@@ -106,6 +106,9 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     private static long CURRENT_ENUM_TYPEDEF_INTERNAL_VERSION;
     private static long CURRENT_BUSINESS_METADATA_TYPEDEF_INTERNAL_VERSION;
     private static long CURRENT_CLASSIFICATION_TYPEDEF_INTERNAL_VERSION;
+    private static long CURRENT_STRUCT_TYPEDEF_INTERNAL_VERSION;
+    private static long CURRENT_ENTITY_TYPEDEF_INTERNAL_VERSION;
+    private static long CURRENT_RELATIONSHIP_TYPEDEF_INTERNAL_VERSION;
 
     @Inject
     public AtlasTypeDefStoreInitializer(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
@@ -127,6 +130,9 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             CURRENT_ENUM_TYPEDEF_INTERNAL_VERSION = Long.parseLong(redisService.getValue(Constants.TYPEDEF_ENUM_CACHE_LATEST_VERSION, "1"));
             CURRENT_BUSINESS_METADATA_TYPEDEF_INTERNAL_VERSION = Long.parseLong(redisService.getValue(Constants.TYPEDEF_BUSINESS_METADATA_CACHE_LATEST_VERSION, "1"));
             CURRENT_CLASSIFICATION_TYPEDEF_INTERNAL_VERSION = Long.parseLong(redisService.getValue(Constants.TYPEDEF_CLASSIFICATION_METADATA_CACHE_LATEST_VERSION, "1"));
+            CURRENT_STRUCT_TYPEDEF_INTERNAL_VERSION = Long.parseLong(redisService.getValue(Constants.TYPEDEF_STRUCT_CACHE_LATEST_VERSION, "1"));
+            CURRENT_ENTITY_TYPEDEF_INTERNAL_VERSION = Long.parseLong(redisService.getValue(Constants.TYPEDEF_ENTITY_CACHE_LATEST_VERSION, "1"));
+            CURRENT_RELATIONSHIP_TYPEDEF_INTERNAL_VERSION = Long.parseLong(redisService.getValue(Constants.TYPEDEF_RELATIONSHIP_CACHE_LATEST_VERSION, "1"));
         } else {
             LOG.info("AtlasTypeDefStoreInitializer.init(): deferring type loading until instance activation");
         }
@@ -438,6 +444,30 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
     public static void setCurrentClassificationTypedefInternalVersion(long version) {
         CURRENT_CLASSIFICATION_TYPEDEF_INTERNAL_VERSION = version;
+    }
+
+    public static long getCurrentStructTypedefInternalVersion() {
+        return CURRENT_STRUCT_TYPEDEF_INTERNAL_VERSION;
+    }
+
+    public static void setCurrentStructTypedefInternalVersion(long version) {
+        CURRENT_STRUCT_TYPEDEF_INTERNAL_VERSION = version;
+    }
+
+    public static long getCurrentEntityTypedefInternalVersion() {
+        return CURRENT_ENTITY_TYPEDEF_INTERNAL_VERSION;
+    }
+
+    public static void setCurrentEntityTypedefInternalVersion(long version) {
+        CURRENT_ENTITY_TYPEDEF_INTERNAL_VERSION = version;
+    }
+
+    public static long getCurrentRelationshipTypedefInternalVersion() {
+        return CURRENT_RELATIONSHIP_TYPEDEF_INTERNAL_VERSION;
+    }
+
+    public static void setCurrentRelationshipTypedefInternalVersion(long version) {
+        CURRENT_RELATIONSHIP_TYPEDEF_INTERNAL_VERSION = version;
     }
 
     private static boolean updateTypeAttributes(AtlasStructDef oldStructDef, AtlasStructDef newStructDef, boolean checkTypeVersion) {

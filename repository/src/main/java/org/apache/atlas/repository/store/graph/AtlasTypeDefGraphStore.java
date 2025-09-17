@@ -145,6 +145,72 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     }
 
     @Override
+    public void reloadStructTypeDefs() throws AtlasBaseException {
+        LOG.info("==> AtlasTypeDefGraphStore.reloadStructTypeDefs()");
+        AtlasTransientTypeRegistry ttr = null;
+        boolean commitUpdates = false;
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate(5);
+            List<AtlasStructDef> structDefs = getStructDefStore(ttr).getAll();
+            for (AtlasBaseTypeDef atlasBaseTypeDef : ttr.getAllStructDefs()) {
+                if (atlasBaseTypeDef instanceof AtlasStructDef) {
+                    ttr.removeTypeByName(atlasBaseTypeDef.getName());
+                }
+            }
+            ttr.addTypes(structDefs);
+            commitUpdates = true;
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
+            LOG.info("<== AtlasTypeDefGraphStore.reloadStructTypeDefs()");
+        }
+    }
+
+    @Override
+    public void reloadEntityTypeDefs() throws AtlasBaseException {
+        LOG.info("==> AtlasTypeDefGraphStore.reloadEntityTypeDefs()");
+        AtlasTransientTypeRegistry ttr = null;
+        boolean commitUpdates = false;
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate(5);
+            List<AtlasEntityDef> entityDefs = getEntityDefStore(ttr).getAll();
+            for (AtlasBaseTypeDef atlasBaseTypeDef : ttr.getAllEntityDefs()) {
+                if (atlasBaseTypeDef instanceof AtlasEntityDef) {
+                    ttr.removeTypeByName(atlasBaseTypeDef.getName());
+                }
+            }
+            ttr.addTypes(entityDefs);
+            commitUpdates = true;
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
+            LOG.info("<== AtlasTypeDefGraphStore.reloadEntityTypeDefs()");
+        }
+    }
+
+    @Override
+    public void reloadRelationshipTypeDefs() throws AtlasBaseException {
+        LOG.info("==> AtlasTypeDefGraphStore.reloadRelationshipTypeDefs()");
+        AtlasTransientTypeRegistry ttr = null;
+        boolean commitUpdates = false;
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate(5);
+            List<AtlasRelationshipDef> relationshipDefs = getRelationshipDefStore(ttr).getAll();
+            for (AtlasBaseTypeDef atlasBaseTypeDef : ttr.getAllRelationshipDefs()) {
+                if (atlasBaseTypeDef instanceof AtlasRelationshipDef) {
+                    ttr.removeTypeByName(atlasBaseTypeDef.getName());
+                }
+            }
+            ttr.addTypes(relationshipDefs);
+            commitUpdates = true;
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
+            LOG.info("<== AtlasTypeDefGraphStore.reloadRelationshipTypeDefs()");
+        }
+    }
+
+    @Override
     public void reloadBusinessMetadataTypeDefs() throws AtlasBaseException {
         LOG.info("==> AtlasTypeDefGraphStore.reloadBusinessMetadataTypeDefs()");
         AtlasTransientTypeRegistry ttr           = null;

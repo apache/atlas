@@ -41,6 +41,12 @@ public interface AtlasTypeDefStore {
 
     void reloadClassificationMetadataTypeDefs() throws AtlasBaseException;
 
+    void reloadStructTypeDefs() throws AtlasBaseException;
+
+    void reloadEntityTypeDefs() throws AtlasBaseException;
+
+    void reloadRelationshipTypeDefs() throws AtlasBaseException;
+
     /* EnumDef operations */
 
     AtlasEnumDef getEnumDefByName(String name) throws AtlasBaseException;
