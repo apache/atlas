@@ -129,7 +129,6 @@ public class TaskQueueWatcher implements Runnable {
                 if (lockAcquired) {
                     redisService.releaseDistributedLock(ATLAS_TASK_LOCK);
                     LOG.info("TaskQueueWatcher: Released Task Lock in finally");
-                    lockAcquired = false;
                 }
             }
             try{
@@ -170,7 +169,8 @@ public class TaskQueueWatcher implements Runnable {
             
             // Keep trying until the task is submitted
             while (!taskSubmitted) {
-                if (isMemoryTooHigh()) {
+                boolean isMemoryTooHigh = isMemoryTooHigh();
+                if (isMemoryTooHigh) {
                     LOG.warn("High memory usage detected ({}%), pausing task submission for task: {}", 
                         getMemoryUsagePercent() * 100, taskGuid);
                     
@@ -179,7 +179,8 @@ public class TaskQueueWatcher implements Runnable {
                         Thread.sleep(AtlasConfiguration.TASK_HIGH_MEMORY_PAUSE_MS.getLong());
                         
                         // Suggest GC if memory is still high after initial wait
-                        if (isMemoryTooHigh()) {
+                        isMemoryTooHigh = isMemoryTooHigh();
+                        if (isMemoryTooHigh) {
                             LOG.info("Memory still high after pause, suggesting garbage collection");
                             System.gc();
                             Thread.sleep(1000); // Give GC time to work
