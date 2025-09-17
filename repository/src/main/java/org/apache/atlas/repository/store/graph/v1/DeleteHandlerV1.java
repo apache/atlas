@@ -92,6 +92,8 @@ import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getState;
 import static org.apache.tinkerpop.gremlin.groovy.jsr223.dsl.credential.__.id;
 import static org.apache.tinkerpop.gremlin.groovy.jsr223.dsl.credential.__.outV;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.hasId;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.not;
 
 public abstract class DeleteHandlerV1 {
     public static final Logger  LOG = LoggerFactory.getLogger(DeleteHandlerV1.class);
@@ -1895,9 +1897,10 @@ public abstract class DeleteHandlerV1 {
 
     /**
      * Helper method to check for active lineage in a specific direction
+     *
      * @param assetVertex The vertex to check
      * @param currentEdge The current edge to exclude
-     * @param direction The edge direction to explore
+     * @param direction   The edge direction to explore
      * @return True if active lineage exists in the specified direction
      */
     private boolean hasActiveLineageDirection(AtlasVertex assetVertex, AtlasEdge currentEdge, Direction direction) {
@@ -1915,24 +1918,19 @@ public abstract class DeleteHandlerV1 {
                     .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE);
         }
 
-        // Complete the traversal with common operations
+
+        // Filter out current edge using Gremlin
+        traversal = traversal.where(not(hasId(currentEdge.getIdForDisplay())));
+
+        for (String deletedEdgeId : RequestContext.get().getDeletedEdgesIdsForResetHasLineage()) {
+            traversal = traversal.where(not(hasId(deletedEdgeId)));
+        }
+
+
         return traversal
-                .project("id", HAS_LINEAGE)
-                .by(id())
-                .by(outV().values(HAS_LINEAGE))
-                .toStream()
-                .anyMatch(edge -> {
-                    Object edgeId = edge.get("id");
-                    String edgeIdStr = (edgeId != null) ? edgeId.toString() : "";
+                .outV() // Get the connected vertex
+                .has(HAS_LINEAGE, true) // Filter vertices with lineage=true
+                .hasNext(); // Just check existence, don't materialize using stream()
 
-                    // Skip if in deleted list or matches current edge
-                    if (RequestContext.get().getDeletedEdgesIdsForResetHasLineage().contains(edgeIdStr) ||
-                            currentEdge.getIdForDisplay().equals(edgeIdStr)) {
-                        return false;
-                    }
-
-                    // Check if this edge has lineage
-                    return Boolean.TRUE.equals(edge.get(HAS_LINEAGE));
-                });
     }
 }
