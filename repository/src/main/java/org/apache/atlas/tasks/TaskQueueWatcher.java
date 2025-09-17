@@ -35,6 +35,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 public class TaskQueueWatcher implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(TaskQueueWatcher.class);
@@ -169,8 +170,7 @@ public class TaskQueueWatcher implements Runnable {
             
             // Keep trying until the task is submitted
             while (!taskSubmitted) {
-                boolean isMemoryTooHigh = isMemoryTooHigh();
-                if (isMemoryTooHigh) {
+                if (isMemoryTooHigh()) {
                     LOG.warn("High memory usage detected ({}%), pausing task submission for task: {}", 
                         getMemoryUsagePercent() * 100, taskGuid);
                     
@@ -179,8 +179,7 @@ public class TaskQueueWatcher implements Runnable {
                         Thread.sleep(AtlasConfiguration.TASK_HIGH_MEMORY_PAUSE_MS.getLong());
                         
                         // Suggest GC if memory is still high after initial wait
-                        isMemoryTooHigh = isMemoryTooHigh();
-                        if (isMemoryTooHigh) {
+                        if (isMemoryTooHigh()) {
                             LOG.info("Memory still high after pause, suggesting garbage collection");
                             System.gc();
                             Thread.sleep(1000); // Give GC time to work
