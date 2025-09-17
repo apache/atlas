@@ -131,7 +131,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         try {
             ttr = typeRegistry.lockTypeRegistryForUpdate(5);
             List<AtlasEnumDef> enumDefs = getEnumDefStore(ttr).getAll();
-            ttr.updateTypes(enumDefs);
+            for (AtlasBaseTypeDef atlasBaseTypeDef : ttr.getAllEnumDefs()) {
+                if (atlasBaseTypeDef instanceof AtlasEnumDef) {
+                    ttr.removeTypeByName(atlasBaseTypeDef.getName());
+                }
+            }
+            ttr.addTypes(enumDefs);
             commitUpdates = true;
         } finally {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
@@ -148,7 +153,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         try {
             ttr = typeRegistry.lockTypeRegistryForUpdate(5);
             List<AtlasBusinessMetadataDef> businessMetadataDefs = getBusinessMetadataDefStore(ttr).getAll();
-            ttr.updateTypes(businessMetadataDefs);
+            for (AtlasBaseTypeDef atlasBaseTypeDef : ttr.getAllBusinessMetadataDefs()) {
+                if (atlasBaseTypeDef instanceof AtlasBusinessMetadataDef) {
+                    ttr.removeTypeByName(atlasBaseTypeDef.getName());
+                }
+            }
+            ttr.addTypes(businessMetadataDefs);
             commitUpdates = true;
         } finally {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
@@ -165,7 +175,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         try {
             ttr = typeRegistry.lockTypeRegistryForUpdate(5);
             List<AtlasClassificationDef> classificationDefs = getClassificationDefStore(ttr).getAll();
-            ttr.updateTypes(classificationDefs);
+            for (AtlasBaseTypeDef atlasBaseTypeDef : ttr.getAllClassificationDefs()) {
+                if (atlasBaseTypeDef instanceof AtlasClassificationDef) {
+                    ttr.removeTypeByName(atlasBaseTypeDef.getName());
+                }
+            }
+            ttr.addTypes(classificationDefs);
             commitUpdates = true;
         } finally {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
