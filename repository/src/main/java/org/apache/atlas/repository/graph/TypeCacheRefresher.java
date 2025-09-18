@@ -1,190 +1,201 @@
 package org.apache.atlas.repository.graph;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.ha.HAConfiguration;
-import org.apache.atlas.repository.RepositoryException;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
+import org.apache.atlas.model.typedef.*;
+import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
+import org.apache.atlas.service.redis.RedisService;
+import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-import static org.apache.atlas.AtlasErrorCode.CINV_UNHEALTHY;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
+import static org.apache.atlas.repository.Constants.*;
 
 @Component
 public class TypeCacheRefresher {
     private static final Logger LOG = LoggerFactory.getLogger(TypeCacheRefresher.class);
-    private String cacheRefresherEndpoint;
-    private String cacheRefresherHealthEndpoint;
-    private final IAtlasGraphProvider provider;
-    private boolean isActiveActiveHAEnabled;
+    private final AtlasTypeDefStore typeDefStore;
+
+    // Define type metadata to make code generic
+    private static class TypeDefMetadata {
+        final String redisKey;
+        final String typeName;
+        final Supplier<Long> getCurrentVersion;
+        final Consumer<Long> setCurrentVersion;
+        final Runnable reloadTypeDefs;
+
+        TypeDefMetadata(String redisKey, String typeName, 
+                       Supplier<Long> getCurrentVersion, 
+                       Consumer<Long> setCurrentVersion,
+                       Runnable reloadTypeDefs) {
+            this.redisKey = redisKey;
+            this.typeName = typeName;
+            this.getCurrentVersion = getCurrentVersion;
+            this.setCurrentVersion = setCurrentVersion;
+            this.reloadTypeDefs = reloadTypeDefs;
+        }
+    }
+
+    // Map of all type definitions and their metadata
+    private final Map<Class<?>, TypeDefMetadata> typeDefMetadataMap;
 
     @Inject
-    public TypeCacheRefresher(final IAtlasGraphProvider provider) {
-        this.provider = provider;
+    public TypeCacheRefresher(final AtlasTypeDefStore typeDefStore) {
+        this.typeDefStore = typeDefStore;
+        this.typeDefMetadataMap = new HashMap<>();
+
+        // Initialize metadata for each type
+        typeDefMetadataMap.put(AtlasBusinessMetadataDef.class, new TypeDefMetadata(
+            TYPEDEF_BUSINESS_METADATA_CACHE_LATEST_VERSION,
+            "BM",
+            AtlasTypeDefStoreInitializer::getCurrentBMTypedefInternalVersion,
+            AtlasTypeDefStoreInitializer::setCurrentBMTypedefInternalVersion,
+            () -> {
+                try {
+                    typeDefStore.reloadBusinessMetadataTypeDefs();
+                } catch (AtlasBaseException e) {
+                    LOG.error("Error reloading BM typedefs", e);
+                }
+            }
+        ));
+
+        typeDefMetadataMap.put(AtlasClassificationDef.class, new TypeDefMetadata(
+            TYPEDEF_CLASSIFICATION_METADATA_CACHE_LATEST_VERSION,
+            "Classification",
+            AtlasTypeDefStoreInitializer::getCurrentClassificationTypedefInternalVersion,
+            AtlasTypeDefStoreInitializer::setCurrentClassificationTypedefInternalVersion,
+            () -> {
+                try {
+                    typeDefStore.reloadClassificationMetadataTypeDefs();
+                } catch (AtlasBaseException e) {
+                    LOG.error("Error reloading Classification typedefs", e);
+                }
+            }
+        ));
+
+        typeDefMetadataMap.put(AtlasEnumDef.class, new TypeDefMetadata(
+            TYPEDEF_ENUM_CACHE_LATEST_VERSION,
+            "Enum",
+            AtlasTypeDefStoreInitializer::getCurrentEnumTypedefInternalVersion,
+            AtlasTypeDefStoreInitializer::setCurrentEnumTypedefInternalVersion,
+            () -> {
+                try {
+                    typeDefStore.reloadEnumTypeDefs();
+                } catch (AtlasBaseException e) {
+                    LOG.error("Error reloading Enum typedefs", e);
+                }
+            }
+        ));
+
+        typeDefMetadataMap.put(AtlasStructDef.class, new TypeDefMetadata(
+            TYPEDEF_STRUCT_CACHE_LATEST_VERSION,
+            "Struct",
+            AtlasTypeDefStoreInitializer::getCurrentStructTypedefInternalVersion,
+            AtlasTypeDefStoreInitializer::setCurrentStructTypedefInternalVersion,
+            () -> {
+                try {
+                    typeDefStore.reloadStructTypeDefs();
+                } catch (AtlasBaseException e) {
+                    LOG.error("Error reloading Struct typedefs", e);
+                }
+            }
+        ));
+
+        typeDefMetadataMap.put(AtlasEntityDef.class, new TypeDefMetadata(
+            TYPEDEF_ENTITY_CACHE_LATEST_VERSION,
+            "Entity",
+            AtlasTypeDefStoreInitializer::getCurrentEntityTypedefInternalVersion,
+            AtlasTypeDefStoreInitializer::setCurrentEntityTypedefInternalVersion,
+            () -> {
+                try {
+                    typeDefStore.reloadEntityTypeDefs();
+                } catch (AtlasBaseException e) {
+                    LOG.error("Error reloading Entity typedefs", e);
+                }
+            }
+        ));
+
+        typeDefMetadataMap.put(AtlasRelationshipDef.class, new TypeDefMetadata(
+            TYPEDEF_RELATIONSHIP_CACHE_LATEST_VERSION,
+            "Relationship",
+            AtlasTypeDefStoreInitializer::getCurrentRelationshipTypedefInternalVersion,
+            AtlasTypeDefStoreInitializer::setCurrentRelationshipTypedefInternalVersion,
+            () -> {
+                try {
+                    typeDefStore.reloadRelationshipTypeDefs();
+                } catch (AtlasBaseException e) {
+                    LOG.error("Error reloading Relationship typedefs", e);
+                }
+            }
+        ));
     }
 
-    @PostConstruct
-    public void init() throws AtlasException {
-        Configuration configuration = ApplicationProperties.get();
-        this.cacheRefresherEndpoint = configuration.getString("atlas.server.type.cache-refresher");
-        this.cacheRefresherHealthEndpoint = configuration.getString("atlas.server.type.cache-refresher-health");
-        this.isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
-        LOG.info("Found {} as cache-refresher endpoint", cacheRefresherEndpoint);
-        LOG.info("Found {} as cache-refresher-health endpoint", cacheRefresherHealthEndpoint);
+    public void refreshCacheIfNeeded(RedisService redisService) throws AtlasBaseException {
+        for (TypeDefMetadata metadata : typeDefMetadataMap.values()) {
+            if (isTypeDefCacheRefreshNeeded(redisService, metadata)) {
+                LOG.info("Refreshing {} type-def cache as the version is different from latest", metadata.typeName);
+                metadata.reloadTypeDefs.run();
+                long currentRedisVersion = Long.parseLong(redisService.getValue(metadata.redisKey, "1"));
+                metadata.setCurrentVersion.accept(currentRedisVersion);
+            }
+        }
     }
 
-    public void verifyCacheRefresherHealth() throws AtlasBaseException, IOException {
-        if (StringUtils.isBlank(cacheRefresherHealthEndpoint) || !isActiveActiveHAEnabled) {
-            LOG.info("Skipping type-def cache refresher health checking as URL is {} and isActiveActiveHAEnabled is {}", cacheRefresherHealthEndpoint, isActiveActiveHAEnabled);
+    private boolean isTypeDefCacheRefreshNeeded(RedisService redisService, TypeDefMetadata metadata) {
+        long currentRedisVersion = Long.parseLong(redisService.getValue(metadata.redisKey, "1"));
+        long currentInternalVersion = metadata.getCurrentVersion.get();
+        LOG.info("Current Redis {} typedef version: {}, Latest {} typedef version: {}", 
+                metadata.typeName, currentRedisVersion, metadata.typeName, currentInternalVersion);
+        return currentInternalVersion < currentRedisVersion;
+    }
+
+    public void updateVersion(RedisService redisService, AtlasTypesDef atlasTypesDef) {
+        if (atlasTypesDef == null) {
             return;
         }
-        final String healthResponseBody;
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
-            final HttpGet healthRequest = new HttpGet(cacheRefresherHealthEndpoint);
-            healthResponseBody = executeGet(client, healthRequest);
-        }
-        LOG.debug("Response Body from cache-refresh-health = {}", healthResponseBody);
-        final ObjectMapper mapper = new ObjectMapper();
-        final CacheRefresherHealthResponse jsonResponse = mapper.readValue(healthResponseBody, CacheRefresherHealthResponse.class);
-        if (!"Healthy".equalsIgnoreCase(jsonResponse.getMessage())) {
-            throw new AtlasBaseException(CINV_UNHEALTHY);
+
+        updateTypeDefVersions(redisService, atlasTypesDef.getBusinessMetadataDefs(), AtlasBusinessMetadataDef.class);
+        updateTypeDefVersions(redisService, atlasTypesDef.getClassificationDefs(), AtlasClassificationDef.class);
+        updateTypeDefVersions(redisService, atlasTypesDef.getEnumDefs(), AtlasEnumDef.class);
+        updateTypeDefVersions(redisService, atlasTypesDef.getStructDefs(), AtlasStructDef.class);
+        updateTypeDefVersions(redisService, atlasTypesDef.getEntityDefs(), AtlasEntityDef.class);
+        updateTypeDefVersions(redisService, atlasTypesDef.getRelationshipDefs(), AtlasRelationshipDef.class);
+    }
+
+    private <T extends AtlasBaseTypeDef> void updateTypeDefVersions(RedisService redisService, 
+                                                                   List<T> typeDefs, 
+                                                                   Class<T> typeClass) {
+        if (CollectionUtils.isNotEmpty(typeDefs)) {
+            TypeDefMetadata metadata = typeDefMetadataMap.get(typeClass);
+            if (metadata != null) {
+                long latestVersion = Long.parseLong(redisService.getValue(metadata.redisKey, "1")) + 1;
+                String latestVersionStr = String.valueOf(latestVersion);
+                redisService.putValue(metadata.redisKey, latestVersionStr);
+                metadata.setCurrentVersion.accept(latestVersion);
+            }
         }
     }
 
-    public void refreshAllHostCache() throws IOException, URISyntaxException, RepositoryException {
-        final String traceId = RequestContext.get().getTraceId();
-        if(StringUtils.isBlank(cacheRefresherEndpoint) || !isActiveActiveHAEnabled) {
-            LOG.info("Skipping type-def cache refresh :: traceId {}", traceId);
+    public void updateVersion(RedisService redisService, AtlasBaseTypeDef atlasBaseTypeDef) {
+        if (atlasBaseTypeDef == null) {
             return;
         }
 
-        int totalFieldKeys = provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size();
-        LOG.info("Found {} totalFieldKeys to be expected in other nodes :: traceId {}", totalFieldKeys, traceId);
-        refreshCache(totalFieldKeys, traceId);
-    }
-
-    private void refreshCache(final int totalFieldKeys, final String traceId) throws IOException, URISyntaxException {
-        URIBuilder builder = new URIBuilder(cacheRefresherEndpoint);
-        builder.setParameter("expectedFieldKeys", String.valueOf(totalFieldKeys));
-        builder.setParameter("traceId", traceId);
-        final HttpPost httpPost = new HttpPost(builder.build());
-        LOG.info("Invoking cache refresh endpoint {} :: traceId {}", cacheRefresherEndpoint, traceId);
-
-        String responseBody;
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
-            responseBody = executePost(traceId, client, httpPost);
-        }
-        LOG.info("Response Body from cache-refresh = {} :: traceId {}", responseBody, traceId);
-        CacheRefreshResponseEnvelope cacheRefreshResponseEnvelope = convertStringToObject(responseBody);
-
-        for (CacheRefreshResponse responseOfEachNode : cacheRefreshResponseEnvelope.getResponse()) {
-            if (responseOfEachNode.getStatus() != 204) {
-                //Do not throw exception in this case as node must have been in passive state now
-                LOG.error("Error while performing cache refresh on host {} . HTTP code = {} :: traceId {}", responseOfEachNode.getHost(),
-                        responseOfEachNode.getStatus(), traceId);
-            } else {
-                LOG.info("Host {} returns response code {} :: traceId {}", responseOfEachNode.getHost(), responseOfEachNode.getStatus(), traceId);
-            }
-        }
-        LOG.info("Refreshed cache successfully on all hosts :: traceId {}", traceId);
-    }
-
-    private String executePost(String traceId, CloseableHttpClient client, HttpPost httpPost) throws IOException {
-        try (CloseableHttpResponse response = client.execute(httpPost)) {
-            LOG.info("Received HTTP response code {} from cache refresh endpoint :: traceId {}", response.getStatusLine().getStatusCode(), traceId);
-            if (response.getStatusLine().getStatusCode() != 200) {
-                throw new RuntimeException("Error while calling cache-refresher on host " + cacheRefresherEndpoint + ". HTTP code = " + response.getStatusLine().getStatusCode() + " :: traceId " + traceId);
-            }
-            return EntityUtils.toString(response.getEntity());
+        TypeDefMetadata metadata = typeDefMetadataMap.get(atlasBaseTypeDef.getClass());
+        if (metadata != null) {
+            long latestVersion = Long.parseLong(redisService.getValue(metadata.redisKey, "1")) + 1;
+            String latestVersionStr = String.valueOf(latestVersion);
+            redisService.putValue(metadata.redisKey, latestVersionStr);
+            metadata.setCurrentVersion.accept(latestVersion);
         }
     }
 
-    private String executeGet(CloseableHttpClient client, HttpGet getRequest) throws IOException, AtlasBaseException {
-        try (CloseableHttpResponse closeableHttpResponse = client.execute(getRequest)) {
-            LOG.info("Received HTTP response code {} from cache refresh health endpoint", closeableHttpResponse.getStatusLine().getStatusCode());
-            if (closeableHttpResponse.getStatusLine().getStatusCode() != 200) {
-                throw new AtlasBaseException(CINV_UNHEALTHY);
-            }
-            return EntityUtils.toString(closeableHttpResponse.getEntity());
-        }
-    }
-
-    private CacheRefreshResponseEnvelope convertStringToObject(final String responseBody) throws JsonProcessingException {
-        final ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(responseBody, CacheRefreshResponseEnvelope.class);
-    }
-}
-
-class CacheRefreshResponseEnvelope {
-    private List<CacheRefreshResponse> response;
-
-    public List<CacheRefreshResponse> getResponse() {
-        return response;
-    }
-
-    public void setResponse(List<CacheRefreshResponse> response) {
-        this.response = response;
-    }
-}
-
-class CacheRefreshResponse {
-    private String host;
-    private int status;
-    private Map<String,String> headers;
-
-    public String getHost() {
-        return host;
-    }
-
-    public void setHost(String host) {
-        this.host = host;
-    }
-
-    public int getStatus() {
-        return status;
-    }
-
-    public void setStatus(int status) {
-        this.status = status;
-    }
-
-    public Map<String, String> getHeaders() {
-        return headers;
-    }
-
-    public void setHeaders(Map<String, String> headers) {
-        this.headers = headers;
-    }
-}
-
-class CacheRefresherHealthResponse {
-    private String message;
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
 }
