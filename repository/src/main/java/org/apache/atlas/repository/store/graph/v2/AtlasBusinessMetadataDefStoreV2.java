@@ -121,6 +121,8 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
                 }
             }
         }
+
+        validateRichTextAttributeLimit(businessMetadataDef);
     }
 
     @Override
@@ -440,5 +442,68 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         AtlasSearchResult atlasSearchResult = entityDiscoveryService.directIndexSearch(indexSearchParams);
 
         return CollectionUtils.isNotEmpty(atlasSearchResult.getEntities());
+    }
+
+    private void validateRichTextAttributeLimit(AtlasBusinessMetadataDef businessMetadataDef) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(businessMetadataDef.getAttributeDefs())) {
+            return;
+        }
+
+        int newRichTextCount = 0;
+        for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
+            if (isRichTextAttribute(attributeDef)) {
+                newRichTextCount++;
+            }
+        }
+
+        if (newRichTextCount == 0) {
+            return;
+        }
+
+        int existingRichTextCount = countExistingRichTextAttributes(businessMetadataDef.getGuid());
+        int totalRichTextCount = existingRichTextCount + newRichTextCount;
+
+        if (totalRichTextCount > 2) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
+                    String.format("Cannot create business metadata attributes. Total rich text attributes would exceed limit of 15. " +
+                                    "Current: %d, Attempting to add: %d, Limit: 15",
+                            existingRichTextCount, newRichTextCount));
+        }
+    }
+
+    private boolean isRichTextAttribute(AtlasStructDef.AtlasAttributeDef attributeDef) {
+        if (attributeDef.getOptions() == null) {
+            return false;
+        }
+
+        String isRichText = attributeDef.getOptions().get("isRichText");
+        return "true".equalsIgnoreCase(isRichText);
+    }
+
+    private int countExistingRichTextAttributes(String excludeBusinessMetadataGuid) throws AtlasBaseException {
+        int count = 0;
+
+        try {
+            List<AtlasBusinessMetadataDef> allBusinessMetadataDefs = getAll();
+
+            for (AtlasBusinessMetadataDef bmDef : allBusinessMetadataDefs) {
+                if (excludeBusinessMetadataGuid != null && excludeBusinessMetadataGuid.equals(bmDef.getGuid())) {
+                    continue;
+                }
+
+                if (CollectionUtils.isNotEmpty(bmDef.getAttributeDefs())) {
+                    for (AtlasStructDef.AtlasAttributeDef attributeDef : bmDef.getAttributeDefs()) {
+                        if (isRichTextAttribute(attributeDef)) {
+                            count++;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOG.error("Error counting existing rich text attributes", e);
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Failed to validate rich text attribute limit");
+        }
+
+        return count;
     }
 }
