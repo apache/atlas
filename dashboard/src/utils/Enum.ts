@@ -77,7 +77,8 @@ export const category: { [key: string]: string } = {
   BUSINESS_METADATA: "Business Metadata",
   PURGE: "Purge Entities",
   IMPORT: "Import Entities",
-  EXPORT: "Export Entities"
+  EXPORT: "Export Entities",
+  AUTO_PURGE : "Auto Purged Entities"
 };
 
 export const auditAction: { [key: string]: string } = {
@@ -106,7 +107,8 @@ export const auditAction: { [key: string]: string } = {
   TYPE_DEF_CREATE: "Type Created",
   TYPE_DEF_DELETE: "Type Deleted",
   IMPORT: "Import",
-  EXPORT: "Export"
+  EXPORT: "Export",
+  AUTO_PURGE : "Auto Purged Entities"
 };
 
 export const stats: any = {

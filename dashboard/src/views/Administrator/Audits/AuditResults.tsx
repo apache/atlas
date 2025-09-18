@@ -53,13 +53,14 @@ const AuditResults = ({ componentProps, row }: any) => {
   const { operation, params, result } = auditObj;
 
   const resultObj =
-    operation == "PURGE"
+    (operation == "PURGE" || operation == "AUTO_PURGE")
       ? result.replace("[", "").replace("]", "").split(",")
       : jsonParse(result);
 
   return (
     <>
       {operation != "PURGE" &&
+      operation != "AUTO_PURGE" &&
       operation != "IMPORT" &&
       operation != "EXPORT" &&
       !isEmpty(resultObj) ? (
@@ -155,11 +156,12 @@ const AuditResults = ({ componentProps, row }: any) => {
         </Grid>
       ) : (
         operation != "PURGE" &&
+        operation != "AUTO_PURGE" &&
         operation != "IMPORT" &&
         operation != "EXPORT" && <Typography>No Results Found</Typography>
       )}
 
-      {operation == "PURGE" && !isEmpty(resultObj) ? (
+      {(operation == "PURGE" || operation == "AUTO_PURGE") && !isEmpty(resultObj) ? (
         <>
           <Typography>{`${category[operation]}`}</Typography>
           <List className="audit-results-list">
@@ -187,7 +189,7 @@ const AuditResults = ({ componentProps, row }: any) => {
           </List>
         </>
       ) : (
-        operation == "PURGE" && <Typography>No Results Found</Typography>
+        (operation == "PURGE" || operation == "AUTO_PURGE") && <Typography>No Results Found</Typography>
       )}
 
       {(operation == "IMPORT" || operation == "EXPORT") && (
@@ -254,11 +256,11 @@ const AuditResults = ({ componentProps, row }: any) => {
         </StyledPaper>
       </CustomModal>
 
-      {operation == "PURGE" && (
+      {(operation == "PURGE" || operation == "AUTO_PURGE") && (
         <CustomModal
           open={openPurgeModal}
           onClose={handleClosePurgeModal}
-          title={`Purged Entity Details: ${currentPurgeResultObj}`}
+          title={operation == "PURGE" ? `Purged Entity Details: ${currentPurgeResultObj}` : `Auto Purged Entity Details: ${currentPurgeResultObj}`}
           footer={false}
           button1Handler={undefined}
           button2Handler={undefined}
