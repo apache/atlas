@@ -31,7 +31,7 @@ on:
       - tagscanarymerge
       - fixlabels
       - interceptapis
-      - fix-redis-wiring
+      - 1277-master
 
 jobs:
   build:
