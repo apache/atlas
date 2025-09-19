@@ -44,6 +44,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class TestAtlasTypeRegistry {
     /*
@@ -91,23 +92,14 @@ public class TestAtlasTypeRegistry {
         typesDef.getClassificationDefs().add(classifiL2d3);
         typesDef.getClassificationDefs().add(classifiL2d4);
 
-        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
-        AtlasTransientTypeRegistry ttr          = null;
-        boolean                    commit       = false;
-        String                     failureMsg   = null;
+        AtlasTypeRegistry typeRegistry = null;
 
         try {
-            ttr = typeRegistry.lockTypeRegistryForUpdate();
-
-            ttr.addTypes(typesDef);
-
-            commit = true;
+            typeRegistry = new AtlasTypeRegistry(typesDef);
         } catch (AtlasBaseException excp) {
-            failureMsg = excp.getMessage();
-        } finally {
-            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+            fail("unexpected failure", excp);
         }
-        assertNull(failureMsg);
+        assertNotNull(typeRegistry);
 
         validateAllSuperTypes(typeRegistry, "L0", new HashSet<>());
         validateAllSuperTypes(typeRegistry, "L1-1", new HashSet<>(Collections.singletonList("L0")));
@@ -148,23 +140,16 @@ public class TestAtlasTypeRegistry {
 
         classifiDef1.addSuperType(classifiDef1.getName());
 
-        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
-        AtlasTransientTypeRegistry ttr          = null;
-        boolean                    commit       = false;
-        String                     failureMsg   = null;
+        AtlasTypeRegistry typeRegistry = null;
 
         try {
-            ttr = typeRegistry.lockTypeRegistryForUpdate();
+            typeRegistry = new AtlasTypeRegistry(new AtlasTypesDef(null, null, Collections.singletonList(classifiDef1), null, null));
 
-            ttr.addType(classifiDef1);
-
-            commit = true;
+            fail("expected invalid supertype failure");
         } catch (AtlasBaseException excp) {
-            failureMsg = excp.getMessage();
-        } finally {
-            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+            assertEquals(excp.getAtlasErrorCode(), AtlasErrorCode.CIRCULAR_REFERENCE);
         }
-        assertNotNull(failureMsg, "expected invalid supertype failure");
+        assertNull(typeRegistry);
     }
 
     /*
@@ -207,23 +192,16 @@ public class TestAtlasTypeRegistry {
         typesDef.getClassificationDefs().add(classifiL2d3);
         typesDef.getClassificationDefs().add(classifiL2d4);
 
-        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
-        AtlasTransientTypeRegistry ttr          = null;
-        boolean                    commit       = false;
-        String                     failureMsg   = null;
+        AtlasTypeRegistry typeRegistry = null;
 
         try {
-            ttr = typeRegistry.lockTypeRegistryForUpdate();
+            typeRegistry = new AtlasTypeRegistry(typesDef);
 
-            ttr.addTypes(typesDef);
-
-            commit = true;
+            fail("expected invalid supertype failure");
         } catch (AtlasBaseException excp) {
-            failureMsg = excp.getMessage();
-        } finally {
-            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+            assertEquals(excp.getAtlasErrorCode(), AtlasErrorCode.CIRCULAR_REFERENCE);
         }
-        assertNotNull(failureMsg, "expected invalid supertype failure");
+        assertNull(typeRegistry);
     }
 
     /*
@@ -279,23 +257,14 @@ public class TestAtlasTypeRegistry {
         typesDef.getEntityDefs().add(entL2d3);
         typesDef.getEntityDefs().add(entL2d4);
 
-        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
-        AtlasTransientTypeRegistry ttr          = null;
-        boolean                    commit       = false;
-        String                     failureMsg   = null;
+        AtlasTypeRegistry typeRegistry = null;
 
         try {
-            ttr = typeRegistry.lockTypeRegistryForUpdate();
-
-            ttr.addTypes(typesDef);
-
-            commit = true;
+            typeRegistry = new AtlasTypeRegistry(typesDef);
         } catch (AtlasBaseException excp) {
-            failureMsg = excp.getMessage();
-        } finally {
-            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+            fail("unexpected failure", excp);
         }
-        assertNull(failureMsg);
+        assertNotNull(typeRegistry);
 
         validateAllSuperTypes(typeRegistry, "L0", new HashSet<>());
         validateAllSuperTypes(typeRegistry, "L1-1", new HashSet<>(Collections.singletonList("L0")));
@@ -345,23 +314,13 @@ public class TestAtlasTypeRegistry {
 
         entDef1.addSuperType(entDef1.getName());
 
-        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
-        AtlasTransientTypeRegistry ttr          = null;
-        boolean                    commit       = false;
-        String                     failureMsg   = null;
-
         try {
-            ttr = typeRegistry.lockTypeRegistryForUpdate();
+            AtlasTypeRegistry ignored = new AtlasTypeRegistry(new AtlasTypesDef(null, null, null, Collections.singletonList(entDef1), null));
 
-            ttr.addType(entDef1);
-
-            commit = true;
+            fail("expected invalid supertype failure");
         } catch (AtlasBaseException excp) {
-            failureMsg = excp.getMessage();
-        } finally {
-            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+            assertEquals(excp.getAtlasErrorCode(), AtlasErrorCode.CIRCULAR_REFERENCE);
         }
-        assertNotNull(failureMsg, "expected invalid supertype failure");
     }
 
     /*
@@ -404,23 +363,13 @@ public class TestAtlasTypeRegistry {
         typesDef.getEntityDefs().add(entL2d3);
         typesDef.getEntityDefs().add(entL2d4);
 
-        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
-        AtlasTransientTypeRegistry ttr          = null;
-        boolean                    commit       = false;
-        String                     failureMsg   = null;
-
         try {
-            ttr = typeRegistry.lockTypeRegistryForUpdate();
+            AtlasTypeRegistry ignored = new AtlasTypeRegistry(typesDef);
 
-            ttr.addTypes(typesDef);
-
-            commit = true;
+            fail("expected invalid supertype failure");
         } catch (AtlasBaseException excp) {
-            failureMsg = excp.getMessage();
-        } finally {
-            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+            assertEquals(excp.getAtlasErrorCode(), AtlasErrorCode.CIRCULAR_REFERENCE);
         }
-        assertNotNull(failureMsg, "expected invalid supertype failure");
     }
 
     @Test
@@ -428,7 +377,6 @@ public class TestAtlasTypeRegistry {
         AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
         AtlasTransientTypeRegistry ttr          = null;
         boolean                    commit       = false;
-        String                     failureMsg   = null;
         AtlasClassificationDef     testTag1     = new AtlasClassificationDef("testTag1");
         AtlasClassificationDef     testTag2     = new AtlasClassificationDef("testTag2");
 
@@ -451,11 +399,10 @@ public class TestAtlasTypeRegistry {
 
             commit = true;
         } catch (AtlasBaseException excp) {
-            failureMsg = excp.getMessage();
+            fail("unexpected failure", excp);
         } finally {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
-        assertNull(failureMsg);
         assertTrue(typeRegistry.isRegisteredType(testTag1.getName()));
         assertTrue(typeRegistry.isRegisteredType(testTag2.getName()));
     }
@@ -539,23 +486,14 @@ public class TestAtlasTypeRegistry {
         typesDef.getEntityDefs().add(entL0);
         typesDef.getEntityDefs().add(entL1);
 
-        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
-        AtlasTransientTypeRegistry ttr          = null;
-        boolean                    commit       = false;
-        String                     failureMsg   = null;
+        AtlasTypeRegistry typeRegistry = null;
 
         try {
-            ttr = typeRegistry.lockTypeRegistryForUpdate();
-
-            ttr.addTypes(typesDef);
-
-            commit = true;
+            typeRegistry = new AtlasTypeRegistry(typesDef);
         } catch (AtlasBaseException excp) {
-            failureMsg = excp.getMessage();
-        } finally {
-            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+            fail("unexpected failure", excp);
         }
-        assertNull(failureMsg);
+        assertNotNull(typeRegistry);
 
         validateAllSuperTypes(typeRegistry, "L0", new HashSet<>());
         validateAllSubTypes(typeRegistry, "L0", new HashSet<>(Collections.singletonList("L1")));
@@ -573,19 +511,12 @@ public class TestAtlasTypeRegistry {
         typesDef.getEntityDefs().add(entL2);
 
         try {
-            commit = false;
+            typeRegistry.updateTypes(typesDef);
 
-            ttr = typeRegistry.lockTypeRegistryForUpdate();
-
-            ttr.updateTypes(typesDef);
-
-            commit = true;
+            fail("type update should have failed");
         } catch (AtlasBaseException excp) {
-            failureMsg = excp.getMessage();
-        } finally {
-            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+            assertEquals(excp.getAtlasErrorCode(), AtlasErrorCode.CIRCULAR_REFERENCE);
         }
-        assertNotNull(failureMsg);
 
         assertNull(typeRegistry.getEntityTypeByName("L2"));
 
@@ -619,23 +550,13 @@ public class TestAtlasTypeRegistry {
         typesDef.getEntityDefs().add(entL1);
         typesDef.getEntityDefs().add(entL2);
 
-        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
-        AtlasTransientTypeRegistry ttr          = null;
-        boolean                    commit       = false;
-        String                     failureMsg   = null;
+        AtlasTypeRegistry typeRegistry = null;
 
         try {
-            ttr = typeRegistry.lockTypeRegistryForUpdate();
-
-            ttr.addTypes(typesDef);
-
-            commit = true;
+            typeRegistry = new AtlasTypeRegistry(typesDef);
         } catch (AtlasBaseException excp) {
-            failureMsg = excp.getMessage();
-        } finally {
-            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+            fail("unexpected failure", excp);
         }
-        assertNull(failureMsg);
 
         validateAllSuperTypes(typeRegistry, "L1", new HashSet<>(Collections.singletonList("L0")));
         validateAllSubTypes(typeRegistry, "L1", new HashSet<>());
@@ -644,19 +565,12 @@ public class TestAtlasTypeRegistry {
         entL1.addSuperType(entL2.getName());
 
         try {
-            commit = false;
+            typeRegistry.updateTypes(typesDef);
 
-            ttr = typeRegistry.lockTypeRegistryForUpdate();
-
-            ttr.updateTypes(typesDef);
-
-            commit = true;
+            fail("type update should have failed");
         } catch (AtlasBaseException excp) {
-            failureMsg = excp.getMessage();
-        } finally {
-            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+            assertEquals(excp.getAtlasErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE);
         }
-        assertNotNull(failureMsg);
 
         validateAllSuperTypes(typeRegistry, "L1", new HashSet<>(Collections.singletonList("L0")));
         validateAllSubTypes(typeRegistry, "L1", new HashSet<>());
@@ -680,23 +594,14 @@ public class TestAtlasTypeRegistry {
         typesDef.getClassificationDefs().add(class1);
         typesDef.getClassificationDefs().add(class2);
 
-        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
-        AtlasTransientTypeRegistry ttr          = null;
-        boolean                    commit       = false;
-        String                     failureMsg   = null;
+        AtlasTypeRegistry typeRegistry = null;
 
         try {
-            ttr = typeRegistry.lockTypeRegistryForUpdate();
-
-            ttr.addTypes(typesDef);
-
-            commit = true;
+            typeRegistry = new AtlasTypeRegistry(typesDef);
         } catch (AtlasBaseException excp) {
-            failureMsg = excp.getMessage();
-        } finally {
-            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+            fail("unexpected failure", excp);
         }
-        assertNull(failureMsg);
+        assertNotNull(typeRegistry);
 
         validateAllSuperTypes(typeRegistry, "class1", new HashSet<>(Collections.singletonList("class0")));
         validateAllSubTypes(typeRegistry, "class1", new HashSet<>());
@@ -704,45 +609,28 @@ public class TestAtlasTypeRegistry {
         //Add class2 as supertype for class1
         class1.addSuperType(class2.getName());
 
-        AtlasErrorCode atlasErrorCode = null;
         try {
-            commit = false;
+            typeRegistry.updateTypes(typesDef);
 
-            ttr = typeRegistry.lockTypeRegistryForUpdate();
-
-            ttr.updateTypes(typesDef);
-
-            commit = true;
+            fail("type update should have failed");
         } catch (AtlasBaseException excp) {
-            failureMsg     = excp.getMessage();
-            atlasErrorCode = excp.getAtlasErrorCode();
-        } finally {
-            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+            assertEquals(excp.getAtlasErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE);
         }
-        assertNotNull(failureMsg);
-        assertEquals(atlasErrorCode, AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE);
 
         validateAllSuperTypes(typeRegistry, "class1", new HashSet<>(Collections.singletonList("class0")));
         validateAllSubTypes(typeRegistry, "class1", new HashSet<>());
     }
 
     private boolean addType(AtlasTypeRegistry typeRegistry, AtlasBaseTypeDef typeDef) {
-        boolean                    ret = false;
-        AtlasTransientTypeRegistry ttr = null;
-
         try {
-            ttr = typeRegistry.lockTypeRegistryForUpdate();
+            typeRegistry.addType(typeDef);
 
-            ttr.addType(typeDef);
-
-            ret = true;
+            return true;
         } catch (AtlasBaseException excp) {
             // ignore
-        } finally {
-            typeRegistry.releaseTypeRegistryForUpdate(ttr, ret);
         }
 
-        return ret;
+        return false;
     }
 
     private void validateAllSuperTypes(AtlasTypeRegistry typeRegistry, String typeName, Set<String> expectedSuperTypes) {
