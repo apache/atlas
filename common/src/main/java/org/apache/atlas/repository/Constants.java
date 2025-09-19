@@ -538,13 +538,6 @@ public final class Constants {
         add(STAKEHOLDER_TITLE_ENTITY_TYPE);
     }};
 
-    public static final String TYPEDEF_ENUM_CACHE_LATEST_VERSION = "typdef.enum.cache.version";
-    public static final String TYPEDEF_BUSINESS_METADATA_CACHE_LATEST_VERSION = "typdef.bm.cache.version";
-    public static final String TYPEDEF_CLASSIFICATION_METADATA_CACHE_LATEST_VERSION = "typdef.cls.cache.version";
-    public static final String TYPEDEF_STRUCT_CACHE_LATEST_VERSION = "typdef.struct.cache.version";
-    public static final String TYPEDEF_ENTITY_CACHE_LATEST_VERSION = "typdef.entity.cache.version";
-    public static final String TYPEDEF_RELATIONSHIP_CACHE_LATEST_VERSION = "typdef.relationship.cache.version";
-
     private Constants() {
     }
 
