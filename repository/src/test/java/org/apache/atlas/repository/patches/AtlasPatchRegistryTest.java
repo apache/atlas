@@ -16,12 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.patches;
+package org.apache.atlas.repository.patches;
 
 import org.apache.atlas.TestModules;
 import org.apache.atlas.model.patches.AtlasPatch;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.patches.AtlasPatchRegistry;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
