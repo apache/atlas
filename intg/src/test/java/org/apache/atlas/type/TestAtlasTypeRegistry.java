@@ -140,16 +140,13 @@ public class TestAtlasTypeRegistry {
 
         classifiDef1.addSuperType(classifiDef1.getName());
 
-        AtlasTypeRegistry typeRegistry = null;
-
         try {
-            typeRegistry = new AtlasTypeRegistry(new AtlasTypesDef(null, null, Collections.singletonList(classifiDef1), null, null));
+            AtlasTypeRegistry ignored = new AtlasTypeRegistry(new AtlasTypesDef(null, null, Collections.singletonList(classifiDef1), null, null));
 
             fail("expected invalid supertype failure");
         } catch (AtlasBaseException excp) {
             assertEquals(excp.getAtlasErrorCode(), AtlasErrorCode.CIRCULAR_REFERENCE);
         }
-        assertNull(typeRegistry);
     }
 
     /*
@@ -192,16 +189,13 @@ public class TestAtlasTypeRegistry {
         typesDef.getClassificationDefs().add(classifiL2d3);
         typesDef.getClassificationDefs().add(classifiL2d4);
 
-        AtlasTypeRegistry typeRegistry = null;
-
         try {
-            typeRegistry = new AtlasTypeRegistry(typesDef);
+            AtlasTypeRegistry ignored = new AtlasTypeRegistry(typesDef);
 
             fail("expected invalid supertype failure");
         } catch (AtlasBaseException excp) {
             assertEquals(excp.getAtlasErrorCode(), AtlasErrorCode.CIRCULAR_REFERENCE);
         }
-        assertNull(typeRegistry);
     }
 
     /*
