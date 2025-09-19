@@ -80,6 +80,12 @@ public class AtlasTypeRegistry {
         resolveIndexFieldNamesForRootTypes();
     }
 
+    public AtlasTypeRegistry(AtlasTypesDef typesDef) throws AtlasBaseException {
+        this();
+
+        updateTypes(typesDef);
+    }
+
     // used only by AtlasTransientTypeRegistry
     protected AtlasTypeRegistry(AtlasTypeRegistry other) {
         registryData              = new RegistryData();
@@ -295,6 +301,36 @@ public class AtlasTypeRegistry {
 
     public AtlasRelationshipType getRelationshipTypeByName(String name) {
         return registryData.relationshipDefs.getTypeByName(name);
+    }
+
+    public void updateTypes(AtlasTypesDef typesDef) throws AtlasBaseException {
+        if (typesDef != null) {
+            AtlasTransientTypeRegistry transientTypeRegistry = lockTypeRegistryForUpdate();
+            boolean                    commitUpdates         = false;
+
+            try {
+                transientTypeRegistry.updateTypes(typesDef);
+
+                commitUpdates = true;
+            } finally {
+                releaseTypeRegistryForUpdate(transientTypeRegistry, commitUpdates);
+            }
+        }
+    }
+
+    public void addType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
+        if (typeDef != null) {
+            AtlasTransientTypeRegistry transientTypeRegistry = lockTypeRegistryForUpdate();
+            boolean                    commitUpdates         = false;
+
+            try {
+                transientTypeRegistry.addType(typeDef);
+
+                commitUpdates = true;
+            } finally {
+                releaseTypeRegistryForUpdate(transientTypeRegistry, commitUpdates);
+            }
+        }
     }
 
     public AtlasTransientTypeRegistry lockTypeRegistryForUpdate() throws AtlasBaseException {
