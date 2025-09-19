@@ -1,7 +1,6 @@
 package org.apache.atlas.service.redis;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.service.metrics.MetricUtils;
 import org.redisson.Redisson;
 import org.slf4j.Logger;
@@ -13,9 +12,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 
 @Component
-@ConditionalOnAtlasProperty(property = "atlas.redis.service.impl")
 @Order(Ordered.HIGHEST_PRECEDENCE)
-public class RedisServiceImpl extends AbstractRedisService{
+public class RedisServiceImpl extends AbstractRedisService {
 
     private static final Logger LOG = LoggerFactory.getLogger(RedisServiceImpl.class);
     private static final long RETRY_DELAY_MS = 1000L;

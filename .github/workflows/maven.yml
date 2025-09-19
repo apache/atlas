@@ -31,7 +31,7 @@ on:
       - tagscanarymerge
       - fixlabels
       - interceptapis
-      - mlh-1240-custom-metadata-consistency
+      - fix-redis-wiring
 
 jobs:
   build:
