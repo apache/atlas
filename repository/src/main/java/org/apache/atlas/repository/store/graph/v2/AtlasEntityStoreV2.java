@@ -579,6 +579,53 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
+    public EntityMutationResponse purgeEntitiesInBatch(Set<String> purgeCandidates) throws AtlasBaseException {
+        LOG.info("==> purgeEntitiesInBatch()");
+
+        Collection<AtlasVertex> purgeVertices = new ArrayList<>();
+        EntityMutationResponse response      = new EntityMutationResponse();
+
+        RequestContext requestContext = RequestContext.get();
+        requestContext.setDeleteType(DeleteType.HARD); // hard deleter
+        requestContext.setPurgeRequested(true);
+
+        for (String guid : purgeCandidates) {
+            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+            if (vertex != null) {
+                AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(vertex);
+                purgeVertices.add(vertex);
+                response.addEntity(PURGE, entityHeader);
+            }
+        }
+
+        deleteDelegate.getHandler().deleteTraitsAndVertices(purgeVertices);
+
+        entityChangeNotifier.onEntitiesMutated(response, false);
+
+        for (AtlasEntityHeader entity : response.getPurgedEntities()) {
+            LOG.info("Auto purged entity with guid {}", entity.getGuid());
+        }
+
+        LOG.info("<== purgeEntitiesInBatch()");
+
+        return response;
+    }
+
+    @Override
+    public Set<AtlasVertex> accumulateDeletionCandidates(Set<String> guids) throws AtlasBaseException {
+        LOG.info("==> accumulateDeletionCandidates() !");
+        Set<AtlasVertex> vertices = new HashSet<>();
+
+        for (String guid : guids) {
+            AtlasVertex vertex = entityRetriever.getEntityVertex(guid);
+            vertices.add(vertex);
+        }
+
+        return deleteDelegate.getHandler().accumulateDeletionCandidates(vertices);
+    }
+
+    @Override
+    @GraphTransaction
     public void addClassifications(final String guid, final List<AtlasClassification> classifications) throws AtlasBaseException {
         LOG.debug("Adding classifications={} to entity={}", classifications, guid);
 

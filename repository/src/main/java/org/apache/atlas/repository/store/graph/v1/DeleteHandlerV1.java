@@ -63,6 +63,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -77,18 +78,22 @@ import static org.apache.atlas.model.TypeCategory.STRUCT;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.PURGED;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_DATASET;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_PROCESS;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_STATUS;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAME_DELIMITER;
 import static org.apache.atlas.repository.Constants.EDGE_PENDING_TASKS_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getAllClassificationEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getAssociatedEntityVertex;
 import static org.apache.atlas.repository.graph.GraphHelper.getBlockedClassificationIds;
@@ -127,6 +132,8 @@ public abstract class DeleteHandlerV1 {
     public static final Logger LOG = LoggerFactory.getLogger(DeleteHandlerV1.class);
 
     private static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
+    private static final String  PROCESS_OUTPUTS_EDGE               = "__Process.outputs";
+    private static final String  RELATIONSHIP_ATTRIBUTE_KEY_STRING  = "columnLineages";
 
     protected final GraphHelper graphHelper;
 
@@ -156,12 +163,22 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasBaseException
      */
     public void deleteEntities(Collection<AtlasVertex> instanceVertices) throws AtlasBaseException {
+        Set<AtlasVertex> deletionCandidateVertices = accumulateDeletionCandidates(instanceVertices);
+        deleteTraitsAndVertices(deletionCandidateVertices);
+    }
+
+    /*
+        accumulate the deletion candidates
+    */
+    public Set<AtlasVertex> accumulateDeletionCandidates(Collection<AtlasVertex> instanceVertices) throws AtlasBaseException {
         final RequestContext   requestContext            = RequestContext.get();
         final Set<AtlasVertex> deletionCandidateVertices = new HashSet<>();
         final boolean          isPurgeRequested          = requestContext.isPurgeRequested();
+        final Set<String>      instanceVertexGuids       = new HashSet<>();
 
         for (AtlasVertex instanceVertex : instanceVertices) {
             final String guid = AtlasGraphUtilsV2.getIdFromVertex(instanceVertex);
+            instanceVertexGuids.add(guid);
 
             if (skipVertexForDelete(instanceVertex)) {
                 if (LOG.isDebugEnabled()) {
@@ -186,13 +203,153 @@ public abstract class DeleteHandlerV1 {
                 requestContext.recordEntityDelete(entityHeader);
                 deletionCandidateVertices.add(vertexInfo.getVertex());
             }
-        }
 
-        // Delete traits and vertices.
+            AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(instanceVertex);
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+            if (entityType.getEntityDef().hasSuperType(ATLAS_TYPE_DATASET)) {
+                addUpstreamProcessEntities(instanceVertex, deletionCandidateVertices, instanceVertexGuids);
+            }
+
+            if (entityType.getEntityDef().hasSuperType(ATLAS_TYPE_PROCESS)) {
+                getColumnLineageEntities(instanceVertex, deletionCandidateVertices);
+            }
+        }
+        return deletionCandidateVertices;
+    }
+
+    /*
+        actually delete traits and then the vertex along its references
+    */
+    public void deleteTraitsAndVertices(Collection<AtlasVertex> deletionCandidateVertices) throws AtlasBaseException {
         for (AtlasVertex deletionCandidateVertex : deletionCandidateVertices) {
             deleteAllClassifications(deletionCandidateVertex);
             deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
         }
+    }
+
+    public void addUpstreamProcessEntities(AtlasVertex entityVertex, Set<AtlasVertex> deletionCandidateVertices, Set<String> instanceVertexGuids) throws AtlasBaseException {
+        RequestContext requestContext = RequestContext.get();
+
+        Iterator<AtlasEdge> edgeIterator = GraphHelper.getIncomingEdgesByLabel(entityVertex, PROCESS_OUTPUTS_EDGE);
+
+        String entityVertexGuid = entityVertex.getProperty(GUID_PROPERTY_KEY, String.class);
+
+        while (edgeIterator.hasNext()) {
+            AtlasEdge edge = edgeIterator.next();
+            AtlasVertex processVertex = edge.getOutVertex();
+
+            String guid = processVertex.getProperty(GUID_PROPERTY_KEY, String.class);
+            if (instanceVertexGuids.contains(guid)) {
+                return; // already added
+            }
+
+            boolean isEligible = isEligible(processVertex, entityVertexGuid, instanceVertexGuids);
+
+            if (isEligible) {
+                instanceVertexGuids.add(guid);
+
+                getColumnLineageEntities(processVertex, deletionCandidateVertices);
+
+                for (GraphHelper.VertexInfo vertexInfo : getOwnedVertices(processVertex)) {
+                    AtlasEntityHeader entityHeader = vertexInfo.getEntity();
+
+                    if (requestContext.isPurgeRequested()) {
+                        entityHeader.setClassifications(entityRetriever.getAllClassifications(vertexInfo.getVertex()));
+                    }
+
+                    requestContext.recordEntityDelete(entityHeader);
+                    deletionCandidateVertices.add(vertexInfo.getVertex());
+                }
+            }
+        }
+    }
+
+    public void getColumnLineageEntities(AtlasVertex process, Set<AtlasVertex> deletionCandidateVertices) throws AtlasBaseException {
+        RequestContext requestContext = RequestContext.get();
+
+        AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(process);
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+        Map<String, Map<String, AtlasAttribute>> relationshipAttributes = entityType.getRelationshipAttributes();
+        Map<String, AtlasAttribute> columnLineages = relationshipAttributes.get(RELATIONSHIP_ATTRIBUTE_KEY_STRING);
+
+        if (columnLineages != null && !columnLineages.isEmpty()) {
+            AtlasAttribute atlasAttribute = columnLineages.values().iterator().next();
+            String relationshipEdgeLabel = atlasAttribute.getRelationshipEdgeLabel();
+
+            Iterator<AtlasEdge> edgeIterator = GraphHelper.getIncomingEdgesByLabel(process, relationshipEdgeLabel);
+
+            int addedCount = 0;
+
+            while (edgeIterator.hasNext()) {
+                AtlasVertex columnLineageVertex = edgeIterator.next().getOutVertex();
+                String typeName = columnLineageVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Column-lineage candidate: type={}, guid={}, state={}, viaEdgeLabel={}, process={}",
+                            typeName, getGuid(columnLineageVertex), getState(columnLineageVertex), relationshipEdgeLabel, string(process));
+                }
+
+                AtlasEntityHeader columnLineageEntityHeader = entityRetriever.toAtlasEntityHeader(columnLineageVertex);
+                requestContext.recordEntityDelete(columnLineageEntityHeader);
+                deletionCandidateVertices.add(columnLineageVertex);
+                addedCount++;
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Collected {} column-lineage vertices via '{}' for process {}", addedCount, relationshipEdgeLabel, getGuid(process));
+            }
+        }
+    }
+
+    boolean isEligible(AtlasVertex processVertex, String entityVertexGuid, Set<String> instanceVertexGuids) throws AtlasBaseException {
+        RequestContext requestContext = RequestContext.get();
+
+        if (requestContext.isPurgeRequested() && getState(processVertex) == ACTIVE) {
+            // skipping the active process entity purging back ward compatibility
+            return false;
+        }
+
+        Iterator<AtlasEdge> processEdges = GraphHelper.getOutGoingEdgesByLabel(processVertex, PROCESS_OUTPUTS_EDGE);
+
+        long countDeletedOutputs = 0;
+        long instanceDeleted = 0; // for handling the case of deletion
+
+        while (processEdges.hasNext()) {
+            //process vertex can have the deleted outgoing edges apart from the current data_set entity
+            AtlasVertex outputEntity = processEdges.next().getInVertex();
+            String outputEntityGuid = outputEntity.getProperty(GUID_PROPERTY_KEY, String.class); // output guid
+
+            if (getState(outputEntity) == ACTIVE && !entityVertexGuid.equals(outputEntityGuid)) {
+                return false;
+            }
+            countDeletedOutputs++;
+
+            if (requestContext.isPurgeRequested() && instanceVertexGuids.contains(outputEntityGuid)) {
+                instanceDeleted++; //for checking that if all outputs are in the instanceVertexGuids during purge
+            }
+        }
+
+        if (requestContext.isPurgeRequested() && countDeletedOutputs > 1) { // ensuring process purging along only left deleted output
+            // but can skip process entity if the all datasets are to be purged in a single scheduled job
+            return countDeletedOutputs == instanceDeleted;
+        }
+
+        return true;
+    }
+
+    public static boolean isSoftDeletableProcess(AtlasVertex processVertex) {
+        Iterator<AtlasEdge> processEdges = GraphHelper.getOutGoingEdgesByLabel(processVertex, PROCESS_OUTPUTS_EDGE);
+
+        while (processEdges.hasNext()) {
+            AtlasVertex output = processEdges.next().getInVertex();
+
+            if (getState(output) == ACTIVE) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

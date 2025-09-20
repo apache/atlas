@@ -68,6 +68,7 @@ import org.apache.atlas.repository.impexp.ZipSink;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.services.MetricsService;
+import org.apache.atlas.services.PurgeService;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -121,6 +122,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -162,6 +164,10 @@ public class AdminResource {
     private static final List<String>  TIMEZONE_LIST                    = Arrays.asList(TimeZone.getAvailableIDs());
     private static final String        METRICS_PERSIST_INTERVAL         = "atlas.metrics.persist.schedule";
     private static final String        METRICS_PERSIST_INTERVAL_DEFAULT = "0 0 0/1 * * *";     // 1 hour interval
+    private static final String        PURGE_CRON_EXPRESSION            = "atlas.purge.cron.expression";
+    private static final String        PURGE_CRON_EXPRESSION_DEFAULT    = "* * * 30 2 ?"; // disabled by default, user controlled scheduling only
+    private static final String        ACTIVE                           = "ACTIVE";
+    private static final String        PURGE_THREAD_NAME                = "Scheduled-Purge-Thread";
     private static final Configuration atlasProperties;
 
     private final ServiceState               serviceState;
@@ -192,6 +198,8 @@ public class AdminResource {
     private final boolean                    isUiTasksTabEnabled;
     private final AtlasAuditReductionService auditReductionService;
     private       Response                   version;
+    private final PurgeService               purgeService;
+    private final ReentrantLock              cronPurgeOperationLock;
 
     @Context
     private HttpServletRequest httpServletRequest;
@@ -205,7 +213,8 @@ public class AdminResource {
             MigrationProgressService migrationProgressService, AtlasServerService serverService,
             ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
             AtlasPatchManager patchManager, AtlasAuditService auditService, EntityAuditRepository auditRepository,
-            TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink, AtlasAuditReductionService atlasAuditReductionService, AtlasMetricsUtil atlasMetricsUtil) {
+            TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink, AtlasAuditReductionService atlasAuditReductionService, AtlasMetricsUtil atlasMetricsUtil,
+                         PurgeService purgeService) {
         this.serviceState              = serviceState;
         this.metricsService            = metricsService;
         this.exportService             = exportService;
@@ -224,6 +233,8 @@ public class AdminResource {
         this.debugMetricsRESTSink      = debugMetricsRESTSink;
         this.auditReductionService     = atlasAuditReductionService;
         this.atlasMetricsUtil          = atlasMetricsUtil;
+        this.purgeService              = purgeService;
+        this.cronPurgeOperationLock    = new ReentrantLock();
 
         if (atlasProperties != null) {
             this.defaultUIVersion            = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V3);
@@ -802,6 +813,63 @@ public class AdminResource {
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    @Scheduled(cron = "#{getPurgeCronExpression}")
+    public void schedulePurgeEntities() throws AtlasBaseException {
+        try {
+            Thread.currentThread().setName(PURGE_THREAD_NAME);
+            if (acquireCronPurgeOperationLock()) {
+                String state = serviceState.getState().toString();
+                LOG.info("==> Status of current node is {}", state);
+                if (state.equals(ACTIVE)) {
+                    LOG.info("==> Scheduled Purging has started");
+                    EntityMutationResponse entityMutationResponse = purgeService.purgeEntities();
+                    Set<String> guids = new HashSet<>();
+
+                    final List<AtlasEntityHeader> purgedEntities = entityMutationResponse.getPurgedEntities() != null
+                            ? entityMutationResponse.getPurgedEntities()
+                            : Collections.emptyList();
+
+                    if (CollectionUtils.isEmpty(purgedEntities)) {
+                        LOG.info("==> no entities got purged");
+                        return;
+                    }
+
+                    for (AtlasEntityHeader entityHeader : entityMutationResponse.getPurgedEntities()) {
+                        guids.add(entityHeader.getGuid());
+                    }
+
+                    LOG.info("==> Purged Entities {}", purgedEntities.size());
+
+                    auditService.add(AuditOperation.AUTO_PURGE, guids.toString(), entityMutationResponse.getPurgedEntitiesIds(),
+                            entityMutationResponse.getPurgedEntities().size());
+
+                    LOG.info("==> Scheduled Purging has finished");
+                } else {
+                    LOG.info("==> Current node is not active, so skipping the scheduled purge");
+                }
+            }
+        } catch (Exception e) {
+            LOG.error("Error while purging entities", e);
+            throw new AtlasBaseException(e);
+        } finally {
+            RequestContext.clear();
+            LOG.info("==> clearing the context");
+            cronPurgeOperationLock.unlock();
+        }
+    }
+
+    @Bean
+    private String getPurgeCronExpression() {
+        if (atlasProperties != null) {
+            return atlasProperties.getString(PURGE_CRON_EXPRESSION, PURGE_CRON_EXPRESSION_DEFAULT);
+        }
+        return PURGE_CRON_EXPRESSION_DEFAULT;
+    }
+
+    private boolean acquireCronPurgeOperationLock() {
+        return cronPurgeOperationLock.tryLock();
     }
 
     @POST

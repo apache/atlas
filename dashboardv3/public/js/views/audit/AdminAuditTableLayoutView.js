@@ -244,7 +244,7 @@ define(['require',
                             el.attr('colspan', '8');
                             if (results) {
                                 var adminValues = null;
-                                if (operation == "PURGE") {
+                                if (operation == "PURGE" || operation == "AUTO_PURGE") {
                                     adminText = that.displayPurgeAndImportAudits(auditData);
                                 } else if (operation == "EXPORT" || operation == "IMPORT") {
                                     adminText = that.displayExportAudits(auditData);
@@ -353,7 +353,7 @@ define(['require',
                 var adminValues = '<ul class="col-sm-6">',
                     guids = null,
                     adminTypDetails = Enums.category[obj.operation];
-                if (obj.operation == "PURGE") {
+                if (obj.operation == "PURGE" || obj.operation == "AUTO_PURGE") {
                     guids = obj.results ? obj.results.replace('[', '').replace(']', '').split(',') : guids;
                 } else {
                     guids = obj.model.get('params') ? obj.model.get('params').split(',') : guids;
@@ -428,9 +428,13 @@ define(['require',
             onClickAdminPurgedEntity: function(e) {
                 var that = this;
                 require(['views/audit/AuditTableLayoutView'], function(AuditTableLayoutView) {
+                    const titles = {
+                        PURGE: "Purged Entity Details",
+                        AUTO_PURGE: "Auto Purge Entity Details"
+                    };
                     var obj = {
                             guid: $(e.target).text(),
-                            titleText: (e.target.dataset.operation == "PURGE") ? "Purged Entity Details: " : "Import Details: "
+                            titleText: (titles[e.target.dataset.operation] || "Import Details") + ": "
                         },
                         modalData = {
                             title: obj.titleText + obj.guid,
