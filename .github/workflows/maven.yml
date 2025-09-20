@@ -31,7 +31,7 @@ on:
       - tagscanarymerge
       - fixlabels
       - interceptapis
-      - 1277-master
+      - revert-custom-metadata-changes
 
 jobs:
   build:
