@@ -2953,7 +2953,7 @@ public class EntityGraphMapper {
                         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetAssetHeader),
                                 "update on entity: " + targetEntityHeader.getDisplayText());
                     } catch(AtlasBaseException e) {
-                        throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "User does not have permission to update entity: " + targetEntityHeader.getDisplayText(), ATTR_MEANINGS);
+                        throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "User does not have permission to update entity: " + targetAssetHeader.getDisplayText(), ATTR_MEANINGS);
                     }
                 } else {
                     AtlasVertex termVertex = edge.getOutVertex();
@@ -2969,7 +2969,7 @@ public class EntityGraphMapper {
                         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termEntityHeader),
                                 "update on entity: " + targetEntityHeader.getDisplayText());
                     } catch(AtlasBaseException e) {
-                        throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "User does not have permission to update entity: " + targetEntityHeader.getDisplayText(), ATTR_MEANINGS);
+                        throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "User does not have permission to update entity: " + termEntityHeader.getDisplayText(), ATTR_MEANINGS);
                     }
                 }
             }
@@ -2991,7 +2991,7 @@ public class EntityGraphMapper {
                         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetAssetHeader),
                                 "update on entity: " + targetEntityHeader.getDisplayText());
                     } catch(AtlasBaseException e) {
-                        throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "User does not have permission to update entity: " + targetEntityHeader.getDisplayText(), ATTR_MEANINGS);
+                        throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "User does not have permission to update entity: " + targetAssetHeader.getDisplayText(), ATTR_MEANINGS);
                     }
                 } else {
                     AtlasVertex termVertex = edge.getOutVertex();
@@ -3007,7 +3007,7 @@ public class EntityGraphMapper {
                         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termEntityHeader),
                                 "update on entity: " + targetEntityHeader.getDisplayText());
                     } catch(AtlasBaseException e) {
-                        throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "User does not have permission to update entity: " + targetEntityHeader.getDisplayText(), ATTR_MEANINGS);
+                        throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "User does not have permission to update entity: " + termEntityHeader.getDisplayText(), ATTR_MEANINGS);
                     }
                 }
             }
