@@ -2835,7 +2835,11 @@ public class EntityGraphMapper {
 
     private void addMeaningsToEntity(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements, boolean isAppend) throws AtlasBaseException {
         if (ctx.getReferringVertex().getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class).equals(ATLAS_GLOSSARY_TERM_ENTITY_TYPE) && isAppend) {
-            addMeaningsToEntityRelations(ctx, createdElements, deletedElements);
+            try {
+                addMeaningsToEntityRelations(ctx, createdElements, deletedElements);
+            } catch (AtlasBaseException e) {
+                throw e;
+            }
         } else {
             try {
                 addMeaningsToEntityV1(ctx, createdElements, deletedElements, isAppend);
