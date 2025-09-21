@@ -2787,7 +2787,7 @@ public class EntityGraphMapper {
             try {
                 verifyMeaningsAuthorization(ctx, createdElements, deletedElements);
             } catch (AtlasBaseException e) {
-                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "Failed to verify meanings authorization for entity: " + ctx.getReferringVertex().getProperty(NAME, String.class));
+                throw e;
             }
         }
 
@@ -2841,7 +2841,7 @@ public class EntityGraphMapper {
                 addMeaningsToEntityV1(ctx, createdElements, deletedElements, isAppend);
             }
             catch (AtlasBaseException e) {
-                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "Failed to add meanings to entity: " + ctx.getReferringVertex().getProperty(NAME, String.class));
+                throw e;
             }
         }
     }
@@ -2861,7 +2861,7 @@ public class EntityGraphMapper {
             try {
                 verifyMeaningsAuthorization(ctx, createdElements, deletedElements);
             } catch ( AtlasBaseException e) {
-                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "Failed to verify meanings authorization for entity: " + ctx.getReferringVertex().getProperty(NAME, String.class));
+                throw e;
             }
         }
 
@@ -2914,10 +2914,20 @@ public class EntityGraphMapper {
 
     private void verifyMeaningsAuthorization(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) throws AtlasBaseException {
         AtlasVertex targetEntityVertex = ctx.getReferringVertex();
-        AtlasEntityHeader targetEntityHeader = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(targetEntityVertex);
+        AtlasEntityHeader targetEntityHeader;
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetEntityHeader),
-                "update on entity: " + targetEntityHeader.getDisplayText());
+        try {
+            targetEntityHeader = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(targetEntityVertex);
+        } catch (AtlasBaseException e) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid entity vertex found for: " + GraphHelper.getGuid(targetEntityVertex) + "with error: " + e, ATTR_MEANINGS);
+        }
+
+        try {
+            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetEntityHeader),
+                    "update on entity: " + targetEntityHeader.getDisplayText());
+        } catch(AtlasBaseException e) {
+            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "User does not have permission to update entity: " + targetEntityHeader.getDisplayText(), ATTR_MEANINGS);
+        }
 
         boolean isGlossaryTermContext = ATLAS_GLOSSARY_TERM_ENTITY_TYPE.equals(targetEntityVertex.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class));
 
@@ -2927,16 +2937,36 @@ public class EntityGraphMapper {
                 
                 if (isGlossaryTermContext) {
                     AtlasVertex targetAssetVertex = edge.getInVertex();
-                    AtlasEntityHeader targetAssetHeader = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(targetAssetVertex);
-                    
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetAssetHeader),
-                            "linking to asset: " + targetAssetHeader.getDisplayText());
+                    AtlasEntityHeader targetAssetHeader;
+
+                    try {
+                        targetAssetHeader = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(targetAssetVertex);
+                    } catch (AtlasBaseException e) {
+                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid entity vertex found for: " + GraphHelper.getGuid(targetAssetVertex) + "with error: " + e, ATTR_MEANINGS);
+                    }
+
+                    try {
+                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetAssetHeader),
+                                "update on entity: " + targetEntityHeader.getDisplayText());
+                    } catch(AtlasBaseException e) {
+                        throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "User does not have permission to update entity: " + targetEntityHeader.getDisplayText(), ATTR_MEANINGS);
+                    }
                 } else {
                     AtlasVertex termVertex = edge.getOutVertex();
-                    AtlasEntityHeader termEntityHeader = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(termVertex);
-                    
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termEntityHeader),
-                            "linking of term: " + termEntityHeader.getDisplayText());
+                    AtlasEntityHeader termEntityHeader;
+
+                    try {
+                        termEntityHeader = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(termVertex);
+                    } catch (AtlasBaseException e) {
+                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid entity vertex found for: " + GraphHelper.getGuid(termVertex) + "with error: " + e, ATTR_MEANINGS);
+                    }
+
+                    try {
+                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termEntityHeader),
+                                "update on entity: " + targetEntityHeader.getDisplayText());
+                    } catch(AtlasBaseException e) {
+                        throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "User does not have permission to update entity: " + targetEntityHeader.getDisplayText(), ATTR_MEANINGS);
+                    }
                 }
             }
         }
@@ -2945,16 +2975,36 @@ public class EntityGraphMapper {
             for (AtlasEdge edge : deletedElements) {
                 if (isGlossaryTermContext) {
                     AtlasVertex targetAssetVertex = edge.getInVertex();
-                    AtlasEntityHeader targetAssetHeader = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(targetAssetVertex);
-                    
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetAssetHeader),
-                            "unlinking from asset: " + targetAssetHeader.getDisplayText());
+                    AtlasEntityHeader targetAssetHeader;
+
+                    try {
+                        targetAssetHeader = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(targetAssetVertex);
+                    } catch (AtlasBaseException e) {
+                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid entity vertex found for: " + GraphHelper.getGuid(targetAssetVertex) + "with error: " + e, ATTR_MEANINGS);
+                    }
+
+                    try {
+                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetAssetHeader),
+                                "update on entity: " + targetEntityHeader.getDisplayText());
+                    } catch(AtlasBaseException e) {
+                        throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "User does not have permission to update entity: " + targetEntityHeader.getDisplayText(), ATTR_MEANINGS);
+                    }
                 } else {
                     AtlasVertex termVertex = edge.getOutVertex();
-                    AtlasEntityHeader termEntityHeader = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(termVertex);
-                    
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termEntityHeader),
-                            "unlinking of term: " + termEntityHeader.getDisplayText());
+                    AtlasEntityHeader termEntityHeader;
+
+                    try {
+                        termEntityHeader = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(termVertex);
+                    } catch (AtlasBaseException e) {
+                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid entity vertex found for entity: " + GraphHelper.getGuid(termVertex) + "with error: " + e, ATTR_MEANINGS);
+                    }
+
+                    try {
+                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termEntityHeader),
+                                "update on entity: " + targetEntityHeader.getDisplayText());
+                    } catch(AtlasBaseException e) {
+                        throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "User does not have permission to update entity: " + targetEntityHeader.getDisplayText(), ATTR_MEANINGS);
+                    }
                 }
             }
         }
