@@ -557,6 +557,9 @@ const BarTreeView: FC<{
   };
 
   const shouldSetSearchParams = (node: TreeNode, treeName: string) => {
+    if (treeName === "CustomFilters") {
+      return node.types === "child";
+    }
     return (
       node.children === undefined ||
       isEmpty(node.children) ||

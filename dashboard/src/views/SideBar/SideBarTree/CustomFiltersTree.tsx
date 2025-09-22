@@ -119,10 +119,10 @@ const CustomFiltersTree = ({ sideBarOpen, searchTerm }: Props) => {
       emptySearchTypes.forEach((typeObj) => {
         if (!existingSearchTypes.includes(typeObj.searchType)) {
           savedSearchTypeArr.push({
-            name: typeObj.searchType,
+            name: typeObj.name,
             children: [],
             types: "parent",
-            parent: typeObj.searchType
+            parent: typeObj.searchType,
           });
         }
       });
