@@ -28,6 +28,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasEntityType;
 
@@ -225,6 +226,13 @@ public interface AtlasEntityStore {
      * Return list of purged entity guids
      */
     EntityMutationResponse purgeByIds(Set<String> guids) throws AtlasBaseException;
+
+    /*
+     * Returns set of auto-purged entity guids
+     */
+    EntityMutationResponse purgeEntitiesInBatch(Set<String> deletedVertices) throws AtlasBaseException;
+
+    Set<AtlasVertex> accumulateDeletionCandidates(Set<String> vertices) throws AtlasBaseException;
 
     /**
      * Add classification(s)

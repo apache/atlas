@@ -1,0 +1,19 @@
+{
+  "patches": [
+    {
+      "id": "TYPEDEF_PATCH_0007_001",
+      "description": "Add additional operations in Atlas",
+      "action": "UPDATE_ENUMDEF",
+      "typeName": "atlas_operation",
+      "applyToVersion": "1.1",
+      "updateToVersion": "1.2",
+      "params": null,
+      "elementDefs": [
+        {
+          "ordinal": 10,
+          "value": "AUTO_PURGE"
+        }
+      ]
+    }
+  ]
+}
