@@ -231,11 +231,17 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
         }
         if (!dataLength) {
           setIsEmptyData(true);
+          setSearchData({ entities: [], referredEntities: {} });
+          setTotalCount(0);
+          setPageCount(0);
           setLoader(false);
         } else {
+          setIsEmptyData(false);
           setSearchData(searchResp.data);
           setTotalCount(totalCount || 0);
-          setPageCount(Math.ceil(totalCount / pagination.pageSize));
+          setPageCount(
+            Math.ceil((totalCount || 0) / ((pagination && pagination.pageSize) || 1))
+          );
           setLoader(false);
         }
       } catch (error: any) {
