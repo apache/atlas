@@ -957,10 +957,10 @@ public abstract class DeleteHandlerV1 {
         }
     }
 
-    public void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid, String classificationName) {
+    public void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid, String classificationName, boolean isImportInProgress) {
         String              currentUser = RequestContext.getCurrentUser();
         String              entityGuid  = GraphHelper.getGuid(entityVertex);
-        Map<String, Object> taskParams  = ClassificationTask.toParameters(entityGuid, classificationVertexId, relationshipGuid, classificationName);
+        Map<String, Object> taskParams  = ClassificationTask.toParameters(entityGuid, classificationVertexId, relationshipGuid, classificationName, isImportInProgress);
         AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams);
 
         AtlasGraphUtilsV2.addEncodedProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
@@ -1280,10 +1280,11 @@ public abstract class DeleteHandlerV1 {
     private void addTagPropagation(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasEdge edge) throws AtlasBaseException {
         final List<AtlasVertex> classificationVertices = getPropagationEnabledClassificationVertices(fromVertex);
         String                  relationshipGuid       = getRelationshipGuid(edge);
+        boolean isImportInProgress                     = RequestContext.get().isImportInProgress();
 
         if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
             for (AtlasVertex classificationVertex : classificationVertices) {
-                createAndQueueTask(CLASSIFICATION_PROPAGATION_ADD, toVertex, classificationVertex.getIdForDisplay(), relationshipGuid, GraphHelper.getClassificationName(classificationVertex));
+                createAndQueueTask(CLASSIFICATION_PROPAGATION_ADD, toVertex, classificationVertex.getIdForDisplay(), relationshipGuid, GraphHelper.getClassificationName(classificationVertex), isImportInProgress);
             }
         } else {
             final List<AtlasVertex> propagatedEntityVertices = CollectionUtils.isNotEmpty(classificationVertices) ? entityRetriever.getIncludedImpactedVerticesV2(toVertex, relationshipGuid) : null;
@@ -1347,6 +1348,7 @@ public abstract class DeleteHandlerV1 {
      */
     private void deleteAllClassifications(AtlasVertex instanceVertex) throws AtlasBaseException {
         List<AtlasEdge> classificationEdges = getAllClassificationEdges(instanceVertex);
+        boolean isImportInProgress = RequestContext.get().isImportInProgress();
 
         for (AtlasEdge edge : classificationEdges) {
             AtlasVertex classificationVertex = edge.getInVertex();
@@ -1355,7 +1357,7 @@ public abstract class DeleteHandlerV1 {
 
             if (isClassificationEdge && removePropagations) {
                 if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
-                    createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, instanceVertex, classificationVertex.getIdForDisplay(), null, GraphHelper.getClassificationName(classificationVertex));
+                    createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, instanceVertex, classificationVertex.getIdForDisplay(), null, GraphHelper.getClassificationName(classificationVertex), isImportInProgress);
                 } else {
                     removeTagPropagation(classificationVertex);
                 }
