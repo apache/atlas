@@ -792,6 +792,7 @@ public class EntityGraphMapper {
             List<AtlasVertex>                              entitiesToPropagateTo = null;
             Map<AtlasClassification, HashSet<AtlasVertex>> addedClassifications  = new HashMap<>();
             List<AtlasClassification>                      addClassifications    = new ArrayList<>(classifications.size());
+            boolean isImportInProgress                                           = RequestContext.get().isImportInProgress();
 
             for (AtlasClassification c : classifications) {
                 AtlasClassification classification     = new AtlasClassification(c);
@@ -851,7 +852,7 @@ public class EntityGraphMapper {
                 if (propagateTags && taskManagement != null && deferredActionEnabled) {
                     propagateTags = false;
 
-                    createAndQueueTask(CLASSIFICATION_PROPAGATION_ADD, entityVertex, classificationVertex.getIdForDisplay(), classificationName);
+                    createAndQueueTask(CLASSIFICATION_PROPAGATION_ADD, entityVertex, classificationVertex.getIdForDisplay(), classificationName, isImportInProgress);
                 }
 
                 // add the attributes for the trait instance
@@ -981,6 +982,7 @@ public class EntityGraphMapper {
         }
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, entityGuid);
+        boolean isImportInProgress = RequestContext.get().isImportInProgress();
 
         if (entityVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, entityGuid);
@@ -1023,7 +1025,7 @@ public class EntityGraphMapper {
                     throw new AtlasBaseException(AtlasErrorCode.DELETE_TAG_PROPAGATION_NOT_ALLOWED, classificationVertexId, entityGuid);
                 }
 
-                createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertexId, classificationName);
+                createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertexId, classificationName, isImportInProgress);
 
                 entityVertices = new ArrayList<>();
             } else {
@@ -1101,6 +1103,7 @@ public class EntityGraphMapper {
         }
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
+        boolean isImportInProgress = RequestContext.get().isImportInProgress();
 
         if (entityVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
@@ -1215,7 +1218,7 @@ public class EntityGraphMapper {
             if (updatedTagPropagation != null && taskManagement != null && deferredActionEnabled) {
                 String propagationType = updatedTagPropagation ? CLASSIFICATION_PROPAGATION_ADD : CLASSIFICATION_PROPAGATION_DELETE;
 
-                createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), classificationName);
+                createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), classificationName, isImportInProgress);
 
                 updatedTagPropagation = null;
             }
@@ -2834,7 +2837,7 @@ public class EntityGraphMapper {
         attributes.put(bmAttribute.getName(), attrValue);
     }
 
-    private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String classificationName) {
-        deleteDelegate.getHandler().createAndQueueTask(taskType, entityVertex, classificationVertexId, null, classificationName);
+    private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String classificationName,  boolean isImportInProgress) {
+        deleteDelegate.getHandler().createAndQueueTask(taskType, entityVertex, classificationVertexId, null, classificationName, isImportInProgress);
     }
 }
