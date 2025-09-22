@@ -2919,7 +2919,7 @@ public class EntityGraphMapper {
 
         List<Object> changedEntities;
 
-        if (currentElements.size() != 0) {
+        if (currentElements != null && !currentElements.isEmpty()) {
             Set<Object> createdSet = new HashSet<>(createdElements);
             Set<Object> currentSet = new HashSet<>(currentElements);
 
@@ -2931,7 +2931,7 @@ public class EntityGraphMapper {
             changedEntities = new ArrayList<>(createdElements);
         }
 
-        if (changedEntities.size() != 0) {
+        if (changedEntities != null && !changedEntities.isEmpty()) {
             for (Object element : changedEntities) {
                 AtlasEdge edge = (AtlasEdge) element;
                 
@@ -2959,7 +2959,7 @@ public class EntityGraphMapper {
             }
         }
 
-        if (deletedElements.size() != 0) {
+        if (deletedElements != null && !deletedElements.isEmpty()) {
             for (AtlasEdge edge : deletedElements) {
                 if (isGlossaryTermContext) {
                     AtlasVertex targetAssetVertex = edge.getInVertex();
