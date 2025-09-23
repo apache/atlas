@@ -247,7 +247,7 @@ public class ImportService implements AsyncImporter {
 
     @Override
     public void onImportTypeDef(AtlasTypesDef typesDef, String importId) throws AtlasBaseException {
-        LOG.info("==> onImportTypeDef(typesDef={}, importId={})", typesDef, importId);
+        LOG.info("==> onImportTypeDef(importId={})", importId);
 
         AtlasAsyncImportRequest importRequest = asyncImportService.fetchImportRequestByImportId(importId);
 
@@ -272,13 +272,13 @@ public class ImportService implements AsyncImporter {
 
             asyncImportService.updateImportRequest(importRequest);
 
-            LOG.info("<== onImportTypeDef(typesDef={}, importResult={})", typesDef, importRequest.getImportResult());
+            LOG.info("<== onImportTypeDef()");
         }
     }
 
     @Override
     public Boolean onImportEntity(AtlasEntityWithExtInfo entityWithExtInfo, String importId, int position) throws AtlasBaseException {
-        LOG.info("==> onImportEntity(entityWithExtInfo={}, importId={}, position={})", entityWithExtInfo, importId, position);
+        LOG.info("==> onImportEntity(importId={}, position={})", importId, position);
 
         AtlasAsyncImportRequest importRequest = asyncImportService.fetchImportRequestByImportId(importId);
 
@@ -309,6 +309,7 @@ public class ImportService implements AsyncImporter {
 
             importRequest.getImportDetails().setImportProgress(resp.right);
         } catch (AtlasBaseException abe) {
+            LOG.warn("Failed to import entity: {} at position: {} for import: {}", entityWithExtInfo.getEntity().getGuid(), position, importId, abe);
             failedEntitiesCounter += 1;
 
             importRequest.getImportDetails().setFailedEntitiesCount(failedEntitiesCounter);
@@ -324,7 +325,7 @@ public class ImportService implements AsyncImporter {
 
             asyncImportService.updateImportRequest(importRequest);
 
-            LOG.info("<== onImportEntity(entityWithExtInfo={}, importId={}, position={})", entityWithExtInfo, importId, position);
+            LOG.info("<== onImportEntity(importId={}, position={})", importId, position);
         }
 
         if (importRequest.getImportDetails().getPublishedEntityCount() <=
