@@ -14,9 +14,9 @@
 -- limitations under the License.
 
 -- DB objects for Atlas entity audit
-CREATE SEQUENCE IF NOT EXISTS atlas_entity_audit_seq;
+CREATE SEQUENCE IF NOT EXISTS atlas_entity_audit_seq INCREMENT BY 1 CACHE 1000;
 
-CREATE TABLE IF NOT EXISTS atlas_entity_audit(id BIGINT DEFAULT nextval('atlas_entity_audit_seq'::regclass), entity_id VARCHAR(64) NOT NULL, event_time BIGINT NOT NULL, event_idx INT NOT NULL, user_name  VARCHAR(64) NOT NULL, operation INT NOT NULL, details TEXT DEFAULT NULL, entity TEXT DEFAULT NULL, audit_type INT NOT NULL, PRIMARY KEY(id));
+CREATE TABLE IF NOT EXISTS atlas_entity_audit(id BIGINT, entity_id VARCHAR(64) NOT NULL, event_time BIGINT NOT NULL, event_idx INT NOT NULL, user_name  VARCHAR(64) NOT NULL, operation INT NOT NULL, details TEXT DEFAULT NULL, entity TEXT DEFAULT NULL, audit_type INT NOT NULL, PRIMARY KEY(id));
 
 CREATE INDEX IF NOT EXISTS atlas_entity_audit_idx_entity_id            ON atlas_entity_audit (entity_id);
 CREATE INDEX IF NOT EXISTS atlas_entity_audit_idx_event_time           ON atlas_entity_audit (event_time);
@@ -25,12 +25,12 @@ CREATE INDEX IF NOT EXISTS atlas_entity_audit_idx_entity_id_event_time ON atlas_
 
 
 -- DB objects for JanusGraph backend store
-CREATE SEQUENCE IF NOT EXISTS janus_store_seq;
-CREATE SEQUENCE IF NOT EXISTS janus_key_seq;
-CREATE SEQUENCE IF NOT EXISTS janus_column_seq ;
+CREATE SEQUENCE IF NOT EXISTS janus_store_seq INCREMENT BY 1 CACHE 1;
+CREATE SEQUENCE IF NOT EXISTS janus_key_seq INCREMENT BY 1 CACHE 1000;
+CREATE SEQUENCE IF NOT EXISTS janus_column_seq INCREMENT BY 1 CACHE 1000;
 
-CREATE TABLE IF NOT EXISTS janus_store(id BIGINT DEFAULT NEXTVAL('janus_store_seq'::regclass), name VARCHAR(255) NOT NULL, PRIMARY KEY(id));
-CREATE TABLE IF NOT EXISTS janus_key(id BIGINT DEFAULT NEXTVAL('janus_key_seq'::regclass), store_id BIGINT NOT NULL, name BYTEA NOT NULL, PRIMARY KEY(id));
+CREATE TABLE IF NOT EXISTS janus_store(id BIGINT, name VARCHAR(255) NOT NULL, PRIMARY KEY(id));
+CREATE TABLE IF NOT EXISTS janus_key(id BIGINT, store_id BIGINT NOT NULL, name BYTEA NOT NULL, PRIMARY KEY(id));
 CREATE TABLE IF NOT EXISTS janus_column(id BIGINT DEFAULT NEXTVAL('janus_column_seq'::regclass), key_id BIGINT NOT NULL, name BYTEA NOT NULL, val BYTEA NOT NULL, PRIMARY KEY(id));
 
 CREATE UNIQUE INDEX IF NOT EXISTS janus_store_uk_name      ON janus_store(name);
@@ -42,10 +42,10 @@ CREATE INDEX IF NOT EXISTS janus_column_idx_key_id ON janus_column (key_id);
 
 
 -- DB objects for JanusGraph unique key constraints
-CREATE SEQUENCE IF NOT EXISTS janus_unique_vertex_key_seq;
-CREATE SEQUENCE IF NOT EXISTS janus_unique_vertex_type_key_seq;
-CREATE SEQUENCE IF NOT EXISTS janus_unique_edge_key_seq;
-CREATE SEQUENCE IF NOT EXISTS janus_unique_edge_type_key_seq;
+CREATE SEQUENCE IF NOT EXISTS janus_unique_vertex_key_seq INCREMENT BY 1 CACHE 1000;
+CREATE SEQUENCE IF NOT EXISTS janus_unique_vertex_type_key_seq INCREMENT BY 1 CACHE 1000;
+CREATE SEQUENCE IF NOT EXISTS janus_unique_edge_key_seq INCREMENT BY 1 CACHE 1000;
+CREATE SEQUENCE IF NOT EXISTS janus_unique_edge_type_key_seq INCREMENT BY 1 CACHE 1000;
 
 CREATE TABLE IF NOT EXISTS janus_unique_vertex_key(id BIGINT DEFAULT NEXTVAL('janus_unique_vertex_key_seq'::regclass), vertex_id BIGINT NOT NULL, key_name VARCHAR(255) NOT NULL, val TEXT NOT NULL, PRIMARY KEY(id));
 CREATE TABLE IF NOT EXISTS janus_unique_vertex_type_key(id BIGINT DEFAULT NEXTVAL('janus_unique_vertex_type_key_seq'::regclass), vertex_id BIGINT NOT NULL, type_name VARCHAR(255) NOT NULL, key_name VARCHAR(255) NOT NULL, val TEXT NOT NULL, PRIMARY KEY(id));
