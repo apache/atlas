@@ -44,6 +44,7 @@ import javax.inject.Inject;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import static org.apache.atlas.notification.NotificationInterface.NotificationType.ASYNC_IMPORT;
 
@@ -52,6 +53,8 @@ public class AsyncImportTaskExecutor {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncImportTaskExecutor.class);
 
     private static final String MESSAGE_SOURCE = AsyncImportTaskExecutor.class.getSimpleName();
+    private static final int MAX_RETRIES       = 3;
+    private static final int BASE_BACKOFF_MS   = 500;
 
     private final AsyncImportService    importService;
     private final NotificationInterface notificationInterface;
@@ -91,14 +94,14 @@ public class AsyncImportTaskExecutor {
     }
 
     public void publishTypeDefNotification(AtlasAsyncImportRequest importRequest, AtlasTypesDef atlasTypesDef) throws AtlasBaseException {
-        LOG.info("==> publishTypeDefNotification(importRequest={}, atlasTypesDef={})", importRequest, atlasTypesDef);
+        LOG.info("==> publishTypeDefNotification()");
 
         try {
             HookNotification typeDefImportNotification = new ImportNotification.AtlasTypesDefImportNotification(importRequest.getImportId(), importRequest.getImportResult().getUserName(), atlasTypesDef);
 
             sendToTopic(importRequest.getTopicName(), typeDefImportNotification);
         } finally {
-            LOG.info("<== publishTypeDefNotification(atlasAsyncImportRequest={})", importRequest);
+            LOG.info("<== publishTypeDefNotification()");
         }
     }
 
@@ -144,13 +147,13 @@ public class AsyncImportTaskExecutor {
         } finally {
             notificationInterface.closeProducer(ASYNC_IMPORT, importRequest.getTopicName());
 
-            LOG.info("<== publishImportRequest(atlasAsyncImportRequest={})", importRequest);
+            LOG.info("<== publishImportRequest()");
         }
     }
 
     @VisibleForTesting
     void publishEntityNotification(AtlasAsyncImportRequest importRequest, EntityImportStream entityImportStream) {
-        LOG.info("==> publishEntityNotification(atlasAsyncImportRequest={})", importRequest);
+        LOG.info("==> publishEntityNotification()");
 
         int publishedEntityCounter = importRequest.getImportDetails().getPublishedEntityCount();
         int failedEntityCounter    = importRequest.getImportDetails().getFailedEntitiesCount();
@@ -186,7 +189,7 @@ public class AsyncImportTaskExecutor {
 
                 importService.updateImportRequest(importRequest);
 
-                LOG.info("<== publishEntityNotification(atlasAsyncImportRequest={})", importRequest);
+                LOG.info("<== publishEntityNotification()");
             }
         }
     }
@@ -195,13 +198,13 @@ public class AsyncImportTaskExecutor {
     void skipToStartEntityPosition(AtlasAsyncImportRequest importRequest, EntityImportStream entityImportStream) {
         int startEntityPosition = importRequest.getImportTrackingInfo().getStartEntityPosition();
 
-        LOG.info("==> skipToStartEntityPosition(atlasAsyncImportRequest={}): position={}", importRequest, startEntityPosition);
+        LOG.info("==> skipToPosition(importId={}): startEntityPosition={}", importRequest.getImportId(), startEntityPosition);
 
         while (entityImportStream.hasNext() && startEntityPosition > entityImportStream.getPosition()) {
             entityImportStream.next();
         }
 
-        LOG.info("<== skipToStartEntityPosition(atlasAsyncImportRequest={}): position={}", importRequest, startEntityPosition);
+        LOG.info("<== skipToPosition()");
     }
 
     @VisibleForTesting
@@ -223,20 +226,22 @@ public class AsyncImportTaskExecutor {
                 newImportRequest.setReceivedTime(System.currentTimeMillis());
                 newImportRequest.getImportDetails().setTotalEntitiesCount(totalEntities);
                 newImportRequest.getImportDetails().setCreationOrder(creationOrder);
-
-                importService.saveImportRequest(newImportRequest);
-
-                LOG.info("registerRequest(importId={}): registered new request {}", importId, newImportRequest);
-
-                return newImportRequest;
+                return withRetry(() -> {
+                    importService.saveImportRequest(newImportRequest);
+                    LOG.info("registerRequest(importId={}): registered new request", importId);
+                    return newImportRequest; }, importId);
             } else if (ObjectUtils.equals(existingImportRequest.getStatus(), ImportStatus.STAGING)) {
                 // if we are resuming staging, we need to update the latest request received at
                 existingImportRequest.setReceivedTime(System.currentTimeMillis());
 
-                importService.updateImportRequest(existingImportRequest);
+                return withRetry(() -> {
+                    importService.updateImportRequest(existingImportRequest);
+                    LOG.info("registerRequest(importId={}): resumed {}", importId, existingImportRequest);
+                    return existingImportRequest;
+                }, importId);
             }
 
-            // handle request in STAGING / WAITING / PROCESSING status as resume
+            // handle request in / WAITING / PROCESSING status as resume
             LOG.info("registerRequest(importId={}): not a new request, resuming {}", importId, existingImportRequest);
 
             return existingImportRequest;
@@ -246,6 +251,47 @@ public class AsyncImportTaskExecutor {
             throw new AtlasBaseException(AtlasErrorCode.IMPORT_REGISTRATION_FAILED, abe);
         } finally {
             LOG.info("<== registerRequest(importId={})", importId);
+        }
+    }
+
+    // retry to handle JanusGraph locking conflicts
+    private <T> T withRetry(Callable<T> action, String importId) throws AtlasBaseException {
+        int attempt = 0;
+
+        while (true) {
+            try {
+                return action.call();
+            } catch (Exception e) {
+                // detect JanusGraph lock contention by walking the cause chain
+                boolean lockingConflict = false;
+                for (Throwable c = e; c != null; c = c.getCause()) {
+                    if ("org.janusgraph.diskstorage.locking.PermanentLockingException"
+                            .equals(c.getClass().getName())) {
+                        lockingConflict = true;
+                        break;
+                    }
+                }
+
+                boolean canRetry = lockingConflict && attempt < (MAX_RETRIES - 1);
+                if (canRetry) {
+                    long backoff = (long) BASE_BACKOFF_MS * (attempt + 1);
+                    LOG.warn("Lock conflict for importId={} on attempt {}/{}, backing off {} ms",
+                            importId, attempt + 1, MAX_RETRIES, backoff);
+                    try {
+                        Thread.sleep(backoff);
+                    } catch (InterruptedException ignored) {
+                    }
+                    attempt++;
+                    continue; // next attempt
+                }
+
+                // Non-retryable OR last attempt failed
+                LOG.error("Failed to process importId={} on attempt {}/{}", importId, attempt + 1, MAX_RETRIES, e);
+                if (e instanceof AtlasBaseException) {
+                    throw (AtlasBaseException) e;
+                }
+                throw new AtlasBaseException(AtlasErrorCode.IMPORT_REGISTRATION_FAILED, e);
+            }
         }
     }
 
