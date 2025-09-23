@@ -2803,6 +2803,7 @@ public class EntityGraphMapper {
             if (!createdElements.isEmpty()) {
 
                 assignedEntitiesVertices = createdElements.stream()
+                        .filter(Objects::nonNull)
                         .map(x -> ((AtlasEdge) x).getInVertex())
                         .filter(x -> ACTIVE.name().equals(x.getProperty(STATE_PROPERTY_KEY, String.class)))
                         .collect(Collectors.toList());
