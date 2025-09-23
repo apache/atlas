@@ -33,6 +33,7 @@ import SkeletonLoader from "@components/SkeletonLoader";
 import RelationshipsTab from "./EntityDetailTabs/RelationshipsTab";
 import ClassificationsTab from "./EntityDetailTabs/ClassificationsTab";
 import { CustomButton, LightTooltip, LinkTab } from "@components/muiComponents";
+import { toast } from "react-toastify";
 import AuditsTab from "./EntityDetailTabs/AuditsTab";
 import { EntityState } from "@models/relationshipSearchType";
 import { useSelector } from "react-redux";
@@ -82,6 +83,10 @@ const EntityDetailPage: React.FC = () => {
   const { entity, referredEntities }: any = detailPageData || {};
   const { classifications = {}, relationshipAttributes = {} } = entity || {};
   const { meanings = [] } = relationshipAttributes || {};
+  const { glossaryData }: any = useAppSelector((state: any) => state.glossary);
+  const hasAnyGlossaryTerms = Array.isArray(glossaryData)
+    ? glossaryData.some((g: any) => Array.isArray(g?.terms) && g.terms.length > 0)
+    : false;
 
   const { name }: { name: string; found: boolean; key: any } =
     extractKeyValueFromEntity(entity);
@@ -417,7 +422,14 @@ const EntityDetailPage: React.FC = () => {
                         tabIndex={-1}
                         size="small"
                         color="primary"
-                        onClick={() => setOpenAddTermModal(true)}
+                        onClick={() => {
+                          if (!hasAnyGlossaryTerms) {
+                            toast.dismiss();
+                            toast.info("There are no available terms");
+                            return;
+                          }
+                          setOpenAddTermModal(true);
+                        }}
                       >
                         <AddCircleOutlineIcon
                           className="mr-0"
