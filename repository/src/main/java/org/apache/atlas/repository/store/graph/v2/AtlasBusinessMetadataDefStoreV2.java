@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph.v2;
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
@@ -51,6 +52,9 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
     private static final Logger LOG = LoggerFactory.getLogger(AtlasBusinessMetadataDefStoreV2.class);
 
     private final EntityDiscoveryService entityDiscoveryService;
+
+    private static final int DEFAULT_RICH_TEXT_ATTRIBUTE_LIMIT = 15;
+    private static final String RICH_TEXT_ATTRIBUTE_LIMIT_PROPERTY = "atlas.business.metadata.richtext.limit";
 
     @Inject
     public AtlasBusinessMetadataDefStoreV2(AtlasTypeDefGraphStoreV2 typeDefStore, AtlasTypeRegistry typeRegistry, EntityDiscoveryService entityDiscoveryService) {
@@ -99,6 +103,15 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         }
 
         return ret;
+    }
+
+    private int getRichTextAttributeLimit() {
+        try {
+            return ApplicationProperties.get().getInt(RICH_TEXT_ATTRIBUTE_LIMIT_PROPERTY, DEFAULT_RICH_TEXT_ATTRIBUTE_LIMIT);
+        } catch (Exception e) {
+            LOG.warn("Failed to read rich text attribute limit configuration, using default: {}", DEFAULT_RICH_TEXT_ATTRIBUTE_LIMIT);
+            return DEFAULT_RICH_TEXT_ATTRIBUTE_LIMIT;
+        }
     }
 
     @Override
@@ -463,11 +476,13 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         int existingRichTextCount = countExistingRichTextAttributes(businessMetadataDef.getGuid());
         int totalRichTextCount = existingRichTextCount + newRichTextCount;
 
-        if (totalRichTextCount > 2) {
+        int limit = getRichTextAttributeLimit();
+
+        if (totalRichTextCount > limit) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
-                    String.format("Cannot create business metadata attributes. Total rich text attributes would exceed limit of 15. " +
-                                    "Current: %d, Attempting to add: %d, Limit: 15",
-                            existingRichTextCount, newRichTextCount));
+                    String.format("Cannot create business metadata attributes. Total rich text attributes would exceed limit of %d. " +
+                                    "Current: %d, Attempting to add: %d, Limit: %d",
+                            existingRichTextCount, newRichTextCount, limit, limit));
         }
     }
 

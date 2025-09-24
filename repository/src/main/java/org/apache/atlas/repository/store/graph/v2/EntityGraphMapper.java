@@ -63,19 +63,10 @@ import org.apache.atlas.repository.store.graph.v2.utils.TagAttributeMapper;
 import org.apache.atlas.repository.util.TagDeNormAttributesUtil;
 import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.tasks.TaskManagement;
-import org.apache.atlas.type.AtlasArrayType;
-import org.apache.atlas.type.AtlasBuiltInTypes;
+import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
-import org.apache.atlas.type.AtlasClassificationType;
-import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasMapType;
-import org.apache.atlas.type.AtlasRelationshipType;
-import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
-import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -171,6 +162,8 @@ public class EntityGraphMapper {
     private static final String ATTR_MEANINGS = "meanings";
     private static final String ATTR_ANCHOR = "anchor";
     private static final String ATTR_CATEGORIES = "categories";
+    private static final int ELASTICSEARCH_KEYWORD_MAX_BYTES = 32766;
+    private static final String UTF8_CHARSET = "UTF-8";
     private static final List<String> ALLOWED_DATATYPES_FOR_DEFAULT_NULL = new ArrayList() {
         {
             add("int");
@@ -2457,6 +2450,44 @@ public class EntityGraphMapper {
             throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED,
                     "Custom relationships size is more than " + UD_REL_THRESHOLD + ", current is " + size + " for " + vertex.getProperty(NAME, String.class));
         }
+    }
+
+    private void validateElasticsearchKeywordSize(AtlasBusinessAttribute bmAttribute, Object attrValue, String fieldName, List<String> messages) {
+        if (!isKeywordMappedAttribute(bmAttribute)) {
+            return;
+        }
+
+        if (attrValue == null) {
+            return;
+        }
+
+        try {
+            String valueAsString = attrValue.toString();
+            byte[] valueBytes = valueAsString.getBytes(UTF8_CHARSET);
+
+            if (valueBytes.length > ELASTICSEARCH_KEYWORD_MAX_BYTES) {
+                messages.add(String.format("%s: Business attribute value exceeds Elasticsearch keyword limit. " +
+                                "Size: %d bytes, Limit: %d bytes (32KB). Consider using a different field type or reducing the value size.",
+                        fieldName, valueBytes.length, ELASTICSEARCH_KEYWORD_MAX_BYTES));
+            }
+        } catch (Exception e) {
+            LOG.warn("Failed to validate Elasticsearch keyword size for field: {}", fieldName, e);
+        }
+    }
+
+    private boolean isKeywordMappedAttribute(AtlasBusinessAttribute bmAttribute) {
+        AtlasAttributeDef attributeDef = bmAttribute.getAttributeDef();
+        AtlasType attrType = bmAttribute.getAttributeType();
+
+        if (attrType instanceof AtlasBuiltInTypes.AtlasStringType || attrType instanceof AtlasEnumType) {
+            return true;
+        }
+
+        if (attributeDef.getIndexType() == AtlasAttributeDef.IndexType.STRING) {
+            return true;
+        }
+
+        return false;
     }
 
     private void addInternalProductAttr(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements, List<Object> currentElements) throws AtlasBaseException {
@@ -5762,6 +5793,8 @@ public class EntityGraphMapper {
                     if (!isValidLength) {
                         messages.add(fieldName + ":  Business attribute-value exceeds maximum length limit");
                     }
+
+                    validateElasticsearchKeywordSize(bmAttribute, attrValue, fieldName, messages);
 
                 } else if (!bmAttribute.getAttributeDef().getIsOptional()) {
                     final boolean isAttrValuePresent;
