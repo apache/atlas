@@ -482,7 +482,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
                     String.format("Cannot create business metadata attributes. Total rich text attributes would exceed limit of %d. " +
                                     "Current: %d, Attempting to add: %d, Limit: %d",
-                            existingRichTextCount, newRichTextCount, limit, limit));
+                            limit, existingRichTextCount, newRichTextCount, limit));
         }
     }
 
