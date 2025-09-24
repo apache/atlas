@@ -339,6 +339,10 @@ const BarTreeView: FC<{
     });
   }, [treeData, searchTerm]);
 
+  const displayTreeName = useMemo(() => {
+    return treeName === "CustomFilters" ? "Custom Filters" : treeName
+  }, [treeName]);
+
   const highlightText = useMemo(() => {
     return (text: string) => {
       if (!searchTerm) return text;
@@ -557,8 +561,8 @@ const BarTreeView: FC<{
   };
 
   const shouldSetSearchParams = (node: TreeNode, treeName: string) => {
-    if (treeName === "CustomFilters") {
-      return node.types === "child";
+    if (treeName === "CustomFilters" && node.types === "parent") {
+      return false;
     }
     return (
       node.children === undefined ||
@@ -909,7 +913,7 @@ const BarTreeView: FC<{
                 className="tree-item-parent-label"
               >
                 <Stack flexGrow={1}>
-                  <span>{treeName}</span>
+                  <span>{displayTreeName}</span>
                 </Stack>
                 <Stack direction="row" alignItems="center" gap="0.375rem">
                   <LightTooltip title="Refresh">
