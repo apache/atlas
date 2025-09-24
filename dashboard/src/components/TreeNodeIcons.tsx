@@ -164,7 +164,8 @@ const TreeNodeIcons = (props: {
   };
   return (
     <>
-      {(node.types == "child" || node.types == undefined) &&
+      {((node.types == "child") ||
+        (node.types == undefined && treeName != "CustomFilters")) &&
         ((treeName == "Classifications" && node.types == "child"
           ? !isEmpty(node.children)
           : isEmpty(node.children)) ||
@@ -192,7 +193,8 @@ const TreeNodeIcons = (props: {
         (node.types == "parent" && isEmpty(node.children)) ||
         (node.types == "child" &&
           !isEmpty(node.children) &&
-          node.cGuid != undefined)) && (
+          node.cGuid != undefined)) &&
+        !(treeName == "CustomFilters" && node.types == "parent") && (
         <IconButton
           onClick={(e) => {
             handleClickNodeMenu(e);

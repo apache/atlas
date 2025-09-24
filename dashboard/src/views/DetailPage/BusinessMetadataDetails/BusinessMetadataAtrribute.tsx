@@ -56,7 +56,8 @@ const BusinessMetadataAtrribute = ({ componentProps, row }: any) => {
             <span>N/A</span>
           ),
         header: "Type Name",
-        enableSorting: true
+        enableSorting: true,
+        width: "30%"
       },
       {
         accessorKey: "searchWeight",
@@ -176,7 +177,9 @@ const BusinessMetadataAtrribute = ({ componentProps, row }: any) => {
                     : "enumeration";
                 let selectedEnumObj = !isEmpty(enumDefs)
                   ? enumDefs.find((obj: { name: any }) => {
-                      return obj.name == typeName;
+                      return (
+                        obj.name == (str.indexOf("<") != -1 ? extracted : str)
+                      );
                     })
                   : {};
                 let selectedEnumValues = !isEmpty(selectedEnumObj)
@@ -208,7 +211,7 @@ const BusinessMetadataAtrribute = ({ componentProps, row }: any) => {
                         ? typeName
                         : "enumeration",
                     ...(currentTypeName == "enumeration" && {
-                      enumType: typeName
+                      enumType: str.indexOf("<") != -1 ? extracted : str
                     }),
                     ...(currentTypeName == "enumeration" && {
                       enumValues: enumTypeOptions
