@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import { CustomButton, LightTooltip } from "@components/muiComponents";
-import { Stack, Typography } from "@mui/material";
+import { CustomButton, LightTooltip, Box } from "@components/muiComponents";
+import { Stack } from "@mui/material";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import { TableLayout } from "@components/Table/TableLayout";
 import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
@@ -75,28 +75,23 @@ const BusinessMetadataTab = ({ setForm, setBMAttribute }: any) => {
           !isEmpty(info.getValue()) ? (
             <LightTooltip
               title={
-                <Typography>
-                  {" "}
-                  <div
-                    dangerouslySetInnerHTML={{
-                      __html: sanitizeHtmlContent(info.getValue())
-                    }}
-                  />
-                </Typography>
-              }
-            >
-              <Typography>
-                {" "}
-                <div
+                <span
                   dangerouslySetInnerHTML={{
-                    __html: sanitizeHtmlContent(
-                      info.getValue().length > 40
-                        ? info.getValue().substr(0, 40) + "..."
-                        : info.getValue()
-                    )
+                    __html: sanitizeHtmlContent(info.getValue())
                   }}
                 />
-              </Typography>
+              }
+            >
+              <Box
+                component="span"
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeHtmlContent(
+                    info.getValue().length > 40
+                      ? info.getValue().substr(0, 40) + "..."
+                      : info.getValue()
+                  )
+                }}
+              />
             </LightTooltip>
           ) : (
             <span>N/A</span>

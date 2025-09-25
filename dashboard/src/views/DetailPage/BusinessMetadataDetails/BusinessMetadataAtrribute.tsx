@@ -120,10 +120,11 @@ const BusinessMetadataAtrribute = ({ componentProps, row }: any) => {
               justifyContent="flex-start"
             >
               {!isEmpty(typesObj) ? (
-                typesObj.map((label: string) => {
+                typesObj.map((label: string, idx: number) => {
                   return (
-                    <LightTooltip title={label}>
+                    <LightTooltip key={`tt-${label}-${idx}`} title={label}>
                       <Chip
+                        key={`chip-${label}-${idx}`}
                         label={<EllipsisText>{label}</EllipsisText>}
                         size="small"
                         sx={{
