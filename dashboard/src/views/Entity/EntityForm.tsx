@@ -443,7 +443,7 @@ const EntityForm = ({
       const { guidAssignments } = entityRespData;
       toast.dismiss(toastId.current);
       toastId.current = toast.success(
-        `Entity was ${isEmpty(guid) ? "created" : "udpated"} successfully`
+        `Entity was ${isEmpty(guid) ? "created" : "updated"} successfully`
       );
       const newSearchParams = new URLSearchParams();
       newSearchParams.set("tabActive", "properties");
