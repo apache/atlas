@@ -374,14 +374,40 @@ const TableLayout: FC<TableProps> = ({
   const [goToPageVal, setGoToPageVal] = useState<any>("");
 
   const [rowSelection, setRowSelection] = useState({});
-  const [sorting, setSorting] = useState<SortingState>(
-    !isEmpty(defaultSortCol) ? defaultSortCol : []
+  const existingColumnIds = useMemo(
+    () =>
+      (!isEmpty(memoizedColumns)
+        ? memoizedColumns.map((c: any) => c.id || c.accessorKey)
+        : []) as string[],
+    [memoizedColumns]
   );
+
+  const sanitizeSorting = (sortingState: SortingState) => {
+    if (isEmpty(sortingState)) return [] as SortingState;
+    return sortingState.filter(
+      (s: any) => s && existingColumnIds.includes(s.id)
+    );
+  };
+
+  const [sorting, setSorting] = useState<SortingState>(() => []);
+
   const [columnOrder, setColumnOrder] = useState<any>(() =>
     !isEmpty(memoizedColumns)
-      ? memoizedColumns.map((c: any) => c.accessorKey)
+      ? memoizedColumns
+          .map((c: any) => c.id || c.accessorKey)
+          .filter(Boolean)
       : []
   );
+
+  useEffect(() => {
+    setColumnOrder(
+      !isEmpty(memoizedColumns)
+        ? memoizedColumns
+            .map((c: any) => c.id || c.accessorKey)
+            .filter(Boolean)
+        : []
+    )
+  }, [memoizedColumns])
   const [columnVisibility, setColumnVisibility] = useState(defaultHideColumns);
   const [tagModal, setTagModal] = useState<boolean>(false);
   let currentParams = searchParams;
@@ -426,7 +452,7 @@ const TableLayout: FC<TableProps> = ({
       columnVisibility: columnVisibilityParams
         ? defaultHideColumns
         : columnVisibility,
-      sorting,
+      sorting: sanitizeSorting(sorting),
       pagination,
       rowSelection,
       columnOrder
@@ -436,6 +462,17 @@ const TableLayout: FC<TableProps> = ({
     pageCount,
     autoResetPageIndex: false
   });
+
+  useEffect(() => {
+    setSorting((prev) => sanitizeSorting(prev));
+    setColumnOrder(
+      !isEmpty(memoizedColumns)
+        ? memoizedColumns
+            .map((c: any) => c.id || c.accessorKey)
+            .filter(Boolean)
+        : []
+    );
+  }, [existingColumnIds]);
 
   useEffect(() => {
     if (typeof fetchData === "function") {
@@ -474,7 +511,8 @@ const TableLayout: FC<TableProps> = ({
     resetSorting(true);
     resetRowSelection(true);
     setRowSelection({});
-    setSorting(!isEmpty(defaultSortCol) ? defaultSortCol : []);
+    const candidate = !isEmpty(defaultSortCol) ? defaultSortCol : []
+    setSorting(sanitizeSorting(candidate));
   }, [typeParam, defaultSortCol, setSearchParams]);
 
   const handleCloseTagModal = () => {
@@ -619,7 +657,7 @@ const TableLayout: FC<TableProps> = ({
                           items={columnOrder}
                           strategy={horizontalListSortingStrategy}
                         >
-                          {" "}
+                          
                           {headerGroup.headers.map((header) =>
                             header.isPlaceholder ? null : (
                               <DraggableTableHeader
