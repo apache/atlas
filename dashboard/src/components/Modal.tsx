@@ -171,12 +171,12 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                     })
                   }}
                   startIcon={
-                    disableButton2 && (
+                    disableButton2 && isDirty ? (
                       <CircularProgress
                         sx={{ color: "white", fontWeight: "600" }}
                         size="14px"
                       />
-                    )
+                    ) : undefined
                   }
                   onClick={(e: Event) => {
                     e.stopPropagation();
