@@ -345,7 +345,7 @@
                                     "BIProcess",
                                     "MatillionComponent",
                                     "ModelVersion",
-                                    "alpha_DQRule",
+                                    "DataQualityRule",
                                     "SnowflakeTag",
                                     "DbtTag",
                                     "BigqueryTag"

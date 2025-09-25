@@ -146,7 +146,7 @@
                         "BIProcess",
                         "MatillionComponent",
                         "ModelVersion",
-                        "alpha_DQRule",
+                        "DataQualityRule",
                         "FlowDatasetOperation",
                         "FlowFieldOperation",
                         "SnowflakeTag",
