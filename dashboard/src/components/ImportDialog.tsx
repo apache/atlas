@@ -78,7 +78,7 @@ export const ImportDialog: React.FC<CustomModalProps> = ({
     if (fileData) {
       try {
         let apiMethod =
-          title == "Import Business Template"
+          title == "Import Business Metadata"
             ? getBusinessMetadataImport
             : getGlossaryImport;
         let formData = new FormData();
