@@ -16,7 +16,7 @@
  */
 
 import { CustomButton, LightTooltip, Box } from "@components/muiComponents";
-import { Stack } from "@mui/material";
+import { Stack, Typography } from "@mui/material";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import { TableLayout } from "@components/Table/TableLayout";
 import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
