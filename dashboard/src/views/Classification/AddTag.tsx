@@ -353,8 +353,16 @@ const AddTag = (props: {
       button2Label={`${isAdd ? "Add" : "Update"}`}
       maxWidth="md"
       button2Handler={handleSubmit(onSubmit)}
-      disableButton2={isEmpty(classificationData) ? true : isSubmitting}
-      isDirty={isEmpty(classificationData) ? true : isDirty}
+      disableButton2={
+        isEmpty(classificationData) ? true : isSubmitting
+      }
+      isDirty={
+        isEmpty(classificationData)
+          ? false
+          : isAdd
+          ? !isEmpty(tagName)
+          : true
+      }
     >
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack>
