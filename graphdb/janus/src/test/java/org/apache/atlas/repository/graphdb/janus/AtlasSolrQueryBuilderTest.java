@@ -20,6 +20,8 @@ package org.apache.atlas.repository.graphdb.janus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
+import org.apache.atlas.model.discovery.SearchParameters.Operator;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -33,14 +35,17 @@ import org.testng.annotations.Test;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class AtlasSolrQueryBuilderTest {
     @Mock
@@ -87,7 +92,7 @@ public class AtlasSolrQueryBuilderTest {
     @BeforeTest
     public void setup() {
         AtlasTypesDef typesDef = new AtlasTypesDef();
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
         when(hiveTableEntityTypeMock.getAttribute("name")).thenReturn(nameAttributeMock);
         when(hiveTableEntityTypeMock.getAttribute("comment")).thenReturn(commentAttributeMock);
         when(hiveTableEntityTypeMock.getAttribute("__state")).thenReturn(stateAttributeMock);
@@ -293,5 +298,423 @@ public class AtlasSolrQueryBuilderTest {
                 .withCriteria(searchParameters.getEntityFilters())
                 .withExcludedDeletedEntities(searchParameters.getExcludeDeletedEntities())
                 .withCommonIndexFieldNames(indexFieldNamesMap);
+    }
+
+    @Test
+    public void testBuildWithEmptyQueryString() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        underTest.withEntityTypes(entityTypes)
+                .withQueryString("")
+                .withExcludedDeletedEntities(true)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        String result = underTest.build();
+
+        assertTrue(result.contains("-__state_index:DELETED"));
+        assertTrue(result.contains("+__typeName__index:(hive_table )"));
+    }
+
+    @Test
+    public void testBuildWithNullQueryString() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        underTest.withEntityTypes(entityTypes)
+                .withQueryString(null)
+                .withExcludedDeletedEntities(true)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        String result = underTest.build();
+
+        assertTrue(result.contains("-__state_index:DELETED"));
+        assertTrue(result.contains("+__typeName__index:(hive_table )"));
+    }
+
+    @Test
+    public void testBuildWithNoEntityTypes() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        underTest.withQueryString("test")
+                .withExcludedDeletedEntities(true)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        String result = underTest.build();
+
+        assertEquals(result, "+test  AND  -__state_index:DELETED");
+    }
+
+    @Test
+    public void testBuildWithIncludeSubtypes() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        Set<String> allTypes = new HashSet<>();
+        allTypes.add("hive_table");
+        allTypes.add("hive_table_subtype");
+        when(hiveTableEntityTypeMock.getTypeAndAllSubTypes()).thenReturn(allTypes);
+
+        underTest.withEntityTypes(entityTypes)
+                .withIncludeSubTypes(true)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        String result = underTest.build();
+
+        assertTrue(result.contains("hive_table"));
+        assertTrue(result.contains("hive_table_subtype"));
+    }
+
+    @Test
+    public void testWithCriteriaEqualOperator() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        SearchParameters.FilterCriteria criteria = new SearchParameters.FilterCriteria();
+        criteria.setAttributeName("name");
+        criteria.setAttributeValue("testValue");
+        criteria.setOperator(SearchParameters.Operator.EQ);
+
+        underTest.withEntityTypes(entityTypes)
+                .withCriteria(criteria)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        String result = underTest.build();
+
+        assertTrue(result.contains("+name_index:testValue"));
+    }
+
+    @Test
+    public void testWithCriteriaNotEqualOperator() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        SearchParameters.FilterCriteria criteria = new SearchParameters.FilterCriteria();
+        criteria.setAttributeName("name");
+        criteria.setAttributeValue("testValue");
+        criteria.setOperator(SearchParameters.Operator.NEQ);
+
+        underTest.withEntityTypes(entityTypes)
+                .withCriteria(criteria)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        String result = underTest.build();
+
+        assertTrue(result.contains("*:* -name_index:testValue"));
+    }
+
+    @Test
+    public void testWithCriteriaIsNullOperator() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        SearchParameters.FilterCriteria criteria = new SearchParameters.FilterCriteria();
+        criteria.setAttributeName("name");
+        criteria.setOperator(SearchParameters.Operator.IS_NULL);
+
+        underTest.withEntityTypes(entityTypes)
+                .withCriteria(criteria)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        String result = underTest.build();
+
+        assertTrue(result.contains("-name_index:*"));
+    }
+
+    @Test
+    public void testWithCriteriaIsNotNullOperator() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        SearchParameters.FilterCriteria criteria = new SearchParameters.FilterCriteria();
+        criteria.setAttributeName("name");
+        criteria.setOperator(SearchParameters.Operator.NOT_NULL);
+
+        underTest.withEntityTypes(entityTypes)
+                .withCriteria(criteria)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        String result = underTest.build();
+
+        assertTrue(result.contains("+name_index:*"));
+    }
+
+    @Test
+    public void testWithCriteriaEndsWithOperator() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        SearchParameters.FilterCriteria criteria = new SearchParameters.FilterCriteria();
+        criteria.setAttributeName("name");
+        criteria.setAttributeValue("testValue");
+        criteria.setOperator(SearchParameters.Operator.ENDS_WITH);
+
+        underTest.withEntityTypes(entityTypes)
+                .withCriteria(criteria)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        String result = underTest.build();
+
+        assertTrue(result.contains("+name_index:*testValue"));
+    }
+
+    @Test
+    public void testWithCriteriaNotContainsOperator() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        SearchParameters.FilterCriteria criteria = new SearchParameters.FilterCriteria();
+        criteria.setAttributeName("name");
+        criteria.setAttributeValue("testValue");
+        criteria.setOperator(SearchParameters.Operator.NOT_CONTAINS);
+
+        underTest.withEntityTypes(entityTypes)
+                .withCriteria(criteria)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        String result = underTest.build();
+
+        assertTrue(result.contains("*:* -name_index:*testValue*"));
+    }
+
+    @Test
+    public void testWithCriteriaCustomAttributesContains() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        SearchParameters.FilterCriteria criteria = new SearchParameters.FilterCriteria();
+        criteria.setAttributeName(Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY);
+        criteria.setAttributeValue("key1=value1");
+        criteria.setOperator(SearchParameters.Operator.CONTAINS);
+
+        // Mock custom attribute
+        AtlasStructType.AtlasAttribute customAttr = mock(AtlasStructType.AtlasAttribute.class);
+        when(hiveTableEntityTypeMock.getAttribute(Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY)).thenReturn(customAttr);
+        when(customAttr.getIndexFieldName()).thenReturn("custom_attr_index");
+
+        underTest.withEntityTypes(entityTypes)
+                .withCriteria(criteria)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        String result = underTest.build();
+
+        assertTrue(result.contains("custom_attr_index"));
+    }
+
+    @Test
+    public void testWithCriteriaCustomAttributesNotContains() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        SearchParameters.FilterCriteria criteria = new SearchParameters.FilterCriteria();
+        criteria.setAttributeName(Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY);
+        criteria.setAttributeValue("key1=value1");
+        criteria.setOperator(SearchParameters.Operator.NOT_CONTAINS);
+
+        // Mock custom attribute
+        AtlasStructType.AtlasAttribute customAttr = mock(AtlasStructType.AtlasAttribute.class);
+        when(hiveTableEntityTypeMock.getAttribute(Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY)).thenReturn(customAttr);
+        when(customAttr.getIndexFieldName()).thenReturn("custom_attr_index");
+
+        underTest.withEntityTypes(entityTypes)
+                .withCriteria(criteria)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        String result = underTest.build();
+
+        assertTrue(result.contains("*:* -custom_attr_index"));
+    }
+
+    @Test
+    public void testWithCriteriaNestedCriteria() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        SearchParameters.FilterCriteria parentCriteria = new SearchParameters.FilterCriteria();
+        parentCriteria.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+
+        SearchParameters.FilterCriteria childCriteria1 = new SearchParameters.FilterCriteria();
+        childCriteria1.setAttributeName("name");
+        childCriteria1.setAttributeValue("testValue1");
+        childCriteria1.setOperator(SearchParameters.Operator.EQ);
+
+        SearchParameters.FilterCriteria childCriteria2 = new FilterCriteria();
+        childCriteria2.setAttributeName("comment");
+        childCriteria2.setAttributeValue("testValue2");
+        childCriteria2.setOperator(Operator.EQ);
+
+        List<FilterCriteria> criterion = new ArrayList<>();
+        criterion.add(childCriteria1);
+        criterion.add(childCriteria2);
+        parentCriteria.setCriterion(criterion);
+
+        underTest.withEntityTypes(entityTypes)
+                .withCriteria(parentCriteria)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        String result = underTest.build();
+
+        assertTrue(result.contains("+name_index:testValue1"));
+        assertTrue(result.contains("+comment_index:testValue2"));
+        assertTrue(result.contains("AND"));
+    }
+
+    @Test
+    public void testWithCriteriaORCondition() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        FilterCriteria parentCriteria = new FilterCriteria();
+        parentCriteria.setCondition(FilterCriteria.Condition.OR);
+
+        FilterCriteria childCriteria1 = new FilterCriteria();
+        childCriteria1.setAttributeName("name");
+        childCriteria1.setAttributeValue("testValue1");
+        childCriteria1.setOperator(Operator.EQ);
+
+        FilterCriteria childCriteria2 = new FilterCriteria();
+        childCriteria2.setAttributeName("comment");
+        childCriteria2.setAttributeValue("testValue2");
+        childCriteria2.setOperator(Operator.EQ);
+
+        List<FilterCriteria> criterion = new ArrayList<>();
+        criterion.add(childCriteria1);
+        criterion.add(childCriteria2);
+        parentCriteria.setCriterion(criterion);
+
+        underTest.withEntityTypes(entityTypes)
+                .withCriteria(parentCriteria)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        String result = underTest.build();
+
+        assertTrue(result.contains("+name_index:testValue1"));
+        assertTrue(result.contains("+comment_index:testValue2"));
+        assertTrue(result.contains("OR"));
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void testWithCriteriaUnsupportedOperator() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        FilterCriteria criteria = new FilterCriteria();
+        criteria.setAttributeName("name");
+        criteria.setAttributeValue("testValue");
+        criteria.setOperator(Operator.IN); // Unsupported operator
+
+        underTest.withEntityTypes(entityTypes)
+                .withCriteria(criteria)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        underTest.build();
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void testWithCriteriaInvalidAttribute() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        FilterCriteria criteria = new FilterCriteria();
+        criteria.setAttributeName("invalidAttribute");
+        criteria.setAttributeValue("testValue");
+        criteria.setOperator(Operator.EQ);
+
+        when(hiveTableEntityTypeMock.getAttribute("invalidAttribute")).thenReturn(null);
+
+        underTest.withEntityTypes(entityTypes)
+                .withCriteria(criteria)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        underTest.build();
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void testWithCriteriaNonIndexedAttribute() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        FilterCriteria criteria = new FilterCriteria();
+        criteria.setAttributeName("nonIndexedAttr");
+        criteria.setAttributeValue("testValue");
+        criteria.setOperator(Operator.EQ);
+
+        AtlasStructType.AtlasAttribute nonIndexedAttr = mock(AtlasStructType.AtlasAttribute.class);
+        when(hiveTableEntityTypeMock.getAttribute("nonIndexedAttr")).thenReturn(nonIndexedAttr);
+        when(nonIndexedAttr.getIndexFieldName()).thenReturn(null);
+
+        underTest.withEntityTypes(entityTypes)
+                .withCriteria(criteria)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        underTest.build();
+    }
+
+    @Test
+    public void testTokenizedCharacterHandling() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Set<AtlasEntityType> entityTypes = new HashSet<>();
+        entityTypes.add(hiveTableEntityTypeMock);
+
+        FilterCriteria criteria = new FilterCriteria();
+        criteria.setAttributeName("qualifiedName");
+        criteria.setAttributeValue("test.value");
+        criteria.setOperator(Operator.CONTAINS);
+
+        when(hiveTableEntityTypeMock.getAttributeDef("qualifiedName")).thenReturn(textAttributeDef);
+        when(textAttributeDef.getIndexType()).thenReturn(null); // No index type to trigger tokenized char handling
+
+        underTest.withEntityTypes(entityTypes)
+                .withCriteria(criteria)
+                .withCommonIndexFieldNames(indexFieldNamesMap);
+
+        String result = underTest.build();
+
+        assertTrue(result.contains("qualifiedName__index"));
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void testDropDeletedEntitiesWithMissingStateIndex() throws AtlasBaseException {
+        AtlasSolrQueryBuilder underTest = new AtlasSolrQueryBuilder();
+
+        Map<String, String> emptyIndexFieldNamesMap = new HashMap<>();
+
+        underTest.withExcludedDeletedEntities(true)
+                .withCommonIndexFieldNames(emptyIndexFieldNamesMap);
+
+        underTest.build();
     }
 }
