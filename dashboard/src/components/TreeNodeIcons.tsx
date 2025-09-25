@@ -248,6 +248,7 @@ const TreeNodeIcons = (props: {
               ) {
                 setCategoryModal(true);
               }
+              handleCloseNode();
             }}
             className="sidebar-menu-item"
             data-cy="createClassification"
@@ -290,6 +291,7 @@ const TreeNodeIcons = (props: {
               }
               if (treeName == "Glossary" && node.types == "parent") {
                 setGlossaryModal(true);
+                setExpandNode(null);
               }
               if (treeName == "Glossary" && node.types == "child") {
                 const searchParams = new URLSearchParams();
@@ -342,6 +344,7 @@ const TreeNodeIcons = (props: {
               if (treeName == "Glossary") {
                 setDeleteGlossaryModal(true);
               }
+              handleCloseNode();
             }}
             data-cy="createClassification"
             className="sidebar-menu-item"
@@ -409,6 +412,7 @@ const TreeNodeIcons = (props: {
             <MenuItem
               onClick={(_e) => {
                 setCategoryModal(true);
+                handleCloseNode();
               }}
               data-cy="createClassification"
               className="sidebar-menu-item"
@@ -429,6 +433,7 @@ const TreeNodeIcons = (props: {
             onClick={(e) => {
               e.stopPropagation();
               setRenameModal(true);
+              handleCloseNode();
             }}
             data-cy="createClassification"
             className="sidebar-menu-item"
@@ -445,6 +450,7 @@ const TreeNodeIcons = (props: {
             onClick={(e) => {
               e.stopPropagation();
               setDeleteModal(true);
+              handleCloseNode();
             }}
             data-cy="downloadBusinessMetadata"
             className="sidebar-menu-item"

@@ -540,6 +540,7 @@ const DialogShowMoreLess = ({
           button2Label="Remove"
           button2Handler={handleRemove}
           disableButton2={removeLoader}
+          isDirty={true}
         >
           {relatedTerm ? (
             <Typography fontSize={15}>
