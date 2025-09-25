@@ -1027,6 +1027,7 @@ const BarTreeView: FC<{
                         if (setisGroupView) {
                           setisGroupView(!isGroupView);
                         }
+                        handleClose();
                       }}
                       data-cy="groupOrFlatTreeView"
                       className="sidebar-menu-item"
@@ -1062,6 +1063,7 @@ const BarTreeView: FC<{
                         } else if (treeName == "Glossary") {
                           setGlossaryModal(true);
                         }
+                        handleClose();
                       }}
                       data-cy="createClassification"
                       className="sidebar-menu-item"
@@ -1085,6 +1087,7 @@ const BarTreeView: FC<{
                       onClick={(e) => {
                         e.stopPropagation();
                         downloadFile();
+                        handleClose();
                       }}
                       data-cy="downloadBusinessMetadata"
                       disabled={
@@ -1110,6 +1113,7 @@ const BarTreeView: FC<{
                       onClick={(e) => {
                         e.stopPropagation();
                         handleOpenModal();
+                        handleClose();
                       }}
                       data-cy="importBusinessMetadata"
                       disabled={
