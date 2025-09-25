@@ -31,6 +31,8 @@ import {
   sanitizeHtmlContent
 } from "@utils/Utils";
 import { useState } from "react";
+import { useAppSelector } from "@hooks/reducerHook";
+import { toast } from "react-toastify";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { removeClassification } from "@api/apiMethods/classificationApiMethod";
 import { useParams, useSearchParams } from "react-router-dom";
@@ -103,6 +105,11 @@ const DetailPageAttribute = ({
 
   const { name }: { name: string; found: boolean; key: any } =
     extractKeyValueFromEntity(data);
+
+  const { glossaryData }: any = useAppSelector((state: any) => state.glossary);
+  const hasAnyGlossaryTerms = Array.isArray(glossaryData)
+    ? glossaryData.some((g: any) => Array.isArray(g?.terms) && g.terms.length > 0)
+    : false;
 
   return (
     <>
@@ -373,6 +380,11 @@ const DetailPageAttribute = ({
                           size="small"
                           color="primary"
                           onClick={() => {
+                            if (!hasAnyGlossaryTerms) {
+                              toast.dismiss();
+                              toast.info("There are no available terms");
+                              return;
+                            }
                             setOpenAddTermModal(true);
                           }}
                         >

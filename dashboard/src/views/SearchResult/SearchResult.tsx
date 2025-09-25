@@ -260,8 +260,12 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
 
         if (!dataLength) {
           setIsEmptyData(true);
+          setSearchData({ entities: [], referredEntities: {} });
+          setTotalCount(0);
+          setPageCount(0);
           setLoader(false);
         } else {
+          setIsEmptyData(false);
           setSearchData(searchResp.data);
           setTotalCount(totalCountLocal || 0);
           setPageCount(

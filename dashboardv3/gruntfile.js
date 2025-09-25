@@ -17,7 +17,7 @@
  */
 
 'use strict';
-var sass = require('node-sass');
+var sass = require('sass');
 module.exports = function(grunt) {
     var buildTime = new Date().getTime(),
         distPath = './dist/n',
