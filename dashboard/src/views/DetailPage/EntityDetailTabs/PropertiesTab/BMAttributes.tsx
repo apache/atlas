@@ -572,12 +572,20 @@ const BMAttributes = ({ loading, bmAttributes, entity }: any) => {
                       </CustomButton>
                     </LightTooltip>
                     {fields.map((field, index) => {
+                      const keySelected = !isEmpty(
+                        bmAttributesValues?.[index]?.key
+                      );
                       return (
                         <Stack
                           gap="0.5rem"
                           direction="row"
                           key={field?.id}
-                          alignItems="center"
+                          alignItems={keySelected ? "flex-start" : "center"}
+                          sx={{
+                            '& .MuiAutocomplete-root': {
+                              alignSelf: keySelected ? 'stretch' : 'center'
+                            }
+                          }}
                         >
                           <Controller
                             control={control}
@@ -596,7 +604,12 @@ const BMAttributes = ({ loading, bmAttributes, entity }: any) => {
                                     onChange={(_, selectedOption) => {
                                       onChange(selectedOption);
                                     }}
-                                    sx={{ flexBasis: "35%" }}
+                                    sx={{
+                                      flexBasis: "35%",
+                                      '& .MuiOutlinedInput-root': {
+                                        height: 36
+                                      }
+                                    }}
                                     getOptionLabel={(option) => option.label}
                                     groupBy={(option) => option.group}
                                     noOptionsText="No results found"
@@ -630,7 +643,11 @@ const BMAttributes = ({ loading, bmAttributes, entity }: any) => {
                               </>
                             )}
                           />
-                          <span style={{ margin: "12px 0" }}>:</span>
+                          <span
+                            style={{ margin: 0, alignSelf: "center" }}
+                          >
+                            :
+                          </span>
                           {isEmpty(bmAttributesValues?.[index]?.key) ? (
                             <Controller
                               control={control}
@@ -644,29 +661,30 @@ const BMAttributes = ({ loading, bmAttributes, entity }: any) => {
                                 fieldState: { error }
                               }) => (
                                 <>
-                                  <div style={{ flex: "1" }}>
+                                  <div
+                                    style={{
+                                      flex: "1",
+                                      display: "flex",
+                                      alignItems: "center"
+                                    }}
+                                  >
                                     <TextField
-                                      margin="normal"
+                                      margin="none"
                                       error={!!error}
-                                      className="form-textfield"
+                                      className="form-textfield bm-empty-field"
                                       onChange={onChange}
                                       value={value}
                                       variant="outlined"
                                       size="small"
                                       disabled
                                       sx={{
+                                        '& .MuiInputBase-root': {
+                                          height: 36
+                                        },
                                         "& .MuiInputBase-root.Mui-disabled": {
                                           backgroundColor: "#eee",
                                           cursor: "not-allowed"
-                                        },
-                                        "& .MuiOutlinedInput-root.Mui-error": {
-                                          "& fieldset": {
-                                            borderColor: "red"
-                                          }
-                                        },
-                                        marginTop: "8px !important",
-                                        marginBottom: "8px !important",
-                                        width: "100%"
+                                        }
                                       }}
                                       type={"string"}
                                     />

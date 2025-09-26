@@ -164,7 +164,8 @@ const TreeNodeIcons = (props: {
   };
   return (
     <>
-      {(node.types == "child" || node.types == undefined) &&
+      {((node.types == "child") ||
+        (node.types == undefined && treeName != "CustomFilters")) &&
         ((treeName == "Classifications" && node.types == "child"
           ? !isEmpty(node.children)
           : isEmpty(node.children)) ||
@@ -192,7 +193,8 @@ const TreeNodeIcons = (props: {
         (node.types == "parent" && isEmpty(node.children)) ||
         (node.types == "child" &&
           !isEmpty(node.children) &&
-          node.cGuid != undefined)) && (
+          node.cGuid != undefined)) &&
+        !(treeName == "CustomFilters" && node.types == "parent") && (
         <IconButton
           onClick={(e) => {
             handleClickNodeMenu(e);
@@ -246,6 +248,7 @@ const TreeNodeIcons = (props: {
               ) {
                 setCategoryModal(true);
               }
+              handleCloseNode();
             }}
             className="sidebar-menu-item"
             data-cy="createClassification"
@@ -288,6 +291,7 @@ const TreeNodeIcons = (props: {
               }
               if (treeName == "Glossary" && node.types == "parent") {
                 setGlossaryModal(true);
+                setExpandNode(null);
               }
               if (treeName == "Glossary" && node.types == "child") {
                 const searchParams = new URLSearchParams();
@@ -340,6 +344,7 @@ const TreeNodeIcons = (props: {
               if (treeName == "Glossary") {
                 setDeleteGlossaryModal(true);
               }
+              handleCloseNode();
             }}
             data-cy="createClassification"
             className="sidebar-menu-item"
@@ -407,6 +412,7 @@ const TreeNodeIcons = (props: {
             <MenuItem
               onClick={(_e) => {
                 setCategoryModal(true);
+                handleCloseNode();
               }}
               data-cy="createClassification"
               className="sidebar-menu-item"
@@ -427,6 +433,7 @@ const TreeNodeIcons = (props: {
             onClick={(e) => {
               e.stopPropagation();
               setRenameModal(true);
+              handleCloseNode();
             }}
             data-cy="createClassification"
             className="sidebar-menu-item"
@@ -443,6 +450,7 @@ const TreeNodeIcons = (props: {
             onClick={(e) => {
               e.stopPropagation();
               setDeleteModal(true);
+              handleCloseNode();
             }}
             data-cy="downloadBusinessMetadata"
             className="sidebar-menu-item"

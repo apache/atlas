@@ -32,11 +32,27 @@
   padding-left: 20px;
 }
 
-.audit-results-lsit-item {
-  display: list-item;
-  padding-left: 0;
-}
-
 .audit-results-entityid {
   display: block;
+}
+
+.enum-value-selector {
+  display: inline-grid !important;
+  grid-template-columns: 1fr !important;
+}
+
+.bmattributes-key .MuiAutocomplete-inputRoot,
+.enum-value-selector .MuiAutocomplete-inputRoot {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.bmattributes-key .MuiAutocomplete-listbox,
+.enum-value-selector .MuiAutocomplete-listbox {
+  max-height: 280px;
+}
+
+.bm-empty-field {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }

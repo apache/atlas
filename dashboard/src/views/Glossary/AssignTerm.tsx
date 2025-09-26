@@ -294,6 +294,11 @@ const AssignTerm = ({
   }, []);
 
   const handleNodeSelect = (nodeId: any) => {
+    if (nodeId === "No Records Found") {
+      toast.dismiss(toastId.current);
+      toastId.current = toast.info("No terms present");
+      return;
+    }
     setSelectedNode(nodeId);
   };
 
@@ -445,6 +450,7 @@ const AssignTerm = ({
         maxWidth="sm"
         button2Handler={relatedTerm ? handleSubmit(onSubmit) : assignTerm}
         disableButton2={isSubmitting}
+        isDirty={!isEmpty(selectedNode)}
       >
         {relatedTerm ? (
           <Stack gap="16px" sx={{ width: "100%" }}>

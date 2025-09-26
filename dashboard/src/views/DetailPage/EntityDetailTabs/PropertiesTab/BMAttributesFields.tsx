@@ -249,8 +249,10 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
                   paddingTop: "4px",
                   paddingBottom: "4px",
                   paddingLeft: "6px",
-                  height: "34px",
-                  gap: "4px"
+                  gap: "4px",
+                  '& .MuiAutocomplete-inputRoot': {
+                    flexWrap: 'wrap'
+                  }
                 }}
                 filterOptions={(options, params) => {
                   const filtered = filter(options, params);

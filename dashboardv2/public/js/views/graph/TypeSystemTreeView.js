@@ -460,10 +460,13 @@ define([
             var nodes = that.LineageHelperRef.getNodes();
             if (!_.isEmpty(nodes)) {
                 _.each(nodes, function(obj) {
-                    searchStr += '<option value="' + obj.guid + '">' + obj.name + "</option>";
+                    var label = _.escape(obj.name)
+                    var value = _.escape(obj.guid)
+                    searchStr += '<option value="' + value + '">' + label + "</option>";
                     if (obj.serviceType && !tempFilteMap[obj.serviceType]) {
                         tempFilteMap[obj.serviceType] = obj.serviceType;
-                        filterStr += '<option value="' + obj.serviceType + '">' + obj.serviceType + "</option>";
+                        var svc = _.escape(obj.serviceType)
+                        filterStr += '<option value="' + svc + '">' + svc + "</option>";
                     }
                 });
             }

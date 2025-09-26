@@ -339,6 +339,10 @@ const BarTreeView: FC<{
     });
   }, [treeData, searchTerm]);
 
+  const displayTreeName = useMemo(() => {
+    return treeName === "CustomFilters" ? "Custom Filters" : treeName
+  }, [treeName]);
+
   const highlightText = useMemo(() => {
     return (text: string) => {
       if (!searchTerm) return text;
@@ -557,6 +561,9 @@ const BarTreeView: FC<{
   };
 
   const shouldSetSearchParams = (node: TreeNode, treeName: string) => {
+    if (treeName === "CustomFilters" && node.types === "parent") {
+      return false;
+    }
     return (
       node.children === undefined ||
       isEmpty(node.children) ||
@@ -906,7 +913,7 @@ const BarTreeView: FC<{
                 className="tree-item-parent-label"
               >
                 <Stack flexGrow={1}>
-                  <span>{treeName}</span>
+                  <span>{displayTreeName}</span>
                 </Stack>
                 <Stack direction="row" alignItems="center" gap="0.375rem">
                   <LightTooltip title="Refresh">
@@ -1024,6 +1031,7 @@ const BarTreeView: FC<{
                         if (setisGroupView) {
                           setisGroupView(!isGroupView);
                         }
+                        handleClose();
                       }}
                       data-cy="groupOrFlatTreeView"
                       className="sidebar-menu-item"
@@ -1059,6 +1067,7 @@ const BarTreeView: FC<{
                         } else if (treeName == "Glossary") {
                           setGlossaryModal(true);
                         }
+                        handleClose();
                       }}
                       data-cy="createClassification"
                       className="sidebar-menu-item"
@@ -1082,6 +1091,7 @@ const BarTreeView: FC<{
                       onClick={(e) => {
                         e.stopPropagation();
                         downloadFile();
+                        handleClose();
                       }}
                       data-cy="downloadBusinessMetadata"
                       disabled={
@@ -1107,6 +1117,7 @@ const BarTreeView: FC<{
                       onClick={(e) => {
                         e.stopPropagation();
                         handleOpenModal();
+                        handleClose();
                       }}
                       data-cy="importBusinessMetadata"
                       disabled={

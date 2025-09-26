@@ -207,8 +207,17 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
       globalSearchParams.basicParams = params;
       globalSearchParams.dslParams = dslParams;
 
-      let searchTypeParams =
-        searchParams.get("searchType") == "dsl" ? dslParams : params;
+      
+      const qParam = searchParams.get("query");
+      if (qParam) {
+        try {
+          (globalSearchParams as any).basicParams.query = qParam;
+          (globalSearchParams as any).dslParams.query = qParam;
+        } catch (_e) {}
+      }
+
+      const isDslSearch = searchParams.get("searchType") == "dsl";
+      let searchTypeParams = isDslSearch ? dslParams : params;
       try {
         const searchResp = await getBasicSearchResult(
           {
@@ -221,21 +230,47 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
           searchParams.get("searchType") || "basic"
         );
         const { data = {} } = searchResp || {};
-        const { approximateCount, entities } = data || {};
-        let totalCount = approximateCount;
-        let dataLength;
-        if (entities) {
-          dataLength = entities?.length;
-        } else {
-          dataLength = searchResp?.data?.length;
-        }
-        if (!dataLength) {
+
+        const hasEntities = Array.isArray((data as any)?.entities);
+        const hasDslAttributes =
+          Array.isArray((data as any)?.attributes) ||
+          Array.isArray((data as any)?.attributes?.name);
+        const hasDslValues =
+          Array.isArray((data as any)?.attributes?.values) ||
+          Array.isArray((data as any)?.values);
+
+        if (isDslSearch && !hasEntities && !hasDslAttributes) {
+          setSearchData({ entities: [] });
           setIsEmptyData(true);
           setLoader(false);
+          return;
+        }
+
+        let dataLength = 0;
+        let totalCountLocal = 0;
+        if (isDslSearch && !hasEntities && hasDslAttributes && hasDslValues) {
+          const vals = (data as any).attributes?.values || (data as any).values;
+          dataLength = (vals as any[])?.length || 0;
+          totalCountLocal = dataLength;
         } else {
+          const { approximateCount, entities } = data as any;
+          dataLength = Array.isArray(entities) ? entities.length : 0;
+          totalCountLocal = approximateCount ?? dataLength;
+        }
+
+        if (!dataLength) {
+          setIsEmptyData(true);
+          setSearchData({ entities: [], referredEntities: {} });
+          setTotalCount(0);
+          setPageCount(0);
+          setLoader(false);
+        } else {
+          setIsEmptyData(false);
           setSearchData(searchResp.data);
-          setTotalCount(totalCount || 0);
-          setPageCount(Math.ceil(totalCount / pagination.pageSize));
+          setTotalCount(totalCountLocal || 0);
+          setPageCount(
+            Math.ceil((totalCountLocal || dataLength) / (pagination.pageSize || pageSize))
+          );
           setLoader(false);
         }
       } catch (error: any) {
@@ -745,16 +780,48 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
     }
   );
 
+  const isDslSearchMode = searchParams.get("searchType") === "dsl";
+  const getDslAttributeNames = () => {
+    const src: any = Array.isArray(searchData) ? searchData[0] : searchData;
+    if (!src) return [] as string[];
+    if (Array.isArray(src?.attributes)) {
+      return src.attributes
+        .map((a: any) => (typeof a === 'string' ? a : a?.name))
+        .filter(Boolean);
+    }
+    if (src?.attributes && Array.isArray(src?.attributes?.name)) {
+      return src.attributes.name as string[];
+    }
+    return [] as string[];
+  };
+  const sanitize = (name: string) =>
+    String(name).replace(/[^A-Za-z0-9_]/g, "_").replace(/_{2,}/g, "_");
+  const dslAttrNames = isDslSearchMode ? getDslAttributeNames() : [];
+  const dslColumns = dslAttrNames.map((label: string, idx: number) => {
+    const key = `dsl_${sanitize(label)}` || `dsl_${idx}`
+    return {
+      id: key,
+      accessorKey: key,
+      header: label,
+      cell: (info: any) => <span>{info.getValue()}</span>,
+      show: true
+    }
+  });
+
   let allColumns =
-    isEmpty(searchParams.get("type")) &&
-    isEmpty(searchParams.get("tag")) &&
-    !isEmpty(searchParams.get("term"))
+    isDslSearchMode && dslColumns.length > 0
+      ? dslColumns
+      : isEmpty(searchParams.get("type")) &&
+        isEmpty(searchParams.get("tag")) &&
+        !isEmpty(searchParams.get("term"))
       ? removeDuplicateObjects([...defaultColumns])
       : removeDuplicateObjects([
           ...defaultColumns,
           ...dynamicColumns,
           ...defaultHideColumns
         ]);
+
+  const isDslAggregate = isDslSearchMode && dslColumns.length > 0;
 
   const defaultColumnVisibility: any = (columns: any) => {
     let columnsParams: any = searchParams.get("attributes");
@@ -778,7 +845,12 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
 
     return hideColumns;
   };
-  const getDefaultSort = useMemo(() => [{ id: "name", asc: true }], []);
+  const getDefaultSort = useMemo(() => {
+    if (isDslAggregate) {
+      return [] as any[]; // no default sorting for DSL aggregates
+    }
+    return [{ id: "name", asc: true }];
+  }, [isDslAggregate]);
 
   return (
     <Stack position="relative" gap={"1rem"}>
@@ -833,27 +905,49 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
 
       <TableLayout
         fetchData={fetchSearchResult}
-        data={searchData.entities || []}
+        data={
+          isDslSearchMode && dslColumns.length > 0
+            ? (() => {
+                const src: any = Array.isArray(searchData)
+                  ? searchData[0]
+                  : searchData;
+                const values: any[] = Array.isArray(src?.values)
+                  ? src.values
+                  : Array.isArray(src?.attributes?.values)
+                  ? src.attributes.values
+                  : [];
+                return values.map((row: any[], idx: number) => {
+                  const obj: any = { id: `dsl-row-${idx}` };
+                  dslAttrNames.forEach((n: string, i: number) => {
+                    const colKey = `dsl_${sanitize(n)}`
+                    obj[colKey] = Array.isArray(row) ? row[i] : row
+                  });
+                  return obj;
+                });
+              })()
+            : searchData.entities || []
+        }
         columns={allColumns.filter(
           (value: {}) => Object.keys(value).length !== 0
         )}
         emptyText="No Records found!"
         isFetching={loader}
         pageCount={pageCount}
-        columnVisibilityParams={true}
-        defaultColumnVisibility={defaultColumnVisibility(allColumns)}
+        // columnVisibilityParams={true}
+        columnVisibilityParams={!isDslAggregate}
+        defaultColumnVisibility={isDslAggregate ? {} : defaultColumnVisibility(allColumns)}
         defaultColumnParams={defaultColumnsName.join(",")}
-        columnVisibility={true}
+        columnVisibility={!isDslAggregate}
+        // columnVisibility={true}
         refreshTable={refreshTable}
         defaultSortCol={getDefaultSort}
         clientSideSorting={true}
         isClientSidePagination={false}
         columnSort={true}
         showPagination={true}
-        showRowSelection={true}
-        tableFilters={
-          isEmpty(classificationParams || glossaryTypeParams) ? true : false
-        }
+        showRowSelection={!isDslAggregate}
+        // showRowSelection={true}
+        tableFilters={true}
         assignFilters={
           !isEmpty(classificationParams || glossaryTypeParams)
             ? {

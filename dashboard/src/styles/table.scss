@@ -249,7 +249,9 @@ td:has(.searchTableName) {
   cursor: pointer;
 }
 
-.expand-row-table td:not(:first-child),
-.expand-row-table th:not(:first-child) {
+/* Only stretch non-first columns when a table is actually expanded (tbody has expanded rows) */
+/* Only stretch direct cells of the expandable table, not nested inner tables */
+.expand-row-table.has-expanded-rows > thead > tr > th:not(:first-child),
+.expand-row-table.has-expanded-rows > tbody > tr > td:not(:first-child) {
   width: 100% !important;
 }
