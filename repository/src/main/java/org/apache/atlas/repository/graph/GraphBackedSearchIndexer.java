@@ -985,7 +985,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             GLOBAL_UNIQUE_INDEX_KEYS.add(propertyName);
 
             if (uniqueKeyHandler != null) {
-                LOG.warn("ignoring uniqueness for composite index for property: {}", propertyName);
+                LOG.info("Uniqueness for property({}) will be handled by {}", propertyName, uniqueKeyHandler.getClass().getSimpleName());
 
                 enforceUniqueness = false;
             }
@@ -1029,7 +1029,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
         if (isUnique) {
             if (uniqueKeyHandler != null) {
-                LOG.warn("ignoring uniqueness for composite index with system property: {} + {}", systemPropertyKey, propertyKey.getName());
+                LOG.info("Uniqueness for property({} + {}) will be handled by {}", systemPropertyKey, propertyKey.getName(), uniqueKeyHandler.getClass().getSimpleName());
 
                 isUnique = false;
             }
