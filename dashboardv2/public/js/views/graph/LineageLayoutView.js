@@ -576,7 +576,9 @@ define(['require',
                                 if ((that.filterObj.isProcessHideCheck && obj && obj.isProcess) || (that.filterObj.isDeletedEntityHideCheck && obj && obj.isDeleted) || (Globals.isLineageOnDemandEnabled && obj && _.contains(["Input", "Output"], obj.btnType))) {
                                     return;
                                 }
-                                typeStr += '<option value="' + obj.guid + '">' + obj.displayText + '</option>';
+                                var label = _.escape(obj.displayText);
+                                var value = _.escape(obj.guid);
+                                typeStr += '<option value="' + value + '">' + label + '</option>';
                             });
                         }
                         that.ui.lineageTypeSearch.html(typeStr);
