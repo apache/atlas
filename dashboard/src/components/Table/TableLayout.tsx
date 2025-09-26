@@ -630,7 +630,11 @@ const TableLayout: FC<TableProps> = ({
             >
               <MuiTable
                 size="small"
-                className="table expand-row-table"
+                className={`table ${expandRow ? "expand-row-table" : ""} ${
+                  memoizedData && memoizedData.length > 0 && expandRow
+                    ? "has-expanded-rows"
+                    : ""
+                }`}
                 sx={{ tableLayout: "fixed", width: "100%" }}
               >
                 {!isFetching && (

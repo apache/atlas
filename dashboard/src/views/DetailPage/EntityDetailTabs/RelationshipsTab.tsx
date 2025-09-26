@@ -70,14 +70,16 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
   const defaultColumns = useMemo(
     () => [
       {
-        accessorKey: "key",
+        id: "relationKey",
+        accessorKey: "relationKey",
+        accessorFn: (row: Record<string, any>) => Object.keys(row)[0] || "",
         cell: (info: any) => {
-          let keys: string[] = Object.keys(info.row.original);
-          let values = info.row.original;
+          const keyName: string = info.getValue();
+          const values = info.row.original;
           return (
-            <Typography fontWeight="600">{`${keys[0]} ${
-              isArray(values[keys[0]]) && !isEmpty(values[keys[0]])
-                ? `(${values[keys[0]].length})`
+            <Typography fontWeight="600">{`${keyName} ${
+              isArray(values[keyName]) && !isEmpty(values[keyName])
+                ? `(${values[keyName].length})`
                 : ""
             }`}</Typography>
           );
@@ -86,21 +88,23 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
         width: "30%"
       },
       {
-        accessorKey: "value",
+        id: "relationValue",
+        accessorKey: "relationValue",
+        accessorFn: (row: Record<string, any>) => row[Object.keys(row)[0]],
         cell: (info: any) => {
-          let keys: string[] = Object.keys(info.row.original);
-          let values = info.row.original;
+          const keyName: string = Object.keys(info.row.original)[0];
+          const value = info.getValue();
           return (
             <span className="value-text">
               {getValues(
-                values[keys[0]],
+                value,
                 columnData,
                 entity,
                 undefined,
                 "properties",
                 referredEntities,
                 undefined,
-                Object.keys(info.row.original)[0]
+                keyName
               )}
             </span>
           );
