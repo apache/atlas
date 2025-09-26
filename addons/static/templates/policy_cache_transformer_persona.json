@@ -1160,6 +1160,60 @@
         "end-two-entity:*"
       ],
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "description": "Allow to update relation for datasets for this AIModel",
+      "resources": [
+        "relationship-type:*",
+        "end-one-entity-type:AIModel",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+        "end-one-entity:{entity}/*",
+
+        "end-two-entity-type:Catalog",
+        "end-two-entity-type:Connection",
+        "end-two-entity-type:Process",
+        "end-two-entity-type:Namespace",
+        "end-two-entity-type:ProcessExecution",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "remove-relationship"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "description": "Allow to update relation for datasets for this AIModel",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:Catalog",
+        "end-one-entity-type:Connection",
+        "end-one-entity-type:Process",
+        "end-one-entity-type:Namespace",
+        "end-one-entity-type:ProcessExecution",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:AIModel",
+        "end-two-entity-classification:*",
+        "end-two-entity:*",
+        "end-two-entity:{entity}/*"
+      ],
+      "actions": ["add-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "description": "Create/delete process to update datasets for this AIModel",
+      "resources": [
+        "entity:*",
+        "entity-type:Process",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create", "entity-delete"]
     }
   ],
   "persona-ai-model-delete": [
