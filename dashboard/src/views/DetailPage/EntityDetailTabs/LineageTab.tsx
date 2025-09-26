@@ -81,13 +81,13 @@ const LineageTab = ({ entity, isProcess }: any) => {
   let lineageOnDemandPayload = {};
   let relationsOnDemand = {};
   const optionsVal = [
-    { label: 3 },
-    { label: 6 },
-    { label: 9 },
-    { label: 12 },
-    { label: 15 },
-    { label: 18 },
-    { label: 21 }
+    { label: "3" },
+    { label: "6" },
+    { label: "9" },
+    { label: "12" },
+    { label: "15" },
+    { label: "18" },
+    { label: "21" }
   ];
   let nodeCount = [3, 6, lineageNodeCount];
   let nodeCountArray = [...new Set(nodeCount)];
@@ -124,7 +124,7 @@ const LineageTab = ({ entity, isProcess }: any) => {
   const [currentPathChecked, setCurrentPathChecked] = useState(true);
   const [checkedDeletedEntity, setCheckedDeletedEntity] = useState(false);
   const [nodeDetailsChecked, setNodeDetailsChecked] = useState(false);
-  const [value, setValue] = useState<any>({ label: 3 });
+  const [value, setValue] = useState<any>({ label: "3" });
   const [nodeValue, setNodeValue] = useState<any>(3);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [typeValue, setTypeValue] = useState("");
@@ -585,15 +585,19 @@ const LineageTab = ({ entity, isProcess }: any) => {
   };
 
   const handleChange = (newValue: any) => {
+    const depthNum = parseInt(newValue, 10);
+    if (Number.isNaN(depthNum)) {
+      return;
+    }
     if (!isLineageOnDemandEnabled) {
       fetchGraph({
-        queryParam: { depth: parseInt(newValue) },
+        queryParam: { depth: depthNum },
         legends: false
       });
     }
 
     if (isLineageOnDemandEnabled) {
-      initialQueryObj[this.guid].depth = lineageDepth;
+      initialQueryObj[guid].depth = depthNum;
       fetchGraph({
         queryParam: initialQueryObj,
         legends: false
