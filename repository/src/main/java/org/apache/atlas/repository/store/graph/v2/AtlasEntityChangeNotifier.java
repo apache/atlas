@@ -780,6 +780,9 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
                 }
 
                 if (entity != null) {
+                    // For ES Isolation
+                    entity.setDocId(entityHeader.getDocId());
+                    entity.setSuperTypeNames(entityHeader.getSuperTypeNames());
                     ret.add(entity);
                 }
             }
