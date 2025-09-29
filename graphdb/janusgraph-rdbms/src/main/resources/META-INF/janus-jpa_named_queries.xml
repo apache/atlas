@@ -75,7 +75,8 @@
     <named-query name="JanusColumn.getColumnsByKeyIdStartNameEndName">
         <query>SELECT c.name, c.val
                  FROM JanusColumn c
-                WHERE c.keyId = :keyId AND c.name >= :startName AND c.name &lt; :endName</query>
+                WHERE c.keyId = :keyId AND c.name >= :startName AND c.name &lt; :endName
+                ORDER BY c.name</query>
     </named-query>
 
     <named-query name="JanusColumn.getKeysByStoreIdColumnRange">
