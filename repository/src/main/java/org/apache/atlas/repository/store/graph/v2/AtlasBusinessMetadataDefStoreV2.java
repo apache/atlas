@@ -524,7 +524,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
                 }
             }
         } catch (Exception e) {
-            LOG.error("Error counting existing rich text attributes", e);
+            LOG.error("Failed to count existing rich text attributes, at business metadata : {}", excludeBusinessMetadataGuid, e);
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Failed to validate rich text attribute limit");
         }
 
