@@ -1,19 +1,23 @@
 package org.apache.atlas.services;
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.SearchFilter;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.service.FeatureFlag;
 import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.atlas.typesystem.types.DataTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-import java.util.List;
+import java.util.Iterator;
+
 
 /**
  * Automatically enables Tag V2 for new Atlas instances
@@ -26,12 +30,19 @@ public class TagsV2AutoEnabler {
 
     private static final String CLASSIFICATION_TYPE = "classification";
     private static final String ENABLE_JANUS_OPTIMISATION_KEY = FeatureFlag.ENABLE_JANUS_OPTIMISATION.getKey();
+    
+    // Property keys for type system vertices
+    private static final String VERTEX_TYPE_PROPERTY_KEY = Constants.VERTEX_TYPE_PROPERTY_KEY;
+    private static final String TYPE_CATEGORY_PROPERTY_KEY = Constants.TYPE_CATEGORY_PROPERTY_KEY;
+    private static final String VERTEX_TYPE = AtlasGraphUtilsV2.VERTEX_TYPE; // "typeSystem"
 
     private final AtlasTypeDefStore typeDefStore;
+    private final AtlasGraph graph;
 
     @Inject
-    public TagsV2AutoEnabler(AtlasTypeDefStore typeDefStore) {
+    public TagsV2AutoEnabler(AtlasTypeDefStore typeDefStore, AtlasGraph graph) {
         this.typeDefStore = typeDefStore;
+        this.graph = graph;
     }
 
     @PostConstruct
@@ -49,11 +60,11 @@ public class TagsV2AutoEnabler {
             boolean hasClassificationTypes = hasClassificationTypes();
 
             if (!hasClassificationTypes) {
-                LOG.info("No classification types found - enabling Janus optimization for new tenant");
+                LOG.info("No classification types found - enabling Tags V2 for new tenant");
                 FeatureFlagStore.setFlag(ENABLE_JANUS_OPTIMISATION_KEY, "true");
-                LOG.info("Successfully enabled Janus optimization feature flag");
+                LOG.info("Successfully enabled Tags V2 feature flag");
             } else {
-                LOG.info("Classification types found - keeping existing configuration (Janus optimization disabled)");
+                LOG.info("Classification types found - keeping existing configuration (Tags v2 disabled)");
             }
 
         } catch (Exception e) {
@@ -63,22 +74,24 @@ public class TagsV2AutoEnabler {
     }
 
     /**
-     * Checks if there are any classification types present in the system
+     * Optimized method to check if any classification types exist
+     * Uses direct graph query instead of loading all typedefs
      * @return true if classification types exist, false otherwise
      */
     private boolean hasClassificationTypes() throws AtlasBaseException {
         try {
-            SearchFilter searchFilter = new SearchFilter();
-            searchFilter.setParam(SearchFilter.PARAM_TYPE, List.of(CLASSIFICATION_TYPE));
-            AtlasTypesDef typesDef = typeDefStore.searchTypesDef(searchFilter);
+            // Query for any vertex that is a type system vertex with TRAIT category
+            AtlasGraphQuery query = graph.query().has(VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE)
+                    .has(TYPE_CATEGORY_PROPERTY_KEY, DataTypes.TypeCategory.TRAIT);
 
-            boolean hasClassifications = typesDef != null && !CollectionUtils.isEmpty(typesDef.getClassificationDefs());
-
-            LOG.info("Found {} classification types", hasClassifications ? typesDef.getClassificationDefs().size() : 0);
+            Iterator<AtlasVertex> results = query.vertices().iterator();
+            boolean hasClassifications = results.hasNext();
+            
+            LOG.info("Found classification types: {}", hasClassifications);
             return hasClassifications;
-        } catch (AtlasBaseException e) {
+        } catch (Exception e) {
             LOG.error("Error checking for classification types", e);
-            throw e;
+            throw new AtlasBaseException("Error checking for classification types", e);
         }
     }
 }
