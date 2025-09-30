@@ -53,7 +53,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
     private final EntityDiscoveryService entityDiscoveryService;
 
-    private static final int DEFAULT_RICH_TEXT_ATTRIBUTE_LIMIT = 15;
+    private static final int DEFAULT_RICH_TEXT_ATTRIBUTE_LIMIT = 50;
     private static final String RICH_TEXT_ATTRIBUTE_LIMIT_PROPERTY = "atlas.business.metadata.richtext.limit";
 
     @Inject
