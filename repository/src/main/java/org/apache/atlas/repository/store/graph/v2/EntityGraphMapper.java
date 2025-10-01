@@ -5831,7 +5831,17 @@ public class EntityGraphMapper {
                 String    fieldName = entityType.getTypeName() + "." + bmName + "." + attrName;
 
                 if (attrValue != null) {
-                    attrType.validateValue(attrValue, fieldName, messages);
+                    if ("string".equalsIgnoreCase(attrType.getTypeName())) {
+                        Object existingValue = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, bmAttribute.getVertexPropertyName(), Object.class);
+                        if (existingValue instanceof String) { //do correct validation if existing value is valid type. otherwise ignore validation
+                            attrType.validateValue(attrValue, fieldName, messages);
+                        } else {
+                            LOG.warn("Existing business attribute value is not of type string for attribute {} of entity {}", fieldName, entityVertex.getIdForDisplay());
+                        }
+                    } else {
+                        attrType.validateValue(attrValue, fieldName, messages);
+                    }
+
                     boolean isValidLength = bmAttribute.isValidLength(attrValue);
                     if (!isValidLength) {
                         messages.add(fieldName + ":  Business attribute-value exceeds maximum length limit");
