@@ -2472,6 +2472,9 @@ public class EntityGraphMapper {
             }
         } catch (Exception e) {
             LOG.warn("Failed to validate Elasticsearch keyword size for field: {}", fieldName, e);
+            messages.add(String.format("%s: Failed to validate Elasticsearch keyword size due to an error: %s",
+                    fieldName, e.getMessage()));
+
         }
     }
 
