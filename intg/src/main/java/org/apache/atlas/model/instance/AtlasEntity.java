@@ -35,14 +35,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -71,6 +64,8 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     public static final String KEY_CREATE_TIME     = "createTime";
     public static final String KEY_UPDATE_TIME     = "updateTime";
     public static final String KEY_VERSION         = "version";
+    public static final String KEY_DOC_ID          = "docId";
+    public static final String KEY_SUPER_TYPES     = "superTypeNames";
 
     /**
      * Status of the entity - can be active or deleted. Deleted entities are not removed from Atlas store.
@@ -90,6 +85,9 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Date    updateTime     = null;
     private Long    version        = 0L;
     private Boolean starred       = null;
+
+    private Set<String>                     superTypeNames      = new HashSet<>();
+    private String                          docId               = null;
 
     private Map<String, Object>              relationshipAttributes;
     private Map<String, Object>              appendRelationshipAttributes;
@@ -241,6 +239,22 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             setAddedRelationshipAttributes(other.getAddedRelationshipAttributes());
             setRemovedRelationshipAttributes(other.getRemovedRelationshipAttributes());
         }
+    }
+
+    public Set<String> getSuperTypeNames() {
+        return superTypeNames;
+    }
+
+    public void setSuperTypeNames(Set<String> superTypeNames) {
+        this.superTypeNames = superTypeNames;
+    }
+
+    public String getDocId() {
+        return docId;
+    }
+
+    public void setDocId(String docId) {
+        this.docId = docId;
     }
 
     public String getGuid() {

@@ -176,10 +176,10 @@ public class JsonToElasticsearchQuery {
                     return createDSLForTagKeyValue(attributeName, attributeValueNode);
                 }
             }
-            case POLICY_FILTER_CRITERIA_NOT_EQUALS -> {
+            case POLICY_FILTER_CRITERIA_NOT_EQUALS, POLICY_FILTER_CRITERIA_NOT_IN -> {
                 ObjectNode mustNotNode = queryNode.putObject("bool").putObject("must_not");
                 if (attributeValueNode.isArray()) {
-                    ArrayNode shouldArray = mustNotNode.putArray("should");
+                    ArrayNode shouldArray = mustNotNode.putObject("bool").putArray("should");
                     for (JsonNode valueNode : attributeValueNode) {
                         shouldArray.add(createDSLForTagKeyValue(attributeName, valueNode));
                     }
@@ -195,17 +195,6 @@ public class JsonToElasticsearchQuery {
                     }
                 } else {
                     shouldArray.add(createDSLForTagKeyValue(attributeName, attributeValueNode));
-                }
-            }
-            case POLICY_FILTER_CRITERIA_NOT_IN -> {
-                ObjectNode notInMustNot = queryNode.putObject("bool").putObject("must_not");
-                ArrayNode notInShouldArray = notInMustNot.putArray("should");
-                if (attributeValueNode.isArray()) {
-                    for (JsonNode valueNode : attributeValueNode) {
-                        notInShouldArray.add(createDSLForTagKeyValue(attributeName, valueNode));
-                    }
-                } else {
-                    notInShouldArray.add(createDSLForTagKeyValue(attributeName, attributeValueNode));
                 }
             }
             default -> LOG.warn("Found unknown operator {}", operator);

@@ -2898,7 +2898,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
                 "bool": {
                   "must": [
                     {"term": {"__state": "ACTIVE"}},
-                    {"term": {"__typeName.keyword": "alpha_DQRuleTemplate"}}
+                    {"term": {"__typeName.keyword": "DataQualityTemplate"}}
                   ]
                 }
               }

@@ -32,6 +32,7 @@ on:
       - fixlabels
       - interceptapis
       - mindbodylineage
+      - revert-custom-metadata-changes
 
 jobs:
   build:

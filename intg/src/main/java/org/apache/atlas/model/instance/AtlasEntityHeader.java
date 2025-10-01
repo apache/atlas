@@ -34,12 +34,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.Date;
+import java.util.*;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -56,6 +51,9 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    private Set<String>                     superTypeNames      = new HashSet<>();
+    private String                          vertexId            = null;
+    private String                          docId               = null;
     private String                          guid                = null;
     private AtlasEntity.Status              status              = AtlasEntity.Status.ACTIVE;
     private String                          displayText         = null;
@@ -101,6 +99,30 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         setClassificationNames(null);
         setClassifications(null);
         setLabels(null);
+    }
+
+    public Set<String> getSuperTypeNames() {
+        return superTypeNames;
+    }
+
+    public void setSuperTypeNames(Set<String> superTypeNames) {
+        this.superTypeNames = superTypeNames;
+    }
+
+    public String getVertexId() {
+        return vertexId;
+    }
+
+    public void setVertexId(String vertexId) {
+        this.vertexId = vertexId;
+    }
+
+    public String getDocId() {
+        return docId;
+    }
+
+    public void setDocId(String docId) {
+        this.docId = docId;
     }
 
     public List<AtlasClassification> getAddOrUpdateClassifications() {

@@ -15,7 +15,7 @@
                   "should": [
                     {
                       "term": {
-                        "__typeName.keyword": "alpha_DQRuleTemplate"
+                        "__typeName.keyword": "DataQualityTemplate"
                       }
                     }
                   ]
@@ -38,7 +38,7 @@
     "aggs": {
       "group_by_dimension": {
         "terms": {
-          "field": "alpha_dqRuleTemplateDimension",
+          "field": "dqRuleTemplateDimension",
           "size": 10
         }
       }

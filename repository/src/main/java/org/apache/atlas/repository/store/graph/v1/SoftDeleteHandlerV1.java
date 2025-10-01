@@ -39,9 +39,7 @@ import javax.inject.Inject;
 import java.util.Collection;
 
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
-import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 
 public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
@@ -77,8 +75,15 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
                 LOG.debug("==> SoftDeleteHandlerV1.deleteEdge({}, {})", GraphHelper.string(edge), force);
             }
 
-            if (edge == null || getTypeName(edge) == null) {
-                LOG.warn("Edge is null or its typeName is empty. Nothing to delete");
+            if (edge == null) {
+                LOG.warn("Edge is null. Nothing to delete");
+                return;
+            }
+
+            //tag vertex do not have typeName, but they have a label
+            if (!CLASSIFICATION_LABEL.equalsIgnoreCase(edge.getLabel())
+                    && getTypeName(edge) == null) {
+                LOG.warn("Edge is not a tag type and typeName is empty. Nothing to delete");
                 return;
             }
 
