@@ -112,6 +112,7 @@ public class RequestContext {
     private MetricsRegistry metricsRegistry;
     private boolean skipAuthorizationCheck = false;
     private Set<String> deletedEdgesIdsForResetHasLineage = new HashSet<>(0);
+    private Set<Object> deletedEdgesObjectIdsForResetHasLineage = new HashSet<>(0);
     private String requestUri;
     private boolean delayTagNotifications = false;
     private boolean skipHasLineageCalculation = false;
@@ -182,6 +183,7 @@ public class RequestContext {
         this.deletedEdgesIds.clear();
         this.processGuidIds.clear();
         this.deletedEdgesIdsForResetHasLineage.clear();
+        this.deletedEdgesObjectIdsForResetHasLineage.clear();
         this.requestContextHeaders.clear();
         this.relationshipEndToVertexIdMap.clear();
         this.relationshipMutationMap.clear();
@@ -507,11 +509,17 @@ public class RequestContext {
     public void addToDeletedEdgesIdsForResetHasLineage(String edgeId) {
         deletedEdgesIdsForResetHasLineage.add(edgeId);
     }
+    public void addToDeletedEdgesObjectIdsForResetHasLineage(Object edgeId) {
+        deletedEdgesObjectIdsForResetHasLineage.add(edgeId);
+    }
 
     public Set<String> getDeletedEdgesIdsForResetHasLineage() {
         return deletedEdgesIdsForResetHasLineage;
     }
 
+    public Set<Object> getDeletedEdgesObjectIdsForResetHasLineage() {
+        return deletedEdgesObjectIdsForResetHasLineage;
+    }
     public Set<String> getProcessGuidIds() {
         return processGuidIds;
     }
