@@ -557,7 +557,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         public boolean isSoftReferenced() {
             return this.options != null &&
                     getOptions().containsKey(AtlasAttributeDef.ATTRDEF_OPTION_SOFT_REFERENCE) &&
-                    getOptions().get(AtlasAttributeDef.ATTRDEF_OPTION_SOFT_REFERENCE).equals(STRING_TRUE);
+                    STRING_TRUE.equalsIgnoreCase(getOptions().get(AtlasAttributeDef.ATTRDEF_OPTION_SOFT_REFERENCE));
         }
 
         @JsonIgnore

@@ -31,7 +31,7 @@ on:
       - tagscanarymerge
       - fixlabels
       - interceptapis
-      - revert-custom-metadata-changes
+      - fix-pg-prod-cm-soft-ref
 
 jobs:
   build:
