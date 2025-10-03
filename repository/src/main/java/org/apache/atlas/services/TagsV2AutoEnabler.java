@@ -8,7 +8,6 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.service.FeatureFlag;
 import org.apache.atlas.service.FeatureFlagStore;
-import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +27,6 @@ import java.util.Iterator;
 public class TagsV2AutoEnabler {
     private static final Logger LOG = LoggerFactory.getLogger(TagsV2AutoEnabler.class);
 
-    private static final String CLASSIFICATION_TYPE = "classification";
     private static final String ENABLE_JANUS_OPTIMISATION_KEY = FeatureFlag.ENABLE_JANUS_OPTIMISATION.getKey();
     
     // Property keys for type system vertices
@@ -36,12 +34,10 @@ public class TagsV2AutoEnabler {
     private static final String TYPE_CATEGORY_PROPERTY_KEY = Constants.TYPE_CATEGORY_PROPERTY_KEY;
     private static final String VERTEX_TYPE = AtlasGraphUtilsV2.VERTEX_TYPE; // "typeSystem"
 
-    private final AtlasTypeDefStore typeDefStore;
     private final AtlasGraph graph;
 
     @Inject
-    public TagsV2AutoEnabler(AtlasTypeDefStore typeDefStore, AtlasGraph graph) {
-        this.typeDefStore = typeDefStore;
+    public TagsV2AutoEnabler(AtlasGraph graph) {
         this.graph = graph;
     }
 
