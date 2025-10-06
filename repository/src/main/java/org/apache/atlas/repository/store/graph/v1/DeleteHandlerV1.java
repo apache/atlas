@@ -1898,9 +1898,10 @@ public abstract class DeleteHandlerV1 {
 
         if (hasActiveLineage) {
             AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
+        } else {
+            AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
         }
 
-        AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
