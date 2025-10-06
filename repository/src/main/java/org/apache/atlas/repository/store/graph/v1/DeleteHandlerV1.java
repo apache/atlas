@@ -1893,7 +1893,7 @@ public abstract class DeleteHandlerV1 {
 
         // If no active lineage found in OUT direction, check IN direction
         if (!hasActiveLineage) {
-            updateAssetHasLineageStatusWithINDirection(assetVertex, currentEdge, exclusionList);
+            hasActiveLineage = updateAssetHasLineageStatusWithINDirection(assetVertex, currentEdge, exclusionList);
         }
 
         if (hasActiveLineage) {
