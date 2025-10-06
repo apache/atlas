@@ -387,6 +387,9 @@ public class CachePolicyTransformerImpl {
         List<RangerPolicyDelta> deletedPolicyDeltas = new ArrayList<>();
         for (String policyGuid : policyGuids) {
             Integer deltaChangeType = auditEventToDeltaChangeType.get(policyChanges.get(policyGuid));
+            if (deltaChangeType == null) {
+                continue;
+            }
             if (deltaChangeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE) {
                 RangerPolicy deletedPolicy = new RangerPolicy();
                 deletedPolicy.setGuid(policyGuid);
