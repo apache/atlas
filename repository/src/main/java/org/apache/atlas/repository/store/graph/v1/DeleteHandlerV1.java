@@ -42,6 +42,8 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphTraversal;
+import org.apache.atlas.repository.graphdb.AtlasGraphTraversalSource;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
@@ -58,9 +60,11 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -1843,28 +1847,27 @@ public abstract class DeleteHandlerV1 {
     }
 
     private boolean updateAssetHasLineageStatusWithDirection(AtlasVertex assetVertex, AtlasEdge currentEdge, AtlasEdgeDirection direction, Set<String> exclusionList) {
+        GraphTraversal<Edge, Map<String, Object>> edgeTraversal;
 
-        Iterator<AtlasEdge> edgeIterator = assetVertex.query()
-                .direction(direction)
-                .label(PROCESS_EDGE_LABELS)
-                .has(STATE_PROPERTY_KEY, ACTIVE.name())
-                .edges()
-                .iterator();
-
-        int processHasLineageCount = 0;
-
-        while (edgeIterator.hasNext()) {
-            AtlasEdge edge = edgeIterator.next();
-            if (!exclusionList.contains(edge.getIdForDisplay()) && !currentEdge.equals(edge)) {
-                AtlasVertex relatedProcessVertex = edge.getOutVertex();
-                boolean processHasLineage = getEntityHasLineage(relatedProcessVertex);
-                if (processHasLineage) {
-                    processHasLineageCount++;
-                    break;
-                }
-            }
+        // Create the appropriate directional traversal
+        if (direction.equals(Direction.OUT)) {
+            edgeTraversal = ((AtlasJanusGraph) graph).V(assetVertex.getId())
+                    .outE()
+                    .hasId(P.not(P.within(exclusionList)))
+                    .hasLabel(P.within(PROCESS_EDGE_LABELS))
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE);
+        } else {
+            edgeTraversal = ((AtlasJanusGraph) graph).V(assetVertex.getId())
+                    .inE()
+                    .hasId(P.not(P.within(exclusionList)))
+                    .hasLabel(P.within(PROCESS_EDGE_LABELS))
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE);
         }
-        return processHasLineageCount > 0;
+
+       return edgeTraversal.outV() // Get the connected vertex
+                .has(HAS_LINEAGE, true) // Filter vertices with lineage=true
+                .limit(1)
+                .hasNext(); // Just check existence, don't materialize using stream()Collapse comment
     }
 
     private boolean updateAssetHasLineageStatusWithOUTDirection(AtlasVertex assetVertex, AtlasEdge currentEdge, Set<String> exclusionList) {
@@ -1887,6 +1890,7 @@ public abstract class DeleteHandlerV1 {
         // Add removed edges to the context
         removedEdges.forEach(edge -> RequestContext.get().addToDeletedEdgesIdsForResetHasLineage(edge.getIdForDisplay()));
         Set<String> exclusionList = RequestContext.get().getDeletedEdgesIdsForResetHasLineage();
+        exclusionList.add(currentEdge.getIdForDisplay());
 
         // First check in OUT direction
         boolean hasActiveLineage = updateAssetHasLineageStatusWithOUTDirection(assetVertex, currentEdge, exclusionList);
