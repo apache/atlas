@@ -1870,7 +1870,7 @@ public class EntityREST {
     public void repairEntityAttributesBulk(Set<String> guids, @QueryParam("repairType") String repairType, @QueryParam("repairAttributeName") String repairAttributeName) throws AtlasBaseException {
 
         Servlets.validateQueryParamLength("repairType", repairType);
-        Servlets.validateQueryParamLength("repairAttribute", repairAttributeName);
+        Servlets.validateQueryParamLength("repairAttributeName", repairAttributeName);
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_REPAIR_INDEX), "Admin Repair Attributes");
 
