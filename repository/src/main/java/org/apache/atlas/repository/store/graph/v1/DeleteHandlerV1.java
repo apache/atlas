@@ -1852,15 +1852,18 @@ public abstract class DeleteHandlerV1 {
         // Create the appropriate directional traversal
         if (direction.equals(Direction.OUT)) {
             edgeTraversal = ((AtlasJanusGraph) graph).V(assetVertex.getId())
-                    .outE()
+                    .outE(PROCESS_EDGE_LABELS)
                     .hasId(P.not(P.within(exclusionList)))
-                    .hasLabel(P.within(PROCESS_EDGE_LABELS))
                     .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE);
-        } else {
+        } else if (direction.equals(Direction.IN)) {
             edgeTraversal = ((AtlasJanusGraph) graph).V(assetVertex.getId())
-                    .inE()
+                    .inE(PROCESS_EDGE_LABELS)
                     .hasId(P.not(P.within(exclusionList)))
-                    .hasLabel(P.within(PROCESS_EDGE_LABELS))
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE);
+        } else{
+            edgeTraversal = ((AtlasJanusGraph) graph).V(assetVertex.getId())
+                    .bothE(PROCESS_EDGE_LABELS)
+                    .hasId(P.not(P.within(exclusionList)))
                     .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE);
         }
 
