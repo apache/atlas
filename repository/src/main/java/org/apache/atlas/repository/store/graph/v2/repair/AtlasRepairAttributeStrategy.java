@@ -20,8 +20,6 @@ package org.apache.atlas.repository.store.graph.v2.repair;
 
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.BusinessLineageRequest;
-import org.apache.atlas.repository.RepositoryException;
 
 import java.util.Set;
 

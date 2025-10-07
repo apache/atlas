@@ -6,7 +6,6 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.TransactionInterceptHelper;
-import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,15 +20,13 @@ public class RemoveInvalidGuidsRepairStrategy implements AtlasRepairAttributeStr
     private final EntityGraphRetriever entityRetriever;
 
 
-    private Set<String> entityGuids;
     private final TransactionInterceptHelper transactionInterceptHelper;
 
     private static final String REPAIR_TYPE = "REMOVE_INVALID_GUIDS";
 
-    public RemoveInvalidGuidsRepairStrategy(EntityGraphRetriever entityRetriever, Set<String> entityGuids, TransactionInterceptHelper transactionInterceptHelper) {
+    public RemoveInvalidGuidsRepairStrategy(EntityGraphRetriever entityRetriever, TransactionInterceptHelper transactionInterceptHelper) {
         this.entityRetriever = entityRetriever;
         this.transactionInterceptHelper = transactionInterceptHelper;
-        this.entityGuids = entityGuids;
     }
 
     @Override

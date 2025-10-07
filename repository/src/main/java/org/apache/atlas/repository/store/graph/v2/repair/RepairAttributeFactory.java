@@ -25,7 +25,7 @@ public class RepairAttributeFactory {
     public AtlasRepairAttributeStrategy getStrategy(String repairType, Set<String> entityGuids) throws AtlasBaseException {
         switch (repairType) {
             case "REMOVE_INVALID_GUIDS":
-                return new RemoveInvalidGuidsRepairStrategy(entityRetriever, entityGuids, transactionInterceptHelper);
+                return new RemoveInvalidGuidsRepairStrategy(entityRetriever, transactionInterceptHelper);
             default:
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
                         "Unsupported repair type: " + repairType + ". Supported types: [REMOVE_INVALID_GUIDS]");
