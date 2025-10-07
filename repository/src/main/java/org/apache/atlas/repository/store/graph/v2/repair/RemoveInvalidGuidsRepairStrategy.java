@@ -104,21 +104,35 @@ public class RemoveInvalidGuidsRepairStrategy implements AtlasRepairAttributeStr
                 return false;
             }
 
-            vertex.removeProperty(OUTPUT_PORT_GUIDS_ATTR);
+            List<String> validGuids = new ArrayList<>();
+            List<String> invalidGuids = new ArrayList<>();
 
             for (String guid : outputPortGuids) {
                 AtlasVertex portVertex = entityRetriever.getEntityVertex(guid);
                 if (portVertex != null) {
-                    AtlasGraphUtilsV2.addEncodedProperty(vertex, OUTPUT_PORT_GUIDS_ATTR , guid);
-                    isCommitRequired = true;
+                    validGuids.add(guid);
                 } else {
-                    LOG.info("Removing invalid or hard deleted guid: {}", guid);
+                    invalidGuids.add(guid);
                 }
+            }
+
+            if (!invalidGuids.isEmpty()) {
+                LOG.info("Removing invalid guids: {} from attribute: {} for entity: {}", invalidGuids, OUTPUT_PORT_GUIDS_ATTR, vertex.getProperty("guid", String.class));
+
+                vertex.removeProperty(OUTPUT_PORT_GUIDS_ATTR);
+
+                for (String validGuid : validGuids) {
+                    AtlasGraphUtilsV2.addEncodedProperty(vertex, OUTPUT_PORT_GUIDS_ATTR, validGuid);
+                }
+
+                isCommitRequired = true;
+            } else {
+                LOG.info("All guids in attribute: {} for entity: {} are valid. No repair needed.", OUTPUT_PORT_GUIDS_ATTR, vertex.getProperty("guid", String.class));
             }
 
             return isCommitRequired;
         } catch (Exception e) {
-            LOG.error("Failed to migrate unique qualifiedName attribute for entity: ", e);
+            LOG.error("Failed to repair attribute for entity: ", e);
             throw e;
         }
     }
