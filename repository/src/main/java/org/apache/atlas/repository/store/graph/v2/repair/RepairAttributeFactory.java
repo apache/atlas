@@ -24,15 +24,15 @@ public class RepairAttributeFactory {
 
     public AtlasRepairAttributeStrategy getStrategy(String repairType, Set<String> entityGuids) throws AtlasBaseException {
         switch (repairType) {
-            case "REMOVE_INVALID_GUIDS":
+            case "REMOVE_INVALID_OUTPUT_PORT_GUIDS":
                 return new RemoveInvalidGuidsRepairStrategy(entityRetriever, transactionInterceptHelper);
             default:
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
-                        "Unsupported repair type: " + repairType + ". Supported types: [REMOVE_INVALID_GUIDS]");
+                        "Unsupported repair type: " + repairType + ". Supported types: [REMOVE_INVALID_OUTPUT_PORT_GUIDS]");
         }
     }
 
     public boolean isValidRepairType(String repairType) {
-        return "REMOVE_INVALID_GUIDS".equals(repairType);
+        return "REMOVE_INVALID_OUTPUT_PORT_GUIDS".equals(repairType);
     }
 }

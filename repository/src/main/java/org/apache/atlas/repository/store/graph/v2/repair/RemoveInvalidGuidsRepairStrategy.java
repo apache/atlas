@@ -22,7 +22,7 @@ public class RemoveInvalidGuidsRepairStrategy implements AtlasRepairAttributeStr
 
     private final TransactionInterceptHelper transactionInterceptHelper;
 
-    private static final String REPAIR_TYPE = "REMOVE_INVALID_GUIDS";
+    private static final String REPAIR_TYPE = "REMOVE_INVALID_OUTPUT_PORT_GUIDS";
 
     public RemoveInvalidGuidsRepairStrategy(EntityGraphRetriever entityRetriever, TransactionInterceptHelper transactionInterceptHelper) {
         this.entityRetriever = entityRetriever;
