@@ -420,6 +420,10 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         if (hasLinkedAssets(domainGuid, DOMAIN_GUIDS)) {
             throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Domain cannot be deleted because some assets are linked to this domain");
         }
+
+        if (hasChildObjects(vertex)) {
+            throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Domain cannot be deleted because it has active child domains or products");
+        }
     }
 
     private void isParentDomainMovedToChild(String targetDomainQualifiedName, String currentDomainQualifiedName) throws AtlasBaseException {

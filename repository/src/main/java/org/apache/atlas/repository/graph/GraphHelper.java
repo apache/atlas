@@ -2116,6 +2116,17 @@ public final class GraphHelper {
     }
 
     /**
+     * Get active children vertices with a limit for optimized existence checks
+     * @param vertex entity vertex
+     * @param childrenEdgeLabel Edge label of children
+     * @param limit Maximum number of vertices to retrieve
+     * @return Iterator of children vertices (limited)
+     */
+    public static Iterator<AtlasVertex> getActiveChildrenVertices(AtlasVertex vertex, String childrenEdgeLabel, int limit) throws AtlasBaseException {
+        return getActiveVertices(vertex, childrenEdgeLabel, AtlasEdgeDirection.OUT, limit);
+    }
+
+    /**
      * Get all the active edges and cap number of edges to avoid excessive processing.
      * @param vertex entity vertex
      * @param childrenEdgeLabel Edge label of children
@@ -2194,6 +2205,26 @@ public final class GraphHelper {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
+
+    public static Iterator<AtlasVertex> getActiveVertices(AtlasVertex vertex, String childrenEdgeLabel, AtlasEdgeDirection direction, int limit) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.getActiveVerticesWithLimit");
+
+        try {
+            return vertex.query()
+                    .direction(direction)
+                    .label(childrenEdgeLabel)
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                    .vertices(limit)
+                    .iterator();
+        } catch (Exception e) {
+            LOG.error("Error while getting active vertices with limit for edge label " + childrenEdgeLabel, e);
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+        }
+        finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
     public static Iterator<AtlasVertex> getAllChildrenVertices(AtlasVertex vertex, String childrenEdgeLabel) throws AtlasBaseException {
         return getAllVertices(vertex, childrenEdgeLabel, AtlasEdgeDirection.OUT);
     }

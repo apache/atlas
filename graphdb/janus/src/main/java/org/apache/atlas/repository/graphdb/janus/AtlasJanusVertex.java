@@ -20,6 +20,7 @@ package org.apache.atlas.repository.graphdb.janus;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.StreamSupport;
 
@@ -55,6 +56,7 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
     public <T> void addProperty(String propertyName, T value) {
         try {
             getWrappedElement().property(VertexProperty.Cardinality.set, propertyName, value);
+            recordInternalAttributeIncrementalAdd(propertyName, Set.class);
         } catch(SchemaViolationException e) {
             throw new AtlasSchemaViolationException(e);
         }
@@ -64,6 +66,7 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
     public <T> void addListProperty(String propertyName, T value) {
         try {
             getWrappedElement().property(VertexProperty.Cardinality.list, propertyName, value);
+            recordInternalAttributeIncrementalAdd(propertyName, List.class);
         } catch(SchemaViolationException e) {
             throw new AtlasSchemaViolationException(e);
         }

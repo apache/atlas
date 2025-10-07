@@ -281,6 +281,9 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         ret.setCreateTime(entity.getCreateTime());
         ret.setUpdateTime(entity.getUpdateTime());
         ret.setDeleteHandler(entity.getDeleteHandler());
+        // For ES Isolation
+        ret.setDocId(entity.getDocId());
+        ret.setSuperTypeNames(entity.getSuperTypeNames());
 
         setAttribute(ret, NAME, name);
         setAttribute(ret, DESCRIPTION, entity.getAttribute(DESCRIPTION));
@@ -302,6 +305,13 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                         ret.setAttribute(attribute.getName(), attrValue);
                     }
                 }
+            }
+
+            // fill the internal properties like __glossary, __meanings etc. (ES Isolation)
+            RequestContext context = RequestContext.get();
+            Map<String, Object> allInternalAttributesMap = context.getAllInternalAttributesMap().get(entity.getGuid());
+            if (MapUtils.isNotEmpty(allInternalAttributesMap)) {
+                ret.setInternalAttributes(allInternalAttributesMap);
             }
 
             //Add relationship attributes which has isOptional as false

@@ -2898,7 +2898,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
                 "bool": {
                   "must": [
                     {"term": {"__state": "ACTIVE"}},
-                    {"term": {"__typeName.keyword": "alpha_DQRuleTemplate"}}
+                    {"term": {"__typeName.keyword": "DataQualityTemplate"}}
                   ]
                 }
               }
@@ -4551,5 +4551,177 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
                 extractWildcardPatternsRecursive(item, patterns);
             }
         }
+    }
+
+    public void testCaseInsensitiveWildcardOptimization() throws Exception {
+        String query = """
+            {
+                "bool": {
+                    "must": [
+                        {
+                            "bool": {
+                                "must": [
+                                    {
+                                        "bool": {
+                                            "must_not": [
+                                                {
+                                                    "wildcard": {
+                                                        "name.keyword": {
+                                                            "value": "*INDEX*",
+                                                            "case_insensitive": true
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "bool": {
+                                            "must_not": [
+                                                {
+                                                    "wildcard": {
+                                                        "displayName.keyword": {
+                                                            "value": "*INDEX*",
+                                                            "case_insensitive": true
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "bool": {
+                                "must": [
+                                    {
+                                        "bool": {
+                                            "must_not": [
+                                                {
+                                                    "wildcard": {
+                                                        "name.keyword": {
+                                                            "value": "*HYBRID*",
+                                                            "case_insensitive": true
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "bool": {
+                                            "must_not": [
+                                                {
+                                                    "wildcard": {
+                                                        "displayName.keyword": {
+                                                            "value": "*HYBRID*",
+                                                            "case_insensitive": true
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }""";
+
+        // Parse and optimize the query
+        JsonNode originalQuery = parseJson(query);
+        ElasticsearchDslOptimizer.OptimizationResult result = optimizer.optimizeQuery(query);
+        JsonNode optimizedQuery = parseJson(result.getOptimizedQuery());
+
+        System.out.println("Original query: " + query);
+        System.out.println("Optimized query: " + result.getOptimizedQuery());
+
+        // Verify that case-insensitive wildcards are not consolidated
+        int originalWildcards = countWildcardsInQuery(originalQuery);
+        int optimizedWildcards = countWildcardsInQuery(optimizedQuery);
+        assertEquals("Case-insensitive wildcards should not be consolidated", originalWildcards, optimizedWildcards);
+
+        // Verify that the case_insensitive flag is preserved
+        assertTrue("Optimized query should preserve case_insensitive wildcards", 
+                  result.getOptimizedQuery().contains("case_insensitive"));
+
+        // Verify that the wildcard patterns are preserved
+        assertTrue("Optimized query should preserve *INDEX* pattern",
+                  result.getOptimizedQuery().contains("*INDEX*"));
+        assertTrue("Optimized query should preserve *HYBRID* pattern",
+                  result.getOptimizedQuery().contains("*HYBRID*"));
+
+        // Verify that empty regexp patterns are not created
+        assertFalse("Optimized query should not contain empty regexp patterns",
+                   result.getOptimizedQuery().contains("\"regexp\":{\"name.keyword\":\"(|)\"}"));
+        assertFalse("Optimized query should not contain empty regexp patterns",
+                   result.getOptimizedQuery().contains("\"regexp\":{\"displayName.keyword\":\"(|)\"}"));
+    }
+
+    public void testCaseInsensitiveWildcardWithRegexp() throws Exception {
+        String query = """
+            {
+                "bool": {
+                    "must_not": [
+                        {
+                            "wildcard": {
+                                "displayName.keyword": {
+                                    "value": "*HYBRID*",
+                                    "case_insensitive": true
+                                }
+                            }
+                        },
+                         {
+                            "wildcard": {
+                                "displayName.keyword": {
+                                    "value": "*INDEX*",
+                                    "case_insensitive": true
+                                }
+                            }
+                        }
+                    ]
+                }
+            }""";
+
+        // Parse and optimize the query
+        JsonNode originalQuery = parseJson(query);
+        ElasticsearchDslOptimizer.OptimizationResult result = optimizer.optimizeQuery(query);
+        JsonNode optimizedQuery = parseJson(result.getOptimizedQuery());
+
+        System.out.println("Original query: " + query);
+        System.out.println("Optimized query: " + result.getOptimizedQuery());
+
+        // Count wildcards and regexps
+        int originalWildcards = countWildcardsInQuery(originalQuery);
+        int optimizedWildcards = countWildcardsInQuery(optimizedQuery);
+        int originalRegexps = countRegexpsInQuery(originalQuery);
+        int optimizedRegexps = countRegexpsInQuery(optimizedQuery);
+
+        // Verify that case-insensitive wildcards are preserved
+        assertEquals("Case-insensitive wildcards should be preserved", originalWildcards, optimizedWildcards);
+        
+        // Verify that regexp count doesn't increase
+        assertEquals("Regexp count should not increase", originalRegexps, optimizedRegexps);
+
+        // Verify that the case_insensitive flag is preserved
+        assertTrue("Optimized query should preserve case_insensitive wildcards", 
+                  result.getOptimizedQuery().contains("case_insensitive"));
+
+        // Verify that the wildcard pattern is preserved
+        assertTrue("Optimized query should preserve *HYBRID* pattern",
+                  result.getOptimizedQuery().contains("*HYBRID*"));
+
+        // Verify no duplicate patterns are created
+        String optimizedStr = result.getOptimizedQuery();
+        int hybridCount = countOccurrences(optimizedStr, "*HYBRID*");
+        int indexCount = countOccurrences(optimizedStr, "*INDEX*");
+        assertEquals("*HYBRID* pattern should appear exactly once", 1, hybridCount);
+        assertEquals("*INDEX* pattern should appear exactly once", 1, indexCount);
+
+        // Verify no empty regexp patterns
+        assertFalse("Optimized query should not contain empty regexp patterns",
+                   optimizedStr.contains("\"regexp\":{\"displayName.keyword\":\"(|)\"}"));
     }
 } 

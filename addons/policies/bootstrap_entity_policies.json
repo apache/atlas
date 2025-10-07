@@ -3758,7 +3758,7 @@
                 ],
                 "policyResourceCategory": "ENTITY",
                 "policyResources": [
-                    "entity-type:alpha_DQRuleTemplate",
+                    "entity-type:DataQualityTemplate",
                     "entity-classification:*",
                     "entity:*"
                 ],

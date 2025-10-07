@@ -26,6 +26,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -45,6 +46,7 @@ public class AtlasEntityHeaderWithRelations extends AtlasEntityHeader implements
     private static final long serialVersionUID = 1L;
 
     private Map<String, Object> relationshipAttributes = null;
+    private Map<String, Object> internalAttributes = null;
 
     public AtlasEntityHeaderWithRelations(String typeName, String guid, Map<String, Object> attributes) {
         super(typeName, attributes);
@@ -62,24 +64,34 @@ public class AtlasEntityHeaderWithRelations extends AtlasEntityHeader implements
         this.relationshipAttributes = relationshipAttributes;
     }
 
+    public Map<String, Object> getInternalAttributes() {
+        return internalAttributes;
+    }
+
+    public void setInternalAttributes(Map<String, Object> internalAttributes) {
+        this.internalAttributes = internalAttributes;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         AtlasEntityHeaderWithRelations that = (AtlasEntityHeaderWithRelations) o;
-        return Objects.equals(relationshipAttributes, that.relationshipAttributes);
+        return Objects.equals(relationshipAttributes, that.relationshipAttributes) &&
+                Objects.equals(internalAttributes, that.internalAttributes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), relationshipAttributes);
+        return Objects.hash(super.hashCode(), relationshipAttributes, internalAttributes);
     }
 
     @Override
     public String toString() {
         return "AtlasEntityHeaderWithRelations{" +
                 "relationshipAttributes=" + relationshipAttributes +
+                "internalAttributes=" + internalAttributes +
                 "AtlasEntityHeader=" + super.toString() +
                 '}';
     }

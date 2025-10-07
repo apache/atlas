@@ -82,8 +82,8 @@ public class FeatureFlagStore implements ApplicationContextAware {
                 // Add version tracking metric
                 MeterRegistry meterRegistry = org.apache.atlas.service.metrics.MetricUtils.getMeterRegistry();
                 Gauge.builder(METRIC_COMPONENT + "_atlas_version_enabled", 
-                            null, 
-                            unused -> isTagV2Enabled() ? 2.0 : 1.0)
+                            this,
+                            ref -> isTagV2Enabled() ? 2.0 : 1.0)
                     .description("Indicates which Tag propagation version is enabled (2.0 = v2, 1.0 = v1)")
                     .tag("component", "version")
                     .register(meterRegistry);

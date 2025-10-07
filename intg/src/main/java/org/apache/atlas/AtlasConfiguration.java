@@ -90,7 +90,7 @@ public enum AtlasConfiguration {
     TASKS_REQUEUE_GRAPH_QUERY("atlas.tasks.requeue.graph.query", false),
     TASKS_IN_PROGRESS_GRAPH_QUERY("atlas.tasks.inprogress.graph.query", false),
     TASKS_REQUEUE_POLL_INTERVAL("atlas.tasks.requeue.poll.interval.millis", 60000),
-    TASKS_QUEUE_SIZE("atlas.tasks.queue.size", 1000),
+    TASKS_QUEUE_SIZE("atlas.tasks.queue.size", 10),
     SESSION_TIMEOUT_SECS("atlas.session.timeout.secs", -1),
     UPDATE_COMPOSITE_INDEX_STATUS("atlas.update.composite.index.status", true),
     TASKS_GRAPH_COMMIT_CHUNK_SIZE("atlas.tasks.graph.commit.chunk.size", 100),
@@ -164,10 +164,10 @@ public enum AtlasConfiguration {
     MIN_TIMEOUT_SUPER_VERTEX("atlas.jg.super.vertex.min.edge.timeout", 2),
 
     // Classification propagation thread pool configuration
-    TAG_ASYNC_NOTIFIER_CORE_POOL_SIZE("atlas.classification.propagation.core.pool.size", 32),
-    TAG_ASYNC_NOTIFIER_MAX_POOL_SIZE("atlas.classification.propagation.max.pool.size", 200),
-    TAG_ASYNC_NOTIFIER_QUEUE_CAPACITY("atlas.classification.propagation.queue.capacity", 1000),
-    TAG_ASYNC_NOTIFIER_KEEP_ALIVE_SECONDS("atlas.classification.propagation.keep.alive.seconds", 300),
+    TAG_ASYNC_NOTIFIER_CORE_POOL_SIZE("atlas.classification.propagation.core.pool.size", 2),     // Reduced
+    TAG_ASYNC_NOTIFIER_MAX_POOL_SIZE("atlas.classification.propagation.max.pool.size", 4),       // Reduced
+    TAG_ASYNC_NOTIFIER_QUEUE_CAPACITY("atlas.classification.propagation.queue.capacity", 100),    // Reduced
+    TAG_ASYNC_NOTIFIER_KEEP_ALIVE_SECONDS("atlas.classification.propagation.keep.alive.seconds", 60), // Reduced
 
     // ES and Cassandra batch operation configurations
     ES_BULK_BATCH_SIZE("atlas.es.bulk.batch.size", 500),
@@ -176,7 +176,13 @@ public enum AtlasConfiguration {
     ES_RETRY_DELAY_MS("atlas.es.retry.delay.ms", 1000),
 
 
-    MIN_EDGES_SUPER_VERTEX("atlas.jg.super.vertex.min.edge.count", 100);
+    MIN_EDGES_SUPER_VERTEX("atlas.jg.super.vertex.min.edge.count", 100),
+
+    // Task resource management configuration
+    TASK_MEMORY_THRESHOLD_PERCENT("atlas.tasks.memory.threshold.percent", 75),
+    TASK_HIGH_MEMORY_PAUSE_MS("atlas.tasks.high.memory.pause.ms", 2000),
+    TASK_MAX_RETRY_ATTEMPTS("atlas.tasks.max.retry.attempts", 3);
+
     private static final Configuration APPLICATION_PROPERTIES;
 
     static {

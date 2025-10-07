@@ -387,6 +387,9 @@ public class CachePolicyTransformerImpl {
         List<RangerPolicyDelta> deletedPolicyDeltas = new ArrayList<>();
         for (String policyGuid : policyGuids) {
             Integer deltaChangeType = auditEventToDeltaChangeType.get(policyChanges.get(policyGuid));
+            if (deltaChangeType == null) {
+                continue;
+            }
             if (deltaChangeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE) {
                 RangerPolicy deletedPolicy = new RangerPolicy();
                 deletedPolicy.setGuid(policyGuid);
@@ -415,6 +418,10 @@ public class CachePolicyTransformerImpl {
         Map<String, EntityAuditActionV2> policyChanges = new HashMap<>();
         for (EntityAuditEventV2 event : events) {
             if (POLICY_ENTITY_TYPE.equals(event.getTypeName()) && !policyChanges.containsKey(event.getEntityId())) {
+                if (auditEventToDeltaChangeType.get(event.getAction()) == null) {
+                    LOG.warn("PolicyDelta: {}: No delta type found for audit_event={} guid={}", serviceName, event.getAction(), event.getEntityId());
+                    continue;
+                }
                 policyChanges.put(event.getEntityId(), event.getAction());
             }
         }
