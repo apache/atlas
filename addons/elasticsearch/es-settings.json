@@ -141,8 +141,7 @@
     "tokenizer": {
       "atlan_path_tokenizer": {
         "type": "path_hierarchy",
-        "delimiter": "/",
-        "skip": "2"
+        "delimiter": "/"
       },
       "atlan_tokenizer_v2": {
         "pattern": "( |_|-|/|@|,|;|$|#|&|\"|\\.|\\(|\\)|\\[|\\]|\\{|\\}|:)",
