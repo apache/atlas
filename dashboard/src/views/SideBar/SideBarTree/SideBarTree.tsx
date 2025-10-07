@@ -193,44 +193,32 @@ const CustomContent = forwardRef(function CustomContent(
     handleSelection(event);
   };
 
+  const labelProps = isValidElement(props.label)
+  ? (props.label.props as CustomContentRootProps)
+  : undefined;
+
   return (
     <CustomContentRoot
       className={clsx(className, classes.root, {
         "Mui-expanded": expanded,
         "Mui-selected":
           (isValidElement(props.label) &&
-            (props.label.props.selectedNodeType === props.label.props.node ||
-              props.label.props.selectedNodeTag === props.label.props.node ||
-              props.label.props.selectedNodeRelationship ===
-                props.label.props.node ||
-              props.label.props.selectedNodeBM === props.label.props.node)) ||
+            (labelProps?.selectedNodeType === labelProps?.node ||
+              labelProps?.selectedNodeTag === labelProps?.node ||
+              labelProps?.selectedNodeRelationship ===
+                labelProps?.node ||
+              labelProps?.selectedNodeBM === labelProps?.node)) ||
           selected,
         "Mui-focused": focused,
         "Mui-disabled": disabled,
       })}
       sx={{ position: "relative" }}
       // selectedNode={props.label.props.selectedNode}
-      selectedNodeType={
-        isValidElement(props.label)
-          ? props.label.props.selectedNodeType
-          : undefined
-      }
-      selectedNodeTag={
-        isValidElement(props.label)
-          ? props.label.props.selectedNodeTag
-          : undefined
-      }
-      selectedNodeRelationship={
-        isValidElement(props.label)
-          ? props.label.props.selectedNodeRelationship
-          : undefined
-      }
-      selectedNodeBM={
-        isValidElement(props.label)
-          ? props.label.props.selectedNodeBM
-          : undefined
-      }
-      node={isValidElement(props.label) ? props.label.props.node : undefined}
+      selectedNodeType={labelProps?.selectedNodeType}
+      selectedNodeTag={labelProps?.selectedNodeTag}
+      selectedNodeRelationship={labelProps?.selectedNodeRelationship}
+      selectedNodeBM={labelProps?.selectedNodeBM}
+      node={labelProps?.node}
       onClick={(e) => {
         handleClick(e);
       }}
