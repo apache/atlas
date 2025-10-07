@@ -1850,12 +1850,12 @@ public abstract class DeleteHandlerV1 {
         GraphTraversal<Edge, Map<String, Object>> edgeTraversal;
 
         // Create the appropriate directional traversal
-        if (direction.equals(Direction.OUT)) {
+        if (AtlasEdgeDirection.OUT.equals(direction)) {
             edgeTraversal = ((AtlasJanusGraph) graph).V(assetVertex.getId())
                     .outE(PROCESS_EDGE_LABELS)
                     .hasId(P.not(P.within(exclusionList)))
                     .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE);
-        } else if (direction.equals(Direction.IN)) {
+        } else if (AtlasEdgeDirection.IN.equals(direction)) {
             edgeTraversal = ((AtlasJanusGraph) graph).V(assetVertex.getId())
                     .inE(PROCESS_EDGE_LABELS)
                     .hasId(P.not(P.within(exclusionList)))
