@@ -192,7 +192,7 @@ const Row = ({
   );
 };
 
-const DraggableTableHeader = ({ header }: { header: any }) => {
+const DraggableTableHeader = ({ header, isEmptyRows }: { header: any; isEmptyRows?: boolean }) => {
   const { attributes, isDragging, listeners, setNodeRef, transform } =
     useSortable({
       id: header.column.id
@@ -204,10 +204,11 @@ const DraggableTableHeader = ({ header }: { header: any }) => {
     transform: CSS.Translate.toString(transform),
     transition: "width transform 0.2s ease-in-out",
     whiteSpace: "nowrap",
-    width:
-      header.column.columnDef?.width != undefined
-        ? header.column.columnDef?.width
-        : header.column.getSize(),
+    width: isEmptyRows
+      ? undefined
+      : header.column.columnDef?.width != undefined
+      ? header.column.columnDef?.width
+      : header.column.getSize(),
     zIndex: isDragging ? 1 : 0
   };
 
@@ -221,14 +222,9 @@ const DraggableTableHeader = ({ header }: { header: any }) => {
     >
       {header.isPlaceholder ? null : (
         <div
-          className={
+          className={`${
             header.column.getCanSort() ? "cursor-pointer select-none" : ""
-          }
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.125rem"
-          }}
+          } table-header-wrap`}
           onClick={header.column.getToggleSortingHandler()}
           title={
             header.column.getCanSort()
@@ -241,10 +237,7 @@ const DraggableTableHeader = ({ header }: { header: any }) => {
           }
         >
           <span
-            style={{
-              display: "inline-block",
-              lineHeight: "20px"
-            }}
+            className="table-header-text"
             {...attributes}
             {...listeners}
           >
@@ -416,6 +409,9 @@ const TableLayout: FC<TableProps> = ({
   currentParams.forEach((value, key) => {
     params[key] = value;
   });
+  // Total number of visible table columns including selection/expand controls
+  const totalVisibleColumns =
+    (showRowSelection ? 1 : 0) + (expandRow ? 1 : 0) + columnOrder.length;
   const {
     getHeaderGroups,
     getRowModel,
@@ -635,8 +631,12 @@ const TableLayout: FC<TableProps> = ({
                     ? "has-expanded-rows"
                     : ""
                 }`}
-                sx={{ tableLayout: "fixed", width: "100%" }}
+                sx={{
+                  tableLayout: memoizedData.length > 0 ? "fixed" : "auto",
+                  width: "100%"
+                }}
               >
+                {/* remove dynamic colgroup for empty state */}
                 {!isFetching && (
                   <TableHead>
                     {getHeaderGroups().map((headerGroup) => (
@@ -667,6 +667,7 @@ const TableLayout: FC<TableProps> = ({
                               <DraggableTableHeader
                                 key={header.id}
                                 header={header}
+                                isEmptyRows={!isFetching && memoizedData.length === 0}
                               />
                             )
                           )}
@@ -680,7 +681,7 @@ const TableLayout: FC<TableProps> = ({
                     <TableRowsLoader rowsNum={10} />
                   ) : memoizedData.length === 0 && isFetching == false ? (
                     <TableRow>
-                      <TableCell colSpan={columns.length + 1}>
+                      <TableCell colSpan={Math.max(1, totalVisibleColumns)}>
                         <Stack textAlign="center">
                           <Typography fontWeight="600" color="text.secondary">
                             {emptyText}
