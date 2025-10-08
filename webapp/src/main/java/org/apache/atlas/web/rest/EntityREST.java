@@ -43,6 +43,7 @@ import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.*;
+import org.apache.atlas.repository.store.graph.v2.repair.AtlasRepairAttributeService;
 import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -109,14 +110,16 @@ public class EntityREST {
     private final ESBasedAuditRepository  esBasedAuditRepository;
     private final EntityGraphRetriever entityGraphRetriever;
     private final EntityMutationService entityMutationService;
+    private final AtlasRepairAttributeService repairAttributeService;
 
     @Inject
-    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository, EntityGraphRetriever retriever, EntityMutationService entityMutationService) {
+    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository, EntityGraphRetriever retriever, EntityMutationService entityMutationService, AtlasRepairAttributeService repairAttributeService) {
         this.typeRegistry      = typeRegistry;
         this.entitiesStore     = entitiesStore;
         this.esBasedAuditRepository = esBasedAuditRepository;
         this.entityGraphRetriever = retriever;
         this.entityMutationService = entityMutationService;
+        this.repairAttributeService = repairAttributeService;
     }
 
     /**
@@ -1850,6 +1853,38 @@ public class EntityREST {
             repairIndex.restoreByIds(guids);
         } catch (Exception e) {
             LOG.error("Exception while repairEntityIndexBulk ", e);
+            throw new AtlasBaseException(e);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Repair attributes for the entity GUID.
+     * @param guids
+     * @throws AtlasBaseException
+     */
+
+    @POST
+    @Path("/guid/bulk/repairattributes")
+    public void repairEntityAttributesBulk(Set<String> guids, @QueryParam("repairType") String repairType, @QueryParam("repairAttributeName") String repairAttributeName) throws AtlasBaseException {
+
+        Servlets.validateQueryParamLength("repairType", repairType);
+        Servlets.validateQueryParamLength("repairAttributeName", repairAttributeName);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_REPAIR_INDEX), "Admin Repair Attributes");
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairEntityAttributesBulk(" + guids.size() + ")");
+            }
+
+            repairAttributeService.repairAttributes(repairAttributeName, repairType, guids);
+
+        } catch (Exception e) {
+            LOG.error("Exception while repairEntityAttributesBulk ", e);
             throw new AtlasBaseException(e);
         } finally {
             AtlasPerfTracer.log(perf);
