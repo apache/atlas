@@ -293,14 +293,14 @@ public class EntityAuthorizer {
         for (String relatedAttribute : relatedAttributes) {
             Object attrValue = entity.getAttribute(relatedAttribute);
             if (attrValue != null) {
-                LOG.info("ABAC_AUTH: Attribute found in entity: {}", relatedAttribute);
+                LOG.info("ABAC_AUTH: Attribute found in entity attr={} entityId={}", relatedAttribute, entity.getAttribute(ATTR_QUALIFIED_NAME));
                 if (attrValue instanceof Collection) {
                     entityAttributeValues.addAll((Collection<? extends String>) attrValue);
                 } else {
                     entityAttributeValues.add(String.valueOf(attrValue));
                 }
             } else if (vertex != null) {
-                LOG.info("ABAC_AUTH: Attribute not found in entity, checking vertex for {}", relatedAttribute);
+                LOG.info("ABAC_AUTH: Attribute not found in entity, checking vertex attr={} entityId={}", relatedAttribute, entity.getAttribute(ATTR_QUALIFIED_NAME));
                 // try fetching from vertex
                 Collection<?> values = vertex.getPropertyValues(relatedAttribute, String.class);
                 for (Object value : values) {
