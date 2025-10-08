@@ -119,14 +119,14 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         String state = vertex.getProperty(STATE_PROPERTY_KEY, String.class);
 
         if (DELETED.name().equals(state)) {
-            //  To allow product restoration but block all other updates if the product is archived
+            //  To allow product restoration and update on daapLineageStatus but block all other updates if the product is archived
             boolean isBeingRestored = false;
 
             if (context != null && context.getEntitiesToRestore() != null) {
                 isBeingRestored = context.getEntitiesToRestore().contains(vertex);
             }
 
-            if (!isBeingRestored) {
+            if (!isBeingRestored && !entity.hasAttribute(DAAP_LINEAGE_STATUS_ATTR)) {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot update DataProduct that is Archived!");
             }
         }
