@@ -2,6 +2,7 @@ package org.apache.atlas.repository.store.graph.v2.repair;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -22,11 +23,14 @@ public class RemoveInvalidGuidsRepairStrategy implements AtlasRepairAttributeStr
 
     private final TransactionInterceptHelper transactionInterceptHelper;
 
-    private static final String REPAIR_TYPE = "REMOVE_INVALID_OUTPUT_PORT_GUIDS";
 
-    public RemoveInvalidGuidsRepairStrategy(EntityGraphRetriever entityRetriever, TransactionInterceptHelper transactionInterceptHelper) {
+    private static final String REPAIR_TYPE = "REMOVE_INVALID_OUTPUT_PORT_GUIDS";
+    private AtlasGraph graph;
+
+    public RemoveInvalidGuidsRepairStrategy(EntityGraphRetriever entityRetriever, TransactionInterceptHelper transactionInterceptHelper, AtlasGraph graph) {
         this.entityRetriever = entityRetriever;
         this.transactionInterceptHelper = transactionInterceptHelper;
+        this.graph = graph;
     }
 
     @Override
@@ -108,7 +112,7 @@ public class RemoveInvalidGuidsRepairStrategy implements AtlasRepairAttributeStr
             List<String> invalidGuids = new ArrayList<>();
 
             for (String guid : outputPortGuids) {
-                AtlasVertex portVertex = entityRetriever.getEntityVertex(guid);
+                AtlasVertex portVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
                 if (portVertex != null) {
                     validGuids.add(guid);
                 } else {
