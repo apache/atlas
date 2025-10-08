@@ -11,6 +11,7 @@ import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +79,9 @@ public class EntityAuthorizer {
     private static AtlasAccessResult evaluateABACPoliciesInMemory(List<RangerPolicy> abacPolicies, AtlasEntityHeader entity) {
         AtlasAccessResult result = new AtlasAccessResult(false);
 
-        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entity.getGuid());
+        // might have to fetch vertex when support for more attributes is added, so not removing the argument but setting to null for now
+        AtlasVertex vertex =  null; // AtlasGraphUtilsV2.findByGuid(entity.getGuid());
+        LOG.info("ABAC_AUTH: Attributes present in entity={} attrs={}", entity.getAttribute(ATTR_QUALIFIED_NAME), entity.getAttributes() == null ? "null" : entity.getAttributes().keySet());
 
         for (RangerPolicy policy : abacPolicies) {
             boolean matched = false;
@@ -293,18 +296,20 @@ public class EntityAuthorizer {
         for (String relatedAttribute : relatedAttributes) {
             Object attrValue = entity.getAttribute(relatedAttribute);
             if (attrValue != null) {
-                LOG.info("ABAC_AUTH: Attribute found in entity attr={} entityId={}", relatedAttribute, entity.getAttribute(ATTR_QUALIFIED_NAME));
+                LOG.info("ABAC_AUTH: Attribute found in entity attr={} qn={}", relatedAttribute, entity.getAttribute(ATTR_QUALIFIED_NAME));
                 if (attrValue instanceof Collection) {
                     entityAttributeValues.addAll((Collection<? extends String>) attrValue);
                 } else {
                     entityAttributeValues.add(String.valueOf(attrValue));
                 }
             } else if (vertex != null) {
-                LOG.info("ABAC_AUTH: Attribute not found in entity, checking vertex attr={} entityId={}", relatedAttribute, entity.getAttribute(ATTR_QUALIFIED_NAME));
                 // try fetching from vertex
                 Collection<?> values = vertex.getPropertyValues(relatedAttribute, String.class);
                 for (Object value : values) {
                     entityAttributeValues.add(String.valueOf(value));
+                }
+                if (CollectionUtils.isNotEmpty(values)) {
+                    LOG.info("ABAC_AUTH: Attribute not found in entity, checking vertex attr={} qn={} value={}", relatedAttribute, entity.getAttribute(ATTR_QUALIFIED_NAME), values);
                 }
             }
         }
