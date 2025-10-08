@@ -69,6 +69,23 @@
   width: auto !important;
 }
 
+/* Ensure the content wrapper inside header spans full cell width */
+.table-header-cell > div,
+.table-header-wrap {
+  display: flex;
+  width: 100%;
+  min-width: 0; /* allow flex children to shrink instead of overflowing */
+}
+
+/* Header text wrapper to avoid inline styles in JSX */
+.table-header-text {
+  display: flex;
+  align-items: center;
+  line-height: 20px;
+  width: 100%;
+  min-width: 0;
+}
+
 /* table-pagination */
 
 .table-pagination {
