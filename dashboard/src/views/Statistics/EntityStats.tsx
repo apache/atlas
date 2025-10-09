@@ -168,8 +168,6 @@ const EntityStats = ({
         shellEntityCount += intVal;
       }
 
-      intVal = numberFormatWithComma(intVal);
-
       if (stats[key]) {
         stats[key][type] = intVal;
       } else {
@@ -360,10 +358,10 @@ const EntityStats = ({
                         }
                       }}
                     >
-                      <TableCell>{`${key} (${
-                        Number(!isEmpty(value.active) ? value.active : 0) +
-                        Number(!isEmpty(value.deleted) ? value.deleted : 0)
-                      })`}</TableCell>
+                      <TableCell>{`${key} (${numberFormatWithComma(
+                        Number(value?.active ?? 0) +
+                          Number(value?.deleted ?? 0)
+                      )})`}</TableCell>
                       <TableCell>
                         <LightTooltip
                           title={`Search for active entities of type '${key}'`}
@@ -376,7 +374,9 @@ const EntityStats = ({
                             size="small"
                             color="primary"
                           >
-                            {!isEmpty(value.active) ? value.active : 0}
+                              {numberFormatWithComma(
+                                Number(!isEmpty(value.active) ? value.active : 0)
+                              )}
                           </CustomButton>
                         </LightTooltip>
                       </TableCell>
@@ -394,11 +394,13 @@ const EntityStats = ({
                               color="error"
                               size="small"
                             >
-                              {value.deleted}
+                              {numberFormatWithComma(
+                                Number(!isEmpty(value.deleted) ? value.deleted : 0)
+                              )}
                             </CustomButton>
                           </LightTooltip>
                         ) : (
-                          0
+                          numberFormatWithComma(0)
                         )}
                       </TableCell>
                       <TableCell>
@@ -415,11 +417,13 @@ const EntityStats = ({
                               size="small"
                               color="error"
                             >
-                              {value.shell}
+                              {numberFormatWithComma(
+                                Number(!isEmpty(value.shell) ? value.shell : 0)
+                              )}
                             </CustomButton>
                           </LightTooltip>
                         ) : (
-                          0
+                          numberFormatWithComma(0)
                         )}
                       </TableCell>
                     </TableRow>
