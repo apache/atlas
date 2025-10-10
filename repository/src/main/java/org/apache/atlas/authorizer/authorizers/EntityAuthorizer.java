@@ -80,6 +80,7 @@ public class EntityAuthorizer {
         AtlasAccessResult result = new AtlasAccessResult(false);
 
         // don't need to fetch vertex for indexsearch response scrubbing as it already has the required attributes
+        // setting vertex to null here as usage is already with a check for null possibility
         AtlasVertex vertex =  entity.getDocId() == null ? AtlasGraphUtilsV2.findByGuid(entity.getGuid()) : null;
 
         for (RangerPolicy policy : abacPolicies) {
