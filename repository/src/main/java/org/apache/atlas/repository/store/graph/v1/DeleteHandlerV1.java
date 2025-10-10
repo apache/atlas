@@ -67,6 +67,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -1853,40 +1854,26 @@ public abstract class DeleteHandlerV1 {
         // Create the appropriate directional traversal
         if (AtlasEdgeDirection.OUT.equals(direction)) {
             edgeTraversal = ((AtlasJanusGraph) graph).V(assetVertex.getId())
-                    .outE(PROCESS_EDGE_LABELS)
-                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE);
+                    .outE(PROCESS_EDGE_LABELS);
         } else if (AtlasEdgeDirection.IN.equals(direction)) {
             edgeTraversal = ((AtlasJanusGraph) graph).V(assetVertex.getId())
-                    .inE(PROCESS_EDGE_LABELS)
-                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE);
+                    .inE(PROCESS_EDGE_LABELS);
         } else{
             edgeTraversal = ((AtlasJanusGraph) graph).V(assetVertex.getId())
-                    .bothE(PROCESS_EDGE_LABELS)
-                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE);
+                    .bothE(PROCESS_EDGE_LABELS);
         }
 
 
-        List<Map<String, Object>> edgeList = edgeTraversal.project("id", HAS_LINEAGE)
-                .by(id())
-                .by(outV().values(HAS_LINEAGE))
-                .toList();
-
-        for (Map<String, Object> edge : edgeList) {
-            Object edgeId = edge.get("id");
-            String edgeIdStr = (edgeId != null) ? edgeId.toString() : "";
-            Boolean outVHasLineage = edge.get(HAS_LINEAGE) != null ? (Boolean) edge.get(HAS_LINEAGE) : false;
-
-            // Skip if in deleted list
-            if (exclusionList.contains(edgeIdStr)){
-                continue;
-            }
-
-            // Check if this edge has lineage
-            if (Boolean.TRUE.equals(outVHasLineage)) {
-                return true;
-            }
-        }
-        return false;
+        return edgeTraversal
+                .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                .has(RELATIONSHIP_GUID_PROPERTY_KEY)
+                // Exclude edges by id; prefer using actual edge-id objects if possible.
+                .filter(__.id().is(P.without(exclusionList)))
+                // Check lineage on the edge's out-vertex
+                .filter(__.outV().has("__hasLineage", true))
+                .limit(1)
+                .tryNext()
+                .isPresent();
     }
 
     private boolean updateAssetHasLineageStatusWithOUTDirection(AtlasVertex assetVertex, AtlasEdge currentEdge, Set<String> exclusionList) {
