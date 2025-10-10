@@ -31,7 +31,7 @@ on:
       - tagscanarymerge
       - fixlabels
       - interceptapis
-      - fix-pg-prod-cm-soft-ref
+      - mlh-1240-improve-cm-refresh-master
 
 jobs:
   build:

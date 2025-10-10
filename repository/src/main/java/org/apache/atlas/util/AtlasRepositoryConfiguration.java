@@ -46,7 +46,7 @@ public class AtlasRepositoryConfiguration {
     public  static final String  AUDIT_EXCLUDED_OPERATIONS                              = "atlas.audit.excludes";
     public  static final String  SEPARATOR                                              = ":";
 
-    private static final Integer DEFAULT_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS = Integer.valueOf(15);
+    private static final Integer DEFAULT_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS = Integer.valueOf(5);
     private static final String  CONFIG_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS  = "atlas.server.type.update.lock.max.wait.time.seconds";
     private static final String  JANUS_GRAPH_DATABASE_IMPLEMENTATION_CLASS         = "org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase";
     private static final String  DEFAULT_GRAPH_DATABASE_IMPLEMENTATION_CLASS       = JANUS_GRAPH_DATABASE_IMPLEMENTATION_CLASS;
