@@ -162,7 +162,7 @@ public class AtlasMetricsUtil {
             partitionStat.incrFailedMessageCount();
         }
 
-        partitionStat.incrProcessedMessageCount();
+        partitionStat.incrProcessedMessageCount(stats.timeTakenMs);
         partitionStat.setLastMessageProcessedTime(messagesProcessed.getLastIncrTime().toEpochMilli());
     }
 
@@ -192,6 +192,7 @@ public class AtlasMetricsUtil {
                 tpDetails.put("failedMessageCount", tpStat.failedMessageCount);
                 tpDetails.put("lastMessageProcessedTime", tpStat.lastMessageProcessedTime);
                 tpDetails.put("processedMessageCount", tpStat.processedMessageCount);
+                tpDetails.put("avgProcessingTime", tpStat.getAvgProcessingTime());
 
                 LOG.debug("Setting failedMessageCount : {} and lastMessageProcessedTime : {} for topic {}-{}", tpStat.failedMessageCount, tpStat.lastMessageProcessedTime, tpStat.topicName, tpStat.partition);
 
@@ -425,6 +426,7 @@ public class AtlasMetricsUtil {
         private       long   lastMessageProcessedTime;
         private       long   failedMessageCount;
         private       long   processedMessageCount;
+        private       long   totalProcessingTimeMs;
 
         public TopicPartitionStat(String topicName, int partition, long startOffset, long currentOffset) {
             this.topicName     = topicName;
@@ -473,8 +475,13 @@ public class AtlasMetricsUtil {
             return processedMessageCount;
         }
 
-        public void incrProcessedMessageCount() {
+        public void incrProcessedMessageCount(long timeTakenMs) {
             this.processedMessageCount++;
+            this.totalProcessingTimeMs += timeTakenMs;
+        }
+
+        public long getAvgProcessingTime() {
+            return processedMessageCount == 0 ? 0 : (totalProcessingTimeMs / processedMessageCount);
         }
     }
 }
