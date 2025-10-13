@@ -360,9 +360,9 @@ public class EntityGraphMapper {
                 } else {
                     diffEntity = new AtlasEntity(restoredEntity.getTypeName());
                     diffEntity.setGuid(restoredEntity.getGuid());
-                    diffEntity.setUpdatedBy(RequestContext.get().getUser());
-                    diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
                 }
+                diffEntity.setUpdatedBy(RequestContext.get().getUser());
+                diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
                 diffEntity.setAttribute(STATE_PROPERTY_KEY, ACTIVE.name());
                 reqContext.cacheDifferentialEntity(diffEntity);
 
