@@ -409,6 +409,7 @@ public class EntityGraphMapper {
                     Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
 
                     if (removedEdges != null && removedEdges.size() > 0) {
+
                         deleteDelegate.getHandler().resetHasLineageOnInputOutputDelete(removedEdges, null);
                     }
 
@@ -3619,6 +3620,8 @@ public class EntityGraphMapper {
 
         return removedEdges;
     }
+
+
 
 
     private AtlasEntityHeader constructHeader(AtlasEntity entity, AtlasVertex vertex, AtlasEntityType entityType) throws AtlasBaseException {

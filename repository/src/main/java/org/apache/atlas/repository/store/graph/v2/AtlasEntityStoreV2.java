@@ -104,8 +104,7 @@ import java.util.stream.Collectors;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
 import static java.lang.Boolean.FALSE;
-import static org.apache.atlas.AtlasConfiguration.ATLAS_DISTRIBUTED_TASK_ENABLED;
-import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
+import static org.apache.atlas.AtlasConfiguration.*;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.authorize.AtlasPrivilege.*;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
@@ -1778,6 +1777,17 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
+    private void sendvertexIdsForHaslineageCalculation(Set<String> vertexIds) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("sendvertexIdsForHaslineageCalculation");
+
+        try {
+            AtlasDistributedTaskNotification notification = taskNotificationSender.createHasLineageCalculationTasks(vertexIds.stream().toList());
+            taskNotificationSender.send(notification);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
     private void checkAndCreateProcessRelationshipsCleanupTaskNotification(AtlasEntityType entityType, AtlasVertex vertex) {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("checkAndCreateAtlasDistributedTaskNotification");
         try {
@@ -1834,7 +1844,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                         String guidVertex = AtlasGraphUtilsV2.getIdFromVertex(vertex);
 
-                        if(ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()) {
+                        if(ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean() && ENABLE_RELATIONSHIP_CLEANUP.getBoolean()) {
                             checkAndCreateProcessRelationshipsCleanupTaskNotification(entityType, vertex);
                         }
 
@@ -2185,7 +2195,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                 String typeName = getTypeName(vertex);
 
-                if(ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()) {
+                if(ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean() && ENABLE_RELATIONSHIP_CLEANUP.getBoolean()) {
                     checkAndCreateProcessRelationshipsCleanupTaskNotification(typeRegistry.getEntityTypeByName(typeName), vertex);
                 }
 
@@ -2230,12 +2240,67 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             for (AtlasEntityHeader entity : req.getUpdatedEntities()) {
                 response.addEntity(UPDATE, entity);
             }
+        if (SEND_HASLINEAGE_VERTICES.getBoolean() && ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()) {
+            Set<String> vertexIds = getRemovedInputOutputVertices();
+            //Batch the vertexIds and send notification
+            if (vertexIds != null && !vertexIds.isEmpty()) {
+                List<String> vertexIdList = new ArrayList<>(vertexIds);
+                int batchSize = 1000;
+                for (int i = 0; i < vertexIdList.size(); i += batchSize) {
+                    int endIndex = Math.min(i + batchSize, vertexIdList.size());
+                    List<String> batch = vertexIdList.subList(i, endIndex);
+                    sendvertexIdsForHaslineageCalculation(new HashSet<>(batch));
+                }
+            }
+        }
+
+
         } catch (Exception e) {
             LOG.error("Delete vertices request failed", e);
             throw new AtlasBaseException(e);
         }
 
         return response;
+    }
+
+    private Set<String> getRemovedInputOutputVertices() {
+        Collection<List<Object>> removedElements = RequestContext.get().getRemovedElementsMap().values();
+        Set<String> vertexIds = null;
+
+        if (removedElements != null) {
+            // Collect all edges
+            List<AtlasEdge> removedEdges = removedElements.stream()
+                    .flatMap(List::stream)
+                    .map(x -> (AtlasEdge) x)
+                    .collect(Collectors.toList());
+
+            // Collect all vertex IDs from both sides of edges
+            List<String> allVertexIds = new ArrayList<>();
+            for (AtlasEdge edge : removedEdges) {
+                String outVertexId = edge.getOutVertex().getIdForDisplay();
+                String inVertexId = edge.getInVertex().getIdForDisplay();
+                allVertexIds.add(outVertexId);
+                allVertexIds.add(inVertexId);
+            }
+
+            // Create set of unique vertex IDs
+            vertexIds = new HashSet<>(allVertexIds);
+
+            // Find and print duplicates
+            Set<String> duplicates = new HashSet<>();
+            Set<String> seen = new HashSet<>();
+            for (String vertexId : allVertexIds) {
+                if (!seen.add(vertexId)) {
+                    duplicates.add(vertexId);
+                }
+            }
+
+            if (!duplicates.isEmpty()) {
+                LOG.info("Duplicate vertices found in removed edges of size: {}, Total Size: {}", duplicates.size(), allVertexIds.size());
+            }
+        }
+
+        return vertexIds;
     }
 
     private EntityMutationResponse restoreVertices(Collection<AtlasVertex> restoreCandidates) throws AtlasBaseException {

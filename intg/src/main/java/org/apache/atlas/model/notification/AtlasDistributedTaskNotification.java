@@ -20,7 +20,8 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasDistributedTaskNotification {
     public enum AtlasTaskType {
-        CLEANUP_ARCHIVED_RELATIONSHIPS
+        CLEANUP_ARCHIVED_RELATIONSHIPS,
+        CALCULATE_HAS_LINEAGE
     }
     protected AtlasTaskType taskType;
     protected Map<String, Object> parameters;
