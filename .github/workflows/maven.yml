@@ -27,7 +27,13 @@ on:
       - development
       - master
       - staging
-      - mindbodylineage
+      - tagscanary
+      - tagscanarymerge
+      - fixlabels
+      - interceptapis
+      - revert-custom-metadata-changes
+      - refactorlineage
+      - fix-pg-prod-cm-soft-ref
 
 jobs:
   build:

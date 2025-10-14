@@ -1685,77 +1685,77 @@ public abstract class DeleteHandlerV1 {
     public void resetHasLineageOnInputOutputDelete(Collection<AtlasEdge> removedEdges, AtlasVertex deletedVertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("resetHasLineageOnInputOutputDelete");
 
-//        for (AtlasEdge atlasEdge : removedEdges) {
-//
-//            boolean isOutputEdge = PROCESS_OUTPUTS.equals(atlasEdge.getLabel());
-//
-//            AtlasVertex assetVertex = atlasEdge.getInVertex();
-//            String assetEdgeLabel = getLabel(getGuid(assetVertex), atlasEdge.getLabel());
-//
-//            boolean assetLabelPairAlreadyProcessed = RequestContext.get().isEdgeLabelAlreadyProcessed(assetEdgeLabel);
-//
-//            if (!assetLabelPairAlreadyProcessed) {
-//                RequestContext.get().addEdgeLabel(assetEdgeLabel);
-//                if (getStatus(assetVertex) == ACTIVE && !assetVertex.equals(deletedVertex)) {
-//                    updateAssetHasLineageStatus(assetVertex, atlasEdge, removedEdges);
-//                }
-//            }
-//
-//            AtlasVertex processVertex = atlasEdge.getOutVertex();
-//            String processId = getGuid(processVertex);
-//            String edgeLabel = isOutputEdge ? PROCESS_OUTPUTS : PROCESS_INPUTS;
-//            String processEdgeLabel = getLabel(processId, edgeLabel);
-//            boolean processLabelPairAlreadyProcessed = RequestContext.get().isEdgeLabelAlreadyProcessed(processEdgeLabel);
-//
-//            if (processLabelPairAlreadyProcessed) {
-//                continue;
-//            }
-//
-//            RequestContext.get().addEdgeLabel(processEdgeLabel);
-//
-//                if (getStatus(processVertex) == ACTIVE && !processVertex.equals(deletedVertex)) {
-//                Iterator<AtlasEdge> edgeIterator = GraphHelper.getActiveEdges(processVertex, edgeLabel, AtlasEdgeDirection.BOTH);
-//
-//                boolean activeEdgeFound = false;
-//
-//                while (edgeIterator.hasNext()) {
-//                    AtlasEdge edge = edgeIterator.next();
-//                    if (!removedEdges.contains(edge)) {
-//                        AtlasVertex relatedAssetVertex = edge.getInVertex();
-//
-//                        if (getStatus(relatedAssetVertex) == ACTIVE) {
-//                            activeEdgeFound = true;
-//                            break;
-//                        }
-//                    }
-//                }
-//
-//                if (!activeEdgeFound) {
-//                    AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, false);
-//
-//                    String oppositeEdgeLabel = isOutputEdge ? PROCESS_INPUTS : PROCESS_OUTPUTS;
-//
-//                    processEdgeLabel = getLabel(processId, oppositeEdgeLabel);
-//                    processLabelPairAlreadyProcessed = RequestContext.get().isEdgeLabelAlreadyProcessed(processEdgeLabel);
-//
-//                    if (processLabelPairAlreadyProcessed) {
-//                        continue;
-//                    }
-//                    RequestContext.get().addEdgeLabel(processEdgeLabel);
-//
-//                    Iterator<AtlasEdge> processEdgeIterator = GraphHelper.getActiveEdges(processVertex, oppositeEdgeLabel, AtlasEdgeDirection.BOTH);
-//
-//                    while (processEdgeIterator.hasNext()) {
-//                        AtlasEdge edge = processEdgeIterator.next();
-//
-//                        if (!removedEdges.contains(edge)) {
-//                            AtlasVertex relatedAssetVertex = edge.getInVertex();
-//                            updateAssetHasLineageStatus(relatedAssetVertex, edge, removedEdges);
-//                        }
-//                    }
-//                }
-//            }
-//        }
+        for (AtlasEdge atlasEdge : removedEdges) {
+
+            boolean isOutputEdge = PROCESS_OUTPUTS.equals(atlasEdge.getLabel());
+
+            AtlasVertex assetVertex = atlasEdge.getInVertex();
+            String assetEdgeLabel = getLabel(getGuid(assetVertex), atlasEdge.getLabel());
+
+            boolean assetLabelPairAlreadyProcessed = RequestContext.get().isEdgeLabelAlreadyProcessed(assetEdgeLabel);
+
+            if (!assetLabelPairAlreadyProcessed) {
+                RequestContext.get().addEdgeLabel(assetEdgeLabel);
+                if (getStatus(assetVertex) == ACTIVE && !assetVertex.equals(deletedVertex)) {
+                    updateAssetHasLineageStatus(assetVertex, atlasEdge, removedEdges);
+                }
+            }
+
+            AtlasVertex processVertex = atlasEdge.getOutVertex();
+            String processId = getGuid(processVertex);
+            String edgeLabel = isOutputEdge ? PROCESS_OUTPUTS : PROCESS_INPUTS;
+            String processEdgeLabel = getLabel(processId, edgeLabel);
+            boolean processLabelPairAlreadyProcessed = RequestContext.get().isEdgeLabelAlreadyProcessed(processEdgeLabel);
+
+            if (processLabelPairAlreadyProcessed) {
+                continue;
+            }
+
+            RequestContext.get().addEdgeLabel(processEdgeLabel);
+
+                if (getStatus(processVertex) == ACTIVE && !processVertex.equals(deletedVertex)) {
+                Iterator<AtlasEdge> edgeIterator = GraphHelper.getActiveEdges(processVertex, edgeLabel, AtlasEdgeDirection.BOTH);
+
+                boolean activeEdgeFound = false;
+
+                while (edgeIterator.hasNext()) {
+                    AtlasEdge edge = edgeIterator.next();
+                    if (!removedEdges.contains(edge)) {
+                        AtlasVertex relatedAssetVertex = edge.getInVertex();
+
+                        if (getStatus(relatedAssetVertex) == ACTIVE) {
+                            activeEdgeFound = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!activeEdgeFound) {
+                    AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, false);
+
+                    String oppositeEdgeLabel = isOutputEdge ? PROCESS_INPUTS : PROCESS_OUTPUTS;
+
+                    processEdgeLabel = getLabel(processId, oppositeEdgeLabel);
+                    processLabelPairAlreadyProcessed = RequestContext.get().isEdgeLabelAlreadyProcessed(processEdgeLabel);
+
+                    if (processLabelPairAlreadyProcessed) {
+                        continue;
+                    }
+                    RequestContext.get().addEdgeLabel(processEdgeLabel);
+
+                    Iterator<AtlasEdge> processEdgeIterator = GraphHelper.getActiveEdges(processVertex, oppositeEdgeLabel, AtlasEdgeDirection.BOTH);
+
+                    while (processEdgeIterator.hasNext()) {
+                        AtlasEdge edge = processEdgeIterator.next();
+
+                        if (!removedEdges.contains(edge)) {
+                            AtlasVertex relatedAssetVertex = edge.getInVertex();
+                            updateAssetHasLineageStatus(relatedAssetVertex, edge, removedEdges);
+                        }
+                    }
+                }
+            }
+        }
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
