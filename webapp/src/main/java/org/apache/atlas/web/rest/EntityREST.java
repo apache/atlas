@@ -1696,6 +1696,47 @@ public class EntityREST {
         }
     }
 
+    /**
+     * repairHasLineageByIds API to correct hasLineage attribute for entities by vertex IDs.
+     * This endpoint accepts a list of vertex IDs and repairs the hasLineage flag for both
+     * Process and Asset entities based on their current lineage state.
+     * 
+     * @param vertexIds List of vertex IDs (guids) to repair
+     * @throws AtlasBaseException if repair operation fails
+     */
+    @POST
+    @Path("/repairhaslineagebyids")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
+    public void repairHasLineageByIds(List<String> vertexIds) throws AtlasBaseException {
+        
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairHasLineageByIds(vertexIds count=" + 
+                        (vertexIds != null ? vertexIds.size() : 0) + ")");
+            }
+
+            if (CollectionUtils.isEmpty(vertexIds)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Vertex IDs list cannot be empty");
+            }
+
+            entitiesStore.repairHasLineageByIds(vertexIds);
+
+
+        } catch (AtlasBaseException e) {
+            LOG.error("Failed to repair hasLineage by IDs", e);
+            throw e;
+        } catch (Exception e) {
+            LOG.error("Unexpected error during repairHasLineageByIds", e);
+            throw new AtlasBaseException(e);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
     private boolean hasNoGUIDAndTypeNameAttributes(ClassificationAssociateRequest request) {
         return (request == null || (CollectionUtils.isEmpty(request.getEntityGuids()) &&
                 (CollectionUtils.isEmpty(request.getEntitiesUniqueAttributes()) || request.getEntityTypeName() == null)));

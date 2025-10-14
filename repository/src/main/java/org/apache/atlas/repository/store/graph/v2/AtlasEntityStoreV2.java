@@ -2848,42 +2848,152 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void repairHasLineageForAsset(AtlasHasLineageRequest request) {
-        //supports repairing scenario mentioned here - https://atlanhq.atlassian.net/browse/DG-128?focusedCommentId=20652
-        //Enhanced to support both directions: setting hasLineage false->true and true->false
+    @Override
+    @GraphTransaction
+    public void repairHasLineageByIds(List<String> vertexIds) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageByIds");
 
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageForAssetGetById");
-        AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, request.getAssetGuid());
-        RequestContext.get().endMetricRecord(metricRecorder);
-
-        if (assetVertex == null) {
-            LOG.warn("repairHasLineage: Asset vertex not found for guid: {}", request.getAssetGuid());
+        if (CollectionUtils.isEmpty(vertexIds)) {
+            LOG.warn("repairHasLineageByIds: No guids provided");
             return;
         }
 
+        for (String vertexId : vertexIds) {
+            if (StringUtils.isEmpty(vertexId)) {
+                LOG.warn("repairHasLineageByIds: Skipping empty guid");
+                continue;
+            }
+
+            AtlasVertex entityVertex = graph.getVertex(vertexId);
+            
+            if (entityVertex == null) {
+                LOG.warn("repairHasLineageByIds: Vertex not found for guid: {}", vertexId);
+                continue;
+            }
+
+            String typeName = getTypeName(entityVertex);
+            AtlasEntityType type = typeRegistry.getEntityTypeByName(typeName);
+            
+            if (type == null) {
+                LOG.warn("repairHasLineageByIds: TypeName is empty for vertexId: {}", vertexId);
+                continue;
+            }
+
+            // Check if the entity is a Process type
+            if (PROCESS_ENTITY_TYPE.equals(typeName) || type.isSubTypeOf(PROCESS_ENTITY_TYPE)) {
+                // For Process: check if it has at least one input vertex and one output vertex active
+                repairHasLineageForProcess(vertexId, entityVertex);
+            } else {
+                // For Asset: follow the repairHasLineageForAsset logic
+                repairHasLineageForAssetByVertex(vertexId, entityVertex);
+            }
+        }
+
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private void repairHasLineageForProcess(String vertexId, AtlasVertex processVertex) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageForProcess");
+
+        try {
+            // Get Gremlin traversal source for native graph operations
+            GraphTraversalSource g = ((AtlasJanusGraph) graph).getGraph().traversal();
+
+            // Check for active input edges with active vertices using graph traversal
+            boolean hasActiveInput = g.V(processVertex.getId())
+                    .outE(PROCESS_INPUTS)
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                    .inV()
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                    .hasNext();
+
+            // Check for active output edges with active vertices using graph traversal
+            boolean hasActiveOutput = g.V(processVertex.getId())
+                    .outE(PROCESS_OUTPUTS)
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                    .inV()
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                    .hasNext();
+
+            boolean shouldHaveLineage = hasActiveInput && hasActiveOutput;
+            boolean currentHasLineage = getEntityHasLineage(processVertex);
+
+            if (currentHasLineage && !shouldHaveLineage) {
+                // Case 1: hasLineage is true but should be false
+                AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, false);
+            } else if (!currentHasLineage && shouldHaveLineage) {
+                // Case 2: hasLineage is false but should be true
+                AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, true);
+            } else {
+                LOG.debug("repairHasLineageByIds: No repair needed for process: {}, hasLineage={}", vertexId, currentHasLineage);
+            }
+        } catch (Exception e) {
+            LOG.error("Failed to use graph traversal for process lineage repair, vertexId: {}", vertexId, e);
+            throw new RuntimeException("Failed to repair hasLineage for process: " + vertexId, e);
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
+    private void repairHasLineageForAssetByVertex(String vertexId, AtlasVertex assetVertex) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageForAssetByVertex");
+
         boolean currentHasLineage = getEntityHasLineage(assetVertex);
         Boolean shouldHaveLineage = checkIfAssetShouldHaveLineage(assetVertex);
+        
         if (shouldHaveLineage == null) {
-            LOG.warn("repairHasLineage: Failed to determine if asset should have lineage for guid: {}", request.getAssetGuid());
+            LOG.warn("repairHasLineageByIds: Failed to determine if asset should have lineage for vertexId: {}", vertexId);
+            RequestContext.get().endMetricRecord(metricRecorder);
             return;
         }
 
         if (currentHasLineage && !shouldHaveLineage) {
             // Case 1: hasLineage is true but should be false
-            metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageSetFalse");
             AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
-            AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE_VALID, true);
-            LOG.info("repairHasLineage: Set hasLineage=false for asset: {}", request.getAssetGuid());
-            RequestContext.get().endMetricRecord(metricRecorder);
+            LOG.info("repairHasLineageByIds: Set hasLineage=false for asset: {}", vertexId);
         } else if (!currentHasLineage && shouldHaveLineage) {
             // Case 2: hasLineage is false but should be true
-            metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageSetTrue");
             AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
-            AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE_VALID, true);
-            LOG.info("repairHasLineage: Set hasLineage=true for asset: {}", request.getAssetGuid());
-            RequestContext.get().endMetricRecord(metricRecorder);
+            LOG.info("repairHasLineageByIds: Set hasLineage=true for asset: {}", vertexId);
         } else {
-            LOG.debug("repairHasLineage: No repair needed for asset: {}, hasLineage={}", request.getAssetGuid(), currentHasLineage);
+            LOG.debug("repairHasLineageByIds: No repair needed for asset: {}, hasLineage={}", vertexId, currentHasLineage);
+        }
+
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private void repairHasLineageForAsset(AtlasHasLineageRequest request) {
+        //supports repairing scenario mentioned here - https://atlanhq.atlassian.net/browse/DG-128?focusedCommentId=20652
+        //Enhanced to support both directions: setting hasLineage false->true and true->false
+
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageForAssetGetById");
+        try {
+            AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, request.getAssetGuid());
+
+            if (assetVertex == null) {
+                LOG.warn("repairHasLineage: Asset vertex not found for guid: {}", request.getAssetGuid());
+                return;
+            }
+
+            boolean currentHasLineage = getEntityHasLineage(assetVertex);
+            Boolean shouldHaveLineage = checkIfAssetShouldHaveLineage(assetVertex);
+            if (shouldHaveLineage == null) {
+                LOG.warn("repairHasLineage: Failed to determine if asset should have lineage for guid: {}", request.getAssetGuid());
+                return;
+            }
+
+            if (currentHasLineage && !shouldHaveLineage) {
+                // Case 1: hasLineage is true but should be false
+                AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
+                LOG.info("repairHasLineage: Set hasLineage=false for asset: {}", request.getAssetGuid());
+            } else if (!currentHasLineage && shouldHaveLineage) {
+                // Case 2: hasLineage is false but should be true
+                AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
+            } else {
+                LOG.debug("repairHasLineage: No repair needed for asset: {}, hasLineage={}", request.getAssetGuid(), currentHasLineage);
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
 
