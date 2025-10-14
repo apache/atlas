@@ -2278,7 +2278,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private Set<String> getRemovedInputOutputVertices() {
         Collection<List<Object>> removedElements = RequestContext.get().getRemovedElementsMap().values();
-        Set<String> vertexIds = null;
+        Set<String> vertexIds = new HashSet<>();
 
         if (removedElements != null) {
             // Collect all edges
@@ -2286,6 +2286,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     .flatMap(List::stream)
                     .map(x -> (AtlasEdge) x)
                     .collect(Collectors.toList());
+            LOG.info("{} edges got deleted", removedEdges.size());
 
             // Collect all vertex IDs from both sides of edges
             List<String> allVertexIds = new ArrayList<>();
@@ -2312,6 +2313,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 LOG.info("Duplicate vertices found in removed edges of size: {}, Total Size: {}", duplicates.size(), allVertexIds.size());
             }
         }
+        LOG.info("Sending {} vertexIds", vertexIds.size());
 
         return vertexIds;
     }
