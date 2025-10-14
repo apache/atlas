@@ -1748,6 +1748,19 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             return ret;
         } finally {
+            if (SEND_HASLINEAGE_VERTICES.getBoolean() && ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()) {
+                Set<String> vertexIds = getRemovedInputOutputVertices();
+                //Batch the vertexIds and send notification
+                if (vertexIds != null && !vertexIds.isEmpty()) {
+                    List<String> vertexIdList = new ArrayList<>(vertexIds);
+                    int batchSize = 1000;
+                    for (int i = 0; i < vertexIdList.size(); i += batchSize) {
+                        int endIndex = Math.min(i + batchSize, vertexIdList.size());
+                        List<String> batch = vertexIdList.subList(i, endIndex);
+                        sendvertexIdsForHaslineageCalculation(new HashSet<>(batch));
+                    }
+                }
+            }
             RequestContext.get().endMetricRecord(metric);
 
             AtlasPerfTracer.log(perf);
