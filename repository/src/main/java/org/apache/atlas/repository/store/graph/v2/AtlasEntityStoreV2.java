@@ -2280,7 +2280,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         Collection<List<Object>> removedElements = RequestContext.get().getRemovedElementsMap().values();
         Set<String> vertexIds = new HashSet<>();
 
-        if (removedElements != null) {
+        if (CollectionUtils.isNotEmpty(removedElements)) {
             // Collect all edges
             List<AtlasEdge> removedEdges = removedElements.stream()
                     .flatMap(List::stream)
