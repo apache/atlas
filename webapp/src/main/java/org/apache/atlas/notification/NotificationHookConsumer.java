@@ -708,7 +708,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 }
 
                 if (entities.size() - count > 0) {
-                    LOG.info("preprocess: moved {} hive_process/hive_column_lineage entities to end of list (listSize={}). topic-offset={}, partition={}", entities.size() - count, entities.size(), kafkaMsg.getOffset(), kafkaMsg.getPartition());
+                    LOG.info("preprocess: moved {} hive_process/hive_column_lineage entities to end of list (listSize={}). topic={}, partition={}, offset={}", entities.size() - count, entities.size(), kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset());
                 }
             }
         }
@@ -1555,9 +1555,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                     try {
                         String strMessage = AbstractNotification.getMessageJson(message);
 
-                        LOG.warn("msgProcessingTime={}, msgSize={}, topicOffset={}}", stats.timeTakenMs, strMessage.length(), kafkaMsg.getOffset());
+                        LOG.warn("msgProcessingTime={}, msgSize={}, topic={}, partition={}, offset={}}", stats.timeTakenMs, strMessage.length(), kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset());
 
-                        LARGE_MESSAGES_LOG.warn("{\"msgProcessingTime\":{},\"msgSize\":{},\"topicOffset\":{},\"data\":{}}", stats.timeTakenMs, strMessage.length(), kafkaMsg.getOffset(), strMessage);
+                        LARGE_MESSAGES_LOG.warn("{\"msgProcessingTime\":{},\"msgSize\":{},\"topic\":{},\"partition\":{},\"topicOffset\":{},\"data\":{}}", stats.timeTakenMs, strMessage.length(), kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset(), strMessage);
                     } catch (Throwable t) {
                         LOG.warn("error while recording large message: msgProcessingTime={}, type={}, topic={}, partition={}, offset={}", stats.timeTakenMs, message.getType(), kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset(), t);
                     }
