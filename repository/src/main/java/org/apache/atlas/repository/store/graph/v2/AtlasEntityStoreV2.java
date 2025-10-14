@@ -2297,19 +2297,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             // Create set of unique vertex IDs
             vertexIds = new HashSet<>(allVertexIds);
-
-            // Find and print duplicates
-            Set<String> duplicates = new HashSet<>();
-            Set<String> seen = new HashSet<>();
-            for (String vertexId : allVertexIds) {
-                if (!seen.add(vertexId)) {
-                    duplicates.add(vertexId);
-                }
-            }
-
-            if (!duplicates.isEmpty()) {
-                LOG.info("Duplicate vertices found in removed edges of size: {}, Total Size: {}, sending {} evrtices", duplicates.size(), allVertexIds.size(), vertexIds.size());
-            }
+            LOG.info("Duplicate vertices found in removed edges of size: {}, Total Size: {}, sending {} Vertices", allVertexIds.size()-vertexIds.size(), allVertexIds.size(), vertexIds.size());
         }
 
 
