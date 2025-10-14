@@ -2916,7 +2916,19 @@ public class EntityGraphRetriever {
                     return ret;
                 }
 
-                String typeName = getTypeName(referenceVertex);
+                String typeName = null;
+                try {
+                    typeName = getTypeName(referenceVertex);
+                } catch (IllegalStateException ile) {
+                    String entityVertexId = entityVertex.getIdForDisplay();
+                    String entityGuid = getGuid(entityVertex);
+                    LOG.error("IllegalStateException for vertexId {}, entityGuid {}, GraphHelper.elementExists(referenceVertex) {}",
+                            entityVertexId, entityGuid, GraphHelper.elementExists(referenceVertex));
+                    try {
+                        LOG.error("IllegalStateException GraphHelper.elementExists(referenceVertex) {}", GraphHelper.elementExists(referenceVertex));
+                    } catch (Exception ignored) {}
+                    throw ile;
+                }
 
                 if (StringUtils.isEmpty(typeName)) {
                     LOG.error("typeName not found on edge {} from vertex {} ", edge.getId(), getGuid(entityVertex));
