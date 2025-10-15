@@ -2926,8 +2926,9 @@ public class EntityGraphRetriever {
                             entityVertexId, entityGuid, GraphHelper.elementExists(referenceVertex));
                     if (!GraphHelper.elementExists(referenceVertex)) {
                         return null;
+                    } else {
+                        throw ile;
                     }
-                    throw ile;
                 }
 
                 if (StringUtils.isEmpty(typeName)) {
