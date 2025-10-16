@@ -54,10 +54,10 @@ public class RepairIndex {
 
     private static JanusGraph graph;
     private static AtlanElasticSearchIndex searchIndex;
-    private static EntityMutationService entityMutationService;
+    private EntityMutationService entityMutationService;
 
     public RepairIndex(EntityMutationService entityMutationService) {
-        RepairIndex.entityMutationService = entityMutationService;
+        this.entityMutationService = entityMutationService;
     }
 
     public static void setupGraph() {
@@ -76,11 +76,10 @@ public class RepairIndex {
         return new String[]{ INDEX_NAME_VERTEX_INDEX, INDEX_NAME_EDGE_INDEX};
     }
 
-    private static void reindexVertex(String indexName, IndexSerializer indexSerializer, Set<String> entityGUIDs) throws Exception {
+    private void reindexVertex(String indexName, IndexSerializer indexSerializer, Set<String> entityGUIDs) throws Exception {
         Map<String, Map<String, List<IndexEntry>>> documentsPerStore = new java.util.HashMap<>();
         ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
         StandardJanusGraphTx tx = mgmt.getWrappedTx();
-        BackendTransaction mutator = tx.getTxHandle();
         JanusGraphIndex index = mgmt.getGraphIndex(indexName);
         MixedIndexType indexType = (MixedIndexType) mgmt.getSchemaVertex(index).asIndexType();
 
