@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 import static org.apache.atlas.service.metrics.MetricUtils.getMeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
+import org.apache.atlas.repository.store.graph.v2.utils.MDCScope;
 
 @Service
 public class AtlasObservabilityService {
@@ -97,10 +97,8 @@ public class AtlasObservabilityService {
      * that should NOT be sent to Prometheus.
      */
     public void logErrorDetails(AtlasObservabilityData data, String errorMessage, Throwable throwable) {
-        // Set MDC filter for observability logs
-        MDC.put("filter", "atlas-observability");
-        
-        try {
+        // Use MDCScope for proper MDC management - automatically restores previous state
+        try (MDCScope scope = MDCScope.of("filter", "atlas-observability")) {
             // Log structured data for debugging - goes to ClickHouse
             // This includes traceId, vertexIds, assetGuids for error correlation
             LOG.error("Atlas createOrUpdate error: {} | traceId: {} | assetGuids: {} | vertexIds: {} | error: {}", 
@@ -109,9 +107,6 @@ public class AtlasObservabilityService {
                 data.getAssetGuids(),
                 data.getVertexIds(),
                 throwable != null ? throwable.getMessage() : "unknown");
-        } finally {
-            // Clean up MDC
-            MDC.remove("filter");
         }
     }
     
