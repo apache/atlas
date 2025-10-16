@@ -48,6 +48,9 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.patches.PatchContext;
 import org.apache.atlas.repository.patches.ReIndexPatch;
+import org.apache.atlas.observability.AtlasObservabilityData;
+import org.apache.atlas.observability.AtlasObservabilityService;
+import org.apache.atlas.observability.PayloadAnalyzer;
 import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
@@ -94,6 +97,7 @@ import org.janusgraph.core.JanusGraphException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
@@ -121,7 +125,7 @@ import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFacto
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
 import static org.apache.atlas.type.Constants.*;
-
+import static org.apache.commons.lang.StringUtils.EMPTY;
 
 
 @Component
@@ -150,6 +154,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final ESAliasStore esAliasStore;
     private final IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier;
     private final AtlasDistributedTaskNotificationSender taskNotificationSender;
+    private final AtlasObservabilityService observabilityService;
 
     private static final List<String> RELATIONSHIP_CLEANUP_SUPPORTED_TYPES = Arrays.asList(AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_ASSET_TYPES.getStringArray());
     private static final List<String> RELATIONSHIP_CLEANUP_RELATIONSHIP_LABELS = Arrays.asList(AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_RELATIONSHIP_LABELS.getStringArray());
@@ -159,7 +164,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                               IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement,
                               AtlasRelationshipStore atlasRelationshipStore, FeatureFlagStore featureFlagStore,
                               IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier, AtlasDistributedTaskNotificationSender taskNotificationSender,
-                              EntityGraphRetriever entityRetriever) {
+                              EntityGraphRetriever entityRetriever, AtlasObservabilityService observabilityService) {
 
         this.graph                = graph;
         this.deleteDelegate       = deleteDelegate;
@@ -176,6 +181,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.esAliasStore = new ESAliasStore(graph, entityRetriever);
         this.atlasAlternateChangeNotifier = atlasAlternateChangeNotifier;
         this.taskNotificationSender = taskNotificationSender;
+        this.observabilityService = observabilityService;
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null, entityRetriever);
         } catch (AtlasException e) {
@@ -1630,6 +1636,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
         }
 
+        // Initialize observability data
+        long startTime = System.currentTimeMillis();
+        RequestContext requestContext = RequestContext.get();
+        AtlasObservabilityData observabilityData = new AtlasObservabilityData(
+                requestContext.getTraceId(),
+                requestContext.getRequestContextHeaders().get("x-atlan-agent-id"),
+                requestContext.getClientOrigin()
+        );
+
         AtlasPerfTracer perf = null;
 
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
@@ -1639,7 +1654,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         MetricRecorder metric = RequestContext.get().startMetricRecord("createOrUpdate");
 
         try {
+            // Timing: preCreateOrUpdate (includes validation)
+            long preCreateStart = System.currentTimeMillis();
             final EntityMutationContext context = preCreateOrUpdate(entityStream, entityGraphMapper, isPartialUpdate);
+            long preCreateTime = System.currentTimeMillis() - preCreateStart;
+            observabilityData.setValidationTime(preCreateTime);
 
             // Check if authorized to create entities
             if (!RequestContext.get().isImportInProgress() && !RequestContext.get().isSkipAuthorizationCheck()) {
@@ -1733,16 +1752,56 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
 
 
+            // Timing: Entity processing (includes diff calculation and lineage)
+            long entityProcessingStart = System.currentTimeMillis();
             EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, bulkRequestContext);
+            long entityProcessingTime = System.currentTimeMillis() - entityProcessingStart;
+            observabilityData.setDiffCalcTime(entityProcessingTime);
+            observabilityData.setLineageCalcTime(entityProcessingTime); // Simplified - both happen in mapAttributesAndClassifications
 
             ret.setGuidAssignments(context.getGuidAssignments());
 
+            // Timing: Ingestion (caching)
+            long ingestionStart = System.currentTimeMillis();
             for (AtlasEntity entity: context.getCreatedEntities()) {
                 RequestContext.get().cacheDifferentialEntity(entity);
             }
-            // Notify the change listeners
+            long ingestionTime = System.currentTimeMillis() - ingestionStart;
+            observabilityData.setIngestionTime(ingestionTime);
+            
+            // Timing: Notifications
+            long notificationStart = System.currentTimeMillis();
             entityChangeNotifier.onEntitiesMutated(ret, RequestContext.get().isImportInProgress());
             atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
+            long notificationTime = System.currentTimeMillis() - notificationStart;
+            observabilityData.setNotificationTime(notificationTime);
+            
+            // Timing: Audit logging (simplified - just a small overhead)
+            long auditStart = System.currentTimeMillis();
+            // Audit logging happens automatically in the transaction
+            long auditTime = System.currentTimeMillis() - auditStart;
+            observabilityData.setAuditLogTime(auditTime);
+            
+            // Record observability metrics
+            long endTime = System.currentTimeMillis();
+            observabilityData.setDuration(endTime - startTime);
+            
+            // Analyze payload if available
+            if (entityStream instanceof AtlasEntityStream) {
+                AtlasEntityStream atlasEntityStream = (AtlasEntityStream) entityStream;
+                PayloadAnalyzer payloadAnalyzer = new PayloadAnalyzer(typeRegistry);
+                payloadAnalyzer.analyzePayload(atlasEntityStream.getEntitiesWithExtInfo(), observabilityData);
+            }
+            
+            // Record metrics
+            observabilityService.recordCreateOrUpdateDuration(observabilityData);
+            observabilityService.recordPayloadSize(observabilityData);
+            observabilityService.recordPayloadBytes(observabilityData);
+            observabilityService.recordArrayRelationships(observabilityData);
+            observabilityService.recordArrayAttributes(observabilityData);
+            observabilityService.recordTimingMetrics(observabilityData);
+            observabilityService.recordOperationCount("createOrUpdate", "success");
+            
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== createOrUpdate()");
             }
