@@ -24,6 +24,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.EntityMutationService;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.diskstorage.BackendTransaction;
@@ -36,6 +37,7 @@ import org.janusgraph.graphdb.types.MixedIndexType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +54,11 @@ public class RepairIndex {
 
     private static JanusGraph graph;
     private static AtlanElasticSearchIndex searchIndex;
+    private static EntityMutationService entityMutationService;
+
+    public RepairIndex(EntityMutationService entityMutationService) {
+        RepairIndex.entityMutationService = entityMutationService;
+    }
 
     public static void setupGraph() {
         LOG.info("Initializing graph: ");
@@ -91,6 +98,8 @@ public class RepairIndex {
             }
         }
         searchIndex.restore(documentsPerStore, indexSerializer.getIndexInfoRetriever(tx).get("search"));
+
+        entityMutationService.repairClassificationMappings(new ArrayList<>(entityGUIDs));
     }
 
     private static Set<String> getEntityAndReferenceGuids(String guid, Map<String, AtlasEntity> referredEntities) throws Exception {
