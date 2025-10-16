@@ -7,9 +7,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import static org.apache.atlas.service.metrics.MetricUtils.getMeterRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class AtlasObservabilityService {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasObservabilityService.class);
     private static final String METRIC_COMPONENT = "atlas_observability";
     private final MeterRegistry meterRegistry;
     
@@ -30,8 +33,7 @@ public class AtlasObservabilityService {
     
     public void recordCreateOrUpdateDuration(AtlasObservabilityData data) {
         Timer timer = getOrCreateTimer("createOrUpdate.duration", 
-            "client_origin", data.getXAtlanClientOrigin(),
-            "agent_id", data.getXAtlanAgentId() != null ? data.getXAtlanAgentId() : "unknown");
+            "client_origin", data.getXAtlanClientOrigin());
         
         timer.record(data.getDuration(), TimeUnit.MILLISECONDS);
     }
@@ -86,6 +88,22 @@ public class AtlasObservabilityService {
             "status", status);
         
         counter.increment();
+    }
+    
+    /**
+     * Log detailed observability data for error cases only.
+     * This includes high-cardinality fields like traceId, vertexIds, assetGuids
+     * that should NOT be sent to Prometheus.
+     */
+    public void logErrorDetails(AtlasObservabilityData data, String errorMessage, Throwable throwable) {
+        // Log structured data for debugging - goes to ClickHouse
+        // This includes traceId, vertexIds, assetGuids for error correlation
+        LOG.error("Atlas createOrUpdate error: {} | traceId: {} | assetGuids: {} | vertexIds: {} | error: {}", 
+            errorMessage,
+            data.getTraceId(),
+            data.getAssetGuids(),
+            data.getVertexIds(),
+            throwable != null ? throwable.getMessage() : "unknown");
     }
     
     private Timer getOrCreateTimer(String metricName, String... tags) {

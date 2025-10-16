@@ -6,13 +6,16 @@ Implement comprehensive observability for Atlas `createOrUpdate` operations with
 ## Core Requirements
 
 ### Dashboard Fields Required
-- `trace_id` | `x-atlan-agent-id` | `x-atlan-client-origin` | `timestamp` | `duration`
-- `payload_asset_size` | `payload_request_bytes` | `asset_guid` | `vertex_id`
+- `x-atlan-client-origin` | `timestamp` | `duration`
+- `payload_asset_size` | `payload_request_bytes`
 - `array_relationship_counts` (JSON format: "operationType:relationshipName" -> count)
 - `total_array_relationships` (sum of all array relationship counts)
 - `array_attribute_counts` (JSON format: "attributeName" -> count)
 - `total_array_attributes` (sum of all array attribute counts)
 - `diffCalcTime` | `lineageCalcTime` | `validationTime` | `ingestionTime` | `notificationTime` | `auditLogTime`
+
+### High-Cardinality Fields (Logs Only)
+- `trace_id` | `x-atlan-agent-id` | `asset_guid` | `vertex_id` - Available in ClickHouse logs for error correlation
 
 ## Implementation Phases
 
@@ -46,6 +49,11 @@ Implement comprehensive observability for Atlas `createOrUpdate` operations with
 - **New Class**: `PayloadAnalyzer` - Analyze payload size and array relationships
 - **Modify**: `AtlasEntityStoreV2.createOrUpdate()` - Main instrumentation point
 - **Modify**: `preCreateOrUpdate()` - Capture vertex creation for new entities (lines 1852-1856)
+
+### Cardinality Management
+- **Prometheus Metrics**: Only low-cardinality fields (counts, durations, sizes)
+- **High-Cardinality Fields**: `traceId`, `assetGuids`, `vertexIds` - logged only for error cases
+- **Error Logging**: `AtlasObservabilityService.logErrorDetails()` includes high-cardinality fields for debugging
 
 #### Payload Analysis Requirements
 - Calculate `payloadAssetSize` (count of entities in `AtlasEntitiesWithExtInfo`)

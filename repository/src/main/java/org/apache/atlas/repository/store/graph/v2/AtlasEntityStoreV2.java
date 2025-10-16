@@ -1787,20 +1787,27 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             observabilityData.setDuration(endTime - startTime);
             
             // Analyze payload if available
-            if (entityStream instanceof AtlasEntityStream) {
-                AtlasEntityStream atlasEntityStream = (AtlasEntityStream) entityStream;
-                PayloadAnalyzer payloadAnalyzer = new PayloadAnalyzer(typeRegistry);
-                payloadAnalyzer.analyzePayload(atlasEntityStream.getEntitiesWithExtInfo(), observabilityData);
+            // Record observability metrics (low-cardinality only for Prometheus)
+            try {
+                if (entityStream instanceof AtlasEntityStream) {
+                    AtlasEntityStream atlasEntityStream = (AtlasEntityStream) entityStream;
+                    PayloadAnalyzer payloadAnalyzer = new PayloadAnalyzer(typeRegistry);
+                    payloadAnalyzer.analyzePayload(atlasEntityStream.getEntitiesWithExtInfo(), observabilityData);
+                }
+                
+                // Record metrics (no high-cardinality fields like traceId, vertexIds, assetGuids)
+                observabilityService.recordCreateOrUpdateDuration(observabilityData);
+                observabilityService.recordPayloadSize(observabilityData);
+                observabilityService.recordPayloadBytes(observabilityData);
+                observabilityService.recordArrayRelationships(observabilityData);
+                observabilityService.recordArrayAttributes(observabilityData);
+                observabilityService.recordTimingMetrics(observabilityData);
+                observabilityService.recordOperationCount("createOrUpdate", "success");
+            } catch (Exception e) {
+                // Log error details with high-cardinality fields for debugging
+                observabilityService.logErrorDetails(observabilityData, "Failed to record observability metrics", e);
+                observabilityService.recordOperationCount("createOrUpdate", "error");
             }
-            
-            // Record metrics
-            observabilityService.recordCreateOrUpdateDuration(observabilityData);
-            observabilityService.recordPayloadSize(observabilityData);
-            observabilityService.recordPayloadBytes(observabilityData);
-            observabilityService.recordArrayRelationships(observabilityData);
-            observabilityService.recordArrayAttributes(observabilityData);
-            observabilityService.recordTimingMetrics(observabilityData);
-            observabilityService.recordOperationCount("createOrUpdate", "success");
             
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== createOrUpdate()");
