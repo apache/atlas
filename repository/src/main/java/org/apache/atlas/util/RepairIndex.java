@@ -125,7 +125,8 @@ public class RepairIndex {
             LOG.info(": Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
         }
 
-        entityMutationService.repairClassificationMappings(Collections.singletonList(guid));
+        referencedGUIDs.add(guid);
+        entityMutationService.repairClassificationMappings(new ArrayList<>(referencedGUIDs));
     }
 
     public void restoreByIds(Set<String> guids) throws Exception {
