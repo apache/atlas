@@ -9,10 +9,11 @@ import java.util.concurrent.TimeUnit;
 import static org.apache.atlas.service.metrics.MetricUtils.getMeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 @Service
 public class AtlasObservabilityService {
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasObservabilityService.class);
+    private static final Logger LOG = LoggerFactory.getLogger("OBSERVABILITY");
     private static final String METRIC_COMPONENT = "atlas_observability";
     private final MeterRegistry meterRegistry;
     
@@ -96,14 +97,22 @@ public class AtlasObservabilityService {
      * that should NOT be sent to Prometheus.
      */
     public void logErrorDetails(AtlasObservabilityData data, String errorMessage, Throwable throwable) {
-        // Log structured data for debugging - goes to ClickHouse
-        // This includes traceId, vertexIds, assetGuids for error correlation
-        LOG.error("Atlas createOrUpdate error: {} | traceId: {} | assetGuids: {} | vertexIds: {} | error: {}", 
-            errorMessage,
-            data.getTraceId(),
-            data.getAssetGuids(),
-            data.getVertexIds(),
-            throwable != null ? throwable.getMessage() : "unknown");
+        // Set MDC filter for observability logs
+        MDC.put("filter", "atlas-observability");
+        
+        try {
+            // Log structured data for debugging - goes to ClickHouse
+            // This includes traceId, vertexIds, assetGuids for error correlation
+            LOG.error("Atlas createOrUpdate error: {} | traceId: {} | assetGuids: {} | vertexIds: {} | error: {}", 
+                errorMessage,
+                data.getTraceId(),
+                data.getAssetGuids(),
+                data.getVertexIds(),
+                throwable != null ? throwable.getMessage() : "unknown");
+        } finally {
+            // Clean up MDC
+            MDC.remove("filter");
+        }
     }
     
     private Timer getOrCreateTimer(String metricName, String... tags) {
