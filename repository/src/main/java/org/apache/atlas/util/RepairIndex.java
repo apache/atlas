@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -97,8 +98,6 @@ public class RepairIndex {
             }
         }
         searchIndex.restore(documentsPerStore, indexSerializer.getIndexInfoRetriever(tx).get("search"));
-
-        entityMutationService.repairClassificationMappings(new ArrayList<>(entityGUIDs));
     }
 
     private static Set<String> getEntityAndReferenceGuids(String guid, Map<String, AtlasEntity> referredEntities) throws Exception {
@@ -125,6 +124,8 @@ public class RepairIndex {
 
             LOG.info(": Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
         }
+
+        entityMutationService.repairClassificationMappings(Collections.singletonList(guid));
     }
 
     public void restoreByIds(Set<String> guids) throws Exception {
@@ -140,5 +141,7 @@ public class RepairIndex {
             LOG.info(": Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
             LOG.info(": Done!");
         }
+
+        entityMutationService.repairClassificationMappings(new ArrayList<>(guids));
     }
 }
