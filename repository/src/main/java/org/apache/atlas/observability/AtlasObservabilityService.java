@@ -54,17 +54,47 @@ public class AtlasObservabilityService {
     }
     
     public void recordArrayRelationships(AtlasObservabilityData data) {
+        // Record total count
         DistributionSummary summary = getOrCreateDistributionSummary("createOrUpdate.array_relationships",
             "client_origin", data.getXAtlanClientOrigin());
-        
         summary.record(data.getTotalArrayRelationships());
+        
+        // Record individual relationship types and counts
+        recordRelationshipMap("relationship_attributes", data.getRelationshipAttributes(), data.getXAtlanClientOrigin());
+        recordRelationshipMap("append_relationship_attributes", data.getAppendRelationshipAttributes(), data.getXAtlanClientOrigin());
+        recordRelationshipMap("remove_relationship_attributes", data.getRemoveRelationshipAttributes(), data.getXAtlanClientOrigin());
     }
     
     public void recordArrayAttributes(AtlasObservabilityData data) {
+        // Record total count
         DistributionSummary summary = getOrCreateDistributionSummary("createOrUpdate.array_attributes",
             "client_origin", data.getXAtlanClientOrigin());
-        
         summary.record(data.getTotalArrayAttributes());
+        
+        // Record individual attribute types and counts
+        recordAttributeMap("array_attributes", data.getArrayAttributes(), data.getXAtlanClientOrigin());
+    }
+    
+    private void recordRelationshipMap(String metricName, Map<String, Integer> relationshipMap, String clientOrigin) {
+        if (relationshipMap != null && !relationshipMap.isEmpty()) {
+            for (Map.Entry<String, Integer> entry : relationshipMap.entrySet()) {
+                Counter counter = getOrCreateCounter("createOrUpdate." + metricName,
+                    "client_origin", clientOrigin,
+                    "relationship_name", entry.getKey());
+                counter.increment(entry.getValue());
+            }
+        }
+    }
+    
+    private void recordAttributeMap(String metricName, Map<String, Integer> attributeMap, String clientOrigin) {
+        if (attributeMap != null && !attributeMap.isEmpty()) {
+            for (Map.Entry<String, Integer> entry : attributeMap.entrySet()) {
+                Counter counter = getOrCreateCounter("createOrUpdate." + metricName,
+                    "client_origin", clientOrigin,
+                    "attribute_name", entry.getKey());
+                counter.increment(entry.getValue());
+            }
+        }
     }
     
     public void recordTimingMetrics(AtlasObservabilityData data) {
