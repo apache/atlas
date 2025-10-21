@@ -199,10 +199,7 @@ public class FullTextMapperV2 implements IFullTextMapper {
         if (MapUtils.isEmpty(attributes)) {
             return;
         }
-        // instead of set convert to a list or a sorted set, and basically shift the SourceTagDomain to the end
-        String LAST_ATTR_KEY = "SourceTagDomain";
-        List<Map.Entry<String, Object>> entries = new ArrayList<>(attributes.entrySet());
-        entries.sort(Comparator.comparing(e -> LAST_ATTR_KEY.equals(e.getKey())));
+
         for (Map.Entry<String, Object> attributeEntry : attributes.entrySet()) {
             String attribKey = attributeEntry.getKey();
             Object attrValue = attributeEntry.getValue();
