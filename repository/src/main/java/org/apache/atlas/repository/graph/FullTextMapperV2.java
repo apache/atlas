@@ -44,13 +44,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 @Component
@@ -205,7 +199,10 @@ public class FullTextMapperV2 implements IFullTextMapper {
         if (MapUtils.isEmpty(attributes)) {
             return;
         }
-
+        // instead of set convert to a list or a sorted set, and basically shift the SourceTagDomain to the end
+        String LAST_ATTR_KEY = "SourceTagDomain";
+        List<Map.Entry<String, Object>> entries = new ArrayList<>(attributes.entrySet());
+        entries.sort(Comparator.comparing(e -> LAST_ATTR_KEY.equals(e.getKey())));
         for (Map.Entry<String, Object> attributeEntry : attributes.entrySet()) {
             String attribKey = attributeEntry.getKey();
             Object attrValue = attributeEntry.getValue();
@@ -249,20 +246,27 @@ public class FullTextMapperV2 implements IFullTextMapper {
                 }
             }
         } else if (value instanceof List) {
-            List valueList = (List) value;
+            List<?> valueList = (List<?>) value;
 
             for (Object listElement : valueList) {
                 mapAttribute(listElement, entityExtInfo, sb, processedGuids, isClassificationOnly);
             }
         } else if (value instanceof Map) {
-            Map valueMap = (Map) value;
+            Map<?, ?> valueMap = (Map<?, ?>) value;
 
-            for (Object key : valueMap.keySet()) {
+            // Ensure "sourceTagQualifiedName" is processed at the very end (if present).
+            final String PRIORITY_KEY = "sourceTagQualifiedName";
+            java.util.List<Object> keys = new java.util.ArrayList<>(valueMap.keySet());
+            if (keys.remove(PRIORITY_KEY)) {
+                keys.add(PRIORITY_KEY); // push to extreme last
+            }
+
+            for (Object key : keys) {
                 mapAttribute(key, entityExtInfo, sb, processedGuids, isClassificationOnly);
                 mapAttribute(valueMap.get(key), entityExtInfo, sb, processedGuids, isClassificationOnly);
             }
         } else if (value instanceof Enum) {
-            Enum enumValue = (Enum) value;
+            Enum<?> enumValue = (Enum<?>) value;
 
             sb.append(enumValue.name()).append(FULL_TEXT_DELIMITER);
         } else if (value instanceof AtlasStruct) {
