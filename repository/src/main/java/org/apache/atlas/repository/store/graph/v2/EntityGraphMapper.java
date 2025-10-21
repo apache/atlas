@@ -2983,6 +2983,10 @@ public class EntityGraphMapper {
                     createdSet.stream().filter(e -> !currentSet.contains(e)),
                     currentSet.stream().filter(e -> !createdSet.contains(e))
             ).collect(Collectors.toList());
+
+            changedEntities = changedEntities.stream()
+                    .filter(edge -> GraphHelper.getStatus((AtlasEdge)edge).equals(ACTIVE))
+                    .collect(Collectors.toList());
         } else {
             changedEntities = new ArrayList<>(createdElements);
         }
