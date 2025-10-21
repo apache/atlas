@@ -2985,7 +2985,15 @@ public class EntityGraphMapper {
             ).collect(Collectors.toList());
 
             changedEntities = changedEntities.stream()
-                    .filter(edge -> GraphHelper.getStatus((AtlasEdge)edge).equals(ACTIVE))
+                    .filter(Objects::nonNull)
+                    .filter(edge -> {
+                        try {
+                            return ACTIVE.equals(GraphHelper.getStatus((AtlasEdge)edge));
+                        } catch (Exception e) {
+                            LOG.warn("Failed to get status for edge: {}", edge, e);
+                            return false;
+                        }
+                    })
                     .collect(Collectors.toList());
         } else {
             changedEntities = new ArrayList<>(createdElements);
