@@ -60,7 +60,7 @@ public class FullTextMapperV2 implements IFullTextMapper {
     private final EntityGraphRetriever     entityGraphRetriever;
     private final boolean                  followReferences;
     private final Map<String, Set<String>> excludeAttributesCache = new HashMap<>();
-
+    private static final String SOURCE_TAG_QN = "sourceTagQualifiedName";
 
     @Inject
     public FullTextMapperV2(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, Configuration configuration, EntityGraphRetriever entityGraphRetriever) {
@@ -193,6 +193,14 @@ public class FullTextMapperV2 implements IFullTextMapper {
         }
     }
 
+    private List<Object> rearrangeAttributesOrder(List<Object> keys) {
+        if (keys != null && keys.contains(SOURCE_TAG_QN)) {
+            keys.remove(SOURCE_TAG_QN);
+            keys.add(SOURCE_TAG_QN);
+        }
+        return keys;
+    }
+
     @Override
     public void mapAttributes(AtlasStructType structType, Map<String, Object> attributes, AtlasEntityExtInfo entityExtInfo, StringBuilder sb,
                                Set<String> processedGuids, Set<String> excludeAttributes, boolean isClassificationOnly) throws AtlasBaseException {
@@ -250,13 +258,10 @@ public class FullTextMapperV2 implements IFullTextMapper {
             }
         } else if (value instanceof Map) {
             Map<?, ?> valueMap = (Map<?, ?>) value;
+            List<Object> keys = new ArrayList<>(valueMap.keySet());
 
-            // Ensure "sourceTagQualifiedName" is processed at the very end (if present).
-            final String PRIORITY_KEY = "sourceTagQualifiedName";
-            java.util.List<Object> keys = new java.util.ArrayList<>(valueMap.keySet());
-            if (keys.remove(PRIORITY_KEY)) {
-                keys.add(PRIORITY_KEY); // push to extreme last
-            }
+            // Only rearrange if the key exists
+            rearrangeAttributesOrder(keys);
 
             for (Object key : keys) {
                 mapAttribute(key, entityExtInfo, sb, processedGuids, isClassificationOnly);
