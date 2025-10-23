@@ -101,7 +101,15 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Set<String>                      labels;
     private Set<String>                      pendingTasks; // read-only field i.e. value provided is ignored during entity create/update
     private String                           deleteHandler;
+
+    /*
+    * Only for notifications
+    * */
     private Map<String, Object>              addedRelationshipAttributes;
+
+    /*
+     * Only for notifications
+     * */
     private Map<String, Object>              removedRelationshipAttributes;
 
     @JsonIgnore
