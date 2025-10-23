@@ -1783,6 +1783,8 @@ public class EntityGraphRetriever {
                         }
                     }
                 }
+            } else {
+                LOG.warn("Entity type not found for type name: {} for entityVertexId {}", typeName, entityVertex.getIdForDisplay());
             }
         }
         finally {
@@ -1894,6 +1896,8 @@ public class EntityGraphRetriever {
                         }
                     }
                 }
+            } else {
+                LOG.warn("Entity type not found for type name: {} for entityVertexId {}", typeName, entityVertex.getIdForDisplay());
             }
         }
         finally {
