@@ -14,6 +14,46 @@
   },
   "analysis": {
     "analyzer": {
+      "atlan_text_delimiter_analyzer": {
+        "filter": [
+          "trim",
+          "text_delimiter_filter",
+          "lowercase",
+          "remove_duplicates"
+        ],
+        "type": "custom",
+        "tokenizer": "keyword"
+      },
+      "atlan_search_delimiter_analyzer": {
+        "filter": [
+          "trim",
+          "text_delimiter_filter",
+          "lowercase",
+          "remove_duplicates"
+        ],
+        "type": "custom",
+        "tokenizer": "whitespace"
+      },
+      "atlan_path_analyzer": {
+        "filter": [
+          "trim",
+          "remove_duplicates"
+        ],
+        "type": "custom",
+        "tokenizer": "atlan_path_tokenizer"
+      },
+      "atlan_text_analyzer_v2": {
+        "filter": [
+          "apostrophe",
+          "lowercase"
+        ],
+        "char_filter": [
+          "truncate_filter",
+          "number_filter"
+        ],
+        "type": "custom",
+        "tokenizer": "atlan_tokenizer_v2"
+      },
       "atlan_glossary_analyzer": {
         "type": "custom",
         "tokenizer": "atlan_glossary_tokenizer",
@@ -31,6 +71,7 @@
           "apostrophe", "lowercase"
         ],
         "char_filter":[
+          "truncate_filter",
           "number_filter"
         ]
       },
@@ -79,9 +120,33 @@
       "snowball_english": {
         "type": "snowball",
         "language": "English"
+      },
+      "text_delimiter_filter": {
+        "split_on_numerics": "true",
+        "generate_word_parts": "true",
+        "preserve_original": "true",
+        "catenate_words": "false",
+        "generate_number_parts": "true",
+        "catenate_all": "true",
+        "split_on_case_change": "true",
+        "type": "word_delimiter_graph",
+        "type_table": [
+          "# => SUBWORD_DELIM",
+          "' => ALPHA"
+        ],
+        "catenate_numbers": "false",
+        "stem_english_possessive": "true"
       }
     },
     "tokenizer": {
+      "atlan_path_tokenizer": {
+        "type": "path_hierarchy",
+        "delimiter": "/"
+      },
+      "atlan_tokenizer_v2": {
+        "pattern": "( |_|-|/|@|,|;|$|#|&|\"|\\.|\\(|\\)|\\[|\\]|\\{|\\}|:)",
+        "type": "pattern"
+      },
       "atlan_glossary_tokenizer": {
         "type": "char_group",
         "tokenize_on_chars": [
