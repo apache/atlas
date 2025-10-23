@@ -1748,7 +1748,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             return ret;
         } finally {
-            if (SEND_HASLINEAGE_VERTICES.getBoolean() && ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()) {
+            if (ENABLE_DISTRIBUTED_HAS_LINEAGE_CALCULATION.getBoolean() && ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()) {
                 Set<String> vertexIds = getRemovedInputOutputVertices();
                 //Batch the vertexIds and send notification
                 if (vertexIds != null && !vertexIds.isEmpty()) {
@@ -2253,7 +2253,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             for (AtlasEntityHeader entity : req.getUpdatedEntities()) {
                 response.addEntity(UPDATE, entity);
             }
-        if (SEND_HASLINEAGE_VERTICES.getBoolean() && ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()) {
+        if (ENABLE_DISTRIBUTED_HAS_LINEAGE_CALCULATION.getBoolean() && ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()) {
             Set<String> vertexIds = getRemovedInputOutputVertices();
             //Batch the vertexIds and send notification
             if (vertexIds != null && !vertexIds.isEmpty()) {
@@ -2285,7 +2285,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             List<AtlasEdge> removedEdges = removedElements.stream()
                     .flatMap(List::stream)
                     .map(x -> (AtlasEdge) x)
-                    .collect(Collectors.toList());
+                    .toList();
+
             // Collect all vertex IDs from both sides of edges
             List<String> allVertexIds = new ArrayList<>();
             for (AtlasEdge edge : removedEdges) {
@@ -2297,7 +2298,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             // Create set of unique vertex IDs
             vertexIds = new HashSet<>(allVertexIds);
-            LOG.info("Duplicate vertices found in removed edges of size: {}, Total Size: {}, sending {} Vertices", allVertexIds.size()-vertexIds.size(), allVertexIds.size(), vertexIds.size());
         }
 
 
