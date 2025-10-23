@@ -1383,7 +1383,7 @@ public class EntityGraphMapper {
                             objectId.put("typeName", getTypeName(inverseVertex));
                             objectId.put("guid", GraphHelper.getGuid(inverseVertex));
 
-                            AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(GraphHelper.getGuid(ctx.getReferringVertex()));
+                            AtlasEntity diffEntity = getOrInitializeDiffEntity(ctx.getReferringVertex());
                             diffEntity.setAddedRelationshipAttribute(ctx.getAttribute().getName(), objectId);
                         }
                     }
@@ -2279,7 +2279,7 @@ public class EntityGraphMapper {
                 }
             }
 
-            AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(GraphHelper.getGuid(ctx.getReferringVertex()));
+            AtlasEntity diffEntity = getOrInitializeDiffEntity(ctx.getReferringVertex());
             diffEntity.setAddedRelationshipAttribute(attribute.getName(), attrValues);
         }
 
@@ -2372,7 +2372,7 @@ public class EntityGraphMapper {
                 attrValues.add(objectId);
             }
 
-            AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(GraphHelper.getGuid(ctx.getReferringVertex()));
+            AtlasEntity diffEntity = getOrInitializeDiffEntity(ctx.getReferringVertex());
             diffEntity.setRemovedRelationshipAttribute(attribute.getName(), attrValues);
         }
 
@@ -2517,6 +2517,18 @@ public class EntityGraphMapper {
 
         currentSize = end2Vertex.getEdgesCount(AtlasEdgeDirection.IN, UD_RELATIONSHIP_EDGE_LABEL) + 1;
         validateCustomRelationshipCount(currentSize, end2Vertex);
+    }
+
+    private AtlasEntity getOrInitializeDiffEntity(AtlasVertex vertex) {
+        AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(GraphHelper.getGuid(vertex));
+        if (diffEntity == null) {
+            diffEntity = new AtlasEntity();
+            diffEntity.setTypeName(GraphHelper.getTypeName(vertex));
+            diffEntity.setGuid(GraphHelper.getGuid(vertex));
+            diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
+            RequestContext.get().cacheDifferentialEntity(diffEntity);
+        }
+        return diffEntity;
     }
 
     private static void validateCustomRelationshipCount(long size, AtlasVertex vertex) throws AtlasBaseException {
