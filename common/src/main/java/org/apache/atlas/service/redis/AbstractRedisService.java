@@ -5,6 +5,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
@@ -184,6 +185,22 @@ public abstract class AbstractRedisService implements RedisService {
     public String getValue(String key) {
         try {
             return (String) redisCacheClient.getBucket(convertToNamespace(key)).get();
+        } catch (Exception e) {
+            MetricUtils.recordRedisConnectionFailure();
+            getLogger().error("Redis getValue operation failed for key: {}", key, e);
+            throw e;
+        }
+    }
+
+    @Override
+    public String getValue(String key, String defaultValue) {
+        try {
+            String value = (String) redisCacheClient.getBucket(convertToNamespace(key)).get();
+            if (StringUtils.isEmpty(value)) {
+                return defaultValue;
+            } else {
+                return value;
+            }
         } catch (Exception e) {
             MetricUtils.recordRedisConnectionFailure();
             getLogger().error("Redis getValue operation failed for key: {}", key, e);

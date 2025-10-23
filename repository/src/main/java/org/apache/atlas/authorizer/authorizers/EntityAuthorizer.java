@@ -11,6 +11,7 @@ import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +79,9 @@ public class EntityAuthorizer {
     private static AtlasAccessResult evaluateABACPoliciesInMemory(List<RangerPolicy> abacPolicies, AtlasEntityHeader entity) {
         AtlasAccessResult result = new AtlasAccessResult(false);
 
-        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entity.getGuid());
+        // don't need to fetch vertex for indexsearch response scrubbing as it already has the required attributes
+        // setting vertex to null here as usage is already with a check for null possibility
+        AtlasVertex vertex =  entity.getDocId() == null ? AtlasGraphUtilsV2.findByGuid(entity.getGuid()) : null;
 
         for (RangerPolicy policy : abacPolicies) {
             boolean matched = false;

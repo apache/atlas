@@ -696,10 +696,22 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         }
     }
 
+    public void addTypesDefInCache(AtlasTypesDef typesDef) throws AtlasBaseException {
+        AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommitWithoutHook();
+        ttr.addTypes(typesDef);
+        typeRegistry.releaseTypeRegistryForUpdate(ttr, true);
+    }
+
+    public void deleteTypesDefInCache(AtlasTypesDef typesDef) throws AtlasBaseException {
+        AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommitWithoutHook();
+        ttr.removeTypesDef(typesDef);
+        typeRegistry.releaseTypeRegistryForUpdate(ttr, true);
+    }
+
 
     @Override
     @GraphTransaction
-    public void deleteTypeByName(String typeName) throws AtlasBaseException {
+    public AtlasTypesDef deleteTypeByName(String typeName) throws AtlasBaseException {
         AtlasType atlasType = typeRegistry.getType(typeName);
         if (atlasType == null) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS.TYPE_NAME_NOT_FOUND, typeName);
@@ -723,6 +735,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         }
 
         deleteTypesDef(typesDef);
+        return typesDef;
     }
 
     @Override
@@ -851,6 +864,13 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         RequestContext.get().endMetricRecord(metricRecorder);
 
+        return ttr;
+    }
+
+    private AtlasTransientTypeRegistry lockTypeRegistryAndReleasePostCommitWithoutHook() throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("lockTypeRegistryAndReleasePostCommit");
+        AtlasTransientTypeRegistry ttr = typeRegistry.lockTypeRegistryForUpdate(typeUpdateLockMaxWaitTimeSeconds);
+        RequestContext.get().endMetricRecord(metricRecorder);
         return ttr;
     }
 

@@ -23,7 +23,7 @@ public class AccessControlPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AccessControlPreProcessor.class);
 
     // Regex reference - https://atlanhq.atlassian.net/browse/DG-1907?focusedCommentId=270252
-    private static final Pattern REGEX_SLACK_CHANNEL_LINK = Pattern.compile("^https://(?<domain>[\\w.-]+\\.slack\\.com)/archives/(?<channel>C\\w{8,})(?:/p(?<timestamp>\\d{10}))?$");
+    private static final Pattern REGEX_SLACK_CHANNEL_LINK = Pattern.compile("^https?://(?:[\\w-]+\\.)*slack\\.com(?:/.*)?$");
     @Override
     public void processAttributes(AtlasStruct entityStruct, EntityMutationContext context, EntityMutations.EntityOperation operation) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {

@@ -15,6 +15,7 @@ on:
       - poctagprophashedrebased
       - idonlycanary
       - idonlycanarybeta
+      - atlas_ci_cd_updates
     types:
       - completed
 

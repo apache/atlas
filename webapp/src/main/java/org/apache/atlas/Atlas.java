@@ -321,7 +321,7 @@ public final class Atlas {
         SLF4JBridgeHandler.install();
     }
 
-    private static void initAccessAuditElasticSearch(Configuration configuration) throws IOException {
+    private static void initAccessAuditElasticSearch(Configuration configuration) throws IOException, AtlasException {
         AccessAuditLogsIndexCreator indexCreator = new AccessAuditLogsIndexCreator(configuration);
         indexCreator.start();
     }

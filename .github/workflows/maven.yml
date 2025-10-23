@@ -27,7 +27,6 @@ on:
       - development
       - master
       - staging
-      - mindbodycanary
 
 jobs:
   build:
