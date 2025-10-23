@@ -507,14 +507,10 @@ public class AtlasGraphUtilsV2 {
                 LOG.debug("Checking if classification {} has references using ES", typeName);
             }
 
-            // Get the ES index name
             String indexName = Constants.getESIndex();
             AtlasIndexQuery indexQuery = graph.elasticsearchQuery(indexName);
 
-            // Build ES query to search for entities with this classification
             String esQuery = buildClassificationReferenceQuery(typeName);
-            
-            // Execute count query
             Long count = indexQuery.countIndexQuery(esQuery);
             
             boolean hasReferences = count != null && count > 0;
@@ -524,7 +520,6 @@ public class AtlasGraphUtilsV2 {
             }
 
             return hasReferences;
-
         } catch (Exception e) {
             LOG.error("Error checking classification references for {}: {}", typeName, e.getMessage(), e);
             // Conservative approach: if ES query fails, assume there are references to prevent accidental deletion
