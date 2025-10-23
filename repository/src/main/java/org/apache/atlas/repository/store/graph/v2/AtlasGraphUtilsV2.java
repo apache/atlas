@@ -485,34 +485,20 @@ public class AtlasGraphUtilsV2 {
      * 
      * @param typeName the classification type name to check
      * @return true if any active entities have this classification, false otherwise
-     * @throws AtlasBaseException if the ES query fails
+     *
      */
-    public static boolean classificationHasReferences(String typeName) throws AtlasBaseException {
-        return classificationHasReferences(getGraphInstance(), typeName);
-    }
-
-    /**
-     * Check if a classification type has references using Elasticsearch.
-     * This method searches for entities that have the classification attached
-     * either directly or through propagation.
-     * 
-     * @param graph the AtlasGraph instance
-     * @param typeName the classification type name to check
-     * @return true if any active entities have this classification, false otherwise
-     * @throws AtlasBaseException if the ES query fails
-     */
-    public static boolean classificationHasReferences(AtlasGraph graph, String typeName) throws AtlasBaseException {
+    public static boolean classificationHasReferences(String typeName) {
         try {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Checking if classification {} has references using ES", typeName);
             }
 
             String indexName = Constants.getESIndex();
-            AtlasIndexQuery indexQuery = graph.elasticsearchQuery(indexName);
+            AtlasIndexQuery indexQuery = getGraphInstance().elasticsearchQuery(indexName);
 
             String esQuery = buildClassificationReferenceQuery(typeName);
             Long count = indexQuery.countIndexQuery(esQuery);
-            
+
             boolean hasReferences = count != null && count > 0;
 
             if (LOG.isDebugEnabled()) {
@@ -535,9 +521,6 @@ public class AtlasGraphUtilsV2 {
      * @return JSON query string
      */
     private static String buildClassificationReferenceQuery(String typeName) {
-        // Escape the type name for JSON
-        String escapedTypeName = typeName.replace("\"", "\\\"").replace("\\", "\\\\");
-        
         return String.format(
             "{\n" +
             "  \"query\": {\n" +
@@ -546,21 +529,18 @@ public class AtlasGraphUtilsV2 {
             "        {\n" +
             "          \"bool\": {\n" +
             "            \"should\": [\n" +
-            "              {\"terms\": {\"%s\": [\"%s\"]}},\n" +
-            "              {\"terms\": {\"%s\": [\"%s\"]}}\n" +
+            "              {\"term\": {\"%s\": \"%s\"}},\n" +
+            "              {\"term\": {\"%s\": \"%s\"}}\n" +
             "            ],\n" +
             "            \"minimum_should_match\": 1\n" +
             "          }\n" +
-            "        },\n" +
-            "        {\"term\": {\"%s\": \"ACTIVE\"}}\n" +
+            "        }\n" +
             "      ]\n" +
             "    }\n" +
             "  }\n" +
             "}",
-            Constants.TRAIT_NAMES_PROPERTY_KEY,
-            escapedTypeName,
-            Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY,
-            escapedTypeName,
+            Constants.TRAIT_NAMES_PROPERTY_KEY, typeName,
+            Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, typeName,
             Constants.STATE_PROPERTY_KEY
         );
     }
