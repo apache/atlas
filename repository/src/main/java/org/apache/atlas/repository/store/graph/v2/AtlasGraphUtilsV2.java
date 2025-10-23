@@ -478,6 +478,98 @@ public class AtlasGraphUtilsV2 {
         return hasInstanceVertex;
     }
 
+    /**
+     * Check if a classification type has references using Elasticsearch.
+     * This method searches for entities that have the classification attached
+     * either directly or through propagation.
+     * 
+     * @param typeName the classification type name to check
+     * @return true if any active entities have this classification, false otherwise
+     * @throws AtlasBaseException if the ES query fails
+     */
+    public static boolean classificationHasReferences(String typeName) throws AtlasBaseException {
+        return classificationHasReferences(getGraphInstance(), typeName);
+    }
+
+    /**
+     * Check if a classification type has references using Elasticsearch.
+     * This method searches for entities that have the classification attached
+     * either directly or through propagation.
+     * 
+     * @param graph the AtlasGraph instance
+     * @param typeName the classification type name to check
+     * @return true if any active entities have this classification, false otherwise
+     * @throws AtlasBaseException if the ES query fails
+     */
+    public static boolean classificationHasReferences(AtlasGraph graph, String typeName) throws AtlasBaseException {
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Checking if classification {} has references using ES", typeName);
+            }
+
+            // Get the ES index name
+            String indexName = Constants.getESIndex();
+            AtlasIndexQuery indexQuery = graph.elasticsearchQuery(indexName);
+
+            // Build ES query to search for entities with this classification
+            String esQuery = buildClassificationReferenceQuery(typeName);
+            
+            // Execute count query
+            Long count = indexQuery.countIndexQuery(esQuery);
+            
+            boolean hasReferences = count != null && count > 0;
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Classification {} has references: {} (count: {})", typeName, hasReferences, count);
+            }
+
+            return hasReferences;
+
+        } catch (Exception e) {
+            LOG.error("Error checking classification references for {}: {}", typeName, e.getMessage(), e);
+            // Conservative approach: if ES query fails, assume there are references to prevent accidental deletion
+            return true;
+        }
+    }
+
+    /**
+     * Build Elasticsearch query to check for classification references.
+     * Searches for entities that have the classification in either __traitNames or __propagatedTraitNames.
+     * 
+     * @param typeName the classification type name
+     * @return JSON query string
+     */
+    private static String buildClassificationReferenceQuery(String typeName) {
+        // Escape the type name for JSON
+        String escapedTypeName = typeName.replace("\"", "\\\"").replace("\\", "\\\\");
+        
+        return String.format(
+            "{\n" +
+            "  \"query\": {\n" +
+            "    \"bool\": {\n" +
+            "      \"filter\": [\n" +
+            "        {\n" +
+            "          \"bool\": {\n" +
+            "            \"should\": [\n" +
+            "              {\"terms\": {\"%s\": [\"%s\"]}},\n" +
+            "              {\"terms\": {\"%s\": [\"%s\"]}}\n" +
+            "            ],\n" +
+            "            \"minimum_should_match\": 1\n" +
+            "          }\n" +
+            "        },\n" +
+            "        {\"term\": {\"%s\": \"ACTIVE\"}}\n" +
+            "      ]\n" +
+            "    }\n" +
+            "  }\n" +
+            "}",
+            Constants.TRAIT_NAMES_PROPERTY_KEY,
+            escapedTypeName,
+            Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY,
+            escapedTypeName,
+            Constants.STATE_PROPERTY_KEY
+        );
+    }
+
     public static AtlasVertex findByTypeAndUniquePropertyName(String typeName, String propertyName, Object attrVal) {
         return findByTypeAndUniquePropertyName(getGraphInstance(), typeName, propertyName, attrVal);
     }
