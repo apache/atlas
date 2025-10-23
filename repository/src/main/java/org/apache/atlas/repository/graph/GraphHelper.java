@@ -1423,7 +1423,12 @@ public final class GraphHelper {
     }
 
     public static long getCreatedTime(AtlasElement element){
-        return element.getProperty(TIMESTAMP_PROPERTY_KEY, Long.class);
+        try {
+            return element.getProperty(TIMESTAMP_PROPERTY_KEY, Long.class);
+        } catch (Exception e) {
+            LOG.warn("Failed to get created time for vertex {}. Error: {}", element.getIdForDisplay(), e.getMessage());
+            return 0l;
+        }
     }
 
     public static long getModifiedTime(AtlasElement element){

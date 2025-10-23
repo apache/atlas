@@ -1824,14 +1824,14 @@ public class EntityGraphRetriever {
             ret.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
 
             // Set entity creation time if available
-            Long createdTime = GraphHelper.getCreatedTime(entityVertex);
-            if (createdTime != null) {
+            long createdTime = GraphHelper.getCreatedTime(entityVertex);
+            if (createdTime != 0L) {
                 ret.setCreateTime(new Date(createdTime));
             }
 
             // Set entity last update time if available
-            Long updatedTime = GraphHelper.getModifiedTime(entityVertex);
-            if (updatedTime != null) {
+            long updatedTime = GraphHelper.getModifiedTime(entityVertex);
+            if (updatedTime != 0L) {
                 ret.setUpdateTime(new Date(updatedTime));
             }
 
