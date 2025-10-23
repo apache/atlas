@@ -1436,8 +1436,7 @@ public final class GraphHelper {
             return element.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
         } catch (Exception e) {
             LOG.warn("Failed to get modified time for vertex {}. Error: {}", element.getIdForDisplay(), e.getMessage());
-            // Fallback to created time if modification timestamp is not set
-            return element.getProperty(TIMESTAMP_PROPERTY_KEY, Long.class);
+            return getCreatedTime(element);
         }
     }
 
