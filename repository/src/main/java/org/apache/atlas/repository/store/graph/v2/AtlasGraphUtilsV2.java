@@ -540,8 +540,7 @@ public class AtlasGraphUtilsV2 {
             "  }\n" +
             "}",
             Constants.TRAIT_NAMES_PROPERTY_KEY, typeName,
-            Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, typeName,
-            Constants.STATE_PROPERTY_KEY
+            Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, typeName
         );
     }
 
