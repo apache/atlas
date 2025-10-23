@@ -1844,9 +1844,9 @@ public class EntityGraphRetriever {
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
             ret.setDocId(LongEncoding.encode(Long.parseLong(entityVertex.getIdForDisplay())));
-            ret.setSuperTypeNames(entityType.getAllSuperTypes());
 
             if (entityType != null) {
+                ret.setSuperTypeNames(entityType.getAllSuperTypes());
                 for (AtlasAttribute headerAttribute : entityType.getHeaderAttributes().values()) {
                     Object attrValue = getVertexAttribute(entityVertex, headerAttribute);
 
@@ -1920,7 +1920,11 @@ public class EntityGraphRetriever {
             ret.setGuid(guid);
 
             ret.setDocId(LongEncoding.encode(Long.parseLong(entityVertex.getIdForDisplay())));
-            ret.setSuperTypeNames(entityType.getAllSuperTypes());
+            if (entityType != null) {
+                ret.setSuperTypeNames(entityType.getAllSuperTypes());
+            } else {
+                LOG.warn("Entity type not found for type name: {} for entityVertexId {}", typeName, entityVertex.getIdForDisplay());
+            }
 
             String state = (String)properties.get(Constants.STATE_PROPERTY_KEY);
             Id.EntityState entityState = state == null ? null : Id.EntityState.valueOf(state);
