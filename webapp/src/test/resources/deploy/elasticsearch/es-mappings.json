@@ -1,0 +1,54 @@
+{
+  "properties": {
+    "relationshipList": {
+      "type": "nested",
+      "properties": {
+        "typeName": {
+          "type": "keyword"
+        },
+        "guid": {
+          "type": "keyword"
+        },
+        "provenanceType": {
+          "type": "integer"
+        },
+        "endName": {
+          "type": "keyword"
+        },
+        "endGuid": {
+          "type": "keyword"
+        },
+        "endTypeName": {
+          "type": "keyword"
+        },
+        "endQualifiedName": {
+          "type": "keyword"
+        },
+        "label": {
+          "type": "keyword"
+        },
+        "propagateTags": {
+          "type": "keyword"
+        },
+        "status": {
+          "type": "keyword"
+        },
+        "createdBy": {
+          "type": "keyword"
+        },
+        "updatedBy": {
+          "type": "keyword"
+        },
+        "createTime": {
+          "type": "long"
+        },
+        "updateTime": {
+          "type": "long"
+        },
+        "version": {
+          "type": "long"
+        }
+      }
+    }
+  }
+}
