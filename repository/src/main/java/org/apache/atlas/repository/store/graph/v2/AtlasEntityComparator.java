@@ -32,6 +32,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasEntityUtil;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.MapUtils;
 
 import java.util.ArrayList;
@@ -68,6 +69,7 @@ public class AtlasEntityComparator {
     }
 
     private AtlasEntityDiffResult getDiffResult(AtlasEntity updatedEntity, AtlasEntity storedEntity, AtlasVertex storedVertex, boolean findOnlyFirstDiff) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getDiffResult");
         AtlasEntity                              diffEntity                       = new AtlasEntity(updatedEntity.getTypeName());
         AtlasEntityType                          entityType                       = typeRegistry.getEntityTypeByName(updatedEntity.getTypeName());
         Map<String, AtlasAttribute>              entityTypeAttributes             = entityType.getAllAttributes();
@@ -255,6 +257,7 @@ public class AtlasEntityComparator {
             }
         }
 
+        RequestContext.get().endMetricRecord(metric);
         return new AtlasEntityDiffResult(diffEntity, sectionsWithDiff > 0, sectionsWithDiff == 1 && hasDiffInCustomAttributes, sectionsWithDiff == 1 && hasDiffInBusinessAttributes);
     }
 

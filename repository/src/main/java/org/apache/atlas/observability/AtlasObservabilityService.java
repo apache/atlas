@@ -1,6 +1,7 @@
 package org.apache.atlas.observability;
 
 import io.micrometer.core.instrument.*;
+import org.apache.atlas.RequestContext;
 import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,11 +38,15 @@ public class AtlasObservabilityService {
     public void recordPayloadSize(AtlasObservabilityData data) {
         DistributionSummary summary = getOrCreateDistributionSummary("payload_size", data.getXAtlanClientOrigin());
         summary.record(data.getPayloadAssetSize());
+        RequestContext context = RequestContext.get();
+        context.endMetricRecord(context.startMetricRecord("entities_count"), data.getPayloadAssetSize());
     }
     
     public void recordPayloadBytes(AtlasObservabilityData data) {
         DistributionSummary summary = getOrCreateDistributionSummary("payload_bytes", data.getXAtlanClientOrigin());
         summary.record(data.getPayloadRequestBytes());
+        RequestContext context = RequestContext.get();
+        context.endMetricRecord(context.startMetricRecord("entities_bytes"), data.getPayloadRequestBytes());
     }
     
     public void recordArrayRelationships(AtlasObservabilityData data) {
@@ -70,12 +75,17 @@ public class AtlasObservabilityService {
     }
     
     private void recordRelationshipMap(String metricName, Map<String, Integer> relationshipMap, String clientOrigin) {
+        RequestContext context = RequestContext.get();
+        int totalCount = 0;
         if (relationshipMap != null && !relationshipMap.isEmpty()) {
             for (Map.Entry<String, Integer> entry : relationshipMap.entrySet()) {
                 Counter counter = getOrCreateCounter(metricName, clientOrigin,
                     "relationship_name", entry.getKey());
                 counter.increment(entry.getValue());
+                context.endMetricRecord(context.startMetricRecord("relation:-" + entry.getKey()), entry.getValue());
+                totalCount += entry.getValue();
             }
+            context.endMetricRecord(context.startMetricRecord("relations_count"), totalCount);
         }
     }
     
