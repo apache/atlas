@@ -4,6 +4,7 @@ multiarch:
   enabled: false
   image: {}
 
+
 clusterName: "atlas-elasticsearch"
 nodeGroup: "master"
 
@@ -11,6 +12,7 @@ nodeGroup: "master"
 # This should be set to clusterName + "-" + nodeGroup for your master group
 global:
   Tier_Type: ""
+  Deployment_Type: ""
 masterService: ""
 
 # Elasticsearch roles that will be applied to this nodeGroup
@@ -23,6 +25,7 @@ roles:
 replicas: 3
 esMajorVersion: 7
 minimumMasterNodes: 1
+
 # JVM automatically uses 50% of container memory as max heap using MaxRAMPercentage
 # This is simpler and more reliable than manual calculation
 esJavaOpts: "-XX:MaxRAMPercentage=50.0 -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:G1HeapRegionSize=16m -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:+G1UseAdaptiveIHOP -XX:G1MixedGCCountTarget=8"
@@ -34,7 +37,6 @@ esConfig:
     http.max_content_length: 2147483647b
     ingest.geoip.downloader.enabled: false
     xpack.security.enabled: false
-
   log4j2.properties: |
     -Dlog4j2.formatMsgNoLookups=true
 
@@ -179,19 +181,24 @@ nodeAffinity:
       - key: cloud.google.com/gke-provisioning  #GCP
         operator: In
         values:
-        - standard  
-
-  # requiredDuringSchedulingIgnoredDuringExecution:
-  #  nodeSelectorTerms:
-  #  - matchExpressions:
-  #    - key: nodegroup
-  #      operator: NotIn
-  #      values:
-  #      - atlan-spark
-  #    - key: lifecycle
-  #      operator: In
-  #      values:
-  #      - None
+        - standard 
+  requiredDuringSchedulingIgnoredDuringExecution:
+    nodeSelectorTerms:
+    - matchExpressions:
+      - key: eks.amazonaws.com/capacityType   #AWS
+        operator: In
+        values:
+        - ON_DEMAND
+    - matchExpressions:
+      - key: lifecycle     #Azure
+        operator: In
+        values:
+        - ondemand
+    - matchExpressions:
+      - key: cloud.google.com/gke-provisioning  #GCP
+        operator: In
+        values:
+        - standard 
 
 # The default is to deploy all pods serially. By setting this to parallel all pods are started at
 # the same time when bootstrapping the cluster
@@ -240,11 +247,11 @@ terminationGracePeriod: 120
 sysctlVmMaxMapCount: 262144
 
 readinessProbe:
-  failureThreshold: 6
-  initialDelaySeconds: 30
+  failureThreshold: 3
+  initialDelaySeconds: 10
   periodSeconds: 10
   successThreshold: 3
-  timeoutSeconds: 15
+  timeoutSeconds: 5
 
 custom_deployment:
   enabled: false
@@ -252,7 +259,7 @@ custom_deployment:
   - m6a.2xlarge
 
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-health.html#request-params wait_for_status
-clusterHealthCheckParams: "wait_for_status=yellow&timeout=5s"
+clusterHealthCheckParams: "wait_for_status=yellow&timeout=1s"
 
 # Timeout for readiness probe health check when ES is already running
 healthCheckProbeTimeout: "1s"
@@ -317,3 +324,152 @@ backup:
   image: ghcr.io/atlanhq/alpine-curl-atlan-v2:3.21.0
   #imageTag: latest
   schedule: '0 3 * * *'
+
+esClusterName: "atlas-elasticsearch2"
+deploymentTier: Enterprise
+isolation:
+  enabled: false
+  names:
+    - "ui-search"
+    - "non-ui-search"
+  replicaCount:
+    ui-search: 3
+    non-ui-search: 3
+
+  resources_enterprise:
+    master:
+      requests:
+        cpu: "100m"
+        memory: "3Gi"
+      limits:
+        cpu: "1000m"
+        memory: "4Gi"
+    ui-search:
+      requests:
+        cpu: "2"
+        memory: "6Gi"
+      limits:
+        cpu: "2"
+        memory: "7Gi"
+    non-ui-search:
+      requests:
+        cpu: "2"
+        memory: "6Gi"
+      limits:
+        cpu: "2"
+        memory: "7Gi"
+
+  resources_standard:
+    master:
+      requests:
+        cpu: "500m"
+        memory: "2Gi"
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+    ui-search:
+      requests:
+        cpu: "1000m"
+        memory: "4Gi"
+      limits:
+        cpu: "2000m"
+        memory: "4Gi"
+    non-ui-search:
+      requests:
+        cpu: "1000m"
+        memory: "4Gi"
+      limits:
+        cpu: "2000m"
+        memory: "4Gi"
+
+  resources_basic:
+    master:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+    ui-search:
+      requests:
+        cpu: "500m"
+        memory: "2Gi"
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+    non-ui-search:
+      requests:
+        cpu: "500m"
+        memory: "2Gi"
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+
+  # JVM automatically uses 50% of container memory as max heap using MaxRAMPercentage for isolation mode
+  esJavaOpts:
+    master: "-XX:MaxRAMPercentage=50.0 -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:G1HeapRegionSize=16m -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:+G1UseAdaptiveIHOP -XX:G1MixedGCCountTarget=8"
+    ui-search: "-XX:MaxRAMPercentage=50.0 -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:G1HeapRegionSize=16m -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:+G1UseAdaptiveIHOP -XX:G1MixedGCCountTarget=8"
+    non-ui-search: "-XX:MaxRAMPercentage=50.0 -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:G1HeapRegionSize=16m -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:+G1UseAdaptiveIHOP -XX:G1MixedGCCountTarget=8"
+
+  roles:
+    master:
+      - "master"
+    ui-search:
+      - "data"
+      - "ingest"
+    non-ui-search:
+      - "data"
+      - "ingest"
+  # Enterprise tier storage
+  volumeClaimTemplate:
+    master:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 20Gi
+    ui-search:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 200Gi
+    non-ui-search:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 200Gi
+
+  # Standard tier storage
+  volumeClaimTemplate_standard:
+    master:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 20Gi
+    ui-search:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 100Gi
+    non-ui-search:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 100Gi
+
+  # Basic tier storage
+  volumeClaimTemplate_basic:
+    master:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 20Gi
+    ui-search:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 50Gi
+    non-ui-search:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 50Gi

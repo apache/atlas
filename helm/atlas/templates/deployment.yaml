@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: atlas
+  name: {{ .Values.atlas.name }}
   namespace: {{ .Values.Namespace  }}
   labels:
     app: {{ template "name" . }}
@@ -28,6 +28,10 @@ spec:
       annotations:
 {{ toYaml .Values.atlas.podAnnotations | indent 8 }}
     spec:
+      {{- with .Values.atlas.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- if and .Values.atlas.affinity (ne .Values.global.Tier_Type "Basic") (ne .Values.global.Tier_Type "Standard") }}
       affinity:
         nodeAffinity:
@@ -69,19 +73,6 @@ spec:
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- $multiarchEnabled := and .Values.multiarch (eq .Values.multiarch.enabled true) }}
-      {{- if or .Values.atlas.tolerations $multiarchEnabled }}
-      tolerations:
-      {{- if .Values.atlas.tolerations }}
-      {{ toYaml .Values.atlas.tolerations | nindent 8 }}
-      {{- end }}
-      {{- if $multiarchEnabled }}
-        - key: "archtype"
-          operator: "Equal"
-          value: "arm64"
-          effect: "NoSchedule"
-      {{- end }}
-      {{- end }}
       initContainers:
       {{- if .Values.atlas.initContainers }}
         {{- toYaml .Values.atlas.initContainers | nindent 8 }}
@@ -102,6 +93,7 @@ spec:
           ports:
             - containerPort: {{ .Values.atlas.service.targetPort }}
           env:
+          {{- toYaml .Values.atlas.env | nindent 12 }}
             - name: K8S_POD_IP
               valueFrom:
                 fieldRef:
@@ -132,8 +124,7 @@ spec:
               value: http://$(HOST_IP):4317
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: >-
-                k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(POD_UID),k8s.node.name=$(K8S_NODE_NAME),k8s.namespace.name=$(Namespace),k8s.log.type=service-logs
-          {{- toYaml .Values.atlas.env | nindent 12 }}
+                k8s.pod.name=$(K8S_POD_NAME),k8s.container.image={{ .Values.atlas.image.repository }}:{{ .Values.atlas.image.tag }},k8s.pod.uid=$(POD_UID),k8s.node.name=$(K8S_NODE_NAME),k8s.namespace.name=$(Namespace),k8s.log.type=service-logs
           {{- if eq .Values.albTenant true }}
             - name: ALB_ENABLED
               value: "true"
@@ -197,9 +188,11 @@ spec:
           volumeMounts:
             - name: telegraf-conf
               mountPath: /etc/telegraf/
+            {{- if .Values.nginx.enabled }}
             - name: nginx-log-volume
               mountPath: /var/log/nginx
               readOnly: true
+            {{- end }}
           ports:
             - name: telegrafd
               containerPort: 9273
@@ -230,6 +223,8 @@ spec:
       {{- end }}
       volumes:
         - name: atlas-logs
+          emptyDir: {}
+        - name: atlas-config-map-rw-vol
           emptyDir: {}
         - name: atlas-config
           configMap:

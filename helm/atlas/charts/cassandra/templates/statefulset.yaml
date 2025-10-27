@@ -77,8 +77,13 @@ spec:
                 {{- end }}
             {{- end }}
           {{- else }}
+          {{- if eq .Values.global.Deployment_Type "Development" }}
           preferredDuringSchedulingIgnoredDuringExecution:
             {{- toYaml .Values.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution | nindent 10 }}
+          {{- else }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            {{- toYaml .Values.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution | nindent 12 }}
+          {{- end }}
           {{- end }}
         podAntiAffinity:
         {{- if eq .Values.antiAffinity "soft" }}
@@ -188,7 +193,7 @@ spec:
           {{- if .Values.hostNetwork }}
           value: {{ required "You must fill \".Values.config.seeds\" with list of Cassandra seeds when hostNetwork is set to true" .Values.config.seeds | quote }}
           {{- else }}
-          value: "atlas-cassandra-0.atlas-cassandra.atlas.svc.cluster.local,atlas-cassandra-1.atlas-cassandra.atlas.svc.cluster.local,atlas-cassandra-2.atlas-cassandra.atlas.svc.cluster.local"
+          value: "{{- range $i, $e := until $seed_size }}{{ template "cassandra.fullname" $global }}-{{ $i }}.{{ template "cassandra.fullname" $global }}.{{ $global.Values.Namespace }}.svc.{{ $global.Values.config.cluster_domain }}{{- if (lt ( add1 $i ) $seed_size ) }},{{- end }}{{- end }}"
           {{- end }}
         - name: MAX_HEAP_SIZE
           value: {{ default "8192M" .Values.max_heap_size | quote }}
@@ -374,7 +379,7 @@ spec:
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
+{{ toYaml . | indent 8 }}
       {{- end }}
 {{- if or .Values.configOverrides (not .Values.persistence.enabled) }}
       volumes:

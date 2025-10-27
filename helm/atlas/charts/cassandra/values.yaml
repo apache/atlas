@@ -1,4 +1,3 @@
-
 multiarch:
   enabled: false
   image: {}
@@ -6,8 +5,10 @@ multiarch:
 
 ## Cassandra image version
 ## ref: https://hub.docker.com/r/library/cassandra/
+
 global:
   Tier_Type: ""
+  Deployment_Type: ""
 image:
   repo: ghcr.io/atlanhq/cassandra
   tag: 3.11.12
@@ -208,6 +209,23 @@ affinity:
     - weight: 1
       preference:
         matchExpressions:
+        - key: cloud.google.com/gke-provisioning  #GCP
+          operator: In
+          values:
+          - standard  
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: eks.amazonaws.com/capacityType   #AWS
+          operator: In
+          values:
+          - ON_DEMAND
+      - matchExpressions:
+        - key: lifecycle     #Azure
+          operator: In
+          values:
+          - ondemand
+      - matchExpressions:
         - key: cloud.google.com/gke-provisioning  #GCP
           operator: In
           values:

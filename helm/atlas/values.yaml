@@ -8,6 +8,7 @@ multiarch:
 # Declare variables to be passed into your templates.
 global:
   Tier_Type: ""
+  Deployment_Type: ""
   cloud: ""
   tenantName: ""
   svcIsolation:
@@ -32,6 +33,8 @@ hpa:
     averageUtilization: 85
 
 atlas:
+  name: atlas
+  maintenanceMode: false
   cache:
     enabled: false
   podAntiAffinity: true
@@ -44,36 +47,33 @@ atlas:
   ranger:
     RANGER_PASSWORD: '{{repl ConfigOption "RangerPassword"}}'
     RANGER_SERVICE_URL: "http://ranger-service.ranger.svc.cluster.local:80/api/policy"
+  config:
+    entities_allowed_large_attributes: "rawQueryText,variablesSchemaBase64,visualBuilderSchemaBase64,dataContractSpec,dataContractJson"
   multitenant: ''
   Deployment_Type: ''
   replicaCount: 2
-  config:
-    entities_allowed_large_attributes: "rawQueryText,variablesSchemaBase64,visualBuilderSchemaBase64,dataContractSpec,dataContractJson"
   janusgraph:
     atomic_mutation: true
     janusgraph_tx_buffer_size: 8192
-  keycloak:
-    token_introspection: true
-    introspection_cache: false
   indexsearch:
     enable_api_limit: false
     query_size_max_limit: 100000
     enable_async: true
     request_timeout_in_secs: 60
     enable_janus_optimization: true
+    enable_request_isolation: false
     enable_janus_optimization_for_relationship: true
-    enable_janus_optimization_for_classifications: false
     enable_janus_optimization_extended: true
-    enable_janus_optimization_for_lineage: false
   jg:
-    super_vertex_edge_count: 100000
-    super_vertex_edge_timeout: 30
+    super:
+      vertex:
+        min:
+          edge:
+            count: 200
   bulk:
     max_entities_allowed: 10000
-    enable_janus_optimization: true
   lineage:
-    optimised_calculation: true
-    enable_connection_lineage: false
+    optimised_calculation: false
   authorizer:
     enable_delta_based_refresh: true
     enable_abac: true
@@ -105,6 +105,13 @@ atlas:
       - weight: 1
         preference:
           matchExpressions:
+          - key: eks.amazonaws.com/capacityType   #AWS
+            operator: In
+            values:
+            - ON_DEMAND
+      - weight: 1
+        preference:
+          matchExpressions:
           - key: lifecycle     #Azure
             operator: In
             values:
@@ -115,7 +122,26 @@ atlas:
           - key: cloud.google.com/gke-provisioning  #GCP
             operator: In
             values:
-            - standard  
+            - standard
+
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: eks.amazonaws.com/capacityType   #AWS
+            operator: In
+            values:
+            - ON_DEMAND
+        - matchExpressions:
+          - key: lifecycle     #Azure
+            operator: In
+            values:
+            - ondemand
+        - matchExpressions:
+          - key: cloud.google.com/gke-provisioning  #GCP
+            operator: In
+            values:
+            - standard 
+    
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         - labelSelector:
@@ -308,6 +334,35 @@ atlas:
     SENTRY_DSN_PROD: ''
     INSTANCE_NAME: ''
 
+  # Config for logagent sidecar for atlas.
+  # Used in logagent configmap and atlas statefulset.
+  filebeatLogagent:
+    image:
+      repository: ghcr.io/atlanhq/filebeat
+      tag: 6.8.4
+    data:
+      filebeat.yml: |-
+        filebeat.inputs:
+        - type: log
+          enabled: true
+          paths:
+            - /opt/apache-atlas/logs/audit.log*
+          fields:
+            logtype: audit
+        - type: log
+          enabled: true
+          paths:
+            - /opt/apache-atlas/logs/metric.log
+          fields:
+            logtype: metric
+        - type: log
+          enabled: true
+          paths:
+            - /opt/apache-atlas/logs/atlas_perf.log
+          fields:
+            logtype: performance
+        output.logstash:
+          hosts: ['logstash-logstash:5044']
   # Redis config for atlas
   # This is used in atlas configmap
   redis:
@@ -466,7 +521,7 @@ nginx:
   proxyConnectTimeout: "60s"       # 1 min - Time taken to establish a connection to the atlas server.
   ratelimit:
     enabled: true
-    default_atlas_service: true
+    default_atlas_service: false
   default:
     zoneMemory: "20m"
     rate: "500r"

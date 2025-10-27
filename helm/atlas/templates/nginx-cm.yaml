@@ -213,7 +213,7 @@ data:
         }
 
         location = /api/atlas/v2/entity/bulk { 
-          limit_req zone=entity_bulk_limit_zone burst={{ .Values.nginx.default.burst }} nodelay; 
+          limit_req zone=entity_bulk_limit_zone burst={{ .Values.nginx.bulk.burst }} nodelay; 
           limit_req_status 429;
           add_header Retry-After 1 always;
           proxy_pass $atlas_upstream$request_uri; 

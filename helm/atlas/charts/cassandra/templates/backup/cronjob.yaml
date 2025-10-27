@@ -27,10 +27,6 @@ spec:
         spec:
           restartPolicy: OnFailure
           serviceAccountName: {{ template "cassandra.serviceAccountName" $ }}
-          {{- with $.Values.nodeSelector }}
-          nodeSelector:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
           containers:
           - name: cassandra-backup
             {{- if and $.Values.multiarch.enabled $.Values.multiarch.image.cain }}

@@ -22,22 +22,6 @@ spec:
     spec:
       template:
         spec:
-          {{- if or (and .Values.multiarch (eq .Values.multiarch.enabled true)) .Values.atlas.tolerations }}
-          tolerations:
-          {{- if and .Values.multiarch (eq .Values.multiarch.enabled true) }}
-          - key: "archtype"
-            operator: "Equal"
-            value: "arm64"
-            effect: "NoSchedule"
-          {{- end }}
-          {{- if .Values.atlas.tolerations }}
-          {{ toYaml .Values.atlas.tolerations | nindent 10 }}
-          {{- end }}
-          {{- end }}
-          {{- with .Values.atlas.nodeSelector }}
-          nodeSelector:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
           {{- if .Values.atlas.imagePullSecrets }}
           imagePullSecrets:
           {{- toYaml .Values.atlas.imagePullSecrets | nindent 12 }}

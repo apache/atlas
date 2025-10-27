@@ -16,7 +16,7 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ .Values.hpa.name  }}
+    name: {{ .Values.atlas.name  }}
   metrics:
   - type: Resource
     resource:

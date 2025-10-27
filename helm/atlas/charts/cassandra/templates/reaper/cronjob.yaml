@@ -21,10 +21,6 @@ spec:
         template:
           spec:
             restartPolicy: {{ .Values.reaper.restartPolicy }}
-            {{- with .Values.nodeSelector }}
-            nodeSelector:
-              {{- toYaml . | nindent 14 }}
-            {{- end }}   
             containers:
                 - name: reaper
                   {{- if and .Values.multiarch.enabled .Values.multiarch.image.reaper }}
