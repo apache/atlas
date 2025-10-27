@@ -79,8 +79,7 @@ public class PayloadAnalyzer {
         // Calculate totals
         int totalRelationships = relationshipAttributes.values().stream().mapToInt(Integer::intValue).sum() +
                                appendRelationshipAttributes.values().stream().mapToInt(Integer::intValue).sum() +
-                               removeRelationshipAttributes.values().stream().mapToInt(Integer::intValue).sum() +
-                                arrayAttributes.values().stream().mapToInt(Integer::intValue).sum();
+                               removeRelationshipAttributes.values().stream().mapToInt(Integer::intValue).sum();
         data.setTotalArrayRelationships(totalRelationships);
         
         int totalAttributes = arrayAttributes.values().stream().mapToInt(Integer::intValue).sum();
@@ -124,6 +123,7 @@ public class PayloadAnalyzer {
     }
     
     private void analyzeEntityArrayAttributes(AtlasEntity entity, Map<String, Integer> arrayAttributes) {
+        
         // Analyze regular attributes for array values
         if (MapUtils.isNotEmpty(entity.getAttributes())) {
             for (Map.Entry<String, Object> entry : entity.getAttributes().entrySet()) {

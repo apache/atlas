@@ -80,6 +80,9 @@ public class RequestContext {
 
     private final Map<String, Set<AtlasRelationship>> relationshipMutationMap = new HashMap<>();
     private final Set<String> edgeLabels = new HashSet<>();
+    
+    // Observability timing fields
+    private long lineageCalcTime = 0L;
 
     private String user;
     private Set<String> userGroups;
@@ -935,6 +938,19 @@ public class RequestContext {
 
     public List<ESDeferredOperation> getESDeferredOperations() {
         return esDeferredOperations;
+    }
+
+    // Observability timing methods
+    public long getLineageCalcTime() {
+        return lineageCalcTime;
+    }
+
+    public void setLineageCalcTime(long lineageCalcTime) {
+        this.lineageCalcTime = lineageCalcTime;
+    }
+
+    public void addLineageCalcTime(long additionalTime) {
+        this.lineageCalcTime += additionalTime;
     }
 
 }

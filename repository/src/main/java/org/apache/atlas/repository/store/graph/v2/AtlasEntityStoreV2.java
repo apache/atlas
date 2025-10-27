@@ -1683,7 +1683,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     }
 
                     AtlasVertex           storedVertex = context.getVertex(entity.getGuid());
+                    
+                    // Timing: Diff calculation
+                    long diffCalcStart = System.currentTimeMillis();
                     AtlasEntityDiffResult diffResult   = entityComparator.getDiffResult(entity, storedVertex, !storeDifferentialAudits);
+                    long diffCalcTime = System.currentTimeMillis() - diffCalcStart;
+                    
+                    // Accumulate diff calculation time
+                    long currentDiffTime = observabilityData.getDiffCalcTime();
+                    observabilityData.setDiffCalcTime(currentDiffTime + diffCalcTime);
 
                     if (diffResult.hasDifference()) {
                         if (storeDifferentialAudits) {
@@ -1752,12 +1760,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
 
 
-            // Timing: Entity processing (includes diff calculation and lineage)
+            // Timing: Entity processing (lineage calculations happen in mapAttributesAndClassifications)
             long entityProcessingStart = System.currentTimeMillis();
             EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, bulkRequestContext);
             long entityProcessingTime = System.currentTimeMillis() - entityProcessingStart;
-            observabilityData.setDiffCalcTime(entityProcessingTime);
-            observabilityData.setLineageCalcTime(entityProcessingTime); // Simplified - both happen in mapAttributesAndClassifications
+            
+            // Use accumulated lineage calculation time from RequestContext
+            long totalLineageCalcTime = RequestContext.get().getLineageCalcTime();
+            observabilityData.setLineageCalcTime(totalLineageCalcTime);
 
             ret.setGuidAssignments(context.getGuidAssignments());
 
@@ -1802,12 +1812,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 observabilityService.recordArrayRelationships(observabilityData);
                 observabilityService.recordArrayAttributes(observabilityData);
                 observabilityService.recordTimingMetrics(observabilityData);
-                observabilityService.recordOperationCount("createOrUpdate", "success");
             } catch (Exception e) {
                 // Log error details with high-cardinality fields for debugging
                 observabilityService.logErrorDetails(observabilityData, "Failed to record observability metrics", e);
-                observabilityService.recordOperationCount("createOrUpdate", "error");
             }
+            
+            // Always record success - the createOrUpdate operation itself succeeded
+            observabilityService.recordOperationCount("createOrUpdate", "success");
             
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== createOrUpdate()");

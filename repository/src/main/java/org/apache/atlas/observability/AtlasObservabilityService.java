@@ -14,13 +14,10 @@ import org.apache.atlas.repository.store.graph.v2.utils.MDCScope;
 @Service
 public class AtlasObservabilityService {
     private static final Logger LOG = LoggerFactory.getLogger("OBSERVABILITY");
-    private static final String METRIC_COMPONENT = "atlas_observability";
+    private static final String METRIC_COMPONENT = "atlas_observability_bulk";
     private final MeterRegistry meterRegistry;
     
-    // Metric caches
-    private final Map<String, Timer> timers = new ConcurrentHashMap<>();
-    private final Map<String, Counter> counters = new ConcurrentHashMap<>();
-    private final Map<String, DistributionSummary> summaries = new ConcurrentHashMap<>();
+    // Note: Micrometer handles metric caching internally, so we don't need to cache them ourselves
     
     @Inject
     public AtlasObservabilityService() {
@@ -33,30 +30,23 @@ public class AtlasObservabilityService {
     }
     
     public void recordCreateOrUpdateDuration(AtlasObservabilityData data) {
-        Timer timer = getOrCreateTimer("createOrUpdate.duration", 
-            "client_origin", data.getXAtlanClientOrigin());
-        
+        Timer timer = getOrCreateTimer("duration", data.getXAtlanClientOrigin());
         timer.record(data.getDuration(), TimeUnit.MILLISECONDS);
     }
     
     public void recordPayloadSize(AtlasObservabilityData data) {
-        DistributionSummary summary = getOrCreateDistributionSummary("createOrUpdate.payload_size",
-            "client_origin", data.getXAtlanClientOrigin());
-        
+        DistributionSummary summary = getOrCreateDistributionSummary("payload_size", data.getXAtlanClientOrigin());
         summary.record(data.getPayloadAssetSize());
     }
     
     public void recordPayloadBytes(AtlasObservabilityData data) {
-        DistributionSummary summary = getOrCreateDistributionSummary("createOrUpdate.payload_bytes",
-            "client_origin", data.getXAtlanClientOrigin());
-        
+        DistributionSummary summary = getOrCreateDistributionSummary("payload_bytes", data.getXAtlanClientOrigin());
         summary.record(data.getPayloadRequestBytes());
     }
     
     public void recordArrayRelationships(AtlasObservabilityData data) {
         // Record total count
-        DistributionSummary summary = getOrCreateDistributionSummary("createOrUpdate.array_relationships",
-            "client_origin", data.getXAtlanClientOrigin());
+        DistributionSummary summary = getOrCreateDistributionSummary("array_relationships", data.getXAtlanClientOrigin());
         summary.record(data.getTotalArrayRelationships());
         
         // Record individual relationship types and counts
@@ -67,57 +57,52 @@ public class AtlasObservabilityService {
     
     public void recordArrayAttributes(AtlasObservabilityData data) {
         // Record total count
-        DistributionSummary summary = getOrCreateDistributionSummary("createOrUpdate.array_attributes",
-            "client_origin", data.getXAtlanClientOrigin());
+        DistributionSummary summary = getOrCreateDistributionSummary("array_attributes", data.getXAtlanClientOrigin());
         summary.record(data.getTotalArrayAttributes());
-        
         // Record individual attribute types and counts
-        recordAttributeMap("array_attributes", data.getArrayAttributes(), data.getXAtlanClientOrigin());
-    }
-    
-    private void recordRelationshipMap(String metricName, Map<String, Integer> relationshipMap, String clientOrigin) {
-        if (relationshipMap != null && !relationshipMap.isEmpty()) {
-            for (Map.Entry<String, Integer> entry : relationshipMap.entrySet()) {
-                Counter counter = getOrCreateCounter("createOrUpdate." + metricName,
-                    "client_origin", clientOrigin,
-                    "relationship_name", entry.getKey());
-                counter.increment(entry.getValue());
-            }
-        }
-    }
-    
-    private void recordAttributeMap(String metricName, Map<String, Integer> attributeMap, String clientOrigin) {
-        if (attributeMap != null && !attributeMap.isEmpty()) {
-            for (Map.Entry<String, Integer> entry : attributeMap.entrySet()) {
-                Counter counter = getOrCreateCounter("createOrUpdate." + metricName,
-                    "client_origin", clientOrigin,
+        if (data.getArrayAttributes() != null && !data.getArrayAttributes().isEmpty()) {
+            for (Map.Entry<String, Integer> entry : data.getArrayAttributes().entrySet()) {
+                Counter counter = getOrCreateCounter("attributes", data.getXAtlanClientOrigin(),
                     "attribute_name", entry.getKey());
                 counter.increment(entry.getValue());
             }
         }
     }
     
-    public void recordTimingMetrics(AtlasObservabilityData data) {
-        recordTimingMetric("diff_calc", data.getDiffCalcTime());
-        recordTimingMetric("lineage_calc", data.getLineageCalcTime());
-        recordTimingMetric("validation", data.getValidationTime());
-        recordTimingMetric("ingestion", data.getIngestionTime());
-        recordTimingMetric("notification", data.getNotificationTime());
-        recordTimingMetric("audit_log", data.getAuditLogTime());
+    private void recordRelationshipMap(String metricName, Map<String, Integer> relationshipMap, String clientOrigin) {
+        if (relationshipMap != null && !relationshipMap.isEmpty()) {
+            for (Map.Entry<String, Integer> entry : relationshipMap.entrySet()) {
+                Counter counter = getOrCreateCounter(metricName, clientOrigin,
+                    "relationship_name", entry.getKey());
+                counter.increment(entry.getValue());
+            }
+        }
     }
     
-    private void recordTimingMetric(String operation, long durationMs) {
+    
+    
+    public void recordTimingMetrics(AtlasObservabilityData data) {
+        
+        recordTimingMetric("diff_calc", data.getDiffCalcTime(), data.getXAtlanClientOrigin());
+        recordTimingMetric("lineage_calc", data.getLineageCalcTime(), data.getXAtlanClientOrigin());
+        recordTimingMetric("validation", data.getValidationTime(), data.getXAtlanClientOrigin());
+        recordTimingMetric("ingestion", data.getIngestionTime(), data.getXAtlanClientOrigin());
+        recordTimingMetric("notification", data.getNotificationTime(), data.getXAtlanClientOrigin());
+        recordTimingMetric("audit_log", data.getAuditLogTime(), data.getXAtlanClientOrigin());
+    }
+    
+    private void recordTimingMetric(String operation, long durationMs, String clientOrigin) {
         if (durationMs > 0) {
-            Timer timer = getOrCreateTimer("createOrUpdate." + operation + "_time");
+            Timer timer = getOrCreateTimer(operation + "_time", clientOrigin != null ? clientOrigin : "unknown");
             timer.record(durationMs, TimeUnit.MILLISECONDS);
+        } else {
+            LOG.debug("Skipping {} metric recording - duration is 0", operation);
         }
     }
     
     public void recordOperationCount(String operation, String status) {
-        Counter counter = getOrCreateCounter("createOrUpdate.operations",
-            "operation", operation,
-            "status", status);
-        
+        Counter counter = getOrCreateCounter("operations", "unknown", 
+            "operation", operation, "status", status);
         counter.increment();
     }
     
@@ -140,38 +125,40 @@ public class AtlasObservabilityService {
         }
     }
     
-    private Timer getOrCreateTimer(String metricName, String... tags) {
-        String key = getMetricKey(metricName, tags);
-        return timers.computeIfAbsent(key, k -> 
-            Timer.builder(METRIC_COMPONENT + "_" + metricName)
+    private Timer getOrCreateTimer(String metricName, String clientOrigin, String... additionalTags) {
+        Tags tags = Tags.of("client_origin", clientOrigin);
+        if (additionalTags != null && additionalTags.length > 0) {
+            tags = tags.and(Tags.of(additionalTags));
+        }
+        return Timer.builder(METRIC_COMPONENT + "_" + metricName)
                 .description("Atlas observability timing metric")
                 .tags(tags)
-                .register(meterRegistry));
+                .register(meterRegistry);
     }
-    
-    private Counter getOrCreateCounter(String metricName, String... tags) {
-        String key = getMetricKey(metricName, tags);
-        return counters.computeIfAbsent(key, k ->
-            Counter.builder(METRIC_COMPONENT + "_" + metricName)
+
+    private Counter getOrCreateCounter(String metricName, String clientOrigin, String... additionalTags) {
+        Tags tags = Tags.of("client_origin", clientOrigin);
+        if (additionalTags != null && additionalTags.length > 0) {
+            tags = tags.and(Tags.of(additionalTags));
+        }
+
+        return Counter.builder(METRIC_COMPONENT + "_" + metricName)
                 .description("Atlas observability counter metric")
                 .tags(tags)
-                .register(meterRegistry));
+                .register(meterRegistry);
     }
+
     
-    private DistributionSummary getOrCreateDistributionSummary(String metricName, String... tags) {
-        String key = getMetricKey(metricName, tags);
-        return summaries.computeIfAbsent(key, k ->
-            DistributionSummary.builder(METRIC_COMPONENT + "_" + metricName)
+    private DistributionSummary getOrCreateDistributionSummary(String metricName, String clientOrigin, String... additionalTags) {
+        Tags tags = Tags.of("client_origin", clientOrigin);
+        if (additionalTags != null && additionalTags.length > 0) {
+            tags = tags.and(Tags.of(additionalTags));
+        }
+        return DistributionSummary.builder(METRIC_COMPONENT + "_" + metricName)
                 .description("Atlas observability distribution metric")
                 .tags(tags)
-                .register(meterRegistry));
+                .register(meterRegistry);
     }
     
-    private String getMetricKey(String metricName, String... tags) {
-        StringBuilder key = new StringBuilder(metricName);
-        for (String tag : tags) {
-            key.append(":").append(tag);
-        }
-        return key.toString();
-    }
+    
 }

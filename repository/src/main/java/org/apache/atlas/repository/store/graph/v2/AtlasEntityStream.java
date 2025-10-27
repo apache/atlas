@@ -80,6 +80,11 @@ public class AtlasEntityStream implements EntityStream {
         return entityStream != null ?  entityStream.getByGuid(guid) : entitiesWithExtInfo.getEntity(guid);
     }
 
+    public AtlasEntitiesWithExtInfo getEntitiesWithExtInfo() {
+        return entitiesWithExtInfo;
+    }
+
+
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer("AtlasEntityStream{");
