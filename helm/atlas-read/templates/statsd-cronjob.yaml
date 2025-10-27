@@ -1,0 +1,65 @@
+{{- if or .Values.global.svcIsolation.enabled (or .Values.global.esIsolation.enabled .Values.global.globalSvcIsolation.enabled) }}
+{{- if .Values.atlas.statsdJob.enabled }}
+{{- if and (.Capabilities.APIVersions.Has "batch/v1") (semverCompare ">= 1.19-0" .Capabilities.KubeVersion.Version) -}}
+apiVersion: batch/v1
+{{- else -}}
+apiVersion: batch/v1beta1
+{{- end }}
+kind: CronJob
+metadata:
+  name: atlas-read-statsd-job
+  namespace: {{ .Values.Namespace  }}
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  failedJobsHistoryLimit: 1
+  successfulJobsHistoryLimit: 1
+  concurrencyPolicy: Replace
+  schedule: "{{ .Values.atlas.statsdJob.schedule }}"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          {{- if or (and .Values.multiarch (eq .Values.multiarch.enabled true)) .Values.atlas.tolerations }}
+          tolerations:
+          {{- if and .Values.multiarch (eq .Values.multiarch.enabled true) }}
+          - key: "archtype"
+            operator: "Equal"
+            value: "arm64"
+            effect: "NoSchedule"
+          {{- end }}
+          {{- if .Values.atlas.tolerations }}
+          {{ toYaml .Values.atlas.tolerations | nindent 10 }}
+          {{- end }}
+          {{- end }}
+          {{- with .Values.atlas.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.atlas.imagePullSecrets }}
+          imagePullSecrets:
+          {{- toYaml .Values.atlas.imagePullSecrets | nindent 12 }}
+          {{- end }}
+          containers:
+          - name: metrics-job
+            {{- if and .Values.multiarch.enabled .Values.multiarch.image.alpine_curl }}
+            image: {{ .Values.multiarch.image.alpine_curl }}
+            {{- else }}
+            image: ghcr.io/atlanhq/alpine-curl:3.14
+            {{- end }}
+            command:
+              - sh
+              - -c
+              - |
+                echo "[+] Checking for Atlas"
+                until printf "." && curl -X GET "http://atlas-read-service-atlas.atlas.svc.cluster.local/api/atlas/admin/health"; do
+                  sleep 2;
+                done;
+                echo 'Atlas OK ✓'
+                curl -X GET "http://atlas-read-service-atlas.atlas.svc.cluster.local/api/atlas/admin/pushMetricsToStatsd"
+          restartPolicy: Never
+{{- end -}}
+{{- end }}

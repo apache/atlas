@@ -1,0 +1,69 @@
+{{- if .Values.global.atlasLogstash.enabled }}
+{{- if .Values.extraContainers }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-logstash-metricbeat-config
+  namespace: {{ template "logstash.namespace" . }}
+  labels:
+    app: "{{ template "logstash.fullname" . }}"
+    chart: "{{ template "logstash.chart" . }}"
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+data:
+  metricbeat.yml: |
+    metricbeat.config.modules:
+      path: ${path.config}/modules.d/*.yml
+      reload.enabled: true
+      reload.period: 10s
+    
+    metricbeat.modules:
+    # Monitor Logstash process only (primary focus)
+    - module: logstash
+      metricsets:
+        - node
+        - node_stats
+      period: 10s
+      hosts: ["localhost:9600"]
+      xpack.enabled: true
+      
+    # System metrics disabled due to missing /hostfs mounts
+    # - module: system
+    #   metricsets:
+    #     - cpu
+    #     - memory
+    #     - process_summary
+    #   period: 10s
+      
+    # Monitor JVM metrics from Logstash (commented out - using logstash module instead)
+    # - module: jolokia
+    #   metricsets: ["jmx"]
+    #   period: 10s
+    #   hosts: ["localhost:9600"]
+    #   namespace: "logstash_jvm"
+              
+    output.elasticsearch:
+      hosts: ["${ELASTIC_HOSTS}"]
+      index: "metricbeat-logstash-%{+yyyy.MM.dd}"
+      template.enabled: false
+      
+    # Disable template management and data streams completely  
+    setup.template.enabled: false
+    setup.ilm.enabled: false
+      
+    processors:
+      # Disabled all kubernetes/docker processors to avoid permission issues
+      # - add_docker_metadata: ~
+      # - add_kubernetes_metadata:
+      #     in_cluster: true
+      - add_fields:
+          target: kubernetes
+          fields:
+            pod_name: ${POD_NAME}
+            namespace: {{ .Release.Namespace }}
+            component: logstash
+            
+    logging.level: info
+    logging.to_stderr: true
+{{- end }}
+{{- end }}

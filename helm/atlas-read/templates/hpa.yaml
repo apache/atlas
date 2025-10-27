@@ -1,0 +1,33 @@
+{{- if and (.Values.deploy) (.Values.deploy.enabled) (.Values.hpa) (.Values.hpa.enabled) -}}
+{{- if and (.Capabilities.APIVersions.Has "autoscaling/v2") (semverCompare ">= 1.19-0" .Capabilities.KubeVersion.Version) -}}
+apiVersion: autoscaling/v2
+{{- else -}}
+apiVersion: autoscaling/v2beta2
+{{- end }}
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Values.hpa.name  }}
+  namespace: {{ .Values.Namespace | default "default" }}
+  labels:
+{{ toYaml .Values.hpa.labels | indent 8 }}
+spec:
+  minReplicas: {{ .Values.atlas.replicaCount }}
+  maxReplicas: {{ add (int .Values.atlas.replicaCount) 2 }}
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Values.hpa.name  }}
+  metrics:
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        averageUtilization: {{ .Values.hpa.memory.averageUtilization }}
+        type: Utilization
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.hpa.cpu.averageUtilization }}
+{{- end }}

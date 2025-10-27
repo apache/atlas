@@ -1,0 +1,168 @@
+{{- if or .Values.global.svcIsolation.enabled (or .Values.global.esIsolation.enabled .Values.global.globalSvcIsolation.enabled) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-read-audit-index
+  namespace: {{ .Values.Namespace  }}
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  atlas-audit.sh: |
+    {{ if or (eq .Values.global.esIsolation.enabled true) (eq .Values.global.globalSvcIsolation.enabled true) }}
+    curl -X PUT "atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200/_template/atlas.audit?pretty" -H 'Content-Type: application/json' -d'
+    {{ else }}
+    curl -X PUT "atlas-elasticsearch-master.atlas.svc.cluster.local:9200/_template/atlas.audit?pretty" -H 'Content-Type: application/json' -d'
+    {{ end }}
+    {
+        "index_patterns": ["atlas.audit*"],
+        "settings": {
+            "number_of_shards" : 3, 
+            "number_of_replicas" : 1,
+            "analysis": {
+                "analyzer": {
+                    "resource_path": {
+                        "tokenizer": "resource_hierarchy"
+                    }
+                },
+                "tokenizer": {
+                    "resource_hierarchy": {
+                        "type": "path_hierarchy",
+                        "delimiter": "/"
+                    }
+                }
+            }
+        },
+        "mappings": {
+            "properties": {
+                    "all": {
+                        "type": "text"
+                    },
+                    "Action": {
+                        "type": "keyword"
+                    },
+                    "glossaryQualifiedName": {
+                        "type": "keyword"
+                    },
+                    "Level": {
+                        "type": "keyword"
+                },
+                "Type": {
+                    "type": "keyword"
+                },
+                "access": {
+                    "type": "keyword",
+                    "copy_to": [
+                        "all"
+                    ]
+                },
+                "action": {
+                    "type": "keyword"
+                },
+                "agent": {
+                    "type": "keyword"
+                },
+                "agentHost": {
+                    "type": "keyword"
+                },
+                "cliIP": {
+                    "type": "keyword"
+                },
+                "cluster_name": {
+                    "type": "keyword"
+                },
+                "datetime": {
+                    "type": "text"
+                },
+                "enforcer": {
+                    "type": "keyword"
+                },
+                "event_count": {
+                    "type": "integer"
+                },
+                "event_dur_ms": {
+                    "type": "integer"
+                },
+                "evtTime": {
+                    "type": "date",
+                    "format": "yyyy-MM-dd HH:mm:ss.SSS"
+                },
+                "id": {
+                    "type": "keyword"
+                },
+                "logType": {
+                    "type": "keyword"
+                },
+                "logtimestamp": {
+                    "type": "date",
+                    "format": "yyyy-MM-dd HH:mm:ss,SSS"
+                },
+                "policy": {
+                    "type": "integer"
+                },
+                "policy_version": {
+                    "type": "integer"
+                },
+                "qualifiedName": {
+                    "type": "keyword"
+                },
+                "qualifiedNameText": {
+                    "type": "text",
+                    "copy_to": [
+                        "all"
+                    ]
+                },
+                "qnComponents": {
+                    "type": "nested"
+                },
+                "repo": {
+                    "type": "keyword"
+                },
+                "repoType": {
+                    "type": "keyword"
+                },
+                "reqUser": {
+                    "type": "keyword",
+                    "copy_to": [
+                        "all"
+                    ]
+                },
+                "resType": {
+                    "type": "keyword"
+                },
+                "resource": {
+                    "type": "text",
+                    "copy_to": [
+                        "all"
+                    ]
+                },
+                "result": {
+                    "type": "keyword"
+                },
+                "seq_num": {
+                    "type": "integer"
+                },
+                "tags": {
+                    "type": "text"
+                }
+            }
+    }
+      }
+    '
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{{- end }}

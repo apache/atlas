@@ -1,0 +1,80 @@
+{{- if .Values.reaper.enable -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ template "cassandra.fullname" . }}-reaper-cron
+  namespace: {{ .Values.Namespace }}
+  labels:
+    app: {{ template "cassandra.name" . }}-reaper
+    chart: {{ template "cassandra.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+    schedule: "00 11 * * 6" #At 11 AM Saturday, UTC.
+    failedJobsHistoryLimit: {{ .Values.reaper.failedJobsHistoryLimit }}
+    successfulJobsHistoryLimit: {{ .Values.reaper.successfulJobsHistoryLimit }}
+    concurrencyPolicy: {{ .Values.reaper.concurrencyPolicy }}
+    jobTemplate:
+      spec:
+        activeDeadlineSeconds: {{ .Values.reaper.activeDeadlineSeconds }}
+        backoffLimit: {{ .Values.reaper.backoffLimit }}
+        template:
+          spec:
+            restartPolicy: {{ .Values.reaper.restartPolicy }}
+            {{- with .Values.nodeSelector }}
+            nodeSelector:
+              {{- toYaml . | nindent 14 }}
+            {{- end }}   
+            containers:
+                - name: reaper
+                  {{- if and .Values.multiarch.enabled .Values.multiarch.image.reaper }}
+                  image: {{ .Values.multiarch.image.reaper }}
+                  {{- else }}
+                  image: "{{ .Values.reaper.image.repository }}:{{ .Values.reaper.image.tag }}"
+                  {{- end }}
+                  imagePullPolicy: {{ .Values.reaper.image.pullPolicy }}
+                  env:
+                  {{- range $key, $value := .Values.reaper.env }}
+                    - name: {{ $key }}
+                      value: {{ $value | quote }}
+                  {{- end }}
+                  ports:
+                    - name: http
+                      containerPort: {{ .Values.reaper.port }}
+                      protocol: TCP
+                  livenessProbe:
+                    httpGet:
+                      path: /ping
+                      port: http
+                    initialDelaySeconds: 30
+                    periodSeconds: 10
+                  readinessProbe:
+                    httpGet:
+                      path: /ping
+                      port: http
+                    initialDelaySeconds: 30
+                    periodSeconds: 10
+                  resources:
+                    requests:
+                      cpu: {{ .Values.reaper.resources.requests.cpu }}
+                      memory: {{ .Values.reaper.resources.requests.memory }}
+                    limits:
+                      cpu: {{ .Values.reaper.resources.limits.cpu }}
+                      memory: {{ .Values.reaper.resources.limits.memory }}
+                - name: reaper-repair-sidecar
+                  {{- if and .Values.multiarch.enabled .Values.multiarch.image.reaper_repair }}
+                  image: {{ .Values.multiarch.image.reaper_repair }}
+                  {{- else }}
+                  image: "{{.Values.reaper.sidecar.image.repository}}:{{.Values.reaper.sidecar.image.tag}}"
+                  {{- end }}
+                  imagePullPolicy: {{.Values.reaper.sidecar.image.pullPolicy}}
+                  env:
+                  {{- range $key, $value := .Values.reaper.sidecar.env }}
+                    - name: {{ $key }}
+                      value: {{ $value | quote }}
+                  {{- end }}
+                  resources:
+                    {{- toYaml .Values.reaper.sidecar.resources | nindent 20 }}
+            imagePullSecrets: 
+                - name: {{ .Values.image.pullSecrets }}
+{{- end}}

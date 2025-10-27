@@ -34,8 +34,49 @@ on:
       - mlh-1240-improve-cm-refresh-master
 
 jobs:
-  build:
+  helm-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        chart: ['atlas', 'atlas-read']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.12.0'
+      
+      - name: Update helm dependencies
+        run: |
+          cd helm/${{ matrix.chart }}
+          helm dependency update
+          
+          echo "Chart dependencies:"
+          ls -la charts/
+      
+      - name: Lint helm chart
+        run: |
+          helm lint helm/${{ matrix.chart }}/
+          echo "✅ ${{ matrix.chart }} chart lint passed!"
+      
+      - name: Validate Chart.yaml
+        run: |
+          # Check for required fields
+          if ! grep -q "^version:" helm/${{ matrix.chart }}/Chart.yaml; then
+            echo "❌ Error: version field missing in Chart.yaml"
+            exit 1
+          fi
+          if ! grep -q "^appVersion:" helm/${{ matrix.chart }}/Chart.yaml; then
+            echo "❌ Error: appVersion field missing in Chart.yaml"
+            exit 1
+          fi
+          echo "✅ Chart.yaml validation passed!"
 
+  build:
+    needs: helm-lint
     runs-on: ubuntu-latest
 
     steps:
@@ -431,3 +472,138 @@ jobs:
         with:
           name: smoke-test-logs-${{ github.run_id }}
           path: smoke-test-logs/
+
+  helm-publish:
+    needs: smoke-test  # Only publish if smoke tests pass in all clouds
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        chart: ['atlas', 'atlas-read']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Get branch name
+        id: branch
+        run: |
+          echo "name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+      
+      - name: Get commit ID
+        id: commit
+        run: |
+          echo "id=$(echo ${GITHUB_SHA} | cut -c1-7)abcd" >> $GITHUB_OUTPUT
+      
+      - name: Generate chart version
+        id: version
+        run: |
+          # Semantic version: 1.0.0-branch.commitid
+          # Replace underscores with hyphens for semver compliance
+          BRANCH_NAME_NORMALIZED=$(echo "${{ steps.branch.outputs.name }}" | tr '_' '-')
+          CHART_VERSION="1.0.0-${BRANCH_NAME_NORMALIZED}.${{ steps.commit.outputs.id }}"
+          echo "chart=${CHART_VERSION}" >> $GITHUB_OUTPUT
+          echo "Generated chart version: ${CHART_VERSION}"
+      
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.12.0'
+      
+      - name: Update Chart.yaml with version
+        run: |
+          sed -i "s/^version: .*/version: ${{ steps.version.outputs.chart }}/" helm/${{ matrix.chart }}/Chart.yaml
+          sed -i "s/^appVersion: .*/appVersion: \"${{ steps.commit.outputs.id }}\"/" helm/${{ matrix.chart }}/Chart.yaml
+          
+          echo "Updated ${{ matrix.chart }}/Chart.yaml:"
+          cat helm/${{ matrix.chart }}/Chart.yaml | grep -E "^(version|appVersion):"
+      
+      - name: Update values.yaml with image tags
+        run: |
+          # Replace placeholders with actual values
+          sed -i "s/ATLAS_LATEST_IMAGE_TAG/${{ steps.commit.outputs.id }}/g" helm/${{ matrix.chart }}/values.yaml
+          sed -i "s/ATLAS_BRANCH_NAME/${{ steps.branch.outputs.name }}/g" helm/${{ matrix.chart }}/values.yaml
+          
+          echo "Image configuration in ${{ matrix.chart }}/values.yaml:"
+          grep -A 3 "image:" helm/${{ matrix.chart }}/values.yaml | head -10
+      
+      - name: Update helm dependencies
+        run: |
+          cd helm/${{ matrix.chart }}
+          helm dependency update
+          
+          echo "Chart dependencies:"
+          ls -la charts/
+      
+      - name: Package helm chart
+        run: |
+          mkdir -p helm-packages
+          helm package helm/${{ matrix.chart }}/ --destination ./helm-packages/
+          
+          echo "Packaged charts:"
+          ls -lh helm-packages/
+      
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: $GITHUB_ACTOR
+          password: ${{ secrets.ORG_PAT_GITHUB }}
+      
+      - name: Push chart to GHCR (OCI Registry)
+        run: |
+          CHART_FILE=$(ls helm-packages/${{ matrix.chart }}-*.tgz)
+          echo "Pushing chart: ${CHART_FILE}"
+          
+          helm push ${CHART_FILE} oci://ghcr.io/atlanhq/helm-charts
+          
+          echo "✅ Chart published successfully!"
+          echo "📦 Chart: ${{ matrix.chart }}"
+          echo "📌 Version: ${{ steps.version.outputs.chart }}"
+          echo "🏷️  Registry: oci://ghcr.io/atlanhq/helm-charts/${{ matrix.chart }}"
+      
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: helm-${{ matrix.chart }}-v${{ steps.version.outputs.chart }}
+          name: "${{ matrix.chart }} Helm Chart v${{ steps.version.outputs.chart }}"
+          body: |
+            ## 📦 ${{ matrix.chart }} Helm Chart Release
+            
+            **Chart**: `${{ matrix.chart }}`  
+            **Chart Version**: `${{ steps.version.outputs.chart }}`  
+            **App Version**: `${{ steps.commit.outputs.id }}`  
+            **Branch**: `${{ steps.branch.outputs.name }}`
+            
+            ### 🐳 Docker Image
+            ```
+            ghcr.io/atlanhq/atlas-metastore-${{ steps.branch.outputs.name }}:${{ steps.commit.outputs.id }}
+            ```
+            
+            ### 📥 Installation
+            
+            **Via OCI Registry (Recommended):**
+            ```bash
+            helm install ${{ matrix.chart }} oci://ghcr.io/atlanhq/helm-charts/${{ matrix.chart }} \
+              --version ${{ steps.version.outputs.chart }}
+            ```
+            
+            **Via Downloaded Chart:**
+            ```bash
+            helm install ${{ matrix.chart }} ./${{ matrix.chart }}-${{ steps.version.outputs.chart }}.tgz
+            ```
+          artifacts: "./helm-packages/${{ matrix.chart }}-*.tgz"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          makeLatest: false
+      
+      - name: Chart publish summary
+        run: |
+          echo "## 🎉 Helm Chart Published Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Chart**: ${{ matrix.chart }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: ${{ steps.version.outputs.chart }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry**: oci://ghcr.io/atlanhq/helm-charts/${{ matrix.chart }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Installation Command" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "helm install ${{ matrix.chart }} oci://ghcr.io/atlanhq/helm-charts/${{ matrix.chart }} --version ${{ steps.version.outputs.chart }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
