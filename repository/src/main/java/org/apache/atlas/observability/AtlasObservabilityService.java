@@ -45,8 +45,6 @@ public class AtlasObservabilityService {
     public void recordPayloadBytes(AtlasObservabilityData data) {
         DistributionSummary summary = getOrCreateDistributionSummary("payload_bytes", data.getXAtlanClientOrigin());
         summary.record(data.getPayloadRequestBytes());
-        RequestContext context = RequestContext.get();
-        context.endMetricRecord(context.startMetricRecord("entities_bytes"), data.getPayloadRequestBytes());
     }
     
     public void recordArrayRelationships(AtlasObservabilityData data) {
