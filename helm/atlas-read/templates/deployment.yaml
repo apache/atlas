@@ -1,9 +1,8 @@
 {{- if and (.Values.deploy) (.Values.deploy.enabled) }}
-{{- if or .Values.global.svcIsolation.enabled (or .Values.global.esIsolation.enabled .Values.global.globalSvcIsolation.enabled) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: atlas-read
+  name: {{ .Values.atlas.name }}
   namespace: {{ .Values.Namespace  }}
   labels:
     app: {{ template "name" . }}
@@ -29,6 +28,10 @@ spec:
       annotations:
 {{ toYaml .Values.atlas.podAnnotations | indent 8 }}
     spec:
+      {{- with .Values.atlas.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- if and .Values.atlas.affinity (ne .Values.global.Tier_Type "Basic") (ne .Values.global.Tier_Type "Standard") }}
       affinity:
         nodeAffinity:
@@ -55,8 +58,13 @@ spec:
                 {{- end }}
             {{- end }}
           {{- else }}
+          {{- if eq .Values.global.Deployment_Type "Development" }}
           preferredDuringSchedulingIgnoredDuringExecution:
             {{- toYaml .Values.atlas.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution | nindent 10 }}
+          {{- else }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            {{- toYaml .Values.atlas.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution | nindent 12 }}
+          {{- end }}
           {{- end }}
         {{- if eq .Values.atlas.podAntiAffinity true }}
         podAntiAffinity:
@@ -69,19 +77,6 @@ spec:
       {{- with .Values.atlas.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- $multiarchEnabled := and .Values.multiarch (eq .Values.multiarch.enabled true) }}
-      {{- if or .Values.atlas.tolerations $multiarchEnabled }}
-      tolerations:
-      {{- if .Values.atlas.tolerations }}
-      {{ toYaml .Values.atlas.tolerations | nindent 8 }}
-      {{- end }}
-      {{- if $multiarchEnabled }}
-        - key: "archtype"
-          operator: "Equal"
-          value: "arm64"
-          effect: "NoSchedule"
-      {{- end }}
       {{- end }}
       initContainers:
       {{- if .Values.atlas.initContainers }}
@@ -103,6 +98,7 @@ spec:
           ports:
             - containerPort: {{ .Values.atlas.service.targetPort }}
           env:
+          {{- toYaml .Values.atlas.env | nindent 12 }}
             - name: K8S_POD_IP
               valueFrom:
                 fieldRef:
@@ -134,7 +130,6 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: >-
                 k8s.pod.name=$(K8S_POD_NAME),k8s.container.image={{ .Values.atlas.image.repository }}:{{ .Values.atlas.image.tag }},k8s.pod.uid=$(POD_UID),k8s.node.name=$(K8S_NODE_NAME),k8s.namespace.name=$(Namespace),k8s.log.type=service-logs
-          {{- toYaml .Values.atlas.env | nindent 12 }}
           {{- if eq .Values.albTenant true }}
             - name: ALB_ENABLED
               value: "true"
@@ -238,5 +233,4 @@ spec:
           configMap:
             name: atlas-read-telegrafd
         {{- end }}
-{{- end }}
 {{- end }}

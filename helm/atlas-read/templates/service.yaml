@@ -11,7 +11,7 @@ metadata:
     {{- else if eq .Values.global.cloud "azure" }}
     konghq.com/path: /api/atlas/v2/
     konghq.com/plugins: svc-rate-limit
-    {{- else }}
+    {{- else if eq .Values.albTenant false }}
     konghq.com/path: /api/atlas/v2/
     konghq.com/plugins: svc-rate-limit
     {{- end }}
@@ -31,10 +31,17 @@ spec:
   type: ClusterIP
   {{- end }}
   ports:
+    {{- if and .Values.nginx.enabled .Values.nginx.ratelimit.default_atlas_service }}
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+      name: http
+    {{- else }}
     - port: {{ .Values.atlas.service.port }}
       targetPort: {{ .Values.atlas.service.targetPort }}
       protocol: TCP
       name: {{ .Values.atlas.service.portName }}
+    {{- end }}
   selector:
     app: {{ template "name" . }}
     release: {{ .Release.Name }}

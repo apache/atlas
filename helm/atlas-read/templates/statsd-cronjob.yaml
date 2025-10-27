@@ -35,10 +35,6 @@ spec:
           {{ toYaml .Values.atlas.tolerations | nindent 10 }}
           {{- end }}
           {{- end }}
-          {{- with .Values.atlas.nodeSelector }}
-          nodeSelector:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
           {{- if .Values.atlas.imagePullSecrets }}
           imagePullSecrets:
           {{- toYaml .Values.atlas.imagePullSecrets | nindent 12 }}

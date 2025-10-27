@@ -76,7 +76,7 @@ spec:
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
+{{ toYaml . | indent 8 }}
       {{- end }}
       {{- if or (eq .Values.antiAffinity "hard") (eq .Values.antiAffinity "soft") .Values.nodeAffinity }}
       {{- if .Values.priorityClassName }}
@@ -119,8 +119,13 @@ spec:
                 - {{ . }}
                 {{- end }}
           {{- else }}
+          {{- if eq .Values.global.Deployment_Type "Development" }}
           preferredDuringSchedulingIgnoredDuringExecution:
             {{- toYaml .Values.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution | nindent 10 }}
+          {{- else }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            {{- toYaml .Values.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution | nindent 12 }}
+          {{- end }}
           {{- end }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriod }}
       volumes:

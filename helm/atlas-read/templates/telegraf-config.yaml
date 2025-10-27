@@ -27,6 +27,25 @@ data:
       # quiet = false
       hostname = "" # Will be set by Telegraf automatically
       omit_hostname = false
+    {{- if and .Values.nginx.enabled .Values.nginx.ratelimit.enabled }}
+    # Input plugin for basic Nginx stub_status metrics
+    [[inputs.nginx]]
+      ## An array of Nginx stub_status URI to gather stats from.
+      urls = ["http://127.0.0.1:8081/nginx_status"]
+      ## Response timeout.
+      # response_timeout = "5s"
+    # Add new input plugin for Prometheus format from Nginx VTS
+    [[inputs.prometheus]]
+      ## An array of URLs to scrape Prometheus metrics from.
+      urls = ["http://127.0.0.1:8082/vts_status"] # URL of the VTS status endpoint
+      ## Metric version for parsing. Default is 0 (auto), try 2 if issues.
+      # metric_version = 0 # Or 2 for OpenMetrics if VTS outputs that
+      ## Timeout for scraping.
+      # response_timeout = "5s"
+      ## Optional: Add tags to metrics from this input
+      # [inputs.prometheus.tags]
+      #   source = "nginx_vts"
+    {{- end }}
     [global_tags]
       deployment="atlas"
     [[inputs.http]]

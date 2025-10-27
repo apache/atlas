@@ -155,9 +155,8 @@ data:
     atlas.graph.index.search.elasticsearch.client-only=true
     atlas.graph.index.search.elasticsearch.retry_on_conflict=5
     atlas.graph.index.search.max-result-set-size=1000
-    atlas.index.audit.elasticsearch.total_field_limit=10000
-    atlas.index.audit.elasticsearch.refresh_interval: 1s
-    
+    atlas.index.audit.elasticsearch.total_field_limit={{ .Values.atlas.index.audit_index_field_limit }}
+    atlas.index.audit.elasticsearch.refresh_interval={{ .Values.atlas.index.audit_index_refresh_interval }}
 
     # Solr-specific configuration property
     # atlas.graph.index.search.max-result-set-size=150
@@ -435,6 +434,7 @@ data:
     atlas.graph.metrics.enabled = true
     atlas.graph.metrics.jmx.enabled = true
     atlas.statsd.enable = true
+
     
     ########## Atlas deferred-actions (background tasks) #############
     
@@ -468,7 +468,7 @@ data:
     atlas.metrics.uri_patterns=/api/(meta|atlas/v2)/glossary/terms/[^/]+/assignedEntities,/api/(meta|atlas/v2)/lineage/[^/]+,/api/(meta|atlas/v2)/lineage/list,/api/(meta|atlas/v2)/entity/accessors,/api/(meta|atlas/v2)/entity/auditSearch,/api/(meta|atlas/v2)/entity/bulk,/api/(meta|atlas/v2)/entity/bulk/setClassifications,/api/(meta|atlas/v2)/entity/bulk/uniqueAttribute,/api/(meta|atlas/v2)/entity/evaluator,/api/(meta|atlas/v2)/entity/guid/[^/]+,/api/(meta|atlas/v2)/entity/guid/[^/]+/businessmetadata,/api/(meta|atlas/v2)/entity/uniqueAttribute/type/[^/]+,/api/(meta|atlas/v2)/search/indexsearch,/api/(meta|atlas/v2)/entity/repairhaslineage,/api/(meta|atlas/v2)/types/typedef/name/[^/]+,/api/(meta|atlas/v2)/types/typedefs,/api/atlas/admin/metrics/prometheus,/api/atlas/admin/pushMetricsToStatsd,/api/atlas/v2/auth/download/policies/[^/]+,/api/atlas/v2/auth/download/roles/[^/]+,/api/atlas/v2/auth/download/users/[^/]+,/api/meta/entity/uniqueAttribute/type/[^/]+,/auth/admin/realms/[^/]+/admin-events,/auth/admin/realms/[^/]+/admin-events,/auth/admin/realms/[^/]+/events,/auth/admin/realms/[^/]+/events,/auth/admin/realms/[^/]+/groups,/auth/admin/realms/[^/]+/groups/[^/]+/role-mappings/realm,/auth/admin/realms/[^/]+/roles,/auth/admin/realms/[^/]+/roles-by-id/[^/]+,/auth/admin/realms/[^/]+/roles/[^/]+,/auth/admin/realms/[^/]+/roles/[^/]+/composites,/auth/admin/realms/[^/]+/roles/[^/]+/groups,/auth/admin/realms/[^/]+/roles/[^/]+/users,/auth/admin/realms/[^/]+/users,/auth/admin/realms/[^/]+/users/[^/]+/groups,/auth/admin/realms/[^/]+/users/[^/]+/role-mappings/realm,/auth/realms/[^/]+/protocol/openid-connect/token,/auth/realms/[^/]+/protocol/openid-connect/token/introspect,/users/mappings,/roles/mappings,/api/(meta|atlas/v2)/business-policy/[^/]+/unlink-business-policy,/api/(meta|atlas/v2)/business-policy/link-business-policy,/api/(meta|atlas/v2)/direct/search,/api/(meta|atlas/v2)/attribute/update
     
     atlas.metrics.method_level.enable=true
-    atlas.metrics.method_patterns=policiesPrefetchFailed,processTermAssignments,elasticSearchQuery,elasticQueryTimeout,mapVertexToAtlasEntityHeaderWithoutPrefetch,mapVertexToAtlasEntityHeaderWithPrefetch,getAllClassifications,scrubSearchResults,getAdjacentEdgesByLabel,preCreateOrUpdate,createOrUpdate,mapAttributes,graphCommit,getAtlasLineageInfo,getLineageInfoOnDemand,getLineageListInfoOnDemand,repairHasLineageForAssetGetById,repairHasLineageForAssetGetRelations,repairHasLineageForRequiredAsset,repairHasLineage,getRelationshipEdge,hasEdges,getEdgeBetweenVertices,removeHasLineageOnDelete,resetHasLineageOnInputOutputDelete,updateAssetHasLineageStatus,scrubEntityHeader,getDiffResult
+    atlas.metrics.method_patterns=policiesPrefetchFailed,mapVertexToAtlasEntityHeaderWithoutPrefetch,mapVertexToAtlasEntityHeaderWithPrefetch,processTermAssignments,elasticSearchQuery,mapVertexToAtlasEntityHeader,elasticQueryTimeout,getAllClassifications,scrubSearchResults,getAdjacentEdgesByLabel,preCreateOrUpdate,createOrUpdate,mapAttributes,graphCommit,getAtlasLineageInfo,getLineageInfoOnDemand,getLineageListInfoOnDemand,repairHasLineageForAssetGetById,repairHasLineageForAssetGetRelations,repairHasLineageForRequiredAsset,repairHasLineage,getRelationshipEdge,hasEdges,getEdgeBetweenVertices,removeHasLineageOnDelete,resetHasLineageOnInputOutputDelete,updateAssetHasLineageStatus,isAccessAllowed
     {{ if .Values.atlas.janusgraph.atomic_mutation }}
     ### Atomic batch related configs ###
     atlas.graph.storage.cql.atomic-batch-mutate={{ .Values.atlas.janusgraph.atomic_mutation }}
@@ -476,29 +476,30 @@ data:
     {{ end }}
 
     ######### Canary-Release #########
-    atlas.canary.keycloak.token-introspection = {{ .Values.atlas.keycloak.token_introspection}}
-    atlas.keycloak.introspection.use.cache = {{ .Values.atlas.keycloak.introspection_cache }}
-    
+    atlas.canary.keycloak.token-introspection = true
+    atlas.keycloak.introspection.use.cache = true
+
+    ######### Atlas Maintenance Mode #########
+    atlas.maintenance.mode={{ .Values.atlas.maintenanceMode }}
+
     ######### Atlas Inddexsearch configs #########
     atlas.indexsearch.enable.api.limit={{ .Values.atlas.indexsearch.enable_api_limit }}
     atlas.indexsearch.query.size.max.limit={{ .Values.atlas.indexsearch.query_size_max_limit }}
     atlas.indexsearch.async.enable={{ .Values.atlas.indexsearch.enable_async }}
     atlas.indexsearch.async.search.keep.alive.time.in.seconds={{ .Values.atlas.indexsearch.request_timeout_in_secs }}
     atlas.indexsearch.enable.janus.optimization={{ .Values.atlas.indexsearch.enable_janus_optimization }}
+    atlas.indexsearch.request.isolation.enable={{ .Values.atlas.indexsearch.enable_request_isolation }}
     atlas.indexsearch.enable.janus.optimization.for.relationship={{ .Values.atlas.indexsearch.enable_janus_optimization_for_relationship }}
     atlas.indexsearch.enable.janus.optimization.extended={{ .Values.atlas.indexsearch.enable_janus_optimization_extended }}
     atlas.indexsearch.enable.janus.optimization.for.classifications={{ .Values.atlas.indexsearch.enable_janus_optimization_for_classifications }}
-    atlas.indexsearch.enable.janus.optimization.for.lineage={{ .Values.atlas.indexsearch.enable_janus_optimization_for_lineage }}
-    atlas.jg.super.vertex.edge.count={{ .Values.atlas.jg.super_vertex_edge_count }}
-    atlas.jg.super.vertex.edge.timeout={{ .Values.atlas.jg.super_vertex_edge_timeout }}
+    atlas.jg.super.vertex.min.edge.count={{ .Values.atlas.jg.super.vertex.min.edge.count }}
     
     ######### Atlas Bulk API configs #########
     atlas.bulk.api.max.entities.allowed={{ .Values.atlas.bulk.max_entities_allowed }}
-    atlas.bulk.api.enable.janus.optimization={{ .Values.atlas.bulk.enable_janus_optimization }}
     
-     ######### Atlas Lineage configs #########
+    ######### Atlas Lineage configs #########
     atlas.lineage.optimised.calculation={{ .Values.atlas.lineage.optimised_calculation }}
-    atlas.lineage.enable.connection.lineage={{ .Values.atlas.lineage.enable_connection_lineage }}
+
     ######### Atlas Distributed Task configs #########
     atlas.distributed.task.enabled={{ .Values.atlas.distributed_task.enabled }}
     {{- if eq .Values.atlas.distributed_task.enabled true }}
@@ -506,9 +507,8 @@ data:
     atlas.relationship.cleanup.supported.relationship.labels={{ .Values.atlas.distributed_task.cleanup_supported_relationship_labels }}
     {{- end }}
     
-       ######### Atlas Typedefs update configs #########
+         ######### Atlas Typedefs update configs #########
     atlas.types.update.async.enable={{ .Values.atlas.types_update.async_enable }}
     atlas.types.update.thread.count={{ .Values.atlas.types_update.thread_count }}
     atlas.typedef.lock.name={{ .Values.atlas.types_update.lock_name }}
 {{- end }}
-

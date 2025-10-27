@@ -66,6 +66,7 @@ spec:
                 - {{ . }}
                 {{- end }}
           {{- else }}
+          {{- if eq .Values.global.Deployment_Type "Development" }}
           preferredDuringSchedulingIgnoredDuringExecution:
           {{- if and .Values.multiarch (hasKey .Values.multiarch "enabled") (eq .Values.multiarch.enabled true) }}
           - weight: 100
@@ -77,6 +78,20 @@ spec:
                     - arm64
           {{- end }}
             {{- toYaml .Values.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution | nindent 10 }}
+          {{- else }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            {{- toYaml .Values.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution | nindent 12 }}
+          {{- if and .Values.multiarch (hasKey .Values.multiarch "enabled") (eq .Values.multiarch.enabled true) }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+                - key: kubernetes.io/arch
+                  operator: In
+                  values:
+                    - arm64
+          {{- end }}
+          {{- end }}
           {{- end }}
         podAntiAffinity:
         {{- if eq .Values.antiAffinity "soft" }}
@@ -212,6 +227,18 @@ spec:
         - name: CASSANDRA_START_RPC
           value: {{ default "false" .Values.config.start_rpc | quote }}
         - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: CASSANDRA_LISTEN_ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: CASSANDRA_BROADCAST_ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: CASSANDRA_BROADCAST_RPC_ADDRESS
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
@@ -381,7 +408,7 @@ spec:
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
+{{ toYaml . | indent 8 }}
       {{- end }}
 {{- if or .Values.configOverrides (not .Values.persistence.enabled) }}
       volumes:

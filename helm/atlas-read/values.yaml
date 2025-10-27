@@ -8,6 +8,7 @@ multiarch:
 # Declare variables to be passed into your templates.
 global:
   Tier_Type: ""
+  Deployment_Type: ""
   cloud: ""
   tenantName: ""
   svcIsolation:
@@ -35,6 +36,8 @@ podDisruptionBudget:
   enabled: true
   minAvailable: "1"
 atlas:
+  name: atlas-read
+  maintenanceMode: false
   cache:
     enabled: false
   podAntiAffinity: true
@@ -47,39 +50,36 @@ atlas:
   ranger:
     RANGER_PASSWORD: '{{repl ConfigOption "RangerPassword"}}'
     RANGER_SERVICE_URL: "http://ranger-service.ranger.svc.cluster.local:80/api/policy"
+  config:
+    entities_allowed_large_attributes: "rawQueryText,variablesSchemaBase64,visualBuilderSchemaBase64,dataContractSpec,dataContractJson"
   multitenant: ''
   Deployment_Type: ''
   replicaCount: 2
-  config:
-    entities_allowed_large_attributes: "rawQueryText,variablesSchemaBase64,visualBuilderSchemaBase64,dataContractSpec,dataContractJson"
   janusgraph:
     atomic_mutation: true
     janusgraph_tx_buffer_size: 8192
-  keycloak:
-    token_introspection: true
-    introspection_cache: false
   indexsearch:
     enable_api_limit: false
     query_size_max_limit: 100000
     enable_async: true
     request_timeout_in_secs: 60
     enable_janus_optimization: true
+    enable_request_isolation: false
     enable_janus_optimization_for_relationship: true
-    enable_janus_optimization_for_classifications: false
     enable_janus_optimization_extended: true
-    enable_janus_optimization_for_lineage: false
   jg:
-    super_vertex_edge_count: 100000
-    super_vertex_edge_timeout: 30
+    super:
+      vertex:
+        min:
+          edge:
+            count: 200
   bulk:
     max_entities_allowed: 10000
-    enable_janus_optimization: true
   lineage:
-    optimised_calculation: true
-    enable_connection_lineage: false
+    optimised_calculation: false
   authorizer:
     enable_delta_based_refresh: true
-    enable_abac: true
+    enable_abac: false
   index:
     audit_index_field_limit: 10000
     audit_index_refresh_interval: 1s
@@ -88,7 +88,7 @@ atlas:
     cleanup_supported_asset_types: "Process,AirflowTask"
     cleanup_supported_relationship_labels: "__Process.inputs,__Process.outputs,__AirflowTask.inputs,__AirflowTask.outputs"
   types_update:
-    async_enable: true
+    async_enable: false
     thread_count: 5
     lock_name: "atlas-read:type-def:lock"
 
@@ -109,6 +109,13 @@ atlas:
       - weight: 1
         preference:
           matchExpressions:
+          - key: eks.amazonaws.com/capacityType   #AWS
+            operator: In
+            values:
+            - ON_DEMAND
+      - weight: 1
+        preference:
+          matchExpressions:
           - key: lifecycle     #Azure
             operator: In
             values:
@@ -119,7 +126,26 @@ atlas:
           - key: cloud.google.com/gke-provisioning  #GCP
             operator: In
             values:
-            - standard  
+            - standard
+
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: eks.amazonaws.com/capacityType   #AWS
+            operator: In
+            values:
+            - ON_DEMAND
+        - matchExpressions:
+          - key: lifecycle     #Azure
+            operator: In
+            values:
+            - ondemand
+        - matchExpressions:
+          - key: cloud.google.com/gke-provisioning  #GCP
+            operator: In
+            values:
+            - standard 
+    
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         - labelSelector:
@@ -146,9 +172,9 @@ atlas:
         - curl -X GET http://localhost:21000/api/atlas/admin/killtheleader
 
   # Kubernetes ingress for atlas
-  # Primary ingress. all traffic is switched to secondary ingress.
+  # Primary ingress.
   ingress:
-    enabled: false
+    enabled: true
     serviceName: atlas-read-ui-service
     annotations:
       kubernetes.io/ingress.class: "kong"
@@ -312,6 +338,35 @@ atlas:
     SENTRY_DSN_PROD: ''
     INSTANCE_NAME: ''
 
+  # Config for logagent sidecar for atlas.
+  # Used in logagent configmap and atlas statefulset.
+  filebeatLogagent:
+    image:
+      repository: ghcr.io/atlanhq/filebeat
+      tag: 6.8.4
+    data:
+      filebeat.yml: |-
+        filebeat.inputs:
+        - type: log
+          enabled: true
+          paths:
+            - /opt/apache-atlas/logs/audit.log*
+          fields:
+            logtype: audit
+        - type: log
+          enabled: true
+          paths:
+            - /opt/apache-atlas/logs/metric.log
+          fields:
+            logtype: metric
+        - type: log
+          enabled: true
+          paths:
+            - /opt/apache-atlas/logs/atlas_perf.log
+          fields:
+            logtype: performance
+        output.logstash:
+          hosts: ['logstash-logstash:5044']
   # Redis config for atlas
   # This is used in atlas configmap
   redis:
@@ -343,13 +398,6 @@ atlas:
   # Flag to enable telegraf sidecar for metrics
   telegraf:
     enabled: true
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 300m
-        memory: 256Mi
 
   # Flag to enable statsD cronjob and schedule
   statsdJob:
@@ -460,3 +508,47 @@ cassandra:
         memory: 1Gi
         #cpu: 1
     destination: ""
+
+nginx:
+  enabled: true
+  clientMaxBodySize: "512m"        # The maximum size of the request body.
+  clientBodyBufferSize: "512k"     # The buffer size for reading the request body. In is nginx InMemory buffer size per request. Excessive request size will be written on disk defined by clientMaxBodySize.
+  clientBodyTimeout: "600s"        # Allow clients up to 10 minutes to actively send their request body before Nginx times out the connection.
+  proxyReadTimeout: "10800s"       # 3 hrs - Time taken to read a response from the atlas server. The workflow client will wait for 3 hrs for the response.
+  proxyConnectTimeout: "60s"       # 1 min - Time taken to establish a connection to the atlas server.
+  ratelimit:
+    enabled: true
+    default_atlas_service: false
+  default:
+    zoneMemory: "20m"
+    rate: "500r"
+    rateUnit: "m"
+    burst: 20
+    header: "$http_x_atlan_agent_id"
+  indexsearch:
+    zoneMemory: "20m"                 # Example: Zone memory, e.g., 10m, 20m
+    rate: "500r"                      # Example: Rate, e.g., 1000r (requests)
+    rateUnit: "m"                     # Example: Rate unit, e.g., m (minute), s (second), 1000r (requests per m minute)
+    burst: 100                         # Example: Burst size
+    header: "$http_x_atlan_agent_id"  # Example: Header name
+  bulk:
+    zoneMemory: "20m"
+    rate: "1000r"
+    rateUnit: "m"
+    burst: 100
+    header: "$http_x_atlan_agent_id"
+  logging:
+    format: '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" "$http_x_forwarded_for" "$http_x_atlan_client_origin" "$http_x_atlan_agent_id"'
+  vts:
+    zoneMemory: "32m"
+
+# Summary of Timeout Settings in Nginx
+
+# To Upstream (Atlas):
+# proxy_connect_timeout: - Time taken to establish a connection to the atlas server.
+# proxy_read_timeout: - Time taken to read a response from the atlas server.
+# proxy_send_timeout: (defaults to proxy_read_timeout) - Time taken to send a request to the atlas server.
+# From Client:
+# client_body_timeout: - Time taken by the client to send the request body.
+# client_header_timeout: - Time taken by the client to send the request header.
+# keepalive_timeout: - This timeout applies to an idle client connection after Nginx has finished sending a response and is waiting for the next request on the same TCP connection.
