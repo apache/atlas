@@ -199,7 +199,7 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
         EntitySearchProcessor processor = new EntitySearchProcessor(context);
         List<AtlasVertex>     vertices  = processor.execute();
 
-        assertEquals(vertices.size(), 7);
+        assertEquals(vertices.size(), 10);
 
         List<String> nameList = new ArrayList<>();
         for (AtlasVertex vertex : vertices) {
@@ -277,7 +277,7 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
         SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.emptySet());
 
         EntitySearchProcessor processor = new EntitySearchProcessor(context);
-        assertEquals(processor.execute().size(), 14);
+        assertEquals(processor.execute().size(), 17);
     }
 
     @Test(expectedExceptions = AtlasBaseException.class, expectedExceptionsMessageRegExp = "Not_Exists: Unknown/invalid typename")
@@ -376,7 +376,7 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
         EntitySearchProcessor processor = new EntitySearchProcessor(context);
         List<AtlasVertex>     vertices  = processor.execute();
 
-        assertEquals(vertices.size(), 7);
+        assertEquals(vertices.size(), 10);
 
         List<String> nameList = new ArrayList<>();
         for (AtlasVertex vertex : vertices) {
@@ -784,6 +784,142 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
         }).collect(Collectors.toList());
 
         assertTrue(guids.contains(cjkGuid2));
+    }
+
+    @Test
+    public void searchTablesByQualifiedNameBeginswithAndEndswith() throws AtlasBaseException {
+        SearchParameters.FilterCriteria filterCriteria          = new SearchParameters.FilterCriteria();
+        List<SearchParameters.FilterCriteria> lstCriterion      = new ArrayList<>();
+
+        filterCriteria.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.STARTS_WITH, "Sales.sample_table"));
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.ENDS_WITH, "@cl1"));
+        filterCriteria.setCriterion(lstCriterion);
+
+        SearchParameters      params    = getSearchParameters(HIVE_TABLE_TYPE, filterCriteria, 20);
+        SearchContext         context   = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        List<AtlasVertex>     vertices  = processor.execute();
+
+        assertEquals(vertices.size(), 1);
+    }
+
+    // Before the fix: Would fail or return no results
+    // After the fix: Falls back to graph query, returns 1 result
+    // [org.apache.atlas.BasicTestSetup public AtlasEntity.AtlasEntitiesWithExtInfo hiveTestEntities()]
+    @Test
+    public void searchTablesByLongQualifiedNameBeginswithAndEndswith() throws AtlasBaseException {
+        SearchParameters.FilterCriteria filterCriteria          = new SearchParameters.FilterCriteria();
+        filterCriteria.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+        List<SearchParameters.FilterCriteria> lstCriterion      = new ArrayList<>();
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.STARTS_WITH, "Sales.rltdvhrxhocivajyqojaxulwzhgzgzpkfolziacfnndzncjkthzeaeykdhhrjqdeibhdgiepwqkinvqzqxevushydtwjaabzgbfjmzvcbsoxewruhyhciyjefzsnokxvbeiiowzbhlkmujcnwilslgeswobzwwvkugyupsemqxsbdcmgrlpxmeuljvxyddvpccvcloupjorziwhogwnjvsdrwksvrbxcxjlcrcmrvvmbdmenafmvgrqzcaqbgpnhxiqbvxcbnudafsmjzvlzzzzpqmjkngbximmbjbijrqfb"));
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.ENDS_WITH, "@cl1"));
+        filterCriteria.setCriterion(lstCriterion);
+
+        SearchParameters      params    = getSearchParameters(HIVE_TABLE_TYPE, filterCriteria, 20);
+        SearchContext         context   = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        List<AtlasVertex>     vertices  = processor.execute();
+
+        assertEquals(vertices.size(), 1);
+    }
+
+    @Test
+    public void searchColumnsByQualifiedNameBeginswithAndEndswith() throws AtlasBaseException {
+        SearchParameters.FilterCriteria filterCriteria          = new SearchParameters.FilterCriteria();
+        filterCriteria.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+        List<SearchParameters.FilterCriteria> lstCriterion      = new ArrayList<>();
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.STARTS_WITH, "Sales.sample_table."));
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.ENDS_WITH, "@cl1"));
+        filterCriteria.setCriterion(lstCriterion);
+
+        SearchParameters      params    = getSearchParameters(COLUMN_TYPE, filterCriteria, 20);
+        SearchContext         context   = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        List<AtlasVertex>     vertices  = processor.execute();
+
+        assertEquals(vertices.size(), 6);
+    }
+
+    //Expected behavior:** Should find **5 columns** from the long-named table
+    // [org.apache.atlas.BasicTestSetup public AtlasEntity.AtlasEntitiesWithExtInfo hiveTestEntities()]
+    @Test
+    public void searchColumnsByLongQualifiedNameBeginswithAndEndswith() throws AtlasBaseException {
+        SearchParameters.FilterCriteria filterCriteria          = new SearchParameters.FilterCriteria();
+        filterCriteria.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+        List<SearchParameters.FilterCriteria> lstCriterion      = new ArrayList<>();
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.STARTS_WITH, "Sales.rltdvhrxhocivajyqojaxulwzhgzgzpkfolziacfnndzncjkthzeaeykdhhrjqdeibhdgiepwqkinvqzqxevushydtwjaabzgbfjmzvcbsoxewruhyhciyjefzsnokxvbeiiowzbhlkmujcnwilslgeswobzwwvkugyupsemqxsbdcmgrlpxmeuljvxyddvpccvcloupjorziwhogwnjvsdrwksvrbxcxjlcrcmrvvmbdmenafmvgrqzcaqbgpnhxiqbvxcbnudafsmjzvlzzzzpqmjkngbximmbjbijrqfb."));
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.ENDS_WITH, "@cl1"));
+        filterCriteria.setCriterion(lstCriterion);
+
+        SearchParameters      params    = getSearchParameters(COLUMN_TYPE, filterCriteria, 20);
+        SearchContext         context   = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        List<AtlasVertex>     vertices  = processor.execute();
+
+        assertEquals(vertices.size(), 5);
+    }
+
+    //**Expected behavior:** Should find **1 table**
+    // [org.apache.atlas.BasicTestSetup public AtlasEntity.AtlasEntitiesWithExtInfo hiveTestEntities()]
+    @Test
+    public void searchTablesByLongTokenizedQualifiedNameBeginswithAndEndswith() throws AtlasBaseException {
+        SearchParameters.FilterCriteria filterCriteria          = new SearchParameters.FilterCriteria();
+        filterCriteria.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+        List<SearchParameters.FilterCriteria> lstCriterion      = new ArrayList<>();
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.STARTS_WITH, "Sales.rrrrtokenizeeeeivajaxulwzhgzgzpkfoianndzncjkthzeaeykdhhrjqdeibhdgiepwqkinvqzqxevushydtwjaabzgbfjmzvcbsoxewruhyhciyjefzsnokxvbeiiowzbhlkmujcnwilslgeswobzwwvkugyupsemqxsbdcmgrlpxmeuljvxyddvpccvcloupjogrqzcaqbgpnhxiqbvxcbnudafsmaajzvlzzzzpqmjkngbximmbjbijrq1"));
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.ENDS_WITH, "@cl1"));
+        filterCriteria.setCriterion(lstCriterion);
+
+        SearchParameters      params    = getSearchParameters(HIVE_TABLE_TYPE, filterCriteria, 20);
+        SearchContext         context   = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        List<AtlasVertex>     vertices  = processor.execute();
+
+        assertEquals(vertices.size(), 1);
+    }
+
+    //**Expected behavior:** Should find **1 table** using graph query fallback
+    // [org.apache.atlas.BasicTestSetup public AtlasEntity.AtlasEntitiesWithExtInfo hiveTestEntities()]
+    @Test
+    public void searchTablesByQualifiedNameContainsAndEndswith() throws AtlasBaseException {
+        SearchParameters.FilterCriteria filterCriteria          = new SearchParameters.FilterCriteria();
+        List<SearchParameters.FilterCriteria> lstCriterion      = new ArrayList<>();
+
+        filterCriteria.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.CONTAINS, ".sample_table"));
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.ENDS_WITH, "@cl1"));
+        filterCriteria.setCriterion(lstCriterion);
+
+        SearchParameters      params    = getSearchParameters(HIVE_TABLE_TYPE, filterCriteria, 20);
+        SearchContext         context   = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        List<AtlasVertex>     vertices  = processor.execute();
+
+        assertEquals(vertices.size(), 1);
+    }
+
+    //**Expected behavior:** Should find **1 table** using graph query fallback
+    // [org.apache.atlas.BasicTestSetup public AtlasEntity.AtlasEntitiesWithExtInfo hiveTestEntities()]
+    @Test
+    public void searchTableByLongQualifiedNameContainsAndEndswith() throws AtlasBaseException {
+        SearchParameters.FilterCriteria filterCriteria          = new SearchParameters.FilterCriteria();
+        List<SearchParameters.FilterCriteria> lstCriterion      = new ArrayList<>();
+
+        filterCriteria.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.CONTAINS, ".rltdvhrxhocivajyqojaxulwzhgzgzpkfolziacfnndzncjkthzeaeykdhhrjqdeibhdgiepwqkinvqzqxevushydtwjaabzgbfjmzvcbsoxewruhyhciyjefzsnokxvbeiiowzbhlkmujcnwilslgeswobzwwvkugyupsemqxsbdcmgrlpxmeuljvxyddvpccvcloupjorziwhogwnjvsdrwksvrbxcxjlcrcmrvvmbdmenafmvgrqzcaqbgpnhxiqbvxcbnudafsmjzvlzzzzpqmjkngbximmbjbijrqfb"));
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.ENDS_WITH, "@cl1"));
+        filterCriteria.setCriterion(lstCriterion);
+
+        SearchParameters      params    = getSearchParameters(HIVE_TABLE_TYPE, filterCriteria, 20);
+        SearchContext         context   = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        List<AtlasVertex>     vertices  = processor.execute();
+
+        assertEquals(vertices.size(), 1);
     }
 
     private static SearchParameters.FilterCriteria filtercriteriaDateRange(String attributeValue, AtlasTypeRegistry typeRegistry, AtlasGraph graph) throws AtlasBaseException {

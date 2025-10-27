@@ -112,6 +112,12 @@ public abstract class SearchProcessor {
     public static final  int     MAX_RESULT_SIZE                 = getApplicationProperty(Constants.INDEX_SEARCH_MAX_RESULT_SET_SIZE, 150);
     public static final  int     MAX_QUERY_STR_LENGTH_TYPES      = getApplicationProperty(Constants.INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH, 512);
     public static final  int     MAX_QUERY_STR_LENGTH_TAGS       = getApplicationProperty(Constants.INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH, 512);
+    /**
+     * Adds a new configurable constant tied to Solr’s default maxTokenLen (255).
+     * Useful for operators (STARTS_WITH, ENDS_WITH, CONTAINS) that can’t safely be processed via the index when values exceed the token length.
+     * Why this helps: avoids Solr truncation and allows search to fall back to the graph safely on long values.
+     */
+    public static final  int     SOLR_MAX_TOKEN_STR_LENGTH       = getApplicationProperty(Constants.INDEX_SEARCH_SOLR_MAX_TOKEN_LENGTH, 255);
     public static final  String  INDEX_SEARCH_PREFIX             = AtlasGraphUtilsV2.getIndexSearchPrefix();
     public static final  String  AND_STR                         = " AND ";
     public static final  String  EMPTY_STRING                    = "";
@@ -671,6 +677,10 @@ public abstract class SearchProcessor {
 
                     for (AtlasStructType structType : structTypes) {
                         String qualifiedName = structType.getVertexPropertyName(criteria.getAttributeName());
+                        if (isIndexSearchable(criteria, structType)) {
+                            LOG.debug("toGraphFilterQuery() ==> skipped attribute: {}, filter value: {}, and operator: {}", criteria.getAttributeName(), criteria.getAttributeValue(), criteria.getOperator());
+                            continue;
+                        }
 
                         if (filterAttributes.contains(qualifiedName)) {
                             String                    attrName  = criteria.getAttributeName();
@@ -868,6 +878,15 @@ public abstract class SearchProcessor {
 
                     ret = false;
                 }
+                /*
+                 * Bypasses index for these operators when value length exceeds the limit.
+                 * Falls back to a graph traversal!
+                 */
+                else if ((operator == SearchParameters.Operator.STARTS_WITH || operator == SearchParameters.Operator.ENDS_WITH || operator == SearchParameters.Operator.CONTAINS)  && attributeValue.length() > SOLR_MAX_TOKEN_STR_LENGTH) {
+                    LOG.debug("{} operator found for string attribute {} (SOLR MAX TOKEN STR LENGTH:{}) and filter value {}, deferring to in-memory or graph query (might cause poor performance)", operator, qualifiedName, SOLR_MAX_TOKEN_STR_LENGTH, attributeValue);
+
+                    ret = false;
+                }
             }
         }
 
@@ -920,6 +939,10 @@ public abstract class SearchProcessor {
                 ArrayList<String> orExpQuery = new ArrayList<>();
 
                 for (AtlasStructType structType : structTypes) {
+                    if (!isIndexSearchable(criteria, structType)) {
+                        LOG.debug("toIndexQuery() ==> skipped attribute: {}, and filter value: {}, and operator: {}", criteria.getAttributeName(), criteria.getAttributeValue(), criteria.getOperator());
+                        continue;
+                    }
                     String name = structType.getVertexPropertyName(criteria.getAttributeName());
 
                     if (filterAttributes.contains(name)) {
