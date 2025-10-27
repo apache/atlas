@@ -50,15 +50,6 @@ COPY atlas-hub/pre-conf/atlas-auth/ /opt/apache-atlas/conf/
 RUN mkdir /opt/apache-atlas/libext
 RUN curl https://repo1.maven.org/maven2/org/jolokia/jolokia-jvm/1.6.2/jolokia-jvm-1.6.2-agent.jar -o /opt/apache-atlas/libext/jolokia-jvm-agent.jar
 
-# Create a non-root user for running Atlas
-RUN groupadd -r atlas && useradd -r -g atlas -d /opt/apache-atlas -s /bin/bash atlas
-
-# Set ownership of the atlas directory to the atlas user
-RUN chown -R atlas:atlas /opt/apache-atlas
-
-# Switch to the non-root user
-USER atlas
-
 RUN cd /opt/apache-atlas/bin \
     && ./atlas_start.py -setup || true
 

@@ -297,6 +297,12 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     
+    env:
+      VCLUSTER_AWS_NAME: ${{ vars.VCLUSTER_AWS_NAME }}
+      VCLUSTER_AZURE_NAME: ${{ vars.VCLUSTER_AZURE_NAME }}
+      VCLUSTER_GCP_NAME: ${{ vars.VCLUSTER_GCP_NAME }}
+      VCLUSTER_PROJECT: ${{ vars.VCLUSTER_PROJECT }}
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -383,14 +389,19 @@ jobs:
           echo "=================================================="
           
           # Connect to AWS vCluster
-          echo "Connecting to AWS vCluster (hkmeta02)..."
-          KUBECONFIG=kubeconfig-aws.yaml vcluster platform connect vcluster hkmeta02 --project default
+          echo "Connecting to AWS vCluster ($VCLUSTER_AWS_NAME)..."
+          KUBECONFIG=kubeconfig-aws.yaml vcluster platform connect vcluster $VCLUSTER_AWS_NAME --project $VCLUSTER_PROJECT
           echo "✓ AWS kubeconfig saved to kubeconfig-aws.yaml"
           
           # Connect to Azure vCluster  
-          echo "Connecting to Azure vCluster (enpla1cp21)..."
-          KUBECONFIG=kubeconfig-azure.yaml vcluster platform connect vcluster enpla1cp21 --project default
+          echo "Connecting to Azure vCluster ($VCLUSTER_AZURE_NAME)..."
+          KUBECONFIG=kubeconfig-azure.yaml vcluster platform connect vcluster $VCLUSTER_AZURE_NAME --project $VCLUSTER_PROJECT
           echo "✓ Azure kubeconfig saved to kubeconfig-azure.yaml"
+          
+          # Connect to GCP vCluster  
+          echo "Connecting to GCP vCluster ($VCLUSTER_GCP_NAME)..."
+          KUBECONFIG=kubeconfig-gcp.yaml vcluster platform connect vcluster $VCLUSTER_GCP_NAME --project $VCLUSTER_PROJECT
+          echo "✓ GCP kubeconfig saved to kubeconfig-gcp.yaml"
           
           echo ""
           echo "Verifying kubeconfigs..."
@@ -403,6 +414,10 @@ jobs:
           echo ""
           echo "Testing Azure connection..."
           KUBECONFIG=kubeconfig-azure.yaml kubectl cluster-info | head -1
+          
+          echo ""
+          echo "Testing GCP connection..."
+          KUBECONFIG=kubeconfig-gcp.yaml kubectl cluster-info | head -1
           
           echo ""
           echo "✓ All vCluster connections established"

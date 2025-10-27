@@ -13,7 +13,7 @@
 #
 # Prerequisites:
 #   - kubectl configured with access to vclusters
-#   - kubeconfig-aws.yaml and kubeconfig-azure.yaml in current directory
+#   - kubeconfig-aws.yaml, kubeconfig-azure.yaml, and kubeconfig-gcp.yaml in current directory
 #   - jq installed
 ##############################################################################
 
@@ -181,10 +181,15 @@ echo -e "${YELLOW}Launching Azure test...${NC}"
 bash -c "test_cloud Azure kubeconfig-azure.yaml" &
 PID_AZURE=$!
 
+echo -e "${YELLOW}Launching GCP test...${NC}"
+bash -c "test_cloud GCP kubeconfig-gcp.yaml" &
+PID_GCP=$!
+
 echo ""
-echo -e "${BLUE}Both tests running in parallel...${NC}"
+echo -e "${BLUE}All tests running in parallel...${NC}"
 echo "AWS PID: $PID_AWS"
 echo "Azure PID: $PID_AZURE"
+echo "GCP PID: $PID_GCP"
 echo ""
 
 # Tail logs in real-time (interleaved) with color coding
@@ -210,6 +215,17 @@ tail -f smoke-test-logs/Azure.log 2>/dev/null | while IFS= read -r line; do
 done &
 TAIL_AZURE=$!
 
+tail -f smoke-test-logs/GCP.log 2>/dev/null | while IFS= read -r line; do
+  if echo "$line" | grep -q "ERROR\|❌\|failed"; then
+    echo -e "${RED}[GCP] $line${NC}"
+  elif echo "$line" | grep -q "✓\|✅\|PASSED\|successfully"; then
+    echo -e "${GREEN}[GCP] $line${NC}"
+  else
+    echo "[GCP] $line"
+  fi
+done &
+TAIL_GCP=$!
+
 # Wait for tests to complete
 FAILED=0
 
@@ -227,8 +243,15 @@ else
   FAILED=1
 fi
 
+if wait $PID_GCP; then
+  echo -e "${GREEN}✓ GCP test completed successfully${NC}"
+else
+  echo -e "${RED}✗ GCP test failed${NC}"
+  FAILED=1
+fi
+
 # Stop tailing logs
-kill $TAIL_AWS $TAIL_AZURE 2>/dev/null || true
+kill $TAIL_AWS $TAIL_AZURE $TAIL_GCP 2>/dev/null || true
 
 # Show final summary
 echo ""
@@ -263,6 +286,22 @@ if grep -q "SMOKE TEST PASSED" smoke-test-logs/Azure.log; then
   done
 else
   cat smoke-test-logs/Azure.log | tail -5 | while IFS= read -r line; do
+    echo -e "${RED}$line${NC}"
+  done
+fi
+
+echo ""
+echo -e "${YELLOW}GCP Results:${NC}"
+if grep -q "SMOKE TEST PASSED" smoke-test-logs/GCP.log; then
+  cat smoke-test-logs/GCP.log | tail -5 | while IFS= read -r line; do
+    if echo "$line" | grep -q "PASSED"; then
+      echo -e "${GREEN}$line${NC}"
+    else
+      echo "$line"
+    fi
+  done
+else
+  cat smoke-test-logs/GCP.log | tail -5 | while IFS= read -r line; do
     echo -e "${RED}$line${NC}"
   done
 fi

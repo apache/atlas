@@ -742,12 +742,6 @@
                         -Dhadoop.tmp.dir=${project.build.directory}/tmp-hadoop-${user.name}
                         -Xmx1024m
                     </argLine>
-                    <environmentVariables>
-                        <DOCKER_HOST>unix:///Users/nikhil/.colima/docker.sock</DOCKER_HOST>
-                        <TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE>/Users/nikhil/.colima/docker.sock</TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE>
-                        <TESTCONTAINERS_RYUK_DISABLED>true</TESTCONTAINERS_RYUK_DISABLED>
-                        <TESTCONTAINERS_REUSE_ENABLE>true</TESTCONTAINERS_REUSE_ENABLE>
-                    </environmentVariables>
                 </configuration>
                 <executions>
                     <!-- Needed for explicit separation of UTs, SSL/Kerberos/Secure server tests and ITs-->
