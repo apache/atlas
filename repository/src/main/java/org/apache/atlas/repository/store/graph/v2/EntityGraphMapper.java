@@ -2987,6 +2987,18 @@ public class EntityGraphMapper {
                     createdSet.stream().filter(e -> !currentSet.contains(e)),
                     currentSet.stream().filter(e -> !createdSet.contains(e))
             ).collect(Collectors.toList());
+
+            changedEntities = changedEntities.stream()
+                    .filter(Objects::nonNull)
+                    .filter(edge -> {
+                        try {
+                            return ACTIVE.equals(GraphHelper.getStatus((AtlasEdge)edge));
+                        } catch (Exception e) {
+                            LOG.warn("Failed to get status for edge: {}", edge, e);
+                            return false;
+                        }
+                    })
+                    .collect(Collectors.toList());
         } else {
             changedEntities = new ArrayList<>(createdElements);
         }

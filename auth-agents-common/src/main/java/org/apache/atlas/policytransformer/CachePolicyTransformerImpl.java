@@ -552,7 +552,12 @@ public class CachePolicyTransformerImpl {
         List<RangerPolicyItemAccess> accesses = new ArrayList<>();
         List<String> actions = (List<String>) atlasPolicy.getAttribute("policyActions");
 
-        actions.forEach(action -> accesses.add(new RangerPolicyItemAccess(action)));
+        if (actions != null) {
+            actions.forEach(action -> accesses.add(new RangerPolicyItemAccess(action)));
+        } else {
+            // Handle the null case - either throw an exception or use an empty list
+            LOG.warn("Policy actions is null for policy: {}", atlasPolicy.getGuid());
+        }
 
 
         if ("allow".equals(policyType)) {
