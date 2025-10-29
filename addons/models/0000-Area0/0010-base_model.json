@@ -547,7 +547,7 @@
           "searchWeight": 10,
           "skipScrubbing": true,
           "indexTypeESConfig": {
-            "analyzer": "atlan_text_analyzer"
+            "analyzer": "atlan_text_analyzer_v2"
           },
           "indexTypeESFields": {
             "keyword": {
@@ -557,6 +557,11 @@
             "stemmed": {
               "type": "text",
               "analyzer": "atlan_text_stemmer"
+            },
+            "delimiter": {
+              "type": "text",
+              "analyzer": "atlan_text_delimiter_analyzer",
+              "search_analyzer": "atlan_search_delimiter_analyzer"
             }
           }
         },
@@ -570,11 +575,17 @@
           "searchWeight": 10,
           "skipScrubbing": true,
           "indexTypeESConfig": {
-            "analyzer": "atlan_text_analyzer"
+            "analyzer": "atlan_text_analyzer_v2"
           },
           "indexTypeESFields": {
             "keyword": {
-              "type": "keyword"
+              "type": "keyword",
+              "normalizer": "atlan_normalizer"
+            },
+            "delimiter": {
+              "type": "text",
+              "analyzer": "atlan_text_delimiter_analyzer",
+              "search_analyzer": "atlan_search_delimiter_analyzer"
             }
           }
         },
@@ -594,7 +605,12 @@
           "indexTypeESFields": {
             "keyword": {
               "type": "keyword",
-              "normalizer": "atlan_normalizer"
+              "normalizer": "atlan_normalizer",
+              "ignore_above": 1000
+            },
+            "text": {
+              "type": "text",
+              "analyzer": "atlan_text_analyzer_v2"
             }
           }
         },
