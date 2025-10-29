@@ -32,6 +32,7 @@ on:
       - fixlabels
       - interceptapis
       - mlh-1240-improve-cm-refresh-master
+      - MLH-1432
 
 jobs:
   build:
