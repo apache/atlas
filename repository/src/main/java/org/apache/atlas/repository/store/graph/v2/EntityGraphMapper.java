@@ -1375,7 +1375,7 @@ public class EntityGraphMapper {
                         if (newEdge != null && getCreatedTime(newEdge) == RequestContext.get().getRequestTime()) {
                             // Only process if newly created the edge
                             AtlasVertex inverseVertex = newEdge.getInVertex();
-                            if (edgeDirection == IN) {
+                            if (IN == edgeDirection) {
                                 inverseVertex = newEdge.getOutVertex();
                             }
 
