@@ -1049,7 +1049,7 @@
         "entity-type:Process",
         "entity-classification:*"
       ],
-      "actions": ["entity-create", "entity-delete"]
+      "actions": ["entity-create", "entity-update", "entity-delete"]
     }
   ],
   "persona-ai-application-delete": [
@@ -1267,7 +1267,7 @@
         "entity-type:Process",
         "entity-classification:*"
       ],
-      "actions": ["entity-create", "entity-delete"]
+      "actions": ["entity-create", "entity-update", "entity-delete"]
     }
   ],
   "persona-ai-model-delete": [
