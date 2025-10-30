@@ -26,6 +26,7 @@ on:
       - beta
       - development
       - master
+      - mlh-1521
       - staging
 
 jobs:
