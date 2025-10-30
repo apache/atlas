@@ -32,7 +32,6 @@ on:
       - fixlabels
       - interceptapis
       - mlh-1240-improve-cm-refresh-master
-      - aigov148
 
 jobs:
   build:
