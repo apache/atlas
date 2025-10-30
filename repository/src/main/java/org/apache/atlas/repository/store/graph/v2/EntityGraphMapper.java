@@ -1370,6 +1370,24 @@ public class EntityGraphMapper {
                         }
                     }
 
+                    if (isAppendOp) {
+                        // E.g. Appending Table relationship while updating a Column (1:n)
+                        if (newEdge != null && getCreatedTime(newEdge) == RequestContext.get().getRequestTime()) {
+                            // Only process if newly created the edge
+                            AtlasVertex inverseVertex = newEdge.getInVertex();
+                            if (IN == edgeDirection) {
+                                inverseVertex = newEdge.getOutVertex();
+                            }
+
+                            Map<String, String> objectId = new HashMap<>();
+                            objectId.put("typeName", getTypeName(inverseVertex));
+                            objectId.put("guid", GraphHelper.getGuid(inverseVertex));
+
+                            AtlasEntity diffEntity = getOrInitializeDiffEntity(ctx.getReferringVertex());
+                            diffEntity.setAddedRelationshipAttribute(ctx.getAttribute().getName(), objectId);
+                        }
+                    }
+
                     if (edgeLabel.equals(GLOSSARY_TERMS_EDGE_LABEL) || edgeLabel.equals(GLOSSARY_CATEGORY_EDGE_LABEL)) {
                         addGlossaryAttr(ctx, newEdge);
                     }
@@ -1926,10 +1944,15 @@ public class EntityGraphMapper {
                         // record entity update on both relationship vertices
                         recordEntityUpdateForNonRelationsipAttribute(fromVertex);
                         recordEntityUpdateForNonRelationsipAttribute(toVertex);
+
+                        recordEntityUpdate(toVertex, ctx, true);
                     }
 
                 } else {
                     newEdge = relationshipStore.getRelationship(fromVertex, toVertex, relationship);
+                    if (newEdge != null) {
+                        recordEntityUpdate(toVertex, ctx, false);
+                    }
                 }
                 ret = newEdge;
             }
@@ -2240,6 +2263,26 @@ public class EntityGraphMapper {
             setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), newElements,  new ArrayList<>(0), cardinality);
         }
 
+        if (CollectionUtils.isNotEmpty(newElementsCreated)
+                && newElementsCreated.get(0) instanceof AtlasEdge
+                ) {
+            List<Map<String, String>> attrValues = new ArrayList<>();
+
+            for (Object newItem : newElementsCreated) {
+                if (getCreatedTime((AtlasEdge) newItem) == RequestContext.get().getRequestTime()) {
+                    // Only process newly created edges
+                    AtlasVertex inverseVertex = ((AtlasEdge) newItem).getInVertex();
+                    Map<String, String> objectId = new HashMap<>();
+                    objectId.put("typeName", getTypeName(inverseVertex));
+                    objectId.put("guid", GraphHelper.getGuid(inverseVertex));
+                    attrValues.add(objectId);
+                }
+            }
+
+            AtlasEntity diffEntity = getOrInitializeDiffEntity(ctx.getReferringVertex());
+            diffEntity.setAddedRelationshipAttribute(attribute.getName(), attrValues);
+        }
+
         switch (ctx.getAttribute().getRelationshipEdgeLabel()) {
             case TERM_ASSIGNMENT_LABEL:
                 addMeaningsToEntity(ctx, newElementsCreated, new ArrayList<>(0), true, new ArrayList<>(0));
@@ -2315,6 +2358,23 @@ public class EntityGraphMapper {
         }
 
         removedElements = removeArrayEntries(attribute, (List)entityRelationsDeleted, ctx);
+
+        if (CollectionUtils.isNotEmpty(removedElements)
+                && removedElements.get(0) instanceof AtlasEdge) {
+
+            List<Map<String, String>> attrValues = new ArrayList<>();
+
+            for (Object removedItem : removedElements) {
+                AtlasVertex inverseVertex = ((AtlasEdge) removedItem).getInVertex();
+                Map<String, String> objectId = new HashMap<>();
+                objectId.put("typeName", getTypeName(inverseVertex));
+                objectId.put("guid", GraphHelper.getGuid(inverseVertex));
+                attrValues.add(objectId);
+            }
+
+            AtlasEntity diffEntity = getOrInitializeDiffEntity(ctx.getReferringVertex());
+            diffEntity.setRemovedRelationshipAttribute(attribute.getName(), attrValues);
+        }
 
 
         switch (ctx.getAttribute().getRelationshipEdgeLabel()) {
@@ -2457,6 +2517,18 @@ public class EntityGraphMapper {
 
         currentSize = end2Vertex.getEdgesCount(AtlasEdgeDirection.IN, UD_RELATIONSHIP_EDGE_LABEL) + 1;
         validateCustomRelationshipCount(currentSize, end2Vertex);
+    }
+
+    private AtlasEntity getOrInitializeDiffEntity(AtlasVertex vertex) {
+        AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(GraphHelper.getGuid(vertex));
+        if (diffEntity == null) {
+            diffEntity = new AtlasEntity();
+            diffEntity.setTypeName(GraphHelper.getTypeName(vertex));
+            diffEntity.setGuid(GraphHelper.getGuid(vertex));
+            diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
+            RequestContext.get().cacheDifferentialEntity(diffEntity);
+        }
+        return diffEntity;
     }
 
     private static void validateCustomRelationshipCount(long size, AtlasVertex vertex) throws AtlasBaseException {
@@ -5660,7 +5732,6 @@ public class EntityGraphMapper {
         if (vertex != null) {
             RequestContext req = RequestContext.get();
 
-            //AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex);
             AtlasEntityHeader header = new AtlasEntityHeader(getTypeName(vertex));
             header.setGuid(GraphHelper.getGuid(vertex));
             header.setCreateTime(new Date(getCreatedTime(vertex)));
