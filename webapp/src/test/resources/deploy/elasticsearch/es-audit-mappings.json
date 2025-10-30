@@ -1,0 +1,45 @@
+{
+  "mappings": {
+    "properties": {
+      "entityQualifiedName": {
+        "type": "keyword"
+      },
+      "entityId": {
+        "type": "keyword"
+      },
+      "typeName": {
+        "type": "keyword"
+      },
+      "created": {
+        "type": "date"
+      },
+      "timestamp": {
+        "type": "date"
+      },
+      "action": {
+        "type": "keyword"
+      },
+      "detail": {
+        "type": "nested"
+      },
+      "user": {
+        "type": "keyword"
+      },
+      "eventKey": {
+        "type": "keyword"
+      }
+    },
+    "dynamic_templates": [
+      {
+        "atlan_headers_as_keyword": {
+          "path_match": "headers.x-atlan-*",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      }
+    ],
+    "date_detection": false,
+    "numeric_detection": false
+  }
+}

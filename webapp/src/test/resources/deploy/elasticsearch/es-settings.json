@@ -1,0 +1,120 @@
+{
+  "mapping" : {
+    "total_fields" : {
+      "limit" : "2000"
+    },
+    "nested_objects" : {
+      "limit" : "100000"
+    }
+  },
+  "similarity": {
+    "default": {
+      "type": "boolean"
+    }
+  },
+  "analysis": {
+    "analyzer": {
+      "atlan_glossary_analyzer": {
+        "type": "custom",
+        "tokenizer": "atlan_glossary_tokenizer",
+        "filter": [
+          "lowercase"
+        ],
+        "char_filter": [
+          "letter_number_filter"
+        ]
+      },
+      "atlan_text_analyzer": {
+        "type": "custom",
+        "tokenizer": "atlan_tokenizer",
+        "filter": [
+          "apostrophe", "lowercase"
+        ],
+        "char_filter":[
+          "number_filter"
+        ]
+      },
+      "atlan_text_comma_analyzer": {
+        "type": "custom",
+        "tokenizer": "atlan_comma_tokenizer",
+        "filter": [
+          "lowercase"
+        ]
+      },
+      "atlan_text_stemmer": {
+        "type": "custom",
+        "tokenizer": "atlan_tokenizer",
+        "filter": [
+          "snowball_english", "lowercase"
+        ],
+        "char_filter":[
+          "number_filter"
+        ]
+      },
+      "search_synonyms": {
+        "type": "custom",
+        "filter": [
+          "graph_synonyms", "lowercase"
+        ],
+        "tokenizer": "atlan_tokenizer"
+      },
+      "truncate_analyzer": {
+        "char_filter": [
+          "truncate_filter"
+        ],
+        "tokenizer": "standard"
+      }
+    },
+    "normalizer": {
+      "atlan_normalizer": {
+        "type": "custom",
+        "filter": ["lowercase"]
+      }
+    },
+    "filter": {
+      "graph_synonyms": {
+        "type": "synonym_graph",
+        "synonyms": [ "foo, bar => baz" ]
+      },
+      "snowball_english": {
+        "type": "snowball",
+        "language": "English"
+      }
+    },
+    "tokenizer": {
+      "atlan_glossary_tokenizer": {
+        "type": "char_group",
+        "tokenize_on_chars": [
+          "whitespace",
+          "punctuation",
+          "symbol"
+        ]
+      },
+      "atlan_tokenizer": {
+        "type": "pattern",
+        "pattern": "( |_|-|'|/|@)"
+      },
+      "atlan_comma_tokenizer": {
+        "type": "pattern",
+        "pattern": ","
+      }
+    },
+    "char_filter":{
+      "letter_number_filter": {
+        "type": "pattern_replace",
+        "pattern": "\\d+",
+        "replacement": " $0 "
+      },
+      "number_filter":{
+        "type":"pattern_replace",
+        "pattern":"\\d+",
+        "replacement":" $0"
+      },
+      "truncate_filter": {
+        "pattern": "(^.{0,100000}).*$",
+        "type": "pattern_replace",
+        "replacement": "$1 "
+      }
+    }
+  }
+}

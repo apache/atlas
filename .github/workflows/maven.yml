@@ -41,6 +41,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      # Set up Docker
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: image=moby/buildkit:master
+          install: true
+
       - name: Set up JDK 17
         uses: actions/setup-java@v1
         with:
@@ -48,6 +55,12 @@ jobs:
 
       - name: Print JDK version
         run: java -version
+
+      # Verify Docker is available
+      - name: Verify Docker
+        run: |
+         docker --version
+         docker info
 
       - name: Cache Maven packages
         uses: actions/cache@v3
@@ -75,6 +88,143 @@ jobs:
         run: |
           echo "build without dashboard"
           chmod +x ./build.sh && ./build.sh
+
+      - name: Check disk space before tests
+        id: check_disk
+        run: |
+          echo "=========================================="
+          echo "DISK SPACE CHECK"
+          echo "=========================================="
+          df -h / | grep -E '^/dev/' || df -h / | tail -1
+          echo ""
+          
+          # Get disk usage percentage (remove % sign)
+          DISK_USAGE=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
+          echo "Current disk usage: ${DISK_USAGE}%"
+          echo "disk_usage=$DISK_USAGE" >> $GITHUB_OUTPUT
+          
+          if [ "$DISK_USAGE" -gt 70 ]; then
+            echo "⚠️  Disk usage is high (${DISK_USAGE}%), cleanup will run"
+          else
+            echo "✅ Disk space is adequate (${DISK_USAGE}%), skipping cleanup"
+          fi
+
+      - name: Free up disk space for tests
+        if: steps.check_disk.outputs.disk_usage > 70
+        run: |
+          echo "=========================================="
+          echo "CLEANING UP DISK SPACE"
+          echo "=========================================="
+          
+          # Clean Docker system
+          echo "Cleaning Docker system..."
+          docker system prune -af --volumes || true
+          
+          # Clean apt cache
+          echo "Cleaning apt cache..."
+          sudo apt-get clean || true
+          sudo rm -rf /var/cache/apt/archives/* || true
+          
+          # Clean temp files
+          echo "Cleaning temp files..."
+          sudo rm -rf /tmp/* || true
+          
+          # Clean old GitHub Actions logs
+          echo "Cleaning GitHub Actions logs..."
+          sudo rm -rf /home/runner/work/_temp/_runner_file_commands/* || true
+          
+          # Clean hostedtoolcache if needed (keep essentials)
+          echo "Cleaning hostedtoolcache (non-essential tools)..."
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo rm -rf /opt/hostedtoolcache/go || true
+          sudo rm -rf /opt/hostedtoolcache/PyPy || true
+          sudo rm -rf /opt/hostedtoolcache/node || true
+          sudo rm -rf /opt/hostedtoolcache/Ruby || true
+          
+          echo ""
+          echo "Disk space after cleanup:"
+          df -h / | grep -E '^/dev/' || df -h / | tail -1
+
+      - name: Verify sufficient disk space
+        run: |
+          echo "=========================================="
+          echo "VERIFYING DISK SPACE"
+          echo "=========================================="
+          
+          DISK_USAGE=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
+          AVAILABLE_GB=$(df -h / | tail -1 | awk '{print $4}')
+          
+          echo "Current disk usage: ${DISK_USAGE}%"
+          echo "Available space: ${AVAILABLE_GB}"
+          
+          # Fail if disk usage is still above 85%
+          if [ "$DISK_USAGE" -gt 85 ]; then
+            echo "ERROR: Insufficient disk space (${DISK_USAGE}% used)"
+            echo "Tests require at least 15% free space to run reliably"
+            echo "Elasticsearch will fail with high disk watermark errors at 90%+"
+            exit 1
+          else
+            echo "Sufficient disk space available (${DISK_USAGE}% used)"
+          fi
+
+      - name: Run Integration Tests
+        id: integration_tests
+        continue-on-error: true
+        env:
+          # Configure Testcontainers for GitHub Actions
+          TESTCONTAINERS_RYUK_DISABLED: true
+          TESTCONTAINERS_CHECKS_DISABLE: true
+          DOCKER_HOST: unix:///var/run/docker.sock
+        run: |
+          echo "Running integration tests..."
+          chmod +x ./run-integration-tests.sh && ./run-integration-tests.sh
+      
+      - name: Upload container logs as artifact
+        if: always()  # Upload logs even if tests pass (for debugging)
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-logs-${{ github.run_id }}
+          path: target/test-logs/
+          retention-days: 5
+      
+      - name: Setup tmate session on test failure
+        if: steps.integration_tests.outcome == 'failure'
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
+        with:
+          detached: true
+          limit-access-to-actor: false
+      
+      - name: Fail the workflow if tests failed
+        if: steps.integration_tests.outcome == 'failure'
+        run: exit 1
+
+      - name: Clean up after integration tests
+        run: |
+          echo "=========================================="
+          echo "CLEANING UP AFTER INTEGRATION TESTS"
+          echo "=========================================="
+          
+          # Remove test containers and images
+          echo "Removing test containers and images..."
+          docker system prune -af --volumes || true
+          
+          # Clean Maven artifacts to free up space
+          echo "Cleaning Maven artifacts..."
+          rm -rf ~/.m2/repository/org/apache/atlas/ || true
+          
+          # Clean test artifacts
+          echo "Cleaning test artifacts..."
+          rm -rf webapp/target/surefire-reports/ || true
+          rm -rf test-debug-logs/ || true
+          
+          # Clean temp files
+          echo "Cleaning temp files..."
+          sudo rm -rf /tmp/* || true
+          
+          echo ""
+          echo "Disk space after cleanup:"
+          df -h / | tail -1
 
       - name: Get Repository Name
         run:   echo "REPOSITORY_NAME=`echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//"`" >> $GITHUB_ENV
@@ -109,41 +259,20 @@ jobs:
           username: $GITHUB_ACTOR
           password: ${{ secrets.ORG_PAT_GITHUB }}
 
-      - name: Build and push with retry
+      - name: Build and push
         id: docker_build
-        run: |
-          # Build and push with retry logic
-          echo "Building and pushing Docker image with retry mechanism..."
-          retry_count=0
-          max_retries=3
-          retry_delay=5
-          
-          while [ $retry_count -lt $max_retries ]; do
-            echo "Build and push attempt $((retry_count + 1)) of $max_retries"
-            
-            if docker buildx build \
-              --platform linux/amd64,linux/arm64 \
-              --file ./Dockerfile \
-              --no-cache \
-              --sbom=true \
-              --provenance=true \
-              --push \
-              --tag ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ env.BRANCH_NAME }}:latest \
-              --tag ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ env.BRANCH_NAME }}:${{ env.COMMIT_ID }} \
-              .; then
-              echo "Build and push successful!"
-              break
-            else
-              retry_count=$((retry_count + 1))
-              if [ $retry_count -lt $max_retries ]; then
-                echo "Build and push failed. Retrying in $retry_delay seconds..."
-                sleep $retry_delay
-              else
-                echo "Build and push failed after $max_retries attempts. Exiting."
-                exit 1
-              fi
-            fi
-          done
+        uses: docker/build-push-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+          context: .
+          file: ./Dockerfile
+          no-cache: true
+          sbom: true
+          provenance: true
+          push: true
+          tags: |
+            ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ env.BRANCH_NAME }}:latest
+            ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ env.BRANCH_NAME }}:${{ env.COMMIT_ID }}
 
       - name: Check Image Manifest
         run: docker buildx imagetools inspect --raw ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ env.BRANCH_NAME }}:${{ env.COMMIT_ID }}
@@ -151,7 +280,7 @@ jobs:
       - name: Scan Image
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'ubuntu:18.04'
+          image-ref: 'ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ env.BRANCH_NAME }}:${{ env.COMMIT_ID }}'
           vuln-type: 'os,library'
           format: 'sarif'
           output: 'trivy-image-results.sarif'
@@ -160,3 +289,145 @@ jobs:
         uses: github/codeql-action/upload-sarif@v2.1.33
         with:
           sarif_file: 'trivy-image-results.sarif'
+
+  # Smoke test on vclusters (parallel with single VPN)
+
+  smoke-test:
+    name: Multi-Cloud Smoke Test
+    needs: build
+    runs-on: ubuntu-latest
+    
+    env:
+      VCLUSTER_AWS_NAME: ${{ vars.VCLUSTER_AWS_NAME }}
+      VCLUSTER_AZURE_NAME: ${{ vars.VCLUSTER_AZURE_NAME }}
+      VCLUSTER_GCP_NAME: ${{ vars.VCLUSTER_GCP_NAME }}
+      VCLUSTER_PROJECT: ${{ vars.VCLUSTER_PROJECT }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Get branch name
+        run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+      
+      - name: Get commit ID
+        run: echo "COMMIT_ID=$(echo ${GITHUB_SHA} | cut -c1-7)abcd" >> $GITHUB_ENV
+      
+      - name: Set test image
+        run: echo "TEST_IMAGE=ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ env.BRANCH_NAME }}:${{ env.COMMIT_ID }}" >> $GITHUB_ENV
+      
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+      
+      - name: Install vCluster CLI
+        uses: loft-sh/setup-vcluster@main
+      
+      - name: Install jq
+        run: sudo apt-get install -y jq
+      
+      - name: Connect to GlobalProtect VPN
+        env:
+          VCLUSTER_PLATFORM_URL: ${{ secrets.VCLUSTER_PLATFORM_URL }}
+        run: |
+          echo "=================================================="
+          echo "CONNECTING TO VPN (Shared for all clouds)"
+          echo "=================================================="
+          
+          # Install OpenConnect
+          sudo apt-get update -qq
+          sudo apt-get install -y openconnect
+          
+          # Connect to VPN (using default DTLS/ESP for AWS compatibility)
+          echo "${{ secrets.GLOBALPROTECT_PASSWORD }}" | sudo openconnect \
+            --protocol=gp \
+            --user="${{ secrets.GLOBALPROTECT_USERNAME }}" \
+            --passwd-on-stdin \
+            --background \
+            "${{ vars.GLOBALPROTECT_PORTAL_URL }}"
+          
+          # Wait for connection to establish
+          echo "Waiting for VPN connection to stabilize..."
+          sleep 20
+          
+          # Check if VPN is running
+          if ! pgrep -x openconnect > /dev/null; then
+            echo "ERROR: OpenConnect exited unexpectedly"
+            exit 1
+          fi
+          echo "VPN process is running (PID: $(pgrep -x openconnect))"
+          
+          # Configure routing for vCluster Platform (172.17.0.0/16)
+          VPN_INTERFACE=$(ip addr show | grep -E '^[0-9]+: tun' | head -1 | cut -d: -f2 | tr -d ' ' || echo "tun0")
+          echo "Using VPN interface: $VPN_INTERFACE"
+          
+          sudo ip route del 172.17.0.0/16 dev docker0 2>/dev/null || true
+          sudo ip route add 172.17.0.0/16 dev $VPN_INTERFACE
+          
+          # Verify connectivity
+          if curl -k -sS $VCLUSTER_PLATFORM_URL -o /dev/null --max-time 30; then
+            echo "✓ VPN connected successfully"
+          else
+            echo "ERROR: VPN connectivity test failed"
+            exit 1
+          fi
+      
+      - name: Login to vCluster Platform
+        env:
+          VCLUSTER_PLATFORM_URL: ${{ secrets.VCLUSTER_PLATFORM_URL }}
+          VCLUSTER_ACCESS_KEY: ${{ secrets.VCLUSTER_ACCESS_KEY }}
+        run: |
+          echo "=================================================="
+          echo "LOGGING IN TO VCLUSTER PLATFORM (Shared)"
+          echo "=================================================="
+          vcluster platform login $VCLUSTER_PLATFORM_URL --access-key $VCLUSTER_ACCESS_KEY
+          echo "✓ Login successful"
+      
+      - name: Connect to all vClusters
+        run: |
+          echo "=================================================="
+          echo "CONNECTING TO ALL VCLUSTERS"
+          echo "=================================================="
+          
+          # Connect to AWS vCluster
+          echo "Connecting to AWS vCluster ($VCLUSTER_AWS_NAME)..."
+          KUBECONFIG=kubeconfig-aws.yaml vcluster platform connect vcluster $VCLUSTER_AWS_NAME --project $VCLUSTER_PROJECT
+          echo "✓ AWS kubeconfig saved to kubeconfig-aws.yaml"
+          
+          # Connect to Azure vCluster  
+          echo "Connecting to Azure vCluster ($VCLUSTER_AZURE_NAME)..."
+          KUBECONFIG=kubeconfig-azure.yaml vcluster platform connect vcluster $VCLUSTER_AZURE_NAME --project $VCLUSTER_PROJECT
+          echo "✓ Azure kubeconfig saved to kubeconfig-azure.yaml"
+          
+          # Connect to GCP vCluster  
+          echo "Connecting to GCP vCluster ($VCLUSTER_GCP_NAME)..."
+          KUBECONFIG=kubeconfig-gcp.yaml vcluster platform connect vcluster $VCLUSTER_GCP_NAME --project $VCLUSTER_PROJECT
+          echo "✓ GCP kubeconfig saved to kubeconfig-gcp.yaml"
+          
+          echo ""
+          echo "Verifying kubeconfigs..."
+          ls -lh kubeconfig-*.yaml
+          
+          echo ""
+          echo "Testing AWS connection..."
+          KUBECONFIG=kubeconfig-aws.yaml kubectl cluster-info | head -1
+          
+          echo ""
+          echo "Testing Azure connection..."
+          KUBECONFIG=kubeconfig-azure.yaml kubectl cluster-info | head -1
+          
+          echo ""
+          echo "Testing GCP connection..."
+          KUBECONFIG=kubeconfig-gcp.yaml kubectl cluster-info | head -1
+          
+          echo ""
+          echo "✓ All vCluster connections established"
+      
+      - name: Run parallel smoke tests
+        run: ./scripts/multi-cloud-smoke-test.sh ${{ env.TEST_IMAGE }}
+      
+      - name: Upload smoke test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-logs-${{ github.run_id }}
+          path: smoke-test-logs/
