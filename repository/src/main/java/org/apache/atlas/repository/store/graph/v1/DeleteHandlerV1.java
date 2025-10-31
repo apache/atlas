@@ -1848,48 +1848,6 @@ public abstract class DeleteHandlerV1 {
 
     }
 
-    private boolean updateAssetHasLineageStatusWithDirection(AtlasVertex assetVertex, AtlasEdge currentEdge, AtlasEdgeDirection direction, Set<String> exclusionList) {
-        GraphTraversal<Edge, Map<String, Object>> edgeTraversal;
-
-        // Create the appropriate directional traversal
-        if (AtlasEdgeDirection.OUT.equals(direction)) {
-            edgeTraversal = ((AtlasJanusGraph) graph).V(assetVertex.getId())
-                    .outE(PROCESS_EDGE_LABELS);
-        } else if (AtlasEdgeDirection.IN.equals(direction)) {
-            edgeTraversal = ((AtlasJanusGraph) graph).V(assetVertex.getId())
-                    .inE(PROCESS_EDGE_LABELS);
-        } else{
-            edgeTraversal = ((AtlasJanusGraph) graph).V(assetVertex.getId())
-                    .bothE(PROCESS_EDGE_LABELS);
-        }
-
-
-        return edgeTraversal
-                .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
-                .has(RELATIONSHIP_GUID_PROPERTY_KEY)
-                // Exclude edges by id; prefer using actual edge-id objects if possible.
-                .filter(__.id().is(P.without(exclusionList)))
-                // Check lineage on the edge's out-vertex
-                .filter(__.outV().has("__hasLineage", true))
-                .limit(1)
-                .tryNext()
-                .isPresent();
-    }
-
-    private boolean updateAssetHasLineageStatusWithOUTDirection(AtlasVertex assetVertex, AtlasEdge currentEdge, Set<String> exclusionList) {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatusWithOUTDirection");
-        boolean hasLineage = updateAssetHasLineageStatusWithDirection(assetVertex, currentEdge, AtlasEdgeDirection.OUT, exclusionList);
-        RequestContext.get().endMetricRecord(metricRecorder);
-        return hasLineage;
-    }
-
-    private boolean updateAssetHasLineageStatusWithINDirection(AtlasVertex assetVertex, AtlasEdge currentEdge, Set<String> exclusionList) {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatusWithINDirection");
-        boolean hasLineage = updateAssetHasLineageStatusWithDirection(assetVertex, currentEdge, AtlasEdgeDirection.IN, exclusionList);
-        RequestContext.get().endMetricRecord(metricRecorder);
-        return hasLineage;
-    }
-
     private void updateAssetHasLineageStatusV1(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatusV1");
 
