@@ -1039,6 +1039,17 @@
         "end-two-entity:{entity}/*"
       ],
       "actions": ["add-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "description": "Create/delete process to update datasets for this AIApplication",
+      "resources": [
+        "entity:*",
+        "entity-type:Process",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create", "entity-update", "entity-delete"]
     }
   ],
   "persona-ai-application-delete": [
@@ -1256,7 +1267,7 @@
         "entity-type:Process",
         "entity-classification:*"
       ],
-      "actions": ["entity-create", "entity-delete"]
+      "actions": ["entity-create", "entity-update", "entity-delete"]
     }
   ],
   "persona-ai-model-delete": [

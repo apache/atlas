@@ -1,0 +1,58 @@
+{
+  "patches": [
+    {
+      "id":              "TYPEDEF_PATCH_0000_003",
+      "description":     "Set serviceType 'atlas_core' to __internal",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "__internal",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "id":              "TYPEDEF_PATCH_0000_008",
+      "description":     "Set serviceType 'atlas_core' to AtlasServer",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasServer",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "id":              "TYPEDEF_PATCH_0000_009",
+      "description":     "Set serviceType 'atlas_core' to __AtlasUserProfile",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "__AtlasUserProfile",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "id":              "TYPEDEF_PATCH_0000_010",
+      "description":     "Set serviceType 'atlas_core' to __AtlasUserSavedSearch",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "__AtlasUserSavedSearch",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "id":              "TYPEDEF_PATCH_0000_011",
+      "description":     "Set serviceType 'atlas_core' to __ExportImportAuditEntry",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "__ExportImportAuditEntry",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "id":              "TYPEDEF_PATCH_0000_014",
+      "description":     "Set serviceType 'atlas_core' to __AtlasUserProfile_savedsearches",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "__AtlasUserProfile_savedsearches",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+	  "serviceType":     "atlas_core"
+    }
+  ]
+}
