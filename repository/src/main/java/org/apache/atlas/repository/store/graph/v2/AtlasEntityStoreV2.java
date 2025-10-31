@@ -1794,7 +1794,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("sendvertexIdsForHaslineageCalculation");
 
         try {
-            AtlasDistributedTaskNotification notification = taskNotificationSender.createHasLineageCalculationTasks(vertexIds.stream().toList());
+            AtlasDistributedTaskNotification notification = taskNotificationSender.createHasLineageCalculationTasks(vertexIds);
             taskNotificationSender.send(notification);
         } finally {
             RequestContext.get().endMetricRecord(metric);

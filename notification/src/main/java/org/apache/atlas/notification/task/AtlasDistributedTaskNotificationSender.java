@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 public class AtlasDistributedTaskNotificationSender {
@@ -35,7 +36,7 @@ public class AtlasDistributedTaskNotificationSender {
        return notification;
     }
 
-    public AtlasDistributedTaskNotification createHasLineageCalculationTasks(List<String> verticesIds) {
+    public AtlasDistributedTaskNotification createHasLineageCalculationTasks(Set<String> verticesIds) {
         Map<String, Object> taskParams = new HashMap<>();
         taskParams.put("vertexIds", verticesIds);
         AtlasDistributedTaskNotification notification = new AtlasDistributedTaskNotification(AtlasDistributedTaskNotification.AtlasTaskType.CALCULATE_HAS_LINEAGE, taskParams);

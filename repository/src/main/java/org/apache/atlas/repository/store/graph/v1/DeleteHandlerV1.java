@@ -1893,22 +1893,30 @@ public abstract class DeleteHandlerV1 {
     private void updateAssetHasLineageStatusV1(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatusV1");
 
-        // Add removed edges to the context
         removedEdges.forEach(edge -> RequestContext.get().addToDeletedEdgesIdsForResetHasLineage(edge.getIdForDisplay()));
-        Set<String> exclusionList = RequestContext.get().getDeletedEdgesIdsForResetHasLineage();
-        exclusionList.add(currentEdge.getIdForDisplay());
 
-        // First check in OUT direction
-        boolean hasActiveLineage = updateAssetHasLineageStatusWithOUTDirection(assetVertex, currentEdge, exclusionList);
+        Iterator<AtlasEdge> edgeIterator = assetVertex.query()
+                .direction(AtlasEdgeDirection.BOTH)
+                .label(PROCESS_EDGE_LABELS)
+                .has(STATE_PROPERTY_KEY, ACTIVE.name())
+                .edges()
+                .iterator();
 
-        // If no active lineage found in OUT direction, check IN direction
-        if (!hasActiveLineage) {
-            hasActiveLineage = updateAssetHasLineageStatusWithINDirection(assetVertex, currentEdge, exclusionList);
+        int processHasLineageCount = 0;
+
+        while (edgeIterator.hasNext()) {
+            AtlasEdge edge = edgeIterator.next();
+            if (!RequestContext.get().getDeletedEdgesIdsForResetHasLineage().contains(edge.getIdForDisplay()) && !currentEdge.equals(edge)) {
+                AtlasVertex relatedProcessVertex = edge.getOutVertex();
+                boolean processHasLineage = getEntityHasLineage(relatedProcessVertex);
+                if (processHasLineage) {
+                    processHasLineageCount++;
+                    break;
+                }
+            }
         }
 
-        if (hasActiveLineage) {
-            AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
-        } else {
+        if (processHasLineageCount == 0) {
             AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
         }
 
