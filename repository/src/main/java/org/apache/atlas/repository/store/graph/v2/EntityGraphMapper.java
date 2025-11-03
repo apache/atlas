@@ -6208,6 +6208,8 @@ public class EntityGraphMapper {
 
             if (getEntityHasLineage(processVertex)) {
                 AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
+                AtlasEntity diffEntity = getOrInitializeDiffEntity(assetVertex);
+                diffEntity.setAttribute(HAS_LINEAGE, true);
                 continue;
             }
 
@@ -6223,11 +6225,19 @@ public class EntityGraphMapper {
                     if (!isHasLineageSet) {
                         AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
                         AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, true);
+
+                        AtlasEntity diffEntity = getOrInitializeDiffEntity(assetVertex);
+                        diffEntity.setAttribute(HAS_LINEAGE, true);
+
+                        diffEntity = getOrInitializeDiffEntity(processVertex);
+                        diffEntity.setAttribute(HAS_LINEAGE, true);
                         isHasLineageSet = true;
                     }
 
                     if (isRestoreEntity) {
                         AtlasGraphUtilsV2.setEncodedProperty(oppositeEdgeAssetVertex, HAS_LINEAGE, true);
+                        AtlasEntity diffEntity = getOrInitializeDiffEntity(oppositeEdgeAssetVertex);
+                        diffEntity.setAttribute(HAS_LINEAGE, true);
                     } else {
                         break;
                     }
