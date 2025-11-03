@@ -34,6 +34,66 @@ on:
       - mlh-1240-improve-cm-refresh-master
 
 jobs:
+  # Detect what changed to optimize workflow execution
+  # This dramatically speeds up helm-only changes by skipping the 20+ minute build job
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+      helm: ${{ steps.filter.outputs.helm }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for accurate comparisons
+      
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          # Compare against the previous commit on this branch (not master)
+          # This way we only detect changes in the current push
+          base: ${{ github.event.before }}
+          filters: |
+            code:
+              - '**/*.java'
+              - '**/*.xml'
+              - '**/*.properties'
+              - 'webapp/**'
+              - 'repository/**'
+              - 'intg/**'
+              - 'graphdb/**'
+              - 'pom.xml'
+              - '**/pom.xml'
+            helm:
+              - 'helm/**'
+  
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # WORKFLOW EXECUTION PATHS:
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  #
+  # 📦 HELM-ONLY CHANGES (exclusively helm/** files):
+  #    changes ✅ → helm-lint ✅ → build ⏭️ → smoke-test ⏭️ → helm-publish ✅
+  #    ⏱️  Time: ~5 minutes (80% faster!)
+  #    📊 Publishing: All 8 charts
+  #        • Infrastructure charts (6): As-is
+  #        • Application charts (2): With latest existing image tag from GHCR
+  #
+  # 💻 CODE/WORKFLOW CHANGES (*.java, maven.yml, Dockerfile, etc.):
+  #    changes ✅ → helm-lint ✅ → build ✅ → smoke-test ✅/⏭️ → helm-publish ✅
+  #    ⏱️  Time: ~25 minutes (full pipeline)
+  #    📊 Publishing: All 8 charts
+  #        • Infrastructure charts (6): As-is
+  #        • Application charts (2): With NEW image tag from build
+  #
+  # 🛡️  QUALITY GATES:
+  #    • helm-lint must pass (syntax validation)
+  #    • build must pass (for code changes)
+  #    • smoke-test must pass (on protected branches)
+  #    • atlas/atlas-read always reference valid images
+  #
+  # Logic: Skip build ONLY if changes are exclusively in helm/**
+  #
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   helm-lint:
     runs-on: ubuntu-latest
     strategy:
@@ -109,7 +169,10 @@ jobs:
           echo "✅ Chart.yaml validation passed for ${{ matrix.chart }}!"
 
   build:
-    needs: helm-lint
+    needs: [helm-lint, changes]
+    # Skip build ONLY if changes are exclusively in helm/**
+    # Run build for: code changes, workflow changes, Dockerfile, scripts, or anything else
+    if: needs.changes.outputs.helm != 'true' || needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -369,11 +432,12 @@ jobs:
 
   smoke-test:
     name: Multi-Cloud Smoke Test
-    needs: build
+    needs: [build, changes]
     runs-on: ubuntu-latest
-    # Only run smoke tests on protected branches (beta, staging, master)
-    # Feature branches skip smoke tests but can still publish OCI charts for manual testing
-    if: github.ref_name == 'beta' || github.ref_name == 'staging' || github.ref_name == 'master'
+    # Run smoke tests on protected branches if build ran (i.e., not helm-only changes)
+    if: |
+      needs.build.result == 'success' &&
+      (github.ref_name == 'beta' || github.ref_name == 'staging' || github.ref_name == 'master')
     
     # Concurrency control: Only one smoke test at a time across all branches
     # Shared vClusters cannot handle concurrent deployments
@@ -517,10 +581,18 @@ jobs:
           path: smoke-test-logs/
 
   helm-publish:
-    needs: [build, smoke-test]
+    needs: [helm-lint, build, smoke-test, changes]
     runs-on: ubuntu-latest
-    # Run if smoke-test passed (protected branches) OR was skipped (feature branches)
-    if: always() && needs.build.result == 'success' && (needs.smoke-test.result == 'success' || needs.smoke-test.result == 'skipped')
+    # Run helm-publish if:
+    # 1. Helm-lint passed (quality gate)
+    # 2. Build succeeded AND smoke-test passed/skipped: publish (code/workflow changes)
+    # 3. Build skipped AND helm changed: publish (helm-only changes)
+    if: |
+      always() && 
+      needs.helm-lint.result == 'success' && (
+        (needs.build.result == 'success' && (needs.smoke-test.result == 'success' || needs.smoke-test.result == 'skipped')) ||
+        (needs.build.result == 'skipped' && needs.changes.outputs.helm == 'true')
+      )
     strategy:
       matrix:
         include:
@@ -554,20 +626,84 @@ jobs:
       max-parallel: 1  # Publish sequentially to avoid race conditions
     
     steps:
+      - name: Determine publish strategy
+        id: can_publish
+        run: |
+          # All charts can be published
+          # Application charts (atlas, atlas-read) have different strategies:
+          # 1. Build succeeded: Use new image tag (current commit)
+          # 2. Build skipped (helm-only): Use latest existing image tag from GHCR
+          echo "should_publish=true" >> $GITHUB_OUTPUT
+          
+          if [[ "${{ matrix.chart }}" == "atlas" ]] || [[ "${{ matrix.chart }}" == "atlas-read" ]]; then
+            if [[ "${{ needs.build.result }}" == "success" ]]; then
+              echo "use_new_image=true" >> $GITHUB_OUTPUT
+              echo "✅ ${{ matrix.chart }}: Will use new image from build"
+            else
+              echo "use_new_image=false" >> $GITHUB_OUTPUT
+              echo "📦 ${{ matrix.chart }}: Helm-only change, will use latest existing image"
+            fi
+          fi
+      
       - name: Checkout code
+        if: steps.can_publish.outputs.should_publish == 'true'
         uses: actions/checkout@v3
       
       - name: Get branch name
+        if: steps.can_publish.outputs.should_publish == 'true'
         id: branch
         run: |
           echo "name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
       
       - name: Get commit ID
+        if: steps.can_publish.outputs.should_publish == 'true'
         id: commit
         run: |
           echo "id=$(echo ${GITHUB_SHA} | cut -c1-7)abcd" >> $GITHUB_OUTPUT
       
+      - name: Get latest image tag (for helm-only changes)
+        if: steps.can_publish.outputs.should_publish == 'true' && steps.can_publish.outputs.use_new_image == 'false'
+        id: latest_image
+        env:
+          GITHUB_TOKEN: ${{ secrets.ORG_PAT_GITHUB }}
+        run: |
+          # Fetch the latest existing image tag from GHCR (excluding arm64/amd64 variants)
+          IMAGE_NAME="atlas-metastore-${{ steps.branch.outputs.name }}"
+          
+          echo "🔍 Fetching latest image tag for ${IMAGE_NAME}..."
+          
+          # Fetch all tags and filter
+          all_tags=()
+          link="n=200"
+          
+          while [[ $link != "" ]]; do
+            response=$(curl -s -X GET "https://ghcr.io/v2/atlanhq/${IMAGE_NAME}/tags/list?${link}" \
+              -H "Authorization: Bearer $(echo ${GITHUB_TOKEN} | base64)")
+            
+            # Filter out arm64/amd64 variants and "latest" tag
+            tags=$(echo "$response" | jq -r '.tags[]' 2>/dev/null | grep -vE '(-arm64|-amd64|^latest)$' || true)
+            all_tags+=($tags)
+            
+            # Check for next page
+            link=$(curl -s -I -X GET "https://ghcr.io/v2/atlanhq/${IMAGE_NAME}/tags/list?${link}" \
+              -H "Authorization: Bearer $(echo ${GITHUB_TOKEN} | base64)" | \
+              grep -i link | cut -f 2 -d '<' | cut -f 1 -d '>' | cut -f 2 -d '?' || true)
+            sleep 1
+          done
+          
+          # Get the last valid tag (most recent)
+          if [[ ${#all_tags[@]} -eq 0 ]]; then
+            echo "❌ No valid tags found for ${IMAGE_NAME}"
+            echo "💡 This might be the first commit on this branch"
+            exit 1
+          else
+            LATEST_TAG="${all_tags[-1]}"
+            echo "📌 Latest image tag: ${LATEST_TAG}"
+            echo "tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Generate chart version
+        if: steps.can_publish.outputs.should_publish == 'true'
         id: version
         run: |
           # Semantic version: {base_version}-{branch}.{commit}
@@ -578,11 +714,13 @@ jobs:
           echo "Generated chart version for ${{ matrix.chart }}: ${CHART_VERSION}"
       
       - name: Install Helm
+        if: steps.can_publish.outputs.should_publish == 'true'
         uses: azure/setup-helm@v3
         with:
           version: '3.12.0'
       
       - name: Update Chart.yaml with version
+        if: steps.can_publish.outputs.should_publish == 'true'
         run: |
           sed -i "s/^version: .*/version: ${{ steps.version.outputs.chart }}/" ${{ matrix.path }}/Chart.yaml
           
@@ -596,17 +734,29 @@ jobs:
           cat ${{ matrix.path }}/Chart.yaml | head -10
       
       - name: Update values.yaml with image tags (application charts only)
-        if: matrix.chart == 'atlas' || matrix.chart == 'atlas-read'
+        if: steps.can_publish.outputs.should_publish == 'true' && (matrix.chart == 'atlas' || matrix.chart == 'atlas-read')
         run: |
           # Replace placeholders with actual values (only for atlas/atlas-read)
-          sed -i "s/ATLAS_LATEST_IMAGE_TAG/${{ steps.commit.outputs.id }}/g" ${{ matrix.path }}/values.yaml
+          # Strategy depends on whether build ran:
+          # - Build succeeded: Use new image tag (current commit)
+          # - Build skipped (helm-only): Use latest existing image tag
+          
+          if [[ "${{ steps.can_publish.outputs.use_new_image }}" == "true" ]]; then
+            IMAGE_TAG="${{ steps.commit.outputs.id }}"
+            echo "✅ Using NEW image tag from build: ${IMAGE_TAG}"
+          else
+            IMAGE_TAG="${{ steps.latest_image.outputs.tag }}"
+            echo "📦 Using LATEST existing image tag: ${IMAGE_TAG}"
+          fi
+          
+          sed -i "s/ATLAS_LATEST_IMAGE_TAG/${IMAGE_TAG}/g" ${{ matrix.path }}/values.yaml
           sed -i "s/ATLAS_BRANCH_NAME/${{ steps.branch.outputs.name }}/g" ${{ matrix.path }}/values.yaml
           
           echo "Image configuration in ${{ matrix.chart }}/values.yaml:"
           grep -A 3 "image:" ${{ matrix.path }}/values.yaml | head -10
       
       - name: Update helm dependencies
-        if: matrix.chart == 'atlas' || matrix.chart == 'atlas-read'
+        if: steps.can_publish.outputs.should_publish == 'true' && (matrix.chart == 'atlas' || matrix.chart == 'atlas-read')
         run: |
           cd ${{ matrix.path }}
           helm dependency update
@@ -615,6 +765,7 @@ jobs:
           ls -la charts/
       
       - name: Package helm chart
+        if: steps.can_publish.outputs.should_publish == 'true'
         run: |
           mkdir -p helm-packages
           helm package ${{ matrix.path }}/ --destination ./helm-packages/
@@ -623,6 +774,7 @@ jobs:
           ls -lh helm-packages/${{ matrix.chart }}-*
       
       - name: Login to GitHub Container Registry
+        if: steps.can_publish.outputs.should_publish == 'true'
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -630,6 +782,7 @@ jobs:
           password: ${{ secrets.ORG_PAT_GITHUB }}
       
       - name: Push chart to GHCR (OCI Registry)
+        if: steps.can_publish.outputs.should_publish == 'true'
         run: |
           CHART_FILE=$(ls helm-packages/${{ matrix.chart }}-*.tgz)
           echo "Pushing chart: ${CHART_FILE}"
@@ -642,6 +795,7 @@ jobs:
           echo "🏷️  Registry: oci://ghcr.io/atlanhq/helm-charts/${{ matrix.chart }}"
       
       - name: Create GitHub Release
+        if: steps.can_publish.outputs.should_publish == 'true'
         uses: ncipollo/release-action@v1
         with:
           tag: helm-${{ matrix.chart }}-v${{ steps.version.outputs.chart }}
@@ -681,6 +835,7 @@ jobs:
           makeLatest: false
       
       - name: Chart publish summary
+        if: steps.can_publish.outputs.should_publish == 'true'
         run: |
           echo "## 🎉 Helm Chart Published Successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
