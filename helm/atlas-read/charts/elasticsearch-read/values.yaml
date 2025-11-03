@@ -13,6 +13,10 @@ nodeGroup: "master"
 global:
   Tier_Type: ""
   Deployment_Type: ""
+  esIsolation:
+    enabled: false
+  globalSvcIsolation:
+    enabled: false
 masterService: ""
 
 # Elasticsearch roles that will be applied to this nodeGroup

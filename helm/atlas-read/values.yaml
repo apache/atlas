@@ -1,3 +1,10 @@
+# Infrastructure charts disabled - published separately as OCI artifacts
+cassandra-online-dc:
+  enabled: false
+elasticsearch-read:
+  enabled: false
+elasticsearch-exporter-read:
+  enabled: false
 
 multiarch:
   enabled: false

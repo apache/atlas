@@ -1,3 +1,10 @@
+# Infrastructure charts disabled - published separately as OCI artifacts
+cassandra:
+  enabled: false
+elasticsearch:
+  enabled: false
+logstash:
+  enabled: false
 
 multiarch:
   enabled: false

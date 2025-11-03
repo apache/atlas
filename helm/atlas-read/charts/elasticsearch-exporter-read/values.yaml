@@ -7,6 +7,10 @@ multiarch:
 #replicaCount: 1
 global:
   Tier_Type: ""
+  esIsolation:
+    enabled: false
+  globalSvcIsolation:
+    enabled: false
 ## restart policy for all containers
 ##
 Namespace: monitoring

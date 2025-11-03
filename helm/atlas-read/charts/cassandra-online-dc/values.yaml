@@ -9,6 +9,10 @@ multiarch:
 global:
   Tier_Type: ""
   Deployment_Type: ""
+  svcIsolation:
+    enabled: false
+  globalSvcIsolation:
+    enabled: false
 image:
   repo: ghcr.io/atlanhq/cassandra
   tag: 3.11.12
