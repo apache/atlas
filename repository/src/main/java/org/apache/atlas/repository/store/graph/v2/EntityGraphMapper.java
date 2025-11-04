@@ -1383,7 +1383,7 @@ public class EntityGraphMapper {
                             objectId.put("typeName", getTypeName(inverseVertex));
                             objectId.put("guid", GraphHelper.getGuid(inverseVertex));
 
-                            AtlasEntity diffEntity = getOrInitializeDiffEntity(ctx.getReferringVertex());
+                            AtlasEntity diffEntity = entityRetriever.getOrInitializeDiffEntity(ctx.getReferringVertex());
                             diffEntity.setAddedRelationshipAttribute(ctx.getAttribute().getName(), objectId);
                         }
                     }
@@ -2279,7 +2279,7 @@ public class EntityGraphMapper {
                 }
             }
 
-            AtlasEntity diffEntity = getOrInitializeDiffEntity(ctx.getReferringVertex());
+            AtlasEntity diffEntity = entityRetriever.getOrInitializeDiffEntity(ctx.getReferringVertex());
             diffEntity.setAddedRelationshipAttribute(attribute.getName(), attrValues);
         }
 
@@ -2372,7 +2372,7 @@ public class EntityGraphMapper {
                 attrValues.add(objectId);
             }
 
-            AtlasEntity diffEntity = getOrInitializeDiffEntity(ctx.getReferringVertex());
+            AtlasEntity diffEntity = entityRetriever.getOrInitializeDiffEntity(ctx.getReferringVertex());
             diffEntity.setRemovedRelationshipAttribute(attribute.getName(), attrValues);
         }
 
@@ -2517,18 +2517,6 @@ public class EntityGraphMapper {
 
         currentSize = end2Vertex.getEdgesCount(AtlasEdgeDirection.IN, UD_RELATIONSHIP_EDGE_LABEL) + 1;
         validateCustomRelationshipCount(currentSize, end2Vertex);
-    }
-
-    private AtlasEntity getOrInitializeDiffEntity(AtlasVertex vertex) {
-        AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(GraphHelper.getGuid(vertex));
-        if (diffEntity == null) {
-            diffEntity = new AtlasEntity();
-            diffEntity.setTypeName(GraphHelper.getTypeName(vertex));
-            diffEntity.setGuid(GraphHelper.getGuid(vertex));
-            diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
-            RequestContext.get().cacheDifferentialEntity(diffEntity);
-        }
-        return diffEntity;
     }
 
     private static void validateCustomRelationshipCount(long size, AtlasVertex vertex) throws AtlasBaseException {
@@ -6208,7 +6196,7 @@ public class EntityGraphMapper {
 
             if (getEntityHasLineage(processVertex)) {
                 AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
-                AtlasEntity diffEntity = getOrInitializeDiffEntity(assetVertex);
+                AtlasEntity diffEntity = entityRetriever.getOrInitializeDiffEntity(assetVertex);
                 diffEntity.setAttribute(HAS_LINEAGE, true);
                 continue;
             }
@@ -6226,17 +6214,17 @@ public class EntityGraphMapper {
                         AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
                         AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, true);
 
-                        AtlasEntity diffEntity = getOrInitializeDiffEntity(assetVertex);
+                        AtlasEntity diffEntity = entityRetriever.getOrInitializeDiffEntity(assetVertex);
                         diffEntity.setAttribute(HAS_LINEAGE, true);
 
-                        diffEntity = getOrInitializeDiffEntity(processVertex);
+                        diffEntity = entityRetriever.getOrInitializeDiffEntity(processVertex);
                         diffEntity.setAttribute(HAS_LINEAGE, true);
                         isHasLineageSet = true;
                     }
 
                     if (isRestoreEntity) {
                         AtlasGraphUtilsV2.setEncodedProperty(oppositeEdgeAssetVertex, HAS_LINEAGE, true);
-                        AtlasEntity diffEntity = getOrInitializeDiffEntity(oppositeEdgeAssetVertex);
+                        AtlasEntity diffEntity = entityRetriever.getOrInitializeDiffEntity(oppositeEdgeAssetVertex);
                         diffEntity.setAttribute(HAS_LINEAGE, true);
                     } else {
                         break;
