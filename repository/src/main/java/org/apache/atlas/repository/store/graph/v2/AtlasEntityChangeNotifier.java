@@ -69,8 +69,6 @@ import static org.apache.atlas.repository.Constants.ENTITY_TEXT_PROPERTY_KEY;
 public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityChangeNotifier.class);
 
-    private static final Predicate<AtlasEntityHeader> PRED_IS_NOT_TYPE_AUDIT_ENTITY = obj -> !obj.getTypeName().equals(AtlasAuditService.ENTITY_TYPE_AUDIT_ENTRY);
-
     private final Set<EntityChangeListener>   entityChangeListeners;
     private final Set<EntityChangeListenerV2> entityChangeListenersV2;
     private final AtlasInstanceConverter      instanceConverter;
@@ -401,7 +399,26 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     }
 
     private boolean skipAuditEntries(List<AtlasEntityHeader> entityHeaders) {
-        return CollectionUtils.isEmpty(entityHeaders) || entityHeaders.stream().noneMatch(PRED_IS_NOT_TYPE_AUDIT_ENTITY);
+        if (CollectionUtils.isEmpty(entityHeaders)) {
+            return true;
+        }
+
+        // Skip audit if ALL entities are internal types (__AtlasAuditEntry, __AtlasMetricsStat, etc.)
+        // Return true (skip) only if ALL entities are internal types
+        // Return false (don't skip) if at least one entity is NOT an internal type
+        boolean allInternal = entityHeaders.stream().allMatch(entityHeader -> {
+            String typeName = entityHeader.getTypeName();
+            AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName(typeName);
+
+            if (entityType != null) {
+                return entityType.isInternalType();
+            }
+
+            // Fallback: if type not found in registry, check if it starts with "__" (like GraphHelper.isInternalType)
+            return GraphHelper.isInternalType(typeName);
+        });
+
+        return allInternal;
     }
 
     private void notifyListeners(List<AtlasEntityHeader> entityHeaders, EntityOperation operation, boolean isImport) throws AtlasBaseException {
