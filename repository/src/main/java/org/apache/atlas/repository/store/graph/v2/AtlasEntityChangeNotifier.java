@@ -65,6 +65,7 @@ import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_DELETE;
 import static org.apache.atlas.repository.Constants.ENTITY_TEXT_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 
 
 @Component
@@ -77,7 +78,12 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     private final FullTextMapperV2            fullTextMapperV2;
     private final AtlasTypeRegistry           atlasTypeRegistry;
     private final boolean                     isV2EntityNotificationEnabled;
+    private final boolean                     notifyDifferentialEntityChangesEnabled;
     private static final List<String> ALLOWED_RELATIONSHIP_TYPES = Arrays.asList(AtlasConfiguration.SUPPORTED_RELATIONSHIP_EVENTS.getStringArray());
+    private static final Set<String> DIFFERENTIAL_NOTIFICATION_ATTRIBUTES = Collections.unmodifiableSet(
+        new HashSet<>(Arrays.asList(HAS_LINEAGE))
+        // Future attributes can be added here, e.g., ASSET_POLICY_GUIDS, DOMAIN_GUIDS_ATTR, etc.
+    );
     public static final String ENTITY_TYPE_AUDIT_ENTRY = "__AtlasAuditEntry";
 
     @Inject
@@ -92,6 +98,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         this.fullTextMapperV2              = fullTextMapperV2;
         this.atlasTypeRegistry             = atlasTypeRegistry;
         this.isV2EntityNotificationEnabled = AtlasRepositoryConfiguration.isV2EntityNotificationEnabled();
+        this.notifyDifferentialEntityChangesEnabled = AtlasConfiguration.NOTIFY_DIFFERENTIAL_ENTITY_CHANGES.getBoolean();
     }
 
     @Override
@@ -769,11 +776,12 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
                     // causing attribute loss in notifications. Now we safely merge only when header has attributes.
                     if (operation == EntityOperation.UPDATE || entityHeader.getAttributes() != null) {
                         if (entity != null && MapUtils.isNotEmpty(entityHeader.getAttributes())) {
-                            Map<String, Object> mergedAttributes = entity.getAttributes() != null
-                                    ? new HashMap<>(entity.getAttributes())
-                                    : new HashMap<>();
-
-                            mergedAttributes.putAll(entityHeader.getAttributes());
+                            Map<String, Object> mergedAttributes = new HashMap<>(entityHeader.getAttributes());
+                            if (entity.getAttributes() != null) {
+                              // remove all keys that are already in entity.attributes to avoid stale values
+                                mergedAttributes.keySet().removeAll(entity.getAttributes().keySet());
+                                mergedAttributes.putAll(entity.getAttributes());
+                            }
                             entity.setAttributes(mergedAttributes);
                         }
                     }
@@ -983,5 +991,202 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
 
         return atlasAttributes;
 
+    }
+
+    @Override
+    public void notifyDifferentialEntityChanges(EntityMutationResponse entityMutationResponse, boolean isImport) throws AtlasBaseException {
+        if (!notifyDifferentialEntityChangesEnabled) {
+            return; // Early exit if disabled
+        }
+
+        if (CollectionUtils.isEmpty(entityChangeListeners)) {
+            return;
+        }
+
+        MetricRecorder metric = RequestContext.get().startMetricRecord("notifyDifferentialEntityChanges");
+
+        try {
+            // 1. Get DifferentialEntitiesMap
+            Map<String, AtlasEntity> diffEntitiesMap = RequestContext.get().getDifferentialEntitiesMap();
+
+            if (MapUtils.isEmpty(diffEntitiesMap)) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("notifyDifferentialEntityChanges: DifferentialEntitiesMap is empty, skipping");
+                }
+                return;
+            }
+
+            // 2. Build set of GUIDs already in EntityMutationResponse (for duplicate prevention)
+            Set<String> existingGuids = collectGuidsFromResponse(entityMutationResponse);
+
+            // 3. Filter entities that have tracked attributes and are not duplicates
+            List<AtlasEntityHeader> entitiesToNotify = filterDifferentialEntities(
+                diffEntitiesMap, existingGuids, DIFFERENTIAL_NOTIFICATION_ATTRIBUTES
+            );
+
+            if (CollectionUtils.isEmpty(entitiesToNotify)) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("notifyDifferentialEntityChanges: No entities to notify after filtering");
+                }
+                return;
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("notifyDifferentialEntityChanges: Notifying {} entities affected by differential changes",
+                    entitiesToNotify.size());
+            }
+
+            // 4. Full text mapping
+            doFullTextMapping(entitiesToNotify);
+
+            // 5. Notify as UPDATE operations
+            notifyListeners(entitiesToNotify, EntityOperation.UPDATE, isImport);
+
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    /**
+     * Collect all GUIDs from EntityMutationResponse to prevent duplicate notifications
+     */
+    private Set<String> collectGuidsFromResponse(EntityMutationResponse response) {
+        Set<String> guids = new HashSet<>();
+
+        if (response != null) {
+            addGuids(guids, response.getCreatedEntities());
+            addGuids(guids, response.getUpdatedEntities());
+            addGuids(guids, response.getPartialUpdatedEntities());
+            addGuids(guids, response.getDeletedEntities());
+            addGuids(guids, response.getPurgedEntities());
+        }
+
+        return guids;
+    }
+
+    /**
+     * Helper method to add GUIDs from a list of entity headers
+     */
+    private void addGuids(Set<String> guids, List<AtlasEntityHeader> headers) {
+        if (CollectionUtils.isNotEmpty(headers)) {
+            for (AtlasEntityHeader header : headers) {
+                if (header != null && header.getGuid() != null) {
+                    guids.add(header.getGuid());
+                }
+            }
+        }
+    }
+
+    /**
+     * Filter differential entities based on criteria:
+     * - Have tracked attributes set
+     * - Are not already in EntityMutationResponse
+     * - Are not internal types
+     */
+    private List<AtlasEntityHeader> filterDifferentialEntities(
+        Map<String, AtlasEntity> diffEntitiesMap,
+        Set<String> existingGuids,
+        Set<String> trackedAttributes
+    ) throws AtlasBaseException {
+        List<AtlasEntityHeader> result = new ArrayList<>();
+
+        for (Map.Entry<String, AtlasEntity> entry : diffEntitiesMap.entrySet()) {
+            String guid = entry.getKey();
+            AtlasEntity diffEntity = entry.getValue();
+
+            if (diffEntity == null || StringUtils.isEmpty(guid)) {
+                continue;
+            }
+
+            // Skip if already in response
+            if (existingGuids.contains(guid)) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("notifyDifferentialEntityChanges: Skipping entity {} (already in EntityMutationResponse)", guid);
+                }
+                continue;
+            }
+
+            // Check if entity has any tracked attribute
+            if (!hasTrackedAttribute(diffEntity, trackedAttributes)) {
+                continue;
+            }
+
+            // Check if internal type
+            String typeName = diffEntity.getTypeName();
+            if (typeName != null && GraphHelper.isInternalType(typeName)) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("notifyDifferentialEntityChanges: Skipping internal type {} for entity {}", typeName, guid);
+                }
+                continue;
+            }
+
+            // Convert diffEntity to AtlasEntityHeader (just use diffEntity, don't fetch from graph)
+            AtlasEntityHeader header = convertDiffEntityToHeader(diffEntity);
+            if (header != null) {
+                result.add(header);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("notifyDifferentialEntityChanges: Entity {} will be notified for differential changes", guid);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Check if diffEntity has any of the tracked attributes
+     */
+    private boolean hasTrackedAttribute(AtlasEntity diffEntity, Set<String> trackedAttributes) {
+        if (diffEntity == null || diffEntity.getAttributes() == null) {
+            return false;
+        }
+
+        return trackedAttributes.stream()
+            .anyMatch(attr -> diffEntity.getAttributes().containsKey(attr));
+    }
+
+    /**
+     * Convert diffEntity to AtlasEntityHeader (using diffEntity only, no graph fetch)
+     */
+    private AtlasEntityHeader convertDiffEntityToHeader(AtlasEntity diffEntity) throws AtlasBaseException {
+        if (diffEntity == null || StringUtils.isEmpty(diffEntity.getGuid())) {
+            return null;
+        }
+
+        try {
+            // Use constructor that creates header from entity
+            AtlasEntityHeader header = new AtlasEntityHeader(diffEntity);
+
+            // Validate type exists
+            String typeName = header.getTypeName();
+            if (StringUtils.isEmpty(typeName)) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("notifyDifferentialEntityChanges: Skipping entity {} (missing typeName)", diffEntity.getGuid());
+                }
+                return null;
+            }
+
+            AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName(typeName);
+            if (entityType == null) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("notifyDifferentialEntityChanges: Skipping entity {} (type {} not found)",
+                        diffEntity.getGuid(), typeName);
+                }
+                return null;
+            }
+
+            // Skip internal types (double-check)
+            if (entityType.isInternalType()) {
+                return null;
+            }
+
+            return header;
+
+        } catch (Exception e) {
+            LOG.warn("notifyDifferentialEntityChanges: Failed to convert diffEntity to header for guid {}: {}",
+                diffEntity.getGuid(), e.getMessage());
+            return null;
+        }
     }
 }
