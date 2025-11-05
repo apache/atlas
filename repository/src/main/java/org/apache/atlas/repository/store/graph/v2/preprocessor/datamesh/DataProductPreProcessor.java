@@ -1,5 +1,8 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
@@ -85,6 +88,23 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         entity.removeAttribute(OUTPUT_PORT_GUIDS_ATTR);
         entity.removeAttribute(INPUT_PORT_GUIDS_ATTR);
+
+        if (entity.getAttribute(DAAP_ASSET_DSL_ATTR) == null) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProductAssetDSL attribute is mandatory for creating DataProduct");
+        }
+
+        String dslString = ((String) entity.getAttribute(DAAP_ASSET_DSL_ATTR)).trim();
+        
+        if (StringUtils.isEmpty(dslString) || dslString.equals("{}")) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProductAssetDSL attribute cannot be empty");
+        }
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.readValue(dslString, new TypeReference<Map<String, Object>>() {});
+        } catch (JsonProcessingException e) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProductAssetDSL attribute must be a valid JSON object: " + e.getMessage());
+        }
 
         if (parentDomainObject == null) {
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot create a Product without a Domain Relationship");
