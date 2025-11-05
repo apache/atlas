@@ -94,14 +94,14 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         }
 
         String dslString = ((String) entity.getAttribute(DAAP_ASSET_DSL_ATTR)).trim();
-        
-        if (StringUtils.isEmpty(dslString) || dslString.equals("{}")) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProductAssetDSL attribute cannot be empty");
-        }
 
         try {
             ObjectMapper mapper = new ObjectMapper();
-            mapper.readValue(dslString, new TypeReference<Map<String, Object>>() {});
+            Map<String, Object> dslMap = mapper.readValue(dslString, new TypeReference<>() {});
+            
+            if (dslMap == null || dslMap.isEmpty()) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProductAssetDSL attribute cannot be empty");
+            }
         } catch (JsonProcessingException e) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProductAssetDSL attribute must be a valid JSON object: " + e.getMessage());
         }
