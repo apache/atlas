@@ -478,7 +478,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
     private void validateProductAssetDSLAttr(AtlasEntity entity) throws AtlasBaseException {
         if (entity.getAttribute(DAAP_ASSET_DSL_ATTR) == null) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProductAssetDSL attribute is mandatory for creating DataProduct");
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProductAssetDSL attribute is mandatory for DataProducts");
         }
 
         String dslString = ((String) entity.getAttribute(DAAP_ASSET_DSL_ATTR)).trim();
