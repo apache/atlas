@@ -478,7 +478,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
     private void validateProductAssetDSLAttr(AtlasEntity entity) throws AtlasBaseException {
         if (entity.getAttribute(DAAP_ASSET_DSL_ATTR) == null) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "dataProductAssetDSL attribute is mandatory for DataProducts");
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "dataProductAssetsDSL attribute is mandatory for DataProducts");
         }
 
         String dslString = ((String) entity.getAttribute(DAAP_ASSET_DSL_ATTR)).trim();
@@ -488,10 +488,10 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             Map<String, Object> dslMap = mapper.readValue(dslString, new TypeReference<>() {});
 
             if (dslMap == null || dslMap.isEmpty()) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "dataProductAssetDSL attribute cannot be empty");
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "dataProductAssetsDSL attribute cannot be empty");
             }
         } catch (JsonProcessingException e) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "dataProductAssetDSL attribute must be a valid JSON object: " + e.getMessage());
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "dataProductAssetsDSL attribute must be a valid JSON object: " + e.getMessage());
         }
     }
 
