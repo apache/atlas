@@ -43,9 +43,6 @@ import java.security.PrivilegedExceptionAction;
 
 import static org.testng.Assert.assertEquals;
 
-/**
- *
- */
 public class AtlasAuthenticationKerberosFilterTest extends BaseSecurityTest {
     public static final String TEST_USER_JAAS_SECTION = "TestUser";
     public static final String TESTUSER               = "testuser";

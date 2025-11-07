@@ -27,9 +27,6 @@ import java.net.URL;
 
 import static org.testng.Assert.assertEquals;
 
-/**
- *
- */
 public class AtlasAuthenticationSimpleFilterIT extends BaseSecurityTest {
     private final Base64 enc = new Base64();
 
