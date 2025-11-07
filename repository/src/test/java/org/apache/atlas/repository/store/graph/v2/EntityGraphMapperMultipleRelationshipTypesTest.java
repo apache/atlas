@@ -66,6 +66,7 @@ public class EntityGraphMapperMultipleRelationshipTypesTest extends AtlasEntityT
     private static final String HIVE_DB_TYPE                  = "hive_db";
     private static final String HIVE_TABLE_TYPE               = "hive_table";
     private static final String ICEBERG_TABLE_TYPE            = "iceberg_table";
+    private static final String INVALID_TABLE_TYPE            = "invalid_table";
     private static final String HIVE_TABLE_DB_RELATIONSHIP    = "hive_table_db";
     private static final String ICEBERG_TABLE_DB_RELATIONSHIP = "iceberg_table_db";
     private static final String TABLES_ATTR_NAME              = "tables";
@@ -314,6 +315,97 @@ public class EntityGraphMapperMultipleRelationshipTypesTest extends AtlasEntityT
         }
     }
 
+    /**
+     * Test that a single invalid element type for the relationship attribute fails fast
+     * with an appropriate error instead of being silently routed to an incorrect relationship type.
+     */
+    @Test
+    public void testSingleInvalidElementTypeFailsFast() throws Exception {
+        init();
+
+        // Create hive_db and an invalid_table entity (not covered by any relationshipDef on TABLES_ATTR_NAME)
+        AtlasEntity dbEntity     = createHiveDbEntity("invalid_single_db_" + randomString());
+        AtlasEntity invalidTable = createInvalidTableEntity("invalid_single_tbl_" + randomString());
+
+        AtlasEntitiesWithExtInfo entitiesToCreate = new AtlasEntitiesWithExtInfo();
+        entitiesToCreate.addEntity(dbEntity);
+        entitiesToCreate.addEntity(invalidTable);
+
+        EntityMutationResponse createResponse = entityStore.createOrUpdate(new AtlasEntityStream(entitiesToCreate), false);
+
+        String dbGuid         = findEntityGuid(createResponse.getCreatedEntities(), HIVE_DB_TYPE);
+        String invalidTblGuid = findEntityGuid(createResponse.getCreatedEntities(), INVALID_TABLE_TYPE);
+
+        // Attempt to set relationship attribute with a single invalid_table element
+        AtlasEntity dbUpdate = new AtlasEntity(HIVE_DB_TYPE);
+        dbUpdate.setGuid(dbGuid);
+        dbUpdate.setAttribute("name", dbEntity.getAttribute("name"));
+
+        List<AtlasRelatedObjectId> tables = new ArrayList<>();
+        tables.add(new AtlasRelatedObjectId(new AtlasObjectId(invalidTblGuid, INVALID_TABLE_TYPE), HIVE_TABLE_DB_RELATIONSHIP));
+
+        dbUpdate.setRelationshipAttribute(TABLES_ATTR_NAME, tables);
+
+        AtlasEntityWithExtInfo dbUpdateExtInfo = new AtlasEntityWithExtInfo(dbUpdate);
+
+        try {
+            entityStore.createOrUpdate(new AtlasEntityStream(dbUpdateExtInfo), false);
+            fail("Expected AtlasBaseException for invalid element type in relationship attribute");
+        } catch (AtlasBaseException e) {
+            // Expect RELATIONSHIPDEF_NOT_DEFINED error for invalid element type
+            String msg = e.getMessage();
+            assertNotNull(msg);
+            assertTrue(msg.contains("RELATIONSHIPDEF_NOT_DEFINED") || msg.contains("relationshipDef"), "Unexpected error message: " + msg);
+        }
+    }
+
+    /**
+     * Test that when all elements in a collection are of invalid type, the mapping fails fast
+     * instead of silently ignoring the attribute.
+     */
+    @Test
+    public void testAllInvalidElementTypesInCollectionFailFast() throws Exception {
+        init();
+
+        // Create hive_db and two invalid_table entities
+        AtlasEntity dbEntity      = createHiveDbEntity("invalid_coll_db_" + randomString());
+        AtlasEntity invalidTable1 = createInvalidTableEntity("invalid_coll_tbl1_" + randomString());
+        AtlasEntity invalidTable2 = createInvalidTableEntity("invalid_coll_tbl2_" + randomString());
+
+        AtlasEntitiesWithExtInfo entitiesToCreate = new AtlasEntitiesWithExtInfo();
+        entitiesToCreate.addEntity(dbEntity);
+        entitiesToCreate.addEntity(invalidTable1);
+        entitiesToCreate.addEntity(invalidTable2);
+
+        EntityMutationResponse createResponse = entityStore.createOrUpdate(new AtlasEntityStream(entitiesToCreate), false);
+
+        String dbGuid          = findEntityGuid(createResponse.getCreatedEntities(), HIVE_DB_TYPE);
+        String invalidTbl1Guid = findEntityGuid(createResponse.getCreatedEntities(), INVALID_TABLE_TYPE, 0);
+        String invalidTbl2Guid = findEntityGuid(createResponse.getCreatedEntities(), INVALID_TABLE_TYPE, 1);
+
+        // Attempt to set relationship attribute with only invalid_table elements
+        AtlasEntity dbUpdate = new AtlasEntity(HIVE_DB_TYPE);
+        dbUpdate.setGuid(dbGuid);
+        dbUpdate.setAttribute("name", dbEntity.getAttribute("name"));
+
+        List<AtlasRelatedObjectId> tables = new ArrayList<>();
+        tables.add(new AtlasRelatedObjectId(new AtlasObjectId(invalidTbl1Guid, INVALID_TABLE_TYPE), HIVE_TABLE_DB_RELATIONSHIP));
+        tables.add(new AtlasRelatedObjectId(new AtlasObjectId(invalidTbl2Guid, INVALID_TABLE_TYPE), HIVE_TABLE_DB_RELATIONSHIP));
+
+        dbUpdate.setRelationshipAttribute(TABLES_ATTR_NAME, tables);
+
+        AtlasEntityWithExtInfo dbUpdateExtInfo = new AtlasEntityWithExtInfo(dbUpdate);
+
+        try {
+            entityStore.createOrUpdate(new AtlasEntityStream(dbUpdateExtInfo), false);
+            fail("Expected AtlasBaseException when all elements in collection have invalid type for relationship attribute");
+        } catch (AtlasBaseException e) {
+            String msg = e.getMessage();
+            assertNotNull(msg);
+            assertTrue(msg.contains("RELATIONSHIPDEF_NOT_DEFINED") || msg.contains("relationshipDef"), "Unexpected error message: " + msg);
+        }
+    }
+
     // Helper methods
 
     private AtlasTypesDef createTypesWithMultipleRelationshipTypes() {
@@ -337,9 +429,16 @@ public class EntityGraphMapperMultipleRelationshipTypesTest extends AtlasEntityT
                 createUniqueRequiredAttrDef("name", "string"),
                 createOptionalAttrDef("description", "string"));
 
+        // Create invalid_table entity type (not part of any relationshipDef for tables)
+        AtlasEntityDef invalidTableDef = createClassTypeDef(INVALID_TABLE_TYPE, "Invalid Table",
+                Collections.emptySet(),
+                createUniqueRequiredAttrDef("name", "string"),
+                createOptionalAttrDef("description", "string"));
+
         typesDef.getEntityDefs().add(hiveDbDef);
         typesDef.getEntityDefs().add(hiveTableDef);
         typesDef.getEntityDefs().add(icebergTableDef);
+        typesDef.getEntityDefs().add(invalidTableDef);
 
         // Create hive_table_db relationship
         AtlasRelationshipDef hiveTableDbRel = new AtlasRelationshipDef();
@@ -409,6 +508,10 @@ public class EntityGraphMapperMultipleRelationshipTypesTest extends AtlasEntityT
 
     private AtlasEntity createIcebergTableEntity(String name) {
         return createNewEntity(ICEBERG_TABLE_TYPE, name, "Test iceberg table: " + name);
+    }
+
+    private AtlasEntity createInvalidTableEntity(String name) {
+        return createNewEntity(INVALID_TABLE_TYPE, name, "Test invalid table: " + name);
     }
 
     private AtlasEntity createNewEntity(String typeName, String name, String description) {

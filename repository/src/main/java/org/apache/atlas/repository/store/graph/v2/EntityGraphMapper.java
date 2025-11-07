@@ -793,7 +793,7 @@ public class EntityGraphMapper {
             List<AtlasVertex>                              entitiesToPropagateTo = null;
             Map<AtlasClassification, HashSet<AtlasVertex>> addedClassifications  = new HashMap<>();
             List<AtlasClassification>                      addClassifications    = new ArrayList<>(classifications.size());
-            boolean isImportInProgress                                           = RequestContext.get().isImportInProgress();
+            boolean                                        isImportInProgress    = RequestContext.get().isImportInProgress();
 
             for (AtlasClassification c : classifications) {
                 AtlasClassification classification     = new AtlasClassification(c);
@@ -982,8 +982,8 @@ public class EntityGraphMapper {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_CLASSIFICATION_PARAMS, "delete", entityGuid);
         }
 
-        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, entityGuid);
-        boolean isImportInProgress = RequestContext.get().isImportInProgress();
+        AtlasVertex entityVertex       = AtlasGraphUtilsV2.findByGuid(this.graph, entityGuid);
+        boolean     isImportInProgress = RequestContext.get().isImportInProgress();
 
         if (entityVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, entityGuid);
@@ -1103,8 +1103,8 @@ public class EntityGraphMapper {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_CLASSIFICATION_PARAMS, "update", guid);
         }
 
-        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
-        boolean isImportInProgress = RequestContext.get().isImportInProgress();
+        AtlasVertex entityVertex       = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
+        boolean     isImportInProgress = RequestContext.get().isImportInProgress();
 
         if (entityVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
@@ -1538,90 +1538,153 @@ public class EntityGraphMapper {
 
         if (CollectionUtils.isEmpty(relationshipTypeNames)) {
             // Fallback to single relationship type processing
-            String relationType = AtlasEntityUtil.getRelationshipType(attrValue);
-            AtlasAttribute attribute = entityType.getRelationshipAttribute(attrName, relationType);
+            String         relationType = AtlasEntityUtil.getRelationshipType(attrValue);
+            AtlasAttribute attribute    = entityType.getRelationshipAttribute(attrName, relationType);
             if (attribute != null) {
                 mapAttribute(attribute, attrValue, vertex, op, context);
             }
+
             return;
         }
 
-        // For collections, we need to split elements by their appropriate relationship type
-        // e.g., hive_table elements should use hive_table_db relationship, iceberg_table elements should use iceberg_table_db
-        if (attrValue instanceof Collection) {
-            Collection<?> collection = (Collection<?>) attrValue;
-            Map<String, List<Object>> elementsByRelationshipType = new HashMap<>();
+        // Pre-resolve relationship types once per attribute to avoid repeated registry lookups
+        Map<String, AtlasRelationshipType> relTypeCache = getRelationshipTypeCache(relationshipTypeNames);
 
-            // Group elements by their appropriate relationship type
-            for (Object element : collection) {
-                String appropriateRelType = findAppropriateRelationshipType(element, entityType, relationshipTypeNames);
-                if (appropriateRelType != null) {
-                    elementsByRelationshipType.computeIfAbsent(appropriateRelType, k -> new ArrayList<>()).add(element);
-                } else {
-                    LOG.warn("Could not find appropriate relationship type for element {} in attribute {}", element, attrName);
-                }
-            }
+        // Cache mapping from element type name -> relationship type name for this attribute
+        Map<String, String> elementTypeToRelationshipType = new HashMap<>();
+
+        String entityTypeName = entityType.getTypeName();
+
+        if (attrValue instanceof Collection) {
+            Collection<?> relatedObjects = (Collection<?>) attrValue;
+
+            // Group related objects by their appropriate relationship type
+            // e.g., hive_table elements should use hive_table_db relationship, iceberg_table elements should use iceberg_table_db
+            Map<String, List<Object>> elementsByRelationshipType = groupElementsByRelationshipType(
+                    relatedObjects, attrName, entityTypeName, relTypeCache, elementTypeToRelationshipType);
 
             // Process each relationship type with its filtered elements
             for (Map.Entry<String, List<Object>> entry : elementsByRelationshipType.entrySet()) {
-                String relationshipTypeName = entry.getKey();
-                List<Object> filteredElements = entry.getValue();
+                String       relationshipTypeName = entry.getKey();
+                List<Object> filteredElements     = entry.getValue();
 
-                try {
-                    AtlasAttribute attribute = entityType.getRelationshipAttribute(attrName, relationshipTypeName);
-                    if (attribute != null && CollectionUtils.isNotEmpty(filteredElements)) {
-                        // Use the same collection type as the original (List or Set)
-                        Object filteredValue = createCollectionOfSameType(attrValue, filteredElements);
-                        LOG.debug("Processing relationship type {} for attribute {} with {} elements",
-                                relationshipTypeName, attrName, filteredElements.size());
-                        mapAttribute(attribute, filteredValue, vertex, op, context);
-                    }
-                } catch (Exception e) {
-                    LOG.warn("Error processing relationship type {} for attribute {}: {}", relationshipTypeName, attrName, e.getMessage());
-                    // Continue with other relationship types
+                AtlasAttribute attribute = entityType.getRelationshipAttribute(attrName, relationshipTypeName);
+
+                if (attribute != null && CollectionUtils.isNotEmpty(filteredElements)) {
+                    // Use the same collection type as the original (List or Set)
+                    Object filteredValue = createCollectionOfSameType(attrValue, filteredElements);
+
+                    LOG.debug("Processing relationship type {} for attribute {} with {} elements",
+                            relationshipTypeName, attrName, filteredElements.size());
+
+                    mapAttribute(attribute, filteredValue, vertex, op, context);
                 }
             }
         } else {
             // Single element - find the appropriate relationship type
-            String appropriateRelType = findAppropriateRelationshipType(attrValue, entityType, relationshipTypeNames);
+            String elementTypeName    = getElementTypeName(attrValue);
+            String appropriateRelType = null;
+
+            if (!StringUtils.isEmpty(elementTypeName)) {
+                appropriateRelType = findAppropriateRelationshipType(elementTypeName, entityTypeName, relTypeCache);
+            }
+
             if (appropriateRelType != null) {
                 AtlasAttribute attribute = entityType.getRelationshipAttribute(attrName, appropriateRelType);
+
                 if (attribute != null) {
                     LOG.debug("Processing relationship type {} for attribute {}", appropriateRelType, attrName);
                     mapAttribute(attribute, attrValue, vertex, op, context);
                 }
             } else {
-                // Fallback to first available relationship type
-                String firstRelType = relationshipTypeNames.iterator().next();
-                AtlasAttribute attribute = entityType.getRelationshipAttribute(attrName, firstRelType);
-                if (attribute != null) {
-                    LOG.debug("Using fallback relationship type {} for attribute {}", firstRelType, attrName);
-                    mapAttribute(attribute, attrValue, vertex, op, context);
-                }
+                LOG.error("No appropriate relationship type found for attribute {} on entityType {} and elementType {}. " +
+                        "Configured relationship types: {}", attrName, entityTypeName, elementTypeName, relationshipTypeNames);
+
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_NOT_DEFINED,
+                        entityTypeName, elementTypeName, attrName);
             }
         }
 
         LOG.debug("<== mapRelationshipAttributeWithMultipleTypes({}, {})", attrName, entity.getTypeName());
     }
 
-    private String findAppropriateRelationshipType(Object element, AtlasEntityType entityType, Set<String> relationshipTypeNames) {
-        String elementTypeName = getElementTypeName(element);
-        if (elementTypeName == null) {
-            return null;
+    private Map<String, List<Object>> groupElementsByRelationshipType(Collection<?> relatedObjects,
+            String attrName,
+            String entityTypeName,
+            Map<String, AtlasRelationshipType> relTypeCache,
+            Map<String, String> elementTypeToRelationshipType) throws AtlasBaseException {
+        Map<String, List<Object>> elementsByRelationshipType = new HashMap<>();
+        Set<String>               unmappedElementTypes       = new HashSet<>();
+
+        // Group related objects by their appropriate relationship type
+        for (Object element : relatedObjects) {
+            String elementTypeName = getElementTypeName(element);
+
+            if (StringUtils.isEmpty(elementTypeName)) {
+                LOG.warn("Could not determine element type name for attribute {} and element {}", attrName, element);
+                unmappedElementTypes.add("unknown");
+                continue;
+            }
+
+            String appropriateRelType;
+
+            if (elementTypeToRelationshipType.containsKey(elementTypeName)) {
+                appropriateRelType = elementTypeToRelationshipType.get(elementTypeName);
+            } else {
+                appropriateRelType = findAppropriateRelationshipType(elementTypeName, entityTypeName, relTypeCache);
+                elementTypeToRelationshipType.put(elementTypeName, appropriateRelType);
+            }
+
+            if (appropriateRelType != null) {
+                elementsByRelationshipType.computeIfAbsent(appropriateRelType, k -> new ArrayList<>()).add(element);
+            } else {
+                LOG.warn("Could not find appropriate relationship type for element {} in attribute {}", element, attrName);
+                unmappedElementTypes.add(elementTypeName);
+            }
         }
 
-        String entityTypeName = entityType.getTypeName();
+        // if we had input elements but could not map any of them, fail fast instead of silently ignoring the attribute
+        if (CollectionUtils.isNotEmpty(relatedObjects) && elementsByRelationshipType.isEmpty()) {
+            String unmappedTypesStr = String.join(",", unmappedElementTypes);
 
+            LOG.error("No appropriate relationshipDef found for attribute {} on entityType {} and elementType(s) {}.",
+                    attrName, entityTypeName, unmappedTypesStr);
+
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_NOT_DEFINED,
+                    entityTypeName, unmappedTypesStr, attrName);
+        }
+
+        return elementsByRelationshipType;
+    }
+
+    private Map<String, AtlasRelationshipType> getRelationshipTypeCache(Set<String> relationshipTypeNames) {
+        Map<String, AtlasRelationshipType> relTypeCache = new HashMap<>();
+
+        if (CollectionUtils.isNotEmpty(relationshipTypeNames)) {
+            for (String relationshipTypeName : relationshipTypeNames) {
+                AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(relationshipTypeName);
+
+                if (relationshipType != null) {
+                    relTypeCache.put(relationshipTypeName, relationshipType);
+                }
+            }
+        }
+
+        return relTypeCache;
+    }
+
+    private String findAppropriateRelationshipType(String elementTypeName, String entityTypeName, Map<String, AtlasRelationshipType> relationshipTypes) {
+        if (StringUtils.isEmpty(elementTypeName) || MapUtils.isEmpty(relationshipTypes)) {
+            return null;
+        }
         // Find the relationship type where:
         // - The source entity type matches one end
         // - The target element type matches the other end
-        for (String relationshipTypeName : relationshipTypeNames) {
-            try {
-                AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(relationshipTypeName);
-                if (relationshipType == null) {
-                    continue;
-                }
+        for (Map.Entry<String, AtlasRelationshipType> entry : relationshipTypes.entrySet()) {
+            String                relationshipTypeName = entry.getKey();
+            AtlasRelationshipType relationshipType     = entry.getValue();
 
+            try {
                 // Check if entityType matches end1 and elementType matches end2
                 boolean match1 = relationshipType.getEnd1Type().isTypeOrSuperTypeOf(entityTypeName) &&
                         relationshipType.getEnd2Type().isTypeOrSuperTypeOf(elementTypeName);
@@ -1645,8 +1708,8 @@ public class EntityGraphMapper {
         if (element instanceof AtlasObjectId) {
             return ((AtlasObjectId) element).getTypeName();
         } else if (element instanceof Map) {
-            Map<?, ?> mapElement = (Map<?, ?>) element;
-            Object typeNameObj = mapElement.get(AtlasObjectId.KEY_TYPENAME);
+            Map<?, ?> mapElement  = (Map<?, ?>) element;
+            Object    typeNameObj = mapElement.get(AtlasObjectId.KEY_TYPENAME);
             return typeNameObj != null ? typeNameObj.toString() : null;
         }
         return null;
@@ -1744,7 +1807,7 @@ public class EntityGraphMapper {
 
                 if (ctx.getValue() != null) {
                     AtlasEntityType instanceType = getInstanceType(ctx.getValue(), context);
-                    AtlasEdge       edge         = currentEdge != null ? currentEdge : null;
+                    AtlasEdge       edge         = currentEdge;
 
                     ctx.setElementType(instanceType);
                     ctx.setExistingEdge(edge);
@@ -1875,7 +1938,7 @@ public class EntityGraphMapper {
         if (inverseUpdated) {
             RequestContext requestContext = RequestContext.get();
 
-            if (!requestContext.isDeletedEntity(graphHelper.getGuid(inverseVertex))) {
+            if (!requestContext.isDeletedEntity(GraphHelper.getGuid(inverseVertex))) {
                 updateModificationMetadata(inverseVertex);
 
                 requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(inverseVertex));
@@ -1924,7 +1987,7 @@ public class EntityGraphMapper {
             return;
         }
 
-        String parentGuid = graphHelper.getGuid(inverseVertex);
+        String parentGuid = GraphHelper.getGuid(inverseVertex);
 
         if (StringUtils.isEmpty(parentGuid)) {
             return;
@@ -1947,8 +2010,8 @@ public class EntityGraphMapper {
 
     // legacy method to create edges for inverse reference
     private AtlasEdge createInverseReference(AtlasAttribute inverseAttribute, AtlasStructType inverseAttributeType, AtlasVertex inverseVertex, AtlasVertex vertex) throws AtlasBaseException {
-        String    propertyName     = AtlasGraphUtilsV2.getQualifiedAttributePropertyKey(inverseAttributeType, inverseAttribute.getName());
-        String    inverseEdgeLabel = AtlasGraphUtilsV2.getEdgeLabel(propertyName);
+        String propertyName     = AtlasGraphUtilsV2.getQualifiedAttributePropertyKey(inverseAttributeType, inverseAttribute.getName());
+        String inverseEdgeLabel = AtlasGraphUtilsV2.getEdgeLabel(propertyName);
 
         try {
             return graphHelper.getOrCreateEdge(inverseVertex, vertex, inverseEdgeLabel);
@@ -2026,7 +2089,7 @@ public class EntityGraphMapper {
             if (ctx.getValue() instanceof AtlasStruct) {
                 structVal = (AtlasStruct) ctx.getValue();
             } else if (ctx.getValue() instanceof Map) {
-                structVal = new AtlasStruct(ctx.getAttrType().getTypeName(), (Map) AtlasTypeUtil.toStructAttributes((Map) ctx.getValue()));
+                structVal = new AtlasStruct(ctx.getAttrType().getTypeName(), AtlasTypeUtil.toStructAttributes((Map) ctx.getValue()));
             }
 
             if (structVal != null) {
@@ -2159,7 +2222,7 @@ public class EntityGraphMapper {
 
                     ret = getOrCreateRelationship(fromVertex, toVertex, relationshipName, relationshipAttributes);
 
-                    boolean isCreated = graphHelper.getCreatedTime(ret) == RequestContext.get().getRequestTime();
+                    boolean isCreated = GraphHelper.getCreatedTime(ret) == RequestContext.get().getRequestTime();
 
                     if (isCreated) {
                         // if relationship did not exist before and new relationship was created
@@ -2444,7 +2507,7 @@ public class EntityGraphMapper {
                     AtlasVertex vertex = context.getDiscoveryContext().getResolvedEntityVertex(objId);
 
                     if (vertex != null) {
-                        assignedGuid = graphHelper.getGuid(vertex);
+                        assignedGuid = GraphHelper.getGuid(vertex);
                     }
                 }
 
@@ -2467,7 +2530,7 @@ public class EntityGraphMapper {
                     AtlasVertex vertex = context.getDiscoveryContext().getResolvedEntityVertex(new AtlasObjectId(mapObjId));
 
                     if (vertex != null) {
-                        assignedGuid = graphHelper.getGuid(vertex);
+                        assignedGuid = GraphHelper.getGuid(vertex);
                     }
                 }
 
@@ -2849,7 +2912,7 @@ public class EntityGraphMapper {
         if (vertex != null) {
             RequestContext req = RequestContext.get();
 
-            if (!req.isUpdatedEntity(graphHelper.getGuid(vertex))) {
+            if (!req.isUpdatedEntity(GraphHelper.getGuid(vertex))) {
                 updateModificationMetadata(vertex);
 
                 req.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(vertex));
@@ -2966,7 +3029,7 @@ public class EntityGraphMapper {
         attributes.put(bmAttribute.getName(), attrValue);
     }
 
-    private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String classificationName,  boolean isImportInProgress) {
+    private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String classificationName, boolean isImportInProgress) {
         deleteDelegate.getHandler().createAndQueueTask(taskType, entityVertex, classificationVertexId, null, classificationName, isImportInProgress);
     }
 }
