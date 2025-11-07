@@ -61,6 +61,7 @@ import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
+import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
@@ -1506,21 +1507,19 @@ public class EntityGraphMapper {
 
             if (op.equals(CREATE)) {
                 for (String attrName : entityType.getRelationshipAttributes().keySet()) {
-                    Object         attrValue    = entity.getRelationshipAttribute(attrName);
-                    String         relationType = AtlasEntityUtil.getRelationshipType(attrValue);
-                    AtlasAttribute attribute    = entityType.getRelationshipAttribute(attrName, relationType);
-
-                    mapAttribute(attribute, attrValue, vertex, op, context);
+                    Object attrValue = entity.getRelationshipAttribute(attrName);
+                    if (attrValue != null) {
+                        mapRelationshipAttributeWithMultipleTypes(entity, entityType, attrName, attrValue, vertex, op, context);
+                    }
                 }
             } else if (op.equals(UPDATE) || op.equals(PARTIAL_UPDATE)) {
                 // relationship attributes mapping
                 for (String attrName : entityType.getRelationshipAttributes().keySet()) {
                     if (entity.hasRelationshipAttribute(attrName)) {
-                        Object         attrValue    = entity.getRelationshipAttribute(attrName);
-                        String         relationType = AtlasEntityUtil.getRelationshipType(attrValue);
-                        AtlasAttribute attribute    = entityType.getRelationshipAttribute(attrName, relationType);
-
-                        mapAttribute(attribute, attrValue, vertex, op, context);
+                        Object attrValue = entity.getRelationshipAttribute(attrName);
+                        if (attrValue != null) {
+                            mapRelationshipAttributeWithMultipleTypes(entity, entityType, attrName, attrValue, vertex, op, context);
+                        }
                     }
                 }
             }
@@ -1531,6 +1530,136 @@ public class EntityGraphMapper {
         }
 
         LOG.debug("<== mapRelationshipAttributes({}, {})", op, entity.getTypeName());
+    }
+
+    private void mapRelationshipAttributeWithMultipleTypes(AtlasEntity entity, AtlasEntityType entityType, String attrName, Object attrValue, AtlasVertex vertex, EntityOperation op, EntityMutationContext context) throws AtlasBaseException {
+        LOG.debug("==> mapRelationshipAttributeWithMultipleTypes({}, {})", attrName, entity.getTypeName());
+        Set<String> relationshipTypeNames = entityType.getAttributeRelationshipTypes(attrName);
+
+        if (CollectionUtils.isEmpty(relationshipTypeNames)) {
+            // Fallback to single relationship type processing
+            String relationType = AtlasEntityUtil.getRelationshipType(attrValue);
+            AtlasAttribute attribute = entityType.getRelationshipAttribute(attrName, relationType);
+            if (attribute != null) {
+                mapAttribute(attribute, attrValue, vertex, op, context);
+            }
+            return;
+        }
+
+        // For collections, we need to split elements by their appropriate relationship type
+        // e.g., hive_table elements should use hive_table_db relationship, iceberg_table elements should use iceberg_table_db
+        if (attrValue instanceof Collection) {
+            Collection<?> collection = (Collection<?>) attrValue;
+            Map<String, List<Object>> elementsByRelationshipType = new HashMap<>();
+
+            // Group elements by their appropriate relationship type
+            for (Object element : collection) {
+                String appropriateRelType = findAppropriateRelationshipType(element, entityType, relationshipTypeNames);
+                if (appropriateRelType != null) {
+                    elementsByRelationshipType.computeIfAbsent(appropriateRelType, k -> new ArrayList<>()).add(element);
+                } else {
+                    LOG.warn("Could not find appropriate relationship type for element {} in attribute {}", element, attrName);
+                }
+            }
+
+            // Process each relationship type with its filtered elements
+            for (Map.Entry<String, List<Object>> entry : elementsByRelationshipType.entrySet()) {
+                String relationshipTypeName = entry.getKey();
+                List<Object> filteredElements = entry.getValue();
+
+                try {
+                    AtlasAttribute attribute = entityType.getRelationshipAttribute(attrName, relationshipTypeName);
+                    if (attribute != null && CollectionUtils.isNotEmpty(filteredElements)) {
+                        // Use the same collection type as the original (List or Set)
+                        Object filteredValue = createCollectionOfSameType(attrValue, filteredElements);
+                        LOG.debug("Processing relationship type {} for attribute {} with {} elements",
+                                relationshipTypeName, attrName, filteredElements.size());
+                        mapAttribute(attribute, filteredValue, vertex, op, context);
+                    }
+                } catch (Exception e) {
+                    LOG.warn("Error processing relationship type {} for attribute {}: {}", relationshipTypeName, attrName, e.getMessage());
+                    // Continue with other relationship types
+                }
+            }
+        } else {
+            // Single element - find the appropriate relationship type
+            String appropriateRelType = findAppropriateRelationshipType(attrValue, entityType, relationshipTypeNames);
+            if (appropriateRelType != null) {
+                AtlasAttribute attribute = entityType.getRelationshipAttribute(attrName, appropriateRelType);
+                if (attribute != null) {
+                    LOG.debug("Processing relationship type {} for attribute {}", appropriateRelType, attrName);
+                    mapAttribute(attribute, attrValue, vertex, op, context);
+                }
+            } else {
+                // Fallback to first available relationship type
+                String firstRelType = relationshipTypeNames.iterator().next();
+                AtlasAttribute attribute = entityType.getRelationshipAttribute(attrName, firstRelType);
+                if (attribute != null) {
+                    LOG.debug("Using fallback relationship type {} for attribute {}", firstRelType, attrName);
+                    mapAttribute(attribute, attrValue, vertex, op, context);
+                }
+            }
+        }
+
+        LOG.debug("<== mapRelationshipAttributeWithMultipleTypes({}, {})", attrName, entity.getTypeName());
+    }
+
+    private String findAppropriateRelationshipType(Object element, AtlasEntityType entityType, Set<String> relationshipTypeNames) {
+        String elementTypeName = getElementTypeName(element);
+        if (elementTypeName == null) {
+            return null;
+        }
+
+        String entityTypeName = entityType.getTypeName();
+
+        // Find the relationship type where:
+        // - The source entity type matches one end
+        // - The target element type matches the other end
+        for (String relationshipTypeName : relationshipTypeNames) {
+            try {
+                AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(relationshipTypeName);
+                if (relationshipType == null) {
+                    continue;
+                }
+
+                // Check if entityType matches end1 and elementType matches end2
+                boolean match1 = relationshipType.getEnd1Type().isTypeOrSuperTypeOf(entityTypeName) &&
+                        relationshipType.getEnd2Type().isTypeOrSuperTypeOf(elementTypeName);
+
+                // Check if entityType matches end2 and elementType matches end1
+                boolean match2 = relationshipType.getEnd2Type().isTypeOrSuperTypeOf(entityTypeName) &&
+                        relationshipType.getEnd1Type().isTypeOrSuperTypeOf(elementTypeName);
+
+                if (match1 || match2) {
+                    return relationshipTypeName;
+                }
+            } catch (Exception e) {
+                LOG.debug("Error checking relationship type {}: {}", relationshipTypeName, e.getMessage());
+            }
+        }
+
+        return null;
+    }
+
+    private String getElementTypeName(Object element) {
+        if (element instanceof AtlasObjectId) {
+            return ((AtlasObjectId) element).getTypeName();
+        } else if (element instanceof Map) {
+            Map<?, ?> mapElement = (Map<?, ?>) element;
+            Object typeNameObj = mapElement.get(AtlasObjectId.KEY_TYPENAME);
+            return typeNameObj != null ? typeNameObj.toString() : null;
+        }
+        return null;
+    }
+
+    private Object createCollectionOfSameType(Object originalValue, List<Object> filteredElements) {
+        if (originalValue instanceof List) {
+            return filteredElements;
+        } else if (originalValue instanceof Set) {
+            return new HashSet<>(filteredElements);
+        } else {
+            return filteredElements;
+        }
     }
 
     private void mapAttribute(AtlasAttribute attribute, Object attrValue, AtlasVertex vertex, EntityOperation op, EntityMutationContext context) throws AtlasBaseException {
