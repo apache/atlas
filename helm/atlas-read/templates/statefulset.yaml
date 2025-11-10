@@ -1,4 +1,4 @@
-{{- if and (not (and (.Values.deploy) (.Values.deploy.enabled))) (or .Values.global.svcIsolation.enabled (or .Values.global.esIsolation.enabled .Values.global.globalSvcIsolation.enabled)) }}
+{{- if or .Values.global.svcIsolation.enabled (or .Values.global.esIsolation.enabled .Values.global.globalSvcIsolation.enabled) }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -78,6 +78,7 @@ spec:
       {{- if .Values.atlas.initContainers }}
         {{- toYaml .Values.atlas.initContainers | nindent 8 }}
       {{- end }}
+      serviceAccountName: cinv-sa
       containers:
         - name: {{ .Chart.Name }}-main
           command: [

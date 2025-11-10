@@ -311,7 +311,7 @@ atlas:
       scheme: HTTP
     failureThreshold: 3
     initialDelaySeconds: 30
-    periodSeconds: 60
+    periodSeconds: 10
     successThreshold: 1
     timeoutSeconds: 5
 

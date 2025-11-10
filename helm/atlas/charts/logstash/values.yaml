@@ -99,8 +99,15 @@ logstashPipeline:
         }
       }
 
+      # Debug: Log business attribute operations
+      if [operationType] == "BUSINESS_ATTRIBUTE_UPDATE" {
+        mutate {
+          add_field => { "[@metadata][debug_ba_operation_detected]" => "true" }
+        }
+      }
+      
       # Only process relevant operations
-      if [operationType] not in ["ENTITY_CREATE", "ENTITY_UPDATE", "ENTITY_DELETE", "CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE"] {
+      if [operationType] not in ["ENTITY_CREATE", "ENTITY_UPDATE", "ENTITY_DELETE", "CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE", "BUSINESS_ATTRIBUTE_UPDATE"] {
         drop { }
       }
 
@@ -116,8 +123,8 @@ logstashPipeline:
         drop { }
       }
 
-      # Transform Atlas entity to ES document
-      if [operationType] not in ["CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE"] {
+      # Transform Atlas entity to ES document (skip for classification and business attribute operations)
+      if [operationType] not in ["CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE", "BUSINESS_ATTRIBUTE_UPDATE"] {
         ruby {
           code => "
             require 'json'
@@ -146,6 +153,14 @@ logstashPipeline:
               attrs = mutated_details['attributes']
             elsif !entity['attributes'].nil?
               attrs = entity['attributes']
+            end
+          end
+
+          # Skip UPDATE if no attributes to prevent empty document overwrites
+          if operation_type == 'ENTITY_UPDATE'
+            if attrs.nil? || attrs.empty?
+              event.cancel
+              return
             end
           end
 
@@ -200,9 +215,9 @@ logstashPipeline:
             if value.is_a?(Array) && !value.empty?
               first_item = value[0]
               if first_item.is_a?(Hash) &&
-                 first_item.key?('guid') &&
-                 first_item.key?('typeName') &&
-                 first_item.key?('uniqueAttributes')
+                first_item.key?('guid') &&
+                first_item.key?('typeName') &&
+                first_item.key?('uniqueAttributes')
                 return true
               end
             end
@@ -427,7 +442,100 @@ logstashPipeline:
         }
       }
       
-      # ES Lookup Fallback for operations missing docId (UPDATE, DELETE, CLASSIFICATION_ADD, CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE)
+      # Business Attribute Update transformation
+      if [operationType] == "BUSINESS_ATTRIBUTE_UPDATE" {
+        ruby {
+          code => "
+            require 'json'
+            require 'time'
+            
+            entity = event.get('entity')
+            mutated_details = event.get('mutatedDetails')
+            operation_type = event.get('operationType')
+            
+            # Skip if no entity
+            if entity.nil?
+              event.cancel
+              return
+            end
+            
+            # Skip if no mutatedDetails for business attribute operations
+            if mutated_details.nil? || mutated_details.empty?
+              event.cancel
+              return
+            end
+            
+            # Ensure mutatedDetails is a hash
+            if !mutated_details.is_a?(Hash)
+              event.cancel
+              return
+            end
+            
+            # Build base document with essential metadata
+            document = {
+              '__modificationTimestamp' => (entity['updateTime'] || (Time.now.to_f * 1000).to_i),
+              '__modifiedBy' => (entity['updatedBy'] || 'atlas-kafka-sync')
+            }
+            
+            # Flatten business attributes: iterate through each BA and its properties
+            # mutatedDetails structure: { ba_id: { property_id: value } }
+            mutated_details.each do |ba_id, properties|
+              next if properties.nil? || !properties.is_a?(Hash)
+              
+              # Iterate through properties and only add non-null values
+              properties.each do |property_id, property_value|
+                # Only include property if value is not null
+                unless property_value.nil?
+                  document[property_id] = property_value
+                end
+              end
+            end
+            
+            # Set ES document ID from docId or guid
+            es_doc_id = entity['docId'] || entity['guid']
+            event.set('[@metadata][es_doc_id]', es_doc_id)
+            event.set('[@metadata][guid]', entity['guid'])
+            event.set('[@metadata][operation_type]', operation_type)
+            event.set('[@metadata][needs_guid_lookup]', es_doc_id == entity['guid'])
+            
+            # Debug metadata
+            event.set('[@metadata][debug_ba_count]', mutated_details.keys.length)
+            non_null_properties = 0
+            mutated_details.each do |ba_id, properties|
+              next unless properties.is_a?(Hash)
+              non_null_properties += properties.values.count { |v| !v.nil? }
+            end
+            event.set('[@metadata][debug_non_null_properties]', non_null_properties)
+            
+            # Add all fields to event
+            document.each do |k, v|
+              event.set(k, v)
+            end
+            
+            # Clean up original fields
+            event.remove('entity')
+            event.remove('mutatedDetails') 
+            event.remove('operationType')
+            event.remove('message')
+            event.remove('internalAttributes')
+            event.remove('msgCreatedBy')
+            event.remove('msgSourceIP')
+            event.remove('msgCreationTime')
+            event.remove('msgSplitIdx')
+            event.remove('msgSplitCount')
+            event.remove('spooled')
+            event.remove('eventTime')
+            event.remove('version')
+            event.remove('source')
+            event.remove('msgCompressionKind')
+            event.remove('@timestamp')
+            event.remove('@version')
+            event.remove('event')
+          "
+        }
+      }
+      
+      # ES Lookup Fallback for operations missing docId (UPDATE, DELETE, CLASSIFICATION_ADD, CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE, BUSINESS_ATTRIBUTE_UPDATE)
       if [@metadata][needs_guid_lookup] {
         http {
           url => "http://atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200/janusgraph_vertex_index/_search"
@@ -467,8 +575,8 @@ logstashPipeline:
         }
       }
 
-      # Remove empty/null fields to match Atlas behavior (skip for classification operations)
-      if [@metadata][operation_type] not in ["CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE"] {
+      # Remove empty/null fields to match Atlas behavior (skip for classification and business attribute operations)
+      if [@metadata][operation_type] not in ["CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE", "BUSINESS_ATTRIBUTE_UPDATE"] {
         ruby {
           code => "
             # Remove fields with empty/null values (operation-aware)
@@ -521,6 +629,8 @@ logstashPipeline:
         }
       } else if [@metadata][operation_type] in ["CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE"] {
         mutate { add_field => { "[@metadata][es_action]" => "update" } }
+      } else if [@metadata][operation_type] == "BUSINESS_ATTRIBUTE_UPDATE" {
+        mutate { add_field => { "[@metadata][es_action]" => "update" } }
       }
       
       # Removed internal metrics - using Prometheus exporter instead
@@ -554,7 +664,7 @@ logstashPipeline:
       }
 
       # update path - partial document updates
-      if [@metadata][es_action] == "update" and [@metadata][is_soft_delete] != "true" and [@metadata][operation_type] not in ["CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE"] {
+      if [@metadata][es_action] == "update" and [@metadata][is_soft_delete] != "true" and [@metadata][operation_type] not in ["CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE", "BUSINESS_ATTRIBUTE_UPDATE"] {
         elasticsearch {
           hosts => ["atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200"]
           index => "janusgraph_vertex_index"
@@ -571,6 +681,22 @@ logstashPipeline:
 
       # classification operations - partial document updates
       if [@metadata][es_action] == "update" and [@metadata][operation_type] in ["CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE"] {
+        elasticsearch {
+          hosts => ["atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200"]
+          index => "janusgraph_vertex_index"
+          action => "update"
+          document_id => "%{[@metadata][es_doc_id]}"
+          doc_as_upsert => false
+          timeout => 90
+          retry_max_interval => 60
+          retry_initial_interval => 1
+          ilm_enabled => false
+          manage_template => false
+        }
+      }
+
+      # business attribute operations - partial document updates
+      if [@metadata][es_action] == "update" and [@metadata][operation_type] == "BUSINESS_ATTRIBUTE_UPDATE" {
         elasticsearch {
           hosts => ["atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200"]
           index => "janusgraph_vertex_index"
@@ -722,6 +848,7 @@ podAnnotations:
   # Pipeline status annotations
   atlan.com/pipeline: "kafka-to-elasticsearch"
   atlan.com/component: "logstash"
+  configmap.reloader.stakater.com/reload: "atlas-logstash-config,atlas-logstash-pipeline,atlas-logstash-metricbeat-config"
 
 # additionals labels
 labels:

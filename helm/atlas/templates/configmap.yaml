@@ -267,11 +267,9 @@ data:
     atlas.server.type.cache-refresher=http://cinv.atlas.svc.cluster.local:5000/cinv
     atlas.server.type.cache-refresher-health=http://cinv.atlas.svc.cluster.local:5000/health
     #### Enabled the configs below as per need if HA is enabled #####
-    {{- if not (and (.Values.deploy) (.Values.deploy.enabled)) }}
     atlas.server.ids=id1,id2
     atlas.server.address.id1=atlas-0.atlas-service-atlas.atlas.svc.cluster.local:21000
     atlas.server.address.id2=atlas-1.atlas-service-atlas.atlas.svc.cluster.local:21000
-    {{- end }}
     atlas.server.ha.zookeeper.connect=zookeeper-0.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-1.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-2.zookeeper-headless.atlas.svc.cluster.local:2181
     atlas.server.ha.zookeeper.retry.sleeptime.ms=10000
     atlas.server.ha.zookeeper.num.retries=18
