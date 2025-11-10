@@ -3305,6 +3305,17 @@ public class EntityGraphRetriever {
         return ret;
     }
 
+    public AtlasEntity getOrInitializeDiffEntity(AtlasVertex vertex) {
+        AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(GraphHelper.getGuid(vertex));
+        if (diffEntity == null) {
+            diffEntity = new AtlasEntity();
+            diffEntity.setTypeName(GraphHelper.getTypeName(vertex));
+            diffEntity.setGuid(GraphHelper.getGuid(vertex));
+            diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
+            RequestContext.get().cacheDifferentialEntity(diffEntity);
+        }
+        return diffEntity;
+    }
     private AtlasRelationshipWithExtInfo mapSystemAttributes(AtlasEdge edge, AtlasRelationshipWithExtInfo relationshipWithExtInfo, boolean extendedInfo) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Mapping system attributes for relationship");
@@ -3434,6 +3445,7 @@ public class EntityGraphRetriever {
 
         return new HashSet<>(ret);
     }
+
 
     private boolean isInactiveEdge(Object element, boolean ignoreInactive) {
         return ignoreInactive && element instanceof AtlasEdge && getStatus((AtlasEdge) element) != AtlasEntity.Status.ACTIVE;

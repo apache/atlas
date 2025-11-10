@@ -80,4 +80,6 @@ public interface IAtlasEntityChangeNotifier {
     void onClassificationUpdatedToEntities(List<AtlasEntity> entities, AtlasClassification updatedClassification) throws AtlasBaseException;
 
     void onBusinessAttributesUpdated(String entityGuid, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException;
+
+    void notifyDifferentialEntityChanges(EntityMutationResponse entityMutationResponse, boolean isImport) throws AtlasBaseException;
 }

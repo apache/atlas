@@ -33,6 +33,7 @@ on:
       - fixlabels
       - interceptapis
       - mlh-1240-improve-cm-refresh-master
+      - mlh1432
 
 jobs:
   build:
@@ -179,7 +180,7 @@ jobs:
         run: |
           echo "Running integration tests..."
           chmod +x ./run-integration-tests.sh && ./run-integration-tests.sh
-
+      
       - name: Upload container logs as artifact
         if: always()  # Upload logs even if tests pass (for debugging)
         uses: actions/upload-artifact@v4
@@ -187,7 +188,7 @@ jobs:
           name: container-logs-${{ github.run_id }}
           path: target/test-logs/
           retention-days: 5
-
+      
       - name: Setup tmate session on test failure
         if: steps.integration_tests.outcome == 'failure'
         uses: mxschmitt/action-tmate@v3
@@ -195,7 +196,7 @@ jobs:
         with:
           detached: true
           limit-access-to-actor: false
-
+      
       - name: Fail the workflow if tests failed
         if: steps.integration_tests.outcome == 'failure'
         run: exit 1
@@ -297,35 +298,35 @@ jobs:
     name: Multi-Cloud Smoke Test
     needs: build
     runs-on: ubuntu-latest
-
+    
     env:
       VCLUSTER_AWS_NAME: ${{ vars.VCLUSTER_AWS_NAME }}
       VCLUSTER_AZURE_NAME: ${{ vars.VCLUSTER_AZURE_NAME }}
       VCLUSTER_GCP_NAME: ${{ vars.VCLUSTER_GCP_NAME }}
       VCLUSTER_PROJECT: ${{ vars.VCLUSTER_PROJECT }}
-
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
+      
       - name: Get branch name
         run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
-
+      
       - name: Get commit ID
         run: echo "COMMIT_ID=$(echo ${GITHUB_SHA} | cut -c1-7)abcd" >> $GITHUB_ENV
-
+      
       - name: Set test image
         run: echo "TEST_IMAGE=ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ env.BRANCH_NAME }}:${{ env.COMMIT_ID }}" >> $GITHUB_ENV
-
+      
       - name: Install kubectl
         uses: azure/setup-kubectl@v3
-
+      
       - name: Install vCluster CLI
         uses: loft-sh/setup-vcluster@main
-
+      
       - name: Install jq
         run: sudo apt-get install -y jq
-
+      
       - name: Connect to GlobalProtect VPN
         env:
           VCLUSTER_PLATFORM_URL: ${{ secrets.VCLUSTER_PLATFORM_URL }}
@@ -371,7 +372,7 @@ jobs:
             echo "ERROR: VPN connectivity test failed"
             exit 1
           fi
-
+      
       - name: Login to vCluster Platform
         env:
           VCLUSTER_PLATFORM_URL: ${{ secrets.VCLUSTER_PLATFORM_URL }}
@@ -382,7 +383,7 @@ jobs:
           echo "=================================================="
           vcluster platform login $VCLUSTER_PLATFORM_URL --access-key $VCLUSTER_ACCESS_KEY
           echo "✓ Login successful"
-
+      
       - name: Connect to all vClusters
         run: |
           echo "=================================================="
@@ -422,10 +423,10 @@ jobs:
           
           echo ""
           echo "✓ All vCluster connections established"
-
+      
       - name: Run parallel smoke tests
         run: ./scripts/multi-cloud-smoke-test.sh ${{ env.TEST_IMAGE }}
-
+      
       - name: Upload smoke test logs
         if: always()
         uses: actions/upload-artifact@v4
