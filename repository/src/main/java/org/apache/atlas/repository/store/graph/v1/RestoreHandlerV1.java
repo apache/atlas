@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -419,7 +420,8 @@ public class RestoreHandlerV1 {
 
     protected void restoreVertex(AtlasVertex instanceVertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("RestoreHandlerV1.restoreVertex");
-
+        boolean skipProcessEdgeRestoration = RequestContext.get().isSkipProcessEdgeRestoration() ||
+                AtlasConfiguration.ATLAS_RELATIONSHIP_SKIP_PROCESS_EDGE_RESTORATION.getBoolean();
         try {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Setting the external references to {} to null(removing edges)", string(instanceVertex));
@@ -427,7 +429,7 @@ public class RestoreHandlerV1 {
             Iterable<AtlasEdge> incomingEdges;
 
         // Restore external references to this vertex - incoming edges from lineage or glossary term edges
-            if (RequestContext.get().isSkipProcessEdgeRestoration())
+            if (skipProcessEdgeRestoration)
                     incomingEdges = instanceVertex.getInEdges(PROCESS_EDGE_LABELS);
             else
                     incomingEdges = instanceVertex.getInEdges(null);
