@@ -202,6 +202,13 @@ affinity:
     - weight: 1
       preference:
         matchExpressions:
+        - key: eks.amazonaws.com/capacityType   #AWS
+          operator: In
+          values:
+          - ON_DEMAND
+    - weight: 1
+      preference:
+        matchExpressions:
         - key: lifecycle     #Azure
           operator: In
           values:
