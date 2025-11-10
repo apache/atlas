@@ -81,6 +81,7 @@ public enum AtlasConfiguration {
     REBUILD_INDEX("atlas.rebuild.index", false),
     PROCESS_NAME_UPDATE_PATCH("atlas.process.name.update.patch", false),
     STORE_DIFFERENTIAL_AUDITS("atlas.entity.audit.differential", false),
+    NOTIFY_DIFFERENTIAL_ENTITY_CHANGES("atlas.notification.differential.entity.changes.enabled", false),
     DSL_EXECUTOR_TRAVERSAL("atlas.dsl.executor.traversal", true),
     DSL_CACHED_TRANSLATOR("atlas.dsl.cached.translator", true),
     DEBUG_METRICS_ENABLED("atlas.debug.metrics.enabled", false),

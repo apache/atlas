@@ -22,6 +22,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.EnableConditional;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListenerV2;
+import org.apache.atlas.model.ESDeferredOperation;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -41,6 +42,7 @@ import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
+import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -312,6 +314,21 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
             Map<String, Object> allInternalAttributesMap = context.getAllInternalAttributesMap().get(entity.getGuid());
             if (MapUtils.isNotEmpty(allInternalAttributesMap)) {
                 ret.setInternalAttributes(allInternalAttributesMap);
+                // fill all classifications related attrs. They are no longer part of vertex attributes
+                if (CollectionUtils.isNotEmpty(context.getESDeferredOperations())) {
+                    List<ESDeferredOperation> esDefferredOperations = context.getESDeferredOperations();
+                    if (CollectionUtils.isNotEmpty(esDefferredOperations)) {
+                        for (ESDeferredOperation esDeferredOperation : esDefferredOperations) {
+                            Long vertexId = LongEncoding.decode(entity.getDocId());
+                            if (Long.parseLong(esDeferredOperation.getEntityId()) == vertexId) {
+                                Map<String, Object> classificationInternalAttributes = esDeferredOperation.getPayload().get(String.valueOf(vertexId));
+                                if (MapUtils.isNotEmpty(classificationInternalAttributes)) {
+                                    ret.getInternalAttributes().putAll(classificationInternalAttributes);
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             //Add relationship attributes which has isOptional as false
