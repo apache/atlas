@@ -2896,6 +2896,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
         }
 
+        // Notify differential entity changes (for entities with hasLineage attribute changes)
+        EntityMutationResponse response = new EntityMutationResponse();
+        entityChangeNotifier.notifyDifferentialEntityChanges(response, false);
+
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
@@ -2928,9 +2932,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             if (currentHasLineage && !shouldHaveLineage) {
                 // Case 1: hasLineage is true but should be false
                 AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, false);
+                // Track change in differential entity map for notifications
+                AtlasEntity diffEntity = entityRetriever.getOrInitializeDiffEntity(processVertex);
+                diffEntity.setAttribute(HAS_LINEAGE, false);
             } else if (!currentHasLineage && shouldHaveLineage) {
                 // Case 2: hasLineage is false but should be true
                 AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, true);
+                // Track change in differential entity map for notifications
+                AtlasEntity diffEntity = entityRetriever.getOrInitializeDiffEntity(processVertex);
+                diffEntity.setAttribute(HAS_LINEAGE, true);
             } else {
                 LOG.debug("repairHasLineageByIds: No repair needed for process: {}, hasLineage={}", vertexId, currentHasLineage);
             }
@@ -2957,10 +2967,16 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (currentHasLineage && !shouldHaveLineage) {
             // Case 1: hasLineage is true but should be false
             AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
+            // Track change in differential entity map for notifications
+            AtlasEntity diffEntity = entityRetriever.getOrInitializeDiffEntity(assetVertex);
+            diffEntity.setAttribute(HAS_LINEAGE, false);
             LOG.info("repairHasLineageByIds: Set hasLineage=false for asset: {}", vertexId);
         } else if (!currentHasLineage && shouldHaveLineage) {
             // Case 2: hasLineage is false but should be true
             AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
+            // Track change in differential entity map for notifications
+            AtlasEntity diffEntity = entityRetriever.getOrInitializeDiffEntity(assetVertex);
+            diffEntity.setAttribute(HAS_LINEAGE, true);
             LOG.info("repairHasLineageByIds: Set hasLineage=true for asset: {}", vertexId);
         } else {
             LOG.debug("repairHasLineageByIds: No repair needed for asset: {}, hasLineage={}", vertexId, currentHasLineage);
