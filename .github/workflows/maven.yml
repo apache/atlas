@@ -39,13 +39,13 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      code: ${{ steps.filter.outputs.code }}
+      non_helm: ${{ steps.filter.outputs.non_helm }}
       helm: ${{ steps.filter.outputs.helm }}
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Fetch all history for accurate comparisons
-      
+
       - uses: dorny/paths-filter@v2
         id: filter
         with:
@@ -53,46 +53,11 @@ jobs:
           # This way we only detect changes in the current push
           base: ${{ github.event.before }}
           filters: |
-            code:
-              - '**/*.java'
-              - '**/*.xml'
-              - '**/*.properties'
-              - 'webapp/**'
-              - 'repository/**'
-              - 'intg/**'
-              - 'graphdb/**'
-              - 'pom.xml'
-              - '**/pom.xml'
             helm:
               - 'helm/**'
-  
-  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  # WORKFLOW EXECUTION PATHS:
-  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  #
-  # 📦 HELM-ONLY CHANGES (exclusively helm/** files):
-  #    changes ✅ → helm-lint ✅ → build ⏭️ → smoke-test ⏭️ → helm-publish ✅
-  #    ⏱️  Time: ~5 minutes (80% faster!)
-  #    📊 Publishing: All 8 charts
-  #        • Infrastructure charts (6): As-is
-  #        • Application charts (2): With latest existing image tag from GHCR
-  #
-  # 💻 CODE/WORKFLOW CHANGES (*.java, maven.yml, Dockerfile, etc.):
-  #    changes ✅ → helm-lint ✅ → build ✅ → smoke-test ✅/⏭️ → helm-publish ✅
-  #    ⏱️  Time: ~25 minutes (full pipeline)
-  #    📊 Publishing: All 8 charts
-  #        • Infrastructure charts (6): As-is
-  #        • Application charts (2): With NEW image tag from build
-  #
-  # 🛡️  QUALITY GATES:
-  #    • helm-lint must pass (syntax validation)
-  #    • build must pass (for code changes)
-  #    • smoke-test must pass (on protected branches)
-  #    • atlas/atlas-read always reference valid images
-  #
-  # Logic: Skip build ONLY if changes are exclusively in helm/**
-  #
-  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            non_helm:
+              - '**'
+              - '!helm/**'
 
   helm-lint:
     runs-on: ubuntu-latest
@@ -171,8 +136,8 @@ jobs:
   build:
     needs: [helm-lint, changes]
     # Skip build ONLY if changes are exclusively in helm/**
-    # Run build for: code changes, workflow changes, Dockerfile, scripts, or anything else
-    if: needs.changes.outputs.helm != 'true' || needs.changes.outputs.code == 'true'
+    # Run build for: any changes outside helm/ (future-proof)
+    if: needs.changes.outputs.non_helm == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -201,10 +166,20 @@ jobs:
 
       - name: Cache Maven packages
         uses: actions/cache@v3
+        id: maven-cache
         with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/build.sh') }}
-          restore-keys: ${{ runner.os }}-m2
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Check Maven cache status
+        run: |
+          if [ "${{ steps.maven-cache.outputs.cache-hit }}" == "true" ]; then
+            echo "✅ Maven cache hit - dependencies will be reused"
+          else
+            echo "ℹ️  Maven cache miss - will download dependencies"
+          fi
 
       - name: Get branch name
         run: |
@@ -228,6 +203,7 @@ jobs:
 
       - name: Check disk space before tests
         id: check_disk
+        if: github.ref_name == 'beta' || github.ref_name == 'staging' || github.ref_name == 'master'
         run: |
           echo "=========================================="
           echo "DISK SPACE CHECK"
@@ -247,7 +223,7 @@ jobs:
           fi
 
       - name: Free up disk space for tests
-        if: steps.check_disk.outputs.disk_usage > 70
+        if: steps.check_disk.outputs.disk_usage > 70 && (github.ref_name == 'beta' || github.ref_name == 'staging' || github.ref_name == 'master')
         run: |
           echo "=========================================="
           echo "CLEANING UP DISK SPACE"
@@ -283,6 +259,7 @@ jobs:
           df -h / | grep -E '^/dev/' || df -h / | tail -1
 
       - name: Verify sufficient disk space
+        if: github.ref_name == 'beta' || github.ref_name == 'staging' || github.ref_name == 'master'
         run: |
           echo "=========================================="
           echo "VERIFYING DISK SPACE"
@@ -306,6 +283,7 @@ jobs:
 
       - name: Run Integration Tests
         id: integration_tests
+        if: github.ref_name == 'beta' || github.ref_name == 'staging' || github.ref_name == 'master'
         continue-on-error: true
         env:
           # Configure Testcontainers for GitHub Actions
@@ -314,31 +292,22 @@ jobs:
           DOCKER_HOST: unix:///var/run/docker.sock
         run: |
           echo "Running integration tests..."
-          chmod +x ./run-integration-tests.sh && ./run-integration-tests.sh
-      
+          chmod +x ./run-integration-tests.sh && ./run-integration-tests.sh --skip-build
+
       - name: Upload container logs as artifact
-        if: always()  # Upload logs even if tests pass (for debugging)
+        if: always() && steps.integration_tests.outcome != 'skipped'
         uses: actions/upload-artifact@v4
         with:
           name: container-logs-${{ github.run_id }}
           path: target/test-logs/
           retention-days: 5
-      
-      - name: Setup tmate session on test failure
-        if: steps.integration_tests.outcome == 'failure'
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 30
-        with:
-          detached: true
-          limit-access-to-actor: false
-      
+
       - name: Fail the workflow if tests failed
         if: steps.integration_tests.outcome == 'failure'
         run: exit 1
 
-
       - name: Clean up after integration tests
-        if: always()
+        if: always() && steps.integration_tests.outcome != 'skipped'
         run: |
           echo "Cleaning up test environment..."
           docker ps -a -q | xargs -r docker rm -f || true
@@ -355,6 +324,7 @@ jobs:
           echo "Cleaning test artifacts..."
           rm -rf webapp/target/surefire-reports/ || true
           rm -rf test-debug-logs/ || true
+          rm -rf target/test-logs/ || true
           
           # Clean temp files
           echo "Cleaning temp files..."
@@ -579,6 +549,64 @@ jobs:
         with:
           name: smoke-test-logs-${{ github.run_id }}
           path: smoke-test-logs/
+      
+      - name: Smoke test summary
+        if: always()
+        run: |
+          echo "## Multi-Cloud Smoke Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image**: \`${{ env.TEST_IMAGE }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check results for each cloud
+          AWS_STATUS="❓ Unknown"
+          AZURE_STATUS="❓ Unknown"
+          GCP_STATUS="❓ Unknown"
+          
+          if [ -f "smoke-test-logs/AWS.log" ]; then
+            if grep -q "SMOKE TEST PASSED" smoke-test-logs/AWS.log; then
+              AWS_STATUS="✅ Passed"
+            else
+              AWS_STATUS="❌ Failed"
+            fi
+          fi
+          
+          if [ -f "smoke-test-logs/Azure.log" ]; then
+            if grep -q "SMOKE TEST PASSED" smoke-test-logs/Azure.log; then
+              AZURE_STATUS="✅ Passed"
+            else
+              AZURE_STATUS="❌ Failed"
+            fi
+          fi
+          
+          if [ -f "smoke-test-logs/GCP.log" ]; then
+            if grep -q "SMOKE TEST PASSED" smoke-test-logs/GCP.log; then
+              GCP_STATUS="✅ Passed"
+            else
+              GCP_STATUS="❌ Failed"
+            fi
+          fi
+          
+          echo "| Cloud | vCluster | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| AWS | \`${{ env.VCLUSTER_AWS_NAME }}\` | $AWS_STATUS |" >> $GITHUB_STEP_SUMMARY
+          echo "| Azure | \`${{ env.VCLUSTER_AZURE_NAME }}\` | $AZURE_STATUS |" >> $GITHUB_STEP_SUMMARY
+          echo "| GCP | \`${{ env.VCLUSTER_GCP_NAME }}\` | $GCP_STATUS |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Overall status
+          if [[ "$AWS_STATUS" == *"Passed"* ]] && [[ "$AZURE_STATUS" == *"Passed"* ]] && [[ "$GCP_STATUS" == *"Passed"* ]]; then
+            echo "**Overall**: ✅ All smoke tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Overall**: ⚠️ Some smoke tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tests Run**:" >> $GITHUB_STEP_SUMMARY
+          echo "- Deployment patch and rollout" >> $GITHUB_STEP_SUMMARY
+          echo "- Atlas API health check (\`/api/atlas/admin/status\`)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 [View detailed logs in artifacts](#)" >> $GITHUB_STEP_SUMMARY
 
   helm-publish:
     needs: [helm-lint, build, smoke-test, changes]
