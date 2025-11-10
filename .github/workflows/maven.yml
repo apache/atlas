@@ -58,7 +58,6 @@ jobs:
             helm:
               - 'helm/**'
             non_helm:
-              - '**'
               - '!helm/**'
 
   helm-lint:
