@@ -1,0 +1,37 @@
+{{- if .Values.atlas.podMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: atlas-podmonitor
+  {{- if .Values.atlas.podMonitor.namespace }}
+  namespace: {{ .Values.atlas.podMonitor.namespace }}
+  {{- end }}
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    {{- toYaml .Values.atlas.podMonitor.labels | nindent 4 }}
+spec:
+  podMetricsEndpoints:
+  - interval: {{ .Values.atlas.podMonitor.interval }}
+    {{- if .Values.atlas.podMonitor.scrapeTimeout }}
+    scrapeTimeout: {{ .Values.atlas.podMonitor.scrapeTimeout }}
+    {{- end }}
+    honorLabels: true
+    port: telegrafd
+    path: /metrics
+    scheme: {{ .Values.atlas.podMonitor.scheme }}
+    {{- if .Values.atlas.podMonitor.relabelings }}
+    relabelings:
+    {{- toYaml .Values.atlas.podMonitor.relabelings | nindent 4 }}
+    {{- end }}
+  jobLabel: "atlas-podMonitor-job"
+  selector:
+    matchLabels:
+      app: {{ template "name" . }}
+      release: {{ .Release.Name }}
+  namespaceSelector:
+    matchNames:
+      - atlas
+{{- end }}

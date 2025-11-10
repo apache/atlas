@@ -1,0 +1,22 @@
+{{- if or .Values.global.svcIsolation.enabled (or .Values.global.esIsolation.enabled .Values.global.globalSvcIsolation.enabled) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-read-ui-service
+  namespace: {{ .Values.Namespace  }} 
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: {{ .Values.atlas.service.type }}
+  ports:
+    - port: {{ .Values.atlas.service.port }}
+      targetPort: {{ .Values.atlas.service.targetPort }}
+      protocol: TCP
+      name: {{ .Values.atlas.service.portName }}
+  selector:
+    app: {{ template "name" . }}
+    release: {{ .Release.Name }}
+{{- end }}
