@@ -128,17 +128,17 @@ public class AtlasObservabilityService {
     
     
     public void recordTimingMetrics(AtlasObservabilityData data) {
-        
-        recordTimingMetric("diff_calc", data.getDiffCalcTime(), data.getXAtlanClientOrigin());
-        recordTimingMetric("lineage_calc", data.getLineageCalcTime(), data.getXAtlanClientOrigin());
-        recordTimingMetric("validation", data.getValidationTime(), data.getXAtlanClientOrigin());
-        recordTimingMetric("ingestion", data.getIngestionTime(), data.getXAtlanClientOrigin());
-        recordTimingMetric("notification", data.getNotificationTime(), data.getXAtlanClientOrigin());
-        recordTimingMetric("audit_log", data.getAuditLogTime(), data.getXAtlanClientOrigin());
+        String clientOrigin = normalizeClientOrigin(data.getXAtlanClientOrigin());
+        recordTimingMetric("diff_calc", data.getDiffCalcTime(), clientOrigin);
+        recordTimingMetric("lineage_calc", data.getLineageCalcTime(), clientOrigin);
+        recordTimingMetric("validation", data.getValidationTime(), clientOrigin);
+        recordTimingMetric("ingestion", data.getIngestionTime(), clientOrigin);
+        recordTimingMetric("notification", data.getNotificationTime(), clientOrigin);
+        recordTimingMetric("audit_log", data.getAuditLogTime(), clientOrigin);
     }
     
     private void recordTimingMetric(String operation, long durationMs, String clientOrigin) {
-        Timer timer = getOrCreateTimer(operation + "_time", clientOrigin != null ? clientOrigin : "unknown");
+        Timer timer = getOrCreateTimer(operation + "_time", clientOrigin);
         timer.record(durationMs, TimeUnit.MILLISECONDS);
     }
     
@@ -199,19 +199,20 @@ public class AtlasObservabilityService {
     }
     
     private Timer getOrCreateTimer(String metricName, String clientOrigin, String... additionalTags) {
+        String normalizedClientOrigin = normalizeClientOrigin(clientOrigin);
         String key;
         if (additionalTags != null && additionalTags.length > 0) {
             // Include clientOrigin in cache key to prevent collisions
             String[] allTags = new String[additionalTags.length + 1];
-            allTags[0] = clientOrigin;
+            allTags[0] = normalizedClientOrigin;
             System.arraycopy(additionalTags, 0, allTags, 1, additionalTags.length);
             key = getMetricKey(metricName, allTags);
         } else {
-            key = getMetricKey(metricName, clientOrigin);
+            key = getMetricKey(metricName, normalizedClientOrigin);
         }
         
         return timerCache.computeIfAbsent(key, k -> {
-            Tags tags = Tags.of("client_origin", clientOrigin);
+            Tags tags = Tags.of("client_origin", normalizedClientOrigin);
             if (additionalTags != null && additionalTags.length > 0) {
                 tags = tags.and(Tags.of(additionalTags));
             }

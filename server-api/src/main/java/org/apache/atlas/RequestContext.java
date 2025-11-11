@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 
@@ -82,7 +83,7 @@ public class RequestContext {
     private final Set<String> edgeLabels = new HashSet<>();
     
     // Observability timing fields
-    private long lineageCalcTime = 0L;
+    private final AtomicLong lineageCalcTime = new AtomicLong(0L);
 
     private String user;
     private Set<String> userGroups;
@@ -200,7 +201,7 @@ public class RequestContext {
         this.allInternalAttributesMap.clear();
 
         // Reset observability timing fields
-        this.lineageCalcTime = 0L;
+        this.lineageCalcTime.set(0L);
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
@@ -945,15 +946,15 @@ public class RequestContext {
 
     // Observability timing methods
     public long getLineageCalcTime() {
-        return lineageCalcTime;
+        return lineageCalcTime.get();
     }
 
     public void setLineageCalcTime(long lineageCalcTime) {
-        this.lineageCalcTime = lineageCalcTime;
+        this.lineageCalcTime.set(lineageCalcTime);
     }
 
     public void addLineageCalcTime(long additionalTime) {
-        this.lineageCalcTime += additionalTime;
+        this.lineageCalcTime.addAndGet(additionalTime);
     }
 
 }
