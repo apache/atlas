@@ -19,6 +19,7 @@ import org.apache.atlas.repository.store.graph.v2.utils.MDCScope;
 public class AtlasObservabilityService {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV2.class);
     private static final String METRIC_COMPONENT = "atlas_observability_bulk";
+    private static final String UNKNOWN_CLIENT_ORIGIN = "unknown";
     private final MeterRegistry meterRegistry;
 
     private final Map<String, Counter> counterCache = new ConcurrentHashMap<>();
@@ -63,7 +64,7 @@ public class AtlasObservabilityService {
      * Micrometer tags cannot have null values.
      */
     private String normalizeClientOrigin(String clientOrigin) {
-        return clientOrigin != null ? clientOrigin : "unknown";
+        return clientOrigin != null ? clientOrigin : UNKNOWN_CLIENT_ORIGIN;
     }
     
     public void recordCreateOrUpdateDuration(AtlasObservabilityData data) {
@@ -74,8 +75,6 @@ public class AtlasObservabilityService {
     public void recordPayloadSize(AtlasObservabilityData data) {
         DistributionSummary summary = getOrCreateDistributionSummary("payload_size", normalizeClientOrigin(data.getXAtlanClientOrigin()));
         summary.record(data.getPayloadAssetSize());
-        RequestContext context = RequestContext.get();
-        context.endMetricRecord(context.startMetricRecord("entities_count"), data.getPayloadAssetSize());
     }
     
     public void recordPayloadBytes(AtlasObservabilityData data) {
@@ -111,17 +110,12 @@ public class AtlasObservabilityService {
     }
     
     private void recordRelationshipMap(String metricName, Map<String, Integer> relationshipMap, String clientOrigin) {
-        RequestContext context = RequestContext.get();
-        int totalCount = 0;
         if (relationshipMap != null && !relationshipMap.isEmpty()) {
             for (Map.Entry<String, Integer> entry : relationshipMap.entrySet()) {
                 Counter counter = getOrCreateCounter(metricName, clientOrigin,
                     "relationship_name", entry.getKey());
                 counter.increment(entry.getValue());
-                context.endMetricRecord(context.startMetricRecord("relation:-" + entry.getKey()), entry.getValue());
-                totalCount += entry.getValue();
             }
-            context.endMetricRecord(context.startMetricRecord("relations_count"), totalCount);
         }
     }
     
@@ -143,7 +137,7 @@ public class AtlasObservabilityService {
     }
     
     public void recordOperationCount(String operation, String status) {
-        Counter counter = getOrCreateCounter("operations", "unknown", 
+        Counter counter = getOrCreateCounter("operations", UNKNOWN_CLIENT_ORIGIN, 
             "operation", operation, "status", status);
         counter.increment();
         // Note: totalOperations is incremented by recordOperationEnd/recordOperationFailure, not here
@@ -174,7 +168,7 @@ public class AtlasObservabilityService {
         recordOperationCount(operation, "failure");
         
         // Record specific error type
-        Counter errorCounter = getOrCreateCounter("operation_errors", "unknown",
+        Counter errorCounter = getOrCreateCounter("operation_errors", UNKNOWN_CLIENT_ORIGIN,
             "operation", operation, "error_type", errorType);
         errorCounter.increment();
     }

@@ -1657,6 +1657,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         MetricRecorder metric = RequestContext.get().startMetricRecord("createOrUpdate");
 
+        boolean operationRecorded = false;
         try {
             // Record operation start
             observabilityService.recordOperationStart("createOrUpdate");
@@ -1806,13 +1807,32 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 observabilityService.recordArrayRelationships(observabilityData);
                 observabilityService.recordArrayAttributes(observabilityData);
                 observabilityService.recordTimingMetrics(observabilityData);
+                
+                // Record RequestContext metrics (separate from observability service to avoid coupling)
+                RequestContext reqContext = RequestContext.get();
+                reqContext.endMetricRecord(reqContext.startMetricRecord("entities_count"), observabilityData.getPayloadAssetSize());
+                
+                // Record relationship metrics
+                if (observabilityData.getRelationshipAttributes() != null) {
+                    int totalRelationsCount = 0;
+                    for (Map.Entry<String, Integer> entry : observabilityData.getRelationshipAttributes().entrySet()) {
+                        reqContext.endMetricRecord(reqContext.startMetricRecord("relation:-" + entry.getKey()), entry.getValue());
+                        totalRelationsCount += entry.getValue();
+                    }
+                    if (totalRelationsCount > 0) {
+                        reqContext.endMetricRecord(reqContext.startMetricRecord("relations_count"), totalRelationsCount);
+                    }
+                }
             } catch (Exception e) {
+                // Log at WARN level to make observability infrastructure problems visible
+                LOG.warn("Failed to record observability metrics: {}", e.getMessage(), e);
                 // Log error details with high-cardinality fields for debugging
                 observabilityService.logErrorDetails(observabilityData, "Failed to record observability metrics", e);
             }
 
             // Record operation success
             observabilityService.recordOperationEnd("createOrUpdate", "success");
+            operationRecorded = true;
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== createOrUpdate()");
@@ -1821,13 +1841,29 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             return ret;
         } catch (AtlasBaseException e) {
             // Record operation failure
-            observabilityService.recordOperationFailure("createOrUpdate", e.getAtlasErrorCode().getErrorCode());
+            if (!operationRecorded) {
+                String errorCode = e.getAtlasErrorCode() != null ? e.getAtlasErrorCode().getErrorCode() : "UNKNOWN_ERROR";
+                observabilityService.recordOperationFailure("createOrUpdate", errorCode);
+                operationRecorded = true;
+            }
             throw e;
         } catch (Exception e) {
             // Record operation failure
-            observabilityService.recordOperationFailure("createOrUpdate", e.getClass().getSimpleName());
+            if (!operationRecorded) {
+                observabilityService.recordOperationFailure("createOrUpdate", e.getClass().getSimpleName());
+                operationRecorded = true;
+            }
             throw new AtlasBaseException(e);
         } finally {
+            // Ensure operationsInProgress is decremented even if recordOperationEnd/Failure wasn't called
+            if (!operationRecorded) {
+                try {
+                    observabilityService.recordOperationFailure("createOrUpdate", "unexpected_error");
+                } catch (Exception e) {
+                    // Log but don't throw - we're in finally block
+                    LOG.warn("Failed to record operation failure in finally block", e);
+                }
+            }
             RequestContext.get().endMetricRecord(metric);
             AtlasPerfTracer.log(perf);
         }
