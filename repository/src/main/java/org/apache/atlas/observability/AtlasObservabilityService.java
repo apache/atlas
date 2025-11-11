@@ -128,19 +128,15 @@ public class AtlasObservabilityService {
     }
     
     private void recordTimingMetric(String operation, long durationMs, String clientOrigin) {
-        if (durationMs > 0) {
-            Timer timer = getOrCreateTimer(operation + "_time", clientOrigin != null ? clientOrigin : "unknown");
-            timer.record(durationMs, TimeUnit.MILLISECONDS);
-        } else {
-            LOG.debug("Skipping {} metric recording - duration is 0", operation);
-        }
+        Timer timer = getOrCreateTimer(operation + "_time", clientOrigin != null ? clientOrigin : "unknown");
+        timer.record(durationMs, TimeUnit.MILLISECONDS);
     }
     
     public void recordOperationCount(String operation, String status) {
         Counter counter = getOrCreateCounter("operations", "unknown", 
             "operation", operation, "status", status);
         counter.increment();
-        totalOperations.incrementAndGet();
+        // Note: totalOperations is incremented by recordOperationEnd/recordOperationFailure, not here
     }
     
     /**
@@ -193,9 +189,15 @@ public class AtlasObservabilityService {
     }
     
     private Timer getOrCreateTimer(String metricName, String clientOrigin, String... additionalTags) {
-        String key = getMetricKey(metricName, clientOrigin);
+        String key;
         if (additionalTags != null && additionalTags.length > 0) {
-            key = getMetricKey(metricName,  additionalTags);
+            // Include clientOrigin in cache key to prevent collisions
+            String[] allTags = new String[additionalTags.length + 1];
+            allTags[0] = clientOrigin;
+            System.arraycopy(additionalTags, 0, allTags, 1, additionalTags.length);
+            key = getMetricKey(metricName, allTags);
+        } else {
+            key = getMetricKey(metricName, clientOrigin);
         }
         
         return timerCache.computeIfAbsent(key, k -> {
@@ -226,16 +228,22 @@ public class AtlasObservabilityService {
                         Duration.ofHours(1),         // 1h
                         Duration.ofHours(2)          // 2h
                     )
-                    .minimumExpectedValue(Duration.ofMillis(1))
+                    .minimumExpectedValue(Duration.ofMillis(0))
                     .maximumExpectedValue(Duration.ofHours(4))
                     .register(meterRegistry);
         });
     }
 
     private Counter getOrCreateCounter(String metricName, String clientOrigin, String... additionalTags) {
-        String key = getMetricKey(metricName, clientOrigin);
+        String key;
         if (additionalTags != null && additionalTags.length > 0) {
-            key = getMetricKey(metricName, additionalTags);
+            // Include clientOrigin in cache key to prevent collisions
+            String[] allTags = new String[additionalTags.length + 1];
+            allTags[0] = clientOrigin;
+            System.arraycopy(additionalTags, 0, allTags, 1, additionalTags.length);
+            key = getMetricKey(metricName, allTags);
+        } else {
+            key = getMetricKey(metricName, clientOrigin);
         }
         
         return counterCache.computeIfAbsent(key, k -> {
@@ -253,9 +261,15 @@ public class AtlasObservabilityService {
 
     
     private DistributionSummary getOrCreateDistributionSummary(String metricName, String clientOrigin, String... additionalTags) {
-        String key = getMetricKey(metricName, clientOrigin);
+        String key;
         if (additionalTags != null && additionalTags.length > 0) {
-            key = getMetricKey(metricName,additionalTags);
+            // Include clientOrigin in cache key to prevent collisions
+            String[] allTags = new String[additionalTags.length + 1];
+            allTags[0] = clientOrigin;
+            System.arraycopy(additionalTags, 0, allTags, 1, additionalTags.length);
+            key = getMetricKey(metricName, allTags);
+        } else {
+            key = getMetricKey(metricName, clientOrigin);
         }
         
         return distributionSummaryCache.computeIfAbsent(key, k -> {
@@ -272,8 +286,8 @@ public class AtlasObservabilityService {
                     .publishPercentileHistogram();
             
             // Configure SLOs based on metric type
-            if (metricName.contains("payload")) {
-                // Payload size SLOs (bytes)
+            if (metricName.contains("payload_bytes")) {
+                // Payload bytes SLOs (bytes)
                 builder.serviceLevelObjectives(
                     1024.0,           // 1KB
                     10240.0,          // 10KB
@@ -287,8 +301,8 @@ public class AtlasObservabilityService {
                 .minimumExpectedValue(1.0)
                 .maximumExpectedValue(107374182400.0) // 100GB
                 .baseUnit("bytes");
-            } else if (metricName.contains("array")) {
-                // Array size SLOs (count)
+            } else if (metricName.contains("payload_size") || metricName.contains("array")) {
+                // Payload size and array metrics SLOs (count)
                 builder.serviceLevelObjectives(
                     1.0,              // 1 item
                     10.0,             // 10 items

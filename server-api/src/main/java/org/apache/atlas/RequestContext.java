@@ -199,6 +199,9 @@ public class RequestContext {
         this.cassandraTagOperations.clear();
         this.allInternalAttributesMap.clear();
 
+        // Reset observability timing fields
+        this.lineageCalcTime = 0L;
+
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
             if (Objects.nonNull(this.metricsRegistry)){
