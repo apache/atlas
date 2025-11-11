@@ -1700,10 +1700,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                     // Accumulate diff calculation time
                     long currentDiffTime = observabilityData.getDiffCalcTime();
-                    // If diff calc time is 0, use a small placeholder value
-                    if (diffCalcTime == 0) {
-                        diffCalcTime = 1; // 1ms placeholder
-                    }
                     observabilityData.setDiffCalcTime(currentDiffTime + diffCalcTime);
 
                     if (diffResult.hasDifference()) {
@@ -1783,10 +1779,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             // Use accumulated lineage calculation time from RequestContext
             long totalLineageCalcTime = RequestContext.get().getLineageCalcTime();
-            // If lineage calc time is 0, use a small placeholder value
-            if (totalLineageCalcTime == 0) {
-                totalLineageCalcTime = 1; // 1ms placeholder
-            }
             observabilityData.setLineageCalcTime(totalLineageCalcTime);
 
             ret.setGuidAssignments(context.getGuidAssignments());
