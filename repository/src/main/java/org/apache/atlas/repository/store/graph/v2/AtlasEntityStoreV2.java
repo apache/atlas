@@ -1776,10 +1776,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             long ingestionTime = System.currentTimeMillis() - ingestionStart;
             observabilityData.setIngestionTime(ingestionTime);
 
-            // Use accumulated lineage calculation time from RequestContext
-            long totalLineageCalcTime = RequestContext.get().getLineageCalcTime();
-            observabilityData.setLineageCalcTime(totalLineageCalcTime);
-
             ret.setGuidAssignments(context.getGuidAssignments());
 
 
