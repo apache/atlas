@@ -2,6 +2,7 @@ package org.apache.atlas.observability;
 
 import io.micrometer.core.instrument.*;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,7 +17,7 @@ import org.apache.atlas.repository.store.graph.v2.utils.MDCScope;
 
 @Service
 public class AtlasObservabilityService {
-    private static final Logger LOG = LoggerFactory.getLogger("OBSERVABILITY");
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV2.class);
     private static final String METRIC_COMPONENT = "atlas_observability_bulk";
     private final MeterRegistry meterRegistry;
 
