@@ -524,6 +524,10 @@
             "text": {
               "type": "text",
               "analyzer": "atlan_text_analyzer"
+            },
+            "hierarchy": {
+              "type": "text",
+              "analyzer": "atlan_path_analyzer"
             }
           }
         }
