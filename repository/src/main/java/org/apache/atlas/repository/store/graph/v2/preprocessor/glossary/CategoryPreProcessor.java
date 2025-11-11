@@ -65,6 +65,7 @@ import static org.apache.atlas.repository.Constants.CATEGORY_TERMS_EDGE_LABEL;
 import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.UNIQUE_QUALIFIED_NAME;
 import static org.apache.atlas.repository.graph.GraphHelper.getActiveChildrenVertices;
 import static org.apache.atlas.repository.graph.GraphHelper.getActiveParentVertices;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
@@ -243,6 +244,9 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             childCategoryVertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
             updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
 
+            // Change category __u_qualifiedName
+            childCategoryVertex.setProperty(UNIQUE_QUALIFIED_NAME, updatedQualifiedName);
+
             //change __glossary, __parentCategory
             childCategoryVertex.setProperty(GLOSSARY_PROPERTY_KEY, targetGlossaryQualifiedName);
             childCategoryVertex.setProperty(CATEGORIES_PARENT_PROPERTY_KEY, parentCategoryQualifiedName);
@@ -301,6 +305,9 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             //qualifiedName
             termVertex.setProperty(QUALIFIED_NAME, updatedTermQualifiedName);
             updatedAttributes.put(QUALIFIED_NAME, updatedTermQualifiedName);
+
+            // Change termVertex __u_qualifiedName
+            termVertex.setProperty(UNIQUE_QUALIFIED_NAME, updatedTermQualifiedName);
 
             // __glossary, __categories
             termVertex.setProperty(GLOSSARY_PROPERTY_KEY, targetGlossaryQualifiedName);
