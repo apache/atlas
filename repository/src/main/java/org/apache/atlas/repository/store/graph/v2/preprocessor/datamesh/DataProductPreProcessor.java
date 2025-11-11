@@ -1,5 +1,8 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
@@ -86,6 +89,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         entity.removeAttribute(OUTPUT_PORT_GUIDS_ATTR);
         entity.removeAttribute(INPUT_PORT_GUIDS_ATTR);
 
+        validateProductAssetDSLAttr(entity);
+
         if (parentDomainObject == null) {
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot create a Product without a Domain Relationship");
         } else {
@@ -133,6 +138,10 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         entity.removeAttribute(OUTPUT_PORT_GUIDS_ATTR);
         entity.removeAttribute(INPUT_PORT_GUIDS_ATTR);
+
+        if (entity.hasAttribute(DAAP_ASSET_DSL_ATTR)) {
+            validateProductAssetDSLAttr(entity);
+        }
 
         if(entity.hasRelationshipAttribute(DATA_DOMAIN_REL_TYPE) && entity.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE) == null){
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProduct can only be moved to another Domain.");
@@ -465,6 +474,25 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         }
 
         return isDaapVisibilityChanged;
+    }
+
+    private void validateProductAssetDSLAttr(AtlasEntity entity) throws AtlasBaseException {
+        if (entity.getAttribute(DAAP_ASSET_DSL_ATTR) == null) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "dataProductAssetsDSL attribute is mandatory for DataProducts");
+        }
+
+        String dslString = ((String) entity.getAttribute(DAAP_ASSET_DSL_ATTR)).trim();
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Object> dslMap = mapper.readValue(dslString, new TypeReference<>() {});
+
+            if (dslMap == null || dslMap.isEmpty()) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "dataProductAssetsDSL attribute cannot be empty");
+            }
+        } catch (JsonProcessingException e) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "dataProductAssetsDSL attribute must be a valid JSON object: " + e.getMessage());
+        }
     }
 
     public static boolean compareLists(List<String> list1, List<String> list2) {

@@ -1,0 +1,19 @@
+1. Get the application URL by running these commands:
+{{- if .Values.atlas.ingress.enabled }}
+{{- range .Values.atlas.ingress.hosts }}
+  http://{{ . }}
+{{- end }}
+{{- else if contains "NodePort" .Values.atlas.service.type }}
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Values.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.atlas.service.type }}
+     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+           You can watch the status of by running 'kubectl get svc -w {{ template "fullname" . }}'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Values.Namespace }} {{ template "fullname" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+  echo http://$SERVICE_IP:{{ .Values.atlas.service.port }}
+{{- else if contains "ClusterIP" .Values.atlas.service.type }}
+  export POD_NAME=$(kubectl get pods --namespace {{ .Values.Namespace }} -l "app={{ template "name" . }},release={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+  kubectl port-forward $POD_NAME 8080:{{ .Values.atlas.service.port }}
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  echo "Default username/password is admin/admin"
+{{- end }}

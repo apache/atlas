@@ -621,6 +621,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
+        entityChangeNotifier.notifyDifferentialEntityChanges(ret, false);
         atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
         return ret;
     }
@@ -665,6 +666,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
+        entityChangeNotifier.notifyDifferentialEntityChanges(ret, false);
         atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
         return ret;
     }
@@ -705,6 +707,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
+        entityChangeNotifier.notifyDifferentialEntityChanges(ret, false);
         atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
         return ret;
     }
@@ -741,6 +744,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
+        entityChangeNotifier.notifyDifferentialEntityChanges(ret, false);
         atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
         return ret;
     }
@@ -777,6 +781,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
+        entityChangeNotifier.notifyDifferentialEntityChanges(ret, false);
         atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
         return ret;
     }
@@ -938,6 +943,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 processTermEntityDeletion(ret.getDeletedEntities());
             // Notify the change listeners
             entityChangeNotifier.onEntitiesMutated(ret, false);
+            entityChangeNotifier.notifyDifferentialEntityChanges(ret, false);
             atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
 
         } catch (JanusGraphException jge) {
@@ -1656,7 +1662,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         try {
             // Record operation start
             observabilityService.recordOperationStart("createOrUpdate");
-            
+
             // Timing: preCreateOrUpdate (includes validation)
             long preCreateStart = System.currentTimeMillis();
             final EntityMutationContext context = preCreateOrUpdate(entityStream, entityGraphMapper, isPartialUpdate);
@@ -1686,12 +1692,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     }
 
                     AtlasVertex           storedVertex = context.getVertex(entity.getGuid());
-                    
+
                     // Timing: Diff calculation
                     long diffCalcStart = System.currentTimeMillis();
                     AtlasEntityDiffResult diffResult   = entityComparator.getDiffResult(entity, storedVertex, !storeDifferentialAudits);
                     long diffCalcTime = System.currentTimeMillis() - diffCalcStart;
-                    
+
                     // Accumulate diff calculation time
                     long currentDiffTime = observabilityData.getDiffCalcTime();
                     // If diff calc time is 0, use a small placeholder value
@@ -1766,6 +1772,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
             }
 
+            for (AtlasEntity entity: context.getCreatedEntities()) {
+                RequestContext.get().cacheDifferentialEntity(entity);
+            }
+
             long ingestionStart = System.currentTimeMillis();
             EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, bulkRequestContext);
             long ingestionTime = System.currentTimeMillis() - ingestionStart;
@@ -1781,18 +1791,16 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             ret.setGuidAssignments(context.getGuidAssignments());
 
-            for (AtlasEntity entity: context.getCreatedEntities()) {
-                RequestContext.get().cacheDifferentialEntity(entity);
-            }
 
             entityChangeNotifier.onEntitiesMutated(ret, RequestContext.get().isImportInProgress());
+            entityChangeNotifier.notifyDifferentialEntityChanges(ret, RequestContext.get().isImportInProgress());
             atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
              // 2ms placeholder
-            
+
             // Record observability metrics
             long endTime = System.currentTimeMillis();
             observabilityData.setDuration(endTime - startTime);
-            
+
             // Analyze payload if available
             // Record observability metrics (low-cardinality only for Prometheus)
             try {
@@ -1801,7 +1809,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     PayloadAnalyzer payloadAnalyzer = new PayloadAnalyzer(typeRegistry);
                     payloadAnalyzer.analyzePayload(atlasEntityStream.getEntitiesWithExtInfo(), observabilityData);
                 }
-                
+
                 // Record metrics (no high-cardinality fields like traceId, vertexIds, assetGuids)
                 observabilityService.recordCreateOrUpdateDuration(observabilityData);
                 observabilityService.recordPayloadSize(observabilityData);
@@ -1813,10 +1821,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 // Log error details with high-cardinality fields for debugging
                 observabilityService.logErrorDetails(observabilityData, "Failed to record observability metrics", e);
             }
-            
+
             // Record operation success
             observabilityService.recordOperationEnd("createOrUpdate", "success");
-            
+
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== createOrUpdate()");
             }
@@ -2289,7 +2297,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
 
             if (CollectionUtils.isNotEmpty(others)) {
-
                 deleteDelegate.getHandler().removeHasLineageOnDelete(others);
                 deleteDelegate.getHandler().deleteEntities(others);
             }

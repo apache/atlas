@@ -1,0 +1,185 @@
+{
+  "mappings": {
+    "properties": {
+      "request.attributes": {
+        "type": "keyword"
+      },
+      "request.relationAttributes": {
+        "type": "keyword"
+      },
+      "request.dsl": {
+        "type": "flattened"
+      },
+      "request.dslText": {
+        "type": "text",
+        "analyzer": "atlan_json_analyzer"
+      },
+
+
+      "persona": {
+        "type": "keyword",
+        "fields": {
+          "text": {
+            "type": "text",
+            "analyzer": "atlan_text_analyzer"
+          }
+        }
+      },
+      "purpose": {
+        "type": "keyword",
+        "fields": {
+          "text": {
+            "type": "text",
+            "analyzer": "atlan_text_analyzer"
+          }
+        }
+      },
+
+      "searchInput": {
+        "type": "text",
+        "analyzer": "atlan_text_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          },
+          "keyword_lowercase": {
+            "type": "keyword",
+            "normalizer": "atlan_normalizer"
+          }
+        }
+      },
+
+      "userAgent": {
+        "type": "keyword"
+      },
+      "host": {
+        "type": "keyword"
+      },
+      "ipAddress": {
+        "type": "keyword"
+      },
+      "userName": {
+        "type": "keyword"
+      },
+      "entityGuidsAll": {
+        "type": "keyword"
+      },
+      "entityQFNamesAll": {
+        "type": "keyword"
+      },
+      "entityGuidsAllowed": {
+        "type": "keyword"
+      },
+      "entityQFNamesAllowed": {
+        "type": "keyword"
+      },
+      "entityGuidsDenied": {
+        "type": "keyword"
+      },
+      "entityQFNamesDenied": {
+        "type": "keyword"
+      },
+
+      "entityTypeNamesAll": {
+        "type": "keyword"
+      },
+      "entityTypeNamesAllowed": {
+        "type": "keyword"
+      },
+      "entityTypeNamesDenied": {
+        "type": "keyword"
+      },
+
+      "utmTags": {
+        "type": "keyword"
+      },
+      "hasResult": {
+        "type": "boolean"
+      },
+      "isFailed": {
+        "type": "boolean"
+      },
+      "errorDetails": {
+        "type": "text"
+      },
+      "errorCode": {
+        "type": "keyword"
+      },
+      "resultsCount": {
+        "type": "long"
+      },
+      "timestamp": {
+        "type": "long"
+      },
+      "createdAt": {
+        "type": "long"
+      },
+      "responseTime": {
+        "type": "long"
+      }
+    }
+  },
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "atlan_text_analyzer": {
+          "type": "custom",
+          "tokenizer": "atlan_tokenizer",
+          "filter": [
+            "apostrophe",
+            "lowercase"
+          ],
+          "char_filter": [
+            "number_filter"
+          ]
+        },
+        "atlan_json_analyzer": {
+          "type": "custom",
+          "tokenizer": "atlan_json_tokenizer"
+        },
+        "atlan_text_stemmer": {
+          "type": "custom",
+          "tokenizer": "atlan_tokenizer",
+          "filter": [
+            "snowball_english",
+            "lowercase"
+          ],
+          "char_filter": [
+            "number_filter"
+          ]
+        }
+      },
+      "normalizer": {
+        "atlan_normalizer": {
+          "type": "custom",
+          "filter": [
+            "lowercase"
+          ]
+        }
+      },
+      "filter": {
+        "snowball_english": {
+          "type": "snowball",
+          "language": "English"
+        }
+      },
+      "tokenizer": {
+        "atlan_tokenizer": {
+          "type": "pattern",
+          "pattern": "( |_|-|'|/|@)"
+        },
+        "atlan_json_tokenizer": {
+          "type": "pattern",
+          "pattern": "(\"|\\{|\\}|:|\\[|\\]|\\,)"
+        }
+      },
+      "char_filter": {
+        "number_filter": {
+          "type": "pattern_replace",
+          "pattern": "\\d+",
+          "replacement": " $0"
+        }
+      }
+    }
+  }
+}

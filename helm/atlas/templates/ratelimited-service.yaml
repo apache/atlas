@@ -1,0 +1,32 @@
+{{- if not .Values.global.atlasNginx.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-ratelimited
+  namespace: {{ .Values.Namespace }}
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: ClusterIP
+  ports:
+    {{- if and .Values.nginx.enabled .Values.nginx.ratelimit.enabled }}
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+      name: {{ .Values.atlas.service.portName }}
+    {{- else }}
+    - port: {{ .Values.atlas.service.port }}
+      targetPort: {{ .Values.atlas.service.targetPort }}
+      protocol: TCP
+      name: {{ .Values.atlas.service.portName }}
+    {{- end }}
+  selector:
+    app: {{ template "name" . }}
+    release: {{ .Release.Name }}
+  internalTrafficPolicy: Cluster
+  ipFamilyPolicy: SingleStack
+  sessionAffinity: None
+{{- end }}

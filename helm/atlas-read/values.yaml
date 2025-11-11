@@ -1,0 +1,561 @@
+# Infrastructure charts disabled - published separately as OCI artifacts
+cassandra-online-dc:
+  enabled: false
+elasticsearch-read:
+  enabled: false
+elasticsearch-exporter-read:
+  enabled: false
+
+multiarch:
+  enabled: false
+  image: {}
+
+# Default values for atlas.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+global:
+  Tier_Type: ""
+  Deployment_Type: ""
+  cloud: ""
+  tenantName: ""
+  svcIsolation:
+    enabled: false
+  atlasNginx:
+    enabled: false
+  globalSvcIsolation:
+    enabled: false
+  esIsolation:
+    enabled: false
+hpa:
+  enabled: false
+  name: atlas-read
+  labels:
+    app: atlas-read
+  cpu:
+    averageUtilization: 85
+  memory:
+    averageUtilization: 85
+
+Namespace: atlas
+sentry_flag: disable
+albTenant: false
+podDisruptionBudget:
+  enabled: true
+  minAvailable: "1"
+atlas:
+  name: atlas-read
+  maintenanceMode: false
+  cache:
+    enabled: false
+  podAntiAffinity: true
+  custom_deployment:
+    enabled: false
+    instance_type:
+      - m6a.2xlarge
+  sentry:
+    sampleRate: 0.5
+  ranger:
+    RANGER_PASSWORD: '{{repl ConfigOption "RangerPassword"}}'
+    RANGER_SERVICE_URL: "http://ranger-service.ranger.svc.cluster.local:80/api/policy"
+  config:
+    entities_allowed_large_attributes: "rawQueryText,variablesSchemaBase64,visualBuilderSchemaBase64,dataContractSpec,dataContractJson"
+  multitenant: ''
+  Deployment_Type: ''
+  replicaCount: 2
+  janusgraph:
+    atomic_mutation: true
+    janusgraph_tx_buffer_size: 8192
+  indexsearch:
+    enable_api_limit: false
+    query_size_max_limit: 100000
+    enable_async: true
+    request_timeout_in_secs: 60
+    enable_janus_optimization: true
+    enable_request_isolation: false
+    enable_janus_optimization_for_relationship: true
+    enable_janus_optimization_extended: true
+  jg:
+    super:
+      vertex:
+        min:
+          edge:
+            count: 200
+  bulk:
+    max_entities_allowed: 10000
+  lineage:
+    optimised_calculation: false
+  authorizer:
+    enable_delta_based_refresh: true
+    enable_abac: false
+  index:
+    audit_index_field_limit: 10000
+    audit_index_refresh_interval: 1s
+  distributed_task:
+    enabled: false
+    cleanup_supported_asset_types: "Process,AirflowTask"
+    cleanup_supported_relationship_labels: "__Process.inputs,__Process.outputs,__AirflowTask.inputs,__AirflowTask.outputs"
+  types_update:
+    async_enable: false
+    thread_count: 5
+    lock_name: "atlas-read:type-def:lock"
+
+  podAnnotations:
+    backup.velero.io/backup-volumes-excludes: master
+
+  image:
+    repository: ghcr.io/atlanhq/atlas-metastore-ATLAS_BRANCH_NAME
+    tag: ATLAS_LATEST_IMAGE_TAG
+    pullPolicy: IfNotPresent
+  imagePullSecrets: {}
+  tolerations: []
+
+  # Affinity rules for atlas
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 1
+        preference:
+          matchExpressions:
+          - key: eks.amazonaws.com/capacityType   #AWS
+            operator: In
+            values:
+            - ON_DEMAND
+      - weight: 1
+        preference:
+          matchExpressions:
+          - key: lifecycle     #Azure
+            operator: In
+            values:
+            - ondemand
+      - weight: 1
+        preference:
+          matchExpressions:
+          - key: cloud.google.com/gke-provisioning  #GCP
+            operator: In
+            values:
+            - standard
+
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: eks.amazonaws.com/capacityType   #AWS
+            operator: In
+            values:
+            - ON_DEMAND
+        - matchExpressions:
+          - key: lifecycle     #Azure
+            operator: In
+            values:
+            - ondemand
+        - matchExpressions:
+          - key: cloud.google.com/gke-provisioning  #GCP
+            operator: In
+            values:
+            - standard 
+    
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app: atlas
+          topologyKey: kubernetes.io/hostname
+
+  # Kubernetes service for atlas
+  service:
+    portName: atlas
+    type: ClusterIP
+    path: /api/atlas/v2/
+    port: 80
+    targetPort: 21000
+
+
+  # kubernetes lifecycle hooks
+  lifecycle:
+    preStop:
+      exec:
+        command:
+        - /bin/sh
+        - -c
+        - curl -X GET http://localhost:21000/api/atlas/admin/killtheleader
+
+  # Kubernetes ingress for atlas
+  # Primary ingress.
+  ingress:
+    enabled: true
+    serviceName: atlas-read-ui-service
+    annotations:
+      kubernetes.io/ingress.class: "kong"
+      konghq.com/preserve-host: "true"
+      konghq.com/plugins: keycloak-jwt, xss
+    labels: {}
+    path: /
+    # pathType is only for k8s >= 1.1=
+    pathType: ImplementationSpecific
+    hosts: []
+    ## Extra paths to prepend to every host configuration. This is useful when working with annotation based services.
+    extraPaths: []
+    tls: {}
+  # Secrets for SSl
+    tlsSecrets:
+      tls.key: ''
+      tls.crt: ''
+
+  # Healthcheck ingress data.
+  healthcheckIngress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: "kong"
+    ## Path for grafana ingress
+    path: /api/atlas/admin/status
+    # pathType is only for k8s > 1.19
+    pathType: Prefix
+    ## Extra paths to prepend to every host configuration. This is useful when working with annotation based services.
+    extraPaths: []
+
+  # Secondary ingress which can be used to provide access on /atlas path
+  secondaryIngress:
+    enabled: true
+    # Used to create an Ingress record.
+    hosts: []
+    ## Path for grafana ingress
+    path: /api/meta/
+    # pathType is only for k8s > 1.19
+    pathType: Prefix
+    labels: {}
+    ## Extra paths to prepend to every host configuration. This is useful when working with annotation based services.
+    extraPaths: []
+    annotations:
+      kubernetes.io/ingress.class: "kong"
+      konghq.com/strip-path: "true"
+      konghq.com/preserve-host: "true"
+      konghq.com/plugins: keycloak-jwt, xss
+    tls: []
+  # Secrets for SSl
+    tlsSecrets:
+      tls.key: ''
+      tls.crt: ''
+
+  # Node selector config for atlas statefulset
+  nodeSelector: {}
+  priorityClassName: ""
+  # Init container for atlas. Right now all checks are combined into one init container to reduce atlas start time.
+  initContainers:
+    - name: init-container-bundle
+      image: ghcr.io/atlanhq/alpine-python-atlan-v2:3.9.21
+      imagePullPolicy: IfNotPresent
+      volumeMounts:
+        - name: atlas-read-init-script
+          mountPath: /tmp/atlas-init.sh
+          subPath: atlas-init.sh
+        - name: atlas-read-config
+          mountPath: /tmp/configfile/atlas-application.properties
+          subPath: atlas-application.properties
+        - name: atlas-config-map-rw-vol
+          mountPath: /tmp/newconfigfile
+        - name: atlas-read-audit-index
+          mountPath: /scripts/atlas-audit.sh
+          subPath: atlas-audit.sh
+        - name: atlas-read-init-container-script
+          mountPath: /scripts/atlas-init-container.sh
+          subPath: atlas-init-container.sh
+      env:
+        - name: ATLAS_SERVICE_NAME
+          value: 'atlas'
+        - name: RANGER_SERVICE_URL
+          value: "http://ranger-service.ranger.svc.cluster.local:80/api/policy"
+        - name: RANGER_USERNAME
+          value: ''
+        - name: RANGER_PASSWORD
+          value: ''
+        - name: KEYCLOAK_ADDRESS
+          value: 'http://keycloak-http.keycloak.svc.cluster.local/auth'
+      command:
+      - /scripts/atlas-init-container.sh
+
+
+  resources:
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits:
+      cpu: 3000m
+      memory: 8Gi
+    requests:
+      cpu: 3000m
+      memory: 8Gi
+
+  resources_basic:
+    limits:
+      memory: 4Gi
+    requests:
+      memory: 20Mi
+
+  resources_standard:
+    limits:
+      memory: 6Gi
+    requests:
+      memory: 20Mi
+
+  # Liveness and readiness probes for atlas
+  livenessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /api/atlas/admin/health
+      port: 21000
+      scheme: HTTP
+    initialDelaySeconds: 720
+    periodSeconds: 60
+    successThreshold: 1
+    timeoutSeconds: 5
+  readinessProbe:
+    httpGet:
+      path: /api/atlas/admin/health
+      port: 21000
+      scheme: HTTP
+    failureThreshold: 3
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+
+  env:
+    - name: ATLAS_SERVER_OPTS
+      value: '-Xmx4g -Xms4g'
+    - name: MAVEN_OPTS
+      value: '-Xmx4g -Xms4g'
+    - name: ATLAS_CLIENT_OPTS
+      value: '-Xmx1g -Xms1g'
+    - name: RANGER_SERVICE_URL
+      value: 'http://ranger-service.ranger.svc.cluster.local:80/api/policy'
+    - name: ATLAS_REPOSITORY_NAME
+      value: "atlas"
+    - name: ATLAS_USE_LEGACY_SEARCH
+      value: "false"
+
+
+  # We are using these in configmap for atlas-keycloak
+  secrets:
+    AUTH_SERVER_URL: ''
+    KEYCLOAK_REALM: ''
+    KEYCLOAK_CLIENT_ID: ''
+    KEYCLOAK_CLIENT_SECRET: ''
+    SENTRY_DSN_SECRET: ''
+    SENTRY_DSN_DEV: ''
+    SENTRY_DSN_PROD: ''
+    INSTANCE_NAME: ''
+
+  # Config for logagent sidecar for atlas.
+  # Used in logagent configmap and atlas statefulset.
+  filebeatLogagent:
+    image:
+      repository: ghcr.io/atlanhq/filebeat
+      tag: 6.8.4
+    data:
+      filebeat.yml: |-
+        filebeat.inputs:
+        - type: log
+          enabled: true
+          paths:
+            - /opt/apache-atlas/logs/audit.log*
+          fields:
+            logtype: audit
+        - type: log
+          enabled: true
+          paths:
+            - /opt/apache-atlas/logs/metric.log
+          fields:
+            logtype: metric
+        - type: log
+          enabled: true
+          paths:
+            - /opt/apache-atlas/logs/atlas_perf.log
+          fields:
+            logtype: performance
+        output.logstash:
+          hosts: ['logstash-logstash:5044']
+  # Redis config for atlas
+  # This is used in atlas configmap
+  redis:
+    enabled: true
+    host: ${USER_REDIS_HOST}
+    port: ${USER_REDIS_PORT}
+    sentinel_urls: ${USER_REDIS_SENTINEL_HOSTS}
+    master_name: ${USER_REDIS_MASTER_SET_NAME}
+    password: ${MASTER_PASSWORD}
+    username: ${USER_REDIS}
+    maxConnections: 100
+    timeout: 100000
+
+  # Pod monitor to send metrics from telegraf to prometheus
+  podMonitor:
+    ## If true, a PodMonitor CRD is created for a prometheus operator
+    ## https://github.com/coreos/prometheus-operator
+    ##
+    enabled: true
+    namespace: monitoring
+    labels:
+      app: prometheus-operator
+      release: prometheus-operator
+    interval: 30s
+    scrapeTimeout: 10s
+    scheme: http
+    relabelings: []
+
+  # Flag to enable telegraf sidecar for metrics
+  telegraf:
+    enabled: true
+
+  # Flag to enable statsD cronjob and schedule
+  statsdJob:
+    enabled: true
+    schedule: '*/10 * * * *'
+
+  # Used in atlas configmaps
+  # can be used to setup slack notifications
+  notification:
+    slackWebhook: ''
+
+cassandra:
+
+  updateStrategy:
+    type: RollingUpdate
+
+  resources:
+    requests:
+      memory: 4Gi
+      #cpu: 1500m
+    limits:
+      memory: 5Gi
+      #cpu: 2000m
+
+  # Config for cassandra
+
+  max_heap_size: 2048M
+  heap_new_size: 512M
+
+  config:
+    cluster_domain: cluster.local
+    cluster_name: cassandra
+    cluster_size: 3
+    seed_size: 3
+    start_rpc: true
+    ports:
+      cql: 9042
+
+
+
+  # Persistence changes for cassandra
+  persistence:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 10Gi
+
+  nodeSelector: {}
+    # nodegroup: atlan-atlas
+
+  ## Affinity for pod assignment
+  ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: "app"
+                operator: In
+                values:
+                - cassandra
+          topologyKey: "kubernetes.io/hostname"
+  # Cassandra exporter configuration
+  exporter:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+      additionalLabels:
+        release: "prometheus-operator"
+      # prometheus: default
+    image:
+      repo: ghcr.io/atlanhq/cassandra_exporter
+      tag: 2.0.2
+    jvmOpts: ""
+    resources:
+      limits:
+        #cpu: 200m
+        memory: 500Mi
+      requests:
+        #cpu: 100m
+        memory: 200Mi
+  podAnnotations: {}
+
+  # Cassandra backup configuration
+  backup:
+    enabled: false
+    schedule:
+    - keyspace: atlas
+      cron: "0 3 * * *"
+    annotations:
+      iam.amazonaws.com/role: ""
+    image:
+      repository: ghcr.io/atlanhq/cain
+      tag: 0.6.0
+    # Name of the secret containing the credentials of the service account used by GOOGLE_APPLICATION_CREDENTIALS, as a credentials.json file
+    extraArgs:
+      - -c
+      - atlas-cassandra
+    google:
+      serviceAccountSecret:
+    env:
+    - name: AWS_REGION
+      value: ""
+    resources:
+      requests:
+        memory: 1Gi
+        #cpu: 1
+      limits:
+        memory: 1Gi
+        #cpu: 1
+    destination: ""
+
+nginx:
+  enabled: true
+  clientMaxBodySize: "512m"        # The maximum size of the request body.
+  clientBodyBufferSize: "512k"     # The buffer size for reading the request body. In is nginx InMemory buffer size per request. Excessive request size will be written on disk defined by clientMaxBodySize.
+  clientBodyTimeout: "600s"        # Allow clients up to 10 minutes to actively send their request body before Nginx times out the connection.
+  proxyReadTimeout: "10800s"       # 3 hrs - Time taken to read a response from the atlas server. The workflow client will wait for 3 hrs for the response.
+  proxyConnectTimeout: "60s"       # 1 min - Time taken to establish a connection to the atlas server.
+  ratelimit:
+    enabled: true
+    default_atlas_service: false
+  default:
+    zoneMemory: "20m"
+    rate: "500r"
+    rateUnit: "m"
+    burst: 20
+    header: "$http_x_atlan_agent_id"
+  indexsearch:
+    zoneMemory: "20m"                 # Example: Zone memory, e.g., 10m, 20m
+    rate: "500r"                      # Example: Rate, e.g., 1000r (requests)
+    rateUnit: "m"                     # Example: Rate unit, e.g., m (minute), s (second), 1000r (requests per m minute)
+    burst: 100                         # Example: Burst size
+    header: "$http_x_atlan_agent_id"  # Example: Header name
+  bulk:
+    zoneMemory: "20m"
+    rate: "1000r"
+    rateUnit: "m"
+    burst: 100
+    header: "$http_x_atlan_agent_id"
+  logging:
+    format: '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" "$http_x_forwarded_for" "$http_x_atlan_client_origin" "$http_x_atlan_agent_id"'
+  vts:
+    zoneMemory: "32m"
+
+# Summary of Timeout Settings in Nginx
+
+# To Upstream (Atlas):
+# proxy_connect_timeout: - Time taken to establish a connection to the atlas server.
+# proxy_read_timeout: - Time taken to read a response from the atlas server.
+# proxy_send_timeout: (defaults to proxy_read_timeout) - Time taken to send a request to the atlas server.
+# From Client:
+# client_body_timeout: - Time taken by the client to send the request body.
+# client_header_timeout: - Time taken by the client to send the request header.
+# keepalive_timeout: - This timeout applies to an idle client connection after Nginx has finished sending a response and is waiting for the next request on the same TCP connection.

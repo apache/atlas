@@ -1,0 +1,16 @@
+{{- if or .Values.global.svcIsolation.enabled .Values.global.globalSvcIsolation.enabled }}
+{{- if .Values.configOverrides }}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ template "cassandra.name" . }}
+  namespace: {{ .Values.Namespace }}
+  labels:
+    app: {{ template "cassandra.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+{{ toYaml .Values.configOverrides | indent 2 }}
+{{- end }}
+{{- end }}

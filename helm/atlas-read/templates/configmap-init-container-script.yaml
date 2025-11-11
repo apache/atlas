@@ -1,0 +1,122 @@
+{{- if or .Values.global.svcIsolation.enabled (or .Values.global.esIsolation.enabled .Values.global.globalSvcIsolation.enabled) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-read-init-container-script
+  namespace: {{ .Values.Namespace  }}
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  atlas-init-container.sh: |
+    #!/bin/sh
+
+    echo "[+] Checking for Cassandra and Elasticsearch"
+    /tmp/atlas-init.sh
+
+    echo "[+] Copying Config File"
+    cp /tmp/configfile/atlas-application.properties /tmp/newconfigfile/atlas-application.properties
+    
+    echo "[+] Checking for Keycloak"
+    until printf "." && curl -s $KEYCLOAK_ADDRESS/realms/master; do
+      sleep 2;
+    done;
+    echo 'Keycloak OK ✓'
+    
+    # Check for Keycloak realms and clients
+    echo "[+] Checking for Keycloak realms and clients"
+    # Set variables
+    KEYCLOAK_SERVER=$KEYCLOAK_ADDRESS
+    KEYCLOAK_REALM="master"
+    KEYCLOAK_USERNAME="batman"
+    KEYCLOAK_PASSWORD=$RANGER_PASSWORD
+    CLIENT_NAME="atlan-backend"
+    REALM_NAME="default"
+    REALM_EXISTS=false
+    CLIENT_EXISTS=false
+    
+    until [ "$REALM_EXISTS" = true ] && [ "$CLIENT_EXISTS" = true ]
+    do
+      # Fetch token
+      TOKEN_RESPONSE=$(curl -s -X POST "${KEYCLOAK_SERVER}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token" \
+       -H "Content-Type: application/x-www-form-urlencoded" \
+       -d "username=${KEYCLOAK_USERNAME}" \
+       -d "password=${KEYCLOAK_PASSWORD}" \
+       -d 'grant_type=password' \
+       -d 'client_id=admin-cli')
+    
+      ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r .access_token)
+    
+      if [ "$ACCESS_TOKEN" == "null" ]; then
+        echo "Error: Unable to fetch access token. Please check your server, realm, username, and password."
+        sleep 5
+        continue
+      fi
+    
+      # Check if realm exists
+      REALM_RESPONSE=$(curl -s -X GET "${KEYCLOAK_SERVER}/admin/realms/${REALM_NAME}" \
+       -H "Authorization: Bearer $ACCESS_TOKEN")
+    
+      REALM_ERROR=$(echo $REALM_RESPONSE | jq -r '.error // empty')
+    
+      if [ "$REALM_RESPONSE" == "" ] || [ "$REALM_ERROR" != "" ]; then
+        echo "Realm ${REALM_NAME} does not exist or could not be retrieved. Retrying in 5 seconds..."
+        REALM_EXISTS=false
+        sleep 5
+        continue
+      else
+        echo "Realm ${REALM_NAME} exists"
+        REALM_EXISTS=true
+      fi
+    
+      # Check if client exists
+      CLIENT_ID_RESPONSE=$(curl -s -X GET "${KEYCLOAK_SERVER}/admin/realms/${REALM_NAME}/clients?clientId=${CLIENT_NAME}" \
+       -H "Authorization: Bearer $ACCESS_TOKEN")
+    
+      CLIENT_ID=$(echo $CLIENT_ID_RESPONSE | jq -r '.[0].id')
+    
+      if [ "$CLIENT_ID_RESPONSE" == "" ] || [ "$CLIENT_ID" == "null" ]; then
+        echo "Client ${CLIENT_NAME} does not exist in realm ${REALM_NAME} or could not be retrieved. Retrying in 5 seconds..."
+        CLIENT_EXISTS=false
+        sleep 5
+        continue
+      else
+        echo "Client ${CLIENT_NAME} exists in realm ${REALM_NAME}"
+        CLIENT_EXISTS=true
+      fi
+    done
+    
+    echo "[+] Checking for Cache Invalidation Proxy"
+    until printf "." && curl -s http://cinv.atlas.svc.cluster.local:5000/health; do
+      sleep 2;
+    done;
+    echo '[+] Cache Invalidation Proxy OK ✓'
+
+    echo "[+] Checking for Zookeeper"
+    while true
+    do
+    sleep 5
+    echo "[+] checking for zookeeper service"
+    leader=`echo stat | nc zookeeper 2181 | grep leader |wc -l`
+    echo $leader
+    if [ $leader -eq 1 ]; then echo "Zookeeper cluster up"; break; fi
+    done
+    echo 'Zookeeper OK ✓'
+
+    echo "[+] Checking for Kafka"
+    host='kafka-headless.kafka.svc.cluster.local'
+    port=9092
+    while true; do
+      if nc -z -w 1 "$host" "$port"; then
+        echo "(+) Kafka OK"
+        break
+      else
+        echo "(-) Kafka is either down or in the process of a restart"
+        sleep 10
+      fi
+    done
+    echo "[+] Atlas audit indexing"
+    /scripts/atlas-audit.sh
+{{- end }}

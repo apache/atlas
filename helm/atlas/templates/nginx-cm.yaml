@@ -1,0 +1,324 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rate-limit-nginx-config
+  namespace: {{ .Values.Namespace }}
+data:
+  nginx.conf: |-
+    # Load the dynamic VTS module (must be at the top level)
+    load_module /etc/nginx/modules/ngx_http_vhost_traffic_status_module.so;
+
+    user nginx;
+    worker_processes auto;
+    error_log /dev/stderr warn;
+    pid /var/run/nginx.pid;
+
+    events {
+      worker_connections 1024;
+    }
+
+    http {
+      include /etc/nginx/mime.types;
+      default_type application/octet-stream;
+
+      # Set a higher limit for the client request body size to prevent 413 errors
+      client_max_body_size {{ .Values.nginx.clientMaxBodySize | default "512m" }};
+      client_body_buffer_size {{ .Values.nginx.clientBodyBufferSize | default "512k" }};
+
+      # Increased timeout for client sending request body to 10 minutes
+      client_body_timeout {{ .Values.nginx.clientBodyTimeout | default "600s" }};
+
+      # Effective Atlan request id: use incoming header if present, else nginx's $request_id
+      map $http_x_atlan_request_id $atlan_request_id {
+          default $http_x_atlan_request_id;
+          ""      $request_id;
+      }
+
+      # Map for the general API rate limiting key & product_webapp bypass
+      map $http_x_atlan_client_origin $effective_agent_id_key {
+          default {{ .Values.nginx.default.header }}; # Default to rate limiting by agent_id
+          "product_webapp" "";             # For "product_webapp", use an empty key (bypasses limit)
+      }
+
+      #  Map for the /api/meta/entity/bulk path-based rate limiting key & product_webapp bypass
+      map $http_x_atlan_client_origin $bulk_path_key {
+          default {{ .Values.nginx.bulk.header }}; # Default to rate limiting by agent_id
+          "product_webapp" "";             # For "product_webapp", use an empty key (bypasses limit)
+      }
+
+      # Map for the /api/meta/search/indexsearch path-based rate limiting key & product_webapp bypass
+      map $http_x_atlan_client_origin $indexsearch_path_key {
+          default {{ .Values.nginx.indexsearch.header }}; # Default to rate limiting by agent_id for these paths
+          "product_webapp" "";            # For "product_webapp", use an empty key (bypasses limit for this path)
+      }
+
+      log_format ratelimit_json escape=json '{'
+        '"time_local": "$time_local", '
+        '"remote_addr": "$remote_addr", '
+        '"remote_user": "$remote_user", '
+        '"request_method": "$request_method", '
+        '"request_uri": "$request_uri", '
+        '"request_protocol": "$server_protocol", '
+        '"request_length": "$request_length", '
+        '"status": "$status", '
+        '"body_bytes_sent": "$body_bytes_sent", '
+        '"bytes_sent": "$bytes_sent", '
+        '"http_referer": "$http_referer", '
+        '"http_user_agent": "$http_user_agent", '
+        '"http_x_forwarded_for": "$http_x_forwarded_for", '
+        '"http_x_atlan_client_origin": "$http_x_atlan_client_origin", '
+        '"http_x_atlan_agent": "$http_x_atlan_agent", '
+        '"http_x_atlan_agent_id": "$http_x_atlan_agent_id", '
+        '"http_x_atlan_package_name": "$http_x_atlan_package_name", '
+        '"http_x_atlan_agent_workflow_id": "$http_x_atlan_agent_workflow_id", '
+        '"http_x_atlan_via_ui": "$http_x_atlan_via_ui", '
+        '"http_x_atlan_request_id": "$atlan_request_id", '
+        '"http_x_atlan_google_sheets_id": "$http_x_atlan_google_sheets_id", '
+        '"http_x_atlan_microsoft_excel_id": "$http_x_atlan_microsoft_excel_id", '
+        '"http_x_atlan_task_guid": "$http_x_atlan_task_guid", '
+        '"http_x_atlan_route": "$http_x_atlan_route", '
+        '"effective_agent_id_key_used": "$effective_agent_id_key", '
+        '"bulk_path_key_used": "$bulk_path_key", '
+        '"indexsearch_path_key_used": "$indexsearch_path_key", '
+        '"limit_req_status": "$limit_req_status", '
+        '"request_time": "$request_time", '
+        '"upstream_addr": "$upstream_addr", '
+        '"upstream_status": "$upstream_status", '
+        '"upstream_response_time": "$upstream_response_time", '
+        '"upstream_connect_time": "$upstream_connect_time", '
+        '"upstream_header_time": "$upstream_header_time"'
+      '}';
+
+      access_log /dev/stdout ratelimit_json; # Logging to container standard output
+
+      # Define rate limit zones
+      limit_req_zone $effective_agent_id_key zone=agent_id_zone:{{ .Values.nginx.default.zoneMemory | default "10m" }} rate={{ .Values.nginx.default.rate | default "500r" }}/{{ .Values.nginx.default.rateUnit | default "m" }}; 
+      limit_req_zone $indexsearch_path_key zone=indexsearch_limit_zone:{{ .Values.nginx.indexsearch.zoneMemory | default "10m" }} rate={{ .Values.nginx.indexsearch.rate | default "500r" }}/{{ .Values.nginx.indexsearch.rateUnit | default "m" }};
+      limit_req_zone $bulk_path_key zone=entity_bulk_limit_zone:{{ .Values.nginx.bulk.zoneMemory | default "10m" }} rate={{ .Values.nginx.bulk.rate | default "200r" }}/{{ .Values.nginx.bulk.rateUnit | default "m" }};
+
+      # Map for VTS filtering by URL group (path-based categorization)
+      map $request_uri $url_group {
+          "~*^/api/atlas/v2/search/indexsearch" "api_atlas_v2_indexsearch";
+          "~*^/api/meta/search/indexsearch" "api_meta_indexsearch";
+          "~*^/api/atlas/v2/entity/bulk"    "api_atlas_v2_entitybulk";
+          "~*^/api/meta/entity/bulk"    "api_meta_entitybulk";
+          "~*^/api/meta/entity/auditSearch" "api_meta_entity_auditsearch";
+          "~*^/api/atlas/v2/entity/auditSearch" "api_atlas_v2_entity_auditsearch";
+          "~*^/api/meta/types/typedefs" "api_meta_types_typedefs";
+          "~*^/api/atlas/v2/types/typedefs" "api_atlas_v2_types_typedefs";
+          "~*^/api/meta/lineage/list"   "api_meta_lineage_list";
+          "~*^/api/atlas/v2/lineage/list" "api_atlas_v2_lineage_list";
+          "~*^/api/atlas"                "api_atlas_other";
+          "~*^/api/meta"                 "api_meta_other";
+          default                         "other_paths";
+      }
+
+      # VTS Module Configuration
+      vhost_traffic_status_zone shared:vhost_traffic_status:32m;
+      # Filter by exact status code and then by URL group
+      vhost_traffic_status_filter_by_set_key $status $url_group; 
+
+      # Server for Nginx stub_status (internal)
+      server {
+          listen 127.0.0.1:8081;
+          server_name localhost;
+          location /nginx_status {
+              stub_status;
+              access_log off; 
+              vhost_traffic_status_bypass_stats on;
+              allow 127.0.0.1;
+              deny all;
+          }
+      }
+
+      # Server for Nginx VTS (internal)
+      server {
+          listen 127.0.0.1:8082;
+          server_name localhost;
+          location /vts_status { 
+              vhost_traffic_status_display;
+              vhost_traffic_status_display_format prometheus;
+              access_log off; 
+              vhost_traffic_status_bypass_stats on;
+              allow 127.0.0.1;
+              deny all;
+          }
+          location /vts_status_html { 
+              vhost_traffic_status_display;
+              vhost_traffic_status_display_format html;
+              access_log off; 
+              vhost_traffic_status_bypass_stats on;
+              allow 127.0.0.1;
+              deny all;
+          }
+      }
+
+      # Main application server
+      server {
+        listen 8080;
+        set $atlas_upstream http://127.0.0.1:21000;
+
+        # Common proxy headers to be included in relevant locations
+        # Standard headers
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Custom Atlan headers
+        proxy_set_header x-atlan-agent $http_x_atlan_agent;
+        proxy_set_header x-atlan-agent-id $http_x_atlan_agent_id;
+        proxy_set_header x-atlan-package-name $http_x_atlan_package_name;
+        proxy_set_header x-atlan-agent-workflow-id $http_x_atlan_agent_workflow_id;
+        proxy_set_header x-atlan-via-ui $http_x_atlan_via_ui;
+        proxy_set_header x-atlan-request-id $atlan_request_id;
+        proxy_set_header x-atlan-google-sheets-id $http_x_atlan_google_sheets_id;
+        proxy_set_header x-atlan-microsoft-excel-id $http_x_atlan_microsoft_excel_id;
+        proxy_set_header x-atlan-task-guid $http_x_atlan_task_guid;
+        proxy_set_header x-atlan-client-origin $http_x_atlan_client_origin;
+        proxy_set_header x-atlan-route $http_x_atlan_route;
+
+        # Most specific locations first
+        location = /api/meta/search/indexsearch {
+          limit_req zone=indexsearch_limit_zone burst={{ .Values.nginx.indexsearch.burst }} nodelay; # Adjust burst as needed
+          limit_req_status 429;
+          add_header Retry-After 1 always;
+          proxy_pass $atlas_upstream$request_uri; 
+          proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout | default "60s" }};
+          proxy_read_timeout {{ .Values.nginx.proxyReadTimeout | default "7200s" }};
+          proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+          add_header X-Debug-Agent-Id $http_x_atlan_agent_id; # This is an outgoing header to client
+        }
+
+        location = /api/atlas/v2/search/indexsearch { # Exact match for this specific path
+          limit_req zone=indexsearch_limit_zone burst={{ .Values.nginx.indexsearch.burst }} nodelay; # Adjust burst as needed
+          limit_req_status 429;
+          add_header Retry-After 1 always;
+          proxy_pass $atlas_upstream$request_uri; 
+          proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout | default "60s" }};
+          proxy_read_timeout {{ .Values.nginx.proxyReadTimeout | default "7200s" }};
+          proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+          add_header X-Debug-Agent-Id $http_x_atlan_agent_id; # If needed
+        }
+
+        location = /api/meta/entity/bulk { # Exact match for this specific path
+          limit_req zone=entity_bulk_limit_zone burst={{ .Values.nginx.bulk.burst }} nodelay; # Adjust burst as needed
+          limit_req_status 429;
+          add_header Retry-After 1 always;
+          proxy_pass $atlas_upstream$request_uri; 
+          proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout | default "60s" }};
+          proxy_read_timeout {{ .Values.nginx.proxyReadTimeout | default "7200s" }};
+          proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+          add_header X-Debug-Agent-Id $http_x_atlan_agent_id;
+        }
+
+        location = /api/atlas/v2/entity/bulk { 
+          limit_req zone=entity_bulk_limit_zone burst={{ .Values.nginx.bulk.burst }} nodelay; 
+          limit_req_status 429;
+          add_header Retry-After 1 always;
+          proxy_pass $atlas_upstream$request_uri; 
+          proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout | default "60s" }};
+          proxy_read_timeout {{ .Values.nginx.proxyReadTimeout | default "7200s" }};
+          proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+          add_header X-Debug-Agent-Id $http_x_atlan_agent_id;
+        }
+
+        # New locations for additional metrics - applying general API rate limit
+        location = /api/meta/entity/auditSearch {
+          limit_req zone=agent_id_zone burst={{ .Values.nginx.default.burst }} nodelay; 
+          limit_req_status 429;
+          add_header Retry-After 1 always;
+          proxy_pass $atlas_upstream$request_uri;
+          proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout | default "60s" }};
+          proxy_read_timeout {{ .Values.nginx.proxyReadTimeout | default "7200s" }};
+          proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+          add_header X-Debug-Agent-Id $http_x_atlan_agent_id;
+        }
+
+        location = /api/atlas/v2/entity/auditSearch {
+          limit_req zone=agent_id_zone burst={{ .Values.nginx.default.burst }} nodelay; 
+          limit_req_status 429;
+          add_header Retry-After 1 always;
+          proxy_pass $atlas_upstream$request_uri;
+          proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout | default "60s" }};
+          proxy_read_timeout {{ .Values.nginx.proxyReadTimeout | default "7200s" }};
+          proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+          add_header X-Debug-Agent-Id $http_x_atlan_agent_id;
+        }
+
+        location = /api/meta/types/typedefs {
+          limit_req zone=agent_id_zone burst={{ .Values.nginx.default.burst }} nodelay; 
+          limit_req_status 429;
+          add_header Retry-After 1 always;
+          proxy_pass $atlas_upstream$request_uri;
+          proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout | default "60s" }};
+          proxy_read_timeout {{ .Values.nginx.proxyReadTimeout | default "7200s" }};
+          proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+          add_header X-Debug-Agent-Id $http_x_atlan_agent_id;
+        }
+
+        location = /api/atlas/v2/types/typedefs {
+          limit_req zone=agent_id_zone burst={{ .Values.nginx.default.burst }} nodelay; 
+          limit_req_status 429;
+          add_header Retry-After 1 always;
+          proxy_pass $atlas_upstream$request_uri;
+          proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout | default "60s" }};
+          proxy_read_timeout {{ .Values.nginx.proxyReadTimeout | default "7200s" }};
+          proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+          add_header X-Debug-Agent-Id $http_x_atlan_agent_id;
+        }
+
+        location = /api/meta/lineage/list {
+          limit_req zone=agent_id_zone burst={{ .Values.nginx.default.burst }} nodelay; 
+          limit_req_status 429;
+          add_header Retry-After 1 always;
+          proxy_pass $atlas_upstream$request_uri;
+          proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout | default "60s" }};
+          proxy_read_timeout {{ .Values.nginx.proxyReadTimeout | default "7200s" }};
+          proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+          add_header X-Debug-Agent-Id $http_x_atlan_agent_id;
+        }
+
+        location = /api/atlas/v2/lineage/list {
+          limit_req zone=agent_id_zone burst={{ .Values.nginx.default.burst }} nodelay; 
+          limit_req_status 429;
+          add_header Retry-After 1 always;
+          proxy_pass $atlas_upstream$request_uri;
+          proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout | default "60s" }};
+          proxy_read_timeout {{ .Values.nginx.proxyReadTimeout | default "7200s" }};
+          proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+          add_header X-Debug-Agent-Id $http_x_atlan_agent_id;
+        }
+
+        # General API prefixes (will catch remaining /api/meta/* and /api/atlas/*)
+        location /api/meta/ {
+          limit_req zone=agent_id_zone burst={{ .Values.nginx.default.burst }} nodelay; # General API limit
+          limit_req_status 429;
+          add_header Retry-After 1 always;
+          proxy_pass $atlas_upstream;
+          proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout | default "60s" }};
+          proxy_read_timeout {{ .Values.nginx.proxyReadTimeout | default "7200s" }};
+          proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+          add_header X-Debug-Agent-Id $http_x_atlan_agent_id;
+        }
+
+        location /api/atlas/ {
+          limit_req zone=agent_id_zone burst={{ .Values.nginx.default.burst }} nodelay; # General API limit
+          limit_req_status 429;
+          add_header Retry-After 1 always;
+          proxy_pass $atlas_upstream;
+          proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout | default "60s" }};
+          proxy_read_timeout {{ .Values.nginx.proxyReadTimeout | default "7200s" }};
+          proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+          add_header X-Debug-Agent-Id $http_x_atlan_agent_id;
+        }
+
+        # Default location for all other requests (UI, etc.)
+        location / {
+          proxy_pass $atlas_upstream;
+          proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout | default "60s" }};
+          proxy_read_timeout {{ .Values.nginx.proxyReadTimeout | default "7200s" }};
+          proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+        }
+      }
+    }

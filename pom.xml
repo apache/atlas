@@ -781,7 +781,7 @@
         <redis.client.version>3.20.1</redis.client.version>
         <micrometer.version>1.11.1</micrometer.version>
         <netty4.version>4.1.61.Final</netty4.version>
-        <junit.jupiter.version>5.8.2</junit.jupiter.version>
+        <junit.jupiter.version>5.9.3</junit.jupiter.version>
     </properties>
 
     <modules>
@@ -1813,7 +1813,7 @@
                 <dependencies>
                     <dependency>
                         <groupId>org.apache.maven.surefire</groupId>
-                        <artifactId>surefire-testng</artifactId>
+                        <artifactId>surefire-junit-platform</artifactId>
                         <version>${surefire.version}</version>
                     </dependency>
                 </dependencies>

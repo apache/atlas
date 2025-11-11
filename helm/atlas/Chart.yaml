@@ -1,0 +1,34 @@
+apiVersion: v2
+name: atlas
+description: Apache Atlas Metadata Management and Governance Platform
+type: application
+version: 1.0.0
+appVersion: "3.0.0"  # Will be updated by CI with commit ID
+maintainers:
+  - name: Atlan Engineering
+    email: engineering@atlan.com
+keywords:
+  - atlas
+  - metadata
+  - governance
+  - data-catalog
+  - apache-atlas
+sources:
+  - https://github.com/atlanhq/atlas-metastore
+home: https://github.com/atlanhq/atlas-metastore
+dependencies:
+  # Infrastructure charts - disabled by default (published separately as OCI)
+  # Charts exist in charts/ subdirectory for individual OCI publishing
+  # Consumed as peers in parent atlan chart, not as subcharts here
+  - name: cassandra
+    repository: file://./charts/cassandra
+    version: 0.x.x
+    condition: cassandra.enabled  # Disabled in values.yaml
+  - name: elasticsearch
+    repository: file://./charts/elasticsearch
+    version: 7.x.x
+    condition: elasticsearch.enabled  # Disabled in values.yaml
+  - name: logstash
+    repository: file://./charts/logstash
+    version: 9.x.x
+    condition: logstash.enabled  # Disabled in values.yaml

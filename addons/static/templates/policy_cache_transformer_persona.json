@@ -996,6 +996,60 @@
         "end-two-entity:*"
       ],
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "description": "Allow to update relation for linked assets for this AIApplication",
+      "resources": [
+        "relationship-type:*",
+        "end-one-entity-type:AIApplication",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+        "end-one-entity:{entity}/*",
+
+        "end-two-entity-type:Catalog",
+        "end-two-entity-type:Connection",
+        "end-two-entity-type:Process",
+        "end-two-entity-type:Namespace",
+        "end-two-entity-type:ProcessExecution",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "remove-relationship"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "description": "Allow to update relation for linked assets for this AIApplication",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:Catalog",
+        "end-one-entity-type:Connection",
+        "end-one-entity-type:Process",
+        "end-one-entity-type:Namespace",
+        "end-one-entity-type:ProcessExecution",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:AIApplication",
+        "end-two-entity-classification:*",
+        "end-two-entity:*",
+        "end-two-entity:{entity}/*"
+      ],
+      "actions": ["add-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "description": "Create/delete process to update datasets for this AIApplication",
+      "resources": [
+        "entity:*",
+        "entity-type:Process",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create", "entity-update", "entity-delete"]
     }
   ],
   "persona-ai-application-delete": [
@@ -1213,7 +1267,7 @@
         "entity-type:Process",
         "entity-classification:*"
       ],
-      "actions": ["entity-create", "entity-delete"]
+      "actions": ["entity-create", "entity-update", "entity-delete"]
     }
   ],
   "persona-ai-model-delete": [

@@ -1,0 +1,17 @@
+{{- if .Values.minAvailable }}
+---
+{{- if and (.Capabilities.APIVersions.Has "policy/v1") (semverCompare ">= 1.19-0" .Capabilities.KubeVersion.Version) }}
+apiVersion: policy/v1
+{{- else }}
+apiVersion: policy/v1beta1
+{{- end }}
+kind: PodDisruptionBudget
+metadata:
+  name: "{{ template "elasticsearch.uname" . }}-pdb"
+  namespace: {{ .Values.Namespace }}
+spec:
+  minAvailable: {{ .Values.minAvailable }}
+  selector:
+    matchLabels:
+      app: "{{ template "elasticsearch.uname" . }}"
+{{- end }}

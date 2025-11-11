@@ -24,6 +24,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.EntityMutationService;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.diskstorage.BackendTransaction;
@@ -36,6 +37,8 @@ import org.janusgraph.graphdb.types.MixedIndexType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +55,11 @@ public class RepairIndex {
 
     private static JanusGraph graph;
     private static AtlanElasticSearchIndex searchIndex;
+    private EntityMutationService entityMutationService;
+
+    public RepairIndex(EntityMutationService entityMutationService) {
+        this.entityMutationService = entityMutationService;
+    }
 
     public static void setupGraph() {
         LOG.info("Initializing graph: ");
@@ -69,11 +77,10 @@ public class RepairIndex {
         return new String[]{ INDEX_NAME_VERTEX_INDEX, INDEX_NAME_EDGE_INDEX};
     }
 
-    private static void reindexVertex(String indexName, IndexSerializer indexSerializer, Set<String> entityGUIDs) throws Exception {
+    private void reindexVertex(String indexName, IndexSerializer indexSerializer, Set<String> entityGUIDs) throws Exception {
         Map<String, Map<String, List<IndexEntry>>> documentsPerStore = new java.util.HashMap<>();
         ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
         StandardJanusGraphTx tx = mgmt.getWrappedTx();
-        BackendTransaction mutator = tx.getTxHandle();
         JanusGraphIndex index = mgmt.getGraphIndex(indexName);
         MixedIndexType indexType = (MixedIndexType) mgmt.getSchemaVertex(index).asIndexType();
 
@@ -117,6 +124,9 @@ public class RepairIndex {
 
             LOG.info(": Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
         }
+
+        referencedGUIDs.add(guid);
+        entityMutationService.repairClassificationMappings(new ArrayList<>(referencedGUIDs));
     }
 
     public void restoreByIds(Set<String> guids) throws Exception {
@@ -132,5 +142,7 @@ public class RepairIndex {
             LOG.info(": Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
             LOG.info(": Done!");
         }
+
+        entityMutationService.repairClassificationMappings(new ArrayList<>(guids));
     }
 }
