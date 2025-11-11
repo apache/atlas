@@ -58,42 +58,52 @@ public class AtlasObservabilityService {
         return key.toString();
     }
     
+    /**
+     * Normalizes client origin to prevent null values in Micrometer tags.
+     * Micrometer tags cannot have null values.
+     */
+    private String normalizeClientOrigin(String clientOrigin) {
+        return clientOrigin != null ? clientOrigin : "unknown";
+    }
+    
     public void recordCreateOrUpdateDuration(AtlasObservabilityData data) {
-        Timer timer = getOrCreateTimer("duration", data.getXAtlanClientOrigin());
+        Timer timer = getOrCreateTimer("duration", normalizeClientOrigin(data.getXAtlanClientOrigin()));
         timer.record(data.getDuration(), TimeUnit.MILLISECONDS);
     }
     
     public void recordPayloadSize(AtlasObservabilityData data) {
-        DistributionSummary summary = getOrCreateDistributionSummary("payload_size", data.getXAtlanClientOrigin());
+        DistributionSummary summary = getOrCreateDistributionSummary("payload_size", normalizeClientOrigin(data.getXAtlanClientOrigin()));
         summary.record(data.getPayloadAssetSize());
         RequestContext context = RequestContext.get();
         context.endMetricRecord(context.startMetricRecord("entities_count"), data.getPayloadAssetSize());
     }
     
     public void recordPayloadBytes(AtlasObservabilityData data) {
-        DistributionSummary summary = getOrCreateDistributionSummary("payload_bytes", data.getXAtlanClientOrigin());
+        DistributionSummary summary = getOrCreateDistributionSummary("payload_bytes", normalizeClientOrigin(data.getXAtlanClientOrigin()));
         summary.record(data.getPayloadRequestBytes());
     }
     
     public void recordArrayRelationships(AtlasObservabilityData data) {
+        String clientOrigin = normalizeClientOrigin(data.getXAtlanClientOrigin());
         // Record total count
-        DistributionSummary summary = getOrCreateDistributionSummary("array_relationships", data.getXAtlanClientOrigin());
+        DistributionSummary summary = getOrCreateDistributionSummary("array_relationships", clientOrigin);
         summary.record(data.getTotalArrayRelationships());
         
         // Record individual relationship types and counts
-        recordRelationshipMap("relationship_attributes", data.getRelationshipAttributes(), data.getXAtlanClientOrigin());
-        recordRelationshipMap("append_relationship_attributes", data.getAppendRelationshipAttributes(), data.getXAtlanClientOrigin());
-        recordRelationshipMap("remove_relationship_attributes", data.getRemoveRelationshipAttributes(), data.getXAtlanClientOrigin());
+        recordRelationshipMap("relationship_attributes", data.getRelationshipAttributes(), clientOrigin);
+        recordRelationshipMap("append_relationship_attributes", data.getAppendRelationshipAttributes(), clientOrigin);
+        recordRelationshipMap("remove_relationship_attributes", data.getRemoveRelationshipAttributes(), clientOrigin);
     }
     
     public void recordArrayAttributes(AtlasObservabilityData data) {
+        String clientOrigin = normalizeClientOrigin(data.getXAtlanClientOrigin());
         // Record total count
-        DistributionSummary summary = getOrCreateDistributionSummary("array_attributes", data.getXAtlanClientOrigin());
+        DistributionSummary summary = getOrCreateDistributionSummary("array_attributes", clientOrigin);
         summary.record(data.getTotalArrayAttributes());
         // Record individual attribute types and counts
         if (data.getArrayAttributes() != null && !data.getArrayAttributes().isEmpty()) {
             for (Map.Entry<String, Integer> entry : data.getArrayAttributes().entrySet()) {
-                Counter counter = getOrCreateCounter("attributes", data.getXAtlanClientOrigin(),
+                Counter counter = getOrCreateCounter("attributes", clientOrigin,
                     "attribute_name", entry.getKey());
                 counter.increment(entry.getValue());
             }
@@ -235,19 +245,20 @@ public class AtlasObservabilityService {
     }
 
     private Counter getOrCreateCounter(String metricName, String clientOrigin, String... additionalTags) {
+        String normalizedClientOrigin = normalizeClientOrigin(clientOrigin);
         String key;
         if (additionalTags != null && additionalTags.length > 0) {
             // Include clientOrigin in cache key to prevent collisions
             String[] allTags = new String[additionalTags.length + 1];
-            allTags[0] = clientOrigin;
+            allTags[0] = normalizedClientOrigin;
             System.arraycopy(additionalTags, 0, allTags, 1, additionalTags.length);
             key = getMetricKey(metricName, allTags);
         } else {
-            key = getMetricKey(metricName, clientOrigin);
+            key = getMetricKey(metricName, normalizedClientOrigin);
         }
         
         return counterCache.computeIfAbsent(key, k -> {
-            Tags tags = Tags.of("client_origin", clientOrigin);
+            Tags tags = Tags.of("client_origin", normalizedClientOrigin);
             if (additionalTags != null && additionalTags.length > 0) {
                 tags = tags.and(Tags.of(additionalTags));
             }
@@ -261,19 +272,20 @@ public class AtlasObservabilityService {
 
     
     private DistributionSummary getOrCreateDistributionSummary(String metricName, String clientOrigin, String... additionalTags) {
+        String normalizedClientOrigin = normalizeClientOrigin(clientOrigin);
         String key;
         if (additionalTags != null && additionalTags.length > 0) {
             // Include clientOrigin in cache key to prevent collisions
             String[] allTags = new String[additionalTags.length + 1];
-            allTags[0] = clientOrigin;
+            allTags[0] = normalizedClientOrigin;
             System.arraycopy(additionalTags, 0, allTags, 1, additionalTags.length);
             key = getMetricKey(metricName, allTags);
         } else {
-            key = getMetricKey(metricName, clientOrigin);
+            key = getMetricKey(metricName, normalizedClientOrigin);
         }
         
         return distributionSummaryCache.computeIfAbsent(key, k -> {
-            Tags tags = Tags.of("client_origin", clientOrigin);
+            Tags tags = Tags.of("client_origin", normalizedClientOrigin);
             if (additionalTags != null && additionalTags.length > 0) {
                 tags = tags.and(Tags.of(additionalTags));
             }

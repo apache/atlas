@@ -1646,42 +1646,44 @@ public abstract class DeleteHandlerV1 {
     public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeHasLineageOnDelete");
         
-        // Timing: Lineage calculation
-        long lineageCalcStart = System.currentTimeMillis();
+        try {
+            // Timing: Lineage calculation
+            long lineageCalcStart = System.currentTimeMillis();
 
-        if (RequestContext.get().skipHasLineageCalculation()) {
-            return;
-        }
+            if (RequestContext.get().skipHasLineageCalculation()) {
+                return;
+            }
 
-        for (AtlasVertex vertexToBeDeleted : vertices) {
-            if (ACTIVE.equals(getStatus(vertexToBeDeleted))) {
-                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(getTypeName(vertexToBeDeleted));
-                boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
-                boolean isCatalog = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
+            for (AtlasVertex vertexToBeDeleted : vertices) {
+                if (ACTIVE.equals(getStatus(vertexToBeDeleted))) {
+                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(getTypeName(vertexToBeDeleted));
+                    boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
+                    boolean isCatalog = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
 
-                if (isCatalog || isProcess) {
+                    if (isCatalog || isProcess) {
 
-                    Iterator<AtlasEdge> edgeIterator = vertexToBeDeleted.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
+                        Iterator<AtlasEdge> edgeIterator = vertexToBeDeleted.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
 
-                    Set<AtlasEdge> edgesToBeDeleted = new HashSet<>();
+                        Set<AtlasEdge> edgesToBeDeleted = new HashSet<>();
 
-                    while (edgeIterator.hasNext()) {
-                        AtlasEdge edge = edgeIterator.next();
-                        if (ACTIVE.equals(getStatus(edge))) {
-                            edgesToBeDeleted.add(edge);
+                        while (edgeIterator.hasNext()) {
+                            AtlasEdge edge = edgeIterator.next();
+                            if (ACTIVE.equals(getStatus(edge))) {
+                                edgesToBeDeleted.add(edge);
+                            }
                         }
-                    }
 
-                    resetHasLineageOnInputOutputDelete(edgesToBeDeleted, vertexToBeDeleted);
+                        resetHasLineageOnInputOutputDelete(edgesToBeDeleted, vertexToBeDeleted);
+                    }
                 }
             }
+            
+            // Record lineage calculation time
+            long lineageCalcTime = System.currentTimeMillis() - lineageCalcStart;
+            RequestContext.get().addLineageCalcTime(lineageCalcTime);
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
-        
-        // Record lineage calculation time
-        long lineageCalcTime = System.currentTimeMillis() - lineageCalcStart;
-        RequestContext.get().addLineageCalcTime(lineageCalcTime);
-        
-        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     public void resetHasLineageOnInputOutputDelete(Collection<AtlasEdge> removedEdges, AtlasVertex deletedVertex) throws AtlasBaseException {
