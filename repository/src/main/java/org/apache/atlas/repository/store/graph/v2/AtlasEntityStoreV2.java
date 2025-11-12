@@ -1695,9 +1695,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                     // Timing: Diff calculation
                     long diffCalcStart = System.currentTimeMillis();
-                    AtlasEntityDiffResult diffResult   = entityComparator.getDiffResult(entity, storedVertex, !storeDifferentialAudits);
+                    AtlasEntityDiffResult diffResult = entityComparator.getDiffResult(entity, storedVertex, !storeDifferentialAudits);
                     long diffCalcTime = System.currentTimeMillis() - diffCalcStart;
-                    observabilityData.setDiffCalcTime(diffCalcTime);
+                    long diffTime = observabilityData.getDiffCalcTime() + diffCalcTime;
+                    observabilityData.setDiffCalcTime(diffTime);
 
                     if (diffResult.hasDifference()) {
                         if (storeDifferentialAudits) {
