@@ -944,15 +944,6 @@ public class RequestContext {
         return esDeferredOperations;
     }
 
-    // Observability timing methods
-    public long getLineageCalcTime() {
-        return lineageCalcTime.get();
-    }
-
-    public void setLineageCalcTime(long lineageCalcTime) {
-        this.lineageCalcTime.set(lineageCalcTime);
-    }
-
     public void addLineageCalcTime(long additionalTime) {
         this.lineageCalcTime.addAndGet(additionalTime);
     }
