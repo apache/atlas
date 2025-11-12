@@ -34,6 +34,7 @@ on:
       - mlh-1240-improve-cm-refresh-master
       - mlh1432
       - mlh-1620
+      - bulkobservabilityy # for testing
 
 jobs:
   # Detect what changed to optimize workflow execution
