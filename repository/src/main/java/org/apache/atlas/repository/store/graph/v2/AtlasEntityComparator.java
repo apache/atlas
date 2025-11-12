@@ -70,6 +70,7 @@ public class AtlasEntityComparator {
 
     private AtlasEntityDiffResult getDiffResult(AtlasEntity updatedEntity, AtlasEntity storedEntity, AtlasVertex storedVertex, boolean findOnlyFirstDiff) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getDiffResult");
+        try{
         AtlasEntity                              diffEntity                       = new AtlasEntity(updatedEntity.getTypeName());
         AtlasEntityType                          entityType                       = typeRegistry.getEntityTypeByName(updatedEntity.getTypeName());
         Map<String, AtlasAttribute>              entityTypeAttributes             = entityType.getAllAttributes();
@@ -256,9 +257,10 @@ public class AtlasEntityComparator {
                 diffEntity.setStatus(AtlasEntity.Status.ACTIVE);
             }
         }
-
-        RequestContext.get().endMetricRecord(metric);
-        return new AtlasEntityDiffResult(diffEntity, sectionsWithDiff > 0, sectionsWithDiff == 1 && hasDiffInCustomAttributes, sectionsWithDiff == 1 && hasDiffInBusinessAttributes);
+            return new AtlasEntityDiffResult(diffEntity, sectionsWithDiff > 0, sectionsWithDiff == 1 && hasDiffInCustomAttributes, sectionsWithDiff == 1 && hasDiffInBusinessAttributes);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
     }
 
     public Map<String, Map<String, Object>> getBusinessMetadataFromEntityAttribute(AtlasEntity entity, AtlasEntityType entityType) {

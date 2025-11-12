@@ -1640,14 +1640,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
         }
 
-        // Initialize observability data
-        long startTime = System.currentTimeMillis();
-        RequestContext requestContext = RequestContext.get();
-        AtlasObservabilityData observabilityData = new AtlasObservabilityData(
-                requestContext.getTraceId(),
-                requestContext.getRequestContextHeaders().get("x-atlan-agent-id"),
-                requestContext.getClientOrigin()
-        );
 
         AtlasPerfTracer perf = null;
 
@@ -1658,6 +1650,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         MetricRecorder metric = RequestContext.get().startMetricRecord("createOrUpdate");
 
         boolean operationRecorded = false;
+
+        // Initialize observability data
+        long startTime = System.currentTimeMillis();
+        RequestContext requestContext = RequestContext.get();
+        AtlasObservabilityData observabilityData = new AtlasObservabilityData(
+                requestContext.getTraceId(),
+                requestContext.getRequestContextHeaders().get("x-atlan-agent-id"),
+                requestContext.getClientOrigin()
+        );
         try {
             // Record operation start
             observabilityService.recordOperationStart("createOrUpdate");
@@ -1772,7 +1773,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
 
             long ingestionStart = System.currentTimeMillis();
-            EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, bulkRequestContext);
+            EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, bulkRequestContext, observabilityData);
             long ingestionTime = System.currentTimeMillis() - ingestionStart;
             observabilityData.setIngestionTime(ingestionTime);
 
@@ -1787,46 +1788,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             long endTime = System.currentTimeMillis();
             observabilityData.setDuration(endTime - startTime);
 
-            // Analyze payload if available
-            // Record observability metrics (low-cardinality only for Prometheus)
-            try {
-                if (entityStream instanceof AtlasEntityStream) {
-                    AtlasEntityStream atlasEntityStream = (AtlasEntityStream) entityStream;
-                    PayloadAnalyzer payloadAnalyzer = new PayloadAnalyzer(typeRegistry);
-                    payloadAnalyzer.analyzePayload(atlasEntityStream.getEntitiesWithExtInfo(), observabilityData);
-                }
-
-                // Record metrics (no high-cardinality fields like traceId, vertexIds, assetGuids)
-                observabilityService.recordCreateOrUpdateDuration(observabilityData);
-                observabilityService.recordPayloadSize(observabilityData);
-                observabilityService.recordPayloadBytes(observabilityData);
-                observabilityService.recordArrayRelationships(observabilityData);
-                observabilityService.recordArrayAttributes(observabilityData);
-                observabilityService.recordTimingMetrics(observabilityData);
-                
-                // Record RequestContext metrics (separate from observability service to avoid coupling)
-                RequestContext reqContext = RequestContext.get();
-                reqContext.endMetricRecord(reqContext.startMetricRecord("entities_count"), observabilityData.getPayloadAssetSize());
-                
-                // Record relationship metrics
-                if (observabilityData.getRelationshipAttributes() != null) {
-                    int totalRelationsCount = 0;
-                    for (Map.Entry<String, Integer> entry : observabilityData.getRelationshipAttributes().entrySet()) {
-                        reqContext.endMetricRecord(reqContext.startMetricRecord("relation:-" + entry.getKey()), entry.getValue());
-                        totalRelationsCount += entry.getValue();
-                    }
-                    if (totalRelationsCount > 0) {
-                        reqContext.endMetricRecord(reqContext.startMetricRecord("relations_count"), totalRelationsCount);
-                    }
-                }
-            } catch (Exception e) {
-                // Log at WARN level to make observability infrastructure problems visible
-                LOG.warn("Failed to record observability metrics: {}", e.getMessage(), e);
-                // Log error details with high-cardinality fields for debugging
-                observabilityService.logErrorDetails(observabilityData, "Failed to record observability metrics", e);
-            }
-
-            // Record operation success
+            recordObservabilityData(requestContext, entityStream, observabilityService, observabilityData);
             observabilityService.recordOperationEnd("createOrUpdate", "success");
             operationRecorded = true;
 
@@ -1840,26 +1802,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             if (!operationRecorded) {
                 String errorCode = e.getAtlasErrorCode() != null ? e.getAtlasErrorCode().getErrorCode() : "UNKNOWN_ERROR";
                 observabilityService.recordOperationFailure("createOrUpdate", errorCode);
-                operationRecorded = true;
             }
             throw e;
-        } catch (Exception e) {
-            // Record operation failure
-            if (!operationRecorded) {
-                observabilityService.recordOperationFailure("createOrUpdate", e.getClass().getSimpleName());
-                operationRecorded = true;
-            }
-            throw new AtlasBaseException(e);
         } finally {
-            // Ensure operationsInProgress is decremented even if recordOperationEnd/Failure wasn't called
-            if (!operationRecorded) {
-                try {
-                    observabilityService.recordOperationFailure("createOrUpdate", "unexpected_error");
-                } catch (Exception e) {
-                    // Log but don't throw - we're in finally block
-                    LOG.warn("Failed to record operation failure in finally block", e);
-                }
-            }
             RequestContext.get().endMetricRecord(metric);
             AtlasPerfTracer.log(perf);
         }
@@ -3304,5 +3249,37 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
+    private void recordObservabilityData(RequestContext requestContext, EntityStream entityStream, AtlasObservabilityService observabilityService, AtlasObservabilityData observabilityData) {
+       try {
+           if (observabilityService == null || observabilityData == null) {
+               return;
+           }
+           analyzePayload(entityStream, observabilityData);
+           observabilityService.recordCreateOrUpdateDuration(observabilityData);
+           observabilityService.recordPayloadSize(observabilityData);
+           observabilityService.recordArrayRelationships(observabilityData);
+           observabilityService.recordArrayAttributes(observabilityData);
+           observabilityService.recordTimingMetrics(observabilityData);
 
+           int totalRelationsCount = 0;
+           for (Map.Entry<String, Integer> entry : observabilityData.getRelationshipAttributes().entrySet()) {
+               requestContext.endMetricRecord(requestContext.startMetricRecord("relation:-" + entry.getKey()), entry.getValue());
+               totalRelationsCount += entry.getValue();
+           }
+           if (totalRelationsCount > 0) {
+               requestContext.endMetricRecord(requestContext.startMetricRecord("relations_count"), totalRelationsCount);
+           }
+
+       }catch (Exception e){
+              LOG.error("Error recording observability data", e);
+       }
+    }
+
+    private void analyzePayload(EntityStream entityStream, AtlasObservabilityData observabilityData){
+        if (entityStream instanceof AtlasEntityStream) {
+            AtlasEntityStream atlasEntityStream = (AtlasEntityStream) entityStream;
+            PayloadAnalyzer payloadAnalyzer = new PayloadAnalyzer(typeRegistry);
+            payloadAnalyzer.analyzePayload(atlasEntityStream.getEntitiesWithExtInfo(), observabilityData);
+        }
+    }
 }

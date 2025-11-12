@@ -43,6 +43,7 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
+import org.apache.atlas.observability.AtlasObservabilityData;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
@@ -344,12 +345,13 @@ public class EntityGraphMapper {
 
     public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context,
                                                                   final boolean isPartialUpdate,
-                                                                  BulkRequestContext bulkRequestContext) throws AtlasBaseException {
+                                                                  BulkRequestContext bulkRequestContext, AtlasObservabilityData observabilityData) throws AtlasBaseException {
 
         MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttributesAndClassifications");
 
         EntityMutationResponse resp = new EntityMutationResponse();
         RequestContext reqContext = RequestContext.get();
+        long lineageTime = 0L;
 
         if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore())) {
             restoreHandlerV1.restoreEntities(context.getEntitiesToRestore());
@@ -415,13 +417,18 @@ public class EntityGraphMapper {
                         if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore())) {
                             isRestoreEntity = context.getEntitiesToRestore().contains(vertex);
                         }
+
+                        long startTime = System.currentTimeMillis();
                         addHasLineage(inOutEdges, isRestoreEntity);
+                        lineageTime += (System.currentTimeMillis() - startTime);
                     }
 
                     Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
 
                     if (removedEdges != null && removedEdges.size() > 0) {
+                        long startTime = System.currentTimeMillis();
                         deleteDelegate.getHandler().resetHasLineageOnInputOutputDelete(removedEdges, null);
+                        lineageTime += (System.currentTimeMillis() - startTime);
                     }
 
                     reqContext.cache(createdEntity);
@@ -506,19 +513,25 @@ public class EntityGraphMapper {
                     // Add hasLineage for newly created edges
                     Set<AtlasEdge> newlyCreatedEdges = getNewCreatedInputOutputEdges(guid);
                     if (newlyCreatedEdges.size() > 0) {
+                        long startTime = System.currentTimeMillis();
                         addHasLineage(newlyCreatedEdges, false);
+                        lineageTime += (System.currentTimeMillis() - startTime);
                     }
 
                     // Add hasLineage for restored edges
                     if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore()) && context.getEntitiesToRestore().contains(vertex)) {
                         Set<AtlasEdge> restoredInputOutputEdges = getRestoredInputOutputEdges(vertex);
+                        long startTime = System.currentTimeMillis();
                         addHasLineage(restoredInputOutputEdges, true);
+                        lineageTime += (System.currentTimeMillis() - startTime);
                     }
 
                     Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
 
                     if (removedEdges != null && removedEdges.size() > 0) {
+                        long startTime = System.currentTimeMillis();
                         deleteDelegate.getHandler().resetHasLineageOnInputOutputDelete(removedEdges, null);
+                        lineageTime += (System.currentTimeMillis() - startTime);
                     }
 
                     reqContext.cache(updatedEntity);
@@ -566,7 +579,9 @@ public class EntityGraphMapper {
                 // Update __hasLineage for edges impacted during append operation
                 Set<AtlasEdge> newlyCreatedEdges = getNewCreatedInputOutputEdges(guid);
                 if (CollectionUtils.isNotEmpty(newlyCreatedEdges)) {
+                    long startTime = System.currentTimeMillis();
                     addHasLineage(newlyCreatedEdges, false);
+                    lineageTime += (System.currentTimeMillis() - startTime);
                 }
             }
         }
@@ -581,7 +596,9 @@ public class EntityGraphMapper {
                 // Update __hasLineage for edges impacted during remove operation
                 Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
                 if (CollectionUtils.isNotEmpty(removedEdges)) {
+                    long startTime = System.currentTimeMillis();
                     deleteDelegate.getHandler().resetHasLineageOnInputOutputDelete(removedEdges, null);
+                    lineageTime += (System.currentTimeMillis() - startTime);
                 }
             }
         }
@@ -605,6 +622,10 @@ public class EntityGraphMapper {
         }
 
         RequestContext.get().endMetricRecord(metric);
+
+        if (observabilityData != null) {
+            observabilityData.setLineageCalcTime(lineageTime);
+        }
 
         return resp;
     }

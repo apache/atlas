@@ -127,8 +127,6 @@ public class AtlasObservabilityService {
         recordTimingMetric("lineage_calc", data.getLineageCalcTime(), clientOrigin);
         recordTimingMetric("validation", data.getValidationTime(), clientOrigin);
         recordTimingMetric("ingestion", data.getIngestionTime(), clientOrigin);
-//        recordTimingMetric("notification", data.getNotificationTime(), clientOrigin);
-//        recordTimingMetric("audit_log", data.getAuditLogTime(), clientOrigin);
     }
     
     private void recordTimingMetric(String operation, long durationMs, String clientOrigin) {
