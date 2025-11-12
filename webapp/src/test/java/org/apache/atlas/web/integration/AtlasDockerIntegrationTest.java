@@ -248,7 +248,7 @@ public class AtlasDockerIntegrationTest {
             atlas.graph.storage.hostname=cassandra
             atlas.graph.storage.cql.port=9042
             atlas.graph.storage.cql.keyspace=atlas
-            atlas.graph.storage.replication-factor=1
+            atlas.graph.storage.cql.replication-factor=1
             
             atlas.graph.index.search.backend=elasticsearch
             atlas.graph.index.search.hostname=elasticsearch:9200
