@@ -3275,7 +3275,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private void analyzePayload(EntityStream entityStream, AtlasObservabilityData observabilityData){
         if (entityStream instanceof AtlasEntityStream) {
             AtlasEntityStream atlasEntityStream = (AtlasEntityStream) entityStream;
-            PayloadAnalyzer payloadAnalyzer = new PayloadAnalyzer(typeRegistry);
+            PayloadAnalyzer payloadAnalyzer = new PayloadAnalyzer();
             payloadAnalyzer.analyzePayload(atlasEntityStream.getEntitiesWithExtInfo(), observabilityData);
         }
     }

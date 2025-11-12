@@ -11,10 +11,8 @@ import java.util.*;
  * Analyzes payload for observability metrics.
  */
 public class PayloadAnalyzer {
-    private final AtlasTypeRegistry typeRegistry;
-    
-    public PayloadAnalyzer(AtlasTypeRegistry typeRegistry) {
-        this.typeRegistry = typeRegistry;
+
+    public PayloadAnalyzer() {
     }
     
     public void analyzePayload(AtlasEntity.AtlasEntitiesWithExtInfo entitiesWithExtInfo, AtlasObservabilityData data) {
