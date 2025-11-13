@@ -1646,6 +1646,8 @@ public abstract class DeleteHandlerV1 {
     public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeHasLineageOnDelete");
 
+        long lineageCalcStart = System.currentTimeMillis();
+
         if (RequestContext.get().skipHasLineageCalculation()) {
             return;
         }
@@ -1673,11 +1675,17 @@ public abstract class DeleteHandlerV1 {
                 }
             }
         }
+        // Record lineage calculation time
+        long lineageCalcTime = System.currentTimeMillis() - lineageCalcStart;
+        RequestContext.get().addLineageCalcTime(lineageCalcTime);
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     public void resetHasLineageOnInputOutputDelete(Collection<AtlasEdge> removedEdges, AtlasVertex deletedVertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("resetHasLineageOnInputOutputDelete");
+
+        // Timing: Lineage calculation
+        long lineageCalcStart = System.currentTimeMillis();
 
         for (AtlasEdge atlasEdge : removedEdges) {
 
@@ -1754,6 +1762,9 @@ public abstract class DeleteHandlerV1 {
                 }
             }
         }
+        // Record lineage calculation time
+        long lineageCalcTime = System.currentTimeMillis() - lineageCalcStart;
+        RequestContext.get().addLineageCalcTime(lineageCalcTime);
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 

@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 
@@ -80,6 +81,9 @@ public class RequestContext {
 
     private final Map<String, Set<AtlasRelationship>> relationshipMutationMap = new HashMap<>();
     private final Set<String> edgeLabels = new HashSet<>();
+    
+    // Observability timing fields
+    private final AtomicLong lineageCalcTime = new AtomicLong(0L);
 
     private String user;
     private Set<String> userGroups;
@@ -195,6 +199,9 @@ public class RequestContext {
         esDeferredOperations.clear();
         this.cassandraTagOperations.clear();
         this.allInternalAttributesMap.clear();
+
+        // Reset observability timing fields
+        this.lineageCalcTime.set(0L);
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
@@ -935,6 +942,14 @@ public class RequestContext {
 
     public List<ESDeferredOperation> getESDeferredOperations() {
         return esDeferredOperations;
+    }
+
+    public void addLineageCalcTime(long additionalTime) {
+        this.lineageCalcTime.addAndGet(additionalTime);
+    }
+
+    public long getLineageCalcTime() {
+        return this.lineageCalcTime.get();
     }
 
 }

@@ -43,6 +43,7 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
+import org.apache.atlas.observability.AtlasObservabilityData;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
@@ -344,7 +345,7 @@ public class EntityGraphMapper {
 
     public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context,
                                                                   final boolean isPartialUpdate,
-                                                                  BulkRequestContext bulkRequestContext) throws AtlasBaseException {
+                                                                  BulkRequestContext bulkRequestContext, AtlasObservabilityData observabilityData) throws AtlasBaseException {
 
         MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttributesAndClassifications");
 
@@ -605,6 +606,10 @@ public class EntityGraphMapper {
         }
 
         RequestContext.get().endMetricRecord(metric);
+
+        if (observabilityData != null) {
+            observabilityData.setLineageCalcTime(RequestContext.get().getLineageCalcTime());
+        }
 
         return resp;
     }
@@ -6186,6 +6191,9 @@ public class EntityGraphMapper {
 
     public void addHasLineage(Set<AtlasEdge> inputOutputEdges, boolean isRestoreEntity) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addHasLineage");
+        
+        // Timing: Lineage calculation
+        long lineageCalcStart = System.currentTimeMillis();
 
         for (AtlasEdge atlasEdge : inputOutputEdges) {
 
@@ -6232,6 +6240,11 @@ public class EntityGraphMapper {
                 }
             }
         }
+        
+        // Record lineage calculation time
+        long lineageCalcTime = System.currentTimeMillis() - lineageCalcStart;
+        RequestContext.get().addLineageCalcTime(lineageCalcTime);
+        
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
