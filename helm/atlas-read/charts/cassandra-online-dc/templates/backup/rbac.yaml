@@ -8,7 +8,6 @@ metadata:
   namespace: {{ .Values.Namespace }}
   labels:
     app: {{ template "cassandra.name" . }}
-    chart: {{ template "cassandra.chart" . }}
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
 ---
@@ -21,7 +20,6 @@ metadata:
   namespace: {{ .Values.Namespace }}
   labels:
     app: {{ template "cassandra.name" . }}
-    chart: {{ template "cassandra.chart" . }}
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
 rules:
@@ -39,7 +37,6 @@ metadata:
   namespace: {{ .Values.Namespace }}
   labels:
     app: {{ template "cassandra.name" . }}
-    chart: {{ template "cassandra.chart" . }}
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
 roleRef:

@@ -8,7 +8,6 @@ metadata:
   namespace: {{ template "logstash.namespace" . }}
   labels:
     app: "{{ template "logstash.fullname" . }}"
-    chart: "{{ .Chart.Name }}"
     heritage: {{ .Release.Service | quote }}
     release: {{ .Release.Name | quote }}
   annotations:
@@ -27,7 +26,6 @@ spec:
 {{- end }}
   selector:
     app: "{{ template "logstash.fullname" . }}"
-    chart: "{{ .Chart.Name }}"
     release: {{ .Release.Name | quote }}
   ports:
 {{ toYaml .Values.service.ports | indent 4 }}
