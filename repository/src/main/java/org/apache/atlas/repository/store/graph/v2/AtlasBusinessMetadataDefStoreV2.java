@@ -386,7 +386,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         AtlasBusinessMetadataDef currentBusinessMetadataDef = toBusinessMetadataDef(vertex);
 
         // Check if assets are attached with the attributes that are being archived
-        checkAttributesAttachedToAssets(businessMetadataDef);
+        checkAttributesAttachedToAssets(businessMetadataDef, currentBusinessMetadataDef);
 
         // Check to verify that in an update call we only allow addition of new entity types, not deletion of existing
         // entity types
@@ -441,33 +441,49 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         }
     }
 
-    private void checkAttributesAttachedToAssets(AtlasBusinessMetadataDef updatedDef) throws AtlasBaseException {
+    private void checkAttributesAttachedToAssets(AtlasBusinessMetadataDef updatedDef, AtlasBusinessMetadataDef currentDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasBusinessMetadataDefStoreV2.checkAttributesAttachedToAssets({})", updatedDef.getName());
         }
 
-        if (CollectionUtils.isEmpty(updatedDef.getAttributeDefs())) {
+        if (CollectionUtils.isEmpty(currentDef.getAttributeDefs())) {
             return;
         }
 
-        for (AtlasStructDef.AtlasAttributeDef attribute : updatedDef.getAttributeDefs()) {
-            String attributeName = attribute.getName();
-            boolean isArchived = isArchivedAttribute(attribute);
+        Map<String, AtlasStructDef.AtlasAttributeDef> updatedAttributeMap = new HashMap<>();
 
-            if (isArchived) {
-                String vertexPropertyName = AtlasStructType.AtlasAttribute.generateVertexPropertyName(attribute);
-                Set<String> applicableTypes = AtlasJson.fromJson(
-                        attribute.getOption(AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES),
-                        Set.class
+        if (CollectionUtils.isNotEmpty(updatedDef.getAttributeDefs())) {
+            for (AtlasStructDef.AtlasAttributeDef attributeDef : updatedDef.getAttributeDefs()) {
+                updatedAttributeMap.put(attributeDef.getName(), attributeDef);
+            }
+        }
+
+        for (AtlasStructDef.AtlasAttributeDef currentAttribute : currentDef.getAttributeDefs()) {
+            AtlasStructDef.AtlasAttributeDef updatedAttr = updatedAttributeMap.get(currentAttribute.getName());
+            if (updatedAttr == null) {
+                continue;
+            }
+
+            //  Diff Calculation: Check if attribute is being archived now but was not archived earlier
+            boolean previouslyArchived = isArchivedAttribute(currentAttribute);
+            boolean currentlyArchived = isArchivedAttribute(updatedAttr);
+            boolean isBeingArchived = !previouslyArchived && currentlyArchived;
+            if (!isBeingArchived) {
+                continue;
+            }
+
+            String vertexPropertyName = AtlasStructType.AtlasAttribute.generateVertexPropertyName(currentAttribute);
+            Set<String> applicableTypes = AtlasJson.fromJson(
+                    currentAttribute.getOption(AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES),
+                    Set.class
+            );
+
+            if (isBusinessAttributePresent(vertexPropertyName, applicableTypes)) {
+                LOG.warn("Business metadata attribute '{}' cannot be archived as it is currently attached to one or more assets", currentAttribute.getName());
+                throw new AtlasBaseException(
+                    AtlasErrorCode.TYPE_HAS_REFERENCES,
+                        currentAttribute.getName()
                 );
-
-                if (isBusinessAttributePresent(vertexPropertyName, applicableTypes)) {
-                    LOG.warn("Business metadata attribute '{}' cannot be archived as it is currently attached to one or more assets", attributeName);
-                    throw new AtlasBaseException(
-                        AtlasErrorCode.TYPE_HAS_REFERENCES,
-                            attributeName
-                    );
-                }
             }
         }
 
