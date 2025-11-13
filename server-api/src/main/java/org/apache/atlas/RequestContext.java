@@ -948,4 +948,8 @@ public class RequestContext {
         this.lineageCalcTime.addAndGet(additionalTime);
     }
 
+    public long getLineageCalcTime() {
+        return this.lineageCalcTime.get();
+    }
+
 }
