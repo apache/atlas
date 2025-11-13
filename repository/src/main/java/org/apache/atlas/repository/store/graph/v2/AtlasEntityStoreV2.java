@@ -1802,6 +1802,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 observabilityService.recordOperationFailure("createOrUpdate", errorCode);
             }
             throw e;
+        } catch (Exception e) {
+            // Record operation failure for unchecked exceptions (RuntimeException, NullPointerException, etc.)
+            if (!operationRecorded) {
+                String errorType = e.getClass().getSimpleName();
+                observabilityService.recordOperationFailure("createOrUpdate", errorType);
+                observabilityService.logErrorDetails(observabilityData, "Unchecked exception in createOrUpdate", e);
+            }
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Unexpected error in createOrUpdate: " + e.getMessage());
         } finally {
             RequestContext.get().endMetricRecord(metric);
             AtlasPerfTracer.log(perf);
