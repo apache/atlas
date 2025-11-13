@@ -3268,6 +3268,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                requestContext.endMetricRecord(requestContext.startMetricRecord("relations_count"), totalRelationsCount);
            }
 
+           requestContext.endMetricRecord(requestContext.startMetricRecord("entities_count"), observabilityData.getPayloadAssetSize());
+
        }catch (Exception e){
               LOG.error("Error recording observability data", e);
        }
