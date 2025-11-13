@@ -385,6 +385,9 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         // Load up current struct definition for matching attributes
         AtlasBusinessMetadataDef currentBusinessMetadataDef = toBusinessMetadataDef(vertex);
 
+        // Check if assets are attached with the attributes that are being archived
+        checkAttributesAttachedToAssets(businessMetadataDef);
+
         // Check to verify that in an update call we only allow addition of new entity types, not deletion of existing
         // entity types
         if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
@@ -435,6 +438,41 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
                     throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, typeName);
                 }
             }
+        }
+    }
+
+    private void checkAttributesAttachedToAssets(AtlasBusinessMetadataDef updatedDef) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AtlasBusinessMetadataDefStoreV2.checkAttributesAttachedToAssets({})", updatedDef.getName());
+        }
+
+        if (CollectionUtils.isEmpty(updatedDef.getAttributeDefs())) {
+            return;
+        }
+
+        for (AtlasStructDef.AtlasAttributeDef attribute : updatedDef.getAttributeDefs()) {
+            String attributeName = attribute.getName();
+            boolean isArchived = isArchivedAttribute(attribute);
+
+            if (isArchived) {
+                String vertexPropertyName = AtlasStructType.AtlasAttribute.generateVertexPropertyName(attribute);
+                Set<String> applicableTypes = AtlasJson.fromJson(
+                        attribute.getOption(AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES),
+                        Set.class
+                );
+
+                if (isBusinessAttributePresent(vertexPropertyName, applicableTypes)) {
+                    LOG.warn("Business metadata attribute '{}' cannot be archived as it is currently attached to one or more assets", attributeName);
+                    throw new AtlasBaseException(
+                        AtlasErrorCode.TYPE_HAS_REFERENCES,
+                            attributeName
+                    );
+                }
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AtlasBusinessMetadataDefStoreV2.checkAttributesAttachedToAssets({})", updatedDef.getName());
         }
     }
 
