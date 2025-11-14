@@ -13,7 +13,7 @@ services:
     networks:
       - atlas
     volumes:
-      - ~/.m2:/home/atlas/.m2:delegated
+      - /home/paresh/.m2:/home/atlas/.m2:delegated
       - ./scripts:/home/atlas/scripts
       - ./patches:/home/atlas/patches
       - ./dist:/home/atlas/dist
