@@ -420,19 +420,13 @@ public class RestoreHandlerV1 {
 
     protected void restoreVertex(AtlasVertex instanceVertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("RestoreHandlerV1.restoreVertex");
-        boolean skipProcessEdgeRestoration = RequestContext.get().isSkipProcessEdgeRestoration() ||
-                AtlasConfiguration.ATLAS_RELATIONSHIP_SKIP_PROCESS_EDGE_RESTORATION.getBoolean();
         try {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Setting the external references to {} to null(removing edges)", string(instanceVertex));
             }
             Iterable<AtlasEdge> incomingEdges;
 
-        // Restore external references to this vertex - incoming edges from lineage or glossary term edges
-            if (skipProcessEdgeRestoration)
-                    incomingEdges = instanceVertex.getInEdges(PROCESS_EDGE_LABELS);
-            else
-                    incomingEdges = instanceVertex.getInEdges(null);
+           incomingEdges = instanceVertex.getInEdges(PROCESS_EDGE_LABELS);
 
             for (AtlasEdge edge : incomingEdges) {
                 AtlasEntity.Status edgeStatus = getStatus(edge);

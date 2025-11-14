@@ -2891,53 +2891,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public void repairHasLineageByIds(List<String> vertexIds) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageByIds");
-
-        if (CollectionUtils.isEmpty(vertexIds)) {
-            LOG.warn("repairHasLineageByIds: No guids provided");
-            return;
-        }
-
-        for (String vertexId : vertexIds) {
-            if (StringUtils.isEmpty(vertexId)) {
-                LOG.warn("repairHasLineageByIds: Skipping empty guid");
-                continue;
-            }
-
-            AtlasVertex entityVertex = graph.getVertex(vertexId);
-            
-            if (entityVertex == null) {
-                LOG.warn("repairHasLineageByIds: Vertex not found for guid: {}", vertexId);
-                continue;
-            }
-
-            String typeName = getTypeName(entityVertex);
-            AtlasEntityType type = typeRegistry.getEntityTypeByName(typeName);
-            
-            if (type == null) {
-                LOG.warn("repairHasLineageByIds: TypeName is empty for vertexId: {}", vertexId);
-                continue;
-            }
-
-            // Check if the entity is a Process type
-            if (PROCESS_ENTITY_TYPE.equals(typeName) || type.isSubTypeOf(PROCESS_ENTITY_TYPE)) {
-                // For Process: check if it has at least one input vertex and one output vertex active
-                repairHasLineageForProcess(vertexId, entityVertex);
-            } else {
-                // For Asset: follow the repairHasLineageForAsset logic
-                repairHasLineageForAssetByVertex(vertexId, entityVertex);
-            }
-        }
-
-        // Notify differential entity changes (for entities with hasLineage attribute changes)
-        EntityMutationResponse response = new EntityMutationResponse();
-        entityChangeNotifier.notifyDifferentialEntityChanges(response, false);
-
-        RequestContext.get().endMetricRecord(metricRecorder);
-    }
-
-    @GraphTransaction
     public void repairHasLineageByIds(Map<String, String> typeByVertexId) throws AtlasBaseException {
       AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageByIdsWithTypes");
 

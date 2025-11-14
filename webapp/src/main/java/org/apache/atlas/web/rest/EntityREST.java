@@ -1704,7 +1704,7 @@ public class EntityREST {
      * This endpoint accepts a list of vertex IDs and repairs the hasLineage flag for both
      * Process and Asset entities based on their current lineage state.
      * 
-     * @param vertexIds List of vertex IDs (guids) to repair
+     * @param typeByVertexId Map of vertex IDs to repair
      * @throws AtlasBaseException if repair operation fails
      */
     @POST

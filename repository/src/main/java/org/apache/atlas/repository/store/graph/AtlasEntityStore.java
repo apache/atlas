@@ -366,7 +366,7 @@ public interface AtlasEntityStore {
 
     void repairHasLineage(AtlasHasLineageRequests requests) throws AtlasBaseException;
 
-    void repairHasLineageByIds(List<String> guids) throws AtlasBaseException;
+    void repairHasLineageByIds(Map<String, String> typeByVertexId) throws AtlasBaseException;
 
     void repairMeaningAttributeForTerms(List<String> termGuids) throws AtlasBaseException;
 
