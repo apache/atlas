@@ -1712,21 +1712,21 @@ public class EntityREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Timed
-    public void repairHasLineageByIds(List<String> vertexIds) throws AtlasBaseException {
+    public void repairHasLineageByIds(Map<String, String> typeByVertexId) throws AtlasBaseException {
         
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairHasLineageByIds(vertexIds count=" + 
-                        (vertexIds != null ? vertexIds.size() : 0) + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairHasLineageByIds(typeByVertexId count=" +
+                        (typeByVertexId != null ? typeByVertexId.size() : 0) + ")");
             }
 
-            if (CollectionUtils.isEmpty(vertexIds)) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Vertex IDs list cannot be empty");
+            if (typeByVertexId == null || typeByVertexId.isEmpty()) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "typeByVertexId map cannot be empty");
             }
 
-            entitiesStore.repairHasLineageByIds(vertexIds);
+            entitiesStore.repairHasLineageByIds(typeByVertexId);
 
 
         } catch (AtlasBaseException e) {

@@ -44,6 +44,14 @@ public class AtlasDistributedTaskNotificationSender {
         return  notification;
     }
 
+    public AtlasDistributedTaskNotification createHasLineageCalculationTasks(Map<String, String> typeByVertexId) {
+        Map<String, Object> taskParams = new HashMap<>();
+        taskParams.put("typeByVertexId", typeByVertexId);
+        AtlasDistributedTaskNotification notification = new AtlasDistributedTaskNotification(AtlasDistributedTaskNotification.AtlasTaskType.CALCULATE_HAS_LINEAGE, taskParams);
+
+        return  notification;
+    }
+
     public void send(AtlasDistributedTaskNotification notification) {
         try {
             notificationInterface.send(NotificationInterface.NotificationType.ATLAS_DISTRIBUTED_TASKS, notification);

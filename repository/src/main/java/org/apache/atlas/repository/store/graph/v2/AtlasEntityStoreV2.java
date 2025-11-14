@@ -1757,15 +1757,19 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             return ret;
         } finally {
             if (ENABLE_DISTRIBUTED_HAS_LINEAGE_CALCULATION.getBoolean() && ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()) {
-                Set<String> vertexIds = getRemovedInputOutputVertices();
-                //Batch the vertexIds and send notification
-                if (vertexIds != null && !vertexIds.isEmpty()) {
-                    List<String> vertexIdList = new ArrayList<>(vertexIds);
+                Map<String, String> typeByVertexId = getRemovedInputOutputVertexTypeMap();
+                // Batch and send notifications
+                if (typeByVertexId != null && !typeByVertexId.isEmpty()) {
+                    List<Map.Entry<String, String>> entries = new ArrayList<>(typeByVertexId.entrySet());
                     int batchSize = 1000;
-                    for (int i = 0; i < vertexIdList.size(); i += batchSize) {
-                        int endIndex = Math.min(i + batchSize, vertexIdList.size());
-                        List<String> batch = vertexIdList.subList(i, endIndex);
-                        sendvertexIdsForHaslineageCalculation(new HashSet<>(batch));
+                    for (int i = 0; i < entries.size(); i += batchSize) {
+                        int endIndex = Math.min(i + batchSize, entries.size());
+                        Map<String, String> batchMap = new HashMap<>();
+                        for (int j = i; j < endIndex; j++) {
+                            Map.Entry<String, String> e = entries.get(j);
+                            batchMap.put(e.getKey(), e.getValue());
+                        }
+                        sendvertexIdsForHaslineageCalculation(batchMap);
                     }
                 }
             }
@@ -1798,11 +1802,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
-    private void sendvertexIdsForHaslineageCalculation(Set<String> vertexIds) {
+    private void sendvertexIdsForHaslineageCalculation(Map<String, String> typeByVertexId) {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("sendvertexIdsForHaslineageCalculation");
 
         try {
-            AtlasDistributedTaskNotification notification = taskNotificationSender.createHasLineageCalculationTasks(vertexIds);
+            AtlasDistributedTaskNotification notification = taskNotificationSender.createHasLineageCalculationTasks(typeByVertexId);
             taskNotificationSender.send(notification);
         } finally {
             RequestContext.get().endMetricRecord(metric);
@@ -2261,15 +2265,18 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 response.addEntity(UPDATE, entity);
             }
         if (ENABLE_DISTRIBUTED_HAS_LINEAGE_CALCULATION.getBoolean() && ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()) {
-            Set<String> vertexIds = getRemovedInputOutputVertices();
-            //Batch the vertexIds and send notification
-            if (vertexIds != null && !vertexIds.isEmpty()) {
-                List<String> vertexIdList = new ArrayList<>(vertexIds);
+            Map<String, String> typeByVertexId = getRemovedInputOutputVertexTypeMap();
+            if (typeByVertexId != null && !typeByVertexId.isEmpty()) {
+                List<Map.Entry<String, String>> entries = new ArrayList<>(typeByVertexId.entrySet());
                 int batchSize = 1000;
-                for (int i = 0; i < vertexIdList.size(); i += batchSize) {
-                    int endIndex = Math.min(i + batchSize, vertexIdList.size());
-                    List<String> batch = vertexIdList.subList(i, endIndex);
-                    sendvertexIdsForHaslineageCalculation(new HashSet<>(batch));
+                for (int i = 0; i < entries.size(); i += batchSize) {
+                    int endIndex = Math.min(i + batchSize, entries.size());
+                    Map<String, String> batchMap = new HashMap<>();
+                    for (int j = i; j < endIndex; j++) {
+                        Map.Entry<String, String> e = entries.get(j);
+                        batchMap.put(e.getKey(), e.getValue());
+                    }
+                    sendvertexIdsForHaslineageCalculation(batchMap);
                 }
             }
         }
@@ -2309,6 +2316,33 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
 
         return vertexIds;
+    }
+
+    private Map<String, String> getRemovedInputOutputVertexTypeMap() {
+        Collection<List<Object>> removedElements = RequestContext.get().getRemovedElementsMap().values();
+        Map<String, String> typeByVertexId = new HashMap<>();
+
+        if (CollectionUtils.isNotEmpty(removedElements)) {
+            // Collect all edges
+            List<AtlasEdge> removedEdges = removedElements.stream()
+                    .flatMap(List::stream)
+                    .map(x -> (AtlasEdge) x)
+                    .toList();
+
+            // Collect vertex IDs and types from both sides of edges
+            for (AtlasEdge edge : removedEdges) {
+                AtlasVertex outV = edge.getOutVertex();
+                AtlasVertex inV = edge.getInVertex();
+                if (outV != null) {
+                    typeByVertexId.put(outV.getIdForDisplay(), getTypeName(outV));
+                }
+                if (inV != null) {
+                    typeByVertexId.put(inV.getIdForDisplay(), getTypeName(inV));
+                }
+            }
+        }
+
+        return typeByVertexId;
     }
 
     private EntityMutationResponse restoreVertices(Collection<AtlasVertex> restoreCandidates) throws AtlasBaseException {
@@ -2901,6 +2935,53 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         entityChangeNotifier.notifyDifferentialEntityChanges(response, false);
 
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    @GraphTransaction
+    public void repairHasLineageByIds(Map<String, String> typeByVertexId) throws AtlasBaseException {
+      AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageByIdsWithTypes");
+
+      if (typeByVertexId == null || typeByVertexId.isEmpty()) {
+          LOG.warn("repairHasLineageByIdsWithTypes: No entries provided");
+          RequestContext.get().endMetricRecord(metricRecorder);
+          return;
+      }
+
+      for (Map.Entry<String, String> entry : typeByVertexId.entrySet()) {
+          String vertexId = entry.getKey();
+          String providedTypeName = entry.getValue();
+
+          if (StringUtils.isEmpty(vertexId) || StringUtils.isEmpty(providedTypeName)) {
+              LOG.warn("repairHasLineageByIdsWithTypes: Skipping empty guid or typeName");
+              continue;
+          }
+
+          AtlasVertex entityVertex = graph.getVertex(vertexId);
+          if (entityVertex == null) {
+              LOG.warn("repairHasLineageByIdsWithTypes: Vertex not found for guid: {}", vertexId);
+              continue;
+          }
+
+          AtlasEntityType type = typeRegistry.getEntityTypeByName(providedTypeName);
+          if (type == null) {
+              LOG.warn("repairHasLineageByIdsWithTypes: Provided typeName {} not found for guid {}", providedTypeName, vertexId);
+              // Default to asset path if provided type is unknown
+              repairHasLineageForAssetByVertex(vertexId, entityVertex);
+              continue;
+          }
+
+          if (PROCESS_ENTITY_TYPE.equals(providedTypeName) || type.isSubTypeOf(PROCESS_ENTITY_TYPE)) {
+              repairHasLineageForProcess(vertexId, entityVertex);
+          } else {
+              repairHasLineageForAssetByVertex(vertexId, entityVertex);
+          }
+      }
+
+      // Notify differential entity changes (for entities with hasLineage attribute changes)
+      EntityMutationResponse response = new EntityMutationResponse();
+      entityChangeNotifier.notifyDifferentialEntityChanges(response, false);
+
+      RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void repairHasLineageForProcess(String vertexId, AtlasVertex processVertex) {
