@@ -11,6 +11,7 @@ metadata:
   namespace: {{ include "logstash.namespace" . }}
   labels:
     app: {{ $fullName | quote}}
+    chart: "{{ .Chart.Name }}"
     heritage: {{ .Release.Service | quote }}
     release: {{ .Release.Name | quote }}
 {{- with .Values.ingress.annotations }}

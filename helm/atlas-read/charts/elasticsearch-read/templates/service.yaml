@@ -13,6 +13,7 @@ metadata:
   labels:
     heritage: {{ .Release.Service | quote }}
     release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}"
     app: "{{ template "elasticsearch.uname" . }}"
 {{- if .Values.service.labels }}
 {{ toYaml .Values.service.labels | indent 4}}
@@ -24,6 +25,7 @@ spec:
   selector:
     heritage: {{ .Release.Service | quote }}
     release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}"
     app: "{{ template "elasticsearch.uname" . }}"
   ports:
   - name: {{ .Values.service.httpPortName | default "http" }}
@@ -53,6 +55,7 @@ metadata:
   labels:
     heritage: {{ .Release.Service | quote }}
     release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}"
     app: "{{ template "elasticsearch.uname" . }}"
 {{- if .Values.service.labelsHeadless }}
 {{ toYaml .Values.service.labelsHeadless | indent 4 }}

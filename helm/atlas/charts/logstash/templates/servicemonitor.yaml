@@ -7,6 +7,7 @@ metadata:
   namespace: {{ template "logstash.namespace" . }}
   labels:
     app: "{{ template "logstash.fullname" . }}"
+    chart: "{{ template "logstash.chart" . }}"
     heritage: {{ .Release.Service | quote }}
     release: {{ .Release.Name | quote }}
     {{- if .Values.serviceMonitor.labels }}

@@ -7,6 +7,7 @@ metadata:
   namespace: {{ template "logstash.namespace" . }}
   labels:
     app: "{{ template "logstash.fullname" . }}"
+    chart: "{{ .Chart.Name }}"
     heritage: {{ .Release.Service | quote }}
     release: {{ .Release.Name | quote }}
     {{- range $key, $value := .Values.labels }}
@@ -38,6 +39,7 @@ spec:
       name: "{{ template "logstash.fullname" . }}"
       labels:
         app: "{{ template "logstash.fullname" . }}"
+        chart: "{{ .Chart.Name }}"
         heritage: {{ .Release.Service | quote }}
         release: {{ .Release.Name | quote }}
         {{- range $key, $value := .Values.labels }}

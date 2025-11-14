@@ -8,6 +8,7 @@ metadata:
   labels:
     heritage: {{ .Release.Service | quote }}
     release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}"
     app: "{{ template "elasticsearch.uname" . }}"
     {{- range $key, $value := .Values.labels }}
     {{ $key }}: {{ $value | quote }}
@@ -40,6 +41,7 @@ spec:
       labels:
         heritage: {{ .Release.Service | quote }}
         release: {{ .Release.Name | quote }}
+        chart: "{{ .Chart.Name }}"
         app: "{{ template "elasticsearch.uname" . }}"
         {{- range $key, $value := .Values.labels }}
         {{ $key }}: {{ $value | quote }}

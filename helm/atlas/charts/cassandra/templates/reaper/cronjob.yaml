@@ -6,6 +6,7 @@ metadata:
   namespace: {{ .Values.Namespace }}
   labels:
     app: {{ template "cassandra.name" . }}-reaper
+    chart: {{ template "cassandra.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:

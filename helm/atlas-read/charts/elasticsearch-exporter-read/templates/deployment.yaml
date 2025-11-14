@@ -5,6 +5,7 @@ metadata:
   name: {{ template "elasticsearch-exporter.fullname" . }}
   namespace: {{ .Values.Namespace }}
   labels:
+    chart: {{ template "elasticsearch-exporter.chart" . }}
     app: {{ template "elasticsearch-exporter.name" . }}
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"

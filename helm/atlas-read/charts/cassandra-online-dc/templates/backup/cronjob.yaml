@@ -12,6 +12,7 @@ metadata:
   namespace: {{ $.Values.Namespace }}
   labels:
     app: {{ template "cassandra.name" $ }}-cain
+    chart: {{ template "cassandra.chart" $ }}
     release: "{{ $release.Name }}"
     heritage: "{{ $release.Service }}"
 spec:

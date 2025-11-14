@@ -418,7 +418,6 @@ atlas:
   # can be used to setup slack notifications
   notification:
     slackWebhook: ''
-    differential_entity_changes_enabled: true
 
 cassandra:
 
