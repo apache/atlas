@@ -51,8 +51,6 @@ import java.util.List;
 import java.util.Set;
 
 import static org.apache.hadoop.hive.metastore.TableType.MANAGED_TABLE;
-//import static org.mockito.Matchers.any;
-//import static org.mockito.Matchers.anyString;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
