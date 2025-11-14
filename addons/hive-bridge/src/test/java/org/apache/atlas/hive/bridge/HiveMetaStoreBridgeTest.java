@@ -43,7 +43,8 @@ import org.apache.hadoop.hive.ql.metadata.Partition;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.mapred.TextInputFormat;
 
-import org.mockito.Matchers;
+//import org.mockito.Matchers;
+import static org.mockito.ArgumentMatchers.*;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -67,6 +68,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -885,13 +887,29 @@ public class HiveMetaStoreBridgeTest {
         getAllDatabaseInClusterMethod.setAccessible(true);
 
         // Test Case 1: Empty result set (no databases)
-        when(atlasClientV2.basicSearch(Matchers.anyString(), Matchers.any(SearchParameters.FilterCriteria.class), (String) isNull(), (String) isNull(), Matchers.anyBoolean(), Matchers.anyInt(), Matchers.anyInt()))
+//        when(atlasClientV2.basicSearch(Matchers.anyString(), Matchers.any(SearchParameters.FilterCriteria.class), (String) isNull(), (String) isNull(), Matchers.anyBoolean(), Matchers.anyInt(), Matchers.anyInt()))
+        when(atlasClientV2.basicSearch(
+                anyString(),
+                any(SearchParameters.FilterCriteria.class),
+                isNull(String.class),
+                isNull(String.class),
+                anyBoolean(),
+                anyInt(),
+                anyInt()))
                 .thenReturn(searchResult);
         when(searchResult.getEntities()).thenReturn(Collections.emptyList());
 
         List<AtlasEntityHeader> resultEmpty = (List<AtlasEntityHeader>) getAllDatabaseInClusterMethod.invoke(bridge);
         assertTrue(resultEmpty.isEmpty());
-        verify(atlasClientV2).basicSearch(Matchers.anyString(), Matchers.any(SearchParameters.FilterCriteria.class), (String) isNull(), (String) isNull(), Matchers.anyBoolean(), Matchers.anyInt(), Matchers.anyInt());
+//        verify(atlasClientV2).basicSearch(Matchers.anyString(), Matchers.any(SearchParameters.FilterCriteria.class), (String) isNull(), (String) isNull(), Matchers.anyBoolean(), Matchers.anyInt(), Matchers.anyInt());
+        verify(atlasClientV2).basicSearch(
+                anyString(),
+                any(SearchParameters.FilterCriteria.class),
+                isNull(String.class),
+                isNull(String.class),
+                anyBoolean(),
+                anyInt(),
+                anyInt());
         verify(searchResult).getEntities();
         verifyNoMoreInteractions(atlasClientV2); // Only one call due to break condition
 
@@ -914,13 +932,29 @@ public class HiveMetaStoreBridgeTest {
         getAllTablesInDbMethod.setAccessible(true);
 
         // Test Case 1: Empty result set (no tables)
-        when(atlasClientV2.relationshipSearch(Matchers.anyString(), Matchers.anyString(), (String) isNull(), (SortOrder) isNull(), Matchers.anyBoolean(), Matchers.anyInt(), Matchers.anyInt()))
+//        when(atlasClientV2.relationshipSearch(Matchers.anyString(), Matchers.anyString(), (String) isNull(), (SortOrder) isNull(), Matchers.anyBoolean(), Matchers.anyInt(), Matchers.anyInt()))
+        when(atlasClientV2.relationshipSearch(
+                anyString(),
+                anyString(),
+                isNull(String.class),
+                isNull(SortOrder.class),
+                anyBoolean(),
+                anyInt(),
+                anyInt()))
                 .thenReturn(searchResult);
         when(searchResult.getEntities()).thenReturn(Collections.emptyList());
 
         List<AtlasEntityHeader> resultEmpty = (List<AtlasEntityHeader>) getAllTablesInDbMethod.invoke(bridge, DATABASE_GUID);
         assertTrue(resultEmpty.isEmpty());
-        verify(atlasClientV2).relationshipSearch(Matchers.anyString(), Matchers.anyString(), (String) isNull(), (SortOrder) isNull(), Matchers.anyBoolean(), Matchers.anyInt(), Matchers.anyInt());
+//        verify(atlasClientV2).relationshipSearch(Matchers.anyString(), Matchers.anyString(), (String) isNull(), (SortOrder) isNull(), Matchers.anyBoolean(), Matchers.anyInt(), Matchers.anyInt());
+        verify(atlasClientV2).relationshipSearch(
+                anyString(),
+                anyString(),
+                isNull(String.class),
+                isNull(SortOrder.class),
+                anyBoolean(),
+                anyInt(),
+                anyInt());
         verify(searchResult).getEntities();
         verifyNoMoreInteractions(atlasClientV2); // Only one call due to break condition
 
@@ -930,14 +964,30 @@ public class HiveMetaStoreBridgeTest {
         // Test Case 2: Partial page with tables (less than pageSize)
         List<AtlasEntityHeader> partialEntities = new ArrayList<>();
         partialEntities.add(entityHeader1);
-        when(atlasClientV2.relationshipSearch(Matchers.anyString(), Matchers.anyString(), (String) isNull(), (SortOrder) isNull(), Matchers.anyBoolean(), Matchers.anyInt(), Matchers.anyInt()))
-                .thenReturn(searchResult);
+//        when(atlasClientV2.relationshipSearch(Matchers.anyString(), Matchers.anyString(), (String) isNull(), (SortOrder) isNull(), Matchers.anyBoolean(), Matchers.anyInt(), Matchers.anyInt()))
+        when(atlasClientV2.relationshipSearch(
+                anyString(),
+                anyString(),
+                isNull(String.class),
+                isNull(SortOrder.class),
+                anyBoolean(),
+                anyInt(),
+                anyInt()))
+        .thenReturn(searchResult);
         when(searchResult.getEntities()).thenReturn(partialEntities);
 
         List<AtlasEntityHeader> resultPartial = (List<AtlasEntityHeader>) getAllTablesInDbMethod.invoke(bridge, DATABASE_GUID);
         assertEquals(1, resultPartial.size());
         assertTrue(resultPartial.contains(entityHeader1));
-        verify(atlasClientV2).relationshipSearch(Matchers.anyString(), Matchers.anyString(), (String) isNull(), (SortOrder) isNull(), Matchers.anyBoolean(), Matchers.anyInt(), Matchers.anyInt());
+//        verify(atlasClientV2).relationshipSearch(Matchers.anyString(), Matchers.anyString(), (String) isNull(), (SortOrder) isNull(), Matchers.anyBoolean(), Matchers.anyInt(), Matchers.anyInt());
+        verify(atlasClientV2).relationshipSearch(
+                anyString(),
+                anyString(),
+                isNull(String.class),
+                isNull(SortOrder.class),
+                anyBoolean(),
+                anyInt(),
+                anyInt());
         verify(searchResult).getEntities();
         verifyNoMoreInteractions(atlasClientV2); // Breaks after one iteration
 
@@ -948,15 +998,31 @@ public class HiveMetaStoreBridgeTest {
         List<AtlasEntityHeader> fullPage = new ArrayList<>();
         fullPage.add(entityHeader1);
         fullPage.add(entityHeader2);
-        when(atlasClientV2.relationshipSearch(Matchers.anyString(), Matchers.anyString(), (String) isNull(), (SortOrder) isNull(), Matchers.anyBoolean(), Matchers.anyInt(), Matchers.anyInt()))
-                .thenReturn(searchResult);
+//        when(atlasClientV2.relationshipSearch(Matchers.anyString(), Matchers.anyString(), (String) isNull(), (SortOrder) isNull(), Matchers.anyBoolean(), Matchers.anyInt(), Matchers.anyInt()))
+        when(atlasClientV2.relationshipSearch(
+                anyString(),
+                anyString(),
+                isNull(String.class),
+                isNull(SortOrder.class),
+                anyBoolean(),
+                anyInt(),
+                anyInt()))
+        .thenReturn(searchResult);
         when(searchResult.getEntities()).thenReturn(fullPage, partialEntities); // First page full, second partial
 
         List<AtlasEntityHeader> resultMultiple = (List<AtlasEntityHeader>) getAllTablesInDbMethod.invoke(bridge, DATABASE_GUID);
         assertEquals(2, resultMultiple.size());
         assertTrue(resultMultiple.contains(entityHeader1));
         assertTrue(resultMultiple.contains(entityHeader2));
-        verify(atlasClientV2).relationshipSearch(Matchers.anyString(), Matchers.anyString(), (String) isNull(), (SortOrder) isNull(), Matchers.anyBoolean(), Matchers.anyInt(), Matchers.anyInt());
+//        verify(atlasClientV2).relationshipSearch(Matchers.anyString(), Matchers.anyString(), (String) isNull(), (SortOrder) isNull(), Matchers.anyBoolean(), Matchers.anyInt(), Matchers.anyInt());
+        verify(atlasClientV2).relationshipSearch(
+                anyString(),
+                anyString(),
+                isNull(String.class),
+                isNull(SortOrder.class),
+                anyBoolean(),
+                anyInt(),
+                anyInt());
         verify(searchResult).getEntities();
     }
 
@@ -1047,7 +1113,8 @@ public class HiveMetaStoreBridgeTest {
 
         // --- Test Case 1: Empty guidTodelete list ---
         deleteByGuidMethod.invoke(bridge, Collections.emptyList());
-        verify(atlasClientV2, never()).deleteEntityByGuid(Matchers.anyString());
+//        verify(atlasClientV2, never()).deleteEntityByGuid(Matchers.anyString());
+        verify(atlasClientV2, never()).deleteEntityByGuid(anyString());
         verifyNoMoreInteractions(atlasClientV2);
 
         reset(atlasClientV2);
@@ -1128,7 +1195,8 @@ public class HiveMetaStoreBridgeTest {
         // Use reflection to call private methods
         getAllDatabaseInClusterMethod.invoke(bridge);
         bridge.deleteEntitiesForNonExistingHiveMetadata(false, null, null);
-        verify(hiveClient, never()).databaseExists(Matchers.anyString());
+//        verify(hiveClient, never()).databaseExists(Matchers.anyString());
+        verify(hiveClient, never()).databaseExists(anyString());
 
         // Reset mocks
         reset(bridge, atlasClientV2, hiveClient);
@@ -1159,7 +1227,8 @@ public class HiveMetaStoreBridgeTest {
         when(tableEntity1.getAttribute(ATTRIBUTE_QUALIFIED_NAME)).thenReturn("default.test_table@primary");
         when(tableEntity2.getGuid()).thenReturn(TABLE_GUID2);
         when(tableEntity2.getAttribute(ATTRIBUTE_QUALIFIED_NAME)).thenReturn("default.test_table2@primary");
-        when(atlasClientV2.deleteEntityByGuid(Matchers.anyString())).thenReturn(mutationResponse);
+//        when(atlasClientV2.deleteEntityByGuid(Matchers.anyString())).thenReturn(mutationResponse);
+        when(atlasClientV2.deleteEntityByGuid(anyString())).thenReturn(mutationResponse);
         AtlasEntityHeader mockEntityHeader = mock(AtlasEntityHeader.class);
         when(mutationResponse.getDeletedEntities())
                 .thenReturn(Collections.singletonList(mockEntityHeader));
