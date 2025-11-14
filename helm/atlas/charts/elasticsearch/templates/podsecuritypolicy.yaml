@@ -8,7 +8,6 @@ metadata:
   labels:
     heritage: {{ .Release.Service | quote }}
     release: {{ .Release.Name | quote }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     app: {{ $fullName | quote }}
 spec:
 {{ toYaml .Values.podSecurityPolicy.spec | indent 2 }}

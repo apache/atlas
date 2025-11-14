@@ -8,7 +8,6 @@ metadata:
   {{- end }}
   labels:
     app: {{ template "cassandra.name" . }}
-    chart: {{ template "cassandra.chart" . }}
     release: "prometheus-operator"
     heritage: {{ .Release.Service }}
     {{- if .Values.exporter.serviceMonitor.additionalLabels }}

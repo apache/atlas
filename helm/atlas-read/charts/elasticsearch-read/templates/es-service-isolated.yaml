@@ -10,7 +10,6 @@ metadata:
   labels:
     heritage: {{ $.Release.Service | quote }}
     release: {{ $.Release.Name | quote }}
-    chart: "{{ $.Chart.Name }}"
     app: {{ $.Values.esClusterName }}-{{ $nodeName }}
     role: {{ $nodeName }}
     {{- range $key, $value := $.Values.labels }}

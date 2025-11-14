@@ -14,7 +14,6 @@ metadata:
   namespace: {{ .Values.Namespace  }}
   labels:
     app: {{ template "name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
   {{- if .Values.atlas.secondaryIngress.annotations }}
@@ -101,7 +100,6 @@ metadata:
   namespace: {{ .Values.Namespace  }}
   labels:
     app: {{ template "name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 {{- if eq .Values.global.cloud "azure" }}

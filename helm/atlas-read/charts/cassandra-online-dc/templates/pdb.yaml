@@ -9,7 +9,6 @@ kind: PodDisruptionBudget
 metadata:
   labels:
     app: {{ template "cassandra.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
   name: {{ template "cassandra.fullname" . }}
