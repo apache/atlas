@@ -72,7 +72,7 @@
           }
         }
       },
-      { "allow_strings":  { "path_match":"detail.attributes.*", "match_mapping_type":"string",  "mapping":{ "type":"keyword", "ignore_above":256 }}},
+      { "allow_strings":  { "path_match":"detail.attributes.*", "match_mapping_type":"string",  "mapping":{ "type": "text", "fields": { "keyword": { "type": "keyword", "ignore_above": 1024 }}}}},
       { "allow_longs":    { "path_match":"detail.attributes.*", "match_mapping_type":"long",    "mapping":{ "type":"long"    }}},
       { "allow_doubles":  { "path_match":"detail.attributes.*", "match_mapping_type":"double",  "mapping":{ "type":"double"  }}},
       { "allow_booleans": { "path_match":"detail.attributes.*", "match_mapping_type":"boolean", "mapping":{ "type":"boolean" }}},
