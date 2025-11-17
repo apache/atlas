@@ -355,7 +355,16 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
             field.setAccessible(true);
 
-            Field modifiersField = Field.class.getDeclaredField("modifiers");
+            Method getDeclaredFields0 = Class.class.getDeclaredMethod("getDeclaredFields0", boolean.class);
+            getDeclaredFields0.setAccessible(true);
+            Field[] fields = (Field[]) getDeclaredFields0.invoke(Field.class, false);
+            Field modifiersField = null;
+            for (Field each : fields) {
+                if ("modifiers".equals(each.getName())) {
+                    modifiersField = each;
+                    break;
+                }
+            }
 
             modifiersField.setAccessible(true);
             modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
