@@ -1782,11 +1782,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             entityChangeNotifier.notifyDifferentialEntityChanges(ret, RequestContext.get().isImportInProgress());
             atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
 
-            // Record observability metrics
-            long endTime = System.currentTimeMillis();
-            observabilityData.setDuration(endTime - startTime);
-
-            recordObservabilityData(requestContext, entityStream, observabilityService, observabilityData);
             observabilityService.recordOperationEnd("createOrUpdate", "success");
             operationRecorded = true;
 
@@ -1809,8 +1804,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 observabilityService.recordOperationFailure("createOrUpdate", errorType);
                 observabilityService.logErrorDetails(observabilityData, "Unchecked exception in createOrUpdate", e);
             }
-            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Unexpected error in createOrUpdate: " + e.getMessage());
+            throw e;
         } finally {
+            // Record observability metrics
+            long endTime = System.currentTimeMillis();
+            observabilityData.setDuration(endTime - startTime);
+
+            recordObservabilityData(requestContext, entityStream, observabilityService, observabilityData);
             RequestContext.get().endMetricRecord(metric);
             AtlasPerfTracer.log(perf);
         }
