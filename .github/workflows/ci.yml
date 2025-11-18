@@ -71,6 +71,15 @@ jobs:
             echo "MAVEN_OPTS=-Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3" >> $GITHUB_ENV
           fi
 
+      - name: Set Java versions dynamically in .env
+        run: |
+          sed -i "s/^ATLAS_BASE_JAVA_VERSION=.*/ATLAS_BASE_JAVA_VERSION=${{ matrix.java }}/" dev-support/atlas-docker/.env
+          sed -i "s/^ATLAS_BUILD_JAVA_VERSION=.*/ATLAS_BUILD_JAVA_VERSION=${{ matrix.java }}/" dev-support/atlas-docker/.env
+          sed -i "s/^ATLAS_SERVER_JAVA_VERSION=.*/ATLAS_SERVER_JAVA_VERSION=${{ matrix.java }}/" dev-support/atlas-docker/.env
+
+      - name: Print updated .env
+        run: cat dev-support/atlas-docker/.env
+
       - name: Clean up Docker space
         run: docker system prune --all --force --volumes
 
@@ -83,7 +92,7 @@ jobs:
           SKIPTESTS=false docker compose -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
           ATLAS_BUILD_CONTAINER=$(docker ps -a -q --filter "name=atlas-build")
           EXIT_CODE=$(docker inspect --format '{{.State.ExitCode}}' "$ATLAS_BUILD_CONTAINER")
-          
+
           # If the exit code is non-zero, fail the workflow
           if [ "$EXIT_CODE" -ne 0 ]; then
             echo "atlas-build container failed with exit code $EXIT_CODE."
