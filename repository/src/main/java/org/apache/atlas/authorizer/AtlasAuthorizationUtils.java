@@ -201,12 +201,6 @@ public class AtlasAuthorizationUtils {
                     return atlasPoliciesResult.isAllowed();
                 }
 
-
-                // if priority is override, then it's an explicit deny as implicit deny won't have priority set to override
-                if (!atlasPoliciesResult.isAllowed() && atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
-                    return false;
-                }
-
                 AtlasAccessResult finalResult = null;
                 metric = RequestContext.get().startMetricRecord("isAccessAllowed.abac");
                 AtlasAccessResult abacPoliciesResult = ABACAuthorizerUtils.isAccessAllowed(request.getEntity(), request.getAction());
@@ -225,7 +219,7 @@ public class AtlasAuthorizationUtils {
                         // Atlas DENY
                         if (atlasPoliciesResult.isExplicitDeny()) {
                             // Matrix row: DENY + DENY (explicit) case
-                            if (abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+                            if (abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE && atlasPoliciesResult.getPolicyPriority() != RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
                                 finalResult = abacPoliciesResult; // ABAC override DENY or ALLOW
                             } else {
                                 finalResult = atlasPoliciesResult; // Atlas DENY takes precedence
@@ -257,6 +251,7 @@ public class AtlasAuthorizationUtils {
                     // log final result audit
                     NewAtlasAuditHandler auditHandler = new NewAtlasAuditHandler(request, SERVICE_DEF_ATLAS);
                     try {
+                        finalResult.setEnforcer("merged_auth");
                         auditHandler.processResult(finalResult, request);
                     } finally {
                         auditHandler.flushAudit();
