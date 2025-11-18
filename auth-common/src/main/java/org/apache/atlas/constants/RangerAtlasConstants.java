@@ -27,7 +27,7 @@ public class RangerAtlasConstants {
     public static final String COMPONENT_ACCESSTYPE_SEPARATOR = ":";
 
     public static final String READ_RESTRICTION_LEVEL_SCRUB = "scrub"; // default
-    public static final String READ_RESTRICTION_LEVEL_GUID_ONLY = "guid_only"; // no being used but kept to convey the possibility
+    public static final String READ_RESTRICTION_LEVEL_GUID_ONLY = "guid_only"; // not being used but kept to convey the possibility
     public static final String READ_RESTRICTION_LEVEL_FULL = "full";
 
 } 
