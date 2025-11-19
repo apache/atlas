@@ -632,8 +632,14 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     private void addToMapList(Map<String, Object> map, String key, Object value) {
         List<Object> values = (List<Object>) map.getOrDefault(key, new ArrayList<>(1));
-        values.add(value);
-        map.put(key, values);
+        try {
+            values.add(value);
+            map.put(key, values);
+        } catch (UnsupportedOperationException use) {
+            List<Object> mutableValues = new ArrayList<>(values);
+            mutableValues.add(value);
+            map.put(key, mutableValues);
+        }
     }
 
     private void init() {
