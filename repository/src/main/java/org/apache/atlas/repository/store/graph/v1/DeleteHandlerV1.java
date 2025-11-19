@@ -1979,7 +1979,7 @@ public abstract class DeleteHandlerV1 {
             
             // If attribute is an array type, pass as a list; otherwise pass as a single object
             if (typeCategory == TypeCategory.ARRAY) {
-                diffEntity.addOrAppendAddedRelationshipAttribute(attributeName, objectId);
+                diffEntity.addOrAppendRemovedRelationshipAttribute(attributeName, objectId);
             } else {
                 diffEntity.setRemovedRelationshipAttribute(attributeName, objectId);
             }
