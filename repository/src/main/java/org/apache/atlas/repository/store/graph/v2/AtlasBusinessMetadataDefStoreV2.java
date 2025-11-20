@@ -560,6 +560,10 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "options['" + key + "'] for attribute " + attrName + " has null/empty value");
             }
 
+            if (key.equals(ATTR_OPTION_ENUM_TYPE) && value == null) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "options['" + key + "'] for attribute " + attrName + " cannot be null");
+            }
+
             // Check if stringified JSON value is valid JSON
             String trimmedValue = value.trim();
             if (trimmedValue.startsWith("{") || trimmedValue.startsWith("[")) {
