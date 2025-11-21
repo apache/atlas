@@ -6,7 +6,7 @@ index c3f886d..716e853 100644
    originTLS.ca = originTLS.ca || options.ca;
    socketTLS.servername = socketTLS.servername || endpoint.hostname;
    
-+  // Security fix: Enforce TLS 1.2+ to prevent weak SSL/TLS protocol vulnerabilities
+
 +  if (secure && !socketTLS.secureProtocol) {
 +    socketTLS.secureProtocol = 'TLSv1_2_method';
 +  }
@@ -18,7 +18,6 @@ index c3f886d..716e853 100644
      if (secure) {
        var options = { socket: self._stream, servername: uri.hostname };
        for (name in originTLS) options[name] = originTLS[name];
-+      // Security fix: Enforce TLS 1.2+ to prevent weak SSL/TLS protocol vulnerabilities
 +      if (!options.secureProtocol) {
 +        options.secureProtocol = 'TLSv1_2_method';
 +      }

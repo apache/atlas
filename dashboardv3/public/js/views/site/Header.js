@@ -131,8 +131,6 @@ define(['require',
         onRender: function() {
             var that = this;
             if (Globals.userLogedIn.status) {
-                // Security fix: Use .text() instead of .html() to prevent XSS attacks
-               // .text() automatically escapes HTML and prevents script injection
                that.$('.userName').text(Globals.userLogedIn.response.userName);
            }
             if (this.options.fromDefaultSearch !== true) {

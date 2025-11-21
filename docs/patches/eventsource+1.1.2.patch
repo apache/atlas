@@ -6,7 +6,7 @@ index d97157e..fc8b711 100644
        }
      }
  
-+    // Security fix: Enforce TLS 1.2+ to prevent weak SSL/TLS protocol vulnerabilities
+
 +    if (isSecure && !options.secureProtocol) {
 +      options.secureProtocol = 'TLSv1_2_method';
 +    }
