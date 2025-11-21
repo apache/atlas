@@ -201,25 +201,32 @@ public class AtlasAuthorizationUtils {
                     return atlasPoliciesResult.isAllowed();
                 }
 
-                AtlasAccessResult finalResult = null;
                 metric = RequestContext.get().startMetricRecord("isAccessAllowed.abac");
-                AtlasAccessResult abacPoliciesResult = ABACAuthorizerUtils.isAccessAllowed(request.getEntity(), request.getAction());
+                AtlasAccessResult finalResult = new AtlasAccessResult(false);
 
-                /* reference - https://docs.google.com/spreadsheets/d/1npyX1cpm8-a8LwzmObgf8U1hZh6bO7FF8cpXjHMMQ08/edit?usp=sharing
-                 * Result of Atlas policy engine and ABAC evaluator is merged with below priority
-                 * Decision hierarchy (highest to lowest precedence):
-                 * 1. Override priority with explicit deny
-                 * 2. Override priority allow
-                 * 3. Explicit deny (normal priority)
-                 * 4. Normal priority allow
-                 * 5. Implicit deny
-                 */
                 try {
+                    // if priority is override, then it's an explicit deny as implicit deny won't have priority set to override
+                    if (!atlasPoliciesResult.isAllowed() && atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+                        finalResult = atlasPoliciesResult;
+                        return finalResult.isAllowed();
+                    }
+
+                    AtlasAccessResult abacPoliciesResult = ABACAuthorizerUtils.isAccessAllowed(request.getEntity(), request.getAction());
+
+                    /* reference - https://docs.google.com/spreadsheets/d/1npyX1cpm8-a8LwzmObgf8U1hZh6bO7FF8cpXjHMMQ08/edit?usp=sharing
+                     * Result of Atlas policy engine and ABAC evaluator is merged with below priority
+                     * Decision hierarchy (highest to lowest precedence):
+                     * 1. Override priority with explicit deny
+                     * 2. Override priority allow
+                     * 3. Explicit deny (normal priority)
+                     * 4. Normal priority allow
+                     * 5. Implicit deny
+                     */
                     if (!atlasPoliciesResult.isAllowed()) {
                         // Atlas DENY
                         if (atlasPoliciesResult.isExplicitDeny()) {
                             // Matrix row: DENY + DENY (explicit) case
-                            if (abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE && atlasPoliciesResult.getPolicyPriority() != RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+                            if (abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
                                 finalResult = abacPoliciesResult; // ABAC override DENY or ALLOW
                             } else {
                                 finalResult = atlasPoliciesResult; // Atlas DENY takes precedence
@@ -248,6 +255,8 @@ public class AtlasAuthorizationUtils {
                         }
                     }
 
+                    return finalResult.isAllowed();
+                } finally {
                     // log final result audit
                     NewAtlasAuditHandler auditHandler = new NewAtlasAuditHandler(request, SERVICE_DEF_ATLAS);
                     try {
@@ -257,8 +266,6 @@ public class AtlasAuthorizationUtils {
                         auditHandler.flushAudit();
                     }
 
-                    return finalResult.isAllowed();
-                } finally {
                     RequestContext.get().endMetricRecord(metric);
                 }
 
@@ -318,41 +325,60 @@ public class AtlasAuthorizationUtils {
                 AtlasAccessResult atlasPoliciesResult = authorizer.isAccessAllowed(request);
 
                 RequestContext.get().endMetricRecord(metric);
-
-                if (!atlasPoliciesResult.isAllowed() && atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
-                    // 1
-                    return false;
+                if (!isABACAuthorizerEnabled()) {
+                    return atlasPoliciesResult.isAllowed();
                 }
 
                 metric = RequestContext.get().startMetricRecord("isAccessAllowed.abac");
-                AtlasAccessResult abacPoliciesResult = ABACAuthorizerUtils.isAccessAllowed(request.getRelationshipType(),
-                        request.getEnd1Entity(),
-                        request.getEnd2Entity(),
-                        request.getAction());
+                AtlasAccessResult finalResult = new AtlasAccessResult(false);
 
-                // reference - https://docs.google.com/spreadsheets/d/1npyX1cpm8-a8LwzmObgf8U1hZh6bO7FF8cpXjHMMQ08/edit?usp=sharing
                 try {
+                    if (!atlasPoliciesResult.isAllowed() && atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+                        // Deny with higher priority
+                        finalResult = atlasPoliciesResult;
+                        return finalResult.isAllowed();
+                    }
+
+                    AtlasAccessResult abacPoliciesResult = ABACAuthorizerUtils.isAccessAllowed(request.getRelationshipType(),
+                            request.getEnd1Entity(),
+                            request.getEnd2Entity(),
+                            request.getAction());
+
+                    // reference - https://docs.google.com/spreadsheets/d/1npyX1cpm8-a8LwzmObgf8U1hZh6bO7FF8cpXjHMMQ08/edit?usp=sharing
                     if (!atlasPoliciesResult.isAllowed()) {
-                        // 2
+                        // Atlas DENY
                         if (atlasPoliciesResult.isExplicitDeny()) {
-                            return abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE;
+                            finalResult = abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE
+                                ? abacPoliciesResult : atlasPoliciesResult; // explicit deny unless abac allow with higher priority
                         } else {
-                            return abacPoliciesResult.isAllowed();
+                            finalResult = abacPoliciesResult; // not explicit, so whatever is the second authorizer result
                         }
                     } else {
                         if (atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
-                            //3
-                            return !(!abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE);
+                            // Atlas allow with higher priority
+                            finalResult = !abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE
+                                ? abacPoliciesResult : atlasPoliciesResult; // atlas wins unless allow abac denies with higher priority
                         } else {
-                            //4
+                            // Atlas allows, so check if abac denies
                             if (abacPoliciesResult.isExplicitDeny()) {
-                                return abacPoliciesResult.isAllowed();
+                                finalResult = abacPoliciesResult;
                             } else {
-                                return atlasPoliciesResult.isAllowed();
+                                finalResult = atlasPoliciesResult;
                             }
                         }
                     }
+                    return finalResult.isAllowed();
+
                 } finally {
+                    // log final result audit
+                    NewAtlasAuditHandler auditHandler = new NewAtlasAuditHandler(request, SERVICE_DEF_ATLAS);
+                    try {
+                        finalResult.setEnforcer("merged_auth");
+                        auditHandler.processResult(finalResult, request);
+                    } finally {
+                        auditHandler.flushAudit();
+                    }
+
                     RequestContext.get().endMetricRecord(metric);
                 }
 
