@@ -31,6 +31,7 @@ import {
   AccordionSummary
 } from "@components/muiComponents";
 import { numberFormatWithComma } from "@utils/Helper";
+import { useMemo, useState } from "react";
 import { useAppSelector } from "@hooks/reducerHook";
 import { isEmpty } from "@utils/Utils";
 import { stats } from "@utils/Enum";
@@ -81,6 +82,40 @@ const ServerStats = ({ selectedValue, currentMetricsData }: any) => {
     serverData?.Notification?.topicDetails
   );
 
+  const [topicSort, setTopicSort] = useState<{
+    key: string;
+    order: "asc" | "desc";
+  }>({ key: "label", order: "asc" });
+
+  const handleSort = (key: string) => {
+    setTopicSort((prev) => {
+      const nextOrder = prev.key === key && prev.order === "asc" ? "desc" : "asc";
+      return { key, order: nextOrder };
+    });
+  };
+
+  const sortedOffsetTableData = useMemo(() => {
+    const list = Array.isArray(offSetTabelData) ? [...offSetTabelData] : [];
+    const { key, order } = topicSort;
+    const dir = order === "asc" ? 1 : -1;
+    return list.sort((a: any, b: any) => {
+      if (key === "label") {
+        const av = String(a.label || "").toLowerCase();
+        const bv = String(b.label || "").toLowerCase();
+        if (av < bv) return -1 * dir;
+        if (av > bv) return 1 * dir;
+        return 0;
+      }
+      const aTopic = serverData?.Notification?.topicDetails?.[a.label] || {};
+      const bTopic = serverData?.Notification?.topicDetails?.[b.label] || {};
+      const av = Number(aTopic?.[key] ?? 0);
+      const bv = Number(bTopic?.[key] ?? 0);
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return 0;
+    });
+  }, [JSON.stringify(offSetTabelData), JSON.stringify(serverData?.Notification?.topicDetails), topicSort]);
+
   let notificationTableHeader = [
     "Count",
     "Avg",
@@ -91,20 +126,13 @@ const ServerStats = ({ selectedValue, currentMetricsData }: any) => {
     // "Failed"
   ];
 
-  let topicOffsetTableCol = [
-    "Kafka Topic-Partition",
-    "Start Offset",
-    "Current Offset",
-    "Processed",
-    "Failed",
-    "Last Message Processed Time"
-  ];
   let topciOffsetTableHeader = [
     "offsetStart",
     "offsetCurrent",
     "processedMessageCount",
     "failedMessageCount",
-    "lastMessageProcessedTime"
+    "lastMessageProcessedTime",
+    "avgProcessingTime"
   ];
 
   let tableCol = [
@@ -235,15 +263,28 @@ const ServerStats = ({ selectedValue, currentMetricsData }: any) => {
               <Table className="classificationTable" size="small">
                 <TableHead>
                   <TableRow>
-                    {topicOffsetTableCol.map((col) => {
-                      return (
-                        <>
-                          <TableCell align="left">
-                            <Typography fontWeight="600">{col}</Typography>
-                          </TableCell>
-                        </>
-                      );
-                    })}
+                    <TableCell align="left" onClick={() => handleSort("label")} sx={{ cursor: "pointer" }}>
+                      <Typography fontWeight="600">
+                        Kafka Topic-Partition{topicSort.key === "label" ? (topicSort.order === "asc" ? " ▲" : " ▼") : ""}
+                      </Typography>
+                    </TableCell>
+                    {topciOffsetTableHeader.map((key) => (
+                      <TableCell key={key} align="left" onClick={() => handleSort(key)} sx={{ cursor: "pointer" }}>
+                        <Typography fontWeight="600">
+                          {(
+                            {
+                              offsetStart: "Start Offset",
+                              offsetCurrent: "Current Offset",
+                              processedMessageCount: "Processed",
+                              failedMessageCount: "Failed",
+                              lastMessageProcessedTime: "Last Message Processed Time",
+                              avgProcessingTime: "Average message processing time"
+                            } as any
+                          )[key]}
+                          {topicSort.key === key ? (topicSort.order === "asc" ? " ▲" : " ▼") : ""}
+                        </Typography>
+                      </TableCell>
+                    ))}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -254,20 +295,22 @@ const ServerStats = ({ selectedValue, currentMetricsData }: any) => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    offSetTabelData?.map((obj, index) => (
+                    sortedOffsetTableData?.map((obj, index) => (
                       <TableRow key={index}>
                         <TableCell>{obj.label}</TableCell>
                         {topciOffsetTableHeader.map((header) => {
                           let returnVal =
-                            serverData?.Notification?.topicDetails?.[
-                              obj.label
-                            ]?.[header];
+                            serverData?.Notification?.topicDetails?.[obj.label]?.[header];
+                          const typeForKey =
+                            header === "avgProcessingTime"
+                              ? stats.Notification["lastMessageProcessedTime"]
+                              : stats.Notification[header];
                           return (
                             <TableCell align="left">
                               {returnVal
                                 ? getStatsValue({
                                     value: returnVal,
-                                    type: stats.Notification[header]
+                                    type: typeForKey
                                   })
                                 : 0}
                             </TableCell>
