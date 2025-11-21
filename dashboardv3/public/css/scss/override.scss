@@ -637,3 +637,38 @@ div.columnmanager-dropdown-container {
         list-style: disc
     }
 }
+ 
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 18px;
+}
+table > thead > tr > th.sortable {
+    padding-right: 24px !important;
+}
+.sort-icon {
+    display: inline-block;
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid #bbb;
+}
+.sort-icon.asc {
+    border-top-color: #38bb9b;
+    transform: translateY(-50%) rotate(180deg);
+}
+.sort-icon.desc {
+    border-top-color: #38bb9b;
+}
+th.sortable[data-sort-key="processedMessageCount"],
+th.sortable[data-sort-key="failedMessageCount"] {
+    white-space: nowrap;
+    vertical-align: top;
+    text-align: center;
+}
