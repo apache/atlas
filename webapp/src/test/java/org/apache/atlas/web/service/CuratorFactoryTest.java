@@ -24,16 +24,17 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.zookeeper.data.ACL;
+import org.mockito.ArgumentMatcher;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 public class CuratorFactoryTest {
@@ -75,19 +76,20 @@ public class CuratorFactoryTest {
         when(zookeeperProperties.hasAcl()).thenReturn(true);
         when(zookeeperProperties.getAcl()).thenReturn("sasl:myclient@EXAMPLE.COM");
         when(zookeeperProperties.hasAuth()).thenReturn(false);
-
         CuratorFactory curatorFactory = new CuratorFactory(configuration) {
             @Override
             protected void initializeCuratorFramework() {
             }
         };
-
         curatorFactory.enhanceBuilderWithSecurityParameters(zookeeperProperties, builder);
+        verify(builder).aclProvider(ArgumentMatchers.argThat(new ArgumentMatcher<ACLProvider>() {
+            @Override
+            public boolean matches(ACLProvider aclProvider) {
+                ACL acl = aclProvider.getDefaultAcl().get(0);
 
-        verify(builder).aclProvider(argThat(aclProvider -> {
-            ACL acl = aclProvider.getDefaultAcl().get(0);
-
-            return acl.getId().getId().equals("myclient@EXAMPLE.COM") && acl.getId().getScheme().equals("sasl");
+                return "myclient@EXAMPLE.COM".equals(acl.getId().getId())
+                        && "sasl".equals(acl.getId().getScheme());
+            }
         }));
     }
 
@@ -102,6 +104,6 @@ public class CuratorFactoryTest {
             }
         };
 
-        verifyZeroInteractions(builder);
+        verifyNoInteractions(builder);
     }
 }
