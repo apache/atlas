@@ -32,7 +32,7 @@ on:
 jobs:
   docker-build:
     runs-on: ubuntu-22.04
-    timeout-minutes: 180
+    timeout-minutes: 600
 
     strategy:
       matrix:
