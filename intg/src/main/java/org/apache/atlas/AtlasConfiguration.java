@@ -141,6 +141,7 @@ public enum AtlasConfiguration {
     ATLAS_INDEXSEARCH_EDGE_BULK_FETCH_BATCH_SIZE ("atlas.indexsearch.edge.bulk.fetch.batch.size", 10),
     ATLAS_MAINTENANCE_MODE("atlas.maintenance.mode", false),
     DELTA_BASED_REFRESH_ENABLED("atlas.authorizer.enable.delta_based_refresh", false),
+    READ_RESTRICTION_LEVEL("atlas.authorizer.read.restriction.level", "scrub"),
 
     ATLAS_UD_RELATIONSHIPS_MAX_COUNT("atlas.ud.relationship.max.count", 100),
 

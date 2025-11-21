@@ -524,6 +524,8 @@ public final class Constants {
     public static final String REQUEST_HEADER_USER_AGENT = "User-Agent";
     public static final String REQUEST_HEADER_HOST       = "Host";
 
+    public static final String ACTION_READ = "entity-read";
+
     public static final Set<String> SKIP_UPDATE_AUTH_CHECK_TYPES = new HashSet<String>() {{
         add(README_ENTITY_TYPE);
         add(LINK_ENTITY_TYPE);

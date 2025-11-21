@@ -188,7 +188,7 @@ class NewAtlasAuditHandler {
                 ret.setTags(tags);
             }*/
             ret.setAgentHostname(MiscUtil.getHostname());
-            ret.setAclEnforcer("abac_auth");
+            ret.setAclEnforcer(result.getEnforcer());
 
             populateDefaults(ret);
 
