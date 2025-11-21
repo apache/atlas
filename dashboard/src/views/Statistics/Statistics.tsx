@@ -158,6 +158,7 @@ const Statistics = ({
             <Autocomplete
               value={selectedValue}
               onChange={(_event: any, newValue: any) => {
+                if (!newValue) return;
                 const { value } = newValue;
                 setSelectedValue(newValue);
                 if (value != "Current") {
@@ -169,6 +170,7 @@ const Statistics = ({
                 ...metricStatsListOptions
               ]}
               getOptionLabel={(option) => option.label}
+              isOptionEqualToValue={(option, value) => option?.value === value?.value}
               disableClearable
               clearOnEscape={false}
               size="small"
@@ -180,7 +182,7 @@ const Statistics = ({
                   fullWidth
                 />
               )}
-              defaultValue={"Current"}
+              defaultValue={{ label: "Current", value: "Current" }}
               sx={{
                 minWidth: "250px",
                 backgroundColor: "#f6f7fb",
