@@ -142,9 +142,7 @@ define(['require',
         onRender: function() {
             var that = this;
             if (Globals.userLogedIn.status) {
-                 // Security fix: Use .text() instead of .html() to prevent XSS attacks
-                // .text() automatically escapes HTML and prevents script injection
-                that.$('.userName').text(Globals.userLogedIn.response.userName);
+                that.$('.userName').html(Globals.userLogedIn.response.userName);
             }
             this.initializeGlobalSearch();
             this.renderDownloadSearchResultview();
