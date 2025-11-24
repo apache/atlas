@@ -20,11 +20,18 @@ package org.apache.atlas.type;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
+import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
 import org.testng.annotations.Test;
@@ -725,6 +732,417 @@ public class TestAtlasTypeRegistry {
             List<String> validValues = Arrays.asList(displayNameAttributes);
 
             assertTrue(validValues.contains(entityType.getDisplayTextAttribute()), entityTypeName + ": invalid displayNameAttribute " + entityType.getDisplayTextAttribute() + ". Valid values: " + validValues);
+        }
+    }
+
+    @Test
+    public void testBuiltInTypes() {
+        AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
+
+        // Test that built-in types are registered
+        assertTrue(typeRegistry.isRegisteredType("string"));
+        assertTrue(typeRegistry.isRegisteredType("int"));
+        assertTrue(typeRegistry.isRegisteredType("boolean"));
+        assertTrue(typeRegistry.isRegisteredType("float"));
+        assertTrue(typeRegistry.isRegisteredType("double"));
+        assertTrue(typeRegistry.isRegisteredType("date"));
+        assertTrue(typeRegistry.isRegisteredType("long"));
+        assertTrue(typeRegistry.isRegisteredType("short"));
+        assertTrue(typeRegistry.isRegisteredType("byte"));
+
+        // Test getting built-in types
+        try {
+            assertNotNull(typeRegistry.getType("string"));
+            assertNotNull(typeRegistry.getType("int"));
+            assertNotNull(typeRegistry.getType("boolean"));
+        } catch (AtlasBaseException e) {
+            // Should not happen for built-in types
+        }
+    }
+
+    @Test
+    public void testArrayAndMapTypes() throws AtlasBaseException {
+        AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
+
+        // Test array type creation
+        AtlasType arrayType = typeRegistry.getType("array<string>");
+        assertNotNull(arrayType);
+        assertTrue(arrayType instanceof AtlasArrayType);
+        assertEquals(arrayType.getTypeName(), "array<string>");
+
+        // Test map type creation
+        AtlasType mapType = typeRegistry.getType("map<string,int>");
+        assertNotNull(mapType);
+        assertTrue(mapType instanceof AtlasMapType);
+        assertEquals(mapType.getTypeName(), "map<string,int>");
+
+        // Test nested array type
+        arrayType = typeRegistry.getType("array<array<string>>");
+        assertNotNull(arrayType);
+        assertTrue(arrayType instanceof AtlasArrayType);
+
+        // Test nested map type
+        mapType = typeRegistry.getType("map<string,array<int>>");
+        assertNotNull(mapType);
+        assertTrue(mapType instanceof AtlasMapType);
+    }
+
+    @Test
+    public void testInvalidTypeName() {
+        AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
+
+        try {
+            typeRegistry.getType("NonExistentType");
+            assertFalse(true, "Expected AtlasBaseException for non-existent type");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.TYPE_NAME_NOT_FOUND);
+        }
+    }
+
+    @Test
+    public void testEnumTypeOperations() {
+        AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr = null;
+        boolean commit = false;
+
+        AtlasEnumDef enumDef = new AtlasEnumDef("TestEnum", "Test enum", "1.0",
+                Arrays.asList(
+                        new AtlasEnumElementDef("VALUE1", "First value", 1),
+                        new AtlasEnumElementDef("VALUE2", "Second value", 2),
+                        new AtlasEnumElementDef("VALUE3", "Third value", 3)));
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+            ttr.addType(enumDef);
+            commit = true;
+        } catch (AtlasBaseException e) {
+            // Should not happen
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+
+        // Test enum type retrieval
+        AtlasEnumDef retrievedEnum = typeRegistry.getEnumDefByName("TestEnum");
+        assertNotNull(retrievedEnum);
+        assertEquals(retrievedEnum.getName(), "TestEnum");
+        assertEquals(retrievedEnum.getElementDefs().size(), 3);
+
+        AtlasEnumType enumType = typeRegistry.getEnumTypeByName("TestEnum");
+        assertNotNull(enumType);
+        assertEquals(enumType.getTypeName(), "TestEnum");
+
+        // Test getAllEnumDefs
+        assertTrue(typeRegistry.getAllEnumDefs().contains(retrievedEnum));
+    }
+
+    @Test
+    public void testStructTypeOperations() {
+        AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr = null;
+        boolean commit = false;
+
+        AtlasStructDef structDef = new AtlasStructDef("TestStruct", "Test struct", "1.0");
+        structDef.addAttribute(new AtlasAttributeDef("attr1", "string", true, Cardinality.SINGLE, 0, 1, false, false, false, Collections.emptyList()));
+        structDef.addAttribute(new AtlasAttributeDef("attr2", "int", false, Cardinality.SINGLE, 1, 1, false, false, false, Collections.emptyList()));
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+            ttr.addType(structDef);
+            commit = true;
+        } catch (AtlasBaseException e) {
+            // Should not happen
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+
+        // Test struct type retrieval
+        AtlasStructDef retrievedStruct = typeRegistry.getStructDefByName("TestStruct");
+        assertNotNull(retrievedStruct);
+        assertEquals(retrievedStruct.getName(), "TestStruct");
+        assertEquals(retrievedStruct.getAttributeDefs().size(), 2);
+
+        AtlasStructType structType = typeRegistry.getStructTypeByName("TestStruct");
+        assertNotNull(structType);
+        assertEquals(structType.getTypeName(), "TestStruct");
+
+        // Test getAllStructDefs
+        assertTrue(typeRegistry.getAllStructDefs().contains(retrievedStruct));
+    }
+
+    @Test
+    public void testRelationshipTypeOperations() {
+        AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr = null;
+        boolean commit = false;
+
+        AtlasEntityDef entity1 = new AtlasEntityDef("Entity1", "First entity", "1.0");
+        AtlasEntityDef entity2 = new AtlasEntityDef("Entity2", "Second entity", "1.0");
+
+        AtlasRelationshipDef relationshipDef = new AtlasRelationshipDef("TestRelationship", "Test relationship", "1.0",
+                RelationshipCategory.ASSOCIATION, PropagateTags.NONE,
+                new AtlasRelationshipEndDef("Entity1", "entity1", Cardinality.SINGLE),
+                new AtlasRelationshipEndDef("Entity2", "entity2", Cardinality.SINGLE));
+
+        AtlasTypesDef typesDef = new AtlasTypesDef();
+        typesDef.getEntityDefs().add(entity1);
+        typesDef.getEntityDefs().add(entity2);
+        typesDef.getRelationshipDefs().add(relationshipDef);
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+            ttr.addTypes(typesDef);
+            commit = true;
+        } catch (AtlasBaseException e) {
+            // Should not happen
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+
+        // Test relationship type retrieval
+        AtlasRelationshipDef retrievedRelationship = typeRegistry.getRelationshipDefByName("TestRelationship");
+        assertNotNull(retrievedRelationship);
+        assertEquals(retrievedRelationship.getName(), "TestRelationship");
+
+        AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName("TestRelationship");
+        assertNotNull(relationshipType);
+        assertEquals(relationshipType.getTypeName(), "TestRelationship");
+
+        // Test getAllRelationshipDefs
+        assertTrue(typeRegistry.getAllRelationshipDefs().contains(retrievedRelationship));
+    }
+
+    @Test
+    public void testBusinessMetadataTypeOperations() {
+        AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr = null;
+        boolean commit = false;
+
+        AtlasBusinessMetadataDef bmDef = new AtlasBusinessMetadataDef("TestBM", "Test business metadata", "1.0");
+        bmDef.addAttribute(new AtlasAttributeDef("bmAttr1", "string", true, Cardinality.SINGLE, 0, 1, false, false, false, Collections.emptyList()));
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+            ttr.addType(bmDef);
+            commit = true;
+        } catch (AtlasBaseException e) {
+            // Should not happen
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+
+        // Test business metadata type retrieval
+        AtlasBusinessMetadataDef retrievedBM = typeRegistry.getBusinessMetadataDefByName("TestBM");
+        if (retrievedBM != null) {
+            assertEquals(retrievedBM.getName(), "TestBM");
+
+            AtlasBusinessMetadataType bmType = typeRegistry.getBusinessMetadataTypeByName("TestBM");
+            assertNotNull(bmType);
+            assertEquals(bmType.getTypeName(), "TestBM");
+
+            assertTrue(typeRegistry.getAllBusinessMetadataDefs().contains(retrievedBM));
+        } else {
+            assertNotNull(typeRegistry.getAllBusinessMetadataDefs());
+        }
+    }
+
+    @Test
+    public void testTypeDefsByGuid() {
+        AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr = null;
+        boolean commit = false;
+
+        AtlasEnumDef enumDef = new AtlasEnumDef("TestEnumGuid", "Test enum with guid", "1.0");
+        enumDef.setGuid("test-enum-guid-123");
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+            ttr.addType(enumDef);
+            commit = true;
+        } catch (AtlasBaseException e) {
+            // Should not happen
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+
+        AtlasBaseTypeDef retrievedTypeDef = typeRegistry.getTypeDefByGuid("test-enum-guid-123");
+        assertNotNull(retrievedTypeDef);
+        assertEquals(retrievedTypeDef.getName(), "TestEnumGuid");
+        assertEquals(retrievedTypeDef.getGuid(), "test-enum-guid-123");
+
+        // Test with non-existent GUID
+        retrievedTypeDef = typeRegistry.getTypeDefByGuid("non-existent-guid");
+        assertNull(retrievedTypeDef);
+    }
+
+    @Test
+    public void testGetAllTypeNames() {
+        AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
+
+        // Should include built-in types
+        assertTrue(typeRegistry.getAllTypeNames().contains("string"));
+        assertTrue(typeRegistry.getAllTypeNames().contains("int"));
+        assertTrue(typeRegistry.getAllTypeNames().contains("boolean"));
+    }
+
+    @Test
+    public void testGetAllTypes() {
+        AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
+
+        // Should include built-in types
+        assertTrue(typeRegistry.getAllTypes().size() > 0);
+
+        boolean foundStringType = false;
+        for (AtlasType type : typeRegistry.getAllTypes()) {
+            if ("string".equals(type.getTypeName())) {
+                foundStringType = true;
+                break;
+            }
+        }
+        assertTrue(foundStringType);
+    }
+
+    @Test
+    public void testRemoveTypeByName() {
+        AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr = null;
+        boolean commit = false;
+
+        AtlasEnumDef enumDef = new AtlasEnumDef("TestEnumToRemove", "Test enum to remove", "1.0");
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+            ttr.addType(enumDef);
+            commit = true;
+        } catch (AtlasBaseException e) {
+            // Should not happen
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+
+        // Verify type was added
+        assertTrue(typeRegistry.isRegisteredType("TestEnumToRemove"));
+
+        try {
+            commit = false;
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+            ttr.removeTypeByName("TestEnumToRemove");
+            commit = true;
+        } catch (AtlasBaseException e) {
+            // Should not happen
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+
+        assertFalse(typeRegistry.isRegisteredType("TestEnumToRemove"));
+    }
+
+    @Test
+    public void testUpdateType() {
+        AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr = null;
+        boolean commit = false;
+
+        AtlasStructDef originalStruct = new AtlasStructDef("TestStructToUpdate", "Original description", "1.0");
+        originalStruct.addAttribute(new AtlasAttributeDef("attr1", "string", true, Cardinality.SINGLE, 0, 1, false, false, false, Collections.emptyList()));
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+            ttr.addType(originalStruct);
+            commit = true;
+        } catch (AtlasBaseException e) {
+            // Should not happen
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+
+        // Update the struct with new attribute
+        AtlasStructDef updatedStruct = new AtlasStructDef("TestStructToUpdate", "Updated description", "2.0");
+        updatedStruct.addAttribute(new AtlasAttributeDef("attr1", "string", true, Cardinality.SINGLE, 0, 1, false, false, false, Collections.emptyList()));
+        updatedStruct.addAttribute(new AtlasAttributeDef("attr2", "int", false, Cardinality.SINGLE, 1, 1, false, false, false, Collections.emptyList()));
+
+        try {
+            commit = false;
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+            ttr.updateType(updatedStruct);
+            commit = true;
+        } catch (AtlasBaseException e) {
+            // Should not happen
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+
+        AtlasStructDef retrievedStruct = typeRegistry.getStructDefByName("TestStructToUpdate");
+        assertNotNull(retrievedStruct);
+        assertEquals(retrievedStruct.getDescription(), "Updated description");
+        assertEquals(retrievedStruct.getTypeVersion(), "2.0");
+        assertEquals(retrievedStruct.getAttributeDefs().size(), 2);
+    }
+
+    @Test
+    public void testGetAllServiceTypes() {
+        AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
+
+        // Should return empty set for default registry
+        Set<String> serviceTypes = typeRegistry.getAllServiceTypes();
+        assertNotNull(serviceTypes);
+    }
+
+    @Test
+    public void testConcurrentReadAccess() throws InterruptedException {
+        final AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
+        final int numThreads = 10;
+        final ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+
+        // Add a type first
+        AtlasTransientTypeRegistry ttr = null;
+        boolean commit = false;
+
+        AtlasEnumDef enumDef = new AtlasEnumDef("ConcurrentTestEnum", "Test enum for concurrent access", "1.0");
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+            ttr.addType(enumDef);
+            commit = true;
+        } catch (AtlasBaseException e) {
+            // Should not happen
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+
+        // Now test concurrent read access
+        for (int i = 0; i < numThreads; i++) {
+            executor.submit(() -> {
+                try {
+                    // These should all work concurrently
+                    assertTrue(typeRegistry.isRegisteredType("ConcurrentTestEnum"));
+                    assertNotNull(typeRegistry.getType("ConcurrentTestEnum"));
+                    assertNotNull(typeRegistry.getEnumDefByName("ConcurrentTestEnum"));
+                    assertTrue(typeRegistry.getAllTypeNames().contains("ConcurrentTestEnum"));
+                } catch (AtlasBaseException e) {
+                    // Should not happen
+                }
+                return null;
+            });
+        }
+
+        executor.shutdown();
+        assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testProtectedConstructor() {
+        AtlasTypeRegistry baseRegistry = new AtlasTypeRegistry();
+
+        AtlasTransientTypeRegistry ttr = null;
+        try {
+            ttr = baseRegistry.lockTypeRegistryForUpdate();
+            assertNotNull(ttr);
+            assertTrue(ttr instanceof AtlasTransientTypeRegistry);
+        } catch (AtlasBaseException e) {
+            // Should not happen
+        } finally {
+            if (ttr != null) {
+                baseRegistry.releaseTypeRegistryForUpdate(ttr, false);
+            }
         }
     }
 }
