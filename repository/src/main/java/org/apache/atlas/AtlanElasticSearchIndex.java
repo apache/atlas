@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -278,11 +279,66 @@ public class AtlanElasticSearchIndex {
             }
         }
 
-        private BackendException convert(Exception esException) {
-            if (esException instanceof InterruptedException) {
-                return new TemporaryBackendException("Interrupted while waiting for response", esException);
-            } else {
-                return new PermanentBackendException("Unknown exception while executing index operation", esException);
-            }
+    private BackendException convert(Exception esException) {
+        if (esException instanceof InterruptedException) {
+            return new TemporaryBackendException("Interrupted while waiting for response", esException);
         }
+
+        // Check if this is a retryable exception by examining the exception chain
+        Throwable cause = esException;
+        while (cause != null) {
+            final String className = cause.getClass().getName();
+            final String message = cause.getMessage() != null ? cause.getMessage().toLowerCase() : "";
+
+            // Network-related exceptions that should be retried
+            if (className.contains("ConnectException") ||
+                    className.contains("SocketTimeoutException") ||
+                    className.contains("NoHttpResponseException") ||
+                    className.contains("ConnectionClosedException") ||
+                    className.contains("SocketException")) {
+                return new TemporaryBackendException("Temporary network exception during ES operation: " + cause.getMessage(), esException);
+            }
+
+            // HTTP status codes that indicate temporary failures
+            if (message.contains("503") || message.contains("service unavailable") ||
+                    message.contains("429") || message.contains("too many requests") ||
+                    message.contains("408") || message.contains("request timeout") ||
+                    message.contains("502") || message.contains("bad gateway") ||
+                    message.contains("504") || message.contains("gateway timeout")) {
+                return new TemporaryBackendException("Temporary ES server error: " + cause.getMessage(), esException);
+            }
+
+            // Cluster/node availability issues
+            if (message.contains("no available connection") ||
+                    message.contains("connection refused") ||
+                    message.contains("connection reset") ||
+                    message.contains("broken pipe") ||
+                    message.contains("connection pool shut down") ||
+                    message.contains("cluster block exception") ||
+                    message.contains("node not connected")) {
+                return new TemporaryBackendException("ES cluster temporarily unavailable: " + cause.getMessage(), esException);
+            }
+
+            cause = cause.getCause();
+        }
+
+        // Validation errors, mapping errors, and other permanent failures
+        final String exMessage = esException.getMessage() != null ? esException.getMessage().toLowerCase() : "";
+        if (exMessage.contains("mapper_parsing_exception") ||
+                exMessage.contains("illegal_argument_exception") ||
+                exMessage.contains("parsing_exception") ||
+                exMessage.contains("version_conflict") ||
+                exMessage.contains("strict_dynamic_mapping_exception")) {
+            return new PermanentBackendException("Permanent ES error: " + esException.getMessage(), esException);
+        }
+
+        // Default to TemporaryBackendException to allow retries for unknown IOException types
+        // Most IOExceptions in Elasticsearch context are transient network issues
+        if (esException instanceof IOException || esException instanceof UncheckedIOException) {
+            return new TemporaryBackendException("Temporary IO exception during ES operation, will retry: " + esException.getMessage(), esException);
+        }
+
+        // For truly unknown exceptions, treat as permanent
+        return new PermanentBackendException("Unknown exception while executing ES operation: " + esException.getMessage(), esException);
+    }
     }

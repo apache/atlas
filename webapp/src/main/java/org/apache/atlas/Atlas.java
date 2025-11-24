@@ -156,7 +156,7 @@ public final class Atlas {
         System.setProperty(AtlasConstants.SYSTEM_PROPERTY_APP_PORT, String.valueOf(appPort));
         final boolean enableTLS = isTLSEnabled(enableTLSFlag, appPort);
         configuration.setProperty(SecurityProperties.TLS_ENABLED, String.valueOf(enableTLS));
-
+        configuration.setProperty("atlas.graph.kafka.bootstrap.servers", configuration.getProperty("atlas.kafka.bootstrap.servers"));
         showStartupInfo(buildConfiguration, enableTLS, appPort);
         if (configuration.getProperty("atlas.graph.index.search.backend").equals("elasticsearch")) {
             initElasticsearch();

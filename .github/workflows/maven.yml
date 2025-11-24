@@ -22,18 +22,9 @@ name: Java CI with Maven
 on:
   push:
     branches:
-      - alpha
       - beta
-      - development
       - master
       - staging
-      - tagscanary
-      - tagscanarymerge
-      - fixlabels
-      - interceptapis
-      - mlh-1240-improve-cm-refresh-master
-      - mlh1432
-      - mlh-1620
 
 jobs:
   # Detect what changed to optimize workflow execution

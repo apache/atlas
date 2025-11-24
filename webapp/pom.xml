@@ -375,9 +375,19 @@
             <artifactId>jersey-multipart</artifactId>
         </dependency>
 
+        <!-- Mockito upgraded to support Java 17 -->
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
+            <artifactId>mockito-core</artifactId>
+            <version>4.11.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>4.11.0</version>
+            <scope>test</scope>
         </dependency>
 
         <!--<dependency>
@@ -495,6 +505,13 @@
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
             <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>${spring.version}</version>
             <scope>test</scope>
         </dependency>
 

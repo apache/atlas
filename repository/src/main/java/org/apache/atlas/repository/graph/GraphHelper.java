@@ -2345,4 +2345,10 @@ public final class GraphHelper {
             })
             .blockingGet();
     }
+
+    public Set<AtlasVertex> getVertices(Set<Long> vertexIds) {
+        if (CollectionUtils.isEmpty(vertexIds)) return Collections.emptySet();
+        Set<String> uniqueVertexIds = vertexIds.stream().map(String::valueOf).collect(Collectors.toSet());
+        return graph.getVertices(uniqueVertexIds.toArray(new String[0]));
+    }
 }
