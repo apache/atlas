@@ -124,36 +124,68 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         return instance;
     }
 
-    public static Configuration get(String fileName) throws AtlasException {
-        String confLocation = System.getProperty(ATLAS_CONFIGURATION_DIRECTORY_PROPERTY);
-
-        try {
-            URL url;
-
-            if (confLocation == null) {
-                LOG.info("Looking for {} in classpath", fileName);
-
-                url = ApplicationProperties.class.getClassLoader().getResource(fileName);
-
-                if (url == null) {
-                    LOG.info("Looking for /{} in classpath", fileName);
-
-                    url = ApplicationProperties.class.getClassLoader().getResource("/" + fileName);
+    public static Configuration getConf(String propertyFileName) throws AtlasException {
+        if (instance == null) {
+            synchronized (ApplicationProperties.class) {
+                if (instance == null) {
+                    set(get(propertyFileName));
                 }
-            } else {
-                url = new File(confLocation, fileName).toURI().toURL();
+            }
+        }
+        return instance;
+    }
+
+    public static Configuration getConf(Configuration clientConf) throws AtlasException {
+        if (instance == null) {
+            synchronized (ApplicationProperties.class) {
+                if (instance == null) {
+                    set(clientConf);
+                }
+            }
+        }
+        return instance;
+    }
+
+    public static Configuration get(String fileName) throws AtlasException {
+        try {
+            URL url = null;
+
+            if (StringUtils.isNotBlank(fileName)) {
+                File file = new File(fileName);
+                boolean hasPath = file.getParent() != null;
+                if (hasPath) {
+                    // Case A: User passed a full path
+                    if (file.exists() && file.isFile()) {
+                        url = file.toURI().toURL();
+                        LOG.info("Loading {} from {}", fileName, url);
+                    }
+                }
+            }
+            if (url == null) {
+                // Case B: use JVM ATLAS config dir or classpath
+                String confLocation = System.getProperty(ATLAS_CONFIGURATION_DIRECTORY_PROPERTY);
+
+                if (confLocation == null) {
+                    LOG.info("Looking for {} in classpath", fileName);
+
+                    url = ApplicationProperties.class.getClassLoader().getResource(fileName);
+
+                    if (url == null) {
+                        LOG.info("Looking for /{} in classpath", fileName);
+                        url = ApplicationProperties.class.getClassLoader().getResource("/" + fileName);
+                    }
+                } else {
+                    url = new File(confLocation, fileName).toURI().toURL();
+                }
+
+                LOG.info("Loading {} from {}", fileName, url);
             }
 
-            LOG.info("Loading {} from {}", fileName, url);
-
             ApplicationProperties appProperties = new ApplicationProperties(url);
-
             appProperties.setDefaults();
-
             setLdapPasswordFromKeystore(appProperties);
 
             Configuration configuration = appProperties.interpolatedConfiguration();
-
             logConfiguration(configuration);
 
             return configuration;

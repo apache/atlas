@@ -19,20 +19,28 @@ package org.apache.atlas;
 
 import org.apache.atlas.utils.AtlasConfigurationUtil;
 import org.apache.commons.configuration.Configuration;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.AbstractMap;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.expectThrows;
 import static org.testng.Assert.fail;
 
 /**
  * Unit test for {@link ApplicationProperties}
  *
  */
+
 public class ApplicationPropertiesTest {
     @Test
     public void testGetFileAsInputStream() throws Exception {
@@ -132,12 +140,12 @@ public class ApplicationPropertiesTest {
 
     @Test
     public void verifySetDefault() throws AtlasException {
-        Configuration         props  = ApplicationProperties.get("test.properties");
+        Configuration props = ApplicationProperties.get("test.properties");
         ApplicationProperties aProps = (ApplicationProperties) props;
 
-        String                                  defaultValue = "someValue";
-        String                                  someKey      = "someKey";
-        AbstractMap.SimpleEntry<String, String> defaultKV    = new AbstractMap.SimpleEntry<>(someKey, defaultValue);
+        String defaultValue = "someValue";
+        String someKey = "someKey";
+        AbstractMap.SimpleEntry<String, String> defaultKV = new AbstractMap.SimpleEntry<>(someKey, defaultValue);
 
         aProps.setDefault(defaultKV, "newValue");
 
@@ -148,13 +156,73 @@ public class ApplicationPropertiesTest {
 
     @Test
     public void verifyGetLatesttString() throws AtlasException {
-        String        key       = "atlas.metadata.namespace";
-        String        oldVal    = "nm-sp-1";
-        String        newVal    = "nm-sp-2";
+        String key = "atlas.metadata.namespace";
+        String oldVal = "nm-sp-1";
+        String newVal = "nm-sp-2";
         Configuration atlasConf = ApplicationProperties.get("test.properties");
 
         assertEquals(atlasConf.getString(key), oldVal);
         assertEquals(AtlasConfigurationUtil.getRecentString(atlasConf, key, oldVal), newVal);
         assertEquals(AtlasConfigurationUtil.getRecentString(atlasConf, "garbage", oldVal), oldVal);
+    }
+
+    @Test
+    public void verifyCustomisedPath() throws AtlasException, IOException {
+        Configuration atlasConf = ApplicationProperties.getConf("src/test/resources/test.properties");
+        InputStream inStr = null;
+
+        try {
+            inStr = ApplicationProperties.getFileAsInputStream(atlasConf, "jaas.properties.file", null);
+            assertNotNull(inStr);
+        } finally {
+            if (inStr != null) {
+                inStr.close();
+            }
+        }
+    }
+
+    @Test
+    public void verifyPropertyValues() throws AtlasException {
+        Configuration props = ApplicationProperties.getConf("src/test/resources/test.properties");
+        ApplicationProperties aProps = (ApplicationProperties) props;
+
+        String defaultValue = "atlas";
+        String someKey = "atlas.service";
+
+        assertFalse(aProps.getString(someKey).equals(defaultValue));
+    }
+
+    @Test
+    public void verifyCustomisedPathFailureExpected() {
+        try (MockedStatic<ApplicationProperties> mocked = Mockito.mockStatic(ApplicationProperties.class)) {
+            mocked.when(() -> ApplicationProperties.getConf("src/test/resources/incorrectfile.properties"))
+                    .thenThrow(new AtlasException("Failed to load application properties"));
+
+            AtlasException ex = expectThrows(
+                    AtlasException.class,
+                    () -> ApplicationProperties.getConf("src/test/resources/incorrectfile.properties"));
+
+            assertTrue(
+                    ex.getMessage().contains("Failed to load application properties"),
+                    "Exception message mismatch!");
+        }
+    }
+
+    @Test
+    public void verifyClientConfiguration_withStaticMock_onlyUsingMockitoMock() throws Exception {
+        Configuration mockConf = Mockito.mock(Configuration.class);
+
+        Mockito.when(mockConf.getString("atlas.server.url")).thenReturn("http://localhost:21000");
+        Mockito.when(mockConf.getString("atlas.login.method")).thenReturn("basic");
+
+        try (MockedStatic<ApplicationProperties> mocked = Mockito.mockStatic(ApplicationProperties.class)) {
+            mocked.when(() -> ApplicationProperties.getConf(Mockito.any(Configuration.class)))
+                    .thenReturn(mockConf);
+            Configuration result = ApplicationProperties.getConf(mockConf);
+
+            assertSame(mockConf, result);
+            assertEquals(result.getString("atlas.server.url"), "http://localhost:21000");
+            assertEquals(result.getString("atlas.login.method"), "basic");
+        }
     }
 }
