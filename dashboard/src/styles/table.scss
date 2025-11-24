@@ -69,6 +69,23 @@
   width: auto !important;
 }
 
+/* Ensure the content wrapper inside header spans full cell width */
+.table-header-cell > div,
+.table-header-wrap {
+  display: flex;
+  width: 100%;
+  min-width: 0; /* allow flex children to shrink instead of overflowing */
+}
+
+/* Header text wrapper to avoid inline styles in JSX */
+.table-header-text {
+  display: flex;
+  align-items: center;
+  line-height: 20px;
+  width: 100%;
+  min-width: 0;
+}
+
 /* table-pagination */
 
 .table-pagination {
@@ -91,18 +108,22 @@
   align-items: center;
   width: 150px;
   border: 1px solid rgba(0, 0, 0, 0.23);
-  height: 32px;
+  height: 27px;
 }
 
-.pagination-previous-btn {
-  height: 32px;
-  width: 32px;
+.pagination-page-change-btn {
+  height: 24px;
+  width: 24px;
 }
 
 .table-pagination-gotopage-input {
   margin-left: 5px;
   flex: 1px;
 }
+.table-pagination-gotopage-input input {
+  padding: 0 4px !important;
+}
+
 .table-pagination-gotopage-button {
   padding: 6px !important;
   border-radius: 0 !important;
@@ -111,20 +132,11 @@
 }
 .table-pagination-page {
   border-radius: 4px !important;
-  height: 24px;
-  width: 24px;
+  height: 20px;
   color: #37bb9b !important;
   border: 1px solid #37bb9b !important;
   margin: 0 0.5rem !important;
-}
-
-.pagination-page-limit .MuiInputBase-fullWidth {
-  padding-top: 3.5px !important;
-  padding-bottom: 3.5px !important;
-}
-
-.pagination-page-limit input {
-  height: 20px;
+  font-size: 0.875rem !important;
 }
 
 /* table-flters */
@@ -230,13 +242,10 @@ td:has(.searchTableName) {
 }
 
 .entity-name {
-  display: inline-block;
   line-height: 24px;
-  width: 72px;
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: bottom;
-  // text-align: center;
 }
 
 .delete-icon {
@@ -255,4 +264,11 @@ td:has(.searchTableName) {
   padding: 0.25rem 0.875rem;
   gap: 0.5rem;
   cursor: pointer;
+}
+
+/* Only stretch non-first columns when a table is actually expanded (tbody has expanded rows) */
+/* Only stretch direct cells of the expandable table, not nested inner tables */
+.expand-row-table.has-expanded-rows > thead > tr > th:not(:first-child),
+.expand-row-table.has-expanded-rows > tbody > tr > td:not(:first-child) {
+  width: 100% !important;
 }

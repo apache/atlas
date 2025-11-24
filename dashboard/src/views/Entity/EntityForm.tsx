@@ -28,11 +28,11 @@ import FormInputText from "@components/Forms/FormInputText";
 import FormSelectBoolean from "@components/Forms/FormSelectBoolean";
 import FormTextArea from "@components/Forms/FormTextArea";
 import CustomModal from "@components/Modal";
+import SkeletonLoader from "@components/SkeletonLoader";
 import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
 import { Action, DynamicObject, State } from "@models/entityFormType";
 import {
   Autocomplete,
-  CircularProgress,
   FormControl,
   Stack,
   TextField,
@@ -443,7 +443,7 @@ const EntityForm = ({
       const { guidAssignments } = entityRespData;
       toast.dismiss(toastId.current);
       toastId.current = toast.success(
-        `Entity was ${isEmpty(guid) ? "created" : "udpated"} successfully`
+        `Entity was ${isEmpty(guid) ? "created" : "updated"} successfully`
       );
       const newSearchParams = new URLSearchParams();
       newSearchParams.set("tabActive", "properties");
@@ -619,12 +619,8 @@ const EntityForm = ({
           )}
         </Stack>
         {loader ? (
-          <Stack
-            direction="row"
-            alignItems={"center"}
-            justifyContent={"center"}
-          >
-            <CircularProgress />
+          <Stack>
+          <SkeletonLoader animation="pulse" variant="text" count={5}/>
           </Stack>
         ) : (
           !isEmpty(entityTypeObj) && (
@@ -638,7 +634,7 @@ const EntityForm = ({
                       <>
                         <fieldset className="entity-form-fieldset">
                           <legend>
-                            <Typography fontSize={"14px"}>
+                            <Typography fontSize={"14px"} padding={ '5px 8px'}>
                               {key == "attributeDefs"
                                 ? "Attributes"
                                 : "Relationships"}

@@ -50,6 +50,8 @@ public abstract class ClassificationTask extends AbstractTask {
     public static final String PARAM_RELATIONSHIP_GUID        = "relationshipGuid";
     public static final String PARAM_RELATIONSHIP_OBJECT      = "relationshipObject";
     public static final String PARAM_RELATIONSHIP_EDGE_ID     = "relationshipEdgeId";
+    public static final String PARAM_IMPORT_IN_PROGRESS       = "isImportInProgress";
+    public static final boolean DEFAULT_IMPORT_IN_PROGRESS    = false;
 
     protected final AtlasGraph             graph;
     protected final EntityGraphMapper      entityGraphMapper;
@@ -66,12 +68,17 @@ public abstract class ClassificationTask extends AbstractTask {
     }
 
     public static Map<String, Object> toParameters(String entityGuid, String classificationVertexId, String relationshipGuid, String classificationName) {
+        return toParameters(entityGuid, classificationVertexId, relationshipGuid, classificationName, false);
+    }
+
+    public static Map<String, Object> toParameters(String entityGuid, String classificationVertexId, String relationshipGuid, String classificationName, boolean  isImportInProgress) {
         Map<String, Object> ret = new HashMap<>();
 
         ret.put(PARAM_ENTITY_GUID, entityGuid);
         ret.put(PARAM_CLASSIFICATION_VERTEX_ID, classificationVertexId);
         ret.put(PARAM_CLASSIFICATION_NAME, classificationName);
         ret.put(PARAM_RELATIONSHIP_GUID, relationshipGuid);
+        ret.put(PARAM_IMPORT_IN_PROGRESS, isImportInProgress);
 
         return ret;
     }
@@ -117,6 +124,14 @@ public abstract class ClassificationTask extends AbstractTask {
             LOG.warn("Task: {}: Unable to process task as user name is empty!", getTaskGuid());
 
             return FAILED;
+        }
+
+        Object obj = params.get(PARAM_IMPORT_IN_PROGRESS);
+        if (obj != null) {
+            LOG.debug("Task: {}: Setting import progress set to: {}", getTaskGuid(), obj);
+            RequestContext.get().setImportInProgress((Boolean) obj);
+        } else {
+            RequestContext.get().setImportInProgress(DEFAULT_IMPORT_IN_PROGRESS);
         }
 
         RequestContext.get().setUser(userName, null);

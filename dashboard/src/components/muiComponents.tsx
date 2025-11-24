@@ -55,7 +55,6 @@ import MuiAccordionDetails from "@mui/material/AccordionDetails";
 const LightTooltip = styled(({ className, ...props }: any) => (
   <Tooltip
     sx={{ transition: "none" }}
-    arrow
     {...props}
     classes={{ popper: className }}
     TransitionComponent={Zoom}
@@ -105,18 +104,20 @@ const CustomButton = ({
   let mergedStyle = { ...defaultStyles, ...customStyles };
 
   return (
-    <Button
-      variant={variant}
-      color={color}
-      sx={mergedStyle}
-      onClick={onClick}
-      size={size}
-      endIcon={endIcon}
-      startIcon={startIcon}
-      disabled={disabled}
-    >
-      {children}
-    </Button>
+    <Box component="span" sx={{ display: 'inline-flex' }}>
+      <Button
+        variant={variant}
+        color={color}
+        sx={mergedStyle}
+        onClick={onClick}
+        size={size}
+        endIcon={endIcon}
+        startIcon={startIcon}
+        disabled={disabled}
+      >
+        {children}
+      </Button>
+    </Box>
   );
 };
 

@@ -31,6 +31,8 @@ import {
   sanitizeHtmlContent
 } from "@utils/Utils";
 import { useState } from "react";
+import { useAppSelector } from "@hooks/reducerHook";
+import { toast } from "react-toastify";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { removeClassification } from "@api/apiMethods/classificationApiMethod";
 import { useParams, useSearchParams } from "react-router-dom";
@@ -104,6 +106,11 @@ const DetailPageAttribute = ({
   const { name }: { name: string; found: boolean; key: any } =
     extractKeyValueFromEntity(data);
 
+  const { glossaryData }: any = useAppSelector((state: any) => state.glossary);
+  const hasAnyGlossaryTerms = Array.isArray(glossaryData)
+    ? glossaryData.some((g: any) => Array.isArray(g?.terms) && g.terms.length > 0)
+    : false;
+
   return (
     <>
       <Stack
@@ -170,7 +177,7 @@ const DetailPageAttribute = ({
             {" "}
             {shortDescription != undefined && (
               <>
-                <Stack gap="0.5rem">
+                <Stack gap="0.5rem" direction="row">
                   <Typography
                     flexBasis="12%"
                     fontWeight="600"
@@ -247,17 +254,15 @@ const DetailPageAttribute = ({
                   paddingRight: "1rem"
                 }}
               >
-                <Stack gap={1} right="0" top="0" justifyContent="flex-end">
+                <div>
                   {alignment == "formatted" ? (
-                    <div style={{ wordBreak: "break-all" }}>
-                      <ShowMoreText
-                        value={sanitizeHtmlContent(description)}
-                        maxLength={160}
-                        more={"show more"}
-                        less={"show less"}
-                        isHtml={true}
-                      />
-                    </div>
+                    <ShowMoreText
+                      value={sanitizeHtmlContent(description)}
+                      maxLength={160}
+                      more={"show more"}
+                      less={"show less"}
+                      isHtml={true}
+                    />
                   ) : (
                     <div style={{ wordBreak: "break-all" }}>
                       <ShowMoreText
@@ -268,7 +273,7 @@ const DetailPageAttribute = ({
                       />
                     </div>
                   )}
-                </Stack>
+                </div>
               </div>
             </Stack>
             {!isEmpty(gtypeParams) &&
@@ -375,6 +380,11 @@ const DetailPageAttribute = ({
                           size="small"
                           color="primary"
                           onClick={() => {
+                            if (!hasAnyGlossaryTerms) {
+                              toast.dismiss();
+                              toast.info("There are no available terms");
+                              return;
+                            }
                             setOpenAddTermModal(true);
                           }}
                         >

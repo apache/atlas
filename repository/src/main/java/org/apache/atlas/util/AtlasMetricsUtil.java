@@ -39,6 +39,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_AVG_TIME_CURR_DAY;
 import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_AVG_TIME_CURR_HOUR;
@@ -162,7 +163,7 @@ public class AtlasMetricsUtil {
             partitionStat.incrFailedMessageCount();
         }
 
-        partitionStat.incrProcessedMessageCount();
+        partitionStat.incrProcessedMessageCount(stats.timeTakenMs);
         partitionStat.setLastMessageProcessedTime(messagesProcessed.getLastIncrTime().toEpochMilli());
     }
 
@@ -187,15 +188,18 @@ public class AtlasMetricsUtil {
             for (TopicPartitionStat tpStat : tStat.partitionStats.values()) {
                 Map<String, Long> tpDetails = new HashMap<>();
 
-                tpDetails.put("offsetStart", tpStat.startOffset);
-                tpDetails.put("offsetCurrent", tpStat.currentOffset);
-                tpDetails.put("failedMessageCount", tpStat.failedMessageCount);
-                tpDetails.put("lastMessageProcessedTime", tpStat.lastMessageProcessedTime);
-                tpDetails.put("processedMessageCount", tpStat.processedMessageCount);
+                tpDetails.put("offsetStart", tpStat.getStartOffset());
+                tpDetails.put("offsetCurrent", tpStat.getCurrentOffset());
+                tpDetails.put("failedMessageCount", tpStat.getFailedMessageCount());
+                tpDetails.put("lastMessageProcessedTime", tpStat.getLastMessageProcessedTime());
+                tpDetails.put("processedMessageCount", tpStat.getProcessedMessageCount());
+                tpDetails.put("avgProcessingTime", tpStat.getAvgProcessingTime());
 
-                LOG.debug("Setting failedMessageCount : {} and lastMessageProcessedTime : {} for topic {}-{}", tpStat.failedMessageCount, tpStat.lastMessageProcessedTime, tpStat.topicName, tpStat.partition);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Setting failedMessageCount : {} and lastMessageProcessedTime : {} for topic {}-{}", tpStat.getFailedMessageCount(), tpStat.getLastMessageProcessedTime(), tpStat.getTopicName(), tpStat.getPartition());
+                }
 
-                topicDetails.put(tpStat.topicName + "-" + tpStat.partition, tpDetails);
+                topicDetails.put(tpStat.getTopicName() + "-" + tpStat.getPartition(), tpDetails);
             }
         }
 
@@ -418,13 +422,14 @@ public class AtlasMetricsUtil {
     }
 
     static class TopicPartitionStat {
-        private final String topicName;
-        private final int    partition;
-        private final long   startOffset;
-        private       long   currentOffset;
-        private       long   lastMessageProcessedTime;
-        private       long   failedMessageCount;
-        private       long   processedMessageCount;
+        private final String     topicName;
+        private final int        partition;
+        private final long       startOffset;
+        private       long       currentOffset;
+        private       long       lastMessageProcessedTime;
+        private final AtomicLong failedMessageCount    = new AtomicLong();
+        private final AtomicLong processedMessageCount = new AtomicLong();
+        private final AtomicLong totalProcessingTimeMs = new AtomicLong();
 
         public TopicPartitionStat(String topicName, int partition, long startOffset, long currentOffset) {
             this.topicName     = topicName;
@@ -462,19 +467,26 @@ public class AtlasMetricsUtil {
         }
 
         public long getFailedMessageCount() {
-            return failedMessageCount;
+            return failedMessageCount.get();
         }
 
         public void incrFailedMessageCount() {
-            this.failedMessageCount++;
+            this.failedMessageCount.incrementAndGet();
         }
 
         public long getProcessedMessageCount() {
-            return processedMessageCount;
+            return processedMessageCount.get();
         }
 
-        public void incrProcessedMessageCount() {
-            this.processedMessageCount++;
+        public void incrProcessedMessageCount(long timeTakenMs) {
+            this.processedMessageCount.incrementAndGet();
+            this.totalProcessingTimeMs.addAndGet(timeTakenMs);
+        }
+
+        public long getAvgProcessingTime() {
+            long processedMessageCount = this.processedMessageCount.get();
+
+            return processedMessageCount == 0 ? 0 : (totalProcessingTimeMs.get() / processedMessageCount);
         }
     }
 }

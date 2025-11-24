@@ -43,7 +43,6 @@ import {
 } from "@tanstack/react-table";
 import { FC, useEffect, useMemo, useState } from "react";
 import TableFilter from "./TableFilters";
-import TablePagination from "./TablePagination";
 import ArrowUpwardOutlinedIcon from "@mui/icons-material/ArrowUpwardOutlined";
 import ArrowDownwardOutlinedIcon from "@mui/icons-material/ArrowDownwardOutlined";
 import SwapVertOutlinedIcon from "@mui/icons-material/SwapVertOutlined";
@@ -75,6 +74,7 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import TableRowsLoader from "./TableLoader";
 import AddTag from "@views/Classification/AddTag";
 import FilterQuery from "@components/FilterQuery";
+import TablePagination from "./TablePagination";
 
 interface IndeterminateCheckboxProps extends Omit<CheckboxProps, "ref"> {
   indeterminate?: boolean;
@@ -129,7 +129,7 @@ const Row = ({
     <>
       <TableRow hover key={row.id} onClick={handleRow}>
         {showRowSelection && (
-          <TableCell padding="checkbox" sx={{ width: "2%" }}>
+          <TableCell width="48">
             <IndeterminateCheckbox
               {...{
                 checked: row.getIsSelected(),
@@ -141,7 +141,7 @@ const Row = ({
           </TableCell>
         )}
         {expandRow && (
-          <TableCell padding="checkbox">
+          <TableCell width="48">
             <IconButton
               aria-label="expand row"
               size="small"
@@ -192,7 +192,7 @@ const Row = ({
   );
 };
 
-const DraggableTableHeader = ({ header }: { header: any }) => {
+const DraggableTableHeader = ({ header, isEmptyRows }: { header: any; isEmptyRows?: boolean }) => {
   const { attributes, isDragging, listeners, setNodeRef, transform } =
     useSortable({
       id: header.column.id
@@ -204,10 +204,11 @@ const DraggableTableHeader = ({ header }: { header: any }) => {
     transform: CSS.Translate.toString(transform),
     transition: "width transform 0.2s ease-in-out",
     whiteSpace: "nowrap",
-    width:
-      header.column.columnDef?.width != undefined
-        ? header.column.columnDef?.width
-        : header.column.getSize(),
+    width: isEmptyRows
+      ? undefined
+      : header.column.columnDef?.width != undefined
+      ? header.column.columnDef?.width
+      : header.column.getSize(),
     zIndex: isDragging ? 1 : 0
   };
 
@@ -221,14 +222,9 @@ const DraggableTableHeader = ({ header }: { header: any }) => {
     >
       {header.isPlaceholder ? null : (
         <div
-          className={
+          className={`${
             header.column.getCanSort() ? "cursor-pointer select-none" : ""
-          }
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.125rem"
-          }}
+          } table-header-wrap`}
           onClick={header.column.getToggleSortingHandler()}
           title={
             header.column.getCanSort()
@@ -241,10 +237,7 @@ const DraggableTableHeader = ({ header }: { header: any }) => {
           }
         >
           <span
-            style={{
-              display: "inline-block",
-              lineHeight: "20px"
-            }}
+            className="table-header-text"
             {...attributes}
             {...listeners}
           >
@@ -315,7 +308,10 @@ const DragAlongCell = ({
     <TableCell
       onClick={() => onClickRow?.(cell, row)}
       key={cell.id}
-      sx={{ padding: "8px", fontSize: "14px !important" }}
+      sx={{
+        padding: "8px",
+        fontSize: "14px !important"
+      }}
       className="text-[#2E353A] text-base font-graphik table-body-cell"
       style={style}
       ref={setNodeRef}
@@ -332,6 +328,7 @@ const TableLayout: FC<TableProps> = ({
   isFetching,
   defaultColumnVisibility,
   pageCount,
+  totalCount,
   onClickRow,
   emptyText,
   defaultColumnParams,
@@ -352,27 +349,58 @@ const TableLayout: FC<TableProps> = ({
   showPagination,
   setUpdateTable,
   isfilterQuery,
-  isClientSidePagination
+  isClientSidePagination,
+  isEmptyData,
+  setIsEmptyData,
+  showGoToPage
 }) => {
   let defaultHideColumns = { ...defaultColumnVisibility };
   const location = useLocation();
   const memoizedData = useMemo(() => data, [data]);
   const memoizedColumns = useMemo(() => columns, [columns]);
   const [searchParams] = useSearchParams();
-
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 25
   });
+
+  const [goToPageVal, setGoToPageVal] = useState<any>("");
+
   const [rowSelection, setRowSelection] = useState({});
-  const [sorting, setSorting] = useState<SortingState>(
-    !isEmpty(defaultSortCol) ? defaultSortCol : []
+  const existingColumnIds = useMemo(
+    () =>
+      (!isEmpty(memoizedColumns)
+        ? memoizedColumns.map((c: any) => c.id || c.accessorKey)
+        : []) as string[],
+    [memoizedColumns]
   );
+
+  const sanitizeSorting = (sortingState: SortingState) => {
+    if (isEmpty(sortingState)) return [] as SortingState;
+    return sortingState.filter(
+      (s: any) => s && existingColumnIds.includes(s.id)
+    );
+  };
+
+  const [sorting, setSorting] = useState<SortingState>(() => []);
+
   const [columnOrder, setColumnOrder] = useState<any>(() =>
     !isEmpty(memoizedColumns)
-      ? memoizedColumns.map((c: any) => c.accessorKey)
+      ? memoizedColumns
+          .map((c: any) => c.id || c.accessorKey)
+          .filter(Boolean)
       : []
   );
+
+  useEffect(() => {
+    setColumnOrder(
+      !isEmpty(memoizedColumns)
+        ? memoizedColumns
+            .map((c: any) => c.id || c.accessorKey)
+            .filter(Boolean)
+        : []
+    )
+  }, [memoizedColumns])
   const [columnVisibility, setColumnVisibility] = useState(defaultHideColumns);
   const [tagModal, setTagModal] = useState<boolean>(false);
   let currentParams = searchParams;
@@ -381,19 +409,17 @@ const TableLayout: FC<TableProps> = ({
   currentParams.forEach((value, key) => {
     params[key] = value;
   });
+  // Total number of visible table columns including selection/expand controls
+  const totalVisibleColumns =
+    (showRowSelection ? 1 : 0) + (expandRow ? 1 : 0) + columnOrder.length;
   const {
     getHeaderGroups,
     getRowModel,
-    firstPage,
-    getCanPreviousPage,
-    previousPage,
-    nextPage,
-    getCanNextPage,
-    lastPage,
     setPageIndex,
     getPageCount,
+    nextPage,
+    previousPage,
     setPageSize,
-    getRowCount,
     resetSorting,
     resetRowSelection,
     getIsAllRowsSelected,
@@ -414,13 +440,15 @@ const TableLayout: FC<TableProps> = ({
     onSortingChange: setSorting,
     onColumnOrderChange: setColumnOrder,
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: isClientSidePagination
+      ? getPaginationRowModel()
+      : undefined,
     onPaginationChange: setPagination,
     state: {
       columnVisibility: columnVisibilityParams
         ? defaultHideColumns
         : columnVisibility,
-      sorting,
+      sorting: sanitizeSorting(sorting),
       pagination,
       rowSelection,
       columnOrder
@@ -432,14 +460,28 @@ const TableLayout: FC<TableProps> = ({
   });
 
   useEffect(() => {
-    if (!isEmpty(fetchData)) {
-      fetchData({ pagination, sorting });
+    setSorting((prev) => sanitizeSorting(prev));
+    setColumnOrder(
+      !isEmpty(memoizedColumns)
+        ? memoizedColumns
+            .map((c: any) => c.id || c.accessorKey)
+            .filter(Boolean)
+        : []
+    );
+  }, [existingColumnIds]);
+
+  useEffect(() => {
+    if (typeof fetchData === "function") {
+      fetchData({
+        pagination,
+        sorting
+      });
     }
   }, [
     fetchData,
     pagination.pageIndex,
     pagination.pageSize,
-    !clientSideSorting && sorting
+    clientSideSorting ? null : sorting
   ]);
 
   function handleDragEnd(event: DragEndEvent) {
@@ -459,30 +501,15 @@ const TableLayout: FC<TableProps> = ({
     useSensor(KeyboardSensor, {})
   );
 
+  const [, setSearchParams] = useSearchParams();
+
   useEffect(() => {
     resetSorting(true);
     resetRowSelection(true);
     setRowSelection({});
-    setSorting(!isEmpty(defaultSortCol) ? defaultSortCol : []);
-    // setColumnVisibility(defaultHideColumns);
-  }, [typeParam]);
-
-  // if (fetchData != undefined) {
-
-  // }
-
-  let currentPageOffset = searchParams.get("pageOffset") || 0;
-  let isFirstPage = currentPageOffset == 0;
-
-  // const filteredParams = Array.from(searchParams.entries())
-  //   .filter(([key]) => ["type", "tag", "term"].includes(key))
-  //   .map(([key, value]) => ({
-  //     keyName:
-  //       key === "tag"
-  //         ? "Classification"
-  //         : key.charAt(0).toUpperCase() + key.slice(1),
-  //     value
-  //   }));
+    const candidate = !isEmpty(defaultSortCol) ? defaultSortCol : []
+    setSorting(sanitizeSorting(candidate));
+  }, [typeParam, defaultSortCol, setSearchParams]);
 
   const handleCloseTagModal = () => {
     setTagModal(false);
@@ -597,7 +624,19 @@ const TableLayout: FC<TableProps> = ({
               onDragEnd={handleDragEnd}
               sensors={sensors}
             >
-              <MuiTable size="small" className="table">
+              <MuiTable
+                size="small"
+                className={`table ${expandRow ? "expand-row-table" : ""} ${
+                  memoizedData && memoizedData.length > 0 && expandRow
+                    ? "has-expanded-rows"
+                    : ""
+                }`}
+                sx={{
+                  tableLayout: memoizedData.length > 0 ? "fixed" : "auto",
+                  width: "100%"
+                }}
+              >
+                {/* remove dynamic colgroup for empty state */}
                 {!isFetching && (
                   <TableHead>
                     {getHeaderGroups().map((headerGroup) => (
@@ -607,7 +646,7 @@ const TableLayout: FC<TableProps> = ({
                         className="table-header-row"
                       >
                         {showRowSelection && (
-                          <TableCell padding="checkbox">
+                          <TableCell width="48">
                             <IndeterminateCheckbox
                               {...{
                                 checked: getIsAllRowsSelected(),
@@ -617,19 +656,18 @@ const TableLayout: FC<TableProps> = ({
                             />
                           </TableCell>
                         )}
-                        {expandRow && (
-                          <TableCell sx={{ width: "2%" }} padding="checkbox" />
-                        )}
+                        {expandRow && <TableCell width="48" />}
                         <SortableContext
                           items={columnOrder}
                           strategy={horizontalListSortingStrategy}
                         >
-                          {" "}
+                          
                           {headerGroup.headers.map((header) =>
                             header.isPlaceholder ? null : (
                               <DraggableTableHeader
                                 key={header.id}
                                 header={header}
+                                isEmptyRows={!isFetching && memoizedData.length === 0}
                               />
                             )
                           )}
@@ -643,7 +681,7 @@ const TableLayout: FC<TableProps> = ({
                     <TableRowsLoader rowsNum={10} />
                   ) : memoizedData.length === 0 && isFetching == false ? (
                     <TableRow>
-                      <TableCell colSpan={columns.length + 1}>
+                      <TableCell colSpan={Math.max(1, totalVisibleColumns)}>
                         <Stack textAlign="center">
                           <Typography fontWeight="600" color="text.secondary">
                             {emptyText}
@@ -669,31 +707,27 @@ const TableLayout: FC<TableProps> = ({
               </MuiTable>
             </DndContext>
           </TableContainer>
-          {/* {noDataFound && (
-            <Stack my={2} textAlign="center">
-              {emptyText}
-            </Stack>
-          )} */}
 
-          {showPagination && (
+          {showPagination && !isFetching && (
             <TablePagination
-              firstPage={firstPage}
-              getCanPreviousPage={getCanPreviousPage}
-              previousPage={previousPage}
-              nextPage={nextPage}
-              getCanNextPage={getCanNextPage}
-              lastPage={lastPage}
+              isServerSide={!isClientSidePagination}
               getPageCount={getPageCount}
               setPageIndex={setPageIndex}
               setPageSize={setPageSize}
+              nextPage={nextPage}
+              previousPage={previousPage}
               getRowModel={getRowModel}
-              getRowCount={getRowCount}
               pagination={pagination}
-              memoizedData={memoizedData}
-              isFirstPage={isFirstPage}
               setRowSelection={setRowSelection}
-              isClientSidePagination={isClientSidePagination}
+              memoizedData={memoizedData}
+              isFirstPage={pagination.pageIndex === 0}
               setPagination={setPagination}
+              goToPageVal={goToPageVal}
+              setGoToPageVal={setGoToPageVal}
+              isEmptyData={isEmptyData}
+              setIsEmptyData={setIsEmptyData}
+              showGoToPage={showGoToPage}
+              totalCount={totalCount}
             />
           )}
         </Paper>

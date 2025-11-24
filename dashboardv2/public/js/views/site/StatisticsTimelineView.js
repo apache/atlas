@@ -696,17 +696,56 @@ define(['require',
                         return returnObj
                     }
 
-                    that.ui.offsetCard.html(
-                        TopicOffsetTable({
-                            data: data.Notification.topicDetails,
-                            tableHeader: ["offsetStart", "offsetCurrent", "processedMessageCount", "failedMessageCount", "lastMessageProcessedTime"],
-                            tableCol: offsetTableColumn(data.Notification.topicDetails),
-                            getTmplValue: function(argument, args) {
-                                var returnVal = data.Notification.topicDetails[argument.label][args];
-                                return returnVal ? that.getValue({ value: returnVal, type: Enums.stats.Notification[args] }) : 0;
+                    var sortState = { key: 'label', order: 'asc' };
+                    var renderTopicTable = function(){
+                        var rows = offsetTableColumn(data.Notification.topicDetails);
+                        var dir = sortState.order === 'asc' ? 1 : -1;
+                        rows = rows.sort(function(a, b){
+                            if (sortState.key === 'label') {
+                                var av = (a.label || '').toLowerCase();
+                                var bv = (b.label || '').toLowerCase();
+                                if (av < bv) return -1 * dir;
+                                if (av > bv) return 1 * dir;
+                                return 0;
                             }
-                        })
-                    )
+                            var at = data.Notification.topicDetails[a.label] || {};
+                            var bt = data.Notification.topicDetails[b.label] || {};
+                            var avn = Number(at[sortState.key] || 0);
+                            var bvn = Number(bt[sortState.key] || 0);
+                            if (avn < bvn) return -1 * dir;
+                            if (avn > bvn) return 1 * dir;
+                            return 0;
+                        });
+
+                        that.ui.offsetCard.html(
+                            TopicOffsetTable({
+                                data: data.Notification.topicDetails,
+                                tableHeader: ["offsetStart", "offsetCurrent", "processedMessageCount", "failedMessageCount", "lastMessageProcessedTime", "avgProcessingTime"],
+                                tableCol: rows,
+                                getTmplValue: function(argument, args) {
+                                    var returnVal = data.Notification.topicDetails[argument.label][args];
+                                    var typeKey = (args === 'avgProcessingTime') ? 'lastMessageProcessedTime' : args;
+                                    return returnVal ? that.getValue({ value: returnVal, type: Enums.stats.Notification[typeKey] }) : 0;
+                                }
+                            })
+                        );
+
+                        var $ths = that.ui.offsetCard.find('th.sortable');
+                        $ths.find('.sort-icon').removeClass('asc desc');
+                        $ths.filter('[data-sort-key="' + sortState.key + '"]').find('.sort-icon').addClass(sortState.order);
+
+                        that.ui.offsetCard.find('th.sortable').off('click').on('click', function(){
+                            var key = $(this).data('sort-key');
+                            if (sortState.key === key) {
+                                sortState.order = (sortState.order === 'asc') ? 'desc' : 'asc';
+                            } else {
+                                sortState.key = key;
+                                sortState.order = 'asc';
+                            }
+                            renderTopicTable();
+                        });
+                    };
+                    renderTopicTable();
                     that.ui.notificationDetails.removeClass('hide');
                 }
 

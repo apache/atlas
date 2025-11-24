@@ -60,7 +60,6 @@ import {
 } from "react-router-dom";
 
 import Stack from "@mui/material/Stack";
-import CircularProgress from "@mui/material/CircularProgress";
 import { globalSearchFilterInitialQuery, isEmpty } from "@utils/Utils";
 import LaunchOutlinedIcon from "@mui/icons-material/LaunchOutlined";
 import { getGlossaryImportTmpl } from "@api/apiMethods/glossaryApiMethod";
@@ -75,6 +74,7 @@ import AddUpdateGlossaryForm from "@views/Glossary/AddUpdateGlossaryForm";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { AntSwitch } from "@utils/Muiutils";
 import { IconButton } from "@components/muiComponents";
+import SkeletonLoader from "@components/SkeletonLoader";
 
 type CustomContentRootProps = HTMLAttributes<HTMLDivElement> & {
   selectedNodeType?: any;
@@ -193,44 +193,32 @@ const CustomContent = forwardRef(function CustomContent(
     handleSelection(event);
   };
 
+  const labelProps = isValidElement(props.label)
+  ? (props.label.props as CustomContentRootProps)
+  : undefined;
+
   return (
     <CustomContentRoot
       className={clsx(className, classes.root, {
         "Mui-expanded": expanded,
         "Mui-selected":
           (isValidElement(props.label) &&
-            (props.label.props.selectedNodeType === props.label.props.node ||
-              props.label.props.selectedNodeTag === props.label.props.node ||
-              props.label.props.selectedNodeRelationship ===
-                props.label.props.node ||
-              props.label.props.selectedNodeBM === props.label.props.node)) ||
+            (labelProps?.selectedNodeType === labelProps?.node ||
+              labelProps?.selectedNodeTag === labelProps?.node ||
+              labelProps?.selectedNodeRelationship ===
+                labelProps?.node ||
+              labelProps?.selectedNodeBM === labelProps?.node)) ||
           selected,
         "Mui-focused": focused,
         "Mui-disabled": disabled,
       })}
       sx={{ position: "relative" }}
       // selectedNode={props.label.props.selectedNode}
-      selectedNodeType={
-        isValidElement(props.label)
-          ? props.label.props.selectedNodeType
-          : undefined
-      }
-      selectedNodeTag={
-        isValidElement(props.label)
-          ? props.label.props.selectedNodeTag
-          : undefined
-      }
-      selectedNodeRelationship={
-        isValidElement(props.label)
-          ? props.label.props.selectedNodeRelationship
-          : undefined
-      }
-      selectedNodeBM={
-        isValidElement(props.label)
-          ? props.label.props.selectedNodeBM
-          : undefined
-      }
-      node={isValidElement(props.label) ? props.label.props.node : undefined}
+      selectedNodeType={labelProps?.selectedNodeType}
+      selectedNodeTag={labelProps?.selectedNodeTag}
+      selectedNodeRelationship={labelProps?.selectedNodeRelationship}
+      selectedNodeBM={labelProps?.selectedNodeBM}
+      node={labelProps?.node}
       onClick={(e) => {
         handleClick(e);
       }}
@@ -338,6 +326,10 @@ const BarTreeView: FC<{
       );
     });
   }, [treeData, searchTerm]);
+
+  const displayTreeName = useMemo(() => {
+    return treeName === "CustomFilters" ? "Custom Filters" : treeName
+  }, [treeName]);
 
   const highlightText = useMemo(() => {
     return (text: string) => {
@@ -557,6 +549,9 @@ const BarTreeView: FC<{
   };
 
   const shouldSetSearchParams = (node: TreeNode, treeName: string) => {
+    if (treeName === "CustomFilters" && node.types === "parent") {
+      return false;
+    }
     return (
       node.children === undefined ||
       isEmpty(node.children) ||
@@ -602,7 +597,11 @@ const BarTreeView: FC<{
     searchParams.delete("entityFilters");
     searchParams.delete("tagFilters");
     searchParams.delete("relationshipFilters");
-    searchParams.delete("pageOffset");
+    // Always reset pagination defaults on tree navigation
+    if (treeName !== "CustomFilters") {
+      searchParams.set("pageLimit", "25");
+      searchParams.set("pageOffset", "0");
+    }
   };
 
   const setGlossarySearchParams = (
@@ -902,7 +901,7 @@ const BarTreeView: FC<{
                 className="tree-item-parent-label"
               >
                 <Stack flexGrow={1}>
-                  <span>{treeName}</span>
+                  <span>{displayTreeName}</span>
                 </Stack>
                 <Stack direction="row" alignItems="center" gap="0.375rem">
                   <LightTooltip title="Refresh">
@@ -1020,6 +1019,7 @@ const BarTreeView: FC<{
                         if (setisGroupView) {
                           setisGroupView(!isGroupView);
                         }
+                        handleClose();
                       }}
                       data-cy="groupOrFlatTreeView"
                       className="sidebar-menu-item"
@@ -1055,6 +1055,7 @@ const BarTreeView: FC<{
                         } else if (treeName == "Glossary") {
                           setGlossaryModal(true);
                         }
+                        handleClose();
                       }}
                       data-cy="createClassification"
                       className="sidebar-menu-item"
@@ -1078,6 +1079,7 @@ const BarTreeView: FC<{
                       onClick={(e) => {
                         e.stopPropagation();
                         downloadFile();
+                        handleClose();
                       }}
                       data-cy="downloadBusinessMetadata"
                       disabled={
@@ -1103,6 +1105,7 @@ const BarTreeView: FC<{
                       onClick={(e) => {
                         e.stopPropagation();
                         handleOpenModal();
+                        handleClose();
                       }}
                       data-cy="importBusinessMetadata"
                       disabled={
@@ -1143,13 +1146,7 @@ const BarTreeView: FC<{
             }}
           >
             {loader ? (
-              <Stack className="tree-item-loader-box">
-                <CircularProgress
-                  disableShrink
-                  size="small"
-                  className="tree-item-loader"
-                />
-              </Stack>
+              <SkeletonLoader animation="pulse" variant="text" width={300} count={5}/>
             ) : (
               filteredData.map((node: TreeNode) => renderTreeItem(node))
             )}

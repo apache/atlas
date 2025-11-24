@@ -222,10 +222,21 @@ const FormTreeView: React.FC<{
     node?.id && (
       <CustomTreeItem
         key={node.id}
-        itemId={node.types != "parent" ? `${node.id}@${node?.parent}` : node.id}
+        itemId={
+          node.types != "parent"
+            ? node.id === "No Records Found"
+              ? node.id
+              : `${node.id}@${node?.parent}`
+            : node.id
+        }
         label={
           <div
             onClick={(_event: React.MouseEvent<HTMLElement>) => {
+              if (node.id === "No Records Found") {
+                toast.dismiss(toastId.current);
+                toastId.current = toast.info("No terms present");
+                return;
+              }
               if (node.types == "parent" && isEmpty(node.children)) {
                 toast.dismiss(toastId.current);
                 toastId.current = toast.warning(`No ${treeName}`);

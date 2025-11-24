@@ -22,6 +22,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -37,6 +38,7 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQueryParameter;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
+import org.apache.atlas.repository.graphdb.AtlasUniqueKeyHandler;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.GraphIndexQueryParameters;
 import org.apache.atlas.repository.graphdb.GremlinVersion;
@@ -44,6 +46,7 @@ import org.apache.atlas.repository.graphdb.janus.query.AtlasJanusGraphQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;
+import org.apache.hadoop.util.StringUtils;
 import org.apache.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import org.apache.tinkerpop.gremlin.jsr223.DefaultImportCustomizer;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -104,6 +107,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     private final ConvertGremlinValueFunction gremlinValueConversionFunction = new ConvertGremlinValueFunction();
     private final Set<String>                 multiProperties                = new HashSet<>();
     private final StandardJanusGraph          janusGraph;
+    private final AtlasUniqueKeyHandler       uniqueKeyHandler;
 
     private final ThreadLocal<GremlinGroovyScriptEngine> scriptEngine = ThreadLocal.withInitial(() -> {
         DefaultImportCustomizer.Builder builder = DefaultImportCustomizer.build()
@@ -130,6 +134,12 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
                 if (key.cardinality() != Cardinality.SINGLE) {
                     multiProperties.add(key.name());
                 }
+            }
+
+            if (StringUtils.equalsIgnoreCase(AtlasConfiguration.STORAGE_BACKEND_TYPE.getString(), "rdbms")) {
+                uniqueKeyHandler = new AtlasJanusRdbmsUniqueKeyHandler();
+            } else {
+                uniqueKeyHandler = null;
             }
         } finally {
             if (mgmt != null) {
@@ -429,6 +439,11 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
             resultList.add(GraphDbObjectFactory.createVertex(this, v));
         }
         return resultList;
+    }
+
+    @Override
+    public AtlasUniqueKeyHandler getUniqueKeyHandler() {
+        return uniqueKeyHandler;
     }
 
     public Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> wrapVertices(Iterable<? extends Vertex> it) {

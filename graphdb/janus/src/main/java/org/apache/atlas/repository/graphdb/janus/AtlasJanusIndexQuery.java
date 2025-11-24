@@ -77,7 +77,7 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
 
     @Override
     public Long vertexTotals() {
-        return query.vertexTotals();
+        return query.offset(0).limit(Integer.MAX_VALUE).vertexTotals();
     }
 
     @Override

@@ -16,8 +16,8 @@
  */
 
 import { getVersion } from "@api/apiMethods/headerApiMethods";
+import SkeletonLoader from "@components/SkeletonLoader";
 import {
-  CircularProgress,
   List,
   ListItem,
   ListItemText,
@@ -54,7 +54,7 @@ const About = () => {
     <>
       <Stack spacing={2}>
         {loader ? (
-          <CircularProgress />
+          <SkeletonLoader animation="wave" variant="text" width={'100%'} count={3} sx={{marginTop: '0px !important'}}/>
         ) : (
           <Stack direction="column" spacing={1}>
             <Typography variant="body1">

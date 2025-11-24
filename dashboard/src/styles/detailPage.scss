@@ -150,3 +150,14 @@ pre.code-block .json-string {
 .detail-page-divider:nth-child(even) {
   display: none;
 }
+
+.long-descriptions,
+.long-descriptions * {
+  display: contents;
+}
+
+.show-more-less-link {
+  display: inline-block !important;
+  cursor: pointer !important;
+  margin-left: 6px !important;
+}

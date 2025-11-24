@@ -51,6 +51,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertex;
+import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedTraitNames;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParameters;
 import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
 import static org.testng.Assert.assertEquals;
@@ -63,7 +65,13 @@ import static org.testng.Assert.assertTrue;
 public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
     private static final String IMPORT_FILE = "tag-propagation-data.zip";
 
+    private static final String IMPORT_DELETE_FILE = "deleted_tab_propagation.zip";
+
     private static final String HDFS_PATH_EMPLOYEES = "a3955120-ac17-426f-a4af-972ec8690e5f";
+
+    private static final String HIVE_TABLE = "089c1ad4-9dde-4f9e-80c8-12a3046be337";
+
+    private static final String HIVE_TABLE_CTAS = "e83551b7-bbef-45aa-99d5-3d98c0ac737b";
 
     @Inject
     private AtlasTypeDefStore typeDefStore;
@@ -209,6 +217,28 @@ public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
         List<String> impactedEntities = entityGraphMapper.deleteClassificationPropagation(hdfsEmployees.getGuid(), classificationVertex.getId().toString());
 
         assertNotNull(impactedEntities);
+    }
+
+    @Test
+    public void runImportForDeletedEntityLineage() throws Exception {
+        runImportWithNoParameters(importService, getZipSource(IMPORT_DELETE_FILE));
+        final String tagName = "classification1";
+
+        AtlasEntity         hiveTable = getEntity(HIVE_TABLE);
+        AtlasEntity         hiveTableCtas = getEntity(HIVE_TABLE_CTAS);
+
+        AtlasVertex parentEntityVertex   = AtlasGraphUtilsV2.findByGuid(hiveTable.getGuid());
+
+        AtlasVertex entityVertex         = AtlasGraphUtilsV2.findByGuid(hiveTableCtas.getGuid());
+
+        AtlasVertex classificationVertex = getClassificationVertex(parentEntityVertex, tagName);
+        assertNotNull(entityVertex);
+        assertNotNull(parentEntityVertex);
+        assertNotNull(classificationVertex);
+
+        List<String> propagatedTraitNames = getPropagatedTraitNames(entityVertex);
+
+        assertNotNull(propagatedTraitNames);
     }
 
     private void loadModelFilesAndImportTestData() {

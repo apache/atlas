@@ -16,15 +16,16 @@
 -->
 <thead>
     <tr>
-        <th>Kafka Topic-Partition</th>
-        <th>Start Offset</th>
-        <th>Current Offset</th>
-        <th>Processed</th>
-        <th>Failed</th>
-        <th>Last Message Processed Time</th>
+        <th data-sort-key="label" class="sortable">Kafka Topic-Partition <span class="sort-icon"></span></th>
+        <th data-sort-key="offsetStart" class="sortable">Start Offset <span class="sort-icon"></span></th>
+        <th data-sort-key="offsetCurrent" class="sortable">Current Offset <span class="sort-icon"></span></th>
+        <th data-sort-key="processedMessageCount" class="sortable">Processed <span class="sort-icon"></span></th>
+        <th data-sort-key="failedMessageCount" class="sortable">Failed <span class="sort-icon"></span></th>
+        <th data-sort-key="lastMessageProcessedTime" class="sortable">Last Message Processed Time <span class="sort-icon"></span></th>
+        <th data-sort-key="avgProcessingTime" class="sortable">Average message processing time <span class="sort-icon"></span></th>
     </tr>
 </thead>
-{{#if data}}
+{{#if tableCol}}
 <tbody>
     {{#each tableCol}}
     <tr>

@@ -91,6 +91,8 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
   const [updateTable, setUpdateTable] = useState(moment.now());
   const { entityData } = useSelector((state: EntityState) => state.entity);
   const [pageCount, setPageCount] = useState<number>(0);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [isEmptyData, setIsEmptyData] = useState(false);
   const [checkedEntities, setCheckedEntities] = useState<any>(
     !isEmpty(searchParams.get("includeDE"))
       ? searchParams.get("includeDE")
@@ -139,9 +141,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
     async ({ pagination }: { pagination?: any }) => {
       setLoader(true);
       const { pageSize, pageIndex } = pagination || {};
-      if (pageIndex > 1) {
-        searchParams.set("pageOffset", `${pageSize * pageIndex}`);
-      }
+
       let params: Params | any = {
         excludeDeletedEntities: !isEmpty(searchParams.get("includeDE"))
           ? !searchParams.get("includeDE")
@@ -207,10 +207,19 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
       globalSearchParams.basicParams = params;
       globalSearchParams.dslParams = dslParams;
 
-      let searchTypeParams =
-        searchParams.get("searchType") == "dsl" ? dslParams : params;
+      
+      const qParam = searchParams.get("query");
+      if (qParam) {
+        try {
+          (globalSearchParams as any).basicParams.query = qParam;
+          (globalSearchParams as any).dslParams.query = qParam;
+        } catch (_e) {}
+      }
+
+      const isDslSearch = searchParams.get("searchType") == "dsl";
+      let searchTypeParams = isDslSearch ? dslParams : params;
       try {
-        let searchResp = await getBasicSearchResult(
+        const searchResp = await getBasicSearchResult(
           {
             data:
               (searchParams.get("searchType") == "basic" ||
@@ -220,12 +229,55 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
           },
           searchParams.get("searchType") || "basic"
         );
-        let totalCount = searchResp.data.approximateCount;
-        setSearchData(searchResp.data);
-        setPageCount(Math.ceil(totalCount / pagination.pageSize));
-        setLoader(false);
+        const { data = {} } = searchResp || {};
+
+        const hasEntities = Array.isArray((data as any)?.entities);
+        const hasDslAttributes =
+          Array.isArray((data as any)?.attributes) ||
+          Array.isArray((data as any)?.attributes?.name);
+        const hasDslValues =
+          Array.isArray((data as any)?.attributes?.values) ||
+          Array.isArray((data as any)?.values);
+
+        if (isDslSearch && !hasEntities && !hasDslAttributes) {
+          setSearchData({ entities: [] });
+          setIsEmptyData(true);
+          setLoader(false);
+          return;
+        }
+
+        let dataLength = 0;
+        let totalCountLocal = 0;
+        if (isDslSearch && !hasEntities && hasDslAttributes && hasDslValues) {
+          const vals = (data as any).attributes?.values || (data as any).values;
+          dataLength = (vals as any[])?.length || 0;
+          totalCountLocal = dataLength;
+        } else {
+          const { approximateCount, entities } = data as any;
+          dataLength = Array.isArray(entities) ? entities.length : 0;
+          totalCountLocal = approximateCount ?? dataLength;
+        }
+
+        if (!dataLength) {
+          setIsEmptyData(true);
+          setSearchData({ entities: [], referredEntities: {} });
+          setTotalCount(0);
+          setPageCount(0);
+          setLoader(false);
+        } else {
+          setIsEmptyData(false);
+          setSearchData(searchResp.data);
+          setTotalCount(totalCountLocal || 0);
+          setPageCount(
+            Math.ceil((totalCountLocal || dataLength) / (pagination.pageSize || pageSize))
+          );
+          setLoader(false);
+        }
       } catch (error: any) {
-        console.error("Error fetching data:", error.response.data.errorMessage);
+        console.error(
+          "Error fetching data:",
+          error?.response?.data?.errorMessage
+        );
         toast.dismiss(toastId.current);
         serverError(error, toastId);
         setLoader(false);
@@ -451,7 +503,6 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
                   obj.name === superTypesEntityData.name
               );
             if (referredEntities == -1) {
-              // let referredEntities = searchData.referredEntities[obj?.guid];
               superTypesObj = {
                 accessorFn: (row: any) =>
                   row.attributes[superTypesEntityData.name],
@@ -729,16 +780,48 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
     }
   );
 
+  const isDslSearchMode = searchParams.get("searchType") === "dsl";
+  const getDslAttributeNames = () => {
+    const src: any = Array.isArray(searchData) ? searchData[0] : searchData;
+    if (!src) return [] as string[];
+    if (Array.isArray(src?.attributes)) {
+      return src.attributes
+        .map((a: any) => (typeof a === 'string' ? a : a?.name))
+        .filter(Boolean);
+    }
+    if (src?.attributes && Array.isArray(src?.attributes?.name)) {
+      return src.attributes.name as string[];
+    }
+    return [] as string[];
+  };
+  const sanitize = (name: string) =>
+    String(name).replace(/[^A-Za-z0-9_]/g, "_").replace(/_{2,}/g, "_");
+  const dslAttrNames = isDslSearchMode ? getDslAttributeNames() : [];
+  const dslColumns = dslAttrNames.map((label: string, idx: number) => {
+    const key = `dsl_${sanitize(label)}` || `dsl_${idx}`
+    return {
+      id: key,
+      accessorKey: key,
+      header: label,
+      cell: (info: any) => <span>{info.getValue()}</span>,
+      show: true
+    }
+  });
+
   let allColumns =
-    isEmpty(searchParams.get("type")) &&
-    isEmpty(searchParams.get("tag")) &&
-    !isEmpty(searchParams.get("term"))
+    isDslSearchMode && dslColumns.length > 0
+      ? dslColumns
+      : isEmpty(searchParams.get("type")) &&
+        isEmpty(searchParams.get("tag")) &&
+        !isEmpty(searchParams.get("term"))
       ? removeDuplicateObjects([...defaultColumns])
       : removeDuplicateObjects([
           ...defaultColumns,
           ...dynamicColumns,
           ...defaultHideColumns
         ]);
+
+  const isDslAggregate = isDslSearchMode && dslColumns.length > 0;
 
   const defaultColumnVisibility: any = (columns: any) => {
     let columnsParams: any = searchParams.get("attributes");
@@ -762,20 +845,15 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
 
     return hideColumns;
   };
-  const getDefaultSort = useMemo(() => [{ id: "name", asc: true }], []);
+  const getDefaultSort = useMemo(() => {
+    if (isDslAggregate) {
+      return [] as any[]; // no default sorting for DSL aggregates
+    }
+    return [{ id: "name", asc: true }];
+  }, [isDslAggregate]);
 
   return (
-    <Stack
-      // paddingTop={
-      //   isEmpty(classificationParams || glossaryTypeParams) ? 0 : "40px"
-      // }
-      // marginTop={
-      //   isEmpty(classificationParams || glossaryTypeParams) ? 0 : "20px"
-      // }
-      // padding="16px"
-      position="relative"
-      gap={"1rem"}
-    >
+    <Stack position="relative" gap={"1rem"}>
       {!isEmpty(classificationParams || glossaryTypeParams) && (
         <Stack
           direction="row"
@@ -825,32 +903,51 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
         </Stack>
       )}
 
-      {/* {loader ? (
-        <CircularProgress />
-      ) : ( */}
       <TableLayout
         fetchData={fetchSearchResult}
-        data={searchData.entities || []}
+        data={
+          isDslSearchMode && dslColumns.length > 0
+            ? (() => {
+                const src: any = Array.isArray(searchData)
+                  ? searchData[0]
+                  : searchData;
+                const values: any[] = Array.isArray(src?.values)
+                  ? src.values
+                  : Array.isArray(src?.attributes?.values)
+                  ? src.attributes.values
+                  : [];
+                return values.map((row: any[], idx: number) => {
+                  const obj: any = { id: `dsl-row-${idx}` };
+                  dslAttrNames.forEach((n: string, i: number) => {
+                    const colKey = `dsl_${sanitize(n)}`
+                    obj[colKey] = Array.isArray(row) ? row[i] : row
+                  });
+                  return obj;
+                });
+              })()
+            : searchData.entities || []
+        }
         columns={allColumns.filter(
           (value: {}) => Object.keys(value).length !== 0
         )}
         emptyText="No Records found!"
         isFetching={loader}
         pageCount={pageCount}
-        columnVisibilityParams={true}
-        defaultColumnVisibility={defaultColumnVisibility(allColumns)}
+        // columnVisibilityParams={true}
+        columnVisibilityParams={!isDslAggregate}
+        defaultColumnVisibility={isDslAggregate ? {} : defaultColumnVisibility(allColumns)}
         defaultColumnParams={defaultColumnsName.join(",")}
-        columnVisibility={true}
+        columnVisibility={!isDslAggregate}
+        // columnVisibility={true}
         refreshTable={refreshTable}
         defaultSortCol={getDefaultSort}
         clientSideSorting={true}
         isClientSidePagination={false}
         columnSort={true}
         showPagination={true}
-        showRowSelection={true}
-        tableFilters={
-          isEmpty(classificationParams || glossaryTypeParams) ? true : false
-        }
+        showRowSelection={!isDslAggregate}
+        // showRowSelection={true}
+        tableFilters={true}
         assignFilters={
           !isEmpty(classificationParams || glossaryTypeParams)
             ? {
@@ -863,11 +960,13 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
         allTableFilters={true}
         setUpdateTable={setUpdateTable}
         isfilterQuery={true}
+        isEmptyData={isEmptyData}
+        setIsEmptyData={setIsEmptyData}
+        showGoToPage={true}
+        totalCount={totalCount}
       />
-      {/* )} */}
     </Stack>
   );
-  // );
 };
 
 export default SearchResult;
