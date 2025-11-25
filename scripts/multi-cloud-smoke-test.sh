@@ -3,7 +3,7 @@
 ##############################################################################
 # Multi-Cloud Smoke Test Script
 # 
-# Tests Atlas deployment across multiple cloud environments in parallel
+# Tests Atlas statefulset across multiple cloud environments in parallel
 # 
 # Usage:
 #   ./multi-cloud-smoke-test.sh <test-image>
@@ -64,20 +64,20 @@ test_cloud() {
       exit 1
     fi
     
-    # Patch deployment
-    echo "[${CLOUD}] Patching Atlas deployment..."
-    if ! KUBECONFIG=$KUBECONFIG_FILE kubectl set image deployment/atlas \
+    # Patch statefulset
+    echo "[${CLOUD}] Patching Atlas statefulset..."
+    if ! KUBECONFIG=$KUBECONFIG_FILE kubectl set image statefulset/atlas \
       atlas-main=$TEST_IMAGE \
       -n atlas; then
-      echo "[${CLOUD}] ❌ ERROR: Failed to patch deployment"
+      echo "[${CLOUD}] ❌ ERROR: Failed to patch statefulset"
       exit 1
     fi
-    echo "[${CLOUD}] ✓ Deployment patched"
+    echo "[${CLOUD}] ✓ StatefulSet patched"
     echo ""
     
     # Wait for rollout
     echo "[${CLOUD}] Waiting for rollout (10 min timeout)..."
-    if KUBECONFIG=$KUBECONFIG_FILE kubectl rollout status deployment/atlas -n atlas --timeout=10m; then
+    if KUBECONFIG=$KUBECONFIG_FILE kubectl rollout status statefulset/atlas -n atlas --timeout=10m; then
       echo "[${CLOUD}] ✓ Rollout completed successfully"
     else
       echo "[${CLOUD}] ❌ ERROR: Rollout failed or timed out"
@@ -315,4 +315,3 @@ if [ $FAILED -eq 1 ]; then
 fi
 
 echo -e "${GREEN}✅ All smoke tests passed!${NC}"
-

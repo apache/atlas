@@ -1,0 +1,42 @@
+{{- if or .Values.global.esIsolation.enabled .Values.global.globalSvcIsolation.enabled }}
+{{- if .Values.backup.enabled -}}
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ template "elasticsearch.uname" . }}-backup
+  namespace: {{ .Values.Namespace }}
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    app: "{{ template "elasticsearch.uname" . }}"
+    {{- range $key, $value := .Values.labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  failedJobsHistoryLimit: 1
+  successfulJobsHistoryLimit: 1
+  schedule: "{{ .Values.backup.schedule }}"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+        {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{ toYaml . }}
+        {{- end }}
+          containers:
+          - name: es-backup
+            {{- if and .Values.multiarch.enabled .Values.multiarch.image.backup }}
+            image: {{ .Values.multiarch.image.backup }}
+            {{- else }}
+            image: {{ .Values.backup.image }}
+            {{- end }}
+            args:
+              - /bin/sh
+              - -c
+              - |
+                now="$(date +'%d%m%Y')"
+                curl -X PUT "http://atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200/_snapshot/atlan_s3_repository/atlan_nightly_backup_$now?wait_for_completion=true&pretty"
+          restartPolicy: OnFailure
+{{- end -}}
+{{- end }}

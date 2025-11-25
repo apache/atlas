@@ -4,6 +4,7 @@ on:
   workflow_run:
     workflows:
       - "Java CI with Maven"
+    # Do not use hyphen (-) in branch names, use underscore (_) instead
     branches:
       - master
       - staging
@@ -16,6 +17,7 @@ on:
       - idonlycanary
       - idonlycanarybeta
       - atlas_ci_cd_updates
+      - ids_beta_updated
     types:
       - completed
 

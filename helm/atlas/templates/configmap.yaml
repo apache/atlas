@@ -1,0 +1,502 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-config
+  namespace: {{ .Values.Namespace }}
+  labels:
+    app: {{ template "name" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  atlas-application.properties: |
+    #
+    # Licensed to the Apache Software Foundation (ASF) under one
+    # or more contributor license agreements.  See the NOTICE file
+    # distributed with this work for additional information
+    # regarding copyright ownership.  The ASF licenses this file
+    # to you under the Apache License, Version 2.0 (the
+    # "License"); you may not use this file except in compliance
+    # with the License.  You may obtain a copy of the License at
+    #
+    #     http://www.apache.org/licenses/LICENSE-2.0
+    #
+    # Unless required by applicable law or agreed to in writing, software
+    # distributed under the License is distributed on an "AS IS" BASIS,
+    # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    # See the License for the specific language governing permissions and
+    # limitations under the License.
+    #
+
+    #########  Graph Database Configs  #########
+
+    # Graph Database
+
+    #Configures the graph database to use.  Defaults to JanusGraph
+    #atlas.graphdb.backend=org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase
+
+    # Graph Storage
+    # Set atlas.graph.storage.backend to the correct value for your desired storage
+    # backend. Possible values:
+    #
+    # hbase
+    # cassandra
+    # embeddedcassandra - Should only be set by building Atlas with  -Pdist,embedded-cassandra-solr
+    # berkeleyje
+    #
+    # See the configuration documentation for more information about configuring the various  storage backends.
+    #
+    # atlas.graph.storage.backend=hbase2
+    # atlas.graph.storage.hbase.table=apache_atlas_janus
+
+
+    #Hbase
+    #For standalone mode , specify localhost
+    #for distributed mode, specify zookeeper quorum here
+    # atlas.graph.storage.hostname=
+    # atlas.graph.storage.hbase.regions-per-server=1
+    # atlas.graph.storage.lock.wait-time=10000
+
+    #In order to use Cassandra as a backend, comment out the hbase specific properties above, and uncomment the
+    #the following properties
+    #atlas.graph.storage.clustername=
+    #atlas.graph.storage.port=
+    atlas.graph.storage.backend=cql
+    atlas.graph.storage.hostname={{ .Chart.Name }}-cassandra
+    atlas.graph.storage.cql.keyspace={{ .Chart.Name }}
+    atlas.graph.storage.cql.replication-factor={{ .Values.cassandra.config.cluster_size }}
+    atlas.graph.storage.clustername={{ .Values.cassandra.config.cluster_name  }}
+    atlas.graph.storage.port={{ .Values.cassandra.config.ports.cql }}
+    atlas.graph.query.fast-property=true
+    atlas.graph.query.batch=true
+    atlas.graph.storage.cql.remote-core-connections-per-host=5
+    atlas.graph.storage.cql.remote-max-connections-per-host=5
+    atlas.graph.storage.cql.request-timeout=5000
+    atlas.graph.graph.replace-instance-if-exists=true
+    # Gremlin Query Optimizer
+    #
+    # Enables rewriting gremlin queries to maximize performance. This flag is provided as
+    # a possible way to work around any defects that are found in the optimizer until they
+    # are resolved.
+    #atlas.query.gremlinOptimizerEnabled=true
+
+    # Delete handler
+    #
+    # This allows the default behavior of doing "soft" deletes to be changed.
+    #
+    # Allowed Values:
+    # org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1 - all deletes are "soft" deletes
+    # org.apache.atlas.repository.store.graph.v1.HardDeleteHandlerV1 - all deletes are "hard" deletes
+    #
+    atlas.DeleteHandlerV1.impl=org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1
+
+    # This allows delete-type selection per REST API call
+    # Ref: http://mail-archives.apache.org/mod_mbox/atlas-dev/201811.mbox/%3CJIRA.13169850.1530632244000.352730.1542268860569@Atlassian.JIRA%3E
+    atlas.rest.enable.delete.type.override=true
+    
+    # Entity audit repository
+    #
+    # This allows the default behavior of logging entity changes to hbase to be changed.
+    #
+    # Allowed Values:
+    # org.apache.atlas.repository.audit.HBaseBasedAuditRepository - log entity changes to hbase
+    # org.apache.atlas.repository.audit.CassandraBasedAuditRepository - log entity changes to cassandra
+    # org.apache.atlas.repository.audit.NoopEntityAuditRepository - disable the audit repository
+    #
+    atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.NoopEntityAuditRepository
+    atlas.EntityAuditRepository.keyspace=atlas_audit
+    atlas.EntityAuditRepository.replicationFactor={{ .Values.cassandra.config.cluster_size }}
+    atlas.entity.audit.differential=true
+    atlas.EntityAuditRepositorySearch.impl=org.apache.atlas.repository.audit.ESBasedAuditRepository
+    # if Cassandra is used as a backend for audit from the above property, uncomment and set the following
+    # properties appropriately. If using the embedded cassandra profile, these properties can remain
+    # commented out.
+    # atlas.EntityAuditRepository.keyspace=atlas_audit
+    # atlas.EntityAuditRepository.replicationFactor=1
+
+    ######### Atlas Entity Attribute configs #########
+    atlas.entities.attribute.allowed.large.attributes={{ .Values.atlas.config.entities_allowed_large_attributes }}
+
+    # Graph Search Index
+    atlas.graph.index.search.backend=elasticsearch
+
+    #Solr
+    #Solr cloud mode properties
+    # atlas.graph.index.search.solr.mode=cloud
+    # atlas.graph.index.search.solr.zookeeper-url=
+    # atlas.graph.index.search.solr.zookeeper-connect-timeout=60000
+    # atlas.graph.index.search.solr.zookeeper-session-timeout=60000
+    # atlas.graph.index.search.solr.wait-searcher=true
+    #Solr http mode properties
+    #atlas.graph.index.search.solr.mode=http
+    #atlas.graph.index.search.solr.http-urls=http://localhost:8983/solr
+
+    # ElasticSearch support (Tech Preview)
+    # Comment out above solr configuration, and uncomment the following two lines. Additionally, make sure the
+    # hostname field is set to a comma delimited set of elasticsearch master nodes, or an ELB that fronts the masters.
+    #
+    # Elasticsearch does not provide authentication out of the box, but does provide an option with the X-Pack product
+    # https://www.elastic.co/products/x-pack/security
+    #
+    # Alternatively, the JanusGraph documentation provides some tips on how to secure Elasticsearch without additional
+    # plugins: http://docs.janusgraph.org/latest/elasticsearch.html
+    
+    atlas.graph.index.search.hostname=atlas-elasticsearch-master:9200
+    atlas.graph.index.search.elasticsearch.client-only=true
+    atlas.graph.index.search.elasticsearch.retry_on_conflict=5
+    atlas.graph.index.search.max-result-set-size=1000
+    atlas.index.audit.elasticsearch.total_field_limit={{ .Values.atlas.index.audit_index_field_limit }}
+    atlas.index.audit.elasticsearch.refresh_interval={{ .Values.atlas.index.audit_index_refresh_interval }}
+
+    # Solr-specific configuration property
+    # atlas.graph.index.search.max-result-set-size=150
+
+    #########  Notification Configs  #########
+    atlas.kafka.bootstrap.servers=kafka-0.kafka-headless.kafka.svc.cluster.local:9092,kafka-1.kafka-headless.kafka.svc.cluster.local:9092,kafka-2.kafka-headless.kafka.svc.cluster.local:9092
+    
+    atlas.kafka.zookeeper.session.timeout.ms=60000
+    atlas.kafka.zookeeper.connection.timeout.ms=30000
+    atlas.kafka.zookeeper.sync.time.ms=20
+    atlas.kafka.zookeeper.connect=zookeeper-0.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-1.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-2.zookeeper-headless.atlas.svc.cluster.local:2181
+
+    atlas.kafka.auto.commit.interval.ms=1000
+    atlas.kafka.hook.group.id=atlas
+    atlas.kafka.enable.auto.commit=false
+    atlas.kafka.auto.offset.reset=earliest
+    atlas.kafka.session.timeout.ms=30000
+    atlas.kafka.offsets.topic.replication.factor=2
+    atlas.kafka.poll.timeout.ms=2000
+
+    atlas.notification.create.topics=true
+    atlas.notification.replicas=3
+    atlas.notification.topics=ATLAS_HOOK,ATLAS_ENTITIES
+    atlas.notification.log.failed.messages=true
+    atlas.notification.failed.messages.filename=atlas_hook_failed_messages.log
+    atlas.notification.consumer.retry.interval=3000
+    atlas.notification.hook.retry.interval=3000
+    # Enable for Kerberized Kafka clusters
+    #atlas.notification.kafka.service.principal=kafka/_HOST@EXAMPLE.COM
+    #atlas.notification.kafka.keytab.location=/etc/security/keytabs/kafka.service.keytab
+
+    ## Server port configuration
+    #atlas.server.http.port=21000
+    #atlas.server.https.port=21443
+
+    #########  Security Properties  #########
+
+    # SSL config
+    atlas.enableTLS=false
+
+    #truststore.file=/path/to/truststore.jks
+    #cert.stores.credential.provider.path=jceks://file/path/to/credentialstore.jceks
+
+    #following only required for 2-way SSL
+    #keystore.file=/path/to/keystore.jks
+
+    # Authentication config
+
+    atlas.authentication.method.kerberos=false
+    atlas.authentication.method.file=false
+
+    atlas.authentication.method.keycloak=true
+    atlas.authentication.method.keycloak.file=${sys:atlas.home}/conf/keycloak.json
+    atlas.authentication.method.keycloak.ugi-groups=false
+    atlas.authentication.method.keycloak.groups_claim=groups
+
+    #### ldap.type= LDAP or AD
+    atlas.authentication.method.ldap.type=none
+
+    #### user credentials file
+    atlas.authentication.method.file.filename=${sys:atlas.home}/conf/users-credentials.properties
+
+    ### groups from UGI
+    #atlas.authentication.method.ldap.ugi-groups=true
+
+    ######## LDAP properties #########
+    #atlas.authentication.method.ldap.url=ldap://<ldap server url>:389
+    #atlas.authentication.method.ldap.userDNpattern=uid={0},ou=People,dc=example,dc=com
+    #atlas.authentication.method.ldap.groupSearchBase=dc=example,dc=com
+    #atlas.authentication.method.ldap.groupSearchFilter=(member=uid={0},ou=Users,dc=example,dc=com)
+    #atlas.authentication.method.ldap.groupRoleAttribute=cn
+    #atlas.authentication.method.ldap.base.dn=dc=example,dc=com
+    #atlas.authentication.method.ldap.bind.dn=cn=Manager,dc=example,dc=com
+    #atlas.authentication.method.ldap.bind.password=<password>
+    #atlas.authentication.method.ldap.referral=ignore
+    #atlas.authentication.method.ldap.user.searchfilter=(uid={0})
+    #atlas.authentication.method.ldap.default.role=<default role>
+
+
+    ######### Active directory properties #######
+    #atlas.authentication.method.ldap.ad.domain=example.com
+    #atlas.authentication.method.ldap.ad.url=ldap://<AD server url>:389
+    #atlas.authentication.method.ldap.ad.base.dn=(sAMAccountName={0})
+    #atlas.authentication.method.ldap.ad.bind.dn=CN=team,CN=Users,DC=example,DC=com
+    #atlas.authentication.method.ldap.ad.bind.password=<password>
+    #atlas.authentication.method.ldap.ad.referral=ignore
+    #atlas.authentication.method.ldap.ad.user.searchfilter=(sAMAccountName={0})
+    #atlas.authentication.method.ldap.ad.default.role=<default role>
+
+    #########  JAAS Configuration ########
+
+    #atlas.jaas.KafkaClient.loginModuleName = com.sun.security.auth.module.Krb5LoginModule
+    #atlas.jaas.KafkaClient.loginModuleControlFlag = required
+    #atlas.jaas.KafkaClient.option.useKeyTab = true
+    #atlas.jaas.KafkaClient.option.storeKey = true
+    #atlas.jaas.KafkaClient.option.serviceName = kafka
+    #atlas.jaas.KafkaClient.option.keyTab = /etc/security/keytabs/atlas.service.keytab
+    #atlas.jaas.KafkaClient.option.principal = atlas/_HOST@EXAMPLE.COM
+
+    #########  Server Properties  #########
+    atlas.rest.address=http://localhost:21000
+    # If enabled and set to true, this will run setup steps when the server starts
+    #atlas.server.run.setup.on.start=false
+
+    #########  Entity Audit Configs  #########
+    # atlas.audit.hbase.tablename=apache_atlas_entity_audit
+    # atlas.audigit.zookeeper.session.timeout.ms=1000
+    # atlas.audit.hbase.zookeeper.quorum=localhost:2181
+
+    #########  High Availability Configuration ########
+    {{- if eq .Values.atlas_ha false }}
+    atlas.server.ha.enabled=false
+    {{- else if eq .Values.atlas_ha true }}
+    atlas.server.ha.enabled=true
+    {{- else }}
+    atlas.server.ha.enabled=false
+    {{- end }}
+    atlas.server.type.cache-refresher=http://cinv.atlas.svc.cluster.local:5000/cinv
+    atlas.server.type.cache-refresher-health=http://cinv.atlas.svc.cluster.local:5000/health
+    #### Enabled the configs below as per need if HA is enabled #####
+    atlas.server.ids=id1,id2
+    atlas.server.address.id1=atlas-0.atlas-service-atlas.atlas.svc.cluster.local:21000
+    atlas.server.address.id2=atlas-1.atlas-service-atlas.atlas.svc.cluster.local:21000
+    atlas.server.ha.zookeeper.connect=zookeeper-0.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-1.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-2.zookeeper-headless.atlas.svc.cluster.local:2181
+    atlas.server.ha.zookeeper.retry.sleeptime.ms=10000
+    atlas.server.ha.zookeeper.num.retries=18
+    atlas.server.ha.zookeeper.session.timeout.ms=20000
+    ## if ACLs need to be set on the created nodes, uncomment these lines and set the values ##
+    #atlas.server.ha.zookeeper.acl=<scheme>:<id>
+    #atlas.server.ha.zookeeper.auth=<scheme>:<authinfo>
+
+    ######### Atlas Authorization #########
+    #atlas.authorizer.impl=none
+
+    {{- if eq .Values.atlas_auth true }}
+    atlas.authorizer.impl=atlas
+    {{- else }}
+    atlas.authorizer.impl=org.apache.ranger.authorization.atlas.authorizer.RangerAtlasAuthorizer
+    {{- end }}
+
+    atlas.authorizer.enable.delta_based_refresh={{ .Values.atlas.authorizer.enable_delta_based_refresh }}
+    atlas.authorizer.enable.abac={{ .Values.atlas.authorizer.enable_abac }}
+
+    #atlas.authorizer.simple.authz.policy.file=atlas-simple-authz-policy.json
+    
+    ######### Atlas User service #########
+    atlas.user-service-url=http://heracles-service.heracles.svc.cluster.local
+
+    #########  Type Cache Implementation ########
+    # A type cache class which implements
+    # org.apache.atlas.typesystem.types.cache.TypeCache.
+    # The default implementation is org.apache.atlas.typesystem.types.cache.DefaultTypeCache which is a local in-memory type cache.
+    #atlas.TypeCache.impl=
+
+    #########  Performance Configs  #########
+    atlas.graph.storage.lock.retries=5
+    
+    #########  Redis Cache Configs  #########
+    {{- if eq .Values.atlas.cache.enabled false }}
+    atlas.graph.cache.db-cache=false
+    {{- else if eq .Values.atlas.cache.enabled true }}
+    atlas.graph.cache.db-cache=true
+    atlas.graph.metrics.merge-stores=false
+    atlas.graph.cache.cache-type=redis
+    atlas.graph.cache.db-cache-expiry-time=86400000
+    atlas.graph.cache.cache-keyspace-prefix=atlas
+    atlas.graph.cache.redis-db-id=1
+    atlas.graph.cache.redis-client-name=atlas-metastore
+    atlas.graph.cache.redis-cache-size=100000
+    atlas.graph.cache.redis-cache-server-mode=sentinel
+    atlas.graph.cache.redis-cache-server-url=redis://{{ .Values.atlas.redis.host }}:{{ .Values.atlas.redis.port }}
+    atlas.graph.cache.redis-cache-sentinel-urls={{ .Values.atlas.redis.sentinel_urls }}
+    atlas.graph.cache.redis-cache-lock-watchdog-ms=300000
+    atlas.graph.cache.redis-cache-username={{ .Values.atlas.redis.username }}
+    atlas.graph.cache.redis-cache-password={{ .Values.atlas.redis.password }}
+    atlas.graph.cache.redis-cache-mastername={{ .Values.atlas.redis.master_name }}
+    atlas.graph.cache.redis-cache-connectTimeout=2000
+    {{- end }}
+
+    atlas.webserver.minthreads=40
+    # Maximum number of threads in the atlas web server
+    atlas.webserver.maxthreads=400
+    # Keepalive time in secs for the thread pool of the atlas web server
+    atlas.webserver.keepalivetimesecs=30
+    # Queue size for the requests(when max threads are busy) for the atlas web server
+    atlas.webserver.queuesize=200
+    #########  CSRF Configs  #########
+    atlas.rest-csrf.enabled=false
+    #atlas.rest-csrf.browser-useragents-regex=^Mozilla.*,^Opera.*,^Chrome.*
+    #atlas.rest-csrf.methods-to-ignore=GET,OPTIONS,HEAD,TRACE
+    #atlas.rest-csrf.custom-header=X-XSRF-HEADER
+
+    ############ KNOX Configs ################
+    #atlas.sso.knox.browser.useragent=Mozilla,Chrome,Opera
+    #atlas.sso.knox.enabled=true
+    #atlas.sso.knox.providerurl=https://<knox gateway ip>:8443/gateway/knoxsso/api/v1/websso
+    #atlas.sso.knox.publicKey=
+
+    ############ Atlas Metric/Stats configs ################
+    # Format: atlas.metric.query.<key>.<name>
+    atlas.metric.query.cache.ttlInSecs=900
+    #atlas.metric.query.general.typeCount=
+    #atlas.metric.query.general.typeUnusedCount=
+    #atlas.metric.query.general.entityCount=
+    #atlas.metric.query.general.tagCount=
+    #atlas.metric.query.general.entityDeleted=
+    #
+    #atlas.metric.query.entity.typeEntities=
+    #atlas.metric.query.entity.entityTagged=
+    #
+    #atlas.metric.query.tags.entityTags=
+
+    #########  Compiled Query Cache Configuration  #########
+
+    # The size of the compiled query cache.  Older queries will be evicted from the cache
+    # when we reach the capacity.
+
+    #atlas.CompiledQueryCache.capacity=1000
+
+    # Allows notifications when items are evicted from the compiled query
+    # cache because it has become full.  A warning will be issued when
+    # the specified number of evictions have occurred.  If the eviction
+    # warning threshold <= 0, no eviction warnings will be issued.
+
+    #atlas.CompiledQueryCache.evictionWarningThrottle=0
+
+
+    #########  Full Text Search Configuration  #########
+
+    #Set to false to disable full text search.
+    #atlas.search.fulltext.enable=true
+    
+
+    ########## Atlas Discovery #############
+    atlas.objectId.support.entity.attributes=true
+    atlas.objectId.entity.attributes=AtlasGlossary:name,AtlasGlossaryTerm:name,AtlasGlossaryCategory:name
+
+
+    #########  Gremlin Search Configuration  #########
+
+    #Set to false to disable gremlin search.
+    atlas.search.gremlin.enable=false
+
+
+    ########## Add http headers ###########
+
+    #atlas.headers.Access-Control-Allow-Origin=*
+    #atlas.headers.Access-Control-Allow-Methods=GET,OPTIONS,HEAD,PUT,POST,DELETE
+    #atlas.headers.Access-Control-Allow-Headers=*
+    #atlas.headers.<headerName>=<headerValue>
+  
+
+    ########## Slack Notification #############
+    atlas.notifications.slackWebhook={{ .Values.atlas.notification.slackWebhook }}
+    
+    {{ if .Values.atlas.redis.enabled }}
+    {{ printf "\n" }}
+    ########## Add query metastore ###########
+    atlan.cache.redis.host={{ .Values.atlas.redis.host }}
+    atlan.cache.redis.port={{ .Values.atlas.redis.port }}
+    atlan.cache.redis.password={{ .Values.atlas.redis.password }}
+    atlas.cache.redis.maxConnections={{ .Values.atlas.redis.maxConnections }}
+    atlas.cache.redis.timeout={{ .Values.atlas.redis.timeout }}
+    atlan.EntityCacheListener.impl=org.apache.atlas.repository.cache.EntityCacheListenerV2
+    atlan.QueryCacheRepository.impl=org.apache.atlas.repository.cache.AtlanQueryCacheRepository
+    {{ printf "\n" }}
+    
+    {{ end }}
+    
+
+    ########## Atlas Monitoring #############
+    
+    atlas.graph.metrics.enabled = true
+    atlas.graph.metrics.jmx.enabled = true
+    atlas.statsd.enable = true
+
+    
+    ########## Atlas deferred-actions (background tasks) #############
+    
+    atlas.tasks.enabled = true
+
+
+    ########## Ranger Credentials
+
+    atlas.ranger.username = admin
+    atlas.ranger.password = {{ .Values.atlas.ranger.RANGER_PASSWORD }}
+    atlas.ranger.base.url = {{ .Values.atlas.ranger.RANGER_SERVICE_URL }}
+
+    ####### Redis credentials #######
+    ###### allowed values for redis implementation ##########
+    # org.apache.atlas.service.redis.RedisServiceImpl - connects to sentinel cluster, for prod.
+    # org.apache.atlas.service.redis.RedisServiceLocalImpl - connects to local redis cluster, for local dev.
+    # org.apache.atlas.service.redis.NoRedisServiceImpl - default, dummy redis implementation.
+    atlas.redis.service.impl = org.apache.atlas.service.redis.RedisServiceImpl
+    atlas.redis.url = redis://{{ .Values.atlas.redis.host }}:{{ .Values.atlas.redis.port }}
+    atlas.redis.sentinel.urls = {{ .Values.atlas.redis.sentinel_urls }}
+    atlas.redis.username = {{ .Values.atlas.redis.username }}
+    atlas.redis.password = {{ .Values.atlas.redis.password }}
+    atlas.redis.master_name = {{ .Values.atlas.redis.master_name }}
+    atlas.redis.lock.wait_time.ms=15000
+    # Renew lock for every 10mins
+    atlas.redis.lock.watchdog_timeout.ms=600000
+
+    atlas.jetty.request.buffer.size=32768
+    
+    # valid uri patterns to collect metrics
+    atlas.metrics.uri_patterns=/api/(meta|atlas/v2)/glossary/terms/[^/]+/assignedEntities,/api/(meta|atlas/v2)/lineage/[^/]+,/api/(meta|atlas/v2)/lineage/list,/api/(meta|atlas/v2)/entity/accessors,/api/(meta|atlas/v2)/entity/auditSearch,/api/(meta|atlas/v2)/entity/bulk,/api/(meta|atlas/v2)/entity/bulk/setClassifications,/api/(meta|atlas/v2)/entity/bulk/uniqueAttribute,/api/(meta|atlas/v2)/entity/evaluator,/api/(meta|atlas/v2)/entity/guid/[^/]+,/api/(meta|atlas/v2)/entity/guid/[^/]+/businessmetadata,/api/(meta|atlas/v2)/entity/uniqueAttribute/type/[^/]+,/api/(meta|atlas/v2)/search/indexsearch,/api/(meta|atlas/v2)/entity/repairhaslineage,/api/(meta|atlas/v2)/types/typedef/name/[^/]+,/api/(meta|atlas/v2)/types/typedefs,/api/atlas/admin/metrics/prometheus,/api/atlas/admin/pushMetricsToStatsd,/api/atlas/v2/auth/download/policies/[^/]+,/api/atlas/v2/auth/download/roles/[^/]+,/api/atlas/v2/auth/download/users/[^/]+,/api/meta/entity/uniqueAttribute/type/[^/]+,/auth/admin/realms/[^/]+/admin-events,/auth/admin/realms/[^/]+/admin-events,/auth/admin/realms/[^/]+/events,/auth/admin/realms/[^/]+/events,/auth/admin/realms/[^/]+/groups,/auth/admin/realms/[^/]+/groups/[^/]+/role-mappings/realm,/auth/admin/realms/[^/]+/roles,/auth/admin/realms/[^/]+/roles-by-id/[^/]+,/auth/admin/realms/[^/]+/roles/[^/]+,/auth/admin/realms/[^/]+/roles/[^/]+/composites,/auth/admin/realms/[^/]+/roles/[^/]+/groups,/auth/admin/realms/[^/]+/roles/[^/]+/users,/auth/admin/realms/[^/]+/users,/auth/admin/realms/[^/]+/users/[^/]+/groups,/auth/admin/realms/[^/]+/users/[^/]+/role-mappings/realm,/auth/realms/[^/]+/protocol/openid-connect/token,/auth/realms/[^/]+/protocol/openid-connect/token/introspect,/users/mappings,/roles/mappings,/api/(meta|atlas/v2)/business-policy/[^/]+/unlink-business-policy,/api/(meta|atlas/v2)/business-policy/link-business-policy,/api/(meta|atlas/v2)/direct/search,/api/(meta|atlas/v2)/attribute/update
+    
+    atlas.metrics.method_level.enable=true
+    atlas.metrics.method_patterns=policiesPrefetchFailed,mapVertexToAtlasEntityHeaderWithoutPrefetch,mapVertexToAtlasEntityHeaderWithPrefetch,processTermAssignments,elasticSearchQuery,mapVertexToAtlasEntityHeader,elasticQueryTimeout,getAllClassifications,scrubSearchResults,getAdjacentEdgesByLabel,preCreateOrUpdate,createOrUpdate,mapAttributes,graphCommit,getAtlasLineageInfo,getLineageInfoOnDemand,getLineageListInfoOnDemand,repairHasLineageForAssetGetById,repairHasLineageForAssetGetRelations,repairHasLineageForRequiredAsset,repairHasLineage,getRelationshipEdge,hasEdges,getEdgeBetweenVertices,removeHasLineageOnDelete,resetHasLineageOnInputOutputDelete,updateAssetHasLineageStatus,isAccessAllowed,findDuplicatePendingTasksV2
+    {{ if .Values.atlas.janusgraph.atomic_mutation }}
+    ### Atomic batch related configs ###
+    atlas.graph.storage.cql.atomic-batch-mutate={{ .Values.atlas.janusgraph.atomic_mutation }}
+    atlas.graph.storage.buffer-size={{ .Values.atlas.janusgraph.janusgraph_tx_buffer_size }}
+    {{ end }}
+
+    ######### Canary-Release #########
+    atlas.canary.keycloak.token-introspection = true
+    atlas.keycloak.introspection.use.cache = true
+
+    ######### Atlas Maintenance Mode #########
+    atlas.maintenance.mode={{ .Values.atlas.maintenanceMode }}
+
+    ######### Atlas Inddexsearch configs #########
+    atlas.indexsearch.enable.api.limit={{ .Values.atlas.indexsearch.enable_api_limit }}
+    atlas.indexsearch.query.size.max.limit={{ .Values.atlas.indexsearch.query_size_max_limit }}
+    atlas.indexsearch.async.enable={{ .Values.atlas.indexsearch.enable_async }}
+    atlas.indexsearch.async.search.keep.alive.time.in.seconds={{ .Values.atlas.indexsearch.request_timeout_in_secs }}
+    atlas.indexsearch.enable.janus.optimization={{ .Values.atlas.indexsearch.enable_janus_optimization }}
+    atlas.indexsearch.request.isolation.enable={{ .Values.atlas.indexsearch.enable_request_isolation }}
+    atlas.indexsearch.enable.janus.optimization.for.relationship={{ .Values.atlas.indexsearch.enable_janus_optimization_for_relationship }}
+    atlas.indexsearch.enable.janus.optimization.extended={{ .Values.atlas.indexsearch.enable_janus_optimization_extended }}
+    atlas.indexsearch.enable.janus.optimization.for.classifications={{ .Values.atlas.indexsearch.enable_janus_optimization_for_classifications }}
+    atlas.jg.super.vertex.min.edge.count={{ .Values.atlas.jg.super.vertex.min.edge.count }}
+    
+    ######### Atlas Bulk API configs #########
+    atlas.bulk.api.max.entities.allowed={{ .Values.atlas.bulk.max_entities_allowed }}
+    
+    ######### Atlas Lineage configs #########
+    atlas.lineage.optimised.calculation={{ .Values.atlas.lineage.optimised_calculation }}
+
+    ######### Atlas Distributed Task configs #########
+    atlas.distributed.task.enabled={{ .Values.atlas.distributed_task.enabled }}
+    {{- if eq .Values.atlas.distributed_task.enabled true }}
+    atlas.relationship.cleanup.supported.asset.types={{ .Values.atlas.distributed_task.cleanup_supported_asset_types }}
+    atlas.relationship.cleanup.supported.relationship.labels={{ .Values.atlas.distributed_task.cleanup_supported_relationship_labels }}
+    {{- end }}
+    
+         ######### Atlas Typedefs update configs #########
+    atlas.types.update.async.enable={{ .Values.atlas.types_update.async_enable }}
+    atlas.types.update.thread.count={{ .Values.atlas.types_update.thread_count }}
+
+    ######### Atlas notification configs #########
+    atlas.notification.differential.entity.changes.enabled={{ .Values.atlas.notification.differential_entity_changes_enabled }}

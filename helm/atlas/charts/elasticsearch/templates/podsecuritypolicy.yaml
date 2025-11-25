@@ -1,0 +1,14 @@
+{{- if .Values.podSecurityPolicy.create -}}
+{{- $fullName := include "elasticsearch.uname" . -}}
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: {{ default $fullName .Values.podSecurityPolicy.name | quote }}
+  namespace: {{ .Values.Namespace }}
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    app: {{ $fullName | quote }}
+spec:
+{{ toYaml .Values.podSecurityPolicy.spec | indent 2 }}
+{{- end -}}

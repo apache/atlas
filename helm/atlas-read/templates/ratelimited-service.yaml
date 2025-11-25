@@ -1,0 +1,31 @@
+{{- if and .Values.nginx.enabled (or .Values.global.svcIsolation.enabled (or .Values.global.esIsolation.enabled .Values.global.globalSvcIsolation.enabled)) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-read-ratelimited
+  namespace: {{ .Values.Namespace }}
+  labels:
+    app: {{ template "name" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: ClusterIP
+  ports:
+    {{- if and .Values.nginx.enabled .Values.nginx.ratelimit.enabled }}
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+      name: http
+    {{- else }}
+    - port: {{ .Values.atlas.service.port }}
+      targetPort: {{ .Values.atlas.service.targetPort }}
+      protocol: TCP
+      name: {{ .Values.atlas.service.portName }}
+    {{- end }}
+  selector:
+    app: {{ template "name" . }}
+    release: {{ .Release.Name }}
+  internalTrafficPolicy: Cluster
+  ipFamilyPolicy: SingleStack
+  sessionAffinity: None
+{{- end }}

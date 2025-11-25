@@ -1,0 +1,246 @@
+{{- $isAWSCloud := eq .Values.global.cloud "aws" }}
+{{- if .Values.isolation.enabled }}
+{{- range .Values.isolation.names }}
+{{- $nodeName := . }}
+---
+apiVersion: {{ template "elasticsearch.statefulset.apiVersion" $ }}
+kind: StatefulSet
+metadata:
+  name: {{ $.Values.esClusterName }}-{{ $nodeName }}
+  namespace: {{ $.Values.Namespace }}
+  labels:
+    heritage: {{ $.Release.Service | quote }}
+    release: {{ $.Release.Name | quote }}
+    cluster: {{ $.Values.esClusterName }}
+    app: {{ $.Values.esClusterName }}-{{ $nodeName }}
+    role: {{ $nodeName }}
+    {{- range $key, $value := $.Values.labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  serviceName: {{ $.Values.esClusterName }}-{{ $nodeName }}
+  selector:
+    matchLabels:
+      app: {{ $.Values.esClusterName }}-{{ $nodeName }}
+      role: {{ $nodeName }}
+  replicas: {{ index $.Values.isolation.replicaCount $nodeName }}
+  podManagementPolicy: {{ $.Values.podManagementPolicy }}
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: {{ $.Values.esClusterName }}-{{ $nodeName }}
+        role: {{ $nodeName }}
+        cluster: {{ $.Values.esClusterName }}
+      annotations:
+        {{- range $key, $value := $.Values.podAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- if $.Values.esConfig }}
+        configchecksum: {{ include (print $.Template.BasePath "/configmap.yaml") $ | sha256sum | trunc 63 }}
+        {{- end }}
+    spec:
+      securityContext:
+{{ toYaml $.Values.podSecurityContext | indent 8 }}
+      volumes:
+        - name: esconfig
+          configMap:
+            name: {{ template "elasticsearch.uname" $ }}-config
+        - name: elasticsearch-synonym-config
+          configMap:
+            name: elasticsearch-synonym-config
+        {{- if $.Values.extraVolumes }}
+{{ toYaml $.Values.extraVolumes | indent 8 }}
+        {{- end }}
+      initContainers:
+      {{- if $.Values.sysctlInitContainer.enabled }}
+      - name: configure-sysctl
+        securityContext:
+          runAsUser: 0
+          privileged: true
+        {{- if and $isAWSCloud $.Values.multiarch.enabled $.Values.multiarch.image.elasticsearch }}
+        image: {{ $.Values.multiarch.image.elasticsearch }}
+        {{- else }}
+        image: "{{ $.Values.image }}:{{ $.Values.imageTag }}"
+        {{- end }}
+        command: ["sysctl", "-w", "vm.max_map_count={{ $.Values.sysctlVmMaxMapCount}}"]
+        resources:
+{{ toYaml $.Values.initResources | indent 10 }}
+      {{- end }}
+      containers:
+      - name: elasticsearch
+        securityContext:
+{{ toYaml $.Values.securityContext | indent 10 }}
+        {{- if and $isAWSCloud $.Values.multiarch.enabled $.Values.multiarch.image.elasticsearch }}
+        image: {{ $.Values.multiarch.image.elasticsearch }}
+        {{- else }}
+        image: "{{ $.Values.image }}:{{ $.Values.imageTag }}"
+        {{- end }}
+        imagePullPolicy: {{ $.Values.imagePullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ $.Values.httpPort }}
+        - name: transport
+          containerPort: {{ $.Values.transportPort }}
+        resources:
+        {{- $tierType := $.Values.deploymentTier | default "" }}
+        {{- if eq $tierType "Enterprise" }}
+{{ toYaml (index $.Values.isolation.resources_enterprise $nodeName) | indent 10 }}
+        {{- else if eq $tierType "Basic" }}
+{{ toYaml (index $.Values.isolation.resources_basic $nodeName) | indent 10 }}
+        {{- else if eq $tierType "Standard" }}
+{{ toYaml (index $.Values.isolation.resources_standard $nodeName) | indent 10 }}
+        {{- else }}
+{{ toYaml (index $.Values.isolation.resources_enterprise $nodeName) | indent 10 }}
+        {{- end }}
+        envFrom: {{ toYaml $.Values.envFrom | nindent 10 }}
+        env:
+          - name: node.name
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: cluster.name
+            value: {{ $.Values.clusterName }}
+          {{ if $nodeName | eq "master" }}
+          - name: cluster.initial_master_nodes
+            value: {{ template "elasticsearch.endpoints" $ }}
+          {{ end }}
+          - name: discovery.seed_hosts
+            value: {{ template "elasticsearch.masterService" $ }}-headless
+          - name: node.roles
+            value: {{ join "," (index $.Values.isolation.roles $nodeName) | quote }}
+          - name: node.attr.role
+            value: {{ $nodeName | quote }}
+          - name: network.host
+            value: {{ $.Values.networkHost }}
+          - name: cluster.max_shards_per_node
+            value: {{ $.Values.maxShardsPerNode | quote }}
+          - name: ES_JAVA_OPTS
+            value: {{ index $.Values.isolation.esJavaOpts $nodeName }}
+          {{- if $.Values.extraEnvs }}
+{{ toYaml $.Values.extraEnvs | indent 10 }}
+          {{- end }}
+        volumeMounts:
+          {{- if ne $nodeName "master" }}
+          - name: {{ $.Values.esClusterName }}-{{ $nodeName }}
+            mountPath: /usr/share/elasticsearch/data
+          {{- end }}
+          - name: elasticsearch-synonym-config
+            mountPath: /usr/share/elasticsearch/config/synonym.txt
+            subPath: synonym.txt
+          {{- range $path, $config := $.Values.esConfig }}
+          - name: esconfig
+            mountPath: /usr/share/elasticsearch/config/{{ $path }}
+            subPath: {{ $path }}
+          {{- end }}
+          {{- if $.Values.extraVolumeMounts }}
+{{ toYaml $.Values.extraVolumeMounts | indent 10 }}
+          {{- end }}
+        readinessProbe:
+{{ toYaml $.Values.readinessProbe | indent 10 }}
+          exec:
+            command:
+              - sh
+              - -c
+              - |
+                #!/usr/bin/env bash -e
+                START_FILE=/tmp/.es_start_file
+
+                http () {
+                    local path="${1}"
+                    if [ -n "${ELASTIC_USERNAME}" ] && [ -n "${ELASTIC_PASSWORD}" ]; then
+                      BASIC_AUTH="-u ${ELASTIC_USERNAME}:${ELASTIC_PASSWORD}"
+                    else
+                      BASIC_AUTH=''
+                    fi
+                    curl -XGET -s -k --fail ${BASIC_AUTH} {{ $.Values.protocol }}://127.0.0.1:{{ $.Values.httpPort }}${path}
+                }
+
+                if [ -f "${START_FILE}" ]; then
+                    echo 'Elasticsearch is already running, checking cluster health'
+                    http "/_cluster/health?timeout={{ $.Values.healthCheckProbeTimeout }}"
+                else
+                    echo 'Waiting for elasticsearch cluster to become ready'
+                    if http "/_cluster/health?{{ $.Values.clusterHealthCheckParams }}" ; then
+                        touch ${START_FILE}
+                        exit 0
+                    else
+                        echo 'Cluster is not yet ready'
+                        exit 1
+                    fi
+                fi
+      {{- if $.Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml $.Values.imagePullSecrets | indent 8 }}
+      {{- end }}
+      {{- with $.Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+      {{- end }}
+      {{- with $.Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+      {{- end }}
+      {{- if or (eq $.Values.antiAffinity "hard") (eq $.Values.antiAffinity "soft") }}
+      affinity:
+        {{- $tierType := $.Values.deploymentTier | default "" }}
+        {{- if or (eq $tierType "Enterprise") (eq $tierType "") }}
+        {{- if eq $.Values.antiAffinity "hard" }}
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                cluster: {{ $.Values.esClusterName }}
+            topologyKey: {{ $.Values.antiAffinityTopologyKey }}
+        {{- else if eq $.Values.antiAffinity "soft" }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 10
+            podAffinityTerm:
+              topologyKey: {{ $.Values.antiAffinityTopologyKey }}
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - {{ $.Values.esClusterName }}
+                - key: role
+                  operator: In
+                  values:
+                  - {{ $nodeName }}
+        {{- end }}
+        {{- end }}
+        nodeAffinity:
+          {{- if eq $.Values.custom_deployment.enabled true }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node.kubernetes.io/instance-type
+                operator: In
+                values:
+                {{- range $.Values.custom_deployment.instance_type }}
+                - {{ . }}
+                {{- end }}
+          {{- else }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+            {{- toYaml $.Values.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution | nindent 12 }}
+          {{- end }}
+      terminationGracePeriodSeconds: {{ $.Values.terminationGracePeriod }}
+      {{- end }}
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ $.Values.esClusterName }}-{{ $nodeName }}
+    spec:
+{{- $tierType := $.Values.deploymentTier | default "" }}
+    {{- if eq $tierType "Enterprise" }}
+{{ toYaml (index $.Values.isolation.volumeClaimTemplate $nodeName) | indent 6 }}
+    {{- else if eq $tierType "Basic" }}
+{{ toYaml (index $.Values.isolation.volumeClaimTemplate_basic $nodeName) | indent 6 }}
+    {{- else if eq $tierType "Standard" }}
+{{ toYaml (index $.Values.isolation.volumeClaimTemplate_standard $nodeName) | indent 6 }}
+    {{- else }}
+{{ toYaml (index $.Values.isolation.volumeClaimTemplate $nodeName) | indent 6 }}
+    {{- end }}
+{{- end }}
+{{- end }}

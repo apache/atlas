@@ -1,0 +1,34 @@
+{{- if .Values.isolation.enabled }}
+{{- range .Values.isolation.names }}
+{{- $nodeName := . }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $.Values.esClusterName }}-{{ $nodeName }}
+  namespace: {{ $.Values.Namespace }}
+  labels:
+    heritage: {{ $.Release.Service | quote }}
+    release: {{ $.Release.Name | quote }}
+    app: {{ $.Values.esClusterName }}-{{ $nodeName }}
+    role: {{ $nodeName }}
+    {{- range $key, $value := $.Values.labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- if eq $nodeName "master" }}
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  {{- end }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: {{ eq $nodeName "master" }}
+  selector:
+    app: {{ $.Values.esClusterName }}-{{ $nodeName }}
+    role: {{ $nodeName }}
+  ports:
+  - name: {{ $.Values.service.httpPortName | default "http" }}
+    port: {{ $.Values.httpPort }}
+  - name: {{ $.Values.service.transportPortName | default "transport" }}
+    port: {{ $.Values.transportPort }}
+{{- end }}
+{{- end }}

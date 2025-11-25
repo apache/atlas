@@ -1,0 +1,116 @@
+{{- if or .Values.global.svcIsolation.enabled .Values.global.globalSvcIsolation.enabled }}
+{{- if .Values.backup.enabled }}
+{{- $release := .Release }}
+{{- $values := .Values }}
+{{- $backup := $values.backup }}
+{{- range $index, $schedule := $backup.schedule }}
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ template "cassandra.fullname" $ }}-backup
+  namespace: {{ $.Values.Namespace }}
+  labels:
+    app: {{ template "cassandra.name" $ }}-cain
+    release: "{{ $release.Name }}"
+    heritage: "{{ $release.Service }}"
+spec:
+  schedule: {{ $schedule.cron | quote }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          annotations:
+            {{ toYaml $backup.annotations }}
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: {{ template "cassandra.serviceAccountName" $ }}
+          {{- with $.Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- $multiarchEnabled := and $.Values.multiarch (eq $.Values.multiarch.enabled true) }}
+          {{- if or $.Values.tolerations $multiarchEnabled }}
+          tolerations:
+          {{- if $.Values.tolerations }}
+          {{ toYaml $.Values.tolerations | nindent 12 }}
+          {{- end }}
+          {{- if $multiarchEnabled }}
+            - key: "archtype"
+              operator: "Equal"
+              value: "arm64"
+              effect: "NoSchedule"
+          {{- end }}
+          {{- end }}
+          containers:
+          - name: cassandra-backup
+            {{- if and $.Values.multiarch.enabled $.Values.multiarch.image.cain }}
+            image: {{ $.Values.multiarch.image.cain }}
+            {{- else }}
+            image: "{{ $backup.image.repository }}:{{ $backup.image.tag }}"
+            {{- end }}
+            command: ["cain"]
+            args:
+            - backup
+            - --namespace
+            - {{ $release.Namespace }}
+            - --selector
+            - release={{ $release.Name }},app={{ template "cassandra.name" $ }}
+            - --keyspace
+            - {{ $schedule.keyspace }}
+            - --dst
+            - {{ $backup.destination }}
+            {{- with $backup.extraArgs }}
+{{ toYaml . | indent 12 }}
+            {{- end }}
+            env:
+{{- if $backup.google.serviceAccountSecret }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/etc/secrets/google/credentials.json"
+{{- end }}
+          {{- with $backup.env }}
+{{ toYaml . | indent 12 }}
+          {{- end }}
+{{- $tierType := $.Values.global.Tier_Type | default "" }}
+{{- if or (eq $tierType "Enterprise") (eq $tierType "") }}
+          {{- with $backup.resources }}
+            resources:
+{{ toYaml . | indent 14 }}
+          {{- end }}
+{{- end }}
+{{- if $backup.google.serviceAccountSecret }}
+            volumeMounts:
+            - name: google-service-account
+              mountPath: /etc/secrets/google/
+{{- end }}
+{{- if $backup.google.serviceAccountSecret }}
+          volumes:
+          - name: google-service-account
+            secret:
+              secretName: {{ $backup.google.serviceAccountSecret | quote }}
+{{- end }}
+          affinity:
+            podAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 1
+                podAffinityTerm:
+                  labelSelector:
+                    matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                      - {{ template "cassandra.fullname" $ }}
+                    - key: release
+                      operator: In
+                      values:
+                      - {{ $release.Name }}
+                  topologyKey: "kubernetes.io/hostname"
+          {{- with $values.tolerations }}
+          tolerations:
+{{ toYaml . | indent 12 }}
+          {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

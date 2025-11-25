@@ -1,0 +1,22 @@
+{{- if .Values.global.atlasLogstash.enabled }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: "{{ template "logstash.fullname" . }}-headless"
+  namespace: {{ template "logstash.namespace" . }}
+  labels:
+    app: "{{ template "logstash.fullname" . }}"
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+{{- if .Values.labels }}
+{{ toYaml .Values.labels | indent 4 }}
+{{- end }}
+spec:
+  clusterIP: None
+  selector:
+    app: "{{ template "logstash.fullname" . }}"
+  ports:
+    - name: http
+      port: {{ .Values.httpPort }}
+{{- end }}

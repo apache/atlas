@@ -1,0 +1,438 @@
+{{- $cloud := .Values.global.cloud }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ template "cassandra.fullname" . }}
+  namespace: {{ .Values.Namespace }}
+  labels:
+    app: {{ template "cassandra.name" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    configmap.reloader.stakater.com/reload: "cassandra-config"
+spec:
+  selector:
+    matchLabels:
+      app: {{ template "cassandra.name" . }}
+      release: {{ .Release.Name }}
+  serviceName: {{ template "cassandra.fullname" . }}
+  replicas: {{ .Values.config.cluster_size }}
+  podManagementPolicy: {{ .Values.podManagementPolicy }}
+  updateStrategy:
+    type: {{ .Values.updateStrategy.type }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "cassandra.name" . }}
+        release: {{ .Release.Name }}
+{{- if .Values.podLabels }}
+{{ toYaml .Values.podLabels | indent 8 }}
+{{- end }}
+{{- if .Values.podAnnotations }}
+      annotations:
+{{ toYaml .Values.podAnnotations | indent 8 }}
+{{- end }}
+    spec:
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
+      {{- if .Values.schedulerName }}
+      schedulerName: "{{ .Values.schedulerName }}"
+      {{- end }}
+      hostNetwork: {{ .Values.hostNetwork }}
+{{- if .Values.selector }}
+{{ toYaml .Values.selector | indent 6 }}
+{{- end }}
+      {{- if .Values.securityContext.enabled }}
+      securityContext:
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+      {{- end }}
+{{- $tierType := .Values.global.Tier_Type | default "" }}
+{{- if or (eq $tierType "Enterprise") (eq $tierType "") }}
+      affinity:
+        nodeAffinity:
+          {{- if eq .Values.custom_deployment.enabled true }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            {{- if (default false .Values.custom_deployment.karpenter_enabled) }}
+            - matchExpressions:
+              - key: purpose
+                operator: In
+                values:
+                - search
+              - key: karpenter.sh/capacity-type
+                operator: In
+                values:
+                - on-demand
+            {{- else }}
+            - matchExpressions:
+              - key: node.kubernetes.io/instance-type
+                operator: In
+                values:
+                {{- range .Values.custom_deployment.instance_type }}
+                - {{ . }}
+                {{- end }}
+            {{- end }}
+          {{- else }}
+          {{- if eq .Values.global.Deployment_Type "Development" }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+            {{- toYaml .Values.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution | nindent 10 }}
+          {{- else }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            {{- toYaml .Values.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution | nindent 12 }}
+          {{- end }}
+          {{- end }}
+        podAntiAffinity:
+        {{- if eq .Values.antiAffinity "soft" }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 50
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - cassandra
+                topologyKey: "kubernetes.io/hostname"
+        {{- else }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            {{- toYaml .Values.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution | nindent 10 }}
+        {{- end }}
+{{- end }}
+{{- if .Values.tolerations }}
+      tolerations:
+{{ toYaml .Values.tolerations | indent 8 }}
+{{- end }}
+# {{- if .Values.configOverrides }}
+#       initContainers:
+#       - name: config-copier
+#         image: ghcr.io/atlanhq/busybox:1.31
+#         command: [ 'sh', '-c', 'cp /configmap-files/* /cassandra-configs/ && chown 999:999 /cassandra-configs/*']
+#         volumeMounts:
+# {{- range $key, $value := .Values.configOverrides }}
+#         - name: cassandra-config-{{ $key | replace "." "-" | replace "_" "--" }}
+#           mountPath: /configmap-files/{{ $key }}
+#           subPath: {{ $key }}
+# {{- end }}
+#         - name: cassandra-configs
+#           mountPath: /cassandra-configs/
+# {{- end }}
+      initContainers:
+      - name: copy-config
+        {{- if and .Values.multiarch.enabled .Values.multiarch.image.busybox }}
+        image: {{ .Values.multiarch.image.busybox }}
+        {{- else }}
+        image: ghcr.io/atlanhq/busybox:1.32
+        {{- end }}
+        command: ['sh', '-c', 'cp /config/cassandra.yaml /config/cassandra-env.sh /mnt/']
+        volumeMounts:
+          - name: config
+            mountPath: /config/cassandra.yaml
+            subPath: cassandra.yaml
+          - name: config
+            mountPath: /config/cassandra-env.sh
+            subPath: cassandra-env.sh
+          - name: pre-install
+            mountPath: /mnt
+      containers:
+{{- if .Values.exporter.enabled }}
+      - name: cassandra-exporter
+        {{- if and .Values.multiarch.enabled .Values.multiarch.image.cassandra_exporter }}
+        image: {{ .Values.multiarch.image.cassandra_exporter }}
+        {{- else }}
+        image: "{{ .Values.exporter.image.repo }}:{{ .Values.exporter.image.tag }}"
+        {{- end }}
+        resources:
+{{ toYaml .Values.exporter.resources | indent 10 }}
+        env:
+          - name: CASSANDRA_EXPORTER_CONFIG_listenPort
+            value: {{ .Values.exporter.port | quote }}
+          - name: JVM_OPTS
+            value: {{ .Values.exporter.jvmOpts | quote }}
+        ports:
+          - name: metrics
+            containerPort: {{ .Values.exporter.port }}
+            protocol: TCP
+          - name: jmx
+            containerPort: 5555
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.exporter.port }}
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: {{ .Values.exporter.port }}
+          initialDelaySeconds: 40
+          timeoutSeconds: 45
+{{- end }}
+      - name: {{ template "cassandra.fullname" . }}
+        {{- if and .Values.multiarch.enabled .Values.multiarch.image.cassandra }}
+        image: {{ .Values.multiarch.image.cassandra }}
+        {{- else }}
+        image: "{{ .Values.image.repo }}:{{ .Values.image.tag }}"
+        {{- end }}
+        imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+{{- if .Values.commandOverrides }}
+        command: {{ .Values.commandOverrides }}
+{{- end }}
+{{- if .Values.argsOverrides }}
+        args: {{ .Values.argsOverrides }}
+{{- end }}
+{{- $tierType := .Values.global.Tier_Type | default "" }}
+{{- if or (eq $tierType "Enterprise") (eq $tierType "") }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+{{- end }}
+        env:
+        {{- $seed_size := default 1 .Values.config.seed_size | int -}}
+        {{- $global := . }}
+        - name: CASSANDRA_SEEDS
+          {{- if .Values.hostNetwork }}
+          value: {{ required "You must fill \".Values.config.seeds\" with list of Cassandra seeds when hostNetwork is set to true" .Values.config.seeds | quote }}
+          {{- else }}
+          value: "{{- range $i, $e := until $seed_size }}{{ template "cassandra.fullname" $global }}-{{ $i }}.{{ template "cassandra.fullname" $global }}.{{ $global.Values.Namespace }}.svc.{{ $global.Values.config.cluster_domain }}{{- if (lt ( add1 $i ) $seed_size ) }},{{- end }}{{- end }}"
+          {{- end }}
+        - name: MAX_HEAP_SIZE
+          value: {{ default "8192M" .Values.max_heap_size | quote }}
+        - name: HEAP_NEWSIZE
+          value: {{ default "200M" .Values.heap_new_size | quote }}
+        - name: CASSANDRA_ENDPOINT_SNITCH
+          value: {{ default "SimpleSnitch" .Values.config.endpoint_snitch | quote }}
+        - name: CASSANDRA_CLUSTER_NAME
+          value: {{ default "Cassandra" .Values.config.cluster_name | quote }}
+        - name: CASSANDRA_DC
+          value: {{ default "DC1" .Values.config.dc_name | quote }}
+        - name: CASSANDRA_RACK
+          value: {{ default "RAC1" .Values.config.rack_name | quote }}
+        - name: CASSANDRA_START_RPC
+          value: {{ default "false" .Values.config.start_rpc | quote }}
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: LOCAL_JMX
+          value: {{ default "no" .Values.config.local_jmx | quote }}
+        {{- range $key, $value := .Values.env }}
+        - name: {{ $key | quote }}
+          value: {{ $value | quote }}
+        {{- end }}
+        livenessProbe:
+          exec:
+            command: [ "/bin/sh", "-c", "nodetool -h ::FFFF:127.0.0.1 status" ]
+          initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+          successThreshold: {{ .Values.livenessProbe.successThreshold }}
+          failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+        readinessProbe:
+          exec:
+            command: [ "/bin/sh", "-c", "nodetool -h ::FFFF:127.0.0.1 status | grep -E \"^UN\\s+{{ .Values.readinessProbe.address }}\"" ]
+          initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+          successThreshold: {{ .Values.readinessProbe.successThreshold }}
+          failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+        ports:
+        - name: intra
+          containerPort: 7000
+        - name: tls
+          containerPort: 7001
+        - name: jmx
+          containerPort: 7199
+        - name: cql
+          containerPort: {{ default 9042 .Values.config.ports.cql }}
+        - name: thrift
+          containerPort: {{ default 9160 .Values.config.ports.thrift }}
+        {{- if .Values.config.ports.agent }}
+        - name: agent
+          containerPort: {{ .Values.config.ports.agent }}
+        {{- end }}
+        volumeMounts:
+        - name: pre-install
+          mountPath: /etc/cassandra/cassandra.yaml
+          subPath: cassandra.yaml
+        - name: pre-install
+          mountPath: /etc/cassandra/cassandra-env.sh
+          subPath: cassandra-env.sh
+        - name: data
+          mountPath: /var/lib/cassandra
+        {{- if .Values.configOverrides }}
+        - name: cassandra-configs
+          mountPath: /etc/cassandra
+        {{- end }}
+        {{- if .Values.extraVolumeMounts }}
+        # Currently some extra blocks accept strings
+        # to continue with backwards compatibility this is being kept
+        # whilst also allowing for yaml to be specified too.
+        {{- if eq "string" (printf "%T" .Values.extraVolumeMounts) }}
+{{ tpl .Values.extraVolumeMounts . | indent 10 }}
+        {{- else }}
+{{ toYaml .Values.extraVolumeMounts | indent 8 }}
+        {{- end }}
+        {{- end }}
+        {{- if not .Values.persistence.enabled }}
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "exec nodetool decommission"]
+        {{- end }}
+      - name: cassandra-icarus
+        {{- if and .Values.multiarch.enabled .Values.multiarch.image.icarus }}
+        image: {{ .Values.multiarch.image.icarus }}
+        {{- else }}
+        image: "{{ .Values.icarus.image.repo }}:{{ .Values.icarus.image.tag }}"
+        {{- end }}
+        imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+        securityContext:
+          runAsUser: {{.Values.securityContext.runAsUser}}
+          runAsGroup: {{ .Values.securityContext.fsGroup }}
+        resources:
+{{ toYaml .Values.icarus.resources | indent 10 }}
+        env:
+          - name: JMX_HOST
+            value: localhost
+          - name: JMX_PORT
+            value: "7199"
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          {{- if eq $cloud "gcp" }}
+          - name: GOOGLE_APPLICATION_CREDENTIALS
+            value: "/var/secrets/google/gcp_credentials.json"
+          {{- end }}
+          {{- if eq $cloud "azure" }}
+          - name: AZURE_STORAGE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: azurestorage
+                key: azure.client.default.key
+          - name: AZURE_STORAGE_ACCOUNT
+            valueFrom:
+              secretKeyRef:
+                name: azurestorage
+                key: azure.client.default.account
+          {{- end}}
+        ports:
+          - containerPort: {{ .Values.icarus.port }}
+            name: http
+        # Health checks for Icarus based on the API spec
+        readinessProbe:
+          httpGet:
+            path: /version  # API endpoint to check version
+            port: {{ .Values.icarus.port }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+
+        livenessProbe:
+          httpGet:
+            path: /version  # Same endpoint can be used to verify service is alive
+            port: {{ .Values.icarus.port }}
+          initialDelaySeconds: 60  # Give it time to start
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        # Wait for Cassandra container to be ready before starting
+        startupProbe:
+          httpGet:
+            path: /version
+            port: {{ .Values.icarus.port }}
+          failureThreshold: 30  # Allow more time during startup
+          periodSeconds: 10
+        volumeMounts:
+          - name: pre-install
+            mountPath: /etc/cassandra/cassandra.yaml
+            subPath: cassandra.yaml
+          - name: pre-install
+            mountPath: /etc/cassandra/cassandra-env.sh
+            subPath: cassandra-env.sh
+          - name: data
+            mountPath: /var/lib/cassandra
+          {{- if eq $cloud "gcp" }}
+          - name: gcp-creds
+            mountPath: /var/secrets/google/gcp_credentials.json
+            subPath: gcp_credentials.json
+            readOnly: true
+          {{- end }}
+
+      {{- if .Values.extraContainers }}
+      # Currently some extra blocks accept strings
+      # to continue with backwards compatibility this is being kept
+      # whilst also allowing for yaml to be specified too.
+      {{- if eq "string" (printf "%T" .Values.extraContainers) }}
+{{ tpl .Values.extraContainers . | indent 6 }}
+      {{- else }}
+{{ toYaml .Values.extraContainers | indent 6 }}
+      {{- end }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ default 30 .Values.podSettings.terminationGracePeriodSeconds }}
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+        - name: {{ .Values.image.pullSecrets }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+      {{- end }}
+{{- if or .Values.configOverrides (not .Values.persistence.enabled) }}
+      volumes:
+{{- end }}
+{{- range $key, $value := .Values.configOverrides }}
+      - configMap:
+          name: cassandra
+        name: cassandra-config-{{ $key | replace "." "-" | replace "_" "--" }}
+{{- end }}
+{{- if .Values.configOverrides }}
+      - name: cassandra-configs
+        emptyDir: {}
+{{- end }}
+{{- if not .Values.persistence.enabled }}
+      - name: data
+        emptyDir: {}
+{{- else }}
+{{- if .Values.extraVolumes }}
+      # Currently some extra blocks accept strings
+      # to continue with backwards compatibility this is being kept
+      # whilst also allowing for yaml to be specified too.
+      volumes:
+      {{- if eq "string" (printf "%T" .Values.extraVolumes) }}
+{{ tpl .Values.extraVolumes . | indent 8 }}
+      {{- else }}
+{{ toYaml .Values.extraVolumes | indent 8 }}
+      {{- end }}
+      {{- end }}
+    {{- if eq $cloud "gcp" }}
+        - name: gcp-creds
+          secret:
+            secretName: gcp-creds-secret-manager
+            items:
+              - key: GOOGLE_APPLICATION_CREDENTIALS
+                path: gcp_credentials.json
+    {{- end }}
+
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+      labels:
+        app: {{ template "cassandra.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      accessModes:
+        - {{ .Values.persistence.accessMode | quote }}
+      resources:
+        requests:
+          storage: {{ .Values.persistence.size | quote }}
+    {{- if .Values.persistence.storageClass }}
+    {{- if (eq "-" .Values.persistence.storageClass) }}
+      storageClassName: ""
+    {{- else }}
+      storageClassName: "{{ .Values.persistence.storageClass }}"
+    {{- end }}
+    {{- end }}
+{{- end }}

@@ -1,0 +1,70 @@
+{{- if .Values.global.atlasLogstash.enabled }}
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ template "logstash.fullname" . }}-metrics
+  namespace: {{ template "logstash.namespace" . }}
+  labels:
+    app: "{{ template "logstash.fullname" . }}"
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    {{- if .Values.serviceMonitor.labels }}
+    {{- toYaml .Values.serviceMonitor.labels | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: "{{ template "logstash.fullname" . }}"
+  endpoints:
+  # Prometheus exporter metrics (PRIMARY - for dashboard)
+  - port: metrics  # Port 9304 - logstash-exporter
+    path: /metrics
+    interval: {{ .Values.serviceMonitor.interval | default "15s" }}
+    scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout | default "10s" }}
+    honorLabels: true
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_pod_name]
+      targetLabel: pod
+    - sourceLabels: [__meta_kubernetes_pod_node_name]  
+      targetLabel: node
+    - sourceLabels: [__meta_kubernetes_namespace]
+      targetLabel: namespace
+    - sourceLabels: [__meta_kubernetes_pod_label_app]
+      targetLabel: app
+    metricRelabelings:
+    # Add job label for all metrics
+    - sourceLabels: []
+      targetLabel: job
+      replacement: "logstash"
+    # Add clusterName label for dashboard compatibility
+    - sourceLabels: [__meta_kubernetes_namespace]
+      targetLabel: clusterName
+      replacement: "$1"
+    
+  # Logstash native API metrics (SECONDARY - for additional context)
+  - port: http  # Port 9600
+    path: /_node/stats
+    interval: {{ .Values.serviceMonitor.interval | default "15s" }}
+    scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout | default "10s" }}
+    honorLabels: true
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_pod_name]
+      targetLabel: pod
+    - sourceLabels: [__meta_kubernetes_pod_node_name]
+      targetLabel: node
+    - sourceLabels: [__meta_kubernetes_namespace]
+      targetLabel: namespace
+    - sourceLabels: [__meta_kubernetes_pod_label_app]
+      targetLabel: app
+    metricRelabelings:
+    # Add job label for all metrics
+    - sourceLabels: []
+      targetLabel: job
+      replacement: "logstash-native"  # Different job name to avoid conflicts
+    # Add clusterName label for dashboard compatibility
+    - sourceLabels: [__meta_kubernetes_namespace]
+      targetLabel: clusterName
+      replacement: "$1"
+{{- end }}
+{{- end }}

@@ -27,6 +27,7 @@ import java.util.Set;
 
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_DENY;
+import static org.apache.atlas.repository.Constants.ACTION_READ;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_TAGS;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_EQUALS;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_ENDS_WITH;
@@ -70,18 +71,18 @@ public class EntityAuthorizer {
         AtlasAccessResult result;
 
         List<RangerPolicy> policies = policiesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
-        result = evaluateABACPoliciesInMemory(policies, entity);
+        result = evaluateABACPoliciesInMemory(policies, entity, action);
 
         RequestContext.get().endMetricRecord(recorder);
         return result;
     }
 
-    private static AtlasAccessResult evaluateABACPoliciesInMemory(List<RangerPolicy> abacPolicies, AtlasEntityHeader entity) {
+    private static AtlasAccessResult evaluateABACPoliciesInMemory(List<RangerPolicy> abacPolicies, AtlasEntityHeader entity, String action) {
         AtlasAccessResult result = new AtlasAccessResult(false);
 
         // don't need to fetch vertex for indexsearch response scrubbing as it already has the required attributes
         // setting vertex to null here as usage is already with a check for null possibility
-        AtlasVertex vertex =  entity.getDocId() == null ? AtlasGraphUtilsV2.findByGuid(entity.getGuid()) : null;
+        AtlasVertex vertex =  entity.getDocId() == null || !ACTION_READ.equals(action) ? AtlasGraphUtilsV2.findByGuid(entity.getGuid()) : null;
 
         for (RangerPolicy policy : abacPolicies) {
             boolean matched = false;

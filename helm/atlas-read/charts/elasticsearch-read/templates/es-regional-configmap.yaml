@@ -1,0 +1,38 @@
+{{- if or .Values.global.esIsolation.enabled .Values.global.globalSvcIsolation.enabled }}
+{{- if .Values.s3_regional_endpoint }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "elasticsearch.uname" . }}-plugin-install-regional
+  namespace: {{ .Values.Namespace }}
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    app: "{{ template "elasticsearch.uname" . }}"
+data:
+  plugin-install.sh: |
+    #!/bin/bash
+
+    echo "[+] Configuring plugins for elasticsearch - with regional endpoint"
+
+    # Delete temporary keystore if present
+    rm -rf /usr/share/elasticsearch/config/elasticsearch.keystore.tmp
+
+    # Configure S3 repository
+    # S3_BUCKET_NAME=atlan-devops-local, for testing purpose
+    # S3_BUCKET_PATH=atlan/infra/elasticsearch
+    curl -X PUT "localhost:9200/_snapshot/atlan_s3_repository?pretty" -H 'Content-Type: application/json' -d'
+    {
+        "type": "s3",
+        "settings": {
+           "bucket": "'"$S3_BUCKET_NAME"'",
+           "base_path": "'"$S3_BUCKET_PATH"'",
+           "role_arn": "'"$S3_BUCKET_ROLE_ARN"'",
+           "region": "'"$S3_BUCKET_REGION"'",
+           "endpoint" : "{{ .Values.s3_regional_endpoint }}",
+           "compress": "true"
+        }
+    }
+    '
+{{- end -}}
+{{- end }}

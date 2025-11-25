@@ -48,6 +48,9 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.patches.PatchContext;
 import org.apache.atlas.repository.patches.ReIndexPatch;
+import org.apache.atlas.observability.AtlasObservabilityData;
+import org.apache.atlas.observability.AtlasObservabilityService;
+import org.apache.atlas.observability.PayloadAnalyzer;
 import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
@@ -104,7 +107,8 @@ import java.util.stream.Collectors;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
 import static java.lang.Boolean.FALSE;
-import static org.apache.atlas.AtlasConfiguration.*;
+import static org.apache.atlas.AtlasConfiguration.ATLAS_DISTRIBUTED_TASK_ENABLED;
+import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.authorize.AtlasPrivilege.*;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
@@ -120,7 +124,6 @@ import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFacto
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
 import static org.apache.atlas.type.Constants.*;
-
 
 
 @Component
@@ -149,6 +152,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final ESAliasStore esAliasStore;
     private final IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier;
     private final AtlasDistributedTaskNotificationSender taskNotificationSender;
+    private final AtlasObservabilityService observabilityService;
 
     private static final List<String> RELATIONSHIP_CLEANUP_SUPPORTED_TYPES = Arrays.asList(AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_ASSET_TYPES.getStringArray());
     private static final List<String> RELATIONSHIP_CLEANUP_RELATIONSHIP_LABELS = Arrays.asList(AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_RELATIONSHIP_LABELS.getStringArray());
@@ -158,7 +162,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                               IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement,
                               AtlasRelationshipStore atlasRelationshipStore, FeatureFlagStore featureFlagStore,
                               IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier, AtlasDistributedTaskNotificationSender taskNotificationSender,
-                              EntityGraphRetriever entityRetriever) {
+                              EntityGraphRetriever entityRetriever, AtlasObservabilityService observabilityService) {
 
         this.graph                = graph;
         this.deleteDelegate       = deleteDelegate;
@@ -175,6 +179,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.esAliasStore = new ESAliasStore(graph, entityRetriever);
         this.atlasAlternateChangeNotifier = atlasAlternateChangeNotifier;
         this.taskNotificationSender = taskNotificationSender;
+        this.observabilityService = observabilityService;
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null, entityRetriever);
         } catch (AtlasException e) {
@@ -1635,6 +1640,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
         }
 
+
         AtlasPerfTracer perf = null;
 
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
@@ -1643,8 +1649,25 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         MetricRecorder metric = RequestContext.get().startMetricRecord("createOrUpdate");
 
+        boolean operationRecorded = false;
+
+        // Initialize observability data
+        long startTime = System.currentTimeMillis();
+        RequestContext requestContext = RequestContext.get();
+        AtlasObservabilityData observabilityData = new AtlasObservabilityData(
+                requestContext.getTraceId(),
+                requestContext.getRequestContextHeaders().get("x-atlan-agent-id"),
+                requestContext.getClientOrigin()
+        );
         try {
+            // Record operation start
+            observabilityService.recordOperationStart("createOrUpdate");
+
+            // Timing: preCreateOrUpdate (includes validation)
+            long preCreateStart = System.currentTimeMillis();
             final EntityMutationContext context = preCreateOrUpdate(entityStream, entityGraphMapper, isPartialUpdate);
+            long preCreateTime = System.currentTimeMillis() - preCreateStart;
+            observabilityData.setValidationTime(preCreateTime);
 
             // Check if authorized to create entities
             if (!RequestContext.get().isImportInProgress() && !RequestContext.get().isSkipAuthorizationCheck()) {
@@ -1669,7 +1692,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     }
 
                     AtlasVertex           storedVertex = context.getVertex(entity.getGuid());
-                    AtlasEntityDiffResult diffResult   = entityComparator.getDiffResult(entity, storedVertex, !storeDifferentialAudits);
+
+                    // Timing: Diff calculation
+                    long diffCalcStart = System.currentTimeMillis();
+                    AtlasEntityDiffResult diffResult = entityComparator.getDiffResult(entity, storedVertex, !storeDifferentialAudits);
+                    long diffCalcTime = System.currentTimeMillis() - diffCalcStart;
+                    long diffTime = observabilityData.getDiffCalcTime() + diffCalcTime;
+                    observabilityData.setDiffCalcTime(diffTime);
 
                     if (diffResult.hasDifference()) {
                         if (storeDifferentialAudits) {
@@ -1737,24 +1766,45 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
             }
 
-
             for (AtlasEntity entity: context.getCreatedEntities()) {
                 RequestContext.get().cacheDifferentialEntity(entity);
             }
 
-            EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, bulkRequestContext);
+            long ingestionStart = System.currentTimeMillis();
+            EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, bulkRequestContext, observabilityData);
+            long ingestionTime = System.currentTimeMillis() - ingestionStart;
+            observabilityData.setIngestionTime(ingestionTime);
 
             ret.setGuidAssignments(context.getGuidAssignments());
 
-            // Notify the change listeners
+
             entityChangeNotifier.onEntitiesMutated(ret, RequestContext.get().isImportInProgress());
             entityChangeNotifier.notifyDifferentialEntityChanges(ret, RequestContext.get().isImportInProgress());
             atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
+
+            observabilityService.recordOperationEnd("createOrUpdate", "success");
+            operationRecorded = true;
+
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== createOrUpdate()");
             }
 
             return ret;
+        } catch (AtlasBaseException e) {
+            // Record operation failure
+            if (!operationRecorded) {
+                String errorCode = e.getAtlasErrorCode() != null ? e.getAtlasErrorCode().getErrorCode() : "UNKNOWN_ERROR";
+                observabilityService.recordOperationFailure("createOrUpdate", errorCode);
+            }
+            throw e;
+        } catch (Exception e) {
+            // Record operation failure for unchecked exceptions (RuntimeException, NullPointerException, etc.)
+            if (!operationRecorded) {
+                String errorType = e.getClass().getSimpleName();
+                observabilityService.recordOperationFailure("createOrUpdate", errorType);
+                observabilityService.logErrorDetails(observabilityData, "Unchecked exception in createOrUpdate", e);
+            }
+            throw e;
         } finally {
             if (ENABLE_DISTRIBUTED_HAS_LINEAGE_CALCULATION.getBoolean() && ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()) {
                 Map<String, String> typeByVertexId = getRemovedInputOutputVertexTypeMap();
@@ -1773,8 +1823,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     }
                 }
             }
-            RequestContext.get().endMetricRecord(metric);
 
+            // Record observability metrics
+            long endTime = System.currentTimeMillis();
+            observabilityData.setDuration(endTime - startTime);
+            recordObservabilityData(requestContext, entityStream, observabilityService, observabilityData);
+            RequestContext.get().endMetricRecord(metric);
             AtlasPerfTracer.log(perf);
         }
     }
@@ -2991,7 +3045,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         boolean currentHasLineage = getEntityHasLineage(assetVertex);
         Boolean shouldHaveLineage = checkIfAssetShouldHaveLineage(assetVertex);
-        
+
         if (shouldHaveLineage == null) {
             LOG.warn("repairHasLineageByIds: Failed to determine if asset should have lineage for vertexId: {}", vertexId);
             RequestContext.get().endMetricRecord(metricRecorder);
@@ -3428,5 +3482,39 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
+    private void recordObservabilityData(RequestContext requestContext, EntityStream entityStream, AtlasObservabilityService observabilityService, AtlasObservabilityData observabilityData) {
+       try {
+           if (observabilityService == null || observabilityData == null) {
+               return;
+           }
+           analyzePayload(entityStream, observabilityData);
+           observabilityService.recordCreateOrUpdateDuration(observabilityData);
+           observabilityService.recordPayloadSize(observabilityData);
+           observabilityService.recordArrayRelationships(observabilityData);
+           observabilityService.recordArrayAttributes(observabilityData);
+           observabilityService.recordTimingMetrics(observabilityData);
 
+           int totalRelationsCount = 0;
+           for (Map.Entry<String, Integer> entry : observabilityData.getRelationshipAttributes().entrySet()) {
+               requestContext.endMetricRecord(requestContext.startMetricRecord("relation:-" + entry.getKey()), entry.getValue());
+               totalRelationsCount += entry.getValue();
+           }
+           if (totalRelationsCount > 0) {
+               requestContext.endMetricRecord(requestContext.startMetricRecord("relations_count"), totalRelationsCount);
+           }
+
+           requestContext.endMetricRecord(requestContext.startMetricRecord("entities_count"), observabilityData.getPayloadAssetSize());
+
+       }catch (Exception e){
+              LOG.error("Error recording observability data", e);
+       }
+    }
+
+    private void analyzePayload(EntityStream entityStream, AtlasObservabilityData observabilityData){
+        if (entityStream instanceof AtlasEntityStream) {
+            AtlasEntityStream atlasEntityStream = (AtlasEntityStream) entityStream;
+            PayloadAnalyzer payloadAnalyzer = new PayloadAnalyzer();
+            payloadAnalyzer.analyzePayload(atlasEntityStream.getEntitiesWithExtInfo(), observabilityData);
+        }
+    }
 }
