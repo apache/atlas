@@ -426,6 +426,12 @@ public class RestoreHandlerV1 {
             }
             Iterable<AtlasEdge> incomingEdges;
 
+            // The restoration logic now unconditionally excludes PROCESS_EDGE_LABELS (process inputs/outputs),
+            // removing any previous conditional behavior based on isSkipProcessEdgeRestoration().
+            // This means process edges will never be restored in this method, while non-process edges
+            // (like glossary term edges and other relationship edges) will be restored.
+            // Note: The configuration flag ATLAS_RELATIONSHIP_SKIP_PROCESS_EDGE_RESTORATION is defined
+            // but not actually used to control this behavior.
            incomingEdges = instanceVertex.getInEdges(PROCESS_EDGE_LABELS);
 
             for (AtlasEdge edge : incomingEdges) {

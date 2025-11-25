@@ -108,6 +108,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.ATLAS_DISTRIBUTED_TASK_ENABLED;
+import static org.apache.atlas.AtlasConfiguration.ENABLE_DISTRIBUTED_HAS_LINEAGE_CALCULATION;
+import static org.apache.atlas.AtlasConfiguration.ENABLE_RELATIONSHIP_CLEANUP;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.authorize.AtlasPrivilege.*;
@@ -2959,19 +2961,19 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
           String providedTypeName = entry.getValue();
 
           if (StringUtils.isEmpty(vertexId) || StringUtils.isEmpty(providedTypeName)) {
-              LOG.warn("repairHasLineageByIdsWithTypes: Skipping empty guid or typeName");
+              LOG.warn("repairHasLineageByIdsWithTypes: Skipping empty id or typeName");
               continue;
           }
 
           AtlasVertex entityVertex = graph.getVertex(vertexId);
           if (entityVertex == null) {
-              LOG.warn("repairHasLineageByIdsWithTypes: Vertex not found for guid: {}", vertexId);
+              LOG.warn("repairHasLineageByIdsWithTypes: Vertex not found for id: {}", vertexId);
               continue;
           }
 
           AtlasEntityType type = typeRegistry.getEntityTypeByName(providedTypeName);
           if (type == null) {
-              LOG.warn("repairHasLineageByIdsWithTypes: Provided typeName {} not found for guid {}", providedTypeName, vertexId);
+              LOG.warn("repairHasLineageByIdsWithTypes: Provided typeName {} not found for id {}", providedTypeName, vertexId);
               // Default to asset path if provided type is unknown
               repairHasLineageForAssetByVertex(vertexId, entityVertex);
               continue;
