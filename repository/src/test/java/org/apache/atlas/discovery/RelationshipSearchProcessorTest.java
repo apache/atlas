@@ -29,6 +29,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.commons.collections.CollectionUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
@@ -63,6 +64,23 @@ public class RelationshipSearchProcessorTest extends BasicTestSetup {
         params.setLimit(20);
 
         executeAndAssert(params, 17);
+    }
+
+    @DataProvider(name = "limitProvider")
+    public Integer[] limitProvider() {
+        return new Integer[] {15, 0, 1, 17, 20};
+    }
+
+    @Test(dataProvider = "limitProvider")
+    public void testRelationshipsApproxCountForAllLimits(int limit) throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setRelationshipName(USER_POST_TYPE);
+        params.setLimit(limit);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.emptySet());
+        RelationshipSearchProcessor processor = new RelationshipSearchProcessor(context, indexer.getEdgeIndexKeys());
+
+        assertEquals(processor.getResultCount(), 17);
     }
 
     @Test
