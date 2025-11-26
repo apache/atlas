@@ -20,6 +20,7 @@ package org.apache.atlas.discovery;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
@@ -123,6 +124,32 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                                             ? new TraversalBasedExecutor(typeRegistry, graph, entityRetriever)
                                             : new ScriptEngineBasedExecutor(typeRegistry, graph, entityRetriever);
         this.dslOptimizer             = ElasticsearchDslOptimizer.getInstance();
+    }
+
+    /**
+     * Package-private constructor for testing purposes only.
+     * Skips initialization of dependencies that require application configuration.
+     * 
+     * WARNING: This constructor should ONLY be used in unit tests where the method
+     * under test doesn't access the uninitialized fields.
+     */
+    EntityDiscoveryService(boolean forTesting) {
+        // Minimal initialization for testing
+        this.graph                    = null;
+        this.indexer                  = null;
+        this.searchTracker            = null;
+        this.gremlinQueryProvider     = null;  // Skip AtlasGremlinQueryProvider.INSTANCE initialization
+        this.typeRegistry             = null;
+        this.maxResultSetSize         = 150;
+        this.maxTypesLengthInIdxQuery = 512;
+        this.maxTagsLengthInIdxQuery  = 512;
+        this.indexSearchPrefix        = null;
+        this.userProfileService       = null;
+        this.suggestionsProvider      = null;
+        this.statsClient              = null;
+        this.dslQueryExecutor         = null;
+        this.dslOptimizer             = ElasticsearchDslOptimizer.getInstance();  // Safe to initialize
+        this.entityRetriever          = null;
     }
 
     @Override
@@ -403,8 +430,13 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
     }
 
-    private void optimizeQueryIfApplicable(SearchParams searchParams, String clientOrigin) {
+    @VisibleForTesting
+    protected void optimizeQueryIfApplicable(SearchParams searchParams, String clientOrigin) {
         try {
+            // no optimisation when ABAC full restriction is ON. The filters are encoded in the query by addPreFiltersToSearchQuery method
+            if (searchParams.getEnableFullRestriction()) {
+                return;
+            }
             if (CLIENT_ORIGIN_PRODUCT.equals(clientOrigin) || CLIENT_ORIGIN_PLAYBOOK.equals(clientOrigin)) {
                 ElasticsearchDslOptimizer.OptimizationResult result = dslOptimizer.optimizeQueryWithValidation(searchParams.getQuery());
                 String dslOptimised = result.getOptimizedQuery();
