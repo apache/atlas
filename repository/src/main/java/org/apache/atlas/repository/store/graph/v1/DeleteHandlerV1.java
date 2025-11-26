@@ -1652,6 +1652,9 @@ public abstract class DeleteHandlerV1 {
             return;
         }
 
+        boolean distributedHasLineageCalculationEnabled = AtlasConfiguration.ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()
+                && AtlasConfiguration.ENABLE_DISTRIBUTED_HAS_LINEAGE_CALCULATION.getBoolean();
+
         for (AtlasVertex vertexToBeDeleted : vertices) {
             if (ACTIVE.equals(getStatus(vertexToBeDeleted))) {
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(getTypeName(vertexToBeDeleted));
@@ -1671,7 +1674,23 @@ public abstract class DeleteHandlerV1 {
                         }
                     }
 
-                    resetHasLineageOnInputOutputDelete(edgesToBeDeleted, vertexToBeDeleted);
+                    if (!distributedHasLineageCalculationEnabled){
+                        resetHasLineageOnInputOutputDelete(edgesToBeDeleted, vertexToBeDeleted);
+                    } else {
+                        // Populate RemovedElementsMap for async hasLineage calculation
+                        if (!edgesToBeDeleted.isEmpty()) {
+                            String guid = getGuid(vertexToBeDeleted);
+                            List<Object> removedElement = RequestContext.get().getRemovedElementsMap().get(guid);
+                            
+                            if (removedElement == null) {
+                                removedElement = new ArrayList<>();
+                                removedElement.addAll(edgesToBeDeleted);
+                                RequestContext.get().getRemovedElementsMap().put(guid, removedElement);
+                            } else {
+                                removedElement.addAll(edgesToBeDeleted);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1856,6 +1875,7 @@ public abstract class DeleteHandlerV1 {
         }
 
     }
+
     private void updateAssetHasLineageStatusV1(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatusV1");
         removedEdges.forEach(edge -> RequestContext.get().addToDeletedEdgesIdsForResetHasLineage(edge.getIdForDisplay()));

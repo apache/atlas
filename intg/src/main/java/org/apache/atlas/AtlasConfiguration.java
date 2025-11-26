@@ -88,6 +88,8 @@ public enum AtlasConfiguration {
     TASKS_USE_ENABLED("atlas.tasks.enabled", true),
     TASKS_PENDING_TASK_QUERY_SIZE_PAGE_SIZE("atlas.tasks.pending.tasks.query.page.size", 100),
     ATLAS_DISTRIBUTED_TASK_ENABLED("atlas.distributed.task.enabled", false),
+    ENABLE_RELATIONSHIP_CLEANUP("atlas.distributed.task.relationship.cleanup", false),
+    ENABLE_DISTRIBUTED_HAS_LINEAGE_CALCULATION("atlas.distributed.task.haslineage.calculation", false),
     TASKS_REQUEUE_GRAPH_QUERY("atlas.tasks.requeue.graph.query", false),
     TASKS_IN_PROGRESS_GRAPH_QUERY("atlas.tasks.inprogress.graph.query", false),
     TASKS_REQUEUE_POLL_INTERVAL("atlas.tasks.requeue.poll.interval.millis", 60000),
@@ -106,7 +108,6 @@ public enum AtlasConfiguration {
     SUPPORTED_RELATIONSHIP_EVENTS("atlas.notification.relationships.filter", "asset_readme,asset_links"),
     ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_ASSET_TYPES("atlas.relationship.cleanup.supported.asset.types", "Process,AirflowTask"),
     ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_RELATIONSHIP_LABELS("atlas.relationship.cleanup.supported.relationship.labels", "__Process.inputs,__Process.outputs,__AirflowTask.inputs,__AirflowTask.outputs"),
-
     REST_API_XSS_FILTER_MASK_STRING("atlas.rest.xss.filter.mask.string", "map<[a-zA-Z _,:<>0-9\\x60]*>|struct<[a-zA-Z _,:<>0-9\\x60]*>|array<[a-zA-Z _,:<>0-9\\x60]*>|\\{\\{[a-zA-Z _,-:0-9\\x60\\{\\}]*\\}\\}"),
     REST_API_XSS_FILTER_EXLUDE_SERVER_NAME("atlas.rest.xss.filter.exclude.server.name", "atlas-service-atlas.atlas.svc.cluster.local"),
 
