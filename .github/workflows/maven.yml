@@ -412,6 +412,10 @@ jobs:
       VCLUSTER_AZURE_NAME: ${{ vars.VCLUSTER_AZURE_NAME }}
       VCLUSTER_GCP_NAME: ${{ vars.VCLUSTER_GCP_NAME }}
       VCLUSTER_PROJECT: ${{ vars.VCLUSTER_PROJECT }}
+      # Cloud provider smoke test toggles (set to 'false' to disable)
+      RUN_AWS_TEST: ${{ vars.RUN_AWS_TEST || 'true' }}
+      RUN_AZURE_TEST: ${{ vars.RUN_AZURE_TEST || 'true' }}
+      RUN_GCP_TEST: ${{ vars.RUN_GCP_TEST || 'true' }}
     
     steps:
       - name: Checkout
@@ -495,42 +499,66 @@ jobs:
       - name: Connect to all vClusters
         run: |
           echo "=================================================="
-          echo "CONNECTING TO ALL VCLUSTERS"
+          echo "CONNECTING TO VCLUSTERS"
           echo "=================================================="
+          echo "Cloud provider configuration:"
+          echo "  AWS:   $RUN_AWS_TEST"
+          echo "  Azure: $RUN_AZURE_TEST"
+          echo "  GCP:   $RUN_GCP_TEST"
+          echo ""
           
           # Connect to AWS vCluster
-          echo "Connecting to AWS vCluster ($VCLUSTER_AWS_NAME)..."
-          KUBECONFIG=kubeconfig-aws.yaml vcluster platform connect vcluster $VCLUSTER_AWS_NAME --project $VCLUSTER_PROJECT
-          echo "✓ AWS kubeconfig saved to kubeconfig-aws.yaml"
+          if [ "$RUN_AWS_TEST" = "true" ]; then
+            echo "Connecting to AWS vCluster ($VCLUSTER_AWS_NAME)..."
+            KUBECONFIG=kubeconfig-aws.yaml vcluster platform connect vcluster $VCLUSTER_AWS_NAME --project $VCLUSTER_PROJECT
+            echo "✓ AWS kubeconfig saved to kubeconfig-aws.yaml"
+          else
+            echo "⊘ Skipping AWS vCluster connection (disabled)"
+          fi
           
           # Connect to Azure vCluster  
-          echo "Connecting to Azure vCluster ($VCLUSTER_AZURE_NAME)..."
-          KUBECONFIG=kubeconfig-azure.yaml vcluster platform connect vcluster $VCLUSTER_AZURE_NAME --project $VCLUSTER_PROJECT
-          echo "✓ Azure kubeconfig saved to kubeconfig-azure.yaml"
+          if [ "$RUN_AZURE_TEST" = "true" ]; then
+            echo "Connecting to Azure vCluster ($VCLUSTER_AZURE_NAME)..."
+            KUBECONFIG=kubeconfig-azure.yaml vcluster platform connect vcluster $VCLUSTER_AZURE_NAME --project $VCLUSTER_PROJECT
+            echo "✓ Azure kubeconfig saved to kubeconfig-azure.yaml"
+          else
+            echo "⊘ Skipping Azure vCluster connection (disabled)"
+          fi
           
           # Connect to GCP vCluster  
-          echo "Connecting to GCP vCluster ($VCLUSTER_GCP_NAME)..."
-          KUBECONFIG=kubeconfig-gcp.yaml vcluster platform connect vcluster $VCLUSTER_GCP_NAME --project $VCLUSTER_PROJECT
-          echo "✓ GCP kubeconfig saved to kubeconfig-gcp.yaml"
+          if [ "$RUN_GCP_TEST" = "true" ]; then
+            echo "Connecting to GCP vCluster ($VCLUSTER_GCP_NAME)..."
+            KUBECONFIG=kubeconfig-gcp.yaml vcluster platform connect vcluster $VCLUSTER_GCP_NAME --project $VCLUSTER_PROJECT
+            echo "✓ GCP kubeconfig saved to kubeconfig-gcp.yaml"
+          else
+            echo "⊘ Skipping GCP vCluster connection (disabled)"
+          fi
           
           echo ""
           echo "Verifying kubeconfigs..."
-          ls -lh kubeconfig-*.yaml
+          ls -lh kubeconfig-*.yaml 2>/dev/null || echo "No kubeconfig files found"
+          
+          # Test connections for enabled clouds
+          if [ "$RUN_AWS_TEST" = "true" ]; then
+            echo ""
+            echo "Testing AWS connection..."
+            KUBECONFIG=kubeconfig-aws.yaml kubectl cluster-info | head -1
+          fi
+          
+          if [ "$RUN_AZURE_TEST" = "true" ]; then
+            echo ""
+            echo "Testing Azure connection..."
+            KUBECONFIG=kubeconfig-azure.yaml kubectl cluster-info | head -1
+          fi
+          
+          if [ "$RUN_GCP_TEST" = "true" ]; then
+            echo ""
+            echo "Testing GCP connection..."
+            KUBECONFIG=kubeconfig-gcp.yaml kubectl cluster-info | head -1
+          fi
           
           echo ""
-          echo "Testing AWS connection..."
-          KUBECONFIG=kubeconfig-aws.yaml kubectl cluster-info | head -1
-          
-          echo ""
-          echo "Testing Azure connection..."
-          KUBECONFIG=kubeconfig-azure.yaml kubectl cluster-info | head -1
-          
-          echo ""
-          echo "Testing GCP connection..."
-          KUBECONFIG=kubeconfig-gcp.yaml kubectl cluster-info | head -1
-          
-          echo ""
-          echo "✓ All vCluster connections established"
+          echo "✓ All enabled vCluster connections established"
       
       - name: Run parallel smoke tests
         run: ./scripts/multi-cloud-smoke-test.sh ${{ env.TEST_IMAGE }}
@@ -551,31 +579,43 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Check results for each cloud
-          AWS_STATUS="❓ Unknown"
-          AZURE_STATUS="❓ Unknown"
-          GCP_STATUS="❓ Unknown"
+          AWS_STATUS="⊘ Skipped (disabled)"
+          AZURE_STATUS="⊘ Skipped (disabled)"
+          GCP_STATUS="⊘ Skipped (disabled)"
           
-          if [ -f "smoke-test-logs/AWS.log" ]; then
-            if grep -q "SMOKE TEST PASSED" smoke-test-logs/AWS.log; then
-              AWS_STATUS="✅ Passed"
+          if [ "$RUN_AWS_TEST" = "true" ]; then
+            if [ -f "smoke-test-logs/AWS.log" ]; then
+              if grep -q "SMOKE TEST PASSED" smoke-test-logs/AWS.log; then
+                AWS_STATUS="✅ Passed"
+              else
+                AWS_STATUS="❌ Failed"
+              fi
             else
-              AWS_STATUS="❌ Failed"
+              AWS_STATUS="❓ Unknown"
             fi
           fi
           
-          if [ -f "smoke-test-logs/Azure.log" ]; then
-            if grep -q "SMOKE TEST PASSED" smoke-test-logs/Azure.log; then
-              AZURE_STATUS="✅ Passed"
+          if [ "$RUN_AZURE_TEST" = "true" ]; then
+            if [ -f "smoke-test-logs/Azure.log" ]; then
+              if grep -q "SMOKE TEST PASSED" smoke-test-logs/Azure.log; then
+                AZURE_STATUS="✅ Passed"
+              else
+                AZURE_STATUS="❌ Failed"
+              fi
             else
-              AZURE_STATUS="❌ Failed"
+              AZURE_STATUS="❓ Unknown"
             fi
           fi
           
-          if [ -f "smoke-test-logs/GCP.log" ]; then
-            if grep -q "SMOKE TEST PASSED" smoke-test-logs/GCP.log; then
-              GCP_STATUS="✅ Passed"
+          if [ "$RUN_GCP_TEST" = "true" ]; then
+            if [ -f "smoke-test-logs/GCP.log" ]; then
+              if grep -q "SMOKE TEST PASSED" smoke-test-logs/GCP.log; then
+                GCP_STATUS="✅ Passed"
+              else
+                GCP_STATUS="❌ Failed"
+              fi
             else
-              GCP_STATUS="❌ Failed"
+              GCP_STATUS="❓ Unknown"
             fi
           fi
           
@@ -586,13 +626,29 @@ jobs:
           echo "| GCP | \`${{ env.VCLUSTER_GCP_NAME }}\` | $GCP_STATUS |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Overall status
-          if [[ "$AWS_STATUS" == *"Passed"* ]] && [[ "$AZURE_STATUS" == *"Passed"* ]] && [[ "$GCP_STATUS" == *"Passed"* ]]; then
-            echo "**Overall**: ✅ All smoke tests passed" >> $GITHUB_STEP_SUMMARY
+          # Overall status - only consider enabled tests
+          ALL_PASSED=true
+          if [ "$RUN_AWS_TEST" = "true" ] && [[ "$AWS_STATUS" != *"Passed"* ]]; then
+            ALL_PASSED=false
+          fi
+          if [ "$RUN_AZURE_TEST" = "true" ] && [[ "$AZURE_STATUS" != *"Passed"* ]]; then
+            ALL_PASSED=false
+          fi
+          if [ "$RUN_GCP_TEST" = "true" ] && [[ "$GCP_STATUS" != *"Passed"* ]]; then
+            ALL_PASSED=false
+          fi
+          
+          if [ "$ALL_PASSED" = "true" ]; then
+            echo "**Overall**: ✅ All enabled smoke tests passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "**Overall**: ⚠️ Some smoke tests failed" >> $GITHUB_STEP_SUMMARY
           fi
           
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Configuration**:" >> $GITHUB_STEP_SUMMARY
+          echo "- AWS: \`$RUN_AWS_TEST\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Azure: \`$RUN_AZURE_TEST\`" >> $GITHUB_STEP_SUMMARY
+          echo "- GCP: \`$RUN_GCP_TEST\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tests Run**:" >> $GITHUB_STEP_SUMMARY
           echo "- Deployment patch and rollout" >> $GITHUB_STEP_SUMMARY

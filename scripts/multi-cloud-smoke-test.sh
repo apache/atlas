@@ -26,10 +26,21 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Cloud provider toggles (default: all enabled)
+# Set to "false" to skip a specific cloud provider
+RUN_AWS_TEST="${RUN_AWS_TEST:-true}"
+RUN_AZURE_TEST="${RUN_AZURE_TEST:-true}"
+RUN_GCP_TEST="${RUN_GCP_TEST:-true}"
+
 # Check arguments
 if [ $# -ne 1 ]; then
   echo -e "${RED}Error: Missing test image argument${NC}"
   echo "Usage: $0 <test-image>"
+  echo ""
+  echo "Environment variables:"
+  echo "  RUN_AWS_TEST=true|false   (default: true)"
+  echo "  RUN_AZURE_TEST=true|false (default: true)"
+  echo "  RUN_GCP_TEST=true|false   (default: true)"
   exit 1
 fi
 
@@ -39,6 +50,11 @@ echo -e "${BLUE}=================================================="
 echo -e "STARTING PARALLEL SMOKE TESTS"
 echo -e "==================================================${NC}"
 echo "Test Image: $TEST_IMAGE"
+echo ""
+echo "Cloud Provider Configuration:"
+echo "  AWS:   $([ "$RUN_AWS_TEST" = "true" ] && echo -e "${GREEN}ENABLED${NC}" || echo -e "${YELLOW}DISABLED${NC}")"
+echo "  Azure: $([ "$RUN_AZURE_TEST" = "true" ] && echo -e "${GREEN}ENABLED${NC}" || echo -e "${YELLOW}DISABLED${NC}")"
+echo "  GCP:   $([ "$RUN_GCP_TEST" = "true" ] && echo -e "${GREEN}ENABLED${NC}" || echo -e "${YELLOW}DISABLED${NC}")"
 echo ""
 
 # Create logs directory
@@ -172,86 +188,120 @@ test_cloud() {
 export TEST_IMAGE
 export -f test_cloud
 
-# Start tests in parallel
-echo -e "${YELLOW}Launching AWS test...${NC}"
-bash -c "test_cloud AWS kubeconfig-aws.yaml" &
-PID_AWS=$!
+# Start tests in parallel (conditionally)
+PID_AWS=""
+PID_AZURE=""
+PID_GCP=""
 
-echo -e "${YELLOW}Launching Azure test...${NC}"
-bash -c "test_cloud Azure kubeconfig-azure.yaml" &
-PID_AZURE=$!
+if [ "$RUN_AWS_TEST" = "true" ]; then
+  echo -e "${YELLOW}Launching AWS test...${NC}"
+  bash -c "test_cloud AWS kubeconfig-aws.yaml" &
+  PID_AWS=$!
+else
+  echo -e "${YELLOW}Skipping AWS test (disabled)${NC}"
+fi
 
-echo -e "${YELLOW}Launching GCP test...${NC}"
-bash -c "test_cloud GCP kubeconfig-gcp.yaml" &
-PID_GCP=$!
+if [ "$RUN_AZURE_TEST" = "true" ]; then
+  echo -e "${YELLOW}Launching Azure test...${NC}"
+  bash -c "test_cloud Azure kubeconfig-azure.yaml" &
+  PID_AZURE=$!
+else
+  echo -e "${YELLOW}Skipping Azure test (disabled)${NC}"
+fi
+
+if [ "$RUN_GCP_TEST" = "true" ]; then
+  echo -e "${YELLOW}Launching GCP test...${NC}"
+  bash -c "test_cloud GCP kubeconfig-gcp.yaml" &
+  PID_GCP=$!
+else
+  echo -e "${YELLOW}Skipping GCP test (disabled)${NC}"
+fi
 
 echo ""
-echo -e "${BLUE}All tests running in parallel...${NC}"
-echo "AWS PID: $PID_AWS"
-echo "Azure PID: $PID_AZURE"
-echo "GCP PID: $PID_GCP"
+echo -e "${BLUE}Active tests running in parallel...${NC}"
+[ -n "$PID_AWS" ] && echo "AWS PID: $PID_AWS"
+[ -n "$PID_AZURE" ] && echo "Azure PID: $PID_AZURE"
+[ -n "$PID_GCP" ] && echo "GCP PID: $PID_GCP"
 echo ""
 
-# Tail logs in real-time (interleaved) with color coding
-tail -f smoke-test-logs/AWS.log 2>/dev/null | while IFS= read -r line; do
-  if echo "$line" | grep -q "ERROR\|❌\|failed"; then
-    echo -e "${RED}[AWS] $line${NC}"
-  elif echo "$line" | grep -q "✓\|✅\|PASSED\|successfully"; then
-    echo -e "${GREEN}[AWS] $line${NC}"
-  else
-    echo "[AWS] $line"
-  fi
-done &
-TAIL_AWS=$!
+# Tail logs in real-time (interleaved) with color coding (only for enabled tests)
+TAIL_AWS=""
+TAIL_AZURE=""
+TAIL_GCP=""
 
-tail -f smoke-test-logs/Azure.log 2>/dev/null | while IFS= read -r line; do
-  if echo "$line" | grep -q "ERROR\|❌\|failed"; then
-    echo -e "${RED}[Azure] $line${NC}"
-  elif echo "$line" | grep -q "✓\|✅\|PASSED\|successfully"; then
-    echo -e "${GREEN}[Azure] $line${NC}"
-  else
-    echo "[Azure] $line"
-  fi
-done &
-TAIL_AZURE=$!
+if [ "$RUN_AWS_TEST" = "true" ]; then
+  tail -f smoke-test-logs/AWS.log 2>/dev/null | while IFS= read -r line; do
+    if echo "$line" | grep -q "ERROR\|❌\|failed"; then
+      echo -e "${RED}[AWS] $line${NC}"
+    elif echo "$line" | grep -q "✓\|✅\|PASSED\|successfully"; then
+      echo -e "${GREEN}[AWS] $line${NC}"
+    else
+      echo "[AWS] $line"
+    fi
+  done &
+  TAIL_AWS=$!
+fi
 
-tail -f smoke-test-logs/GCP.log 2>/dev/null | while IFS= read -r line; do
-  if echo "$line" | grep -q "ERROR\|❌\|failed"; then
-    echo -e "${RED}[GCP] $line${NC}"
-  elif echo "$line" | grep -q "✓\|✅\|PASSED\|successfully"; then
-    echo -e "${GREEN}[GCP] $line${NC}"
-  else
-    echo "[GCP] $line"
-  fi
-done &
-TAIL_GCP=$!
+if [ "$RUN_AZURE_TEST" = "true" ]; then
+  tail -f smoke-test-logs/Azure.log 2>/dev/null | while IFS= read -r line; do
+    if echo "$line" | grep -q "ERROR\|❌\|failed"; then
+      echo -e "${RED}[Azure] $line${NC}"
+    elif echo "$line" | grep -q "✓\|✅\|PASSED\|successfully"; then
+      echo -e "${GREEN}[Azure] $line${NC}"
+    else
+      echo "[Azure] $line"
+    fi
+  done &
+  TAIL_AZURE=$!
+fi
+
+if [ "$RUN_GCP_TEST" = "true" ]; then
+  tail -f smoke-test-logs/GCP.log 2>/dev/null | while IFS= read -r line; do
+    if echo "$line" | grep -q "ERROR\|❌\|failed"; then
+      echo -e "${RED}[GCP] $line${NC}"
+    elif echo "$line" | grep -q "✓\|✅\|PASSED\|successfully"; then
+      echo -e "${GREEN}[GCP] $line${NC}"
+    else
+      echo "[GCP] $line"
+    fi
+  done &
+  TAIL_GCP=$!
+fi
 
 # Wait for tests to complete
 FAILED=0
 
-if wait $PID_AWS; then
-  echo -e "${GREEN}✓ AWS test completed successfully${NC}"
-else
-  echo -e "${RED}✗ AWS test failed${NC}"
-  FAILED=1
+if [ "$RUN_AWS_TEST" = "true" ]; then
+  if wait $PID_AWS; then
+    echo -e "${GREEN}✓ AWS test completed successfully${NC}"
+  else
+    echo -e "${RED}✗ AWS test failed${NC}"
+    FAILED=1
+  fi
 fi
 
-if wait $PID_AZURE; then
-  echo -e "${GREEN}✓ Azure test completed successfully${NC}"
-else
-  echo -e "${RED}✗ Azure test failed${NC}"
-  FAILED=1
+if [ "$RUN_AZURE_TEST" = "true" ]; then
+  if wait $PID_AZURE; then
+    echo -e "${GREEN}✓ Azure test completed successfully${NC}"
+  else
+    echo -e "${RED}✗ Azure test failed${NC}"
+    FAILED=1
+  fi
 fi
 
-if wait $PID_GCP; then
-  echo -e "${GREEN}✓ GCP test completed successfully${NC}"
-else
-  echo -e "${RED}✗ GCP test failed${NC}"
-  FAILED=1
+if [ "$RUN_GCP_TEST" = "true" ]; then
+  if wait $PID_GCP; then
+    echo -e "${GREEN}✓ GCP test completed successfully${NC}"
+  else
+    echo -e "${RED}✗ GCP test failed${NC}"
+    FAILED=1
+  fi
 fi
 
 # Stop tailing logs
-kill $TAIL_AWS $TAIL_AZURE $TAIL_GCP 2>/dev/null || true
+[ -n "$TAIL_AWS" ] && kill $TAIL_AWS 2>/dev/null || true
+[ -n "$TAIL_AZURE" ] && kill $TAIL_AZURE 2>/dev/null || true
+[ -n "$TAIL_GCP" ] && kill $TAIL_GCP 2>/dev/null || true
 
 # Show final summary
 echo ""
@@ -259,51 +309,71 @@ echo -e "${BLUE}=================================================="
 echo -e "SMOKE TEST RESULTS"
 echo -e "==================================================${NC}"
 
-echo -e "${YELLOW}AWS Results:${NC}"
-if grep -q "SMOKE TEST PASSED" smoke-test-logs/AWS.log; then
-  cat smoke-test-logs/AWS.log | tail -5 | while IFS= read -r line; do
-    if echo "$line" | grep -q "PASSED"; then
-      echo -e "${GREEN}$line${NC}"
-    else
-      echo "$line"
-    fi
-  done
+if [ "$RUN_AWS_TEST" = "true" ]; then
+  echo -e "${YELLOW}AWS Results:${NC}"
+  if [ -f "smoke-test-logs/AWS.log" ] && grep -q "SMOKE TEST PASSED" smoke-test-logs/AWS.log; then
+    cat smoke-test-logs/AWS.log | tail -5 | while IFS= read -r line; do
+      if echo "$line" | grep -q "PASSED"; then
+        echo -e "${GREEN}$line${NC}"
+      else
+        echo "$line"
+      fi
+    done
+  elif [ -f "smoke-test-logs/AWS.log" ]; then
+    cat smoke-test-logs/AWS.log | tail -5 | while IFS= read -r line; do
+      echo -e "${RED}$line${NC}"
+    done
+  else
+    echo -e "${YELLOW}No log file found${NC}"
+  fi
+  echo ""
 else
-  cat smoke-test-logs/AWS.log | tail -5 | while IFS= read -r line; do
-    echo -e "${RED}$line${NC}"
-  done
+  echo -e "${YELLOW}AWS: SKIPPED (disabled)${NC}"
+  echo ""
 fi
 
-echo ""
-echo -e "${YELLOW}Azure Results:${NC}"
-if grep -q "SMOKE TEST PASSED" smoke-test-logs/Azure.log; then
-  cat smoke-test-logs/Azure.log | tail -5 | while IFS= read -r line; do
-    if echo "$line" | grep -q "PASSED"; then
-      echo -e "${GREEN}$line${NC}"
-    else
-      echo "$line"
-    fi
-  done
+if [ "$RUN_AZURE_TEST" = "true" ]; then
+  echo -e "${YELLOW}Azure Results:${NC}"
+  if [ -f "smoke-test-logs/Azure.log" ] && grep -q "SMOKE TEST PASSED" smoke-test-logs/Azure.log; then
+    cat smoke-test-logs/Azure.log | tail -5 | while IFS= read -r line; do
+      if echo "$line" | grep -q "PASSED"; then
+        echo -e "${GREEN}$line${NC}"
+      else
+        echo "$line"
+      fi
+    done
+  elif [ -f "smoke-test-logs/Azure.log" ]; then
+    cat smoke-test-logs/Azure.log | tail -5 | while IFS= read -r line; do
+      echo -e "${RED}$line${NC}"
+    done
+  else
+    echo -e "${YELLOW}No log file found${NC}"
+  fi
+  echo ""
 else
-  cat smoke-test-logs/Azure.log | tail -5 | while IFS= read -r line; do
-    echo -e "${RED}$line${NC}"
-  done
+  echo -e "${YELLOW}Azure: SKIPPED (disabled)${NC}"
+  echo ""
 fi
 
-echo ""
-echo -e "${YELLOW}GCP Results:${NC}"
-if grep -q "SMOKE TEST PASSED" smoke-test-logs/GCP.log; then
-  cat smoke-test-logs/GCP.log | tail -5 | while IFS= read -r line; do
-    if echo "$line" | grep -q "PASSED"; then
-      echo -e "${GREEN}$line${NC}"
-    else
-      echo "$line"
-    fi
-  done
+if [ "$RUN_GCP_TEST" = "true" ]; then
+  echo -e "${YELLOW}GCP Results:${NC}"
+  if [ -f "smoke-test-logs/GCP.log" ] && grep -q "SMOKE TEST PASSED" smoke-test-logs/GCP.log; then
+    cat smoke-test-logs/GCP.log | tail -5 | while IFS= read -r line; do
+      if echo "$line" | grep -q "PASSED"; then
+        echo -e "${GREEN}$line${NC}"
+      else
+        echo "$line"
+      fi
+    done
+  elif [ -f "smoke-test-logs/GCP.log" ]; then
+    cat smoke-test-logs/GCP.log | tail -5 | while IFS= read -r line; do
+      echo -e "${RED}$line${NC}"
+    done
+  else
+    echo -e "${YELLOW}No log file found${NC}"
+  fi
 else
-  cat smoke-test-logs/GCP.log | tail -5 | while IFS= read -r line; do
-    echo -e "${RED}$line${NC}"
-  done
+  echo -e "${YELLOW}GCP: SKIPPED (disabled)${NC}"
 fi
 
 echo -e "${BLUE}==================================================${NC}"
