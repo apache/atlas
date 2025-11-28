@@ -58,7 +58,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
     private static final int DEFAULT_RICH_TEXT_ATTRIBUTE_LIMIT = 50;
     private static final String RICH_TEXT_ATTRIBUTE_LIMIT_PROPERTY = "atlas.business.metadata.richtext.limit";
-    private static final String ATTR_OPTION_ENUM_TYPE = "enumType";
+    private static final Set<String> ATTR_OPTION_FIELDS_TO_SKIP = Set.of("enumType");
 
     @Inject
     public AtlasBusinessMetadataDefStoreV2(AtlasTypeDefGraphStoreV2 typeDefStore, AtlasTypeRegistry typeRegistry, EntityDiscoveryService entityDiscoveryService) {
@@ -133,7 +133,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
         if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
             for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
-                validateAttributeDef(attributeDef);
+                validateBusinessAttributeDef(attributeDef);
             }
         }
 
@@ -533,7 +533,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         return count;
     }
 
-    private void validateAttributeDef(AtlasStructDef.AtlasAttributeDef attributeDef) throws AtlasBaseException {
+    private void validateBusinessAttributeDef(AtlasStructDef.AtlasAttributeDef attributeDef) throws AtlasBaseException {
         if (!isValidName(attributeDef.getName())) {
             throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_INVALID_CHARS, attributeDef.getName());
         }
@@ -556,11 +556,11 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
             String key = entry.getKey();
             String value = entry.getValue();
 
-            if (StringUtils.isBlank(value) && !key.equals(ATTR_OPTION_ENUM_TYPE)) {
+            if (StringUtils.isBlank(value) && !ATTR_OPTION_FIELDS_TO_SKIP.contains(key)) {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "options['" + key + "'] for attribute " + attrName + " has null/empty value");
             }
 
-            if (key.equals(ATTR_OPTION_ENUM_TYPE) && value == null) {
+            if (ATTR_OPTION_FIELDS_TO_SKIP.contains(key) && value == null) {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "options['" + key + "'] for attribute " + attrName + " cannot be null");
             }
 
