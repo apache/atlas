@@ -9,7 +9,8 @@
     "prebuild": "npm run fetch-team",
     "build": "node ./docz-lib/docz/bin/index.js build",
     "predeploy": "npm install && npm run build",
-    "deploy": "gh-pages -d .docz/dist"
+    "deploy": "gh-pages -d .docz/dist",
+    "postinstall": "patch-package"
   },
   "author": "",
   "license": "MIT",
@@ -24,6 +25,8 @@
     "babel-plugin-lodash": "3.3.4",
     "babel-plugin-react-transform": "3.0.0",
     "gh-pages": "2.0.1",
+    "patch-package": "^6.5.1",
+    "postinstall-postinstall": "^2.1.0",
     "react-github-btn": "1.0.5",
     "react-syntax-highlighter": "11.0.1",
     "reactstrap": "8.0.0",
