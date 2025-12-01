@@ -385,6 +385,9 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         // Load up current struct definition for matching attributes
         AtlasBusinessMetadataDef currentBusinessMetadataDef = toBusinessMetadataDef(vertex);
 
+        // Check if assets are attached with the attributes that are being archived
+        checkAttributesAttachedToAssets(businessMetadataDef, currentBusinessMetadataDef);
+
         // Check to verify that in an update call we only allow addition of new entity types, not deletion of existing
         // entity types
         if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
@@ -435,6 +438,57 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
                     throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, typeName);
                 }
             }
+        }
+    }
+
+    private void checkAttributesAttachedToAssets(AtlasBusinessMetadataDef updatedDef, AtlasBusinessMetadataDef currentDef) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AtlasBusinessMetadataDefStoreV2.checkAttributesAttachedToAssets({})", updatedDef.getName());
+        }
+
+        if (CollectionUtils.isEmpty(currentDef.getAttributeDefs())) {
+            return;
+        }
+
+        Map<String, AtlasStructDef.AtlasAttributeDef> updatedAttributeMap = new HashMap<>();
+
+        if (CollectionUtils.isNotEmpty(updatedDef.getAttributeDefs())) {
+            for (AtlasStructDef.AtlasAttributeDef attributeDef : updatedDef.getAttributeDefs()) {
+                updatedAttributeMap.put(attributeDef.getName(), attributeDef);
+            }
+        }
+
+        for (AtlasStructDef.AtlasAttributeDef currentAttribute : currentDef.getAttributeDefs()) {
+            AtlasStructDef.AtlasAttributeDef updatedAttr = updatedAttributeMap.get(currentAttribute.getName());
+            if (updatedAttr == null) {
+                continue;
+            }
+
+            //  Diff Calculation: Check if attribute is being archived now but was not archived earlier
+            boolean previouslyArchived = isArchivedAttribute(currentAttribute);
+            boolean currentlyArchived = isArchivedAttribute(updatedAttr);
+            boolean isBeingArchived = !previouslyArchived && currentlyArchived;
+            if (!isBeingArchived) {
+                continue;
+            }
+
+            String vertexPropertyName = AtlasStructType.AtlasAttribute.generateVertexPropertyName(currentAttribute);
+            Set<String> applicableTypes = AtlasJson.fromJson(
+                    currentAttribute.getOption(AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES),
+                    Set.class
+            );
+
+            if (isBusinessAttributePresent(vertexPropertyName, applicableTypes)) {
+                LOG.warn("Business metadata attribute '{}' cannot be archived as it is currently attached to one or more assets", currentAttribute.getName());
+                throw new AtlasBaseException(
+                    AtlasErrorCode.TYPE_HAS_REFERENCES,
+                        currentAttribute.getName()
+                );
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AtlasBusinessMetadataDefStoreV2.checkAttributesAttachedToAssets({})", updatedDef.getName());
         }
     }
 
