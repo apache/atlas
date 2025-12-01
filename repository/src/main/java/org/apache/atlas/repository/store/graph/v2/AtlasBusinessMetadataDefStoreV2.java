@@ -39,6 +39,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -539,7 +540,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         }
 
         Map<String, String> options = attributeDef.getOptions();
-        if (options != null) {
+        if (MapUtils.isNotEmpty(options)) {
             validateOptionsMap(options, attributeDef.getName());
         }
     }
@@ -561,12 +562,11 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
             }
 
             if (ATTR_OPTION_FIELDS_TO_SKIP.contains(key) && value == null) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "options['" + key + "'] for attribute " + attrName + " cannot be null");
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "options['" + key + "'] value for attribute " + attrName + " cannot be null");
             }
 
-            // Check if stringified JSON value is valid JSON
             String trimmedValue = value.trim();
-            if (trimmedValue.startsWith("{") || trimmedValue.startsWith("[")) {
+            if (trimmedValue.startsWith("[")) {
                 try {
                     JSON_MAPPER.readTree(trimmedValue);
                 } catch (JsonProcessingException e) {
