@@ -52,8 +52,8 @@ public class GenericEntityPreprocessorTest {
     private AtlasEntity entity;
 
     public void testEntityTypesToIgnore(String msgJson, List<Pattern> entityTypesToIgnore) {
-        PreprocessorContext context = getPreprocessorContext(msgJson);
-        List<AtlasEntity> entities = context.getEntities();
+        PreprocessorContext context  = getPreprocessorContext(msgJson);
+        List<AtlasEntity>   entities = context.getEntities();
 
         Set<String> filteredEntitiesActual = filterEntity(entities, (AtlasEntity entity) -> isMatch(entityTypesToIgnore, entity.getTypeName()));
 

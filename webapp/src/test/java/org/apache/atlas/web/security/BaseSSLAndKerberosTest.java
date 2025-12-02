@@ -29,9 +29,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import java.io.File;
 import java.io.IOException;
 
-/**
- *
- */
 public class BaseSSLAndKerberosTest extends BaseSecurityTest {
     public static final String TEST_USER_JAAS_SECTION = "TestUser";
     public static final String TESTUSER               = "testuser";

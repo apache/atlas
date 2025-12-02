@@ -48,9 +48,6 @@ import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_FILE_KEY;
 import static org.testng.Assert.assertNotNull;
 
-/**
- *
- */
 public class BaseSecurityTest {
     private static final String  JAAS_ENTRY = "%s { \n" + " %s required\n"
             // kerberos module
