@@ -19,20 +19,25 @@ package org.apache.atlas;
 
 import org.apache.atlas.utils.AtlasConfigurationUtil;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.testng.annotations.Test;
 
 import java.io.InputStream;
 import java.util.AbstractMap;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.expectThrows;
 import static org.testng.Assert.fail;
 
 /**
  * Unit test for {@link ApplicationProperties}
  *
  */
+
 public class ApplicationPropertiesTest {
     @Test
     public void testGetFileAsInputStream() throws Exception {
@@ -156,5 +161,42 @@ public class ApplicationPropertiesTest {
         assertEquals(atlasConf.getString(key), oldVal);
         assertEquals(AtlasConfigurationUtil.getRecentString(atlasConf, key, oldVal), newVal);
         assertEquals(AtlasConfigurationUtil.getRecentString(atlasConf, "garbage", oldVal), oldVal);
+    }
+
+    @Test
+    public void verifyPropertyValues() throws AtlasException {
+        Configuration props = ApplicationProperties.getConfFromAbsolutePath("src/test/resources/test.properties");
+        ApplicationProperties aProps = (ApplicationProperties) props;
+
+        String nameSpaceValue = "nm-sp-11";
+        String someKey        = "atlas.metadata.namespace";
+
+        assertFalse(aProps.getString(someKey).equals(nameSpaceValue));
+    }
+
+    @Test
+    public void verifyCustomisedPathFailureExpected() throws AtlasException {
+        ApplicationProperties.forceReload();
+
+        AtlasException ex = expectThrows(
+                AtlasException.class,
+                () -> ApplicationProperties.getConfFromAbsolutePath("src/test/resources/incorrectfile.properties"));
+
+        assertTrue(
+                ex.getMessage().contains("Failed to load application properties"),
+                "Expected error message to contain 'Failed to load application properties'");
+    }
+
+    @Test
+    public void verifyClientConfiguration() throws Exception {
+        PropertiesConfiguration props = new PropertiesConfiguration();
+
+        String defaultValue = "atlas";
+        String someKey      = "atlas.service";
+
+        props.setProperty(someKey, defaultValue);
+        Configuration configuration = ApplicationProperties.get(props);
+
+        assertTrue(configuration.getProperty(someKey).equals(defaultValue));
     }
 }
