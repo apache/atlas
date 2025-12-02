@@ -121,7 +121,7 @@ public class RestoreHandlerV1 {
                 // Record all restoring candidate entities in RequestContext
                 // and gather restoring candidate vertices.
                 for (VertexInfo vertexInfo : getOwnedVertices(instanceVertex)) {
-                    requestContext.recordEntityRestore(vertexInfo.getEntity());
+                    requestContext.recordEntityRestore(vertexInfo.getEntity(), vertexInfo.getVertex());
                     restoreCandidateVertices.add(vertexInfo.getVertex());
                 }
             }

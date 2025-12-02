@@ -18,6 +18,11 @@
 
 package org.apache.atlas.util;
 
+import org.apache.atlas.RequestContext;
+import org.apache.atlas.model.Tag;
+import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.repository.graph.IFullTextMapper;
 import org.apache.atlas.AtlanElasticSearchIndex;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -25,8 +30,16 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase;
+import org.apache.atlas.repository.graphdb.janus.cassandra.ESConnector;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
+import org.apache.atlas.repository.util.AtlasEntityUtils;
+import org.apache.atlas.repository.util.TagDeNormAttributesUtil;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasEntityUtil;
+import org.janusgraph.core.JanusGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationService;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.diskstorage.BackendException;
@@ -41,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -48,10 +62,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
 import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.INDEX_NAME_EDGE_INDEX;
 import static org.apache.atlas.type.Constants.INDEX_NAME_VERTEX_INDEX;
+
 
 @Component
 public class RepairIndex {
@@ -62,11 +79,14 @@ public class RepairIndex {
     private JanusGraph graph;
     private AtlanElasticSearchIndex searchIndex;
     private EntityMutationService entityMutationService;
+    private AtlasTypeRegistry typeRegistry;
     private GraphHelper graphHelper;
 
     @Inject
-    public RepairIndex(EntityMutationService entityMutationService, AtlasGraph atlasGraph) {
+    public RepairIndex(EntityMutationService entityMutationService, AtlasGraph atlasGraph,
+                       AtlasTypeRegistry typeRegistry) {
         this.entityMutationService = entityMutationService;
+        this.typeRegistry = typeRegistry;
         graphHelper = new GraphHelper(atlasGraph);
     }
 
@@ -88,30 +108,43 @@ public class RepairIndex {
      * @param vertexIds
      * @throws Exception
      */
-    public void reindexVerticesByIds(String indexName, Set<Long> vertexIds) throws Exception {
-        Map<String, Map<String, List<IndexEntry>>> documentsPerStore = new java.util.HashMap<>();
-        StandardJanusGraphTx tx = null;
-        try {
-            tx = (StandardJanusGraphTx) graph.newTransaction();
-            JanusGraphSchemaVertex indexV = tx.getSchemaVertex(JanusGraphSchemaCategory.GRAPHINDEX.getSchemaName(indexName));
-            MixedIndexType indexType = (MixedIndexType) indexV.asIndexType();
-            Set<AtlasVertex> vertices = graphHelper.getVertices(vertexIds);
-            StandardJanusGraph janusGraph = (StandardJanusGraph) graph;
-            IndexSerializer indexSerializer = janusGraph.getIndexSerializer();
-            Set<String> guids = new HashSet<>();
-            for (AtlasVertex vertex : vertices) {
-                indexSerializer.reindexElement(vertex.getWrappedElement(), indexType, documentsPerStore);
-                guids.add(vertex.getProperty(GUID_PROPERTY_KEY, String.class));
+    public void reindexVerticesByIds(String indexName, Set<String> vertexIds) throws Exception {
+        Set<AtlasVertex> vertices = graphHelper.getVertices(vertexIds);
+        Set<String> guids = vertices.stream().map(GraphHelper::getGuid).collect(Collectors.toSet());
+
+        if (RequestContext.get().isIdOnlyGraphEnabled()) {
+            Map<String, Map<String, Object>> toReIndex = ((AtlasJanusGraph) graph).getESPropertiesForUpdateFromVertices(vertices, this.typeRegistry);
+            try {
+                ESConnector.syncToEs(toReIndex, true, null);
+            } catch (Exception e){
+                LOG.info("Exception: " + e.getMessage());
             }
-            searchIndex.restore(documentsPerStore, indexSerializer.getIndexInfoRetriever(tx).get("search"));
-            entityMutationService.repairClassificationMappings(new ArrayList<>(guids));
-        } catch (BackendException | AtlasBaseException e) {
-            throw e;
-        } finally {
-            if (tx != null && tx.isOpen()) {
-                tx.rollback();
+        } else {
+
+            Map<String, Map<String, List<IndexEntry>>> documentsPerStore = new java.util.HashMap<>();
+            StandardJanusGraphTx tx = null;
+            try {
+                tx = (StandardJanusGraphTx) graph.newTransaction();
+                JanusGraphSchemaVertex indexV = tx.getSchemaVertex(JanusGraphSchemaCategory.GRAPHINDEX.getSchemaName(indexName));
+                MixedIndexType indexType = (MixedIndexType) indexV.asIndexType();
+                StandardJanusGraph janusGraph = (StandardJanusGraph) graph;
+                IndexSerializer indexSerializer = janusGraph.getIndexSerializer();
+
+                for (AtlasVertex vertex : vertices) {
+                    indexSerializer.reindexElement(vertex.getWrappedElement(), indexType, documentsPerStore);
+                }
+                searchIndex.restore(documentsPerStore, indexSerializer.getIndexInfoRetriever(tx).get("search"));
+
+            } catch (BackendException e) {
+                throw e;
+            } finally {
+                if (tx != null && tx.isOpen()) {
+                    tx.rollback();
+                }
             }
         }
+
+        entityMutationService.repairClassificationMappings(new ArrayList<>(guids));
     }
 
     public void restoreSelective(String guid, Map<String, AtlasEntity> referredEntities) throws Exception {

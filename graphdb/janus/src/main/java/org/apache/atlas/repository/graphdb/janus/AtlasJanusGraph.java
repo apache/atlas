@@ -290,6 +290,19 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
         executeWithRetry(hostname, SimpleStatement.builder(createKeyspaceQuery).setConsistencyLevel(DefaultConsistencyLevel.ALL).build());
         LOG.info("Ensured keyspace {} exists", keyspace);
+
+        String createAssetsTable = String.format(
+                "CREATE TABLE IF NOT EXISTS %s.%s (" +
+                        "id text, " +
+                        "bucket int, " +
+                        "json_data text, " +
+                        "updated_at timestamp, " +
+                        "PRIMARY KEY ((bucket),id)" +
+                        ") WITH compaction = {'class': 'SizeTieredCompactionStrategy', 'min_threshold': 4, 'max_threshold': 32};",
+                keyspace, "assets");
+
+        executeWithRetry(hostname, SimpleStatement.builder(createAssetsTable).setConsistencyLevel(DefaultConsistencyLevel.ALL).build());
+        LOG.info("Ensured table {}.{} exists with SizeTieredCompactionStrategy", keyspace, "assets");
     }
 
     @Override
@@ -464,7 +477,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
                 recorder = RequestContext.get().startMetricRecord("commitIdOnly.callInsertES");
                 List<String> docIdsToDelete = RequestContext.get().getVerticesToHardDelete().stream()
                         .map(x -> ((AtlasJanusVertex) x ))
-                        .map(x -> LongEncoding.encode((Long) x.getId()))
+                        .map(x -> x.getDocId())
                         .toList();
 
                 ESConnector.syncToEs(

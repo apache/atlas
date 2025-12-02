@@ -22,6 +22,7 @@ import java.util.*;
 
 import static org.apache.atlas.repository.store.graph.v2.tags.CassandraTagConfig.*;
 import static org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl.*;
+import static org.apache.atlas.utils.AtlasEntityUtil.calculateBucket;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -387,7 +388,20 @@ public class TagDAOCassandraImplTest {
         );
     }
 
+    @Test
+    void testBucketCalculation() {
+        assertEquals(63, calculateBucket("aaaaaaa"));
+        assertEquals(62, calculateBucket("aaaaaab"));
+        assertEquals(61, calculateBucket("aaaaaac"));
+        assertEquals(60, calculateBucket("aaaaaad"));
 
+        assertEquals(31, calculateBucket("abaaaab"));
+
+        assertEquals(32, calculateBucket("11228037216"));
+        assertEquals(56, calculateBucket("4272455864"));
+        assertEquals(16, calculateBucket("3637313744"));
+        assertEquals(32, calculateBucket("2076545120"));
+    }
 
     // =================== Helper Methods ===================
 

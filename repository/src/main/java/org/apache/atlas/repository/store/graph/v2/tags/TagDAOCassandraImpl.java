@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.Tag;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT;
 import static org.apache.atlas.repository.store.graph.v2.tags.CassandraTagConfig.*;
+import static org.apache.atlas.utils.AtlasEntityUtil.calculateBucket;
 
 /**
  * Data Access Object for tag operations in Cassandra.
@@ -113,7 +115,9 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     private TagDAOCassandraImpl() throws AtlasBaseException {
         try {
             String hostname = ApplicationProperties.get().getString(CASSANDRA_HOSTNAME_PROPERTY, DEFAULT_HOST);
-            Map<String, String> replicationConfig = Map.of("class", "SimpleStrategy", "replication_factor", ApplicationProperties.get().getString(CASSANDRA_REPLICATION_FACTOR_PROPERTY, "3"));
+            Map<String, String> replicationConfig = Map.of(
+                    "class", "SimpleStrategy",
+                    "replication_factor", AtlasConfiguration.CASSANDRA_REPLICATION_FACTOR_PROPERTY.getString());
 
             DriverConfigLoader configLoader = DriverConfigLoader.programmaticBuilder()
                     //.withDuration(DefaultDriverOption.REQUEST_TIMEOUT, REQUEST_TIMEOUT)
@@ -699,11 +703,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
     private int calculateOptimalRemotePoolSize() {
         return Math.max(calculateOptimalLocalPoolSize() / 2, 2);
-    }
-
-    public static int calculateBucket(String vertexId) {
-        int numBuckets = 2 << BUCKET_POWER; // 2 * 2^5 = 64
-        return (int) (Long.parseLong(vertexId) % numBuckets);
     }
 
     public static AtlasClassification convertToAtlasClassification(String tagMetaJson) throws AtlasBaseException {

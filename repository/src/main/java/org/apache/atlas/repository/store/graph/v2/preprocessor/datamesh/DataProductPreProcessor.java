@@ -13,6 +13,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertexService;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -50,8 +51,9 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private EntityGraphRetriever retrieverNoRelation = null;
 
     public DataProductPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
-                                   AtlasGraph graph, AtlasEntityStore entityStore) {
-        super(typeRegistry, entityRetriever, graph);
+                                   AtlasGraph graph, AtlasEntityStore entityStore,
+                                   DynamicVertexService dynamicVertexService) {
+        super(typeRegistry, entityRetriever, graph, dynamicVertexService);
         this.updatedPolicyResources = new HashMap<>();
         this.entityStore = entityStore;
         this.retrieverNoRelation = new EntityGraphRetriever(entityRetriever, true);

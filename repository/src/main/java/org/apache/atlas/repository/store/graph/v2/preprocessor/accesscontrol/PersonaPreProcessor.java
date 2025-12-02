@@ -205,7 +205,7 @@ public class PersonaPreProcessor extends AccessControlPreProcessor {
                         policyToBeUpdated.setAttribute(ATTR_POLICY_IS_ENABLED, enable);
 
                         context.addUpdated(policyToBeUpdated.getGuid(), policyToBeUpdated, entityType, policyVertex);
-                        RequestContext.get().cacheDifferentialEntity(policyToBeUpdated);
+                        RequestContext.get().cacheDifferentialEntity(policyToBeUpdated, policyVertex);
                     }
                 }
             }

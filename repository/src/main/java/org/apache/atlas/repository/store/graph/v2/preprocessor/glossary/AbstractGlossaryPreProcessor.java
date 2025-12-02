@@ -34,6 +34,7 @@ import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertexService;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
@@ -79,13 +80,14 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
 
     protected EntityDiscoveryService discovery;
 
-    AbstractGlossaryPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, TaskManagement taskManagement) {
+    AbstractGlossaryPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph,
+                                 TaskManagement taskManagement, DynamicVertexService dynamicVertexService) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
         this.taskManagement = taskManagement;
 
         try {
-            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null, entityRetriever);
+            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, dynamicVertexService, null, entityRetriever);
         } catch (AtlasException e) {
             e.printStackTrace();
         }
@@ -228,7 +230,7 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
         AtlasEntity entity = new AtlasEntity();
         entity = entityRetriever.mapSystemAttributes(entityVertex, entity);
         entity.setAttributes(updatedAttributes);
-        requestContext.cacheDifferentialEntity(new AtlasEntity(entity));
+        requestContext.cacheDifferentialEntity(new AtlasEntity(entity), entityVertex);
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 

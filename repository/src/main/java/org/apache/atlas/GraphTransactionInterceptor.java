@@ -26,6 +26,7 @@ import org.apache.atlas.exception.NotFoundException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +55,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
     private static final ThreadLocal<Map<String, AtlasVertex>>  guidVertexCache            = ThreadLocal.withInitial(() -> new HashMap<>());
 
     private final AtlasGraph     graph;
+    private final AtlasTypeRegistry     typeRegistry;
 
     private static final ThreadLocal<Map<Object, String>> vertexGuidCache =
             new ThreadLocal<Map<Object, String>>() {
@@ -80,8 +82,9 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             };
 
     @Inject
-    public GraphTransactionInterceptor(AtlasGraph graph) {
+    public GraphTransactionInterceptor(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
         this.graph          = graph;
+        this.typeRegistry   = typeRegistry;
     }
 
     @Override
@@ -199,7 +202,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
     }
 
     private void doCommit(final String invokingClass, final String invokedMethodName) {
-        graph.commit();
+        graph.commit(typeRegistry);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Graph commit txn {}.{}", invokingClass, invokedMethodName);

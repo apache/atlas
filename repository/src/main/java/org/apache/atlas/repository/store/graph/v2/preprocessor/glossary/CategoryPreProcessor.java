@@ -33,6 +33,7 @@ import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertexService;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
@@ -83,8 +84,9 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
     private EntityMutationContext context;
 
     public CategoryPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
-                                AtlasGraph graph, TaskManagement taskManagement, EntityGraphMapper entityGraphMapper) {
-        super(typeRegistry, entityRetriever, graph, taskManagement);
+                                AtlasGraph graph, TaskManagement taskManagement,
+                                EntityGraphMapper entityGraphMapper, DynamicVertexService dynamicVertexService) {
+        super(typeRegistry, entityRetriever, graph, taskManagement, dynamicVertexService);
         this.entityGraphMapper = entityGraphMapper;
     }
 

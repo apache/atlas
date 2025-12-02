@@ -113,7 +113,7 @@ public class RequestContext {
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
     private String traceId;
-    private final Map<AtlasObjectId, Object> relationshipEndToVertexIdMap = new HashMap<>();
+    private final Map<AtlasObjectId, String> relationshipEndToVertexIdMap = new HashMap<>();
     private boolean     allowDuplicateDisplayName;
     private MetricsRegistry metricsRegistry;
     private boolean skipAuthorizationCheck = false;
@@ -134,8 +134,8 @@ public class RequestContext {
 
     Map<String, Object> tagsDiff = new HashMap<>();
 
-    private List<Object> verticesToHardDelete = new ArrayList<>(0);
-    private List<Object> verticesToSoftDelete = new ArrayList<>(0);
+    private final List<Object> verticesToHardDelete = new ArrayList<>(0);
+    private final List<Object> verticesToSoftDelete = new ArrayList<>(0);
 
     //To handle gets from background threads where createContext() is not called
     //createContext called for every request in the filter
@@ -938,11 +938,11 @@ public class RequestContext {
         this.forwardedAddresses = forwardedAddresses;
     }
 
-    public void addRelationshipEndToVertexIdMapping(AtlasObjectId atlasObjectId, Object vertexId) {
+    public void addRelationshipEndToVertexIdMapping(AtlasObjectId atlasObjectId, String vertexId) {
         this.relationshipEndToVertexIdMap.put(atlasObjectId, vertexId);
     }
 
-    public Map<AtlasObjectId, Object> getRelationshipEndToVertexIdMap() {
+    public Map<AtlasObjectId, String> getRelationshipEndToVertexIdMap() {
         return this.relationshipEndToVertexIdMap;
     }
 

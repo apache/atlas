@@ -32,6 +32,7 @@ import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertexService;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.tasks.TaskManagement;
@@ -57,8 +58,12 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(TermPreProcessor.class);
 
     private AtlasEntityHeader anchor;
-    public TermPreProcessor( AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, TaskManagement taskManagement) {
-        super(typeRegistry, entityRetriever, graph, taskManagement);
+
+    public TermPreProcessor( AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
+                             AtlasGraph graph, TaskManagement taskManagement,
+                             DynamicVertexService dynamicVertexService
+                             ) {
+        super(typeRegistry, entityRetriever, graph, taskManagement, dynamicVertexService);
     }
 
     @Override

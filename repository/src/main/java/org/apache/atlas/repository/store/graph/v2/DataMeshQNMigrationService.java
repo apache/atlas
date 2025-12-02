@@ -420,7 +420,7 @@ public class DataMeshQNMigrationService implements MigrationService {
         AtlasEntity entity = new AtlasEntity();
         entity = entityRetriever.mapSystemAttributes(entityVertex, entity);
         entity.setAttributes(updatedAttributes);
-        requestContext.cacheDifferentialEntity(new AtlasEntity(entity));
+        requestContext.cacheDifferentialEntity(new AtlasEntity(entity), entityVertex);
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 

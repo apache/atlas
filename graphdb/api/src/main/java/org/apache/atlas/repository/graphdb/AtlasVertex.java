@@ -102,4 +102,6 @@ public interface AtlasVertex<V, E> extends AtlasElement {
      * @return
      */
     V getV();
+
+    String getDocId();
 }

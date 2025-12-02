@@ -282,7 +282,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         if (diffResult.hasDifference()) {
             if (storeDifferentialAudits) {
                 diffResult.getDiffEntity().setGuid(entity.getGuid());
-                reqContext.cacheDifferentialEntity(diffResult.getDiffEntity());
+                reqContext.cacheDifferentialEntity(diffResult.getDiffEntity(), vertex);
             }
         }
     }

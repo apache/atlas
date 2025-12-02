@@ -1,5 +1,6 @@
 package org.apache.atlas.service.redis;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.service.metrics.MetricUtils;
@@ -31,8 +32,13 @@ public class RedisServiceImpl extends AbstractRedisService {
             try {
                 LOG.info("Attempting to connect to Redis...");
 
-                redisClient = Redisson.create(getProdConfig());
-                redisCacheClient = Redisson.create(getCacheImplConfig());
+                if (AtlasConfiguration.REDIS_IS_LOCAL.getBoolean()) {
+                    redisClient = Redisson.create(getLocalConfig());
+                    redisCacheClient = Redisson.create(getLocalConfig());
+                } else {
+                    redisClient = Redisson.create(getProdConfig());
+                    redisCacheClient = Redisson.create(getCacheImplConfig());
+                }
 
                 if (redisClient == null || redisCacheClient == null) {
                     throw new AtlasException("Failed to create Sentinel redis client.");

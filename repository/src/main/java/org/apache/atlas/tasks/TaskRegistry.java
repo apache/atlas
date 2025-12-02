@@ -80,6 +80,7 @@ import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.Constants.TASK_STATUS;
 import static org.apache.atlas.repository.audit.ESBasedAuditRepository.getHttpHosts;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getClient;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getDocIdForVertexId;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
 @Component
@@ -469,7 +470,7 @@ public class TaskRegistry {
                                         atlasTask.getGuid(), atlasTask.getStatus());
                                 mismatches++;
                                 try {
-                                    String docId = LongEncoding.encode(Long.parseLong(vertex.getIdForDisplay()));
+                                    String docId = getDocIdForVertexId(vertex.getIdForDisplay());
                                     repairMismatchedTask(atlasTask, docId);
                                 }
                                 catch (Exception e){

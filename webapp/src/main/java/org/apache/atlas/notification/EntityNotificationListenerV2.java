@@ -33,6 +33,7 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -319,9 +320,9 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                     List<ESDeferredOperation> esDefferredOperations = context.getESDeferredOperations();
                     if (CollectionUtils.isNotEmpty(esDefferredOperations)) {
                         for (ESDeferredOperation esDeferredOperation : esDefferredOperations) {
-                            Long vertexId = LongEncoding.decode(entity.getDocId());
-                            if (Long.parseLong(esDeferredOperation.getEntityId()) == vertexId) {
-                                Map<String, Object> classificationInternalAttributes = esDeferredOperation.getPayload().get(String.valueOf(vertexId));
+                            String vertexId = AtlasGraphUtilsV2.getVertexIdForDocId(entity.getDocId());
+                            if (esDeferredOperation.getEntityId().equals(vertexId)) {
+                                Map<String, Object> classificationInternalAttributes = esDeferredOperation.getPayload().get(vertexId);
                                 if (MapUtils.isNotEmpty(classificationInternalAttributes)) {
                                     ret.getInternalAttributes().putAll(classificationInternalAttributes);
                                 }

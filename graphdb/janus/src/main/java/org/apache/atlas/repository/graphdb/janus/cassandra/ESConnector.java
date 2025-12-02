@@ -101,8 +101,6 @@ public class ESConnector {
                 for (String assetVertexId : entitiesMapForUpdate.keySet()) {
                     Map<String, Object> toUpdate = new HashMap<>(entitiesMapForUpdate.get(assetVertexId));
 
-                    //long vertexId = Long.valueOf(assetVertexId);
-                    //String docId = LongEncoding.encode(vertexId);
                     String docId =  JG_ES_DOC_ID_PREFIX + assetVertexId;
 
                     bulkRequestBody.append("{\"update\":{\"_index\":\"janusgraph_vertex_index\",\"_id\":\"" + docId + "\" }}\n");

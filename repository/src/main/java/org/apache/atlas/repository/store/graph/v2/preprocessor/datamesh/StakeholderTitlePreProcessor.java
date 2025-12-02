@@ -16,6 +16,8 @@ import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertex;
+import org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertexService;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
@@ -58,13 +60,14 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
     protected EntityDiscoveryService discovery;
 
     public StakeholderTitlePreProcessor(AtlasGraph graph,
-                                       AtlasTypeRegistry typeRegistry,
-                                       EntityGraphRetriever entityRetriever) {
+                                        AtlasTypeRegistry typeRegistry,
+                                        EntityGraphRetriever entityRetriever,
+                                        DynamicVertexService dynamicVertexService) {
         this.typeRegistry = typeRegistry;
         this.entityRetriever = entityRetriever;
 
         try {
-            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null, entityRetriever);
+            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, dynamicVertexService, null, entityRetriever);
         } catch (AtlasException e) {
             e.printStackTrace();
         }

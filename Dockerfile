@@ -41,6 +41,8 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
 
+RUN apt install unzip
+
 RUN ln -s /usr/bin/python2 /usr/bin/python
 
 COPY atlas-hub/atlas_start.py.patch atlas-hub/atlas_config.py.patch /opt/apache-atlas/bin/

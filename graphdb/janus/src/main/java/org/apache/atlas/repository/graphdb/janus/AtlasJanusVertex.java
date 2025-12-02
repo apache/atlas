@@ -43,6 +43,9 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.core.JanusGraphVertex;
+
+import static org.apache.atlas.repository.graphdb.janus.cassandra.ESConnector.JG_ES_DOC_ID_PREFIX;
+
 /**
  * Janus implementation of AtlasVertex.
  */
@@ -226,6 +229,8 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
         return this;
     }
 
-
-
+    @Override
+    public String getDocId() {
+        return JG_ES_DOC_ID_PREFIX + this.getIdForDisplay();
+    }
 }

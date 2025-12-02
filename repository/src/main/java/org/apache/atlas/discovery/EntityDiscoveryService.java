@@ -978,7 +978,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private void prepareSearchResult(AtlasSearchResult ret,  DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes,
                                      boolean fetchCollapsedResults, boolean useVertexEdgeBulkFetching) throws AtlasBaseException {
         if (RequestContext.get().isIdOnlyGraphEnabled()) {
-            fetchCollapsedResults = false; // V2 doesn't use this flag in this context
+            fetchCollapsedResults = false; // TODO: V2 doesn't use this flag in this context
             prepareSearchResultV2(ret, indexQueryResult, resultAttributes, fetchCollapsedResults);
         } else {
             prepareSearchResultV1(ret, indexQueryResult, resultAttributes, fetchCollapsedResults, useVertexEdgeBulkFetching);

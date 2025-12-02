@@ -134,6 +134,7 @@ public final class GraphHelper {
     }
 
     public AtlasEdge addEdge(AtlasVertex fromVertex, AtlasVertex toVertex, String edgeLabel) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("GraphHelper.addEdge");
         AtlasEdge ret;
 
         if (LOG.isDebugEnabled()) {
@@ -160,6 +161,7 @@ public final class GraphHelper {
             }
         }
 
+        RequestContext.get().endMetricRecord(recorder);
         return ret;
     }
 
@@ -1817,6 +1819,7 @@ public final class GraphHelper {
 
 
     public static List<AtlasEdge> getCollectionElementsUsingRelationship(AtlasVertex vertex, AtlasAttribute attribute, String edgeLabel) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getCollectionElementsUsingRelationship");
         List<AtlasEdge>                ret;
         AtlasRelationshipEdgeDirection edgeDirection = attribute.getRelationshipEdgeDirection();
         Iterator<AtlasEdge>            edgesForLabel = getEdgesForLabel(vertex, edgeLabel, edgeDirection);
@@ -1825,6 +1828,7 @@ public final class GraphHelper {
 
         sortCollectionElements(attribute, ret);
 
+        RequestContext.get().endMetricRecord(recorder);
         return ret;
     }
 
@@ -2346,9 +2350,9 @@ public final class GraphHelper {
             .blockingGet();
     }
 
-    public Set<AtlasVertex> getVertices(Set<Long> vertexIds) {
+    public Set<AtlasVertex> getVertices(Set<String> vertexIds) {
         if (CollectionUtils.isEmpty(vertexIds)) return Collections.emptySet();
-        Set<String> uniqueVertexIds = vertexIds.stream().map(String::valueOf).collect(Collectors.toSet());
+        Set<String> uniqueVertexIds = new HashSet<>(vertexIds);
         return graph.getVertices(uniqueVertexIds.toArray(new String[0]));
     }
 }
