@@ -21,6 +21,7 @@ package org.apache.atlas.plugin.service;
 
 import org.apache.atlas.authorizer.store.PoliciesStore;
 import org.apache.atlas.authorizer.store.UsersStore;
+import org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertexService;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -74,7 +75,8 @@ public class RangerBasePlugin {
 	private       RangerRoles                 roles;
 	private       RangerUserStore             userStore;
 	private final List<RangerChainedPlugin>   chainedPlugins;
-	private       AtlasTypeRegistry           typeRegistry = null;
+	private 	  AtlasTypeRegistry 		  typeRegistry = null;
+	private 	DynamicVertexService dynamicVertexService = null;
 	private final UsersStore                  usersStore;
 	private final PoliciesStore               policiesStore;
 
@@ -90,6 +92,12 @@ public class RangerBasePlugin {
 	public RangerBasePlugin(String serviceType, String serviceName, AtlasTypeRegistry typeRegistry) {
 		this(new RangerPluginConfig(serviceType, serviceName, null, null, null, null));
 		this.typeRegistry = typeRegistry;
+	}
+
+	public RangerBasePlugin(String serviceType, String serviceName, AtlasTypeRegistry typeRegistry, DynamicVertexService dynamicVertexService) {
+		this(new RangerPluginConfig(serviceType, serviceName, null, null, null, null));
+		this.typeRegistry = typeRegistry;
+		this.dynamicVertexService = dynamicVertexService;
 	}
 
 	public RangerBasePlugin(RangerPluginConfig pluginConfig) {
@@ -230,7 +238,7 @@ public class RangerBasePlugin {
 		}
 
 		if (!pluginConfig.getPolicyEngineOptions().disablePolicyRefresher) {
-			refresher = new PolicyRefresher(this);
+			refresher = new PolicyRefresher(this, dynamicVertexService);
 			LOG.info("Created PolicyRefresher Thread(" + refresher.getName() + ")");
 			refresher.setDaemon(true);
 			refresher.startRefresher();

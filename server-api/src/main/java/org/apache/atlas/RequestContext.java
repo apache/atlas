@@ -51,14 +51,15 @@ public class RequestContext {
     private final Map<String, AtlasEntityHeader>         updatedEntities      = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         deletedEntities      = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         restoreEntities      = new HashMap<>();
+    private final Map<String, Object>                    restoreVertices      = new HashMap<>();
     private final Map<String, Map<String, Object>> allInternalAttributesMap     = new HashMap<>();
-
 
     private       Map<String, String>                    lexoRankCache        = null;
     private final Map<String, AtlasEntity>               entityCache          = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         entityHeaderCache    = new HashMap<>();
     private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache   = new HashMap<>();
     private final Map<String, AtlasEntity>               diffEntityCache      = new HashMap<>();
+    private final Map<String, Object>                    diffVertexCache      = new HashMap<>();
     private final Map<String, List<AtlasClassification>> addedPropagations    = new HashMap<>();
     private final Map<String, List<AtlasClassification>> removedPropagations  = new HashMap<>();
     private final Map<String, String>                    requestContextHeaders= new HashMap<>();
@@ -133,8 +134,8 @@ public class RequestContext {
 
     Map<String, Object> tagsDiff = new HashMap<>();
 
-    private RequestContext() {
-    }
+    private List<Object> verticesToHardDelete = new ArrayList<>(0);
+    private List<Object> verticesToSoftDelete = new ArrayList<>(0);
 
     //To handle gets from background threads where createContext() is not called
     //createContext called for every request in the filter
@@ -198,6 +199,9 @@ public class RequestContext {
         addedClassificationAndVertices.clear();
         esDeferredOperations.clear();
         this.cassandraTagOperations.clear();
+        this.verticesToSoftDelete.clear();
+        this.verticesToHardDelete.clear();
+
         this.allInternalAttributesMap.clear();
 
         // Reset observability timing fields
@@ -444,10 +448,11 @@ public class RequestContext {
         }
     }
 
-    public void recordEntityRestore(AtlasEntityHeader entity) {
+    public void recordEntityRestore(AtlasEntityHeader entity, Object vertex) {
         if (entity != null && entity.getGuid() != null) {
             entity.setStatus(AtlasEntity.Status.ACTIVE);
             restoreEntities.put(entity.getGuid(), entity);
+            restoreVertices.put(entity.getGuid(), vertex);
         }
     }
 
@@ -471,6 +476,18 @@ public class RequestContext {
 
     public void setDelayTagNotifications(boolean delayTagNotifications) {
         this.delayTagNotifications = delayTagNotifications;
+    }
+
+    public boolean isIdOnlyGraphEnabled() {
+        //TODO: extract flag from Redis
+//        if (isIdOnlyGraphEnabled == null || !isIdOnlyGraphEnabled) {
+//            // flag is not set yet
+//            // set it for the current request
+//            isIdOnlyGraphEnabled = Boolean.parseBoolean(
+//                                FeatureFlagStore.getFlag(FeatureFlagStore.FEATURE_FLAG_ID_ONLY_GRAPH_ENABLED)
+//                        );
+//        }
+        return true;
     }
 
     public Map<AtlasClassification, Collection<Object>> getDeletedClassificationAndVertices() {
@@ -503,6 +520,22 @@ public class RequestContext {
 
     public void addTagsDiff(String entityGuid, Map<String, List<AtlasClassification>> tagsDiff) {
         this.tagsDiff.put(entityGuid, tagsDiff);
+    }
+
+    public List<Object> getVerticesToHardDelete() {
+        return verticesToHardDelete;
+    }
+    public void addVertexToHardDelete(Object vertex) {
+        this.verticesToHardDelete.add(vertex);
+    }
+    public List<Object> getVerticesToSoftDelete() {
+        return verticesToSoftDelete;
+    }
+    public void addVertexToSoftDelete(Object vertex) {
+        this.verticesToSoftDelete.add(vertex);
+    }
+
+    private RequestContext() {
     }
 
     public void addToDeletedEdgesIds(String edgeId) {
@@ -603,9 +636,10 @@ public class RequestContext {
         }
     }
 
-    public void cacheDifferentialEntity(AtlasEntity entity) {
+    public void cacheDifferentialEntity(AtlasEntity entity, Object atlasVertex) {
         if (entity != null && entity.getGuid() != null) {
             diffEntityCache.put(entity.getGuid(), entity);
+            diffVertexCache.put(entity.getGuid(), atlasVertex);
         }
     }
 
@@ -626,7 +660,13 @@ public class RequestContext {
         return diffEntityCache.get(guid);
     }
 
+    public Object getDifferentialVertex(String guid) {
+        return diffVertexCache.get(guid);
+    }
+
     public Collection<AtlasEntity> getDifferentialEntities() { return diffEntityCache.values(); }
+
+    public Set<String> getDifferentialGUIDS() { return diffEntityCache.keySet(); }
 
     public Map<String,AtlasEntity> getDifferentialEntitiesMap() { return diffEntityCache; }
 
@@ -648,6 +688,14 @@ public class RequestContext {
 
     public Collection<AtlasEntityHeader> getRestoredEntities() {
         return restoreEntities.values();
+    }
+
+    public AtlasEntityHeader getRestoredEntity(String guid) {
+        return restoreEntities.get(guid);
+    }
+
+    public Collection<Object> getRestoredVertices() {
+        return restoreVertices.values();
     }
 
     /**

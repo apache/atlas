@@ -30,6 +30,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
+import org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertex;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.lang.ArrayUtils;
@@ -47,6 +48,15 @@ import org.janusgraph.core.JanusGraphVertex;
  */
 public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> {
 
+    private DynamicVertex dynamicVertex;
+
+    public DynamicVertex getDynamicVertex() {
+        return dynamicVertex;
+    }
+
+    public void setDynamicVertex(DynamicVertex dynamicVertex) {
+        this.dynamicVertex = dynamicVertex;
+    }
 
     public AtlasJanusVertex(AtlasJanusGraph graph, Vertex source) {
         super(graph, source);
@@ -54,39 +64,74 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
 
     @Override
     public <T> void addProperty(String propertyName, T value) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusVertex.addProperty");
         try {
-            getWrappedElement().property(VertexProperty.Cardinality.set, propertyName, value);
+            if (RequestContext.get().isIdOnlyGraphEnabled() && isVertex()) {
+                this.getDynamicVertex().addSetProperty(propertyName, value);
+
+                if (VERTEX_CORE_PROPERTIES.contains(propertyName)) {
+                    getWrappedElement().property(VertexProperty.Cardinality.set, propertyName, value);
+                }
+            } else {
+                getWrappedElement().property(VertexProperty.Cardinality.set, propertyName, value);
+            }
+
             recordInternalAttributeIncrementalAdd(propertyName, Set.class);
         } catch(SchemaViolationException e) {
             throw new AtlasSchemaViolationException(e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
         }
     }
 
     @Override
     public <T> void addListProperty(String propertyName, T value) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusVertex.addListProperty");
         try {
-            getWrappedElement().property(VertexProperty.Cardinality.list, propertyName, value);
+            if (RequestContext.get().isIdOnlyGraphEnabled() && isVertex()) {
+                this.getDynamicVertex().addListProperty(propertyName, value);
+
+                if (VERTEX_CORE_PROPERTIES.contains(propertyName)) {
+                    getWrappedElement().property(VertexProperty.Cardinality.list, propertyName, value);
+                }
+            } else {
+                getWrappedElement().property(VertexProperty.Cardinality.list, propertyName, value);
+            }
+
             recordInternalAttributeIncrementalAdd(propertyName, List.class);
         } catch(SchemaViolationException e) {
             throw new AtlasSchemaViolationException(e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
         }
     }
 
 
     @Override
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> getEdges(AtlasEdgeDirection dir, String edgeLabel) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusVertex.getEdges");
 
-        Direction d = AtlasJanusObjectFactory.createDirection(dir);
-        Iterator<Edge> edges = getWrappedElement().edges(d, edgeLabel);
-        return graph.wrapEdges(edges);
+        try {
+            Direction d = AtlasJanusObjectFactory.createDirection(dir);
+            Iterator<Edge> edges = getWrappedElement().edges(d, edgeLabel);
+            return graph.wrapEdges(edges);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
     }
 
     @Override
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> getEdges(AtlasEdgeDirection dir, String[] edgeLabels) {
-        Direction      direction = AtlasJanusObjectFactory.createDirection(dir);
-        Iterator<Edge> edges     = getWrappedElement().edges(direction, edgeLabels);
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusVertex.getEdges1");
 
-        return graph.wrapEdges(edges);
+        try {
+            Direction      direction = AtlasJanusObjectFactory.createDirection(dir);
+            Iterator<Edge> edges     = getWrappedElement().edges(direction, edgeLabels);
+
+            return graph.wrapEdges(edges);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
     }
 
     public Set<AtlasJanusEdge> getInEdges(String[] edgeLabelsToExclude) {
@@ -105,10 +150,15 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
 
     @Override
     public long getEdgesCount(AtlasEdgeDirection dir, String edgeLabel) {
-        Direction      direction = AtlasJanusObjectFactory.createDirection(dir);
-        Iterator<Edge> it     = getWrappedElement().edges(direction, edgeLabel);
-        IteratorToIterableAdapter<Edge> iterable = new IteratorToIterableAdapter<>(it);
-        return StreamSupport.stream(iterable.spliterator(), true).count();
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusVertex.getEdgesCount");
+        try {
+            Direction      direction = AtlasJanusObjectFactory.createDirection(dir);
+            Iterator<Edge> it     = getWrappedElement().edges(direction, edgeLabel);
+            IteratorToIterableAdapter<Edge> iterable = new IteratorToIterableAdapter<>(it);
+            return StreamSupport.stream(iterable.spliterator(), true).count();
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
     }
 
     @Override
@@ -129,27 +179,45 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
 
     @Override
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> getEdges(AtlasEdgeDirection in) {
-        Direction d = AtlasJanusObjectFactory.createDirection(in);
-        Iterator<Edge> edges = getWrappedElement().edges(d);
-        return graph.wrapEdges(edges);
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusVertex.getEdges2");
+        try {
+            Direction d = AtlasJanusObjectFactory.createDirection(in);
+            Iterator<Edge> edges = getWrappedElement().edges(d);
+            return graph.wrapEdges(edges);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
     }
 
     @Override
     public <T> Collection<T> getPropertyValues(String propertyName, Class<T> clazz) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusVertex.getPropertyValues");
+        try {
+            if (RequestContext.get().isIdOnlyGraphEnabled() && isVertex()) {
+                return (Collection<T>) getProperty(propertyName, clazz);
+            }
 
-        Collection<T> result = new ArrayList<T>();
-        Iterator<VertexProperty<T>> it = getWrappedElement().properties(propertyName);
-        while(it.hasNext()) {
-            result.add(it.next().value());
+            Collection<T> result = new ArrayList<T>();
+            Iterator<VertexProperty<T>> it = getWrappedElement().properties(propertyName);
+            while (it.hasNext()) {
+                result.add(it.next().value());
+            }
+
+            return result;
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
         }
-
-        return result;
     }
 
     @Override
     public AtlasVertexQuery<AtlasJanusVertex, AtlasJanusEdge> query() {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusVertex.query");
 
-        return new AtlasJanusVertexQuery(graph, getAsJanusVertex().query());
+        try {
+            return new AtlasJanusVertexQuery(graph, getAsJanusVertex().query());
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
     }
 
 

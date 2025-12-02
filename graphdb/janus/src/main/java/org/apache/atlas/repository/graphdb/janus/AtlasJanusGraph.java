@@ -17,19 +17,33 @@
  */
 package org.apache.atlas.repository.graphdb.janus;
 
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.datastax.driver.core.exceptions.WriteTimeoutException;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.DefaultConsistencyLevel;
+import com.datastax.oss.driver.api.core.DriverTimeoutException;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.cql.Statement;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ESAliasRequestBuilder;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
+import org.apache.atlas.idgenerator.DistributedIdGenerator;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
@@ -43,10 +57,16 @@ import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.GraphIndexQueryParameters;
 import org.apache.atlas.repository.graphdb.GremlinVersion;
+import org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertexService;
+import org.apache.atlas.repository.graphdb.janus.cassandra.ESConnector;
 import org.apache.atlas.repository.graphdb.janus.query.AtlasJanusGraphQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
@@ -60,6 +80,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ImmutablePath;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.IoCore;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
@@ -80,6 +101,7 @@ import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,12 +110,17 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.INDEX_SEARCH_CLIENT_NOT_INITIATED;
 import static org.apache.atlas.AtlasErrorCode.RELATIONSHIP_CREATE_INVALID_PARAMS;
@@ -124,6 +151,40 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     private final RestClient esUiClusterClient;
     private final RestClient esNonUiClusterClient;
+
+    private String CASSANDRA_HOSTNAME_PROPERTY = "atlas.graph.storage.hostname";
+    private final CqlSession cqlSession;
+    private final DynamicVertexService dynamicVertexService;
+
+    // Sonyflake-based distributed ID generator
+    private static final DistributedIdGenerator CUSTOM_ID_GENERATOR;
+
+
+    static {
+        try {
+            String hostName = ApplicationProperties.get().getString("atlas.graph.storage.hostname", "localhost");
+            int port = ApplicationProperties.get().getInt("atlas.graph.storage.port", 9042);
+            String podName = System.getenv("K8S_POD_NAME");
+
+            if (podName == null || podName.isBlank()) {
+                podName = "local-atlas-0";
+                String message = "Pod name not found in env for DistributedIdGenerator for custom vertex ID generation, falling back to " + podName;
+                LOG.warn(message);
+
+                //LOG.error(message);
+                //throw new RuntimeException(message);
+            }
+
+            CUSTOM_ID_GENERATOR = new DistributedIdGenerator(hostName, port, podName);
+        } catch (AtlasException e) {
+            LOG.error("Failed to initialize DistributedIdGenerator for custom vertex ID generation");
+            throw new RuntimeException(e);
+        }
+    }
+
+    public DynamicVertexService getDynamicVertexRetrievalService() {
+        return dynamicVertexService;
+    }
 
     private final ThreadLocal<GremlinGroovyScriptEngine> scriptEngine = ThreadLocal.withInitial(() -> {
         DefaultImportCustomizer.Builder builder = DefaultImportCustomizer.build()
@@ -162,6 +223,73 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         this.elasticsearchClient = elasticsearchClient;
         this.esUiClusterClient = esUiClusterClient;
         this.esNonUiClusterClient = esNonUiClusterClient;
+
+        try {
+            initializeSchema();
+        } catch (AtlasBaseException e) {
+
+        }
+
+        this.cqlSession = initializeCassandraSession();
+        this.dynamicVertexService = new DynamicVertexService(cqlSession);
+    }
+
+    private CqlSession initializeCassandraSession() {
+        String hostname = null;
+        try {
+            hostname = ApplicationProperties.get().getString(CASSANDRA_HOSTNAME_PROPERTY, "localhost");
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+
+        String keyspace = AtlasConfiguration.ATLAS_CASSANDRA_VANILLA_KEYSPACE.getString();
+
+        return getCQLBuilder(hostname)
+                .withKeyspace(keyspace)
+                .build();
+    }
+
+    private CqlSessionBuilder getCQLBuilder (String hostname) {
+        return CqlSession.builder()
+                .addContactPoint(new InetSocketAddress(hostname, 9042))
+                .withConfigLoader(
+                        DriverConfigLoader.programmaticBuilder()
+                                .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, Duration.ofSeconds(10))
+                                .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, Duration.ofSeconds(15))
+                                .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(15))
+                                .withDuration(DefaultDriverOption.CONTROL_CONNECTION_AGREEMENT_TIMEOUT, Duration.ofSeconds(20))
+                                .withDuration(DefaultDriverOption.REQUEST_TRACE_INTERVAL, Duration.ofMillis(500))
+                                .withDuration(DefaultDriverOption.REQUEST_TRACE_ATTEMPTS, Duration.ofSeconds(20))
+                                .build())
+                .withLocalDatacenter("datacenter1");
+    }
+
+    private void initializeSchema() throws AtlasBaseException {
+        String hostname = null;
+        try {
+            hostname = ApplicationProperties.get().getString(CASSANDRA_HOSTNAME_PROPERTY, "localhost");
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+
+        String keyspace = AtlasConfiguration.ATLAS_CASSANDRA_VANILLA_KEYSPACE.getString();
+        String replFactor = AtlasConfiguration.CASSANDRA_REPLICATION_FACTOR_PROPERTY.getString();
+
+        Map<String, String> replicationConfig =
+                Map.of(
+                        "class", "SimpleStrategy",
+                        "replication_factor", replFactor);
+
+        String replicationConfigString = replicationConfig.entrySet().stream()
+                .map(entry -> String.format("'%s': '%s'", entry.getKey(), entry.getValue()))
+                .collect(Collectors.joining(", "));
+
+        String createKeyspaceQuery = String.format(
+                "CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {%s} AND durable_writes = true;",
+                keyspace, replicationConfigString);
+
+        executeWithRetry(hostname, SimpleStatement.builder(createKeyspaceQuery).setConsistencyLevel(DefaultConsistencyLevel.ALL).build());
+        LOG.info("Ensured keyspace {} exists", keyspace);
     }
 
     @Override
@@ -259,7 +387,8 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     @Override
     public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> addVertex() {
-        Vertex result = getGraph().addVertex();
+        String id = generateCustomId();
+        Vertex result = getGraph().addVertex(T.id, id);
 
         return GraphDbObjectFactory.createVertex(this, result);
     }
@@ -284,6 +413,139 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     @Override
     public void commit() {
         getGraph().tx().commit();
+    }
+
+    @Override
+    public void commit(AtlasTypeRegistry typeRegistry) {
+        getGraph().tx().commit();
+
+        commitIdOnly(typeRegistry);
+    }
+
+    private void commitIdOnly(AtlasTypeRegistry typeRegistry) {
+        if (RequestContext.get().isIdOnlyGraphEnabled()) {
+
+            try {
+                AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("commitIdOnly.callInsertVertices");
+                // Extract updated vertices
+                Set<AtlasVertex> updatedVertexList = RequestContext.get().getDifferentialGUIDS().stream()
+                        .map(x -> ((AtlasVertex) RequestContext.get().getDifferentialVertex(x)))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+
+                // Extract SOFT deleted vertices
+                updatedVertexList.addAll(RequestContext.get().getVerticesToSoftDelete().stream()
+                        .map(x -> ((AtlasVertex) x))
+                        .collect(Collectors.toSet()));
+
+                // Extract restored vertices
+                if (!RequestContext.get().getRestoredVertices().isEmpty()) {
+                    updatedVertexList.addAll(RequestContext.get().getRestoredVertices().stream()
+                            .filter(Objects::nonNull)
+                            .map(x -> ((AtlasVertex) x))
+                            .collect(Collectors.toSet()));
+                }
+
+                Map<String, Map<String, Object>> normalisedAttributes = normalizeAttributes(updatedVertexList, typeRegistry);
+
+                if (CollectionUtils.isNotEmpty(updatedVertexList)) {
+                    dynamicVertexService.insertVertices(normalisedAttributes);
+                }
+                RequestContext.get().endMetricRecord(recorder);
+
+                recorder = RequestContext.get().startMetricRecord("commitIdOnly.callDropVertices");
+                // Extract HARD/PURGE vertex Ids
+                List<String> purgedVertexIdsList = RequestContext.get().getVerticesToHardDelete().stream().map(x -> ((AtlasVertex) x).getIdForDisplay()).toList();
+                dynamicVertexService.dropVertices(purgedVertexIdsList);
+
+                RequestContext.get().endMetricRecord(recorder);
+
+
+                recorder = RequestContext.get().startMetricRecord("commitIdOnly.callInsertES");
+                List<String> docIdsToDelete = RequestContext.get().getVerticesToHardDelete().stream()
+                        .map(x -> ((AtlasJanusVertex) x ))
+                        .map(x -> LongEncoding.encode((Long) x.getId()))
+                        .toList();
+
+                ESConnector.syncToEs(
+                        getESPropertiesForUpdateFromMap(normalisedAttributes, typeRegistry),
+                        true,
+                        docIdsToDelete);
+
+                RequestContext.get().endMetricRecord(recorder);
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private Map<String, Map<String, Object>> normalizeAttributes(Set<AtlasVertex> vertices, AtlasTypeRegistry typeRegistry) {
+        Map<String, Map<String, Object>> rt = new HashMap<>();
+
+        for (AtlasVertex vertex : vertices) {
+            String typeName = vertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
+            AtlasEntityType type = typeRegistry.getEntityTypeByName(typeName);
+
+            Map<String, Object> allProperties = new HashMap<>(((AtlasJanusVertex) vertex).getDynamicVertex().getAllProperties());
+
+            type.normalizeAttributeValuesForUpdate(allProperties);
+
+            rt.put(vertex.getIdForDisplay(), allProperties);
+        }
+
+        return rt;
+    }
+
+    public Map<String, Map<String, Object>> getESPropertiesForUpdateFromMap(Map<String, Map<String, Object>> normalisedAttributes, AtlasTypeRegistry typeRegistry) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getESPropertiesForUpdateFromMap");
+        if (MapUtils.isEmpty(normalisedAttributes)) {
+            return null;
+        }
+
+        try {
+            return normalisedAttributes.keySet().stream().collect(Collectors.toMap(
+                    k -> k,
+                    v -> getESPropertiesForUpdate(normalisedAttributes.get(v), typeRegistry)
+            ));
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    public Map<String, Map<String, Object>> getESPropertiesForUpdateFromVertices(Set<AtlasVertex> vertices, AtlasTypeRegistry typeRegistry) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getESPropertiesForUpdateFromVertices");
+        if (CollectionUtils.isEmpty(vertices)) {
+            return null;
+        }
+        try {
+            return vertices.stream().collect(Collectors.toMap(
+                    k -> k.getIdForDisplay(),
+                    v -> getESPropertiesForUpdate(((AtlasJanusVertex) v).getDynamicVertex().getAllProperties(), typeRegistry)
+            ));
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    private Map<String, Object> getESPropertiesForUpdate(Map<String, Object> properties, AtlasTypeRegistry typeRegistry) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getESPropertiesForUpdate.filter");
+        try {
+            AtlasEntityType type = typeRegistry.getEntityTypeByName((String) properties.get(Constants.TYPE_NAME_PROPERTY_KEY));
+            return getEligibleProperties(properties, type).stream()
+                    .filter(k -> properties.get(k) != null)
+                    .collect(Collectors.toMap(
+                            k -> k,
+                            v -> properties.get(v)
+                    ));
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    private List<String> getEligibleProperties(Map<String, Object> properties, AtlasEntityType type) {
+        return properties.keySet().stream().filter(x ->
+                        type.isAttributesForESSync(x) || x.startsWith(Constants.INTERNAL_PROPERTY_KEY_PREFIX))
+                .toList();
     }
 
     @Override
@@ -423,6 +685,14 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         Vertex           vertex = getSingleElement(it, vertexId);
 
         return GraphDbObjectFactory.createVertex(this, vertex);
+    }
+
+    @Override
+    public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> getJanusVertex(String vertexId) {
+        Iterator<Vertex> it     = getGraph().vertices(vertexId);
+        Vertex           vertex = getSingleElement(it, vertexId);
+
+        return GraphDbObjectFactory.createJanusVertex(this, vertex);
     }
 
     @Override
@@ -709,5 +979,44 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         }
 
         return null;
+    }
+
+    private <T extends Statement<T>> ResultSet executeWithRetry(String hostname,
+                                                                Statement<T> statement) throws AtlasBaseException {
+        int MAX_RETRIES = 3;
+        Duration INITIAL_BACKOFF = Duration.ofMillis(100);
+        int retryCount = 0;
+        Exception lastException;
+
+        try (CqlSession tempCqlSession = getCQLBuilder(hostname).build();) {
+            while (true) {
+                try {
+                    return tempCqlSession.execute(statement);
+                } catch (DriverTimeoutException | WriteTimeoutException | NoHostAvailableException e) {
+                    lastException = e;
+                    retryCount++;
+                    LOG.warn("Retry attempt {} for statement execution due to exception: {}", retryCount, e.toString());
+                    if (retryCount >= MAX_RETRIES) {
+                        break;
+                    }
+                    try {
+                        long backoff = INITIAL_BACKOFF.toMillis() * (long)Math.pow(2, retryCount - 1);
+                        Thread.sleep(backoff);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new AtlasBaseException("AtlasJAnusGraph: Interrupted during retry backoff", ie);
+                    }
+                }
+            }
+        } catch (AtlasBaseException be) {
+            throw be;
+        }
+
+        LOG.error("AtlasJAnusGraph: Failed to execute statement after {} retries", MAX_RETRIES, lastException);
+        throw new AtlasBaseException("AtlasJAnusGraph: Failed to execute statement after " + MAX_RETRIES + " retries", lastException);
+    }
+
+    private String generateCustomId() {
+        return CUSTOM_ID_GENERATOR.nextId();
     }
 }

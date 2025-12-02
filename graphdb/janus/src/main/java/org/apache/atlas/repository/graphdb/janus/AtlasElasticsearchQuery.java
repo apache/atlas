@@ -733,6 +733,12 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
 
         @Override
+        public String getVertexId() {
+            String docId = String.valueOf(hit.getId());
+            return docId.substring(1);
+        }
+
+        @Override
         public double getScore() {
             return hit.getScore();
         }
@@ -802,6 +808,14 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 return result;
             }
             return null;
+        }
+
+        @Override
+        public String getVertexId() {
+            // Discard prefix "S" from doc id
+            // TODO: This should not fail in case of migrated vertices
+            String docId = String.valueOf(hit.get("_id"));
+            return docId.substring(1);
         }
 
         @Override

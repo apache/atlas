@@ -41,6 +41,7 @@ public class AtlasEntityUtil {
     private static final int    SOFT_REFERENCE_FORMAT_INDEX_TYPE_NAME = 0;
     private static final int    SOFT_REFERENCE_FORMAT_INDEX_GUID      = 1;
 
+    private static final int NUM_BUCKETS = 2 << 5;
 
     public static String formatSoftRefValue(String typeName, String guid) {
         return String.format(SOFT_REF_FORMAT, typeName, guid);
@@ -166,4 +167,12 @@ public class AtlasEntityUtil {
         return ret;
     }
 
+    public static int calculateBucket(String vertexId) {
+        try {
+            // Backward compatibility for Tags V2
+            return (int) (Long.parseLong(vertexId) % NUM_BUCKETS);
+        } catch (NumberFormatException nfe) {
+            return Math.abs(vertexId.hashCode() % NUM_BUCKETS);
+        }
+    }
 }

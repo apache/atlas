@@ -23,6 +23,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import javax.script.ScriptEngine;
@@ -117,6 +118,9 @@ public interface AtlasGraph<V, E> {
      * @return
      */
     AtlasVertex<V, E> getVertex(String vertexId);
+
+
+    AtlasVertex<V, E> getJanusVertex(String vertexId);
 
 
     /**
@@ -234,6 +238,9 @@ public interface AtlasGraph<V, E> {
      * Commits changes made to the graph in the current transaction.
      */
     void commit();
+
+
+    void commit(AtlasTypeRegistry typeRegistry);
 
     /**
      * Rolls back changes made to the graph in the current transaction.

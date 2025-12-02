@@ -96,6 +96,7 @@ public class AtlasEntityType extends AtlasStructType {
     private List<AtlasAttribute>                             dynEvalTriggerAttributes   = Collections.emptyList();
     private Map<String,List<TemplateToken>>                  parsedTemplates            = Collections.emptyMap();
     private Set<String>                                      tagPropagationEdges        = Collections.emptySet();
+    private Set<String>                                      attributesForESSync        = Collections.emptySet();
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
@@ -408,6 +409,18 @@ public class AtlasEntityType extends AtlasStructType {
         }
 
         return ret;
+    }
+
+    public Set<String> getAttributesForESSync() {
+        return attributesForESSync;
+    }
+
+    public boolean isAttributesForESSync(String attributesName) {
+        return attributesForESSync.contains(attributesName);
+    }
+
+    public void setAttributesForESSync(Set<String> attributesForESSync) {
+        this.attributesForESSync = attributesForESSync;
     }
 
     public Set<String> getSuperTypes() {

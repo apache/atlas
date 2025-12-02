@@ -18,6 +18,8 @@
 
 package org.apache.atlas.repository.graphdb.janus;
 
+import org.apache.atlas.RequestContext;
+import org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertex;
 import org.janusgraph.core.EdgeLabel;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
@@ -71,11 +73,42 @@ public final class GraphDbObjectFactory {
      * @param source the Gremlin vertex
      */
     public static AtlasJanusVertex createVertex(AtlasJanusGraph graph, Vertex source) {
-
         if (source == null) {
             return null;
         }
-        return new AtlasJanusVertex(graph, source);
+
+        AtlasJanusVertex ret = new AtlasJanusVertex(graph, source);
+
+        //TODO: Identify Asset vertices with specific label. Do not rely on __type key existence
+
+        if (!source.keys().contains("__type") && RequestContext.get().isIdOnlyGraphEnabled()) { // Do only for Asset vertices
+            try {
+                DynamicVertex dynamicVertex = graph.getDynamicVertexRetrievalService().retrieveVertex(source.id().toString());
+                if (dynamicVertex == null) {
+                    dynamicVertex = new DynamicVertex();
+                }
+                ret.setDynamicVertex(dynamicVertex);
+
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return ret;
+    }
+
+    /**
+     * Creates an AtlasJanusVertex that corresponds to the given Gremlin Vertex.
+     *
+     * @param graph The graph that contains the vertex
+     * @param source the Gremlin vertex
+     */
+    public static AtlasJanusVertex createJanusVertex(AtlasJanusGraph graph, Vertex source) {
+        if (source == null) {
+            return null;
+        }
+
+        AtlasJanusVertex ret = new AtlasJanusVertex(graph, source);
+        return ret;
     }
 
     /**
