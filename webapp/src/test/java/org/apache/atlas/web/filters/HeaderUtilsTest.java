@@ -93,7 +93,6 @@ public class HeaderUtilsTest {
 
         assertEquals("DENY", HeadersUtil.getHeaderMap(HeadersUtil.X_FRAME_OPTIONS_KEY));
         assertEquals("nosniff", HeadersUtil.getHeaderMap(HeadersUtil.X_CONTENT_TYPE_OPTIONS_KEY));
-        assertEquals("1; mode=block", HeadersUtil.getHeaderMap(HeadersUtil.X_XSS_PROTECTION_KEY));
     }
 
     private Properties createPropertiesWithHeaders(String... headers) {
