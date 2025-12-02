@@ -505,7 +505,7 @@ public class TypesREST {
                 try{
                     existingMB = typeDefStore.getBusinessMetadataDefByGuid(mb.getGuid());
                 }catch (AtlasBaseException e){
-                    //do nothing -- this BM is ew
+                    //do nothing -- this BM is new
                     existingMB = null;
                 }
                 mb.setRandomNameForNewAttributeDefs(existingMB);
@@ -515,7 +515,7 @@ public class TypesREST {
                 try{
                     existingClassificationDef = typeDefStore.getClassificationDefByGuid(classificationDef.getGuid());
                 }catch (AtlasBaseException e){
-                    //do nothing -- this classification is ew
+                    //do nothing -- this classification is new
                     existingClassificationDef = null;
                 }
                 classificationDef.setRandomNameForNewAttributeDefs(existingClassificationDef);

@@ -86,7 +86,16 @@ public class AtlasStructType extends AtlasType {
         Map<String, AtlasAttribute> a = new HashMap<>();
 
         for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
-            AtlasType      attrType  = typeRegistry.getType(attributeDef.getTypeName());
+            String typeName = attributeDef.getTypeName();
+            String attributeName = attributeDef.getName();
+            
+            if (StringUtils.isBlank(typeName)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
+                    String.format("Attribute '%s' has missing or empty typeName. typeName is required and cannot be null or empty.",
+                        attributeName));
+            }
+            
+            AtlasType      attrType  = typeRegistry.getType(typeName);
             AtlasAttribute attribute = new AtlasAttribute(this, attributeDef, attrType);
 
             Cardinality cardinality = attributeDef.getCardinality();

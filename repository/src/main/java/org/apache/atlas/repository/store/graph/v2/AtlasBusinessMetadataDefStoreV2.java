@@ -39,9 +39,12 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import javax.inject.Inject;
 import java.util.*;
@@ -52,9 +55,11 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
     private static final Logger LOG = LoggerFactory.getLogger(AtlasBusinessMetadataDefStoreV2.class);
 
     private final EntityDiscoveryService entityDiscoveryService;
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     private static final int DEFAULT_RICH_TEXT_ATTRIBUTE_LIMIT = 50;
     private static final String RICH_TEXT_ATTRIBUTE_LIMIT_PROPERTY = "atlas.business.metadata.richtext.limit";
+    private static final Set<String> ATTR_OPTION_FIELDS_TO_SKIP = Set.of("enumType");
 
     @Inject
     public AtlasBusinessMetadataDefStoreV2(AtlasTypeDefGraphStoreV2 typeDefStore, AtlasTypeRegistry typeRegistry, EntityDiscoveryService entityDiscoveryService) {
@@ -129,9 +134,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
         if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
             for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
-                if (!isValidName(attributeDef.getName())) {
-                    throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_INVALID_CHARS, attributeDef.getName());
-                }
+                validateBusinessAttributeDef(attributeDef);
             }
         }
 
@@ -583,5 +586,48 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         }
 
         return count;
+    }
+
+    private void validateBusinessAttributeDef(AtlasStructDef.AtlasAttributeDef attributeDef) throws AtlasBaseException {
+        if (!isValidName(attributeDef.getName())) {
+            throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_INVALID_CHARS, attributeDef.getName());
+        }
+
+        Map<String, String> options = attributeDef.getOptions();
+        if (MapUtils.isNotEmpty(options)) {
+            validateOptionsMap(options, attributeDef.getName());
+        }
+    }
+
+    private void validateOptionsMap(Map<String, String> options, String attrName) throws AtlasBaseException {
+        // Validate the entire options map is serializable as JSON
+        try {
+            JSON_MAPPER.writeValueAsString(options);
+        } catch (JsonProcessingException e) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "options map for attribute " + attrName + " is not a valid JSON object: " + e.getMessage());
+        }
+
+        for (Map.Entry<String, String> entry : options.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+
+            if (StringUtils.isBlank(value) && !ATTR_OPTION_FIELDS_TO_SKIP.contains(key)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "options['" + key + "'] for attribute " + attrName + " has null/empty value");
+            }
+
+            if (ATTR_OPTION_FIELDS_TO_SKIP.contains(key) && value == null) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "options['" + key + "'] value for attribute " + attrName + " cannot be null");
+            }
+
+            String trimmedValue = value.trim();
+            if (trimmedValue.startsWith("[")) {
+                try {
+                    JSON_MAPPER.readTree(trimmedValue);
+                } catch (JsonProcessingException e) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "options['" + key + "'] for attribute " + attrName +  " contains invalid JSON string: " + e.getMessage());
+                }
+            }
+            // Other string values (booleans, integers, strings) are valid JSON primitives when quoted
+        }
     }
 }
