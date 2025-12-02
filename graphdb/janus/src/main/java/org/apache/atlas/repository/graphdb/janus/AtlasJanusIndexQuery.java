@@ -114,7 +114,7 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
 
     @Override
     public Long edgeTotals() {
-        return query.edgeTotals();
+        return query.offset(0).limit(Integer.MAX_VALUE).edgeTotals();
     }
 
     /**
