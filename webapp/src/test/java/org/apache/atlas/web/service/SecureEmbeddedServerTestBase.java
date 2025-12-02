@@ -53,9 +53,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-/**
- * Secure Test class for jersey resources.
- */
 public class SecureEmbeddedServerTestBase {
     public static final int ATLAS_DEFAULT_HTTPS_PORT = 21443;
 

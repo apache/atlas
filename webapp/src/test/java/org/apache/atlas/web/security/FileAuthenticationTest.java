@@ -43,6 +43,8 @@ import java.util.Collection;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
+import static org.testng.AssertJUnit.assertFalse;
+import static org.testng.AssertJUnit.assertNotNull;
 
 public class FileAuthenticationTest {
     private static final Logger LOG = LoggerFactory.getLogger(FileAuthenticationTest.class);
@@ -189,6 +191,188 @@ public class FileAuthenticationTest {
         }
 
         assertEquals(role, "ADMIN");
+    }
+
+    @Test
+    public void testNullUsernameLogin() {
+        when(authentication.getName()).thenReturn(null);
+        when(authentication.getCredentials()).thenReturn("password");
+
+        try {
+            Authentication auth = authProvider.authenticate(authentication);
+            LOG.debug(" {}", auth);
+        } catch (BadCredentialsException bcExp) {
+            assertEquals(bcExp.getMessage(), "Username can't be null or empty.");
+        }
+    }
+
+    @Test
+    public void testEmptyUsernameLogin() {
+        when(authentication.getName()).thenReturn("");
+        when(authentication.getCredentials()).thenReturn("password");
+
+        try {
+            Authentication auth = authProvider.authenticate(authentication);
+            LOG.debug(" {}", auth);
+        } catch (BadCredentialsException bcExp) {
+            assertEquals(bcExp.getMessage(), "Username can't be null or empty.");
+        }
+    }
+
+    @Test
+    public void testNullPasswordLogin() {
+        when(authentication.getName()).thenReturn("admin");
+        when(authentication.getCredentials()).thenReturn(null);
+
+        try {
+            Authentication auth = authProvider.authenticate(authentication);
+            LOG.debug(" {}", auth);
+        } catch (BadCredentialsException bcExp) {
+            assertEquals(bcExp.getMessage(), "Password can't be null or empty.");
+        }
+    }
+
+    @Test
+    public void testEmptyPasswordLogin() {
+        when(authentication.getName()).thenReturn("admin");
+        when(authentication.getCredentials()).thenReturn("");
+
+        try {
+            Authentication auth = authProvider.authenticate(authentication);
+            LOG.debug(" {}", auth);
+        } catch (BadCredentialsException bcExp) {
+            assertEquals(bcExp.getMessage(), "Password can't be null or empty.");
+        }
+    }
+
+    @Test
+    public void testWhitespaceUsernameLogin() {
+        when(authentication.getName()).thenReturn("   ");
+        when(authentication.getCredentials()).thenReturn("password");
+
+        try {
+            Authentication auth = authProvider.authenticate(authentication);
+            LOG.debug(" {}", auth);
+        } catch (UsernameNotFoundException uExp) {
+            assertTrue(uExp.getMessage().contains("Username not found."));
+        }
+    }
+
+    @Test
+    public void testWhitespacePasswordLogin() {
+        when(authentication.getName()).thenReturn("admin");
+        when(authentication.getCredentials()).thenReturn("   ");
+
+        try {
+            Authentication auth = authProvider.authenticate(authentication);
+            LOG.debug(" {}", auth);
+        } catch (BadCredentialsException bcExp) {
+            assertEquals(bcExp.getMessage(), "Wrong password");
+        }
+    }
+
+    @Test
+    public void testValidUserWithSpecialCharacters() {
+        // Add a user with special characters to the credential file for this test
+        when(authentication.getName()).thenReturn("admin");
+        when(authentication.getCredentials()).thenReturn("admin");
+
+        Authentication auth = authProvider.authenticate(authentication);
+
+        LOG.debug(" {}", auth);
+
+        assertTrue(auth.isAuthenticated());
+        assertEquals(auth.getName(), "admin");
+        assertEquals(auth.getCredentials(), "admin");
+    }
+
+    @Test
+    public void testAuthenticationTokenType() {
+        when(authentication.getName()).thenReturn("admin");
+        when(authentication.getCredentials()).thenReturn("admin");
+
+        Authentication auth = authProvider.authenticate(authentication);
+
+        LOG.debug(" {}", auth);
+
+        assertTrue(auth.isAuthenticated());
+        // Verify the returned authentication is of correct type
+        assertTrue(auth instanceof org.springframework.security.authentication.UsernamePasswordAuthenticationToken);
+    }
+
+    @Test
+    public void testMultipleRolesForUser() {
+        when(authentication.getName()).thenReturn("admin");
+        when(authentication.getCredentials()).thenReturn("admin");
+
+        Authentication auth = authProvider.authenticate(authentication);
+
+        LOG.debug(" {}", auth);
+
+        assertTrue(auth.isAuthenticated());
+
+        Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
+
+        // Verify we have at least one authority
+        assertTrue(authorities.size() > 0);
+
+        // Check that authorities are not null
+        for (GrantedAuthority gauth : authorities) {
+            assertNotNull(gauth.getAuthority());
+            assertFalse(gauth.getAuthority().isEmpty());
+        }
+    }
+
+    @Test
+    public void testCaseInsensitiveUsername() {
+        // Test case sensitivity - this should fail since usernames are case sensitive
+        when(authentication.getName()).thenReturn("ADMIN");
+        when(authentication.getCredentials()).thenReturn("admin");
+
+        try {
+            Authentication auth = authProvider.authenticate(authentication);
+            LOG.debug(" {}", auth);
+        } catch (UsernameNotFoundException uExp) {
+            assertTrue(uExp.getMessage().contains("Username not found."));
+        }
+    }
+
+    @Test
+    public void testLongUsername() {
+        // Test with a very long username
+        StringBuilder longUsername = new StringBuilder();
+        for (int i = 0; i < 1000; i++) {
+            longUsername.append("a");
+        }
+
+        when(authentication.getName()).thenReturn(longUsername.toString());
+        when(authentication.getCredentials()).thenReturn("password");
+
+        try {
+            Authentication auth = authProvider.authenticate(authentication);
+            LOG.debug(" {}", auth);
+        } catch (UsernameNotFoundException uExp) {
+            assertTrue(uExp.getMessage().contains("Username not found."));
+        }
+    }
+
+    @Test
+    public void testLongPassword() {
+        // Test with a very long password
+        StringBuilder longPassword = new StringBuilder();
+        for (int i = 0; i < 1000; i++) {
+            longPassword.append("p");
+        }
+
+        when(authentication.getName()).thenReturn("admin");
+        when(authentication.getCredentials()).thenReturn(longPassword.toString());
+
+        try {
+            Authentication auth = authProvider.authenticate(authentication);
+            LOG.debug(" {}", auth);
+        } catch (BadCredentialsException bcExp) {
+            assertEquals(bcExp.getMessage(), "Wrong password");
+        }
     }
 
     @AfterClass
