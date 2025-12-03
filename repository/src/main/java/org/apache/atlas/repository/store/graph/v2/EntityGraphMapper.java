@@ -2995,6 +2995,12 @@ public class EntityGraphMapper {
                     . map(x -> x.getProperty(NAME,String.class))
                     .collect(Collectors.toList());
 
+            // Extract qualified names of deleted meanings for removal from __meanings
+            List<String> deletedMeaningsQNames = deletedElements.stream()
+                    .map(x -> x.getOutVertex())
+                    .map(x -> x.getProperty(QUALIFIED_NAME, String.class))
+                    .collect(Collectors.toList());
+
             List<String> newMeaningsNames = meanings.stream()
                     .filter(x -> !currentMeaningsQNames.contains(x.getProperty(QUALIFIED_NAME,String.class)))
                     .map(x -> x.getProperty(NAME, String.class))
@@ -3009,20 +3015,73 @@ public class EntityGraphMapper {
                 qNames.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(ctx.getReferringVertex(), MEANINGS_PROPERTY_KEY, q));
             }
 
-            if (CollectionUtils.isNotEmpty(names)) {
-                AtlasGraphUtilsV2.setEncodedProperty(ctx.referringVertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(names, ","));
+            // Remove deleted meanings from __meanings when in append mode
+            if (isAppend && CollectionUtils.isNotEmpty(deletedMeaningsQNames)) {
+                deletedMeaningsQNames.forEach(q -> AtlasGraphUtilsV2.removeItemFromListPropertyValue(ctx.getReferringVertex(), MEANINGS_PROPERTY_KEY, q));
+            }
+
+            // Update __meaningsText based on final state
+            if (!isAppend) {
+                // Full replace: set to new names
+                if (CollectionUtils.isNotEmpty(names)) {
+                    AtlasGraphUtilsV2.setEncodedProperty(ctx.referringVertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(names, ","));
+                }
+            } else {
+                // Append mode: recalculate __meaningsText from remaining __meanings
+                if (CollectionUtils.isNotEmpty(deletedMeaningsQNames) || CollectionUtils.isNotEmpty(qNames)) {
+                    List<String> remainingMeaningsQNames = ctx.getReferringVertex().getMultiValuedProperty(MEANINGS_PROPERTY_KEY, String.class);
+
+                    if (CollectionUtils.isEmpty(remainingMeaningsQNames)) {
+                        // No meanings left, clear __meaningsText
+                        ctx.getReferringVertex().removeProperty(MEANINGS_TEXT_PROPERTY_KEY);
+                    } else {
+                        // Rebuild __meaningsText from current __meaningNames and new names
+                        List<String> currentMeaningNames = ctx.getReferringVertex().getMultiValuedProperty(MEANING_NAMES_PROPERTY_KEY, String.class);
+                        Set<String> finalNames = new HashSet<>();
+
+                        if (CollectionUtils.isNotEmpty(currentMeaningNames)) {
+                            finalNames.addAll(currentMeaningNames);
+                        }
+                        // Remove deleted names
+                        if (CollectionUtils.isNotEmpty(deletedMeaningsNames)) {
+                            finalNames.removeAll(deletedMeaningsNames);
+                        }
+                        // Add new names
+                        if (CollectionUtils.isNotEmpty(names)) {
+                            finalNames.addAll(names);
+                        }
+
+                        if (CollectionUtils.isNotEmpty(finalNames)) {
+                            AtlasGraphUtilsV2.setEncodedProperty(ctx.referringVertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(finalNames, ","));
+                        } else {
+                            ctx.getReferringVertex().removeProperty(MEANINGS_TEXT_PROPERTY_KEY);
+                        }
+                    }
+                } else if (CollectionUtils.isNotEmpty(names)) {
+                    // Only additions, no deletions - append to existing text
+                    String existingText = AtlasGraphUtilsV2.getProperty(ctx.referringVertex, MEANINGS_TEXT_PROPERTY_KEY, String.class);
+                    if (org.apache.commons.lang3.StringUtils.isNotEmpty(existingText)) {
+                        AtlasGraphUtilsV2.setEncodedProperty(ctx.referringVertex, MEANINGS_TEXT_PROPERTY_KEY, existingText + "," + StringUtils.join(names, ","));
+                    } else {
+                        AtlasGraphUtilsV2.setEncodedProperty(ctx.referringVertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(names, ","));
+                    }
+                }
             }
 
             if (CollectionUtils.isNotEmpty(newMeaningsNames)) {
                 newMeaningsNames.forEach(q -> AtlasGraphUtilsV2.addListProperty(ctx.getReferringVertex(), MEANING_NAMES_PROPERTY_KEY, q, true));
             }
 
-            if(createdElements.isEmpty()){
-                ctx.getReferringVertex().removeProperty(MEANING_NAMES_PROPERTY_KEY);
-
-            } else if (CollectionUtils.isNotEmpty(deletedMeaningsNames)) {
+            // Handle __meaningNames removal
+            if (isAppend && CollectionUtils.isNotEmpty(deletedMeaningsNames)) {
+                // In append mode with deletions, remove specific names
                 deletedMeaningsNames.forEach(q -> AtlasGraphUtilsV2.removeItemFromListPropertyValue(ctx.getReferringVertex(), MEANING_NAMES_PROPERTY_KEY, q));
-
+            } else if (createdElements.isEmpty() && CollectionUtils.isNotEmpty(deletedElements)) {
+                // Remove-only operation: check if any meanings remain
+                List<String> remainingMeanings = ctx.getReferringVertex().getMultiValuedProperty(MEANINGS_PROPERTY_KEY, String.class);
+                if (CollectionUtils.isEmpty(remainingMeanings)) {
+                    ctx.getReferringVertex().removeProperty(MEANING_NAMES_PROPERTY_KEY);
+                }
             }
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
