@@ -238,9 +238,9 @@ public class EntityGraphMapper {
         DEFERRED_ACTION_ENABLED = value;
     }
 
-    public AtlasVertex createVertex(AtlasEntity entity) throws AtlasBaseException {
+    public AtlasVertex createAssetVertex(AtlasEntity entity) throws AtlasBaseException {
         final String guid = UUID.randomUUID().toString();
-        return createVertexWithGuid(entity, guid);
+        return createAssetVertexWithGuid(entity, guid);
     }
 
     public AtlasVertex createShellEntityVertex(AtlasObjectId objectId, EntityGraphDiscoveryContext context) throws AtlasBaseException {
@@ -279,13 +279,13 @@ public class EntityGraphMapper {
         return ret;
     }
 
-    public AtlasVertex createVertexWithGuid(AtlasEntity entity, String guid) throws AtlasBaseException {
+    public AtlasVertex createAssetVertexWithGuid(AtlasEntity entity, String guid) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> createVertexWithGuid({})", entity.getTypeName());
+            LOG.debug("==> createAssetVertexWithGuid({})", entity.getTypeName());
         }
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
-        AtlasVertex     ret        = createStructVertex(entity);
+        AtlasVertex     ret        = createAssetVertex(entity.getTypeName());
 
         for (String superTypeName : entityType.getAllSuperTypes()) {
             AtlasGraphUtilsV2.addEncodedProperty(ret, SUPER_TYPES_PROPERTY_KEY, superTypeName);
@@ -1042,6 +1042,27 @@ public class EntityGraphMapper {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== createStructVertex({})", typeName);
+        }
+
+        return ret;
+    }
+
+    private AtlasVertex createAssetVertex(String typeName) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> createAssetVertex({})", typeName);
+        }
+
+        final AtlasVertex ret = graph.addAssetVertex();
+
+        AtlasGraphUtilsV2.setEncodedProperty(ret, ENTITY_TYPE_PROPERTY_KEY, typeName);
+        AtlasGraphUtilsV2.setEncodedProperty(ret, STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
+        AtlasGraphUtilsV2.setEncodedProperty(ret, TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+        AtlasGraphUtilsV2.setEncodedProperty(ret, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+        AtlasGraphUtilsV2.setEncodedProperty(ret, CREATED_BY_KEY, RequestContext.get().getUser());
+        AtlasGraphUtilsV2.setEncodedProperty(ret, MODIFIED_BY_KEY, RequestContext.get().getUser());
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== createAssetVertex({})", typeName);
         }
 
         return ret;
