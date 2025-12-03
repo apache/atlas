@@ -345,39 +345,6 @@ public class AtlasTypeRegistry {
         for (AtlasType type : registryData.allTypes.getAllTypes()) {
             type.resolveReferencesPhase3(this);
         }
-
-        enrichESAttributes();
-    }
-
-    private void enrichESAttributes() {
-        long start = System.currentTimeMillis();
-        List<AtlasEntityType> allEntityTypes = registryData.allTypes.getAllTypes().stream()
-                .filter(x -> x instanceof AtlasEntityType)
-                .map( x -> ((AtlasEntityType) x))
-                .toList();
-        for (AtlasEntityType type : allEntityTypes) {
-            Set<String> eligibleAttributes = type.getAllAttributes().keySet().stream()
-                    .filter(x -> type.getAttribute(x).isSyncToESRequired())
-                    .map(x -> type.getAttribute(x).getName())
-                    .collect(Collectors.toSet());
-
-            if (type.getBusinessAttributes() != null) {
-                Set<String> eligibleBMAttributes = type.getBusinessAttributes()
-                        .values()
-                        .stream()
-                        .flatMap(x -> x.values()
-                                .stream()
-                                .filter(y -> y.isSyncToESRequired())
-                                .map(y -> y.getName()))
-                        .collect(Collectors.toSet());
-
-                eligibleAttributes.addAll(eligibleBMAttributes);
-            }
-
-            type.setAttributesForESSync(eligibleAttributes);
-        }
-
-        LOG.info("Took {} millis to enrich attributesForESSync", System.currentTimeMillis() - start);
     }
 
     private void addTypeWithNoRefResolve(AtlasBaseTypeDef typeDef) throws AtlasBaseException{
@@ -591,6 +558,39 @@ public class AtlasTypeRegistry {
             for (AtlasType type : registryData.allTypes.getAllTypes()) {
                 type.resolveReferencesPhase3(this);
             }
+
+            enrichESAttributes();
+        }
+
+        private void enrichESAttributes() {
+            long start = System.currentTimeMillis();
+            List<AtlasEntityType> allEntityTypes = registryData.allTypes.getAllTypes().stream()
+                    .filter(x -> x instanceof AtlasEntityType)
+                    .map( x -> ((AtlasEntityType) x))
+                    .toList();
+            for (AtlasEntityType type : allEntityTypes) {
+                Set<String> eligibleAttributes = type.getAllAttributes().keySet().stream()
+                        .filter(x -> type.getAttribute(x).isSyncToESRequired())
+                        .map(x -> type.getAttribute(x).getName())
+                        .collect(Collectors.toSet());
+
+                if (type.getBusinessAttributes() != null) {
+                    Set<String> eligibleBMAttributes = type.getBusinessAttributes()
+                            .values()
+                            .stream()
+                            .flatMap(x -> x.values()
+                                    .stream()
+                                    .filter(y -> y.isSyncToESRequired())
+                                    .map(y -> y.getName()))
+                            .collect(Collectors.toSet());
+
+                    eligibleAttributes.addAll(eligibleBMAttributes);
+                }
+
+                type.setAttributesForESSync(eligibleAttributes);
+            }
+
+            LOG.info("Took {} millis to enrich attributesForESSync", System.currentTimeMillis() - start);
         }
 
         public void clear() {

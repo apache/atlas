@@ -91,13 +91,13 @@ public class ESConnector {
     public static void syncToEs(Map<String, Map<String, Object>> entitiesMapForUpdate, boolean upsert, List<String> docIdsToDelete) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("writeTagPropertiesES");
 
-        if (MapUtils.isEmpty(entitiesMapForUpdate) || CollectionUtils.isEmpty(docIdsToDelete)) {
+        if (MapUtils.isEmpty(entitiesMapForUpdate) && CollectionUtils.isEmpty(docIdsToDelete)) {
             return;
         }
         try {
             StringBuilder bulkRequestBody = new StringBuilder();
 
-            if (MapUtils.isEmpty(entitiesMapForUpdate)) {
+            if (!MapUtils.isEmpty(entitiesMapForUpdate)) {
                 for (String assetVertexId : entitiesMapForUpdate.keySet()) {
                     Map<String, Object> toUpdate = new HashMap<>(entitiesMapForUpdate.get(assetVertexId));
 
@@ -118,7 +118,7 @@ public class ESConnector {
                 }
             }
 
-            if (CollectionUtils.isEmpty(docIdsToDelete)) {
+            if (!CollectionUtils.isEmpty(docIdsToDelete)) {
                 for (String docId: docIdsToDelete) {
                     bulkRequestBody.append("{\"delete\":{\"_index\":\"").append(VERTEX_INDEX_NAME).append("\",");
                     bulkRequestBody.append("\"_id\":\"").append(docId).append("\"}}");
