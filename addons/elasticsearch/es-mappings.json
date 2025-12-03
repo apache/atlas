@@ -50,5 +50,16 @@
         }
       }
     }
-  }
+  },
+  "dynamic_templates": [
+    {
+      "custom_metadata_strings": {
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword",
+          "ignore_above": 5120
+        }
+      }
+    }
+  ]
 }
