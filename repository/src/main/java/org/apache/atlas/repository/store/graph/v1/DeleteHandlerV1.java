@@ -282,7 +282,7 @@ public abstract class DeleteHandlerV1 {
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), typeName);
             }
             entity.setVertexId(vertex.getIdForDisplay());
-            entity.setDocId(getDocIdForVertexId(vertex.getIdForDisplay()));
+            entity.setDocId(vertex.getDocId());
             entity.setSuperTypeNames(entityType.getAllSuperTypes());
             vertexInfoMap.put(guid, new GraphHelper.VertexInfo(entity, vertex));
 

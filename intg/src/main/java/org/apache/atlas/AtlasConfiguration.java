@@ -199,7 +199,10 @@ public enum AtlasConfiguration {
     TASK_HIGH_MEMORY_PAUSE_MS("atlas.tasks.high.memory.pause.ms", 2000),
     TASK_MAX_RETRY_ATTEMPTS("atlas.tasks.max.retry.attempts", 3),
 
-    REDIS_IS_LOCAL("redis.run.mode.local", false);
+    REDIS_IS_LOCAL("redis.run.mode.local", false),
+
+    ATLAS_GRAPH_LEAN_GRAPH_ENABLED("atlas.graph.lean.graph.enabled", false),
+    ATLAS_GRAPH_INDEX_SEARCH_PREFIX("atlas.graph.index.search.index-name", "janusgraph");
 
     private static final Configuration APPLICATION_PROPERTIES;
 

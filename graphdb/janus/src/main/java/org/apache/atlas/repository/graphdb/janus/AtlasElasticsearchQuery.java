@@ -62,6 +62,7 @@ import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 import static org.apache.atlas.AtlasErrorCode.INDEX_NOT_FOUND;
+import static org.apache.atlas.repository.Constants.LEAN_GRAPH_ENABLED;
 
 
 public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> {
@@ -778,8 +779,13 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         @Override
         public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> getVertex() {
-            String vertexId = getVertexId();
-            return graph.getVertex(vertexId);
+            if (LEAN_GRAPH_ENABLED) {
+                String vertexId = getVertexId();
+                return graph.getVertex(vertexId);
+            } else {
+                long vertexId = LongEncoding.decode(String.valueOf(hit.get("_id")));
+                return graph.getVertex(String.valueOf(vertexId));
+            }
         }
 
         @Override

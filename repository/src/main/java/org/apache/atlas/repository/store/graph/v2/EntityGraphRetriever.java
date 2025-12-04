@@ -124,7 +124,6 @@ import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.TWO_TO_ONE;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getDocIdForVertexId;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
@@ -1454,7 +1453,7 @@ public class EntityGraphRetriever {
 
             mapSystemAttributes(entityVertex, entity);
 
-            entity.setDocId(getDocIdForVertexId(entityVertex.getIdForDisplay()));
+            entity.setDocId(entityVertex.getDocId());
             entity.setSuperTypeNames(typeRegistry.getEntityTypeByName(entity.getTypeName()).getAllSuperTypes());
 
             mapBusinessAttributes(entityVertex, entity);
@@ -1736,7 +1735,7 @@ public class EntityGraphRetriever {
             }
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
-            ret.setDocId(getDocIdForVertexId(entityVertex.getIdForDisplay()));
+            ret.setDocId(entityVertex.getDocId());
             if (entityType != null) {
                 ret.setSuperTypeNames(entityType.getAllSuperTypes());
                 for (AtlasAttribute headerAttribute : entityType.getHeaderAttributes().values()) {
@@ -1845,7 +1844,7 @@ public class EntityGraphRetriever {
             }
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
-            ret.setDocId(getDocIdForVertexId(entityVertex.getIdForDisplay()));
+            ret.setDocId(entityVertex.getDocId());
 
             if (entityType != null) {
                 ret.setSuperTypeNames(entityType.getAllSuperTypes());
@@ -1923,7 +1922,7 @@ public class EntityGraphRetriever {
             ret.setTypeName(typeName);
             ret.setGuid(guid);
 
-            ret.setDocId(getDocIdForVertexId(entityVertex.getIdForDisplay()));
+            ret.setDocId(entityVertex.getDocId());
             if (entityType != null) {
                 ret.setSuperTypeNames(entityType.getAllSuperTypes());
             } else {
@@ -2440,7 +2439,7 @@ public class EntityGraphRetriever {
                     break;
                 case STRUCT:
                     AtlasPerfMetrics.MetricRecorder recorder2 = RequestContext.get().startMetricRecord("mapVertexToAttribute.STRUCT");
-                    if (RequestContext.get().isIdOnlyGraphEnabled()) {
+                    if (LEAN_GRAPH_ENABLED) {
                         Object val = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, attribute.getVertexPropertyName(), Object.class);
                         if (val instanceof String) {
                             ret = mapStringToStruct(attrType, (String) val);
@@ -2709,7 +2708,7 @@ public class EntityGraphRetriever {
                 break;
 
             case MAP:
-                if (RequestContext.get().isIdOnlyGraphEnabled() && value instanceof String) { // For indexsearch & diff & constructHeader (probably all reads)
+                if (LEAN_GRAPH_ENABLED && value instanceof String) { // For indexsearch & diff & constructHeader (probably all reads)
                     return AtlasType.fromJson((String) value, Map.class);
                 } else {
                     ret = value;
@@ -2720,7 +2719,7 @@ public class EntityGraphRetriever {
                 break;
 
             case STRUCT:
-                if (RequestContext.get().isIdOnlyGraphEnabled()) {
+                if (LEAN_GRAPH_ENABLED) {
                     ret = value instanceof String ? mapStringToStruct(atlasType, (String) value) : value;
                 } else {
                     ret = mapVertexToStruct(entityVertex, edgeLabel, (AtlasEdge) value, entityExtInfo, isMinExtInfo);

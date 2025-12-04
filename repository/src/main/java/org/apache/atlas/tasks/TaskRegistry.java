@@ -17,8 +17,6 @@
  */
 package org.apache.atlas.tasks;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
@@ -34,27 +32,22 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
-import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasMetricType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpHost;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
-import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -69,8 +62,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Objects;
-import java.util.LinkedHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -78,9 +69,8 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.repository.Constants.ATLAN_HEADER_PREFIX_PATTERN;
 import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.Constants.TASK_STATUS;
-import static org.apache.atlas.repository.audit.ESBasedAuditRepository.getHttpHosts;
+import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getClient;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getDocIdForVertexId;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
 @Component
@@ -88,7 +78,6 @@ public class TaskRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(TaskRegistry.class);
     public static final int TASK_FETCH_BATCH_SIZE = 100;
     public static final List<Map<String, Object>> SORT_ARRAY = Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc")));
-    public static final String JANUSGRAPH_VERTEX_INDEX = "janusgraph_vertex_index";
     public static final String TASK_MISMATCH_TAG = "mismatchTask";
 
     private AtlasGraph graph;
@@ -470,7 +459,7 @@ public class TaskRegistry {
                                         atlasTask.getGuid(), atlasTask.getStatus());
                                 mismatches++;
                                 try {
-                                    String docId = getDocIdForVertexId(vertex.getIdForDisplay());
+                                    String docId = vertex.getDocId();
                                     repairMismatchedTask(atlasTask, docId);
                                 }
                                 catch (Exception e){
@@ -528,7 +517,7 @@ public class TaskRegistry {
                             "  ctx._source[entry.getKey()] = entry.getValue(); " +
                             "}";
 
-            UpdateRequest req = new UpdateRequest(JANUSGRAPH_VERTEX_INDEX, docId)
+            UpdateRequest req = new UpdateRequest(VERTEX_INDEX_NAME, docId)
                     .script(new Script(ScriptType.INLINE, "painless", scriptSource,
                             Collections.singletonMap("fields", fieldsToUpdate)))
                     .retryOnConflict(RETRY_ON_CONFLICT)
