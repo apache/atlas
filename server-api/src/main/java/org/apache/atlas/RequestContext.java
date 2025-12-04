@@ -478,18 +478,6 @@ public class RequestContext {
         this.delayTagNotifications = delayTagNotifications;
     }
 
-    public boolean isIdOnlyGraphEnabled() {
-        //TODO: extract flag from Redis
-//        if (isIdOnlyGraphEnabled == null || !isIdOnlyGraphEnabled) {
-//            // flag is not set yet
-//            // set it for the current request
-//            isIdOnlyGraphEnabled = Boolean.parseBoolean(
-//                                FeatureFlagStore.getFlag(FeatureFlagStore.FEATURE_FLAG_ID_ONLY_GRAPH_ENABLED)
-//                        );
-//        }
-        return true;
-    }
-
     public Map<AtlasClassification, Collection<Object>> getDeletedClassificationAndVertices() {
         return deletedClassificationAndVertices;
     }

@@ -101,7 +101,6 @@ import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -400,8 +399,13 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     @Override
     public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> addVertex() {
-        String id = generateCustomId();
-        Vertex result = getGraph().addVertex(T.id, id);
+        Vertex result = null;
+        if (LEAN_GRAPH_ENABLED) {
+            String id = generateCustomId();
+            result = getGraph().addVertex(T.id, id);
+        } else {
+            result = getGraph().addVertex();
+        }
 
         return GraphDbObjectFactory.createVertex(this, result);
     }
@@ -436,7 +440,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
     private void commitIdOnly(AtlasTypeRegistry typeRegistry) {
-        if (RequestContext.get().isIdOnlyGraphEnabled()) {
+        if (LEAN_GRAPH_ENABLED) {
 
             try {
                 AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("commitIdOnly.callInsertVertices");
