@@ -247,7 +247,7 @@ public class EntityGraphMapper {
 
         final String    guid       = UUID.randomUUID().toString();
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(objectId.getTypeName());
-        AtlasVertex     ret        = createStructVertex(objectId);
+        AtlasVertex     ret        = createAssetVertex(objectId.getTypeName());
 
         for (String superTypeName : entityType.getAllSuperTypes()) {
             AtlasGraphUtilsV2.addEncodedProperty(ret, SUPER_TYPES_PROPERTY_KEY, superTypeName);
