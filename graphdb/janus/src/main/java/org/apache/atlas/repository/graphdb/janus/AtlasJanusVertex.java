@@ -71,7 +71,7 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
     public <T> void addProperty(String propertyName, T value) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusVertex.addProperty");
         try {
-            if (LEAN_GRAPH_ENABLED && isVertex()) {
+            if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
                 this.getDynamicVertex().addSetProperty(propertyName, value);
 
                 if (VERTEX_CORE_PROPERTIES.contains(propertyName)) {
@@ -93,7 +93,7 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
     public <T> void addListProperty(String propertyName, T value) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusVertex.addListProperty");
         try {
-            if (LEAN_GRAPH_ENABLED && isVertex()) {
+            if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
                 this.getDynamicVertex().addListProperty(propertyName, value);
 
                 if (VERTEX_CORE_PROPERTIES.contains(propertyName)) {
@@ -198,7 +198,7 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
     public <T> Collection<T> getPropertyValues(String propertyName, Class<T> clazz) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusVertex.getPropertyValues");
         try {
-            if (LEAN_GRAPH_ENABLED && isVertex()) {
+            if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
                 return (Collection<T>) getProperty(propertyName, clazz);
             }
 

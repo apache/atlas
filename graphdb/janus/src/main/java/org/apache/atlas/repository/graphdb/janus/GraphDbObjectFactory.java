@@ -81,7 +81,7 @@ public final class GraphDbObjectFactory {
 
         AtlasJanusVertex ret = new AtlasJanusVertex(graph, source);
 
-        if (LEAN_GRAPH_ENABLED && ret.isVertex()) { // Do only for Asset vertices
+        if (LEAN_GRAPH_ENABLED && ret.isAssetVertex()) { // Do only for Asset vertices
             try {
                 DynamicVertex dynamicVertex = graph.getDynamicVertexRetrievalService().retrieveVertex(source.id().toString());
                 if (dynamicVertex == null) {

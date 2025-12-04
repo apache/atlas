@@ -104,4 +104,6 @@ public interface AtlasVertex<V, E> extends AtlasElement {
     V getV();
 
     String getDocId();
+
+    boolean isAssetVertex();
 }

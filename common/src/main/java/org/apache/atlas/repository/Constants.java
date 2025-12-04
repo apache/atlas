@@ -337,6 +337,7 @@ public final class Constants {
     public static final String CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "isPropagated");
     public static final String CLASSIFICATION_EDGE_STATE_PROPERTY_KEY         = STATE_PROPERTY_KEY;
     public static final String CLASSIFICATION_LABEL                           = "classifiedAs";
+    public static final String ASSET_VERTEX_LABEL                             = "asset";
     public static final String CLASSIFICATION_NAME_DELIMITER                  = "|";
     public static final String LABEL_NAME_DELIMITER                           = CLASSIFICATION_NAME_DELIMITER;
     public static final String TERM_ASSIGNMENT_LABEL                          = "r:AtlasGlossarySemanticAssignment";

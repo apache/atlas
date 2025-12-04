@@ -2008,9 +2008,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                         //Create vertices which do not exist in the repository
                         if (RequestContext.get().isImportInProgress() && AtlasTypeUtil.isAssignedGuid(entity.getGuid())) {
-                            vertex = entityGraphMapper.createVertexWithGuid(entity, entity.getGuid());
+                            vertex = entityGraphMapper.createAssetVertexWithGuid(entity, entity.getGuid());
                         } else {
-                            vertex = entityGraphMapper.createVertex(entity);
+                            vertex = entityGraphMapper.createAssetVertex(entity);
                         }
 
                         discoveryContext.addResolvedGuid(guid, vertex);

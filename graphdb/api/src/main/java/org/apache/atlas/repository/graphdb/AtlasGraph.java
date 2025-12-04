@@ -67,6 +67,13 @@ public interface AtlasGraph<V, E> {
          */
     AtlasVertex<V, E> addVertex();
 
+        /**
+         * Adds asset vertex to the graph with a fixed specific label.
+         *
+         * @return
+         */
+    AtlasVertex<V, E> addAssetVertex();
+
     /**
      * Removes the specified edge from the graph.
      *
