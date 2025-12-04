@@ -77,7 +77,6 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.model.TypeCategory.*;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
 import static org.apache.atlas.repository.Constants.*;
@@ -977,7 +976,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     private void prepareSearchResult(AtlasSearchResult ret,  DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes,
                                      boolean fetchCollapsedResults, boolean useVertexEdgeBulkFetching) throws AtlasBaseException {
-        if (RequestContext.get().isIdOnlyGraphEnabled()) {
+        if (LEAN_GRAPH_ENABLED) {
             fetchCollapsedResults = false; // TODO: V2 doesn't use this flag in this context
             prepareSearchResultV2(ret, indexQueryResult, resultAttributes, fetchCollapsedResults);
         } else {

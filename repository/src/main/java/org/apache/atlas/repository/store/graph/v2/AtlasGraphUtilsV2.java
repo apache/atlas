@@ -46,6 +46,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
+import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +60,7 @@ import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.GLOSSARY_TERMS_EDGE_LABEL;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
+import static org.apache.atlas.repository.Constants.LEAN_GRAPH_ENABLED;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
@@ -164,7 +166,7 @@ public class AtlasGraphUtilsV2 {
 
     public static boolean isReference(TypeCategory typeCategory) {
 
-        if (RequestContext.get().isIdOnlyGraphEnabled()) {
+        if (LEAN_GRAPH_ENABLED) {
             return typeCategory == TypeCategory.ENTITY ||
                     typeCategory == TypeCategory.OBJECT_ID_TYPE;
         } else {
@@ -1059,8 +1061,12 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static String getDocIdForVertexId(String vertexId) {
-        if (StringUtils.isNotEmpty(vertexId)) {
-            return JG_ES_DOC_ID_PREFIX + vertexId;
+        if (LEAN_GRAPH_ENABLED) {
+            if (StringUtils.isNotEmpty(vertexId)) {
+                return JG_ES_DOC_ID_PREFIX + vertexId;
+            }
+        } else {
+            return LongEncoding.encode(Long.parseLong(vertexId));
         }
         return vertexId;
     }

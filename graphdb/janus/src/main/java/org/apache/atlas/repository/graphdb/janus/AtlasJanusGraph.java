@@ -45,6 +45,7 @@ import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
@@ -101,7 +102,6 @@ import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -400,9 +400,26 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     @Override
     public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> addVertex() {
-        String id = generateCustomId();
-        Vertex result = getGraph().addVertex(T.id, id);
+        Vertex result = null;
+        if (LEAN_GRAPH_ENABLED) {
+            String id = generateCustomId();
+            result = getGraph().addVertex(T.id, id);
+        } else {
+            result = getGraph().addVertex();
+        }
 
+        return GraphDbObjectFactory.createVertex(this, result);
+    }
+
+    @Override
+    public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> addAssetVertex() {
+        Vertex result = null;
+        if (LEAN_GRAPH_ENABLED) {
+            String id = generateCustomId();
+            result = getGraph().addVertex(T.id, id, T.label, ASSET_VERTEX_LABEL);
+        } else {
+            result = getGraph().addVertex();
+        }
         return GraphDbObjectFactory.createVertex(this, result);
     }
 
@@ -436,7 +453,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
     private void commitIdOnly(AtlasTypeRegistry typeRegistry) {
-        if (RequestContext.get().isIdOnlyGraphEnabled()) {
+        if (LEAN_GRAPH_ENABLED) {
 
             try {
                 AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("commitIdOnly.callInsertVertices");
@@ -444,18 +461,22 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
                 Set<AtlasVertex> updatedVertexList = RequestContext.get().getDifferentialGUIDS().stream()
                         .map(x -> ((AtlasVertex) RequestContext.get().getDifferentialVertex(x)))
                         .filter(Objects::nonNull)
+                        .filter(AtlasVertex::isAssetVertex)
                         .collect(Collectors.toSet());
 
                 // Extract SOFT deleted vertices
                 updatedVertexList.addAll(RequestContext.get().getVerticesToSoftDelete().stream()
                         .map(x -> ((AtlasVertex) x))
+                        .filter(Objects::nonNull)
+                        .filter(AtlasVertex::isAssetVertex)
                         .collect(Collectors.toSet()));
 
                 // Extract restored vertices
                 if (!RequestContext.get().getRestoredVertices().isEmpty()) {
                     updatedVertexList.addAll(RequestContext.get().getRestoredVertices().stream()
-                            .filter(Objects::nonNull)
                             .map(x -> ((AtlasVertex) x))
+                            .filter(Objects::nonNull)
+                            .filter(AtlasVertex::isAssetVertex)
                             .collect(Collectors.toSet()));
                 }
 
@@ -468,16 +489,24 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
                 recorder = RequestContext.get().startMetricRecord("commitIdOnly.callDropVertices");
                 // Extract HARD/PURGE vertex Ids
-                List<String> purgedVertexIdsList = RequestContext.get().getVerticesToHardDelete().stream().map(x -> ((AtlasVertex) x).getIdForDisplay()).toList();
+
+                List<AtlasVertex> hardDeletedVertices = RequestContext.get().getVerticesToHardDelete().stream()
+                        .map(x -> (AtlasVertex) x)
+                        .filter(Objects::nonNull)
+                        .filter(AtlasVertex::isAssetVertex)
+                        .toList();
+
+                List<String> purgedVertexIdsList = hardDeletedVertices.stream()
+                        .map(AtlasElement::getIdForDisplay)
+                        .toList();
                 dynamicVertexService.dropVertices(purgedVertexIdsList);
 
                 RequestContext.get().endMetricRecord(recorder);
 
 
                 recorder = RequestContext.get().startMetricRecord("commitIdOnly.callInsertES");
-                List<String> docIdsToDelete = RequestContext.get().getVerticesToHardDelete().stream()
-                        .map(x -> ((AtlasJanusVertex) x ))
-                        .map(x -> x.getDocId())
+                List<String> docIdsToDelete = hardDeletedVertices.stream()
+                        .map(AtlasVertex::getDocId)
                         .toList();
 
                 ESConnector.syncToEs(
