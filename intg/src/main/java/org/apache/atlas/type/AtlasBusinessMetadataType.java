@@ -152,10 +152,7 @@ public class AtlasBusinessMetadataType extends AtlasStructType {
         if (attrType instanceof AtlasBuiltInTypes.AtlasStringType || attrType instanceof AtlasEnumType) {
             attributeDef.setIndexType(AtlasAttributeDef.IndexType.STRING);
 
-            HashMap<String, Object> indexTypeESConfig = new HashMap<>();
-            if (Constants.ES_ATLAN_KEYWORD_ANALYZER_CONFIG != null) {
-                indexTypeESConfig.putAll(Constants.ES_ATLAN_KEYWORD_ANALYZER_CONFIG);
-            }
+            HashMap<String, Object> indexTypeESConfig = new HashMap<>(Constants.ES_ATLAN_KEYWORD_ANALYZER_CONFIG);
             indexTypeESConfig.put("ignore_above", 5120);
 
             attributeDef.setIndexTypeESConfig(indexTypeESConfig);
