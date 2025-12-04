@@ -283,7 +283,17 @@ public final class Constants {
     /**
      * elasticsearch index prefix.
      */
-    public static final String INDEX_PREFIX = "janusgraph_";
+    public static final String SEARCH_INDEX_NAME_CONFIG = "atlas.graph.index.search.index-name";
+
+    public static final String INDEX_PREFIX;
+
+    static {
+        try {
+            INDEX_PREFIX = ApplicationProperties.get().getString(SEARCH_INDEX_NAME_CONFIG) + "_";
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public static final String VERTEX_INDEX_NAME = INDEX_PREFIX + VERTEX_INDEX;
     public static final String EDGE_INDEX_NAME = INDEX_PREFIX + EDGE_INDEX;
