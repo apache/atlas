@@ -66,10 +66,12 @@ public class UsersStore {
             // If user not found directly, check if user's groups are in role's group list
             if (!userInRole && userGroups != null && !userGroups.isEmpty()) {
                 List<RangerRole.RoleMember> roleGroups = role.getGroups();
-                for (RangerRole.RoleMember roleGroup : roleGroups) {
-                    if (userGroups.contains(roleGroup.getName())) {
-                        userInRole = true;
-                        break;
+                if (roleGroups != null) {
+                    for (RangerRole.RoleMember roleGroup : roleGroups) {
+                        if (userGroups.contains(roleGroup.getName())) {
+                            userInRole = true;
+                            break;
+                        }
                     }
                 }
             }
