@@ -38,6 +38,9 @@ public enum AtlasConfiguration {
     REST_API_ENABLE_DELETE_TYPE_OVERRIDE("atlas.rest.enable.delete.type.override", false),
     NOTIFICATION_RELATIONSHIPS_ENABLED("atlas.notification.relationships.enabled", true),
 
+    ENABLE_ENTITY_NOTIFICATIONS("atlas.enable.entity.notifications", true),
+    ENABLE_ENTITY_AUDITS("atlas.enable.entity.audits", true),
+
     NOTIFICATION_HOOK_TOPIC_NAME("atlas.notification.hook.topic.name", "ATLAS_HOOK"),
     NOTIFICATION_ENTITIES_TOPIC_NAME("atlas.notification.entities.topic.name", "ATLAS_ENTITIES"),
     NOTIFICATION_RELATIONSHIPS_TOPIC_NAME("atlas.notification.relationships.topic.name", "ATLAS_RELATIONSHIPS"),
