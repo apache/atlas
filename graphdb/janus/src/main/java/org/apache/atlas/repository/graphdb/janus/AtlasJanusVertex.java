@@ -43,7 +43,9 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.util.encoding.LongEncoding;
 
+import static org.apache.atlas.repository.Constants.LEAN_GRAPH_ENABLED;
 import static org.apache.atlas.repository.graphdb.janus.cassandra.ESConnector.JG_ES_DOC_ID_PREFIX;
 
 /**
@@ -69,7 +71,7 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
     public <T> void addProperty(String propertyName, T value) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusVertex.addProperty");
         try {
-            if (RequestContext.get().isIdOnlyGraphEnabled() && isAssetVertex()) {
+            if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
                 this.getDynamicVertex().addSetProperty(propertyName, value);
 
                 if (VERTEX_CORE_PROPERTIES.contains(propertyName)) {
@@ -91,7 +93,7 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
     public <T> void addListProperty(String propertyName, T value) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusVertex.addListProperty");
         try {
-            if (RequestContext.get().isIdOnlyGraphEnabled() && isAssetVertex()) {
+            if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
                 this.getDynamicVertex().addListProperty(propertyName, value);
 
                 if (VERTEX_CORE_PROPERTIES.contains(propertyName)) {
@@ -196,7 +198,7 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
     public <T> Collection<T> getPropertyValues(String propertyName, Class<T> clazz) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusVertex.getPropertyValues");
         try {
-            if (RequestContext.get().isIdOnlyGraphEnabled() && isAssetVertex()) {
+            if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
                 return (Collection<T>) getProperty(propertyName, clazz);
             }
 
@@ -231,6 +233,10 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
 
     @Override
     public String getDocId() {
-        return JG_ES_DOC_ID_PREFIX + this.getIdForDisplay();
+        if (LEAN_GRAPH_ENABLED) {
+            return JG_ES_DOC_ID_PREFIX + this.getIdForDisplay();
+        } else {
+            return LongEncoding.encode(Long.parseLong(this.getIdForDisplay()));
+        }
     }
 }

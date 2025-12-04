@@ -103,7 +103,7 @@ public class ESConnector {
 
                     String docId =  JG_ES_DOC_ID_PREFIX + assetVertexId;
 
-                    bulkRequestBody.append("{\"update\":{\"_index\":\"janusgraph_vertex_index\",\"_id\":\"" + docId + "\" }}\n");
+                    bulkRequestBody.append("{\"update\":{\"_index\":\"").append(VERTEX_INDEX_NAME).append("\",\"_id\":\"" + docId + "\" }}\n");
 
                     bulkRequestBody.append("{");
 

@@ -27,8 +27,6 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 
 
-import io.opentelemetry.api.common.AttributeType;
-
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
@@ -83,7 +81,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -1325,7 +1322,7 @@ public class EntityGraphMapper {
 
                 case STRUCT: {
 
-                    if (RequestContext.get().isIdOnlyGraphEnabled()) {
+                    if (LEAN_GRAPH_ENABLED) {
                         return mapToVertexByTypeCategoryForStructV2(ctx);
                     } else {
                         String    edgeLabel   = AtlasGraphUtilsV2.getEdgeLabel(ctx.getVertexProperty());
@@ -3296,7 +3293,7 @@ public class EntityGraphMapper {
                 return ctx.getValue();
 
         case STRUCT:
-            if (RequestContext.get().isIdOnlyGraphEnabled()) {
+            if (LEAN_GRAPH_ENABLED) {
                 //return ctx.getValue();
                 return mapToVertexByTypeCategoryForStructV2(ctx);
             } else {
@@ -3728,7 +3725,7 @@ public class EntityGraphMapper {
 
         if (!isReference(elementType) || isSoftReference) {
             if (isArrayOfPrimitiveType || isArrayOfEnum || isArrayOfStruct) {
-                if (RequestContext.get().isIdOnlyGraphEnabled()) {
+                if (LEAN_GRAPH_ENABLED) {
                     AtlasGraphUtilsV2.setEncodedProperty(vertex, vertexPropertyName, allValues);
 
                 } else {

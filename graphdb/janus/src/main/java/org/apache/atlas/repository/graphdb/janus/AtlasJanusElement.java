@@ -44,6 +44,7 @@ import org.janusgraph.core.JanusGraphElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.atlas.repository.Constants.LEAN_GRAPH_ENABLED;
 import static org.apache.atlas.type.Constants.GUID_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.INTERNAL_PROPERTY_KEY_PREFIX;
 
@@ -88,7 +89,7 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
                 return null;
             }
 
-            if (RequestContext.get().isIdOnlyGraphEnabled() && isAssetVertex()) {
+            if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
                 AtlasPerfMetrics.MetricRecorder recorder1 = RequestContext.get().startMetricRecord("AtlasJanusElement.getProperty.newFlow");
                 AtlasJanusVertex vertex = (AtlasJanusVertex) this;
 
@@ -148,7 +149,7 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
 
     @Override
     public Set<String> getPropertyKeys() {
-        if (RequestContext.get().isIdOnlyGraphEnabled() && isAssetVertex()) {
+        if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
             AtlasJanusVertex vertex = (AtlasJanusVertex) this;
             return vertex.getDynamicVertex().getPropertyKeys();
         } else {
@@ -158,7 +159,7 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
 
     @Override
     public void removeProperty(String propertyName) {
-        if (RequestContext.get().isIdOnlyGraphEnabled() && isAssetVertex()) {
+        if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
             AtlasJanusVertex vertex = (AtlasJanusVertex) this;
             vertex.getDynamicVertex().removeProperty(propertyName);
             return;
@@ -223,7 +224,7 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
                     removeProperty(propertyName);
                 }
             } else {
-                if (RequestContext.get().isIdOnlyGraphEnabled() && isAssetVertex()) {
+                if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
                     AtlasJanusVertex vertex = (AtlasJanusVertex) this;
                     vertex.getDynamicVertex().setProperty(propertyName, value);
 
@@ -301,7 +302,7 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
     public <V> List<V> getMultiValuedProperty(String propertyName, Class<V> elementType) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusElement.getMultiValuedProperty");
         try {
-            if (RequestContext.get().isIdOnlyGraphEnabled() && isAssetVertex()) {
+            if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
                 AtlasPerfMetrics.MetricRecorder recorder1 = RequestContext.get().startMetricRecord("AtlasJanusElement.getMultiValuedProperty.newFlow");
                 try {
                     Object val = getProperty(propertyName, elementType);
@@ -333,7 +334,7 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
 
     @Override
     public <V> Set<V> getMultiValuedSetProperty(String propertyName, Class<V> elementType) {
-        if (RequestContext.get().isIdOnlyGraphEnabled() && isAssetVertex()) {
+        if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
             Set<V> value = new HashSet<>();
             Object prop = getProperty(propertyName, elementType);
             if (prop == null) {

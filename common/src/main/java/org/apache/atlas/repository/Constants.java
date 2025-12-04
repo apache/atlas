@@ -39,6 +39,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.apache.atlas.AtlasConfiguration.ATLAS_GRAPH_INDEX_SEARCH_PREFIX;
+import static org.apache.atlas.AtlasConfiguration.ATLAS_GRAPH_LEAN_GRAPH_ENABLED;
 import static org.apache.atlas.service.FeatureFlag.USE_TEMP_ES_INDEX;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 import static org.apache.atlas.type.AtlasStructType.UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX;
@@ -283,7 +285,12 @@ public final class Constants {
     /**
      * elasticsearch index prefix.
      */
-    public static final String INDEX_PREFIX = "janusgraph_";
+    public static final String INDEX_PREFIX;
+    public static final boolean LEAN_GRAPH_ENABLED = ATLAS_GRAPH_LEAN_GRAPH_ENABLED.getBoolean();
+
+    static {
+        INDEX_PREFIX = ATLAS_GRAPH_INDEX_SEARCH_PREFIX.getString() + "_";
+    }
 
     public static final String VERTEX_INDEX_NAME = INDEX_PREFIX + VERTEX_INDEX;
     public static final String EDGE_INDEX_NAME = INDEX_PREFIX + EDGE_INDEX;

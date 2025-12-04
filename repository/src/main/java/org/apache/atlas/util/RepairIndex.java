@@ -19,14 +19,9 @@
 package org.apache.atlas.util;
 
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.model.Tag;
-import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.repository.graph.IFullTextMapper;
 import org.apache.atlas.AtlanElasticSearchIndex;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -34,14 +29,9 @@ import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase;
 import org.apache.atlas.repository.graphdb.janus.cassandra.ESConnector;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
-import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
-import org.apache.atlas.repository.util.AtlasEntityUtils;
-import org.apache.atlas.repository.util.TagDeNormAttributesUtil;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.utils.AtlasEntityUtil;
 import org.janusgraph.core.JanusGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationService;
-import org.janusgraph.core.JanusGraph;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.graphdb.database.IndexSerializer;
@@ -56,7 +46,6 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import javax.annotation.PostConstruct;
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -64,8 +53,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
-import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.LEAN_GRAPH_ENABLED;
 import static org.apache.atlas.type.Constants.INDEX_NAME_EDGE_INDEX;
 import static org.apache.atlas.type.Constants.INDEX_NAME_VERTEX_INDEX;
 
@@ -112,7 +100,7 @@ public class RepairIndex {
         Set<AtlasVertex> vertices = graphHelper.getVertices(vertexIds);
         Set<String> guids = vertices.stream().map(GraphHelper::getGuid).collect(Collectors.toSet());
 
-        if (RequestContext.get().isIdOnlyGraphEnabled()) {
+        if (LEAN_GRAPH_ENABLED) {
             Map<String, Map<String, Object>> toReIndex = ((AtlasJanusGraph) graph).getESPropertiesForUpdateFromVertices(vertices, this.typeRegistry);
             try {
                 ESConnector.syncToEs(toReIndex, true, null);

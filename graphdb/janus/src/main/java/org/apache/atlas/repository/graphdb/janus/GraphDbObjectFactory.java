@@ -31,6 +31,8 @@ import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.JanusGraphIndex;
 
+import static org.apache.atlas.repository.Constants.LEAN_GRAPH_ENABLED;
+
 
 /**
  * Factory that serves up instances of graph database abstraction layer classes
@@ -79,7 +81,7 @@ public final class GraphDbObjectFactory {
 
         AtlasJanusVertex ret = new AtlasJanusVertex(graph, source);
 
-        if (ret.isAssetVertex() && RequestContext.get().isIdOnlyGraphEnabled()) { // Do only for Asset vertices
+        if (LEAN_GRAPH_ENABLED && ret.isAssetVertex()) { // Do only for Asset vertices
             try {
                 DynamicVertex dynamicVertex = graph.getDynamicVertexRetrievalService().retrieveVertex(source.id().toString());
                 if (dynamicVertex == null) {
