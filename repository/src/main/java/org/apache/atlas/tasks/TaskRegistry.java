@@ -78,6 +78,7 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.repository.Constants.ATLAN_HEADER_PREFIX_PATTERN;
 import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.Constants.TASK_STATUS;
+import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
 import static org.apache.atlas.repository.audit.ESBasedAuditRepository.getHttpHosts;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getClient;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getDocIdForVertexId;
@@ -88,7 +89,6 @@ public class TaskRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(TaskRegistry.class);
     public static final int TASK_FETCH_BATCH_SIZE = 100;
     public static final List<Map<String, Object>> SORT_ARRAY = Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc")));
-    public static final String JANUSGRAPH_VERTEX_INDEX = "janusgraph_vertex_index";
     public static final String TASK_MISMATCH_TAG = "mismatchTask";
 
     private AtlasGraph graph;
@@ -528,7 +528,7 @@ public class TaskRegistry {
                             "  ctx._source[entry.getKey()] = entry.getValue(); " +
                             "}";
 
-            UpdateRequest req = new UpdateRequest(JANUSGRAPH_VERTEX_INDEX, docId)
+            UpdateRequest req = new UpdateRequest(VERTEX_INDEX_NAME, docId)
                     .script(new Script(ScriptType.INLINE, "painless", scriptSource,
                             Collections.singletonMap("fields", fieldsToUpdate)))
                     .retryOnConflict(RETRY_ON_CONFLICT)
