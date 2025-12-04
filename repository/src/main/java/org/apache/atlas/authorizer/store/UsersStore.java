@@ -48,15 +48,34 @@ public class UsersStore {
         return groups;
     }
 
-    public List<String> getRolesForUser(String user, RangerRoles allRoles) {
+    public List<String> getRolesForUser(String user, List<String> userGroups, RangerRoles allRoles) {
         List<String> roles = new ArrayList<>();
         Set<RangerRole> rangerRoles = allRoles.getRangerRoles();
         for (RangerRole role : rangerRoles) {
+            boolean userInRole = false;
+
+            // Check if user is directly in role's user list
             List<RangerRole.RoleMember> users = role.getUsers();
             for (RangerRole.RoleMember roleUser: users) {
                 if (roleUser.getName().equals(user)) {
-                    roles.add(role.getName());
+                    userInRole = true;
+                    break;
                 }
+            }
+
+            // If user not found directly, check if user's groups are in role's group list
+            if (!userInRole && userGroups != null && !userGroups.isEmpty()) {
+                List<RangerRole.RoleMember> roleGroups = role.getGroups();
+                for (RangerRole.RoleMember roleGroup : roleGroups) {
+                    if (userGroups.contains(roleGroup.getName())) {
+                        userInRole = true;
+                        break;
+                    }
+                }
+            }
+
+            if (userInRole) {
+                roles.add(role.getName());
             }
         }
         return roles;

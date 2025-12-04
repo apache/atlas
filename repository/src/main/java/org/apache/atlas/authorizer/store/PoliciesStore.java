@@ -93,7 +93,7 @@ public class PoliciesStore {
                 List<String> groups = usersStore.getGroupsForUser(user, userStore);
 
                 RangerRoles allRoles = usersStore.getAllRoles();
-                List<String> roles = usersStore.getRolesForUser(user, allRoles);
+                List<String> roles = usersStore.getRolesForUser(user, groups, allRoles);
                 roles.addAll(usersStore.getNestedRolesForUser(roles, allRoles));
 
                 filteredPolicies = getFilteredPoliciesForUser(filteredPolicies, user, groups, roles, policyType);
