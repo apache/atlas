@@ -57,7 +57,9 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
         if (force) {
             graphHelper.removeVertex(instanceVertex);
-            RequestContext.get().addVertexToHardDelete(instanceVertex);
+            if (instanceVertex.isAssetVertex()) {
+                RequestContext.get().addVertexToHardDelete(instanceVertex);
+            }
         } else {
             Status state = AtlasGraphUtilsV2.getState(instanceVertex);
 

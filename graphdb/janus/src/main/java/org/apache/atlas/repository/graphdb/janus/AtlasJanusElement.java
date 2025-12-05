@@ -256,7 +256,9 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
     }
 
     public boolean isAssetVertex() {
-        return this instanceof AtlasVertex && this.element.label().equals(Constants.ASSET_VERTEX_LABEL);
+        return this.exists()
+                && this instanceof AtlasVertex
+                && this.element.label().equals(Constants.ASSET_VERTEX_LABEL);
     }
 
     @Override

@@ -486,12 +486,15 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
                 RequestContext.get().endMetricRecord(recorder);
 
                 recorder = RequestContext.get().startMetricRecord("commitIdOnly.callDropVertices");
+
                 // Extract HARD/PURGE vertex Ids
 
+                // Skipping isAssetVertex check as it already performed when adding item in verticesToHardDelete
+                // This is done to avoid "Vertex with id <> was removed" error as isAssetVertex on purged vertex fails
+                // Though Janus vertex is purged, still we can use cached Atlas vertex to get vertexId & docId
                 List<AtlasVertex> hardDeletedVertices = RequestContext.get().getVerticesToHardDelete().stream()
                         .map(x -> (AtlasVertex) x)
                         .filter(Objects::nonNull)
-                        .filter(AtlasVertex::isAssetVertex)
                         .toList();
 
                 List<String> purgedVertexIdsList = hardDeletedVertices.stream()
@@ -726,15 +729,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
         return GraphDbObjectFactory.createVertex(this, vertex);
     }
-
-    @Override
-    public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> getJanusVertex(String vertexId) {
-        Iterator<Vertex> it     = getGraph().vertices(vertexId);
-        Vertex           vertex = getSingleElement(it, vertexId);
-
-        return GraphDbObjectFactory.createJanusVertex(this, vertex);
-    }
-
+    
     @Override
     public Set<AtlasVertex> getVertices(String... vertexIds) {
         Set<AtlasVertex> result = new HashSet<>();
