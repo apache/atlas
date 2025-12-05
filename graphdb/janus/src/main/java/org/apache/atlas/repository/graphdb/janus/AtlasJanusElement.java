@@ -157,6 +157,7 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
     @Override
     public void removePropertyValue(String propertyName, Object propertyValue) {
         List<Object> finalValues = new ArrayList<>();
+        boolean shouldAddToFinalValues = true;
 
         if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
             AtlasJanusVertex vertex = (AtlasJanusVertex) this;
@@ -167,20 +168,22 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
                     finalValues = new ArrayList<>(allValues);
                 }
             }
+            shouldAddToFinalValues = false; // avoid re adding in finalValues if it was already added here
+        }
 
-        } else {
-            Iterator<? extends Property<Object>> it = getWrappedElement().properties(propertyName);
+        Iterator<? extends Property<Object>> it = getWrappedElement().properties(propertyName);
 
-            boolean removedFirst = false;
+        boolean removedFirst = false;
 
-            while (it.hasNext()) {
-                Property currentProperty = it.next();
-                Object currentPropertyValue = currentProperty.value();
+        while (it.hasNext()) {
+            Property currentProperty = it.next();
+            Object currentPropertyValue = currentProperty.value();
 
-                if (!removedFirst && Objects.equals(currentPropertyValue, propertyValue)) {
-                    currentProperty.remove();
-                    removedFirst = true;
-                } else {
+            if (!removedFirst && Objects.equals(currentPropertyValue, propertyValue)) {
+                currentProperty.remove();
+                removedFirst = true;
+            } else {
+                if (shouldAddToFinalValues) {
                     finalValues.add(currentPropertyValue);
                 }
             }
@@ -192,6 +195,7 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
     @Override
     public void removeAllPropertyValue(String propertyName, Object propertyValue) {
         List<Object> finalValues = new ArrayList<>();
+        boolean shouldAddToFinalValues = true;
 
         if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
             AtlasJanusVertex vertex = (AtlasJanusVertex) this;
@@ -202,17 +206,20 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
                     finalValues = new ArrayList<>(allValues);
                 }
             }
+            shouldAddToFinalValues = false; // avoid re adding in finalValues if it was already added here
+        }
 
-        } else {
-            Iterator<? extends Property<Object>> it = getWrappedElement().properties(propertyName);
+        Iterator<? extends Property<Object>> it = getWrappedElement().properties(propertyName);
 
-            while (it.hasNext()) {
-                Property currentProperty      = it.next();
-                Object   currentPropertyValue = currentProperty.value();
+        while (it.hasNext()) {
+            Property currentProperty      = it.next();
+            Object   currentPropertyValue = currentProperty.value();
 
-                if (Objects.equals(currentPropertyValue, propertyValue)) {
-                    currentProperty.remove();
-                } else {
+            if (Objects.equals(currentPropertyValue, propertyValue)) {
+                currentProperty.remove();
+            } else {
+                if (shouldAddToFinalValues) {
+                    // avoid re add in finalValues if it was already added in LEAN_GRAPH_ENABLED block
                     finalValues.add(currentPropertyValue);
                 }
             }

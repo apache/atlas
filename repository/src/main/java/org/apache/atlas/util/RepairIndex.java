@@ -150,6 +150,7 @@ public class RepairIndex {
 
             LOG.info(": Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
         }
+        entityMutationService.repairClassificationMappings(new ArrayList<>(referencedGUIDs));
     }
 
     public void restoreByIds(Set<String> guids) throws Exception {
@@ -165,6 +166,7 @@ public class RepairIndex {
             LOG.info(": Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
             LOG.info(": Done!");
         }
+        entityMutationService.repairClassificationMappings(new ArrayList<>(guids));
     }
 
     private static String[] getIndexes() {
@@ -230,7 +232,6 @@ public class RepairIndex {
                 }
             }
         }
-        entityMutationService.repairClassificationMappings(new ArrayList<>(entityGUIDs));
     }
 
     private static Set<String> getEntityAndReferenceGuids(String guid, Map<String, AtlasEntity> referredEntities) throws Exception {
