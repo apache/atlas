@@ -100,25 +100,34 @@ public class DynamicVertex {
         Object currentValue = properties.getOrDefault(key, null);
 
         Set<Object> values;
+        try {
 
-        if (currentValue == null) {
-            values = new HashSet<>(1);
-        } else if (currentValue instanceof List) {
-            values = new HashSet<>((List) currentValue);
-        } else {
-            values = (Set) currentValue;
-        }
+            if (currentValue == null) {
+                values = new HashSet<>(1);
+            } else if (currentValue instanceof List) {
+                values = new HashSet<>((List) currentValue);
+            } else {
+                values = (Set) currentValue;
+            }
 
-        if (!values.contains(value)) {
-            values.add(value);
-            properties.put(key, values);
+            if (!values.contains(value)) {
+                values.add(value);
+                properties.put(key, values);
+            }
+        } catch (ClassCastException cce) {
+            throw new RuntimeException(cce);
         }
     }
 
     public void addListProperty(String key, Object value) {
-        List<Object> values = (List<Object>) properties.getOrDefault(key, new ArrayList<>(1));
-        values.add(value);
-        properties.put(key, values);
+        try {
+            List<Object> values = (List<Object>) properties.getOrDefault(key, new ArrayList<>(1));
+            values.add(value);
+            properties.put(key, values);
+
+        } catch (ClassCastException cce) {
+            throw new RuntimeException(cce);
+        }
     }
 
     /**

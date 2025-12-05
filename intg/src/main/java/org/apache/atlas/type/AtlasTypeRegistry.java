@@ -563,7 +563,6 @@ public class AtlasTypeRegistry {
         }
 
         private void enrichESAttributes() {
-            long start = System.currentTimeMillis();
             List<AtlasEntityType> allEntityTypes = registryData.allTypes.getAllTypes().stream()
                     .filter(x -> x instanceof AtlasEntityType)
                     .map( x -> ((AtlasEntityType) x))
@@ -589,8 +588,6 @@ public class AtlasTypeRegistry {
 
                 type.setAttributesForESSync(eligibleAttributes);
             }
-
-            LOG.info("Took {} millis to enrich attributesForESSync", System.currentTimeMillis() - start);
         }
 
         public void clear() {

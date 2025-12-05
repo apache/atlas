@@ -821,7 +821,7 @@ public class AtlasStructType extends AtlasType {
                     break;
             }
 
-            if (getName().startsWith(Constants.INTERNAL_PROPERTY_KEY_PREFIX)) {
+            if (getName() != null && getName().startsWith(Constants.INTERNAL_PROPERTY_KEY_PREFIX)) {
                 this.isSyncToESRequired = true;
             } else {
                 this.isSyncToESRequired = this.attributeType.getTypeCategory() == TypeCategory.PRIMITIVE || this.attributeType.getTypeCategory() == TypeCategory.ENUM;

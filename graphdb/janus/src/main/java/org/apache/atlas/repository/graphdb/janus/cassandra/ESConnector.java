@@ -130,7 +130,6 @@ public class ESConnector {
             request.setEntity(new StringEntity(bulkRequestBody.toString(), ContentType.APPLICATION_JSON));
 
             int maxRetries = AtlasConfiguration.ES_MAX_RETRIES.getInt();
-            long retryDelay = AtlasConfiguration.ES_RETRY_DELAY_MS.getLong();
             long initialRetryDelay = AtlasConfiguration.ES_RETRY_DELAY_MS.getLong();
 
             for (int retryCount = 0; retryCount < maxRetries; retryCount++) {

@@ -30,7 +30,7 @@ import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.graphson.AtlasGraphSONMode;
 import org.apache.atlas.repository.graphdb.janus.graphson.AtlasGraphSONUtility;
-import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -82,60 +82,41 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
 
     @Override
     public <T> T getProperty(String propertyName, Class<T> clazz) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusElement.getProperty");
-        try {
+        if (excludeProperties.contains(propertyName)) {
+            return null;
+        }
 
-            if (excludeProperties.contains(propertyName)) {
+        if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
+            AtlasJanusVertex vertex = (AtlasJanusVertex) this;
+
+            if (vertex.getDynamicVertex().hasProperties() && vertex.getDynamicVertex().hasProperty(propertyName)) {
+                return (T) vertex.getDynamicVertex().getProperty(propertyName, clazz);
+            } else {
                 return null;
             }
+        }
 
-            if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
-                AtlasPerfMetrics.MetricRecorder recorder1 = RequestContext.get().startMetricRecord("AtlasJanusElement.getProperty.newFlow");
-                AtlasJanusVertex vertex = (AtlasJanusVertex) this;
+        //add explicit logic to return null if the property does not exist
+        //This is the behavior Atlas expects.  Janus throws an exception
+        //in this scenario.
 
-                try {
-                    if (vertex.getDynamicVertex().hasProperties() && vertex.getDynamicVertex().hasProperty(propertyName)) {
-                        return (T) vertex.getDynamicVertex().getProperty(propertyName, clazz);
-                    } else {
-                        return null;
-                    }
-                } finally {
-                    RequestContext.get().endMetricRecord(recorder1);
-                }
+        Property p = getWrappedElement().property(propertyName);
+        if (p.isPresent()) {
+            Object propertyValue= p.value();
+            if (propertyValue == null) {
+                return null;
             }
-
-            //add explicit logic to return null if the property does not exist
-            //This is the behavior Atlas expects.  Janus throws an exception
-            //in this scenario.
-
-            AtlasPerfMetrics.MetricRecorder recorder2 = RequestContext.get().startMetricRecord("AtlasJanusElement.getProperty.oldFlow");
-            try {
-                Property p = getWrappedElement().property(propertyName);
-                if (p.isPresent()) {
-                    Object propertyValue= p.value();
-                    if (propertyValue == null) {
-                        return null;
-                    }
-                    if (AtlasEdge.class == clazz) {
-                        return (T) graph.getEdge(propertyValue.toString());
-                    }
-                    if (AtlasVertex.class == clazz) {
-                        return (T) graph.getVertex(propertyValue.toString());
-                    }
-                    return (T) propertyValue;
-
-                }
-            } finally {
-                RequestContext.get().endMetricRecord(recorder2);
+            if (AtlasEdge.class == clazz) {
+                return (T) graph.getEdge(propertyValue.toString());
             }
+            if (AtlasVertex.class == clazz) {
+                return (T) graph.getVertex(propertyValue.toString());
+            }
+            return (T) propertyValue;
 
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
         }
         return null;
     }
-
-
 
     /**
      * Gets all of the values of the given property.
@@ -174,20 +155,34 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
     }
 
     @Override
-    public void removePropertyValue(String propertyName, Object propertyValue) { //TODO
-        Iterator<? extends Property<Object>> it = getWrappedElement().properties(propertyName);
+    public void removePropertyValue(String propertyName, Object propertyValue) {
         List<Object> finalValues = new ArrayList<>();
-        boolean removedFirst = false;
 
-        while (it.hasNext()) {
-            Property currentProperty      = it.next();
-            Object   currentPropertyValue = currentProperty.value();
+        if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
+            AtlasJanusVertex vertex = (AtlasJanusVertex) this;
+            if ( vertex.getDynamicVertex().hasProperty(propertyName)) {
+                Collection allValues = vertex.getDynamicVertex().getProperty(propertyName, Collection.class);
+                if (CollectionUtils.isNotEmpty(allValues)) {
+                    allValues.remove(propertyValue);
+                    finalValues = new ArrayList<>(allValues);
+                }
+            }
 
-            if (!removedFirst && Objects.equals(currentPropertyValue, propertyValue)) {
-                currentProperty.remove();
-                removedFirst = true;
-            } else {
-                finalValues.add(currentPropertyValue);
+        } else {
+            Iterator<? extends Property<Object>> it = getWrappedElement().properties(propertyName);
+
+            boolean removedFirst = false;
+
+            while (it.hasNext()) {
+                Property currentProperty = it.next();
+                Object currentPropertyValue = currentProperty.value();
+
+                if (!removedFirst && Objects.equals(currentPropertyValue, propertyValue)) {
+                    currentProperty.remove();
+                    removedFirst = true;
+                } else {
+                    finalValues.add(currentPropertyValue);
+                }
             }
         }
 
@@ -195,19 +190,31 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
     }
 
     @Override
-    public void removeAllPropertyValue(String propertyName, Object propertyValue) { //TODO
-        Iterator<? extends Property<Object>> it = getWrappedElement().properties(propertyName);
+    public void removeAllPropertyValue(String propertyName, Object propertyValue) {
         List<Object> finalValues = new ArrayList<>();
 
+        if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
+            AtlasJanusVertex vertex = (AtlasJanusVertex) this;
+            if ( vertex.getDynamicVertex().hasProperty(propertyName)) {
+                Collection allValues = vertex.getDynamicVertex().getProperty(propertyName, Collection.class);
+                if (CollectionUtils.isNotEmpty(allValues)) {
+                    allValues.removeIf(value -> Objects.equals(value, propertyValue));
+                    finalValues = new ArrayList<>(allValues);
+                }
+            }
 
-        while (it.hasNext()) {
-            Property currentProperty      = it.next();
-            Object   currentPropertyValue = currentProperty.value();
+        } else {
+            Iterator<? extends Property<Object>> it = getWrappedElement().properties(propertyName);
 
-            if (Objects.equals(currentPropertyValue, propertyValue)) {
-                currentProperty.remove();
-            } else {
-                finalValues.add(currentPropertyValue);
+            while (it.hasNext()) {
+                Property currentProperty      = it.next();
+                Object   currentPropertyValue = currentProperty.value();
+
+                if (Objects.equals(currentPropertyValue, propertyValue)) {
+                    currentProperty.remove();
+                } else {
+                    finalValues.add(currentPropertyValue);
+                }
             }
         }
 
@@ -216,7 +223,6 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
 
     @Override
     public void setProperty(String propertyName, Object value) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusElement.setProperty");
         try {
             if (value == null) {
                 Object existingVal = getProperty(propertyName, Object.class);
@@ -239,8 +245,6 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
             }
         } catch(SchemaViolationException e) {
             throw new AtlasSchemaViolationException(e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
         }
     }
 
@@ -289,47 +293,30 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
 
     @Override
     public List<String> getListProperty(String propertyName) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusElement.getListProperty");
-        try {
-            List<String> value =  getProperty(propertyName, List.class);
-            return value;
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
+        List<String> value =  getProperty(propertyName, List.class);
+        return value;
     }
 
     @Override
     public <V> List<V> getMultiValuedProperty(String propertyName, Class<V> elementType) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AtlasJanusElement.getMultiValuedProperty");
-        try {
-            if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
-                AtlasPerfMetrics.MetricRecorder recorder1 = RequestContext.get().startMetricRecord("AtlasJanusElement.getMultiValuedProperty.newFlow");
-                try {
-                    Object val = getProperty(propertyName, elementType);
-                    if (val == null) {
-                        return new ArrayList<>(0);
-                    } else {
-                        return (List<V>) val;
-                    }
-                } finally {
-                    RequestContext.get().endMetricRecord(recorder1);
-                }
+        if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
+            Object val = getProperty(propertyName, elementType);
+            if (val == null) {
+                return new ArrayList<>(0);
+            } else {
+                return (List<V>) val;
             }
-
-            AtlasPerfMetrics.MetricRecorder recorder2 = RequestContext.get().startMetricRecord("AtlasJanusElement.getMultiValuedProperty.oldFlow");
-            Iterator<? extends Property<Object>> it = getWrappedElement().properties(propertyName);
-
-            List<V> value = new ArrayList<>();
-            while (it.hasNext()) {
-                Property currentProperty      = it.next();
-                Object   currentPropertyValue = currentProperty.value();
-                value.add((V) currentPropertyValue);
-            }
-            RequestContext.get().endMetricRecord(recorder2);
-            return value;
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
         }
+
+        Iterator<? extends Property<Object>> it = getWrappedElement().properties(propertyName);
+
+        List<V> value = new ArrayList<>();
+        while (it.hasNext()) {
+            Property currentProperty      = it.next();
+            Object   currentPropertyValue = currentProperty.value();
+            value.add((V) currentPropertyValue);
+        }
+        return value;
     }
 
     @Override

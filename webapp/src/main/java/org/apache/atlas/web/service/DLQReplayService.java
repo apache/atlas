@@ -1,6 +1,5 @@
 package org.apache.atlas.web.service;
 
-import com.amazonaws.services.dynamodbv2.xspec.S;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -16,7 +15,6 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.dlq.DLQEntry;
 import org.janusgraph.diskstorage.dlq.SerializableIndexMutation;
-import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

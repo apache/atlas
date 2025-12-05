@@ -22,23 +22,21 @@ import java.util.Map;
  */
 class JacksonVertexSerializer implements VertexSerializer {
     private static final Logger LOG = LoggerFactory.getLogger(JacksonVertexSerializer.class);
-    private final ObjectMapper objectMapper;
-    private final DynamicVertexDeserializer deserializer;
 
+    private static final ObjectMapper objectMapper;
 
-    public JacksonVertexSerializer() {
-        this.deserializer = new DynamicVertexDeserializer();
-        this.objectMapper = new ObjectMapper();
+    static {
+        objectMapper = new ObjectMapper();
 
         // Configure Jackson to handle nulls similar to GSON
-        this.objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+        objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
 
         // Register custom deserializer
         SimpleModule module = new SimpleModule();
-        module.addDeserializer(DynamicVertex.class, deserializer);
+        module.addDeserializer(DynamicVertex.class, new DynamicVertexDeserializer());
         module.addDeserializer(Object.class, new NumbersAsStringObjectDeserializer());
         module.addSerializer(String.class, new StringSerializer());
-        this.objectMapper.registerModule(module);
+        objectMapper.registerModule(module);
     }
 
     @Override
@@ -69,17 +67,6 @@ class JacksonVertexSerializer implements VertexSerializer {
             // Handle exception appropriately
             throw new RuntimeException("Failed to serialize map data", e);
         }
-    }
-
-    /**
-     * Deserializes a JsonNode directly into a DynamicVertex without going through string conversion.
-     * This is more efficient when the JsonNode is already available.
-     *
-     * @param jsonNode The JsonNode to deserialize
-     * @return A DynamicVertex object
-     */
-    public DynamicVertex deserializeFromNode(JsonNode jsonNode) {
-        return deserializer.deserializeFromNode(jsonNode);
     }
 
     /**

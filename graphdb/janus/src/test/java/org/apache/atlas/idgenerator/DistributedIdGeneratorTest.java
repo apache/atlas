@@ -44,7 +44,7 @@ public class DistributedIdGeneratorTest {
 
     @Test
     @Order(1)
-    void validateCloseAtBatchSize() {
+    void testIDGenerationResumesIdAfterRestart() {
 
         DistributedIdGenerator idGenerator = new DistributedIdGenerator("localhost", 9042, serverName);
 
@@ -82,7 +82,7 @@ public class DistributedIdGeneratorTest {
 
     @Test
     @Order(2)
-    void validateCloseBeforeBatchSize() {
+    void testIDGenerationWithWasteIDs() {
         String serverName = "test-server-2";
 
         DistributedIdGenerator idGenerator = new DistributedIdGenerator("localhost", 9042, serverName);
@@ -123,7 +123,7 @@ public class DistributedIdGeneratorTest {
 
     @Test
     @Order(3)
-    void validateCloseAfterBatchSize() throws AtlasBaseException, IOException, InterruptedException {
+    void testIDGenerationExhaustBatch() {
         String serverName = "test-server-3";
 
         DistributedIdGenerator idGenerator = new DistributedIdGenerator("localhost", 9042, serverName);
@@ -159,7 +159,7 @@ public class DistributedIdGeneratorTest {
 
     @Test
     @Order(4)
-    void validateCloseMultiple() throws AtlasBaseException, IOException, InterruptedException {
+    void testIDGenerationCloseMultipleTimes() {
         String serverName = "test-server-4";
 
         DistributedIdGenerator idGenerator = new DistributedIdGenerator("localhost", 9042, serverName);
@@ -201,7 +201,7 @@ public class DistributedIdGeneratorTest {
 
     @Test
     @Order(5)
-    void validateSequentialOverflows() throws AtlasBaseException, IOException, InterruptedException {
+    void testIDGenerationSequentialOverflows() {
         String serverName = "test-server-5";
 
         DistributedIdGenerator idGenerator = new DistributedIdGenerator("localhost", 9042, serverName);
@@ -256,7 +256,7 @@ public class DistributedIdGeneratorTest {
 
     @Test
     @Order(6)
-    void validateRollovers() throws AtlasBaseException, IOException, InterruptedException {
+    void testIDGenerationRollovers() {
         String serverName = "test-server-6";
 
         DistributedIdGenerator idGenerator = new DistributedIdGenerator("localhost", 9042, serverName);

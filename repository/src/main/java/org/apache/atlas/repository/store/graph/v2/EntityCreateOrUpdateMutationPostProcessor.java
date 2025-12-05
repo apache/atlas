@@ -5,6 +5,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.CassandraTagOperation;
 import org.apache.atlas.model.ESDeferredOperation;
 import org.apache.atlas.model.Tag;
+import org.apache.atlas.repository.graphdb.janus.cassandra.ESConnector;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import org.apache.atlas.utils.AtlasPerfTracer;

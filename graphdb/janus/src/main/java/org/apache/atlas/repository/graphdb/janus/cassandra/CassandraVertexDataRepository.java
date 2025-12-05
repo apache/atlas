@@ -178,25 +178,27 @@ class CassandraVertexDataRepository implements VertexDataRepository {
 
         Map<String, DynamicVertex> results = new HashMap<>();
 
-        // Split large batches into smaller ones to avoid Cassandra limitations
-        if (sanitizedIds.size() > MAX_IN_CLAUSE_ITEMS) {
-            List<List<String>> batches = Lists.partition(sanitizedIds, MAX_IN_CLAUSE_ITEMS);
+        try {
+            // Split large batches into smaller ones to avoid Cassandra limitations
+            if (sanitizedIds.size() > MAX_IN_CLAUSE_ITEMS) {
+                List<List<String>> batches = Lists.partition(sanitizedIds, MAX_IN_CLAUSE_ITEMS);
 
-            // Process each batch
-            for (List<String> batch : batches) {
-                try {
-                    Map<String, DynamicVertex> batchResults = fetchSingleBatchDirectly(batch);
-                    results.putAll(batchResults);
-                } catch (Exception e) {
-                    LOG.error("Error fetching batch of vertex data directly", e);
-                    // Continue with other batches even if one fails
+                // Process each batch
+                for (List<String> batch : batches) {
+                    try {
+                        Map<String, DynamicVertex> batchResults = fetchSingleBatchDirectly(batch);
+                        results.putAll(batchResults);
+                    } catch (Exception e) {
+                        LOG.error("Error fetching batch of vertex data directly", e);
+                        // Continue with other batches even if one fails
+                    }
                 }
+            } else {
+                results = fetchSingleBatchDirectly(sanitizedIds);
             }
-        } else {
-            results = fetchSingleBatchDirectly(sanitizedIds);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
         }
-
-        RequestContext.get().endMetricRecord(recorder);
 
         return results;
     }
@@ -207,7 +209,7 @@ class CassandraVertexDataRepository implements VertexDataRepository {
      * Uses "WHERE bucket_id IN (...) AND id IN (...)" approach.
      */
     private Map<String, DynamicVertex> fetchSingleBatchDirectly(List<String> vertexIdsInBatch) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder mainRecorder = RequestContext.get().startMetricRecord("fetchSingleBatchDirectly_SingleCallStrategy");
+        AtlasPerfMetrics.MetricRecorder mainRecorder = RequestContext.get().startMetricRecord("fetchSingleBatchDirectly");
         Map<String, DynamicVertex> results = new HashMap<>();
 
         if (vertexIdsInBatch == null || vertexIdsInBatch.isEmpty()) {

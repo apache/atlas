@@ -95,7 +95,7 @@ public class TagDAOCassandraImplTest {
         // --- 1. Setup: Insert the provided sample data directly into the database ---
         String assetId = "40964208";
         String tagTypeName = "dZdVxX8U8hj19zDqhr81ZR";
-        int bucket = TagDAOCassandraImpl.calculateBucket(assetId);
+        int bucket = calculateBucket(assetId);
 
         String directTagMetaJson = "{\"typeName\":\"dZdVxX8U8hj19zDqhr81ZR\",\"attributes\":{\"GgKQQ5k7voU8kxBsIod7fw\":[{\"typeName\":\"SourceTagAttachment\",\"attributes\":{\"sourceTagGuid\":\"ce9b94c1-b8a1-4552-91da-2408434af9b4\",\"sourceTagConnectorName\":\"snowflake\",\"sourceTagName\":\"C5 Public\",\"sourceTagValue\":[{\"typeName\":\"SourceTagAttachmentValue\",\"attributes\":{\"tagAttachmentValue\":\"C4\"}}],\"sourceTagQualifiedName\":\"default/snowflake/1741259414/GOVERNANCE/PUBLIC/C4 Public\"}}],\"QT6ZIX14kPyUZmdUMaUYwI\":\"ABC\"},\"entityGuid\":\"02f551b1-5ad0-4718-af45-44d0213bf48b\",\"entityStatus\":\"ACTIVE\",\"propagate\":true,\"removePropagationsOnEntityDelete\":true,\"restrictPropagationThroughLineage\":false,\"restrictPropagationThroughHierarchy\":false}";
         String directAssetMetadata = "{\"__modifiedBy\":\"admin\",\"qualifiedName\":\"default/redshift/1234/table_000001\",\"__typeName\":\"Table\",\"__createdBy\":\"admin\",\"__modificationTimestamp\":1750760080584,\"name\":\"table_000001\",\"__guid\":\"02f551b1-5ad0-4718-af45-44d0213bf48b\",\"__timestamp\":1750756510291}";

@@ -153,11 +153,10 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     private final RestClient esNonUiClusterClient;
 
     private String CASSANDRA_HOSTNAME_PROPERTY = "atlas.graph.storage.hostname";
-    private final CqlSession cqlSession;
-    private final DynamicVertexService dynamicVertexService;
+    private CqlSession cqlSession;
+    private DynamicVertexService dynamicVertexService;
 
-    // Sonyflake-based distributed ID generator
-    private static final DistributedIdGenerator CUSTOM_ID_GENERATOR;
+    private static DistributedIdGenerator CUSTOM_ID_GENERATOR;
 
 
     static {
@@ -175,7 +174,9 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
                 //throw new RuntimeException(message);
             }
 
-            CUSTOM_ID_GENERATOR = new DistributedIdGenerator(hostName, port, podName);
+            if (LEAN_GRAPH_ENABLED) {
+                CUSTOM_ID_GENERATOR = new DistributedIdGenerator(hostName, port, podName);
+            }
         } catch (AtlasException e) {
             LOG.error("Failed to initialize DistributedIdGenerator for custom vertex ID generation");
             throw new RuntimeException(e);
@@ -224,14 +225,11 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         this.esUiClusterClient = esUiClusterClient;
         this.esNonUiClusterClient = esNonUiClusterClient;
 
-        try {
+        if (LEAN_GRAPH_ENABLED) {
             initializeSchema();
-        } catch (AtlasBaseException e) {
-
+            this.cqlSession = initializeCassandraSession();
+            this.dynamicVertexService = new DynamicVertexService(cqlSession);
         }
-
-        this.cqlSession = initializeCassandraSession();
-        this.dynamicVertexService = new DynamicVertexService(cqlSession);
     }
 
     private CqlSession initializeCassandraSession() {
@@ -264,7 +262,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
                 .withLocalDatacenter("datacenter1");
     }
 
-    private void initializeSchema() throws AtlasBaseException {
+    private void initializeSchema() {
         String hostname = null;
         try {
             hostname = ApplicationProperties.get().getString(CASSANDRA_HOSTNAME_PROPERTY, "localhost");
@@ -1024,7 +1022,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
     private <T extends Statement<T>> ResultSet executeWithRetry(String hostname,
-                                                                Statement<T> statement) throws AtlasBaseException {
+                                                                Statement<T> statement) {
         int MAX_RETRIES = 3;
         Duration INITIAL_BACKOFF = Duration.ofMillis(100);
         int retryCount = 0;
@@ -1051,11 +1049,11 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
                 }
             }
         } catch (AtlasBaseException be) {
-            throw be;
+            throw new RuntimeException(be);
         }
 
         LOG.error("AtlasJAnusGraph: Failed to execute statement after {} retries", MAX_RETRIES, lastException);
-        throw new AtlasBaseException("AtlasJAnusGraph: Failed to execute statement after " + MAX_RETRIES + " retries", lastException);
+        throw new RuntimeException("AtlasJAnusGraph: Failed to execute statement after " + MAX_RETRIES + " retries", lastException);
     }
 
     private String generateCustomId() {

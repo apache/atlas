@@ -5849,7 +5849,7 @@ public class EntityGraphMapper {
                 }
 
                 // passing atlasVertex null since only relation was updated & no update of metadata of asset
-                req.cacheDifferentialEntity(entity, null);
+                req.cacheDifferentialEntity(entity, vertex);
             } finally {
                 req.endMetricRecord(recorderInverseMutatedDetails);
             }
