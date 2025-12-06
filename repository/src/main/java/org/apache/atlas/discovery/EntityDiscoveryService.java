@@ -713,7 +713,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             boolean includeMeanings = context.includeMeanings();
 
             final int BATCH_SIZE = AtlasConfiguration.ATLAS_CASSANDRA_BATCH_SIZE.getInt();
-            Map<String, Result> batchResults = new HashMap<>(BATCH_SIZE);
+            Map<String, Result> batchResults = new LinkedHashMap<>(BATCH_SIZE);
             Map<String, AtlasEntityHeader> vertexIdHeader = new HashMap<>();
 
             // Process vertices in batches but collect all relation IDs
