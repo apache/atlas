@@ -126,10 +126,6 @@ public interface AtlasGraph<V, E> {
      */
     AtlasVertex<V, E> getVertex(String vertexId);
 
-
-    AtlasVertex<V, E> getJanusVertex(String vertexId);
-
-
     /**
      * Utility method to get AltasVertex in bulk
      * @param vertexIds

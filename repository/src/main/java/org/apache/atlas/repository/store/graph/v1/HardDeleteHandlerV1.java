@@ -49,8 +49,10 @@ public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
             LOG.debug("==> HardDeleteHandlerV1._deleteVertex({}, {})", GraphHelper.string(instanceVertex), force);
         }
 
+        if (instanceVertex.isAssetVertex()) {
+            RequestContext.get().addVertexToHardDelete(instanceVertex);
+        }
         graphHelper.removeVertex(instanceVertex);
-        RequestContext.get().addVertexToHardDelete(instanceVertex);
     }
 
     @Override
