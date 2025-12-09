@@ -120,7 +120,9 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         } finally {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
 
-            updateLeanGraphRegistry();
+            if (commitUpdates) {
+                updateLeanGraphRegistry();
+            }
 
             LOG.info("<== AtlasTypeDefGraphStore.init()");
         }
