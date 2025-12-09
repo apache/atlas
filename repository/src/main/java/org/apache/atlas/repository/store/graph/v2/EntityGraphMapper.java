@@ -3131,21 +3131,22 @@ public class EntityGraphMapper {
     /**
      * Builds the final set of meaning names by combining new and existing names,
      * excluding deleted names. Optimized to only fetch existing names when there are deletions.
+     * Uses LinkedHashSet to maintain deterministic ordering (existing names first, then new names).
      */
     private Set<String> buildFinalMeaningNames(AttributeMutationContext ctx, List<String> newMeaningNames,
                                                List<String> deletedMeaningsNames) {
-        Set<String> finalNames = new HashSet<>();
+        Set<String> finalNames = new LinkedHashSet<>();
         
-        // Add new names
-        if (CollectionUtils.isNotEmpty(newMeaningNames)) {
-            finalNames.addAll(newMeaningNames);
-        }
-        
-        // Add existing names, conditionally fetching based on whether there are deletions
+        // Add existing names first (to preserve original order), conditionally fetching based on whether there are deletions
         if (CollectionUtils.isNotEmpty(deletedMeaningsNames)) {
             addExistingNamesExcludingDeleted(ctx, finalNames, deletedMeaningsNames);
         } else {
             addAllExistingNames(ctx, finalNames);
+        }
+        
+        // Add new names after existing (append semantics)
+        if (CollectionUtils.isNotEmpty(newMeaningNames)) {
+            finalNames.addAll(newMeaningNames);
         }
         
         return finalNames;
