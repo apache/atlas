@@ -944,7 +944,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
     }
 
-    private Class getPrimitiveClass(String attribTypeName) {
+    private static Class getPrimitiveClass(String attribTypeName) {
         String attributeTypeName = attribTypeName.toLowerCase();
 
         switch (attributeTypeName) {
@@ -984,7 +984,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
     }
 
-    private Map<String, Object> filterMapByKeys(AtlasEntityType entityType, DynamicVertex vertex, Set<String> resultAttributes) {
+    public static Map<String, Object> filterMapByKeys(AtlasEntityType entityType, DynamicVertex vertex, Set<String> resultAttributes) {
         if (vertex.getAllProperties() == null || vertex.getAllProperties().isEmpty() || resultAttributes == null || resultAttributes.isEmpty()) {
             return Collections.emptyMap();
         }

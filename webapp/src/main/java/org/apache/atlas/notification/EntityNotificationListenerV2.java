@@ -315,15 +315,20 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
             Map<String, Object> allInternalAttributesMap = context.getAllInternalAttributesMap().get(entity.getGuid());
             if (MapUtils.isNotEmpty(allInternalAttributesMap)) {
                 ret.setInternalAttributes(allInternalAttributesMap);
+            }
+
+            if (CollectionUtils.isNotEmpty(context.getESDeferredOperations())) {
                 // fill all classifications related attrs. They are no longer part of vertex attributes
-                if (CollectionUtils.isNotEmpty(context.getESDeferredOperations())) {
-                    List<ESDeferredOperation> esDefferredOperations = context.getESDeferredOperations();
-                    if (CollectionUtils.isNotEmpty(esDefferredOperations)) {
-                        for (ESDeferredOperation esDeferredOperation : esDefferredOperations) {
-                            String vertexId = AtlasGraphUtilsV2.getVertexIdForDocId(entity.getDocId());
-                            if (esDeferredOperation.getEntityId().equals(vertexId)) {
-                                Map<String, Object> classificationInternalAttributes = esDeferredOperation.getPayload().get(vertexId);
-                                if (MapUtils.isNotEmpty(classificationInternalAttributes)) {
+                List<ESDeferredOperation> esDefferredOperations = context.getESDeferredOperations();
+                if (CollectionUtils.isNotEmpty(esDefferredOperations)) {
+                    for (ESDeferredOperation esDeferredOperation : esDefferredOperations) {
+                        String vertexId = AtlasGraphUtilsV2.getVertexIdForDocId(entity.getDocId());
+                        if (esDeferredOperation.getEntityId().equals(vertexId)) {
+                            Map<String, Object> classificationInternalAttributes = esDeferredOperation.getPayload().get(vertexId);
+                            if (MapUtils.isNotEmpty(classificationInternalAttributes)) {
+                                if (ret.getInternalAttributes() == null) {
+                                    ret.setInternalAttributes(classificationInternalAttributes);
+                                } else {
                                     ret.getInternalAttributes().putAll(classificationInternalAttributes);
                                 }
                             }

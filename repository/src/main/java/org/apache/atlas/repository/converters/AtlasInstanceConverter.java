@@ -29,6 +29,8 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.VertexEdgePropertiesCache;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusVertex;
+import org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.*;
 import org.apache.atlas.v1.model.instance.Referenceable;
@@ -44,6 +46,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.apache.atlas.repository.Constants.LEAN_GRAPH_ENABLED;
 
 @Singleton
 @Component
@@ -237,6 +241,14 @@ public class AtlasInstanceConverter {
     }
 
     public List<AtlasEntity> getEnrichedEntitiesWithPrimitiveAttributes(Set<AtlasVertex> vertices, Set<AtlasStructType.AtlasAttribute> attributes) throws AtlasBaseException {
+        if (LEAN_GRAPH_ENABLED) {
+            return getEnrichedEntitiesWithPrimitiveAttributesV2(vertices, attributes);
+        } else {
+            return getEnrichedEntitiesWithPrimitiveAttributesV1(vertices, attributes);
+        }
+    }
+
+    public List<AtlasEntity> getEnrichedEntitiesWithPrimitiveAttributesV1(Set<AtlasVertex> vertices, Set<AtlasStructType.AtlasAttribute> attributes) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(vertices)) {
             return Collections.emptyList();
         }
@@ -267,6 +279,26 @@ public class AtlasInstanceConverter {
 
         return enrichedEntities;
 
+    }
+
+    public List<AtlasEntity> getEnrichedEntitiesWithPrimitiveAttributesV2(Set<AtlasVertex> vertices, Set<AtlasStructType.AtlasAttribute> attributes) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(vertices)) {
+            return Collections.emptyList();
+        }
+
+        List<AtlasEntity> enrichedEntities =  new ArrayList<>(vertices.size());
+
+        Set<String> attributeNames = attributes.stream()
+                .map(AtlasStructType.AtlasAttribute::getName)
+                .collect(Collectors.toSet());
+
+        for (AtlasVertex vertex : vertices) {
+            AtlasEntityHeader entityHeader =  entityGraphRetriever.dynamicVertexToAtlasEntityHeader(vertex, attributeNames);
+            if (entityHeader != null) {
+                enrichedEntities.add(new AtlasEntity(entityHeader));
+            }
+        }
+        return enrichedEntities;
     }
 
 }

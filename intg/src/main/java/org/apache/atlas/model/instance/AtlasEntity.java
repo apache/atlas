@@ -151,6 +151,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         setUpdateTime(header.getUpdateTime());
         setUpdatedBy(header.getUpdatedBy());
         setDeleteHandler(header.getDeleteHandler());
+        setDocId(header.getDocId());
     }
 
     public AtlasEntity(Map map) {
