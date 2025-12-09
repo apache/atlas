@@ -9,6 +9,7 @@ on:
       - master
       - staging
       - beta
+      - leangraphsts
       - mlh41-integration-tests
       - mlh41tests
       - mlh40java17
