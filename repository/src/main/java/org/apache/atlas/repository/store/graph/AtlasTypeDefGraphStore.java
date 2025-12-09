@@ -707,15 +707,15 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     public void addTypesDefInCache(AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommitWithoutHook();
         ttr.addTypes(typesDef);
-        updateLeanGraphRegistry();
         typeRegistry.releaseTypeRegistryForUpdate(ttr, true);
+        updateLeanGraphRegistry();
     }
 
     public void deleteTypesDefInCache(AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommitWithoutHook();
         ttr.removeTypesDef(typesDef);
-        updateLeanGraphRegistry();
         typeRegistry.releaseTypeRegistryForUpdate(ttr, true);
+        updateLeanGraphRegistry();
     }
 
 
@@ -835,8 +835,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         }
     }
 
-    @Override
-    public void updateLeanGraphRegistry() {
+    private void updateLeanGraphRegistry() {
         if (LEAN_GRAPH_ENABLED) {
             AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("updateLeanGraphRegistry");
             try {
@@ -1223,9 +1222,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
             typeRegistry.releaseTypeRegistryForUpdate(ttr, isSuccess);
 
-            updateLeanGraphRegistry();
-
             if (isSuccess) {
+                updateLeanGraphRegistry();
                 notifyListeners(ttr);
             }
 
