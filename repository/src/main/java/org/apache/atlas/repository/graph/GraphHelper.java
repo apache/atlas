@@ -1266,9 +1266,7 @@ public final class GraphHelper {
 
     public static Boolean isEntityIncomplete(DynamicVertex dynamicVertex) {
         Integer value = (Integer) dynamicVertex.getAllProperties().get(Constants.IS_INCOMPLETE_PROPERTY_KEY);
-        Boolean ret   = value != null && value.equals(INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;
-
-        return ret;
+        return value != null && value.equals(INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;
     }
 
     public static Boolean getEntityHasLineage(AtlasElement element) {
@@ -1342,7 +1340,7 @@ public final class GraphHelper {
     }
 
     public static Status getStatus(DynamicVertex dynamicVertex) {
-        return  (getState(dynamicVertex) == Id.EntityState.DELETED) ? Status.DELETED : Status.ACTIVE;
+        return  (Id.EntityState.DELETED == getState(dynamicVertex)) ? Status.DELETED : Status.ACTIVE;
     }
 
     public static Status getStatus(AtlasEdge edge) {
@@ -1451,7 +1449,7 @@ public final class GraphHelper {
         }
     }
 
-    public static long getCreatedTime(DynamicVertex dynamicVertex){
+    public static long getCreatedTime(DynamicVertex dynamicVertex, String vertexId){
         try {
             Object value = dynamicVertex.getAllProperties().get(TIMESTAMP_PROPERTY_KEY);
             if (value instanceof Long) {
@@ -1460,6 +1458,7 @@ public final class GraphHelper {
                 return Long.parseLong((String) value);
             }
         } catch (Exception e) {
+            LOG.warn("Exception while extracting {} for dynamic vertex {}", TIMESTAMP_PROPERTY_KEY, vertexId);
             return 0l;
         }
     }
@@ -1473,7 +1472,7 @@ public final class GraphHelper {
         }
     }
 
-    public static long getModifiedTime(DynamicVertex dynamicVertex){
+    public static long getModifiedTime(DynamicVertex dynamicVertex, String vertexId){
         try {
             Object value = dynamicVertex.getAllProperties().get(MODIFICATION_TIMESTAMP_PROPERTY_KEY);
             if (value instanceof Long) {
@@ -1482,6 +1481,7 @@ public final class GraphHelper {
                 return Long.parseLong((String) value);
             }
         } catch (Exception e) {
+            LOG.warn("Exception while extracting {} for dynamic vertex {}", MODIFICATION_TIMESTAMP_PROPERTY_KEY, vertexId);
             return 0l;
         }
     }

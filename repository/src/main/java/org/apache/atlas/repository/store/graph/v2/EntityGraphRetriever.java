@@ -1725,13 +1725,13 @@ public class EntityGraphRetriever {
             ret.setUpdatedBy((String) dynamicProperties.get(MODIFIED_BY_KEY));
 
             // Set entity creation time if available
-            long createdTime = GraphHelper.getCreatedTime(dynamicVertex);
+            long createdTime = GraphHelper.getCreatedTime(dynamicVertex, atlasVertex.getIdForDisplay());
             if (createdTime != 0L) {
                 ret.setCreateTime(new Date(createdTime));
             }
 
             // Set entity last update time if available
-            long updatedTime = GraphHelper.getModifiedTime(dynamicVertex);
+            long updatedTime = GraphHelper.getModifiedTime(dynamicVertex, atlasVertex.getIdForDisplay());
             if (updatedTime != 0L) {
                 ret.setUpdateTime(new Date(updatedTime));
             }
