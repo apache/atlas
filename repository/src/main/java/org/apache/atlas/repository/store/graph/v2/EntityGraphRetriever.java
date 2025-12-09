@@ -1708,6 +1708,7 @@ public class EntityGraphRetriever {
             Map<String, Object> dynamicProperties = dynamicVertex.getAllProperties();
 
             if (MapUtils.isEmpty(dynamicProperties)) {
+                LOG.warn("Dynamic properties map is empty for vertex {}", atlasVertex.getIdForDisplay());
                 return null;
             }
 
@@ -1754,19 +1755,7 @@ public class EntityGraphRetriever {
 
             if (entityType != null) {
                 ret.setSuperTypeNames(entityType.getAllSuperTypes());
-                for (AtlasAttribute headerAttribute : entityType.getHeaderAttributes().values()) {
-                    Object attrValue = getVertexAttribute(atlasVertex, headerAttribute);
-
-                    if (attrValue != null) {
-                        ret.setAttribute(headerAttribute.getName(), attrValue);
-                    }
-                }
-
-                Object displayText = getDisplayText(atlasVertex, entityType);
-
-                if (displayText != null) {
-                    ret.setDisplayText(displayText.toString());
-                }
+                attributes.addAll(entityType.getHeaderAttributes().keySet());
 
                 if (CollectionUtils.isNotEmpty(attributes)) {
                     EntityDiscoveryService.filterMapByKeys(entityType, dynamicVertex, attributes);

@@ -294,7 +294,9 @@ public class AtlasInstanceConverter {
 
         for (AtlasVertex vertex : vertices) {
             AtlasEntityHeader entityHeader =  entityGraphRetriever.dynamicVertexToAtlasEntityHeader(vertex, attributeNames);
-            enrichedEntities.add(new AtlasEntity(entityHeader));
+            if (entityHeader != null) {
+                enrichedEntities.add(new AtlasEntity(entityHeader));
+            }
         }
         return enrichedEntities;
     }
