@@ -143,15 +143,14 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
         if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
             AtlasJanusVertex vertex = (AtlasJanusVertex) this;
             vertex.getDynamicVertex().removeProperty(propertyName);
-            return;
         }
 
         Iterator<? extends Property<String>> it = getWrappedElement().properties(propertyName);
         while(it.hasNext()) {
             Property<String> property = it.next();
             property.remove();
-            recordInternalAttribute(propertyName, null);
         }
+        recordInternalAttribute(propertyName, null);
     }
 
     @Override
@@ -247,8 +246,8 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
                 } else {
                     // Might be an edge
                     getWrappedElement().property(propertyName, value);
-                    recordInternalAttribute(propertyName, value);
-                 }
+                }
+                recordInternalAttribute(propertyName, value);
             }
         } catch(SchemaViolationException e) {
             throw new AtlasSchemaViolationException(e);

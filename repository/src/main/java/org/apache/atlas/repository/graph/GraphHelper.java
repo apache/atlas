@@ -35,6 +35,7 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.repository.VertexEdgePropertiesCache;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.repository.graphdb.janus.*;
+import org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
@@ -88,6 +89,7 @@ import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelation
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE_VALID;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal.Symbols.element;
 
 /**
  * Utility class for graph operations.
@@ -1262,6 +1264,13 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static Boolean isEntityIncomplete(DynamicVertex dynamicVertex) {
+        Integer value = (Integer) dynamicVertex.getAllProperties().get(Constants.IS_INCOMPLETE_PROPERTY_KEY);
+        Boolean ret   = value != null && value.equals(INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;
+
+        return ret;
+    }
+
     public static Boolean getEntityHasLineage(AtlasElement element) {
         if (element.getPropertyKeys().contains(HAS_LINEAGE)) {
             return element.getProperty(HAS_LINEAGE, Boolean.class);
@@ -1306,6 +1315,11 @@ public final class GraphHelper {
         return state == null ? null : Id.EntityState.valueOf(state);
     }
 
+    public static Id.EntityState getState(DynamicVertex dynamicVertex) {
+        String state = (String) dynamicVertex.getAllProperties().get(STATE_PROPERTY_KEY);
+        return state == null ? null : Id.EntityState.valueOf(state);
+    }
+
     public static Long getVersion(AtlasElement element) {
         return element.getProperty(Constants.VERSION_PROPERTY_KEY, Long.class);
     }
@@ -1325,6 +1339,10 @@ public final class GraphHelper {
         }
 
         return ret;
+    }
+
+    public static Status getStatus(DynamicVertex dynamicVertex) {
+        return  (getState(dynamicVertex) == Id.EntityState.DELETED) ? Status.DELETED : Status.ACTIVE;
     }
 
     public static Status getStatus(AtlasEdge edge) {
@@ -1433,12 +1451,38 @@ public final class GraphHelper {
         }
     }
 
+    public static long getCreatedTime(DynamicVertex dynamicVertex){
+        try {
+            Object value = dynamicVertex.getAllProperties().get(TIMESTAMP_PROPERTY_KEY);
+            if (value instanceof Long) {
+                return (Long) value;
+            } else {
+                return Long.parseLong((String) value);
+            }
+        } catch (Exception e) {
+            return 0l;
+        }
+    }
+
     public static long getModifiedTime(AtlasElement element){
         try {
             return element.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
         } catch (Exception e) {
             LOG.warn("Failed to get modified time for vertex {}. Error: {}", element.getIdForDisplay(), e.getMessage());
             return getCreatedTime(element);
+        }
+    }
+
+    public static long getModifiedTime(DynamicVertex dynamicVertex){
+        try {
+            Object value = dynamicVertex.getAllProperties().get(MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+            if (value instanceof Long) {
+                return (Long) value;
+            } else {
+                return Long.parseLong((String) value);
+            }
+        } catch (Exception e) {
+            return 0l;
         }
     }
 
