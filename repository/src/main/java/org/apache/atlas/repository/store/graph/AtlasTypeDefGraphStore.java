@@ -704,16 +704,22 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
     public void addTypesDefInCache(AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommitWithoutHook();
-        ttr.addTypes(typesDef);
-        typeRegistry.releaseTypeRegistryForUpdate(ttr, true);
-        updateLeanGraphRegistry();
+        try {
+            ttr.addTypes(typesDef);
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, true);
+            updateLeanGraphRegistry();
+        }
     }
 
     public void deleteTypesDefInCache(AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommitWithoutHook();
-        ttr.removeTypesDef(typesDef);
-        typeRegistry.releaseTypeRegistryForUpdate(ttr, true);
-        updateLeanGraphRegistry();
+        try {
+            ttr.removeTypesDef(typesDef);
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, true);
+            updateLeanGraphRegistry();
+        }
     }
 
 
