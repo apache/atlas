@@ -1225,7 +1225,13 @@ public class EntityGraphRetriever {
                     Map<Object, Object> properties = (Map<Object, Object>) vertexInfo.get("properties");
                     if (properties != null) {
                         if (MapUtils.isNotEmpty(properties) && properties.containsKey(T.id)) {
-                            String vertexId = (String) properties.get(T.id);
+                            String vertexId;
+                            if (LEAN_GRAPH_ENABLED) {
+                                vertexId = (String) properties.get(T.id);
+                            } else {
+                                Long id = (Long) properties.get(T.id);
+                                vertexId = id.toString();
+                            }
                             properties.remove(T.id);
                             properties.remove(T.label);
                             Map<String, List<?>> vertexProperties = getStringArrayListMap(properties);
@@ -1764,37 +1770,6 @@ public class EntityGraphRetriever {
 
                 if (CollectionUtils.isNotEmpty(attributes)) {
                     EntityDiscoveryService.filterMapByKeys(entityType, dynamicVertex, attributes);
-
-                    /*
-                    for (String attrName : attributes) {
-                        // structs are processed here
-                        AtlasAttribute attribute = entityType.getAttribute(attrName);
-
-                        if (attribute == null) {
-                            attrName = toNonQualifiedName(attrName);
-
-                            if (ret.hasAttribute(attrName)) {
-                                continue;
-                            }
-
-                            attribute = entityType.getAttribute(attrName);
-
-                            if (attribute == null) {
-                                attribute = entityType.getRelationshipAttribute(attrName, null);
-                                // if it is relationshipAttribute but UI does not want to show it, skip processing
-                                if (attribute != null) {
-                                    continue;
-                                }
-                            }
-                        }
-
-                        Object attrValue = getVertexAttribute(atlasVertex, attribute);
-
-                        if (attrValue != null) {
-                            ret.setAttribute(attrName, attrValue);
-                        }
-                    }
-                    */
                 }
             } else {
                 LOG.warn("Entity type not found for type name: {} for entityVertexId {}", typeName, atlasVertex.getIdForDisplay());

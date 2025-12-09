@@ -326,7 +326,11 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                         if (esDeferredOperation.getEntityId().equals(vertexId)) {
                             Map<String, Object> classificationInternalAttributes = esDeferredOperation.getPayload().get(vertexId);
                             if (MapUtils.isNotEmpty(classificationInternalAttributes)) {
-                                ret.getInternalAttributes().putAll(classificationInternalAttributes);
+                                if (ret.getInternalAttributes() == null) {
+                                    ret.setInternalAttributes(classificationInternalAttributes);
+                                } else {
+                                    ret.getInternalAttributes().putAll(classificationInternalAttributes);
+                                }
                             }
                         }
                     }
