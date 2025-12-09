@@ -113,4 +113,6 @@ public interface AtlasTypeDefStore {
     AtlasTypesDef deleteTypeByName(String typeName) throws AtlasBaseException;
 
     void notifyLoadCompletion();
+
+    void updateLeanGraphRegistry();
 }
