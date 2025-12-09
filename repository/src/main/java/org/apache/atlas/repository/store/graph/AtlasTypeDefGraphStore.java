@@ -409,7 +409,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         try {
             ttr.updateTypes(ret);
-            //updateLeanGraphRegistry();
         } catch (AtlasBaseException e) { // this shouldn't happen, as the types were already validated
             LOG.error("failed to update the registry after updating the store", e);
         }
@@ -484,7 +483,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         try {
             ttr.updateTypes(ret);
-            //updateLeanGraphRegistry();
         } catch (AtlasBaseException e) { // this shouldn't happen, as the types were already validated
             LOG.error("failed to update the registry after updating the store", e);
         }
@@ -521,7 +519,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         // Translate any NOT FOUND errors to BAD REQUEST
         try {
             ttr.updateTypes(typesDef);
-            //updateLeanGraphRegistry();
         } catch (AtlasBaseException e) {
             if (AtlasErrorCode.TYPE_NAME_NOT_FOUND == e.getAtlasErrorCode()) {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, e.getMessage());
@@ -695,7 +692,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         // Remove all from
         ttr.removeTypesDef(typesDef);
-        //updateLeanGraphRegistry();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasTypeDefGraphStore.deleteTypesDef(enums={}, structs={}, classfications={}, entities={})",
@@ -1255,7 +1251,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     private void tryUpdateByName(String name, AtlasBaseTypeDef typeDef, AtlasTransientTypeRegistry ttr) throws AtlasBaseException {
         try {
             ttr.updateTypeByName(name, typeDef);
-            //updateLeanGraphRegistry();
         } catch (AtlasBaseException e) {
             if (AtlasErrorCode.TYPE_NAME_NOT_FOUND == e.getAtlasErrorCode()) {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, e.getMessage());
@@ -1268,7 +1263,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     private void tryUpdateByGUID(String guid, AtlasBaseTypeDef typeDef, AtlasTransientTypeRegistry ttr) throws AtlasBaseException {
         try {
             ttr.updateTypeByGuid(guid, typeDef);
-            //updateLeanGraphRegistry();
         } catch (AtlasBaseException e) {
             if (AtlasErrorCode.TYPE_GUID_NOT_FOUND == e.getAtlasErrorCode()) {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, e.getMessage());
@@ -1282,7 +1276,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         // Translate any NOT FOUND errors to BAD REQUEST
         try {
             ttr.addTypes(typesDef);
-            //updateLeanGraphRegistry();
         } catch (AtlasBaseException e) {
             if (AtlasErrorCode.TYPE_NAME_NOT_FOUND == e.getAtlasErrorCode() ||
                     AtlasErrorCode.TYPE_GUID_NOT_FOUND == e.getAtlasErrorCode()) {
