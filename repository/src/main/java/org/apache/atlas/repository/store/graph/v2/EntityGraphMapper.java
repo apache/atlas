@@ -3009,6 +3009,7 @@ public class EntityGraphMapper {
             if (!isAppend){
                 ctx.getReferringVertex().removeProperty(MEANINGS_PROPERTY_KEY);
                 ctx.getReferringVertex().removeProperty(MEANINGS_TEXT_PROPERTY_KEY);
+                ctx.getReferringVertex().removeProperty(MEANING_NAMES_PROPERTY_KEY);
             }
 
             if (CollectionUtils.isNotEmpty(qNames)) {
