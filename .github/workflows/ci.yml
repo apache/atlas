@@ -34,7 +34,7 @@ env:
 
 jobs:
   docker-build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 3600
     steps:
       - name: check docker containers
