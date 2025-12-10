@@ -4203,8 +4203,8 @@ public class EntityGraphMapper {
                 if (RequestContext.get().isDelayTagNotifications()) {
                     RequestContext.get().addAddedClassificationAndVertices(classification, new ArrayList<>(vertices));
                 } else {
-                    List<AtlasEntity> propagatedEntities = updateClassificationText(classification, vertices);
-                    entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification), false);
+                    List<AtlasEntity> entities = updateClassificationText(classification, vertices);
+                    entityChangeNotifier.onClassificationsAddedToEntities(entities, Collections.singletonList(classification), false);
                 }
             }
 
