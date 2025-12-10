@@ -710,8 +710,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             ttr.addTypes(typesDef);
             commitUpdates = true;
         } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, true);
             if (commitUpdates) {
-                typeRegistry.releaseTypeRegistryForUpdate(ttr, true);
                 updateLeanGraphRegistry();
             }
         }
@@ -724,8 +724,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             ttr.removeTypesDef(typesDef);
             commitUpdates = true;
         } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, true);
             if (commitUpdates) {
-                typeRegistry.releaseTypeRegistryForUpdate(ttr, true);
                 updateLeanGraphRegistry();
             }
         }
