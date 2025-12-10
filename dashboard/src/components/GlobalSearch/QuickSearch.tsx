@@ -115,9 +115,12 @@ const QuickSearch = () => {
   };
 
   const onInputChange = (_event: any, value: string) => {
-    if (value) {
+    // Sanitize input: remove any potential script tags and validate
+    const sanitizedValue = value ? value.trim() : "";
+    
+    if (sanitizedValue) {
       setOpen(true);
-      getData(value);
+      getData(sanitizedValue);
     } else {
       setOptions([]);
       setValue("");
@@ -125,27 +128,69 @@ const QuickSearch = () => {
     }
   };
 
-  const handleValues = (option: HandleValuesType) => {
-    const { entityObj, title, types } = option;
-    setOpen(false);
-    setOptions([]);
-    searchParams.set("query", title);
-    searchParams.set("searchType", "basic");
-
-    types == "Entities"
-      ? navigate(
-          {
-            pathname: `/detailPage/${entityObj.guid}`
-          },
-          { replace: true }
-        )
-      : navigate(
+  const handleValues = (option: HandleValuesType | string | null) => {
+    // Handle case when option is a string (direct search query)
+    if (typeof option === "string") {
+      const queryValue = option.trim();
+      if (queryValue) {
+        setOpen(false);
+        setOptions([]);
+        // URLSearchParams automatically encodes the value, preventing XSS
+        // Additional validation: ensure query is not empty after trim
+        const sanitizedQuery = queryValue || "*";
+        searchParams.set("query", sanitizedQuery);
+        searchParams.set("searchType", "basic");
+        navigate(
           {
             pathname: `/search/searchResult`,
             search: searchParams.toString()
           },
           { replace: true }
         );
+      }
+      return;
+    }
+
+    // Handle case when option is null or undefined
+    if (!option || typeof option !== "object") {
+      return;
+    }
+
+    const { entityObj, title, types } = option;
+    
+    // Validate that title exists and is not undefined
+    if (!title || title === "undefined" || typeof title !== "string") {
+      return;
+    }
+
+    // Sanitize title: trim and validate
+    const sanitizedTitle = title.trim();
+    if (!sanitizedTitle) {
+      return;
+    }
+
+    setOpen(false);
+    setOptions([]);
+    // URLSearchParams automatically encodes the value, preventing XSS
+    searchParams.set("query", sanitizedTitle);
+    searchParams.set("searchType", "basic");
+
+    if (types === "Entities" && entityObj && entityObj.guid) {
+      navigate(
+        {
+          pathname: `/detailPage/${entityObj.guid}`
+        },
+        { replace: true }
+      );
+    } else {
+      navigate(
+        {
+          pathname: `/search/searchResult`,
+          search: searchParams.toString()
+        },
+        { replace: true }
+      );
+    }
   };
 
   const handleClickAway = () => {
@@ -172,18 +217,30 @@ const QuickSearch = () => {
               const code = e.keyCode || e.which;
 
               switch (code) {
-                case 13:
+                case 13: // Enter key
+                  e.preventDefault();
+                  const inputValue = (e.target as HTMLInputElement).value.trim();
+                  
+                  // If input is empty, use "*" for wildcard search (matching classic UI behavior)
+                  const searchQuery = inputValue === "" ? "*" : inputValue;
+                  
+                  // Try to find exact match in options
                   const activeOption = options.find(
                     (option: { title: any }) =>
                       typeof option !== "string" &&
-                      option.title === (e.target as HTMLInputElement).value
+                      option.title === searchQuery
                   );
+                  
                   if (activeOption) {
+                    // If exact match found, use that option
                     handleValues(activeOption as HandleValuesType);
+                  } else {
+                    // If no match found, trigger basic search with typed value (matching classic UI behavior)
+                    handleValues(searchQuery);
                   }
                   break;
-                case 9:
-                case 27:
+                case 9: // Tab key
+                case 27: // Escape key
                   setOpen(false);
                   break;
                 default:
@@ -204,9 +261,19 @@ const QuickSearch = () => {
             }}
             value={value}
             onChange={(_event: any, newValue: any) => {
-              setOptions(newValue ? [newValue, ...options] : options);
-              setValue(newValue);
-              handleValues(newValue);
+              if (newValue) {
+                // Only update options if newValue is a valid option object
+                if (typeof newValue === "object" && newValue.title) {
+                  setOptions([newValue, ...options]);
+                }
+                setValue(newValue);
+                // Only call handleValues if newValue is a valid option
+                if (typeof newValue === "object" && newValue.title && newValue.title !== "undefined") {
+                  handleValues(newValue);
+                }
+              } else {
+                setValue("");
+              }
             }}
             clearOnBlur={false}
             autoComplete={true}
@@ -214,9 +281,14 @@ const QuickSearch = () => {
             noOptionsText={"No Entities"}
             disableClearable
             onInputChange={onInputChange}
-            getOptionLabel={(option: string | QuickSearchOptionListType) =>
-              typeof option === "string" ? option : (option as any).title
-            }
+            getOptionLabel={(option: string | QuickSearchOptionListType) => {
+              if (typeof option === "string") {
+                return option;
+              }
+              // Safely extract title, defaulting to empty string if undefined
+              const title = (option as any)?.title;
+              return title && typeof title === "string" ? title : "";
+            }}
             renderOption={(props, option, { inputValue }) => {
               const { entityObj, types, parent } =
                 typeof option !== "string" &&
@@ -238,21 +310,31 @@ const QuickSearch = () => {
                 typeof option !== "string" && "title" in option
                   ? option.title
                   : option;
-              const href = `/detailPage/${
-                (entityObj as { guid: string })?.guid
-              }`;
+              
+              // Validate and sanitize title to prevent XSS
+              const safeTitle = typeof title === "string" ? title : "";
+              
+              // Validate guid to prevent XSS in URL
+              const guid = (entityObj as { guid?: string })?.guid;
+              const safeGuid = guid && typeof guid === "string" ? guid : "";
+              const href = safeGuid ? `/detailPage/${safeGuid}` : "#";
+              
               const { name }: { name: string; found: boolean; key: any } =
                 extractKeyValueFromEntity(entityObj);
+              
+              // Safely handle name extraction
+              const safeName = name && typeof name === "string" ? name : "";
+              
               const matches = match(
-                types == "Entities" ? (name as string) : (title as string),
-                inputValue,
+                types === "Entities" ? safeName : safeTitle,
+                inputValue || "",
                 {
                   findAllOccurrences: true,
                   insideWords: true
                 }
               );
               const parts = parse(
-                types == "Entities" ? (name as string) : (title as string),
+                types === "Entities" ? safeName : safeTitle,
                 matches
               );
               return (
@@ -273,7 +355,7 @@ const QuickSearch = () => {
                     }
                   }}
                 >
-                  {types == "Entities" && !isEmpty(entityObj) ? (
+                  {types === "Entities" && !isEmpty(entityObj) ? (
                     <Link
                       className="entity-name text-decoration-none"
                       style={{
@@ -296,10 +378,10 @@ const QuickSearch = () => {
                       }
                     >
                       {" "}
-                      {types == "Entities" && !isEmpty(entityObj) && (
+                      {types === "Entities" && !isEmpty(entityObj) && (
                         <DisplayImage entity={entityObj} />
                       )}{" "}
-                      {types == "Entities" && !isEmpty(entityObj)
+                      {types === "Entities" && !isEmpty(entityObj)
                         ? parts.map((part, index) => (
                             <Stack
                               flexDirection="row"
@@ -308,7 +390,7 @@ const QuickSearch = () => {
                                 fontWeight: part.highlight ? "bold" : "regular"
                               }}
                             >
-                              {entityObj?.guid != "-1" && !part.highlight ? (
+                              {entityObj?.guid !== "-1" && !part.highlight ? (
                                 <Link
                                   className="entity-name text-blue text-decoration-none"
                                   style={{
@@ -345,7 +427,7 @@ const QuickSearch = () => {
                               {part.text}
                             </Stack>
                           ))}
-                      {types == "Entities" &&
+                      {types === "Entities" &&
                         !isEmpty(entityObj) &&
                         ` (${parent})`}
                     </Link>
@@ -410,13 +492,25 @@ const QuickSearch = () => {
         <CustomButton
           variant="outlined"
           size="small"
+          sx={{
+            backgroundColor: "white !important",
+            color: "#4a90e2 !important",
+            borderColor: "#dddddd !important",
+            "&:hover": {
+              backgroundColor: "rgba(74, 144, 226, 0.08) !important",
+              // borderColor: "#4a90e2 !important",
+              color: "#4a90e2 !important"
+            }
+          }}
           onClick={() => {
             setOpenAdvanceSearch(true);
           }}
         >
           <Typography
             sx={{
-              color: location?.pathname == "/search" ? "blue" : "eeeeee"
+              color: "#4a90e2 !important",
+              fontWeight: "600 !important",
+              fontSize: "0.875rem !important"
             }}
             display="inline"
           >

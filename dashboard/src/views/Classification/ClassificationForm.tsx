@@ -314,7 +314,6 @@ const ClassificationForm = ({
                       {alignment == "formatted" ? (
                         <div style={{ position: "relative" }}>
                           <ReactQuill
-                            {...field}
                             theme="snow"
                             placeholder={"Description required"}
                             value={descriptionValue}

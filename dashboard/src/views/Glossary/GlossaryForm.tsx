@@ -142,7 +142,6 @@ const GlossaryForm = (props: {
                   {alignment == "formatted" ? (
                     <div style={{ position: "relative" }}>
                       <ReactQuill
-                        {...field}
                         theme="snow"
                         placeholder={"Description required"}
                         onChange={(text) => {
@@ -150,6 +149,7 @@ const GlossaryForm = (props: {
                           setValue("description", text);
                         }}
                         className="classification-form-editor"
+                        value={field.value || ""}
                       />
                     </div>
                   ) : (

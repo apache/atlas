@@ -138,21 +138,22 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
           required: true
         }}
         defaultValue={""}
-        render={({ field }) => (
-          <Stack gap="0.5rem">
-            <div style={{ position: "relative", flexBasis: "100%" }}>
-              {typeName == "string" ? (
-                <ReactQuill
-                  {...field}
-                  theme="snow"
-                  placeholder={"Enter String"}
-                  onChange={(text) => {
-                    field.onChange(text);
-                  }}
-                  className="classification-form-editor"
-                  value={typeof field.value === "string" ? field.value : ""}
-                />
-              ) : (
+        render={({ field }) => {
+          return (
+            <Stack gap="0.5rem">
+              <div style={{ position: "relative", flexBasis: "100%" }}>
+                {typeName == "string" ? (
+                  <ReactQuill
+                    key={`quill-${index}-${name}`}
+                    theme="snow"
+                    placeholder={"Enter String"}
+                    onChange={(text) => {
+                      field.onChange(text);
+                    }}
+                    className="classification-form-editor"
+                    value={typeof field.value === "string" ? field.value : ""}
+                  />
+                ) : (
                 <TextField
                   margin="none"
                   fullWidth
@@ -176,7 +177,8 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
               )}
             </div>
           </Stack>
-        )}
+          );
+        }}
       />
     );
   } else if (typeName === "boolean") {
