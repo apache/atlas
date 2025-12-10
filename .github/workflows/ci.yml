@@ -35,10 +35,11 @@ env:
 jobs:
   docker-build:
     runs-on: ubuntu-22.04
-    timeout-minutes: 180
+    timeout-minutes: 3600
     steps:
       - uses: actions/checkout@v4
-
+      - name: Check disk usage
+        run: df -h
       - name: Cache for maven dependencies
         uses: actions/cache@v4
         with:
@@ -48,7 +49,8 @@ jobs:
           key: maven-repo-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             maven-repo-
-
+      - name: Check disk usage
+        run: df -h
       - name: Set up .m2 directory and permissions
         run: |
           mkdir -p ~/.m2/repository
@@ -94,12 +96,14 @@ jobs:
           key: ${{ runner.os }}-atlas-downloads-${{ hashFiles('dev-support/atlas-docker/.env') }}
           restore-keys: |
             ${{ runner.os }}-atlas-downloads-
-
+      - name: Check disk usage
+        run: df -h
       - name: Run download-archives.sh
         run: |
           cd dev-support/atlas-docker
           chmod +x download-archives.sh && ./download-archives.sh
-
+      - name: Check disk usage
+        run: df -h
       - name: Bring up containers
         run: |
           cd dev-support/atlas-docker
