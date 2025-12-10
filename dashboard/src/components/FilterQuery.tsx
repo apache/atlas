@@ -108,7 +108,32 @@ export const FilterQuery = ({ value }: any) => {
 
     searchParams.delete(currentType);
 
-    if ([...searchParams]?.length == 1) {
+    // Check if there are any meaningful filters left after removal
+    const meaningfulFilterParams = [
+      "type",
+      "tag",
+      "query",
+      "term",
+      "relationshipName",
+      "entityFilters",
+      "tagFilters",
+      "relationshipFilters",
+      "excludeST",
+      "excludeSC",
+      "includeDE"
+    ];
+
+    const hasMeaningfulFilters = meaningfulFilterParams.some((param) =>
+      searchParams.has(param)
+    );
+
+    // If no meaningful filters remain, navigate to clear all (like Clear button)
+    if (!hasMeaningfulFilters) {
+      navigate({
+        pathname: "/search"
+      });
+    } else if ([...searchParams]?.length <= 1) {
+      // Only searchType or other system params remain
       navigate({
         pathname: "/search"
       });
@@ -438,6 +463,11 @@ export const FilterQuery = ({ value }: any) => {
     );
 
     queryArray.push(<div className="group">{queryIncludeDE}</div>);
+  }
+
+  // If no filters to display, return null (don't show empty parentheses)
+  if (queryArray.length === 0) {
+    return null;
   }
 
   return (

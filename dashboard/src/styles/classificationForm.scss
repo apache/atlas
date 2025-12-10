@@ -22,3 +22,16 @@
 .classification-form-editor .ql-container {
   min-height: 90px !important;
 }
+
+/* Prevent duplicate toolbars in ReactQuill */
+.classification-form-editor .ql-toolbar:not(:first-of-type) {
+  display: none !important;
+}
+
+.classification-form-editor .ql-toolbar {
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  box-sizing: border-box;
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  padding: 8px;
+}

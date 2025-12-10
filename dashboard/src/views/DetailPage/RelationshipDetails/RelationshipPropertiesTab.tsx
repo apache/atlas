@@ -190,13 +190,20 @@ const RelationshipPropertiesTab = (props: {
                             spacing={4}
                             marginBottom={1}
                             marginTop={1}
+                            sx={{
+                              flexWrap: "nowrap",
+                              alignItems: "flex-start"
+                            }}
                           >
                             <div
                               style={{
-                                flex: 1,
-                                wordBreak: "break-all",
+                                flexBasis: "30%",
+                                flexShrink: 0,
+                                minWidth: "120px",
+                                wordBreak: "break-word",
                                 textAlign: "left",
-                                fontWeight: "600"
+                                fontWeight: "600",
+                                paddingRight: "16px"
                               }}
                             >
                               {`${keys} ${
@@ -205,8 +212,9 @@ const RelationshipPropertiesTab = (props: {
                             </div>
                             <div
                               style={{
-                                // flex: 1,
-                                wordBreak: "break-all",
+                                flex: 1,
+                                minWidth: 0,
+                                wordBreak: "break-word",
                                 textAlign: "left"
                               }}
                             >
@@ -242,7 +250,7 @@ const RelationshipPropertiesTab = (props: {
             </AccordionSummary>
             <AccordionDetails>
               {" "}
-              {!isEmpty(end1)
+              {!isEmpty(end2)
                 ? Object.entries(end2)
                     .sort()
                     .map(([keys, value]: [string, any]) => {
@@ -253,13 +261,20 @@ const RelationshipPropertiesTab = (props: {
                             spacing={4}
                             marginBottom={1}
                             marginTop={1}
+                            sx={{
+                              flexWrap: "nowrap",
+                              alignItems: "flex-start"
+                            }}
                           >
                             <div
                               style={{
-                                flex: 1,
-                                wordBreak: "break-all",
+                                flexBasis: "30%",
+                                flexShrink: 0,
+                                minWidth: "120px",
+                                wordBreak: "break-word",
                                 textAlign: "left",
-                                fontWeight: "600"
+                                fontWeight: "600",
+                                paddingRight: "16px"
                               }}
                             >
                               {`${keys} ${
@@ -268,8 +283,9 @@ const RelationshipPropertiesTab = (props: {
                             </div>
                             <div
                               style={{
-                                // flex: 1,
-                                wordBreak: "break-all",
+                                flex: 1,
+                                minWidth: 0,
+                                wordBreak: "break-word",
                                 textAlign: "left"
                               }}
                             >

@@ -448,7 +448,6 @@ const BusinessMetaDataForm = ({
                               {alignment == "formatted" ? (
                                 <div style={{ position: "relative" }}>
                                   <ReactQuill
-                                    {...field}
                                     theme="snow"
                                     placeholder={"Description required"}
                                     onChange={(text) => {
@@ -456,6 +455,7 @@ const BusinessMetaDataForm = ({
                                       setValue("description", text);
                                     }}
                                     className="classification-form-editor"
+                                    value={field.value || ""}
                                   />
                                 </div>
                               ) : (

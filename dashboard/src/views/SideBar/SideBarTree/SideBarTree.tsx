@@ -61,6 +61,8 @@ import {
 
 import Stack from "@mui/material/Stack";
 import { globalSearchFilterInitialQuery, isEmpty } from "@utils/Utils";
+import { attributeFilter } from "@utils/CommonViewFunction";
+import { cloneDeep } from "@utils/Helper";
 import LaunchOutlinedIcon from "@mui/icons-material/LaunchOutlined";
 import { getGlossaryImportTmpl } from "@api/apiMethods/glossaryApiMethod";
 import { toast } from "react-toastify";
@@ -593,12 +595,13 @@ const BarTreeView: FC<{
         break;
     }
 
-    searchParams.delete("attributes");
-    searchParams.delete("entityFilters");
-    searchParams.delete("tagFilters");
-    searchParams.delete("relationshipFilters");
-    // Always reset pagination defaults on tree navigation
+    // Note: Don't delete filters here for CustomFilters - they will be set by setCustomFiltersSearchParams
     if (treeName !== "CustomFilters") {
+      searchParams.delete("attributes");
+      searchParams.delete("entityFilters");
+      searchParams.delete("tagFilters");
+      searchParams.delete("relationshipFilters");
+      // Always reset pagination defaults on tree navigation
       searchParams.set("pageLimit", "25");
       searchParams.set("pageOffset", "0");
     }
@@ -633,6 +636,7 @@ const BarTreeView: FC<{
     searchParams: URLSearchParams,
     savedSearchData: any[]
   ) => {
+    // Clear all existing params except searchType
     const keys = Array.from(searchParams.keys());
     for (let i = 0; i < keys.length; i++) {
       if (keys[i] !== "searchType") {
@@ -640,17 +644,136 @@ const BarTreeView: FC<{
       }
     }
 
+    // Clear globalSearchFilterInitialQuery when applying new saved search
+    globalSearchFilterInitialQuery.setQuery({});
+
     if (treeName === "CustomFilters") {
       const params = savedSearchData.find((obj) => obj.name === node.id);
-      for (const key in params?.searchParameters) {
-        if (shouldSetCustomFilterParam(node, key)) {
-          setCustomFilterParam(searchParams, key, params.searchParameters[key]);
+      if (params) {
+        const searchParamsObj = params?.searchParameters || {};
+        
+        // Step 1: Set searchType based on saved search type
+        if (params.searchType) {
+          const searchTypeValue = params.searchType.toLowerCase() === "advanced" ? "advanced" : "basic";
+          searchParams.set("searchType", searchTypeValue);
         }
+        
+        // Step 2: Apply basic search parameters (excluding filters which are handled separately)
+        for (const key in searchParamsObj) {
+          if (shouldSetCustomFilterParam(node, key) && 
+              !["entityFilters", "tagFilters", "relationshipFilters"].includes(key)) {
+            setCustomFilterParam(searchParams, key, searchParamsObj[key]);
+          }
+        }
+        
+        // Step 3: Convert and apply entityFilters from API format to URL string format
+        if (searchParamsObj.entityFilters && !isEmpty(searchParamsObj.entityFilters)) {
+          const clonedFilter = cloneDeep(searchParamsObj.entityFilters);
+          const ruleUrl = attributeFilter.generateUrl({
+            value: clonedFilter,
+            formatedDateToLong: true
+          });
+          
+          if (ruleUrl && !isEmpty(ruleUrl) && typeof ruleUrl === "string") {
+            searchParams.set("entityFilters", ruleUrl);
+            
+            // Convert API format to query builder format for Filters component UI
+            const qbFilter = convertApiToQueryBuilder(searchParamsObj.entityFilters);
+            if (qbFilter && (qbFilter.rules || qbFilter.combinator)) {
+              globalSearchFilterInitialQuery.setQuery({ 
+                entityFilters: qbFilter 
+              });
+            }
+          }
+        }
+        
+        // Step 4: Convert and apply tagFilters from API format to URL string format
+        if (searchParamsObj.tagFilters && !isEmpty(searchParamsObj.tagFilters)) {
+          const clonedFilter = cloneDeep(searchParamsObj.tagFilters);
+          const ruleUrl = attributeFilter.generateUrl({
+            value: clonedFilter,
+            formatedDateToLong: true
+          });
+          
+          if (ruleUrl && !isEmpty(ruleUrl) && typeof ruleUrl === "string") {
+            searchParams.set("tagFilters", ruleUrl);
+            
+            // Convert API format to query builder format for Filters component UI
+            const qbFilter = convertApiToQueryBuilder(searchParamsObj.tagFilters);
+            if (qbFilter && (qbFilter.rules || qbFilter.combinator)) {
+              globalSearchFilterInitialQuery.setQuery({ 
+                tagFilters: qbFilter 
+              });
+            }
+          }
+        }
+        
+        // Step 5: Convert and apply relationshipFilters from API format to URL string format
+        if (searchParamsObj.relationshipFilters && !isEmpty(searchParamsObj.relationshipFilters)) {
+          const clonedFilter = cloneDeep(searchParamsObj.relationshipFilters);
+          const ruleUrl = attributeFilter.generateUrl({
+            value: clonedFilter,
+            formatedDateToLong: true
+          });
+          
+          if (ruleUrl && !isEmpty(ruleUrl) && typeof ruleUrl === "string") {
+            searchParams.set("relationshipFilters", ruleUrl);
+            
+            // Convert API format to query builder format for Filters component UI
+            const qbFilter = convertApiToQueryBuilder(searchParamsObj.relationshipFilters);
+            if (qbFilter && (qbFilter.rules || qbFilter.combinator)) {
+              globalSearchFilterInitialQuery.setQuery({ 
+                relationshipFilters: qbFilter 
+              });
+            }
+          }
+        }
+        
+        searchParams.set("isCF", "true");
       }
-      searchParams.set("isCF", "true");
     } else {
       searchParams.set("relationshipName", node.id);
     }
+  };
+  
+  // Helper function to convert API format filter (criterion/condition) to query builder format (rules/combinator)
+  const convertApiToQueryBuilder = (apiFilter: any): any => {
+    if (!apiFilter || typeof apiFilter !== "object") {
+      return null;
+    }
+    
+    const result: any = {};
+    
+    // Convert condition to combinator
+    if (apiFilter.condition) {
+      result.combinator = apiFilter.condition.toLowerCase();
+    } else {
+      result.combinator = "and"; // default
+    }
+    
+    // Convert criterion to rules
+    if (apiFilter.criterion && Array.isArray(apiFilter.criterion)) {
+      result.rules = apiFilter.criterion.map((rule: any) => {
+        // If nested condition, recurse
+        if (rule.condition || rule.criterion) {
+          return convertApiToQueryBuilder(rule);
+        }
+        // Convert API rule format to query builder format
+        return {
+          field: rule.attributeName || rule.id,
+          operator: rule.operator,
+          value: rule.attributeValue || rule.value,
+          type: rule.type || rule.attributeType
+        };
+      });
+    } else if (apiFilter.rules && Array.isArray(apiFilter.rules)) {
+      // Already in query builder format
+      result.rules = apiFilter.rules.map((rule: any) => 
+        rule.condition || rule.criterion ? convertApiToQueryBuilder(rule) : rule
+      );
+    }
+    
+    return Object.keys(result).length > 0 ? result : null;
   };
 
   const shouldSetCustomFilterParam = (node: TreeNode, key: string) => {
@@ -673,7 +796,11 @@ const BarTreeView: FC<{
       searchParams.set("pageOffset", value);
     } else if (key === "typeName") {
       searchParams.set("type", value);
-    } else {
+    } else if (key === "classification") {
+      // Map classification to tag parameter for URL (matching classic UI)
+      searchParams.set("tag", value);
+    } else if (value !== null && value !== undefined && value !== "") {
+      // Only set parameter if value is not null, undefined, or empty string
       searchParams.set(key, value);
     }
   };
