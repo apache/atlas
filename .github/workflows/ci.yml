@@ -34,9 +34,13 @@ env:
 
 jobs:
   docker-build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     timeout-minutes: 3600
     steps:
+      - name: check docker containers
+        run: docker ps -aq
+      - name: Check disk usage
+        run: df -h
       - uses: actions/checkout@v4
       - name: Check disk usage
         run: df -h
@@ -56,7 +60,8 @@ jobs:
           mkdir -p ~/.m2/repository
           chmod -R 777 ~/.m2
           chmod -R 777 ./
-      
+      - name: Check disk usage
+        run: df -h      
       - name: Set up JDK 8
         uses: actions/setup-java@v4
         with:
@@ -65,7 +70,8 @@ jobs:
 
       - name: Clean up Docker space
         run: docker system prune --all --force --volumes
-
+      - name: Check disk usage
+        run: df -h
       - name: Build Atlas - JDK 8
         run: |
           cd dev-support/atlas-docker
@@ -81,7 +87,8 @@ jobs:
             echo "atlas-build container failed with exit code $EXIT_CODE."
             exit 1
           fi
-
+      - name: Check disk usage
+        run: df -h
       - name: Upload Code Coverage Results
         uses: actions/upload-artifact@v4
         with:
