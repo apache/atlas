@@ -4204,8 +4204,7 @@ public class EntityGraphMapper {
                     RequestContext.get().addAddedClassificationAndVertices(classification, new ArrayList<>(vertices));
                 } else {
                     List<AtlasEntity> propagatedEntities = updateClassificationText(classification, vertices);
-
-                    entityChangeNotifier.onClassificationsAddedToEntitiesV2(vertices, Collections.singletonList(classification), false, RequestContext.get());
+                    entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification), false);
                 }
             }
 
