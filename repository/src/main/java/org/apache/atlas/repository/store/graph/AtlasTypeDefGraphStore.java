@@ -57,6 +57,7 @@ import static org.apache.atlas.model.discovery.SearchParameters.ALL_ENTITY_TYPES
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_CLASSIFICATION_TYPES;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_BUILTIN_TYPES;
 import static org.apache.atlas.repository.Constants.LEAN_GRAPH_ENABLED;
+import static org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertexService.VERTEX_CORE_PROPERTIES;
 import static org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer.getTypesToCreate;
 import static org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer.getTypesToUpdate;
 
@@ -851,7 +852,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         if (LEAN_GRAPH_ENABLED) {
             AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("updateLeanGraphRegistry");
             try {
-                //updateCoreRegistryForLeanGraph(typeRegistry); // Coming soon for uniqueness constraint support in https://atlanhq.atlassian.net/browse/MLH-1890
+                updateCoreRegistryForLeanGraph(typeRegistry);
                 enrichESAttributes(typeRegistry);
             } finally {
                 RequestContext.get().endMetricRecord(recorder);
@@ -859,7 +860,21 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         }
     }
 
-    private static void enrichESAttributes(AtlasTypeRegistry typeRegistry) {
+    private void updateCoreRegistryForLeanGraph(AtlasTypeRegistry typeRegistry) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("updateCoreRegistryForLeanGraph");
+        try {
+            Set<String> uniqueProperties = typeRegistry.getAllEntityTypes().stream()
+                    .flatMap(entityType ->
+                            entityType.getUniqAttributes().values().stream()
+                                    .map(AtlasStructType.AtlasAttribute::getVertexUniquePropertyName)
+                    ).collect(Collectors.toSet());
+            VERTEX_CORE_PROPERTIES.addAll(uniqueProperties);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    private void enrichESAttributes(AtlasTypeRegistry typeRegistry) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("enrichESAttributes");
         try {
             List<AtlasEntityType> allEntityTypes = typeRegistry.getAllTypes().stream()

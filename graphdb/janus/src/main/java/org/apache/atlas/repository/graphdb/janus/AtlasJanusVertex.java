@@ -46,6 +46,7 @@ import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.util.encoding.LongEncoding;
 
 import static org.apache.atlas.repository.Constants.LEAN_GRAPH_ENABLED;
+import static org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertexService.VERTEX_CORE_PROPERTIES;
 import static org.apache.atlas.repository.graphdb.janus.cassandra.ESConnector.JG_ES_DOC_ID_PREFIX;
 
 /**

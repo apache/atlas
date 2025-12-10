@@ -14,8 +14,10 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Main entry point for the batch vertex retrieval system.
@@ -31,6 +33,8 @@ public class DynamicVertexService {
 
     private static final int defaultBatchSize = AtlasConfiguration.ATLAS_CASSANDRA_BATCH_SIZE.getInt();
 
+    public final static Set<String> VERTEX_CORE_PROPERTIES = new HashSet<>();
+
     /**
      * Creates a new BatchVertexRetrievalService with custom configuration.
      *
@@ -40,6 +44,12 @@ public class DynamicVertexService {
     public DynamicVertexService(CqlSession session) {
         this.repository = new CassandraVertexDataRepository(session);
         this.serializer = new JacksonVertexSerializer();
+
+        VERTEX_CORE_PROPERTIES.add("__guid");
+        VERTEX_CORE_PROPERTIES.add("__state");
+        VERTEX_CORE_PROPERTIES.add("__typeName");
+        VERTEX_CORE_PROPERTIES.add("qualifiedName");
+        VERTEX_CORE_PROPERTIES.add("__u_qualifiedName");
     }
 
     /**
