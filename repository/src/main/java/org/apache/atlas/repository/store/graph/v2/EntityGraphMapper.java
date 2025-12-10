@@ -359,8 +359,7 @@ public class EntityGraphMapper {
 
         if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore())) {
             restoreHandlerV1.restoreEntities(context.getEntitiesToRestore());
-            for (AtlasVertex vertexToRestore : context.getEntitiesToRestore()) {
-                AtlasEntityHeader restoredEntity = reqContext.getRestoredEntity(GraphHelper.getGuid(vertexToRestore));
+            for (AtlasEntityHeader restoredEntity : reqContext.getRestoredEntities()) {
                 if (restoredEntity == null) {
                     continue;
                 }
@@ -376,7 +375,7 @@ public class EntityGraphMapper {
                 diffEntity.setUpdatedBy(RequestContext.get().getUser());
                 diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
                 diffEntity.setAttribute(STATE_PROPERTY_KEY, ACTIVE.name());
-                reqContext.cacheDifferentialEntity(diffEntity, vertexToRestore);
+                reqContext.cacheDifferentialEntity(diffEntity, reqContext.getRestoredVertex(restoredEntity.getGuid()));
 
                 resp.addEntity(UPDATE, restoredEntity);
             }
