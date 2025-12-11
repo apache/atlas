@@ -34,7 +34,7 @@ env:
 
 jobs:
   docker-build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 3600
     steps:
       - name: check docker containers
@@ -116,7 +116,6 @@ jobs:
           cd dev-support/atlas-docker
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
-          docker compose -f docker-compose.atlas-base.yml build 
           docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml -f docker-compose.atlas-hive.yml up -d --wait
 
       - name: Check status of containers and remove them
