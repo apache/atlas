@@ -116,8 +116,10 @@ jobs:
           cd dev-support/atlas-docker
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
-          docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml -f docker-compose.atlas-hive.yml up -d --wait
-
+          export ATLAS_BACKEND=postgres
+          docker compose -f docker-compose.atlas.yml up -d --wait
+      - name: Check disk usage
+        run: df -h
       - name: Check status of containers and remove them
         run: |
           containers=(atlas-zk atlas-solr atlas-kafka atlas-db atlas-hadoop atlas-hbase atlas-hive atlas);
