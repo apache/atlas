@@ -2995,6 +2995,12 @@ public class EntityGraphMapper {
                     . map(x -> x.getProperty(NAME,String.class))
                     .collect(Collectors.toList());
 
+            // Extract qualified names of deleted meanings for removal from __meanings
+            List<String> deletedMeaningsQNames = deletedElements.stream()
+                    .map(x -> x.getOutVertex())
+                    .map(x -> x.getProperty(QUALIFIED_NAME, String.class))
+                    .collect(Collectors.toList());
+
             List<String> newMeaningsNames = meanings.stream()
                     .filter(x -> !currentMeaningsQNames.contains(x.getProperty(QUALIFIED_NAME,String.class)))
                     .map(x -> x.getProperty(NAME, String.class))
@@ -3003,30 +3009,69 @@ public class EntityGraphMapper {
             if (!isAppend){
                 ctx.getReferringVertex().removeProperty(MEANINGS_PROPERTY_KEY);
                 ctx.getReferringVertex().removeProperty(MEANINGS_TEXT_PROPERTY_KEY);
+                ctx.getReferringVertex().removeProperty(MEANING_NAMES_PROPERTY_KEY);
             }
 
             if (CollectionUtils.isNotEmpty(qNames)) {
                 qNames.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(ctx.getReferringVertex(), MEANINGS_PROPERTY_KEY, q));
             }
 
-            if (CollectionUtils.isNotEmpty(names)) {
-                AtlasGraphUtilsV2.setEncodedProperty(ctx.referringVertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(names, ","));
+            // Remove deleted meanings from __meanings when in append mode
+            if (isAppend && CollectionUtils.isNotEmpty(deletedMeaningsQNames)) {
+                LOG.info("Removing {} deleted meanings from vertex {}", deletedMeaningsQNames.size(), ctx.getReferringVertex().getId());
+                deletedMeaningsQNames.forEach(q -> AtlasGraphUtilsV2.removeItemFromListPropertyValue(ctx.getReferringVertex(), MEANINGS_PROPERTY_KEY, q));
             }
 
-            if (CollectionUtils.isNotEmpty(newMeaningsNames)) {
-                newMeaningsNames.forEach(q -> AtlasGraphUtilsV2.addListProperty(ctx.getReferringVertex(), MEANING_NAMES_PROPERTY_KEY, q, true));
-            }
-
-            if(createdElements.isEmpty()){
-                ctx.getReferringVertex().removeProperty(MEANING_NAMES_PROPERTY_KEY);
-
-            } else if (CollectionUtils.isNotEmpty(deletedMeaningsNames)) {
-                deletedMeaningsNames.forEach(q -> AtlasGraphUtilsV2.removeItemFromListPropertyValue(ctx.getReferringVertex(), MEANING_NAMES_PROPERTY_KEY, q));
-
+            // Update __meaningsText based on final state
+            updateMeaningsTextProperty(ctx, isAppend, names, deletedMeaningsNames, qNames, deletedMeaningsQNames);
+            
+            // Update __meaningNames based on mode
+            if (!isAppend) {
+                // Full replace mode: add all names (already cleared above)
+                if (CollectionUtils.isNotEmpty(names)) {
+                    names.forEach(name -> AtlasGraphUtilsV2.addListProperty(ctx.getReferringVertex(), MEANING_NAMES_PROPERTY_KEY, name, true));
+                }
+            } else {
+                // Append mode: add only new names
+                if (CollectionUtils.isNotEmpty(newMeaningsNames)) {
+                    newMeaningsNames.forEach(name -> AtlasGraphUtilsV2.addListProperty(ctx.getReferringVertex(), MEANING_NAMES_PROPERTY_KEY, name, true));
+                }
+                
+                // Remove deleted names in append mode
+                if (CollectionUtils.isNotEmpty(deletedMeaningsNames)) {
+                    deletedMeaningsNames.forEach(name -> AtlasGraphUtilsV2.removeItemFromListPropertyValue(ctx.getReferringVertex(), MEANING_NAMES_PROPERTY_KEY, name));
+                }
+                
+                // Remove-only operation: clear property if no meanings remain
+                if (createdElements.isEmpty() && CollectionUtils.isNotEmpty(deletedElements)) {
+                    List<String> remainingMeanings = ctx.getReferringVertex().getMultiValuedProperty(MEANINGS_PROPERTY_KEY, String.class);
+                    if (CollectionUtils.isEmpty(remainingMeanings)) {
+                        ctx.getReferringVertex().removeProperty(MEANING_NAMES_PROPERTY_KEY);
+                    }
+                }
             }
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
+    }
+
+    /**
+     * Updates the __meaningsText property on the referring vertex based on the meanings changes.
+     * This method delegates to {@link MeaningsTextPropertyUpdater} for the actual implementation.
+     *
+     * @param ctx                      The attribute mutation context containing the referring vertex
+     * @param isAppend                 Whether the operation is in append mode or full replace mode
+     * @param newMeaningNames          List of names of newly added meanings
+     * @param deletedMeaningsNames     List of names of deleted meanings
+     * @param newMeaningsQNames        Set of qualified names of newly added meanings
+     * @param deletedMeaningsQNames    List of qualified names of deleted meanings
+     */
+    @VisibleForTesting
+    void updateMeaningsTextProperty(AttributeMutationContext ctx, boolean isAppend,
+                                           List<String> newMeaningNames, List<String> deletedMeaningsNames,
+                                           Set<String> newMeaningsQNames, List<String> deletedMeaningsQNames) {
+        new MeaningsTextPropertyUpdater().update(ctx, isAppend, newMeaningNames, deletedMeaningsNames, 
+                                                  newMeaningsQNames, deletedMeaningsQNames);
     }
 
     private void verifyMeaningsAuthorization(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements, List<Object> currentElements) throws AtlasBaseException {
