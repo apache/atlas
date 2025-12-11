@@ -34,11 +34,15 @@ env:
 
 jobs:
   docker-build:
-    runs-on: ubuntu-22.04-16core
+    runs-on: ubuntu-22.04
     timeout-minutes: 3600
     steps:
       - name: check docker containers
         run: docker ps -aq
+      - name: Check disk usage
+        run: df -h
+      - name: Delete huge unnecessary tools folder
+        run: rm -rf /opt/hostedtoolcache
       - name: Check disk usage
         run: df -h
       - uses: actions/checkout@v4
