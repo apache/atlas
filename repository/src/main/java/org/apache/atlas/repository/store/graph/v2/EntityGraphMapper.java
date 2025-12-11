@@ -3021,11 +3021,8 @@ public class EntityGraphMapper {
                 LOG.info("Removing {} deleted meanings from vertex {}", deletedMeaningsQNames.size(), ctx.getReferringVertex().getId());
                 deletedMeaningsQNames.forEach(q -> AtlasGraphUtilsV2.removeItemFromListPropertyValue(ctx.getReferringVertex(), MEANINGS_PROPERTY_KEY, q));
             }
-
-            // Update __meaningsText based on final state
-            updateMeaningsTextProperty(ctx, isAppend, names, deletedMeaningsNames, qNames, deletedMeaningsQNames);
             
-            // Update __meaningNames based on mode
+            // Update __meaningNames based on mode (must be done BEFORE updating __meaningsText)
             if (!isAppend) {
                 // Full replace mode: add all names (already cleared above)
                 if (CollectionUtils.isNotEmpty(names)) {
@@ -3050,6 +3047,9 @@ public class EntityGraphMapper {
                     }
                 }
             }
+
+            // Update __meaningsText based on final state (must be done AFTER __meaningNames is updated)
+            updateMeaningsTextProperty(ctx, isAppend, names, deletedMeaningsNames, qNames, deletedMeaningsQNames);
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
