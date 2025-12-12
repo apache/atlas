@@ -352,7 +352,8 @@ const TableLayout: FC<TableProps> = ({
   isClientSidePagination,
   isEmptyData,
   setIsEmptyData,
-  showGoToPage
+  showGoToPage,
+  customLeftButton
 }) => {
   let defaultHideColumns = { ...defaultColumnVisibility };
   const location = useLocation();
@@ -550,6 +551,7 @@ const TableLayout: FC<TableProps> = ({
                   setUpdateTable={setUpdateTable}
                   getSelectedRowModel={getSelectedRowModel}
                   memoizedData={memoizedData}
+                  customLeftButton={customLeftButton}
                 />
               )}
               {isfilterQuery && <Divider />}

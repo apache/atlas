@@ -277,14 +277,12 @@ const TreeNodeIcons = (props: {
             onClick={(_e) => {
               if (treeName == "Classifications") {
                 const searchParams = new URLSearchParams();
-                searchParams.set(
-                  "tag",
-                  node.types == "child" ? node.label : node.nodeName
-                );
+                const classificationName = node.label
+                  ? node.label.split(" (")[0]
+                  : node.nodeName || node.id;
+                searchParams.set("tag", classificationName);
                 navigate({
-                  pathname: `/tag/tagAttribute/${
-                    node.types == "child" ? node.label : node.nodeName
-                  }`,
+                  pathname: `/tag/tagAttribute/${classificationName}`,
                   search: searchParams.toString()
                 });
                 setExpandNode(null);
@@ -380,9 +378,20 @@ const TreeNodeIcons = (props: {
               const searchParams = new URLSearchParams();
               searchParams.set("searchType", "basic");
               if (treeName == "Classifications") {
-                searchParams.set("tag", node.nodeName || node.id);
+                let classificationName: string;
+                if (node.label) {
+                  classificationName = node.label.split(" (")[0];
+                } else if (node.nodeName) {
+                  classificationName = node.nodeName;
+                } else {
+                  classificationName = node.id;
+                }
+                searchParams.set("tag", classificationName);
               } else if (treeName == "Glossary") {
-                searchParams.set("term", node.id);
+                const termValue = node.types == "child" && node.parent
+                  ? `${node.id}@${node.parent}`
+                  : node.id;
+                searchParams.set("term", termValue);
               }
               navigate({
                 pathname: "/search/searchResult",

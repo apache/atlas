@@ -104,7 +104,8 @@ export const TableFilter = ({
   columnVisibilityParams,
   setUpdateTable,
   getSelectedRowModel,
-  memoizedData
+  memoizedData,
+  customLeftButton
 }: any) => {
   const [open, setOpen] = useState<null | HTMLElement>(null);
   const location = useLocation();
@@ -299,6 +300,7 @@ export const TableFilter = ({
     <>
       <Stack direction="row" justifyContent={"space-between"}>
         <Stack direction="row" spacing={1}>
+          {customLeftButton}
           {allTableFilters && (
             <CustomButton
               variant="outlined"
