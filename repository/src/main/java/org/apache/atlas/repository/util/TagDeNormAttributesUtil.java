@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
@@ -81,15 +82,15 @@ public class TagDeNormAttributesUtil {
             String deletedTagEntityGuid = tagDeleted.getEntityGuid();
             
             List<AtlasClassification> remainingTags = currentTags.stream()
-                    .filter(tag -> !(deletedTagTypeName.equals(tag.getTypeName()) && 
-                                     deletedTagEntityGuid.equals(tag.getEntityGuid())))
+                    .filter(tag -> !(Objects.equals(deletedTagTypeName, tag.getTypeName()) && 
+                                     Objects.equals(deletedTagEntityGuid, tag.getEntityGuid())))
                     .collect(Collectors.toList());
 
             deNormAttrs.put(CLASSIFICATION_TEXT_KEY, getClassificationTextKey(remainingTags, typeRegistry, fullTextMapperV2));
 
             //filter direct attachments
             List<String> directTraits = remainingTags.stream()
-                    .filter(tag -> deletedTagEntityGuid.equals(tag.getEntityGuid()))
+                    .filter(tag -> Objects.equals(deletedTagEntityGuid, tag.getEntityGuid()))
                     .map(AtlasStruct::getTypeName)
                     .collect(Collectors.toList());
             deNormAttrs.put(CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(directTraits));
