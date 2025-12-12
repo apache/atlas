@@ -56,4 +56,5 @@ export interface TableProps {
   isEmptyData?: boolean;
   setIsEmptyData?: React.Dispatch<React.SetStateAction<boolean>>;
   showGoToPage?: boolean;
+  customLeftButton?: React.ReactNode;
 }

@@ -83,7 +83,7 @@ let defaultColumnsName: Array<string> = [
   "term"
 ];
 
-const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
+const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }: any) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchData, setSearchData] = useState<any>([]);
   const [loader, setLoader] = useState(true);
@@ -947,7 +947,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
         showPagination={true}
         showRowSelection={!isDslAggregate}
         // showRowSelection={true}
-        tableFilters={true}
+        tableFilters={!hideFilters}
         assignFilters={
           !isEmpty(classificationParams || glossaryTypeParams)
             ? {
@@ -956,10 +956,10 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
               }
             : null
         }
-        queryBuilder={true}
-        allTableFilters={true}
+        queryBuilder={!hideFilters}
+        allTableFilters={!hideFilters}
         setUpdateTable={setUpdateTable}
-        isfilterQuery={true}
+        isfilterQuery={!hideFilters}
         isEmptyData={isEmptyData}
         setIsEmptyData={setIsEmptyData}
         showGoToPage={true}
