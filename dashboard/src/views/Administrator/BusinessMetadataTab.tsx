@@ -197,29 +197,7 @@ const BusinessMetadataTab = ({ setForm, setBMAttribute }: any) => {
 
   return (
     <Stack direction="column">
-      <Stack padding={2} position="relative">
-        <div style={{ height: "0" }}>
-          <CustomButton
-            variant="contained"
-            sx={{
-              position: "absolute",
-              marginTop: "13px",
-              marginLeft: "13px",
-              left: "16px"
-            }}
-            size="small"
-            onClick={(_e: any) => {
-              setForm(true);
-              setBMAttribute({});
-              dispatchState(setEditBMAttribute({}));
-            }}
-            startIcon={<AddIcon fontSize="small" />}
-            data-cy="createBusinessMetadata"
-          >
-            Create Business Metadata
-          </CustomButton>
-        </div>
-
+      <Stack padding={2}>
         <TableLayout
           data={businessMetadataDefs || []}
           columns={defaultColumns}
@@ -233,6 +211,21 @@ const BusinessMetadataTab = ({ setForm, setBMAttribute }: any) => {
           showRowSelection={false}
           tableFilters={true}
           expandRow={true}
+          customLeftButton={
+            <CustomButton
+              variant="contained"
+              size="small"
+              onClick={(_e: any) => {
+                setForm(true);
+                setBMAttribute({});
+                dispatchState(setEditBMAttribute({}));
+              }}
+              startIcon={<AddIcon fontSize="small" />}
+              data-cy="createBusinessMetadata"
+            >
+              Create Business Metadata
+            </CustomButton>
+          }
           auditTableDetails={{
             Component: BusinessMetadataAtrribute,
             componentProps: {

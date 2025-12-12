@@ -595,15 +595,13 @@ const BarTreeView: FC<{
         break;
     }
 
-    // Note: Don't delete filters here for CustomFilters - they will be set by setCustomFiltersSearchParams
     if (treeName !== "CustomFilters") {
-      searchParams.delete("attributes");
-      searchParams.delete("entityFilters");
-      searchParams.delete("tagFilters");
-      searchParams.delete("relationshipFilters");
-      // Always reset pagination defaults on tree navigation
-      searchParams.set("pageLimit", "25");
-      searchParams.set("pageOffset", "0");
+    searchParams.delete("attributes");
+    searchParams.delete("entityFilters");
+    searchParams.delete("tagFilters");
+    searchParams.delete("relationshipFilters");
+    searchParams.set("pageLimit", "25");
+    searchParams.set("pageOffset", "0");
     }
   };
 
@@ -654,7 +652,7 @@ const BarTreeView: FC<{
         
         // Step 1: Set searchType based on saved search type
         if (params.searchType) {
-          const searchTypeValue = params.searchType.toLowerCase() === "advanced" ? "advanced" : "basic";
+          const searchTypeValue = params.searchType === "ADVANCED" ? "dsl" : "basic";
           searchParams.set("searchType", searchTypeValue);
         }
         
@@ -729,7 +727,7 @@ const BarTreeView: FC<{
           }
         }
         
-        searchParams.set("isCF", "true");
+      searchParams.set("isCF", "true");
       }
     } else {
       searchParams.set("relationshipName", node.id);

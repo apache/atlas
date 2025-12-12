@@ -142,7 +142,7 @@ const GlossaryDetailLayout = () => {
                 {(activeTab == undefined || activeTab === "entities") &&
                   !isEmpty(data) && (
                     <div style={{ padding: "16px" }}>
-                      <SearchResult glossaryTypeParams={qualifiedName} />
+                      <SearchResult glossaryTypeParams={qualifiedName} hideFilters={true} />
                     </div>
                   )}
                 {activeTab === "entitiesProperties" && (

@@ -56,7 +56,7 @@ const ClassificationDetailsLayout = () => {
         loading={loading}
         attributeDefs={attributeDefs}
       />
-      <SearchResult classificationParams={tagName} />
+      <SearchResult classificationParams={tagName} hideFilters={true} />
     </Stack>
   );
 };

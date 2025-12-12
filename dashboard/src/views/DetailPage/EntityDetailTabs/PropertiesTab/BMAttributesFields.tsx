@@ -140,20 +140,20 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
         defaultValue={""}
         render={({ field }) => {
           return (
-            <Stack gap="0.5rem">
-              <div style={{ position: "relative", flexBasis: "100%" }}>
-                {typeName == "string" ? (
-                  <ReactQuill
+          <Stack gap="0.5rem">
+            <div style={{ position: "relative", flexBasis: "100%" }}>
+              {typeName == "string" ? (
+                <ReactQuill
                     key={`quill-${index}-${name}`}
-                    theme="snow"
-                    placeholder={"Enter String"}
-                    onChange={(text) => {
-                      field.onChange(text);
-                    }}
-                    className="classification-form-editor"
-                    value={typeof field.value === "string" ? field.value : ""}
-                  />
-                ) : (
+                  theme="snow"
+                  placeholder={"Enter String"}
+                  onChange={(text) => {
+                    field.onChange(text);
+                  }}
+                  className="classification-form-editor"
+                  value={typeof field.value === "string" ? field.value : ""}
+                />
+              ) : (
                 <TextField
                   margin="none"
                   fullWidth
