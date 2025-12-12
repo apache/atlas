@@ -38,7 +38,8 @@ jobs:
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
-
+      - name: Delete huge unnecessary tools folder
+        run: rm -rf /opt/hostedtoolcache
       - name: Cache for maven dependencies
         uses: actions/cache@v4
         with:
