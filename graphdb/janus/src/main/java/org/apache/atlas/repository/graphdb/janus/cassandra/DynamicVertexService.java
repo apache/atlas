@@ -16,6 +16,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Main entry point for the batch vertex retrieval system.
@@ -30,6 +32,16 @@ public class DynamicVertexService {
     private final JacksonVertexSerializer serializer;
 
     private static final int defaultBatchSize = AtlasConfiguration.ATLAS_CASSANDRA_BATCH_SIZE.getInt();
+
+    public final static Set<String> VERTEX_CORE_PROPERTIES = ConcurrentHashMap.newKeySet();
+
+    static {
+        VERTEX_CORE_PROPERTIES.add("__guid");
+        VERTEX_CORE_PROPERTIES.add("__state");
+        VERTEX_CORE_PROPERTIES.add("__typeName");
+        VERTEX_CORE_PROPERTIES.add("qualifiedName");
+        VERTEX_CORE_PROPERTIES.add("__u_qualifiedName");
+    }
 
     /**
      * Creates a new BatchVertexRetrievalService with custom configuration.

@@ -51,10 +51,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_ENTITY_TYPES;
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_CLASSIFICATION_TYPES;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_BUILTIN_TYPES;
+import static org.apache.atlas.repository.Constants.LEAN_GRAPH_ENABLED;
+import static org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertexService.VERTEX_CORE_PROPERTIES;
 import static org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer.getTypesToCreate;
 import static org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer.getTypesToUpdate;
 
@@ -117,6 +120,10 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             commitUpdates = true;
         } finally {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
+
+            if (commitUpdates) {
+                updateLeanGraphRegistry();
+            }
 
             LOG.info("<== AtlasTypeDefGraphStore.init()");
         }
@@ -697,15 +704,31 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     }
 
     public void addTypesDefInCache(AtlasTypesDef typesDef) throws AtlasBaseException {
+        boolean commitUpdates = false;
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommitWithoutHook();
-        ttr.addTypes(typesDef);
-        typeRegistry.releaseTypeRegistryForUpdate(ttr, true);
+        try {
+            ttr.addTypes(typesDef);
+            commitUpdates = true;
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
+            if (commitUpdates) {
+                updateLeanGraphRegistry();
+            }
+        }
     }
 
     public void deleteTypesDefInCache(AtlasTypesDef typesDef) throws AtlasBaseException {
+        boolean commitUpdates = false;
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommitWithoutHook();
-        ttr.removeTypesDef(typesDef);
-        typeRegistry.releaseTypeRegistryForUpdate(ttr, true);
+        try {
+            ttr.removeTypesDef(typesDef);
+            commitUpdates = true;
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
+            if (commitUpdates) {
+                updateLeanGraphRegistry();
+            }
+        }
     }
 
 
@@ -814,6 +837,73 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         return ret;
     }
 
+    @Override
+    public void notifyLoadCompletion(){
+        for (TypeDefChangeListener changeListener : typeDefChangeListeners) {
+            try {
+                changeListener.onLoadCompletion();
+            } catch (Throwable t) {
+                LOG.error("OnLoadCompletion failed for listener {}", changeListener.getClass().getName(), t);
+            }
+        }
+    }
+
+    private void updateLeanGraphRegistry() {
+        if (LEAN_GRAPH_ENABLED) {
+            AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("updateLeanGraphRegistry");
+            try {
+                updateCoreRegistryForLeanGraph(typeRegistry);
+                enrichESAttributes(typeRegistry);
+            } finally {
+                RequestContext.get().endMetricRecord(recorder);
+            }
+        }
+    }
+
+    private void updateCoreRegistryForLeanGraph(AtlasTypeRegistry typeRegistry) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("updateCoreRegistryForLeanGraph");
+        try {
+            Set<String> uniqueProperties = typeRegistry.getAllEntityTypes().stream()
+                    .flatMap(entityType ->
+                            entityType.getUniqAttributes().values().stream()
+                                    .map(AtlasStructType.AtlasAttribute::getVertexUniquePropertyName)
+                    ).collect(Collectors.toSet());
+            VERTEX_CORE_PROPERTIES.addAll(uniqueProperties);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    private void enrichESAttributes(AtlasTypeRegistry typeRegistry) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("enrichESAttributes");
+        try {
+            List<AtlasEntityType> allEntityTypes = typeRegistry.getAllTypes().stream()
+                    .filter(x -> x instanceof AtlasEntityType)
+                    .map(x -> ((AtlasEntityType) x))
+                    .toList();
+            for (AtlasEntityType type : allEntityTypes) {
+                Set<String> eligibleAttributes = type.getAllAttributes().keySet().stream()
+                        .filter(x -> type.getAttribute(x).isSyncToESRequired())
+                        .map(x -> type.getAttribute(x).getName())
+                        .collect(Collectors.toSet());
+                if (type.getBusinessAttributes() != null) {
+                    Set<String> eligibleBMAttributes = type.getBusinessAttributes()
+                            .values()
+                            .stream()
+                            .flatMap(x -> x.values()
+                                    .stream()
+                                    .filter(y -> y.isSyncToESRequired())
+                                    .map(y -> y.getName()))
+                            .collect(Collectors.toSet());
+                    eligibleAttributes.addAll(eligibleBMAttributes);
+                }
+                type.setAttributesForESSync(eligibleAttributes);
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
     private AtlasBaseTypeDef getByNameNoAuthz(String name) throws AtlasBaseException {
         if (StringUtils.isBlank(name)) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, "", name);
@@ -916,7 +1006,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             }
         }
     }
-
 
     private void rectifyAttributesIfNeeded(final Set<String> entityNames, AtlasStructDef structDef) {
         List<AtlasAttributeDef> attributeDefs = structDef.getAttributeDefs();
@@ -1161,6 +1250,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, isSuccess);
 
             if (isSuccess) {
+                updateLeanGraphRegistry();
                 notifyListeners(ttr);
             }
 
@@ -1185,17 +1275,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             }
         }
 
-    }
-
-    @Override
-    public void notifyLoadCompletion(){
-        for (TypeDefChangeListener changeListener : typeDefChangeListeners) {
-            try {
-                changeListener.onLoadCompletion();
-            } catch (Throwable t) {
-                LOG.error("OnLoadCompletion failed for listener {}", changeListener.getClass().getName(), t);
-            }
-        }
     }
 
     private void tryUpdateByName(String name, AtlasBaseTypeDef typeDef, AtlasTransientTypeRegistry ttr) throws AtlasBaseException {

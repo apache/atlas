@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.atlas.repository.Constants.LEAN_GRAPH_ENABLED;
+import static org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertexService.VERTEX_CORE_PROPERTIES;
 import static org.apache.atlas.type.Constants.GUID_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.INTERNAL_PROPERTY_KEY_PREFIX;
 
@@ -59,20 +60,12 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
 
     private T element;
     protected AtlasJanusGraph graph;
-    protected final static Set<String> VERTEX_CORE_PROPERTIES = new HashSet<>();
-
     //excludeProperties: Getting key related issue while Migration mode when fetching few attributes from graph
     //This is dirty fix to ignore getting such attributes value from graph & return null explicitly
     private static final Set<String> excludeProperties = new HashSet<>();
     static {
         excludeProperties.add("replicatedTo");
         excludeProperties.add("replicatedFrom");
-
-        VERTEX_CORE_PROPERTIES.add("__guid");
-        VERTEX_CORE_PROPERTIES.add("__state");
-        VERTEX_CORE_PROPERTIES.add("__typeName");
-        VERTEX_CORE_PROPERTIES.add("qualifiedName");
-        VERTEX_CORE_PROPERTIES.add("__u_qualifiedName");
     }
 
     public AtlasJanusElement(AtlasJanusGraph graph, T element) {
