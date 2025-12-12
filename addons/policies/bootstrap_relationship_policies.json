@@ -290,6 +290,7 @@
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
+                "isPolicyEnabled": false,
                 "policyType": "allow",
                 "policyUsers":
                 [],

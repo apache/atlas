@@ -297,24 +297,6 @@
       "resources": [
         "relationship-type:*",
 
-        "end-one-entity-type:AtlasGlossary",
-        "end-one-entity-type:AtlasGlossaryTerm",
-        "end-one-entity-type:AtlasGlossaryCategory",
-        "end-one-entity-classification:*",
-        "end-one-entity:*{entity}",
-
-        "end-two-entity-type:*",
-        "end-two-entity-classification:*",
-        "end-two-entity:*"
-      ],
-      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
-    },
-    {
-      "policyType": "ACCESS",
-      "policyResourceCategory": "RELATIONSHIP",
-      "resources": [
-        "relationship-type:*",
-
         "end-one-entity-type:*",
         "end-one-entity-classification:*",
         "end-one-entity:*",
