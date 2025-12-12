@@ -17,18 +17,28 @@
  */
 package org.apache.atlas.repository.impexp;
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.impexp.ExportService.TraversalDirection;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import static org.apache.atlas.repository.impexp.ExportService.ExportContext;
@@ -39,6 +49,10 @@ import static org.apache.atlas.repository.impexp.ExportService.TraversalDirectio
 
 public class RelationshipAttributesExtractor implements ExtractStrategy {
     private static final Logger LOG = LoggerFactory.getLogger(RelationshipAttributesExtractor.class);
+
+    private static final String DISPLAY_NAME_PROPERTY = "Asset.__s_name";
+    private static final String RELATIONSHIP_GUID_PROPERTY = "_r__guid";
+    private static final String QUALIFIED_NAME_PROPERTY = "Referenceable.qualifiedName";
 
     private final AtlasTypeRegistry typeRegistry;
 
@@ -148,6 +162,93 @@ public class RelationshipAttributesExtractor implements ExtractStrategy {
             }
         }
 
+        String typeName = entity.getTypeName();
+        List<String> relatedTypes = checkForRelationshipTypes(typeName);
+        if (CollectionUtils.isNotEmpty(relatedTypes)) {
+            String alreadyPopulatedType = checkAlreadyPopulatedRelationshipType(entity);
+            relatedTypes.remove(alreadyPopulatedType);
+        }
+        String entityGuid = entity.getGuid();
+        List<AtlasRelatedObjectId> relatedObjectIdList = populateRelatedObjectIds(typeName, entityGuid, relatedTypes);
+        relatedObjectIds.addAll(relatedObjectIdList);
+        return relatedObjectIds;
+    }
+
+    private String checkAlreadyPopulatedRelationshipType(AtlasEntity entity) {
+        String typeName = entity.getTypeName();
+        String relationshipAttr;
+        try {
+            relationshipAttr = ApplicationProperties.get().getString("atlas.relationship.attr.for." + typeName);
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+        Object o = entity.getRelationshipAttribute(relationshipAttr);
+        String relatedTypeName = null;
+        if (o instanceof AtlasRelatedObjectId) {
+            AtlasRelatedObjectId relatedObjectId = (AtlasRelatedObjectId) o;
+            relatedTypeName = relatedObjectId.getTypeName();
+        } else if (o instanceof Collection) {
+            List<AtlasRelatedObjectId> relatedObjectIds = (List<AtlasRelatedObjectId>) o;
+            if (!CollectionUtils.isEmpty(relatedObjectIds)) {
+                relatedTypeName = relatedObjectIds.get(0).getTypeName();
+            }
+        }
+        return relatedTypeName;
+    }
+
+    private List<String> checkForRelationshipTypes(String typeName) {
+        List<String> relatedTypeList = null;
+        try {
+            String[] relatedTypes = ApplicationProperties.get().getStringArray("atlas.relationship.types.for." + typeName);
+            if (relatedTypes != null && relatedTypes.length > 0) {
+                relatedTypeList = new ArrayList<>();
+                for (String relatedType : relatedTypes) {
+                    relatedTypeList.add(relatedType);
+                }
+            }
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+        return relatedTypeList;
+    }
+
+    private List<AtlasRelatedObjectId> populateRelatedObjectIds(String typeName, String entityGuid, List<String> relatedTypes) {
+        List<AtlasRelatedObjectId> relatedObjectIds = new ArrayList<>();
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entityGuid);
+        if (CollectionUtils.isEmpty(relatedTypes)) {
+            return relatedObjectIds;
+        }
+        for (String relatedType : relatedTypes) {
+            String edgeLabel;
+            try {
+                edgeLabel = ApplicationProperties.get().getString("atlas.relationship.edge.label.between." + typeName + "." + relatedType);
+            } catch (AtlasException e) {
+                throw new RuntimeException(e);
+            }
+            Iterator<AtlasEdge> edges = GraphHelper.getIncomingEdgesByLabel(vertex, edgeLabel);
+            while (edges.hasNext()) {
+                AtlasEdge relationshipEdge = edges.next();
+                AtlasVertex relationshipVertex = relationshipEdge.getOutVertex();
+                AtlasRelatedObjectId relatedObjectId = new AtlasRelatedObjectId();
+                AtlasEntity.Status vertexStatus = GraphHelper.getStatus(relationshipVertex);
+                relatedObjectId.setEntityStatus(vertexStatus);
+                String displayText = relationshipVertex.getProperty(DISPLAY_NAME_PROPERTY, String.class);
+                relatedObjectId.setDisplayText(displayText);
+                relatedObjectId.setRelationshipType(GraphHelper.getTypeName(relationshipEdge));
+                String relationshipGuid = relationshipEdge.getProperty(RELATIONSHIP_GUID_PROPERTY, String.class);
+                relatedObjectId.setRelationshipGuid(relationshipGuid);
+                AtlasRelationship.Status edgeStatus = GraphHelper.getEdgeStatus(relationshipEdge);
+                relatedObjectId.setRelationshipStatus(edgeStatus);
+                AtlasStruct relationshipAttributes = new AtlasStruct();
+                relationshipAttributes.setTypeName(GraphHelper.getTypeName(relationshipEdge));
+                relatedObjectId.setRelationshipAttributes(relationshipAttributes);
+                String qualifiedName = relationshipVertex.getProperty(QUALIFIED_NAME_PROPERTY, String.class);
+                relatedObjectId.setQualifiedName(qualifiedName);
+                relatedObjectId.setGuid(GraphHelper.getGuid(relationshipVertex));
+                relatedObjectId.setTypeName(GraphHelper.getTypeName(relationshipVertex));
+                relatedObjectIds.add(relatedObjectId);
+            }
+        }
         return relatedObjectIds;
     }
 }
