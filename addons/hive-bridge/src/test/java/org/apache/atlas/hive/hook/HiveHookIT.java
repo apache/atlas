@@ -1974,20 +1974,25 @@ public class HiveHookIT extends HiveITBase {
         AtlasEntity   sdEntity   = atlasClientV2.getEntityByGuid(sdObjectId.getGuid()).getEntity();
 
         Assert.assertEquals((sdEntity.getAttribute(ATTRIBUTE_NUM_BUCKETS)), numBuckets);
-        Assert.assertEquals(sdEntity.getAttribute(ATTRIBUTE_BUCKET_COLS), bucketColNames);
+
+        // hive_storagedesc.bucketCols and sortCols use cardinality SET in the Atlas model — iteration order is undefined.
+        @SuppressWarnings("unchecked")
+        List<String> actualBucketCols = (List<String>) sdEntity.getAttribute(ATTRIBUTE_BUCKET_COLS);
+        Assert.assertNotNull(actualBucketCols);
+        Assert.assertTrue(CollectionUtils.isEqualCollection(actualBucketCols, bucketColNames));
 
         List<AtlasStruct> hiveOrderStructList = toAtlasStructList(sdEntity.getAttribute(ATTRIBUTE_SORT_COLS));
 
         Assert.assertNotNull(hiveOrderStructList);
         Assert.assertEquals(hiveOrderStructList.size(), sortcolNames.size());
 
-        for (int i = 0; i < sortcolNames.size(); i++) {
-            AtlasStruct hiveOrderStruct = hiveOrderStructList.get(i);
-
+        List<String> actualSortColNames = new ArrayList<>();
+        for (AtlasStruct hiveOrderStruct : hiveOrderStructList) {
             Assert.assertNotNull(hiveOrderStruct);
-            Assert.assertEquals(hiveOrderStruct.getAttribute("col"), sortcolNames.get(i));
-            Assert.assertEquals(hiveOrderStruct.getAttribute("order"), 1);
+            Assert.assertEquals(((Number) hiveOrderStruct.getAttribute("order")).intValue(), 1);
+            actualSortColNames.add((String) hiveOrderStruct.getAttribute("col"));
         }
+        Assert.assertTrue(CollectionUtils.isEqualCollection(actualSortColNames, sortcolNames));
     }
 
     @Test
