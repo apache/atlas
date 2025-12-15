@@ -11,6 +11,7 @@ import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -24,6 +25,7 @@ import java.util.Iterator;
  * latest tag propagation version by default.
  */
 @Component
+@DependsOn("featureFlagStore")
 public class TagsV2AutoEnabler {
     private static final Logger LOG = LoggerFactory.getLogger(TagsV2AutoEnabler.class);
 
