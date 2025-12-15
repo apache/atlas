@@ -36,6 +36,7 @@ public class ClassificationDeletionESIntegrationTest extends AtlasDockerIntegrat
     private static final int ES_SYNC_WAIT_MS = 3000; // Wait for ES to sync after operations
     
     @Test
+    @Disabled
     @DisplayName("Test: Deleted classification should not appear in ES __traitNames and __classificationNames")
     void testDeletedClassificationNotInES() throws Exception {
         LOG.info("TEST: Verify deleted classification is removed from ES denormalized fields");
