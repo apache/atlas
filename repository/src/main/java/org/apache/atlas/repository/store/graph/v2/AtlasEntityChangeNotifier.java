@@ -431,22 +431,9 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     @Override
     @Async
     public void onClassificationPropagationDeleted(List<AtlasEntity> entities, List<AtlasClassification> deletedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
-        try {
-            setRequestContext(requestContext);
-            for (AtlasEntity entity : entities) {
-                doFullTextMapping(entity.getGuid());
-                for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
-                    try {
-                        listener.onClassificationPropagationDeleted(entity, deletedClassifications, forceInline);
-                    } catch (Exception e) {
-                        LOG.error("Classification propagation deletion notification failed for listener {} on entity {}: {}", 
-                            listener.getClass().getSimpleName(), entity.getGuid(), e.getMessage(), e);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            LOG.error("Failed to notify listeners for classification propagation deletion: {}", e.getMessage(), e);
-            throw e;
+        setRequestContext(requestContext);
+        for (AtlasEntity entity : entities) {
+            onClassificationPropagationDeleted(entity, deletedClassifications, forceInline);
         }
     }
 
