@@ -1758,7 +1758,7 @@ public class EntityGraphRetriever {
                 attributes.addAll(entityType.getHeaderAttributes().keySet());
 
                 if (CollectionUtils.isNotEmpty(attributes)) {
-                    EntityDiscoveryService.filterMapByKeys(entityType, dynamicVertex, attributes);
+                    ret.setAttributes(EntityDiscoveryService.filterMapByKeys(entityType, dynamicVertex, attributes));
                 }
             } else {
                 LOG.warn("Entity type not found for type name: {} for entityVertexId {}", typeName, atlasVertex.getIdForDisplay());
