@@ -62,8 +62,6 @@ public interface IAtlasEntityChangeNotifier {
     void onClassificationPropagationDeleted(List<AtlasEntity> entities, List<AtlasClassification> deletedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException;
 
     void onClassificationPropagationDeletedV2(Set<AtlasVertex> vertices, AtlasClassification deletedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException;
-
-    void onClassificationPropagationDeleted(List<AtlasEntity> entities, List<AtlasClassification> deletedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException;
     
     void onClassificationPropagationDeleted(AtlasEntity entity, List<AtlasClassification> deletedClassifications, boolean forceInline) throws AtlasBaseException;
 
