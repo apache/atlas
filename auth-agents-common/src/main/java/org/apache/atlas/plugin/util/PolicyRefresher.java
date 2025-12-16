@@ -231,8 +231,8 @@ public class PolicyRefresher extends Thread {
 
 	private void loadPolicy() {
 
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> PolicyRefresher(serviceName=" + serviceName + ").loadPolicy()");
+		if(LOG.isInfoEnabled()) {
+			LOG.info("==> PolicyRefresher(serviceName=" + serviceName + ").loadPolicy()");
 		}
 
 		RangerPerfTracer perf = null;
@@ -289,8 +289,8 @@ public class PolicyRefresher extends Thread {
 
 		RangerPerfTracer.log(perf);
 
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== PolicyRefresher(serviceName=" + serviceName + ").loadPolicy()");
+		if(LOG.isInfoEnabled()) {
+			LOG.info("<== PolicyRefresher(serviceName=" + serviceName + ").loadPolicy()");
 		}
 	}
 
@@ -500,28 +500,28 @@ public class PolicyRefresher extends Thread {
 	}
 
 	private void loadRoles() {
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> PolicyRefresher(serviceName=" + serviceName + ").loadRoles()");
+		if(LOG.isInfoEnabled()) {
+			LOG.info("==> PolicyRefresher(serviceName=" + serviceName + ").loadRoles()");
 		}
 
 		//Load the Ranger UserGroup Roles
 		rolesProvider.loadUserGroupRoles(plugIn);
 
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== PolicyRefresher(serviceName=" + serviceName + ").loadRoles()");
+			LOG.info("<== PolicyRefresher(serviceName=" + serviceName + ").loadRoles()");
 		}
 	}
 
 	private void loadUserStore() {
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> PolicyRefresher(serviceName=" + serviceName + ").loadGroups()");
+		if(LOG.isInfoEnabled()) {
+			LOG.info("==> PolicyRefresher(serviceName=" + serviceName + ").loadGroups()");
 		}
 
 		//Load the Ranger UserGroup Roles
 		userStoreProvider.loadUserStore(plugIn);
 
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== PolicyRefresher(serviceName=" + serviceName + ").loadRoles()");
+			LOG.info("<== PolicyRefresher(serviceName=" + serviceName + ").loadRoles()");
 		}
 	}
 }
