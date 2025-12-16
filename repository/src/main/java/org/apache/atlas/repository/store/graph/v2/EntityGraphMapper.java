@@ -90,6 +90,7 @@ import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.model.TypeCategory.ARRAY;
 import static org.apache.atlas.model.TypeCategory.CLASSIFICATION;
+import static org.apache.atlas.model.TypeCategory.PRIMITIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_TYPENAME;
@@ -4563,7 +4564,17 @@ public class EntityGraphMapper {
                 if (MapUtils.isNotEmpty(deNormAttributesMap)) {
                     ESConnector.writeTagProperties(deNormAttributesMap);
                 }
-                entityChangeNotifier.onClassificationPropagationAddedToEntitiesV2(chunkedVerticesToPropagateSet, Collections.singletonList(classification), true, RequestContext.get()); // Async call
+                
+                // Convert vertices to entities before async notification (prevent transaction closure issues)
+                try {
+                    Set<AtlasStructType.AtlasAttribute> primitiveAttributes = getEntityTypeAttributes(chunkedVerticesToPropagateSet);
+                    List<AtlasEntity> notificationEntities = instanceConverter.getEnrichedEntitiesWithPrimitiveAttributes(chunkedVerticesToPropagateSet, primitiveAttributes);
+                    entityChangeNotifier.onClassificationPropagationAddedToEntities(notificationEntities, Collections.singletonList(classification), true, RequestContext.get());
+                } catch (Exception e) {
+                    LOG.error("Failed to convert vertices to entities for classification propagation notification: {}", e.getMessage(), e);
+                    throw e;
+                }
+                
                 offset += CHUNK_SIZE;
                 LOG.info("offset {}, impactedVerticesSize: {}", offset, impactedVerticesSize);
             } while (offset < impactedVerticesSize);
@@ -5573,8 +5584,15 @@ public class EntityGraphMapper {
 
                 Set<AtlasVertex> vertices = graph.getVertices(vertexIds.toArray(new String[0]));
 
-                // notify listeners (async)
-                entityChangeNotifier.onClassificationPropagationDeletedV2(vertices, originalClassification, true, RequestContext.get());
+                // Convert vertices to entities before async notification (prevent transaction closure issues)
+                try {
+                    Set<AtlasStructType.AtlasAttribute> primitiveAttributes = getEntityTypeAttributes(vertices);
+                    List<AtlasEntity> notificationEntities = instanceConverter.getEnrichedEntitiesWithPrimitiveAttributes(vertices, primitiveAttributes);
+                    entityChangeNotifier.onClassificationPropagationDeleted(notificationEntities, Collections.singletonList(originalClassification), true, RequestContext.get());
+                } catch (Exception e) {
+                    LOG.error("Failed to convert vertices to entities for classification propagation deletion notification: {}", e.getMessage(), e);
+                    throw e;
+                }
 
                 totalDeleted += batchToDelete.size();
 
@@ -6651,8 +6669,15 @@ public class EntityGraphMapper {
                 //new bulk method to fetch in batches
                 Set<AtlasVertex> propagtedVertices = graph.getVertices(vertexIds.toArray(new String[0]));
 
-                // notify listeners (async) that these entities got their classification text updated
-                entityChangeNotifier.onClassificationUpdatedToEntitiesV2(propagtedVertices, originalClassification, true, RequestContext.get());
+                // Convert vertices to entities before async notification (prevent transaction closure issues)
+                try {
+                    Set<AtlasStructType.AtlasAttribute> primitiveAttributes = getEntityTypeAttributes(propagtedVertices);
+                    List<AtlasEntity> notificationEntities = instanceConverter.getEnrichedEntitiesWithPrimitiveAttributes(propagtedVertices, primitiveAttributes);
+                    entityChangeNotifier.onClassificationUpdatedToEntitiesV2(notificationEntities, originalClassification, true, RequestContext.get());
+                } catch (Exception e) {
+                    LOG.error("Failed to convert vertices to entities for classification propagation update notification: {}", e.getMessage(), e);
+                    throw e;
+                }
 
                 totalUpdated += batchToUpdate.size();
                 // grab next batch
@@ -6868,7 +6893,15 @@ public class EntityGraphMapper {
 
         Set<AtlasVertex> vertices = graph.getVertices(vertexIdsToDelete.toArray(new String[0]));
         if (!vertices.isEmpty()) {
-            entityChangeNotifier.onClassificationPropagationDeletedV2(vertices, sourceTag, true, RequestContext.get());
+            // Convert vertices to entities before async notification (prevent transaction closure issues)
+            try {
+                Set<AtlasStructType.AtlasAttribute> primitiveAttributes = getEntityTypeAttributes(vertices);
+                List<AtlasEntity> notificationEntities = instanceConverter.getEnrichedEntitiesWithPrimitiveAttributes(vertices, primitiveAttributes);
+                entityChangeNotifier.onClassificationPropagationDeleted(notificationEntities, Collections.singletonList(sourceTag), true, RequestContext.get());
+            } catch (Exception e) {
+                LOG.error("Failed to convert vertices to entities for classification propagation deletion notification: {}", e.getMessage(), e);
+                throw e;
+            }
         }
     }
 
@@ -6963,6 +6996,27 @@ public class EntityGraphMapper {
 
         RequestContext requestContext = RequestContext.get();
         requestContext.cacheDifferentialEntity(diffEntity);
+    }
+
+    private Set<AtlasStructType.AtlasAttribute> getEntityTypeAttributes(Set<AtlasVertex> vertices) {
+        Set<AtlasStructType.AtlasAttribute> primitiveAttributes = new HashSet<>();
+        for (AtlasVertex vertex : vertices) {
+            String typeName = vertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
+            if (typeName != null) {
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+                if (entityType != null) {
+                    Map<String, AtlasStructType.AtlasAttribute> attributes = entityType.getAllAttributes();
+                    if (MapUtils.isNotEmpty(attributes)) {
+                        for (AtlasStructType.AtlasAttribute attribute : attributes.values()) {
+                            if (PRIMITIVE.equals(attribute.getAttributeType().getTypeCategory())) {
+                                primitiveAttributes.add(attribute);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return primitiveAttributes;
     }
 
 }

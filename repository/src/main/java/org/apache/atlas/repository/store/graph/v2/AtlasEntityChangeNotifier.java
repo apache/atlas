@@ -221,9 +221,18 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     @Override
     @Async
     public void onClassificationPropagationAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
-        setRequestContext(requestContext);
-        for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
-            listener.onClassificationPropagationsAdded(entities, addedClassifications, forceInline);
+        try {
+            setRequestContext(requestContext);
+            for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
+                try {
+                    listener.onClassificationPropagationsAdded(entities, addedClassifications, forceInline);
+                } catch (Exception e) {
+                    LOG.error("Classification propagation notification failed for listener {}: {}", listener.getClass().getSimpleName(), e.getMessage(), e);
+                }
+            }
+        } catch (Exception e) {
+            LOG.error("Failed to notify listeners for classification propagation: {}", e.getMessage(), e);
+            throw e;
         }
     }
 
@@ -315,9 +324,18 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     @Override
     @Async
     public void onClassificationUpdatedToEntitiesV2(List<AtlasEntity> entities, AtlasClassification updatedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
-        setRequestContext(requestContext);
-        for (AtlasEntity entity : entities) {
-            onClassificationUpdatedToEntity(entity, Collections.singletonList(updatedClassification), forceInline);
+        try {
+            setRequestContext(requestContext);
+            for (AtlasEntity entity : entities) {
+                try {
+                    onClassificationUpdatedToEntity(entity, Collections.singletonList(updatedClassification), forceInline);
+                } catch (Exception e) {
+                    LOG.error("Classification propagation update notification failed for entity {}: {}", entity.getGuid(), e.getMessage(), e);
+                }
+            }
+        } catch (Exception e) {
+            LOG.error("Failed to notify listeners for classification propagation update: {}", e.getMessage(), e);
+            throw e;
         }
     }
 
@@ -412,10 +430,10 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
 
     @Override
     @Async
-    public void onClassificationPropagationDeleted(List<AtlasEntity> entities, AtlasClassification deletedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
+    public void onClassificationPropagationDeleted(List<AtlasEntity> entities, List<AtlasClassification> deletedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
         setRequestContext(requestContext);
         for (AtlasEntity entity : entities) {
-            onClassificationPropagationDeleted(entity, Collections.singletonList(deletedClassification), forceInline);
+            onClassificationPropagationDeleted(entity, deletedClassifications, forceInline);
         }
     }
 
