@@ -79,8 +79,7 @@ import java.util.stream.Stream;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
 import static org.apache.atlas.authorize.AtlasPrivilege.*;
-import static org.apache.atlas.repository.Constants.ATTR_CONTRACT;
-import static org.apache.atlas.repository.Constants.ATTR_CONTRACT_JSON;
+import static org.apache.atlas.repository.Constants.*;
 
 
 /**
@@ -1120,7 +1119,7 @@ public class EntityREST {
     @POST
     @Path("auditSearch")
     @Timed
-    public EntityAuditSearchResult searchAuditEvents(AuditSearchParams parameters) throws AtlasBaseException {
+    public EntityAuditSearchResult searchAuditEvents(@Context HttpServletRequest servletRequest,  AuditSearchParams parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -1131,8 +1130,9 @@ public class EntityREST {
             }
 
             EntityAuditSearchResult ret = esBasedAuditRepository.searchEvents(dslString);
-
-            scrubAndSetEntityAudits(ret, parameters.getSuppressLogs(), parameters.getAttributes());
+            String agentId = servletRequest.getHeader(TASK_HEADER_ATLAN_AGENT_ID);
+            boolean isCsaExportAgent = agentId != null && agentId.contains(CSA_ADOPTION_EXPORT);
+            scrubAndSetEntityAudits(ret, parameters.getSuppressLogs(), parameters.getAttributes(), isCsaExportAgent);
 
             return ret;
         } finally {
@@ -1140,38 +1140,39 @@ public class EntityREST {
         }
     }
 
-    private void scrubAndSetEntityAudits(EntityAuditSearchResult result, boolean suppressLogs, Set<String> attributes) throws AtlasBaseException {
+    private void scrubAndSetEntityAudits(EntityAuditSearchResult result, boolean suppressLogs, Set<String> attributes, boolean isCsaExportAgent) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("scrubEntityAudits");
-        for (EntityAuditEventV2 event : result.getEntityAudits()) {
-            try {
-                AtlasSearchResult ret = new AtlasSearchResult();
-                AtlasEntityWithExtInfo entityWithExtInfo = entitiesStore.getByIdWithoutAuthorization(event.getEntityId());
-                AtlasEntityHeader entityHeader = new AtlasEntityHeader(entityWithExtInfo.getEntity());
-                ret.addEntity(entityHeader);
-                AtlasSearchResultScrubRequest request = new AtlasSearchResultScrubRequest(typeRegistry, ret);
-                AtlasAuthorizationUtils.scrubSearchResults(request, suppressLogs);
-                if(entityHeader.getScrubbed()!= null && entityHeader.getScrubbed()){
-                    event.setDetail(null);
-                }
-                Map<String, Object> entityAttrs = entityHeader.getAttributes();
-                if(attributes == null) entityAttrs.clear();
-                else entityAttrs.keySet().retainAll(attributes);
+        if (!isCsaExportAgent) { // avoid enriching asset attributes for csa adoption export workloads
+            for (EntityAuditEventV2 event : result.getEntityAudits()) {
+                try {
+                    AtlasSearchResult ret = new AtlasSearchResult();
+                    AtlasEntityWithExtInfo entityWithExtInfo = entitiesStore.getByIdWithoutAuthorization(event.getEntityId());
+                    AtlasEntityHeader entityHeader = new AtlasEntityHeader(entityWithExtInfo.getEntity());
+                    ret.addEntity(entityHeader);
+                    AtlasSearchResultScrubRequest request = new AtlasSearchResultScrubRequest(typeRegistry, ret);
+                    AtlasAuthorizationUtils.scrubSearchResults(request, suppressLogs);
+                    if (entityHeader.getScrubbed() != null && entityHeader.getScrubbed()) {
+                        event.setDetail(null);
+                    }
+                    Map<String, Object> entityAttrs = entityHeader.getAttributes();
+                    if (attributes == null) entityAttrs.clear();
+                    else entityAttrs.keySet().retainAll(attributes);
 
-                event.setEntityDetail(entityHeader);
-
-            } catch (AtlasBaseException e) {
-                if (e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
-                    try {
-                        AtlasEntityHeader entityHeader = event.getEntityHeader();
-                        AtlasSearchResult ret = new AtlasSearchResult();
-                        ret.addEntity(entityHeader);
-                        AtlasSearchResultScrubRequest request = new AtlasSearchResultScrubRequest(typeRegistry, ret);
-                        AtlasAuthorizationUtils.scrubSearchResults(request, suppressLogs);
-                        if(entityHeader.getScrubbed()!= null && entityHeader.getScrubbed()){
-                            event.setDetail(null);
+                    event.setEntityDetail(entityHeader);
+                } catch (AtlasBaseException e) {
+                    if (e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
+                        try {
+                            AtlasEntityHeader entityHeader = event.getEntityHeader();
+                            AtlasSearchResult ret = new AtlasSearchResult();
+                            ret.addEntity(entityHeader);
+                            AtlasSearchResultScrubRequest request = new AtlasSearchResultScrubRequest(typeRegistry, ret);
+                            AtlasAuthorizationUtils.scrubSearchResults(request, suppressLogs);
+                            if (entityHeader.getScrubbed() != null && entityHeader.getScrubbed()) {
+                                event.setDetail(null);
+                            }
+                        } catch (AtlasBaseException abe) {
+                            throw abe;
                         }
-                    } catch (AtlasBaseException abe) {
-                        throw abe;
                     }
                 }
             }
