@@ -25,8 +25,16 @@ import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.lang.StringUtils;
+
+import org.apache.atlas.authorizer.store.UsersStore;
+import org.apache.atlas.plugin.util.RangerUserStore;
+
+import org.apache.atlas.authorizer.store.UsersStore;
+import org.apache.atlas.plugin.util.RangerUserStore;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
@@ -46,15 +54,29 @@ public class AssetPreProcessor implements PreProcessor {
 
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(ATLAS_GLOSSARY_ENTITY_TYPE, ATLAS_GLOSSARY_TERM_ENTITY_TYPE, ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE, DATA_PRODUCT_ENTITY_TYPE, DATA_DOMAIN_ENTITY_TYPE));
 
+    private static final Pattern SSI_TAG_PATTERN = Pattern.compile("<!--#\\s*\\w+.*-->", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+
     public AssetPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
+        this(typeRegistry, entityRetriever, graph, null);
+    }
+
+    public AssetPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, EntityDiscoveryService discovery) {
+        this(typeRegistry, entityRetriever, graph, discovery, new EntityGraphRetriever(entityRetriever, true));
+    }
+
+    AssetPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, EntityDiscoveryService discovery, EntityGraphRetriever retrieverNoRelation) {
         this.typeRegistry = typeRegistry;
         this.entityRetriever = entityRetriever;
-        this.retrieverNoRelation = new EntityGraphRetriever(entityRetriever, true);
+        this.retrieverNoRelation = retrieverNoRelation;
 
-        try {
-            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
-        } catch (AtlasException e) {
-            e.printStackTrace();
+        if (discovery != null) {
+            this.discovery = discovery;
+        } else {
+            try {
+                this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
+            } catch (AtlasException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -84,6 +106,7 @@ public class AssetPreProcessor implements PreProcessor {
     private void processCreateAsset(AtlasEntity entity, AtlasVertex vertex, EntityMutations.EntityOperation operation) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateAsset");
 
+        validateUserAndGroupAttributes(entity);
         processDomainLinkAttribute(entity, vertex, operation);
 
         RequestContext.get().endMetricRecord(metricRecorder);
@@ -93,6 +116,7 @@ public class AssetPreProcessor implements PreProcessor {
     private void processUpdateAsset(AtlasEntity entity, AtlasVertex vertex, EntityMutations.EntityOperation operation) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateAsset");
 
+        validateUserAndGroupAttributes(entity);
         processDomainLinkAttribute(entity, vertex, operation);
 
         RequestContext.get().endMetricRecord(metricRecorder);
@@ -251,5 +275,101 @@ public class AssetPreProcessor implements PreProcessor {
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
         return entityType != null && entityType.getTypeAndAllSuperTypes().contains("Asset");
+    }
+
+    private void validateUserAndGroupAttributes(AtlasEntity entity) throws AtlasBaseException {
+        validateAttributes(entity, "ownerGroups", true);
+        validateAttributes(entity, ATTR_ADMIN_GROUPS, true);
+        validateAttributes(entity, ATTR_VIEWER_GROUPS, true);
+
+        validateAttributes(entity, OWNER_ATTRIBUTE, false);
+        validateAttributes(entity, "ownerUsers", false);
+        validateAttributes(entity, ATTR_ADMIN_USERS, false);
+        validateAttributes(entity, ATTR_VIEWER_USERS, false);
+
+        if (entity.hasAttribute("announcementMessage")) {
+            String message = (String) entity.getAttribute("announcementMessage");
+            if (StringUtils.isNotEmpty(message) && SSI_TAG_PATTERN.matcher(message).find()) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid announcementMessage: SSI tags are not allowed");
+            }
+        }
+    }
+
+    private void validateAttributes(AtlasEntity entity, String attributeName, boolean isGroup) throws AtlasBaseException {
+        if (entity.hasAttribute(attributeName)) {
+            Object attributeValue = entity.getAttribute(attributeName);
+
+            RangerUserStore userStore = UsersStore.getInstance().getUserStore();
+            Set<String> validNames = null;
+            if (userStore != null) {
+                Map<String, Map<String, String>> attrMapping = isGroup ? userStore.getGroupAttrMapping() : userStore.getUserAttrMapping();
+                if (attrMapping != null) {
+                    validNames = attrMapping.keySet();
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("[DEBUG_SECURITY] Valid {}s: {}", isGroup ? "group" : "user", validNames);
+                    }
+                } else {
+                    LOG.warn("[DEBUG_SECURITY] attrMapping is null for {}", isGroup ? "group" : "user");
+                }
+            } else {
+                LOG.warn("[DEBUG_SECURITY] RangerUserStore is null. Cannot validate users/groups.");
+            }
+
+            if (attributeValue instanceof Collection) {
+                Collection<String> values = (Collection<String>) attributeValue;
+                List<String> validValues = new ArrayList<>();
+
+                for (Object item : values) {
+                    if (item instanceof String) {
+                        String value = (String) item;
+                        if (isValidAndExists(value, isGroup ? "group" : "user", validNames)) {
+                            validValues.add(value);
+                        } else {
+                            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + (isGroup ? "group" : "user") + " name: " + value);
+                        }
+                    }
+                }
+                // Update the attribute with only valid values
+                entity.setAttribute(attributeName, validValues);
+
+            } else {
+                String value = (String) attributeValue;
+                if (!isValidAndExists(value, isGroup ? "group" : "user", validNames)) {
+                    // For single values, if invalid or non-existent, we set to null or handle appropriately
+                    entity.setAttribute(attributeName, null);
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + (isGroup ? "group" : "user") + " name: " + value);
+                }
+            }
+        }
+    }
+
+    private boolean isValidAndExists(String name, String type, Set<String> validNames) throws AtlasBaseException {
+        if (StringUtils.isEmpty(name)) {
+            return false;
+        }
+
+        // 1. Sanitization (Security) - Fail Fast
+        if (SSI_TAG_PATTERN.matcher(name).find()) {
+             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + type + " name: SSI tags are not allowed");
+        }
+        if (name.contains("<") || name.contains(">")) {
+             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + type + " name: Special characters < > are not allowed");
+        }
+        if (name.toLowerCase().startsWith("http:") || name.toLowerCase().startsWith("https:")) {
+             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + type + " name: URLs are not allowed");
+        }
+
+        // 2. Existence Check (Cleanup)
+        // If we have a list of valid names, and the name is NOT in it, return false (filter it out).
+        if (validNames != null && !validNames.contains(name)) {
+            LOG.warn("[DEBUG_SECURITY] Invalid/Non-existent {}: {}. Rejecting.", type, name);
+            return false;
+        }
+        
+        if (validNames == null) {
+            LOG.warn("[DEBUG_SECURITY] validNames is null for {}. Skipping existence check for: {}", type, name);
+        }
+
+        return true;
     }
 }
