@@ -777,8 +777,6 @@ public class EntityGraphMapper {
             LOG.debug("==> setBusinessAttributes(entityVertex={}, entityType={}, businessAttributes={}", entityVertex, entityType.getTypeName(), businessAttributes);
         }
 
-        validateProductStatus(entityVertex);
-
         validateBusinessAttributes(entityVertex, entityType, businessAttributes, true);
 
         Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessAttributes = entityType.getBusinessAttributes();
@@ -841,6 +839,8 @@ public class EntityGraphMapper {
             }
         }
 
+        validateBusinessMetadataUpdateOnArchivedProduct(entityVertex, updatedBusinessAttributes);
+
         if (MapUtils.isNotEmpty(updatedBusinessAttributes)) {
             updateModificationMetadata(entityVertex);
             entityChangeNotifier.onBusinessAttributesUpdated(AtlasGraphUtilsV2.getIdFromVertex(entityVertex), updatedBusinessAttributes);
@@ -858,8 +858,6 @@ public class EntityGraphMapper {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> addOrUpdateBusinessAttributes(entityVertex={}, entityType={}, businessAttributes={}", entityVertex, entityType.getTypeName(), businessAttributes);
         }
-
-        validateProductStatus(entityVertex);
 
         validateBusinessAttributes(entityVertex, entityType, businessAttributes, true);
 
@@ -928,6 +926,8 @@ public class EntityGraphMapper {
             }
         }
 
+        validateBusinessMetadataUpdateOnArchivedProduct(entityVertex, updatedBusinessAttributes);
+
         if (MapUtils.isNotEmpty(updatedBusinessAttributes)) {
             updateModificationMetadata(entityVertex);
             entityChangeNotifier.onBusinessAttributesUpdated(AtlasGraphUtilsV2.getIdFromVertex(entityVertex), updatedBusinessAttributes);
@@ -945,8 +945,6 @@ public class EntityGraphMapper {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> removeBusinessAttributes(entityVertex={}, entityType={}, businessAttributes={}", entityVertex, entityType.getTypeName(), businessAttributes);
         }
-
-        validateProductStatus(entityVertex);
 
         AtlasEntityHeader               entityHeader   = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
         AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA, entityHeader);
@@ -983,6 +981,8 @@ public class EntityGraphMapper {
             }
         }
 
+        validateBusinessMetadataUpdateOnArchivedProduct(entityVertex, updatedBusinessAttributes);
+
         if (MapUtils.isNotEmpty(updatedBusinessAttributes)) {
             updateModificationMetadata(entityVertex);
             entityChangeNotifier.onBusinessAttributesUpdated(AtlasGraphUtilsV2.getIdFromVertex(entityVertex), updatedBusinessAttributes);
@@ -1000,6 +1000,38 @@ public class EntityGraphMapper {
 
                 if ((AtlasEntity.Status.DELETED.name().equals(entityState))) {
                     throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot update DataProduct that is Archived!");
+                }
+            }
+        }
+    }
+
+    /**
+     * Validates that for archived DataProducts, only business metadata removals (null values) are allowed.
+     * Any additions or updates (non-null values) in the updatedBusinessAttributes are blocked.
+     */
+    public void validateBusinessMetadataUpdateOnArchivedProduct(AtlasVertex entityVertex, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException {
+        if (entityVertex == null || MapUtils.isEmpty(updatedBusinessAttributes)) {
+            return;
+        }
+
+        if (!DATA_PRODUCT_ENTITY_TYPE.equals(entityVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class))) {
+            return;
+        }
+
+        String entityState = entityVertex.getProperty(STATE_PROPERTY_KEY, String.class);
+
+        if (!AtlasEntity.Status.DELETED.name().equals(entityState)) {
+            return;
+        }
+
+        for (Map.Entry<String, Map<String, Object>> bmEntry : updatedBusinessAttributes.entrySet()) {
+            Map<String, Object> bmAttributes = bmEntry.getValue();
+
+            if (MapUtils.isNotEmpty(bmAttributes)) {
+                boolean hasNonNullValue = bmAttributes.values().stream().anyMatch(Objects::nonNull);
+                
+                if (hasNonNullValue) {
+                    throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot add or update custom metadata on archived DataProduct.");
                 }
             }
         }
