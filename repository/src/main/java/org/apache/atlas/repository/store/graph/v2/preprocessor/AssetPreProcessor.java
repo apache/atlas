@@ -419,7 +419,9 @@ public class AssetPreProcessor implements PreProcessor {
 
         // 2. Existence Check (Cleanup)
         // If we have a list of valid names, and the name is NOT in it, return false (filter it out).
-        if (validNames != null && !validNames.contains(name)) {
+        // Also skip validation if validNames is empty - this indicates a failed load from Heracles/auth service,
+        // and we should not block requests due to transient API failures.
+        if (validNames != null && !validNames.isEmpty() && !validNames.contains(name)) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("[DEBUG_SECURITY] Invalid/Non-existent {} rejected.", type);
             }
@@ -427,9 +429,9 @@ public class AssetPreProcessor implements PreProcessor {
             return false;
         }
         
-        if (validNames == null) {
+        if (validNames == null || validNames.isEmpty()) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("[DEBUG_SECURITY] validNames is null for {}. Skipping existence check.", type);
+                LOG.debug("[DEBUG_SECURITY] validNames is null or empty for {}. Skipping existence check.", type);
             }
             
         }

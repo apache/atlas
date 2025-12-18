@@ -328,5 +328,80 @@ public class AssetPreProcessorTest {
             assertTrue(e.getMessage().contains("Invalid group name: invalidViewerGroup"));
         }
     }
+
+    @Test
+    public void testEmptyGroupMappingSkipsExistenceCheck() throws AtlasBaseException {
+        // Simulate a scenario where Heracles API failed and groupAttrMapping is empty
+        RangerUserStore mockUserStore = mock(RangerUserStore.class);
+        Map<String, Set<String>> userGroupMap = new HashMap<>();
+        userGroupMap.put("validUser", Collections.emptySet());
+
+        // Empty group mapping - simulates failed Heracles API load
+        Map<String, Map<String, String>> emptyGroupMap = new HashMap<>();
+
+        when(mockUserStore.getUserGroupMapping()).thenReturn(userGroupMap);
+        when(mockUserStore.getGroupAttrMapping()).thenReturn(emptyGroupMap);
+        UsersStore.getInstance().setUserStore(mockUserStore);
+
+        AtlasEntity entity = new AtlasEntity();
+        entity.setAttribute(QUALIFIED_NAME, "test-asset");
+        entity.setAttribute(ATTR_OWNER_GROUPS, List.of("someGroup"));
+
+        // Should NOT throw exception - validation should be skipped when group mapping is empty
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+
+        // The group should be preserved since existence check is skipped
+        assertTrue(((List<?>) entity.getAttribute(ATTR_OWNER_GROUPS)).contains("someGroup"));
+    }
+
+    @Test
+    public void testEmptyUserMappingSkipsExistenceCheck() throws AtlasBaseException {
+        // Simulate a scenario where user loading failed and userGroupMapping is empty
+        RangerUserStore mockUserStore = mock(RangerUserStore.class);
+
+        // Empty user mapping - simulates failed user load
+        Map<String, Set<String>> emptyUserMap = new HashMap<>();
+
+        Map<String, Map<String, String>> groupMap = new HashMap<>();
+        groupMap.put("validGroup", new HashMap<>());
+
+        when(mockUserStore.getUserGroupMapping()).thenReturn(emptyUserMap);
+        when(mockUserStore.getGroupAttrMapping()).thenReturn(groupMap);
+        UsersStore.getInstance().setUserStore(mockUserStore);
+
+        AtlasEntity entity = new AtlasEntity();
+        entity.setAttribute(QUALIFIED_NAME, "test-asset");
+        entity.setAttribute(OWNER_ATTRIBUTE, "someUser");
+
+        // Should NOT throw exception - validation should be skipped when user mapping is empty
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+
+        // The user should be preserved since existence check is skipped
+        assertEquals(entity.getAttribute(OWNER_ATTRIBUTE), "someUser");
+    }
+
+    @Test
+    public void testEmptyMappingStillRejectsSSITags() {
+        // Even when mappings are empty, security checks should still work
+        RangerUserStore mockUserStore = mock(RangerUserStore.class);
+        Map<String, Set<String>> emptyUserMap = new HashMap<>();
+        Map<String, Map<String, String>> emptyGroupMap = new HashMap<>();
+
+        when(mockUserStore.getUserGroupMapping()).thenReturn(emptyUserMap);
+        when(mockUserStore.getGroupAttrMapping()).thenReturn(emptyGroupMap);
+        UsersStore.getInstance().setUserStore(mockUserStore);
+
+        AtlasEntity entity = new AtlasEntity();
+        entity.setAttribute(QUALIFIED_NAME, "test-asset");
+        entity.setAttribute(ATTR_OWNER_GROUPS, List.of("group<!--#exec-->"));
+
+        try {
+            preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+            fail("Should have thrown exception for SSI tag even with empty mapping");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.BAD_REQUEST);
+            assertTrue(e.getMessage().contains("SSI tags are not allowed"));
+        }
+    }
 }
 
