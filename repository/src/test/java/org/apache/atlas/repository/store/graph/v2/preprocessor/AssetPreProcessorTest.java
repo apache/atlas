@@ -23,11 +23,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
-import static org.apache.atlas.repository.Constants.ATTR_VIEWER_GROUPS;
-import static org.apache.atlas.repository.Constants.ATTR_VIEWER_USERS;
 import static org.apache.atlas.repository.Constants.OWNER_ATTRIBUTE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.mockito.Mockito.mock;
@@ -69,15 +68,15 @@ public class AssetPreProcessorTest {
 
         // Setup default valid users/groups
         RangerUserStore mockUserStore = mock(RangerUserStore.class);
-        Map<String, Map<String, String>> userMap = new HashMap<>();
-        userMap.put("validUser", new HashMap<>());
-        userMap.put("adminUser", new HashMap<>());
+        Map<String, Set<String>> userGroupMap = new HashMap<>();
+        userGroupMap.put("validUser", Collections.emptySet());
+        userGroupMap.put("adminUser", Collections.emptySet());
 
         Map<String, Map<String, String>> groupMap = new HashMap<>();
         groupMap.put("validGroup", new HashMap<>());
         groupMap.put("adminGroup", new HashMap<>());
 
-        when(mockUserStore.getUserAttrMapping()).thenReturn(userMap);
+        when(mockUserStore.getUserGroupMapping()).thenReturn(userGroupMap);
         when(mockUserStore.getGroupAttrMapping()).thenReturn(groupMap);
 
         UsersStore.getInstance().setUserStore(mockUserStore);
@@ -98,9 +97,9 @@ public class AssetPreProcessorTest {
         AtlasEntity entity = new AtlasEntity();
         entity.setAttribute(QUALIFIED_NAME, "test-asset");
         entity.setAttribute(OWNER_ATTRIBUTE, "validUser");
-        entity.setAttribute("ownerGroups", Arrays.asList("validGroup"));
-        entity.setAttribute(ATTR_ADMIN_USERS, Arrays.asList("adminUser"));
-        entity.setAttribute(ATTR_ADMIN_GROUPS, Arrays.asList("adminGroup"));
+        entity.setAttribute("ownerGroups", List.of("validGroup"));
+        entity.setAttribute(ATTR_ADMIN_USERS, List.of("adminUser"));
+        entity.setAttribute(ATTR_ADMIN_GROUPS, List.of("adminGroup"));
 
         preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
 
@@ -198,6 +197,20 @@ public class AssetPreProcessorTest {
             assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.BAD_REQUEST);
             assertTrue(e.getMessage().contains("URLs are not allowed"));
         }
+    }
+
+    @Test
+    public void testProcessAttributesWithNullValues() throws AtlasBaseException {
+        AtlasEntity entity = new AtlasEntity();
+        entity.setAttribute(QUALIFIED_NAME, "test-asset");
+        entity.setAttribute(OWNER_ATTRIBUTE, null);
+        entity.setAttribute("ownerGroups", null);
+
+        // Should not throw exception
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+
+        assertNull(entity.getAttribute(OWNER_ATTRIBUTE));
+        assertNull(entity.getAttribute("ownerGroups"));
     }
 }
 

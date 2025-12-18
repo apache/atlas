@@ -303,16 +303,28 @@ public class AssetPreProcessor implements PreProcessor {
             }
 
             RangerUserStore userStore = UsersStore.getInstance().getUserStore();
-            Set<String> validNames = null;
+            Set<String>     validNames = null;
+
             if (userStore != null) {
-                Map<String, Map<String, String>> attrMapping = isGroup ? userStore.getGroupAttrMapping() : userStore.getUserAttrMapping();
-                if (attrMapping != null) {
-                    validNames = attrMapping.keySet();
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("[DEBUG_SECURITY] Valid {} count: {}", isGroup ? "group" : "user", validNames.size());
+                if (isGroup) {
+                    Map<String, Map<String, String>> groupAttrMapping = userStore.getGroupAttrMapping();
+
+                    if (groupAttrMapping != null) {
+                        validNames = groupAttrMapping.keySet();
                     }
                 } else {
-                    LOG.warn("[DEBUG_SECURITY] attrMapping is null for {}", isGroup ? "group" : "user");
+                    Map<String, Set<String>> userGroupMapping = userStore.getUserGroupMapping();
+
+                    if (userGroupMapping != null) {
+                        validNames = userGroupMapping.keySet();
+                    }
+                }
+
+                if (validNames != null) {
+                        LOG.debug("[DEBUG_SECURITY] Valid {} count: {}", isGroup ? "group" : "user", validNames.size());
+
+                } else {
+                    LOG.warn("[DEBUG_SECURITY] Mapping is null for {}", isGroup ? "group" : "user");
                 }
             } else {
                 LOG.warn("[DEBUG_SECURITY] RangerUserStore is null. Cannot validate users/groups.");
@@ -322,13 +334,12 @@ public class AssetPreProcessor implements PreProcessor {
                 Collection<String> values = (Collection<String>) attributeValue;
                 List<String> validValues = new ArrayList<>();
 
-                for (Object item : values) {
-                    if (item instanceof String) {
-                        String value = (String) item;
-                        if (isValidAndExists(value, isGroup ? "group" : "user", validNames)) {
-                            validValues.add(value);
+                for (String item : values) {
+                    if (item != null) {
+                        if (isValidAndExists(item, isGroup ? "group" : "user", validNames)) {
+                            validValues.add(item);
                         } else {
-                            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + (isGroup ? "group" : "user") + " name: " + value);
+                            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + (isGroup ? "group" : "user") + " name: " + item);
                         }
                     }
                 }
@@ -365,16 +376,14 @@ public class AssetPreProcessor implements PreProcessor {
         // 2. Existence Check (Cleanup)
         // If we have a list of valid names, and the name is NOT in it, return false (filter it out).
         if (validNames != null && !validNames.contains(name)) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("[DEBUG_SECURITY] Invalid/Non-existent {}: {}. Rejecting.", type, name.replaceAll("[\r\n]", "_"));
-            }
+            LOG.debug("[DEBUG_SECURITY] Invalid/Non-existent {}: {}. Rejecting.", type, name.replaceAll("[\r\n]", "_"));
+            
             return false;
         }
         
         if (validNames == null) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("[DEBUG_SECURITY] validNames is null for {}. Skipping existence check for: {}", type, name.replaceAll("[\r\n]", "_"));
-            }
+            LOG.debug("[DEBUG_SECURITY] validNames is null for {}. Skipping existence check for: {}", type, name.replaceAll("[\r\n]", "_"));
+            
         }
 
         return true;
