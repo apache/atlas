@@ -10,6 +10,7 @@ on:
       - staging
       - beta
       - leangraphsts
+      - leangraphdep
       - mlh41-integration-tests
       - mlh41tests
       - mlh40java17
