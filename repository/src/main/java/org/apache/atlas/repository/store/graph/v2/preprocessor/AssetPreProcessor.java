@@ -286,9 +286,14 @@ public class AssetPreProcessor implements PreProcessor {
         validateAttributes(entity, ATTR_VIEWER_USERS, false);
 
         if (entity.hasAttribute("announcementMessage")) {
-            String message = (String) entity.getAttribute("announcementMessage");
-            if (StringUtils.isNotEmpty(message) && SSI_TAG_PATTERN.matcher(message).find()) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid announcementMessage: SSI tags are not allowed");
+            Object attributeValue = entity.getAttribute("announcementMessage");
+            if (attributeValue != null) {
+                if (!(attributeValue instanceof String message)) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid announcementMessage: must be string");
+                }
+                if (StringUtils.isNotEmpty(message) && SSI_TAG_PATTERN.matcher(message).find()) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid announcementMessage: SSI tags are not allowed");
+                }
             }
         }
     }

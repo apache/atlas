@@ -154,6 +154,23 @@ public class AssetPreProcessorTest {
     }
 
     @Test
+    public void testAnnouncementMessageNonStringThrowsException() {
+        AtlasEntity entity = new AtlasEntity();
+        entity.setAttribute(QUALIFIED_NAME, "test-asset");
+        entity.setAttribute("announcementMessage", 123); // Non-string value
+
+        try {
+            preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+            fail("Should have thrown exception for non-string announcementMessage");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.BAD_REQUEST);
+            assertTrue(e.getMessage().contains("Invalid announcementMessage: must be string"));
+        } catch (ClassCastException e) {
+            fail("Should have thrown AtlasBaseException (BAD_REQUEST) but got ClassCastException");
+        }
+    }
+
+    @Test
     public void testSSIDetectionInGroupName() {
         AtlasEntity entity = new AtlasEntity();
         entity.setAttribute(QUALIFIED_NAME, "test-asset");
