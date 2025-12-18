@@ -30,9 +30,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.atlas.authorizer.store.UsersStore;
 import org.apache.atlas.plugin.util.RangerUserStore;
 
-import org.apache.atlas.authorizer.store.UsersStore;
-import org.apache.atlas.plugin.util.RangerUserStore;
-
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -356,8 +353,6 @@ public class AssetPreProcessor implements PreProcessor {
                 }
                 String value = ((String) attributeValue).trim();
                 if (!isValidAndExists(value, isGroup ? "group" : "user", validNames)) {
-                    // For single values, if invalid or non-existent, we set to null or handle appropriately
-                    entity.setAttribute(attributeName, null);
                     throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + (isGroup ? "group" : "user") + " name: " + value);
                 }
                 entity.setAttribute(attributeName, value);

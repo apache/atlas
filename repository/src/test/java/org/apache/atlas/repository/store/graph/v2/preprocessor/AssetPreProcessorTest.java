@@ -212,5 +212,22 @@ public class AssetPreProcessorTest {
         assertNull(entity.getAttribute(OWNER_ATTRIBUTE));
         assertNull(entity.getAttribute("ownerGroups"));
     }
+
+    @Test
+    public void testProcessAttributesSingleValueInvalidUserPreservesValue() {
+        AtlasEntity entity = new AtlasEntity();
+        String invalidUser = "nonExistentUser";
+        entity.setAttribute(QUALIFIED_NAME, "test-asset");
+        entity.setAttribute(OWNER_ATTRIBUTE, invalidUser);
+
+        try {
+            preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+            fail("Should have thrown exception for invalid user");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.BAD_REQUEST);
+            // Verify that the attribute value is preserved and NOT set to null
+            assertEquals(entity.getAttribute(OWNER_ATTRIBUTE), invalidUser, "Attribute value should be preserved even if invalid");
+        }
+    }
 }
 
