@@ -276,26 +276,36 @@ public class AssetPreProcessor implements PreProcessor {
     }
 
     private void validateUserAndGroupAttributes(AtlasEntity entity) throws AtlasBaseException {
-        validateAttributes(entity, "ownerGroups", true);
+        validateAttributes(entity, ATTR_OWNER_GROUPS, true);
         validateAttributes(entity, ATTR_ADMIN_GROUPS, true);
         validateAttributes(entity, ATTR_VIEWER_GROUPS, true);
 
         validateAttributes(entity, OWNER_ATTRIBUTE, false);
-        validateAttributes(entity, "ownerUsers", false);
+        validateAttributes(entity, ATTR_OWNER_USERS, false);
         validateAttributes(entity, ATTR_ADMIN_USERS, false);
         validateAttributes(entity, ATTR_VIEWER_USERS, false);
 
-        if (entity.hasAttribute("announcementMessage")) {
-            Object attributeValue = entity.getAttribute("announcementMessage");
+        if (entity.hasAttribute(ATTR_ANNOUNCEMENT_MESSAGE)) {
+            Object attributeValue = entity.getAttribute(ATTR_ANNOUNCEMENT_MESSAGE);
             if (attributeValue != null) {
                 if (!(attributeValue instanceof String message)) {
                     throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid announcementMessage: must be string");
                 }
                 if (StringUtils.isNotEmpty(message) && SSI_TAG_PATTERN.matcher(message).find()) {
+                    String assetIdentifier = getAssetIdentifier(entity);
+                    LOG.warn("SSI tags detected in announcementMessage for asset: {}, message: {}", assetIdentifier, message);
                     throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid announcementMessage: SSI tags are not allowed");
                 }
             }
         }
+    }
+
+    private String getAssetIdentifier(AtlasEntity entity) {
+        Object qualifiedName = entity.getAttribute(QUALIFIED_NAME);
+        if (qualifiedName != null) {
+            return qualifiedName.toString();
+        }
+        return entity.getGuid() != null ? entity.getGuid() : "unknown";
     }
 
     private void validateAttributes(AtlasEntity entity, String attributeName, boolean isGroup) throws AtlasBaseException {

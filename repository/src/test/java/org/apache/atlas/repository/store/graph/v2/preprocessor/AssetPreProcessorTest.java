@@ -27,6 +27,9 @@ import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
+import static org.apache.atlas.repository.Constants.ATTR_ANNOUNCEMENT_MESSAGE;
+import static org.apache.atlas.repository.Constants.ATTR_OWNER_GROUPS;
+import static org.apache.atlas.repository.Constants.ATTR_OWNER_USERS;
 import static org.apache.atlas.repository.Constants.OWNER_ATTRIBUTE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.mockito.Mockito.mock;
@@ -97,14 +100,14 @@ public class AssetPreProcessorTest {
         AtlasEntity entity = new AtlasEntity();
         entity.setAttribute(QUALIFIED_NAME, "test-asset");
         entity.setAttribute(OWNER_ATTRIBUTE, "validUser");
-        entity.setAttribute("ownerGroups", List.of("validGroup"));
+        entity.setAttribute(ATTR_OWNER_GROUPS, List.of("validGroup"));
         entity.setAttribute(ATTR_ADMIN_USERS, List.of("adminUser"));
         entity.setAttribute(ATTR_ADMIN_GROUPS, List.of("adminGroup"));
 
         preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
 
         assertEquals(entity.getAttribute(OWNER_ATTRIBUTE), "validUser");
-        assertTrue(((List<?>) entity.getAttribute("ownerGroups")).contains("validGroup"));
+        assertTrue(((List<?>) entity.getAttribute(ATTR_OWNER_GROUPS)).contains("validGroup"));
         assertTrue(((List<?>) entity.getAttribute(ATTR_ADMIN_USERS)).contains("adminUser"));
     }
 
@@ -127,7 +130,7 @@ public class AssetPreProcessorTest {
     public void testProcessAttributesInvalidGroupThrowsException() {
         AtlasEntity entity = new AtlasEntity();
         entity.setAttribute(QUALIFIED_NAME, "test-asset");
-        entity.setAttribute("ownerGroups", Arrays.asList("validGroup", "invalidGroup"));
+        entity.setAttribute(ATTR_OWNER_GROUPS, Arrays.asList("validGroup", "invalidGroup"));
 
         try {
             preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
@@ -142,7 +145,7 @@ public class AssetPreProcessorTest {
     public void testSSIDetectionInAnnouncement() {
         AtlasEntity entity = new AtlasEntity();
         entity.setAttribute(QUALIFIED_NAME, "test-asset");
-        entity.setAttribute("announcementMessage", "Hello <!--#exec cmd=\"ls\" --> world");
+        entity.setAttribute(ATTR_ANNOUNCEMENT_MESSAGE, "Hello <!--#exec cmd=\"ls\" --> world");
 
         try {
             preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
@@ -157,7 +160,7 @@ public class AssetPreProcessorTest {
     public void testAnnouncementMessageNonStringThrowsException() {
         AtlasEntity entity = new AtlasEntity();
         entity.setAttribute(QUALIFIED_NAME, "test-asset");
-        entity.setAttribute("announcementMessage", 123); // Non-string value
+        entity.setAttribute(ATTR_ANNOUNCEMENT_MESSAGE, 123); // Non-string value
 
         try {
             preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
@@ -175,7 +178,7 @@ public class AssetPreProcessorTest {
         AtlasEntity entity = new AtlasEntity();
         entity.setAttribute(QUALIFIED_NAME, "test-asset");
         // Even if validation against store would fail it, security check comes first
-        entity.setAttribute("ownerGroups", Collections.singletonList("group<!--#exec-->"));
+        entity.setAttribute(ATTR_OWNER_GROUPS, Collections.singletonList("group<!--#exec-->"));
 
         try {
             preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
@@ -205,7 +208,7 @@ public class AssetPreProcessorTest {
     public void testURLDetectionInGroup() {
         AtlasEntity entity = new AtlasEntity();
         entity.setAttribute(QUALIFIED_NAME, "test-asset");
-        entity.setAttribute("ownerGroups", Collections.singletonList("http://malicious.com"));
+        entity.setAttribute(ATTR_OWNER_GROUPS, Collections.singletonList("http://malicious.com"));
 
         try {
             preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
@@ -221,13 +224,13 @@ public class AssetPreProcessorTest {
         AtlasEntity entity = new AtlasEntity();
         entity.setAttribute(QUALIFIED_NAME, "test-asset");
         entity.setAttribute(OWNER_ATTRIBUTE, null);
-        entity.setAttribute("ownerGroups", null);
+        entity.setAttribute(ATTR_OWNER_GROUPS, null);
 
         // Should not throw exception
         preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
 
         assertNull(entity.getAttribute(OWNER_ATTRIBUTE));
-        assertNull(entity.getAttribute("ownerGroups"));
+        assertNull(entity.getAttribute(ATTR_OWNER_GROUPS));
     }
 
     @Test
