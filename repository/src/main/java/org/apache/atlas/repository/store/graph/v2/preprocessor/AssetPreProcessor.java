@@ -298,6 +298,9 @@ public class AssetPreProcessor implements PreProcessor {
     private void validateAttributes(AtlasEntity entity, String attributeName, boolean isGroup) throws AtlasBaseException {
         if (entity.hasAttribute(attributeName)) {
             Object attributeValue = entity.getAttribute(attributeName);
+            if (attributeValue == null) {
+                return;
+            }
 
             RangerUserStore userStore = UsersStore.getInstance().getUserStore();
             Set<String> validNames = null;
@@ -306,7 +309,7 @@ public class AssetPreProcessor implements PreProcessor {
                 if (attrMapping != null) {
                     validNames = attrMapping.keySet();
                     if (LOG.isDebugEnabled()) {
-                        LOG.debug("[DEBUG_SECURITY] Valid {}s: {}", isGroup ? "group" : "user", validNames);
+                        LOG.debug("[DEBUG_SECURITY] Valid {} count: {}", isGroup ? "group" : "user", validNames.size());
                     }
                 } else {
                     LOG.warn("[DEBUG_SECURITY] attrMapping is null for {}", isGroup ? "group" : "user");
@@ -362,12 +365,16 @@ public class AssetPreProcessor implements PreProcessor {
         // 2. Existence Check (Cleanup)
         // If we have a list of valid names, and the name is NOT in it, return false (filter it out).
         if (validNames != null && !validNames.contains(name)) {
-            LOG.warn("[DEBUG_SECURITY] Invalid/Non-existent {}: {}. Rejecting.", type, name);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("[DEBUG_SECURITY] Invalid/Non-existent {}: {}. Rejecting.", type, name.replaceAll("[\r\n]", "_"));
+            }
             return false;
         }
         
         if (validNames == null) {
-            LOG.warn("[DEBUG_SECURITY] validNames is null for {}. Skipping existence check for: {}", type, name);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("[DEBUG_SECURITY] validNames is null for {}. Skipping existence check for: {}", type, name.replaceAll("[\r\n]", "_"));
+            }
         }
 
         return true;
