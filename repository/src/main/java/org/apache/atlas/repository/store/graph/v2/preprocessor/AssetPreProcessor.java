@@ -276,15 +276,65 @@ public class AssetPreProcessor implements PreProcessor {
     }
 
     private void validateUserAndGroupAttributes(AtlasEntity entity) throws AtlasBaseException {
-        validateAttributes(entity, ATTR_OWNER_GROUPS, true);
-        validateAttributes(entity, ATTR_ADMIN_GROUPS, true);
-        validateAttributes(entity, ATTR_VIEWER_GROUPS, true);
+        validateGroupAttributes(entity);
+        validateUserAttributes(entity);
+        validateAnnouncementMessage(entity);
+    }
 
-        validateAttributes(entity, OWNER_ATTRIBUTE, false);
-        validateAttributes(entity, ATTR_OWNER_USERS, false);
-        validateAttributes(entity, ATTR_ADMIN_USERS, false);
-        validateAttributes(entity, ATTR_VIEWER_USERS, false);
+    private void validateGroupAttributes(AtlasEntity entity) throws AtlasBaseException {
+        RangerUserStore userStore = UsersStore.getInstance().getUserStore();
+        Set<String> validGroups = null;
 
+        if (userStore != null) {
+            Map<String, Map<String, String>> groupAttrMapping = userStore.getGroupAttrMapping();
+            if (groupAttrMapping != null) {
+                validGroups = groupAttrMapping.keySet();
+            }
+
+            if (validGroups != null) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("[DEBUG_SECURITY] Valid group count: {}", validGroups.size());
+                }
+            } else {
+                LOG.warn("[DEBUG_SECURITY] Group mapping is null");
+            }
+        } else {
+            LOG.warn("[DEBUG_SECURITY] RangerUserStore is null. Cannot validate groups.");
+        }
+
+        validateAttribute(entity, ATTR_OWNER_GROUPS, "group", validGroups);
+        validateAttribute(entity, ATTR_ADMIN_GROUPS, "group", validGroups);
+        validateAttribute(entity, ATTR_VIEWER_GROUPS, "group", validGroups);
+    }
+
+    private void validateUserAttributes(AtlasEntity entity) throws AtlasBaseException {
+        RangerUserStore userStore = UsersStore.getInstance().getUserStore();
+        Set<String> validUsers = null;
+
+        if (userStore != null) {
+            Map<String, Set<String>> userGroupMapping = userStore.getUserGroupMapping();
+            if (userGroupMapping != null) {
+                validUsers = userGroupMapping.keySet();
+            }
+
+            if (validUsers != null) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("[DEBUG_SECURITY] Valid user count: {}", validUsers.size());
+                }
+            } else {
+                LOG.warn("[DEBUG_SECURITY] User mapping is null");
+            }
+        } else {
+            LOG.warn("[DEBUG_SECURITY] RangerUserStore is null. Cannot validate users.");
+        }
+
+        validateAttribute(entity, OWNER_ATTRIBUTE, "user", validUsers);
+        validateAttribute(entity, ATTR_OWNER_USERS, "user", validUsers);
+        validateAttribute(entity, ATTR_ADMIN_USERS, "user", validUsers);
+        validateAttribute(entity, ATTR_VIEWER_USERS, "user", validUsers);
+    }
+
+    private void validateAnnouncementMessage(AtlasEntity entity) throws AtlasBaseException {
         if (entity.hasAttribute(ATTR_ANNOUNCEMENT_MESSAGE)) {
             Object attributeValue = entity.getAttribute(ATTR_ANNOUNCEMENT_MESSAGE);
             if (attributeValue != null) {
@@ -308,70 +358,44 @@ public class AssetPreProcessor implements PreProcessor {
         return entity.getGuid() != null ? entity.getGuid() : "unknown";
     }
 
-    private void validateAttributes(AtlasEntity entity, String attributeName, boolean isGroup) throws AtlasBaseException {
-        if (entity.hasAttribute(attributeName)) {
-            Object attributeValue = entity.getAttribute(attributeName);
-            if (attributeValue == null) {
-                return;
-            }
+    private void validateAttribute(AtlasEntity entity, String attributeName, String type, Set<String> validNames) throws AtlasBaseException {
+        if (!entity.hasAttribute(attributeName)) {
+            return;
+        }
 
-            RangerUserStore userStore = UsersStore.getInstance().getUserStore();
-            Set<String>     validNames = null;
+        Object attributeValue = entity.getAttribute(attributeName);
+        if (attributeValue == null) {
+            return;
+        }
 
-            if (userStore != null) {
-                if (isGroup) {
-                    Map<String, Map<String, String>> groupAttrMapping = userStore.getGroupAttrMapping();
+        if (attributeValue instanceof Collection) {
+            Collection<?> values = (Collection<?>) attributeValue;
+            List<String> validValues = new ArrayList<>();
 
-                    if (groupAttrMapping != null) {
-                        validNames = groupAttrMapping.keySet();
-                    }
+            for (Object itemObj : values) {
+                if (!(itemObj instanceof String)) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, 
+                            "Invalid " + type + " name: must be string, got " + (itemObj == null ? "null" : itemObj.getClass().getSimpleName()));
+                }
+                String item = ((String) itemObj).trim();
+                if (isValidAndExists(item, type, validNames)) {
+                    validValues.add(item);
                 } else {
-                    Map<String, Set<String>> userGroupMapping = userStore.getUserGroupMapping();
-
-                    if (userGroupMapping != null) {
-                        validNames = userGroupMapping.keySet();
-                    }
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + type + " name: " + item);
                 }
-
-                if (validNames != null) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("[DEBUG_SECURITY] Valid {} count: {}", isGroup ? "group" : "user", validNames.size());
-                    }
-                } else {
-                    LOG.warn("[DEBUG_SECURITY] Mapping is null for {}", isGroup ? "group" : "user");
-                }
-            } else {
-                LOG.warn("[DEBUG_SECURITY] RangerUserStore is null. Cannot validate users/groups.");
             }
+            entity.setAttribute(attributeName, validValues);
 
-            if (attributeValue instanceof Collection) {
-                Collection<?> values = (Collection<?>) attributeValue;
-                List<String> validValues = new ArrayList<>();
-
-                for (Object itemObj : values) {
-                    if (!(itemObj instanceof String)) {
-                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + (isGroup ? "group" : "user") + " name: must be string, got " + (itemObj == null ? "null" : itemObj.getClass().getSimpleName()));
-                    }
-                    String item = ((String) itemObj).trim();
-                    if (isValidAndExists(item, isGroup ? "group" : "user", validNames)) {
-                        validValues.add(item);
-                    } else {
-                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + (isGroup ? "group" : "user") + " name: " + item);
-                    }
-                }
-                // Update the attribute with only valid values
-                entity.setAttribute(attributeName, validValues);
-
-            } else {
-                if (!(attributeValue instanceof String)) {
-                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + (isGroup ? "group" : "user") + " attribute: must be string or collection of strings");
-                }
-                String value = ((String) attributeValue).trim();
-                if (!isValidAndExists(value, isGroup ? "group" : "user", validNames)) {
-                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + (isGroup ? "group" : "user") + " name: " + value);
-                }
-                entity.setAttribute(attributeName, value);
+        } else {
+            if (!(attributeValue instanceof String)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, 
+                        "Invalid " + type + " attribute: must be string or collection of strings");
             }
+            String value = ((String) attributeValue).trim();
+            if (!isValidAndExists(value, type, validNames)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + type + " name: " + value);
+            }
+            entity.setAttribute(attributeName, value);
         }
     }
 

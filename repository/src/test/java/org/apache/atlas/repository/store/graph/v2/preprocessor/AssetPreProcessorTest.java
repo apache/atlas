@@ -30,6 +30,8 @@ import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
 import static org.apache.atlas.repository.Constants.ATTR_ANNOUNCEMENT_MESSAGE;
 import static org.apache.atlas.repository.Constants.ATTR_OWNER_GROUPS;
 import static org.apache.atlas.repository.Constants.ATTR_OWNER_USERS;
+import static org.apache.atlas.repository.Constants.ATTR_VIEWER_GROUPS;
+import static org.apache.atlas.repository.Constants.ATTR_VIEWER_USERS;
 import static org.apache.atlas.repository.Constants.OWNER_ATTRIBUTE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.mockito.Mockito.mock;
@@ -247,6 +249,83 @@ public class AssetPreProcessorTest {
             assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.BAD_REQUEST);
             // Verify that the attribute value is preserved and NOT set to null
             assertEquals(entity.getAttribute(OWNER_ATTRIBUTE), invalidUser, "Attribute value should be preserved even if invalid");
+        }
+    }
+
+    @Test
+    public void testEmptyAnnouncementMessageDoesNotThrow() throws AtlasBaseException {
+        AtlasEntity entity = new AtlasEntity();
+        entity.setAttribute(QUALIFIED_NAME, "test-asset");
+        entity.setAttribute(ATTR_ANNOUNCEMENT_MESSAGE, "");
+
+        // Should not throw exception for empty message
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+
+        assertEquals(entity.getAttribute(ATTR_ANNOUNCEMENT_MESSAGE), "");
+    }
+
+    @Test
+    public void testValidAnnouncementMessagePasses() throws AtlasBaseException {
+        AtlasEntity entity = new AtlasEntity();
+        entity.setAttribute(QUALIFIED_NAME, "test-asset");
+        entity.setAttribute(ATTR_ANNOUNCEMENT_MESSAGE, "This is a valid announcement message.");
+
+        // Should not throw exception for valid message
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+
+        assertEquals(entity.getAttribute(ATTR_ANNOUNCEMENT_MESSAGE), "This is a valid announcement message.");
+    }
+
+    @Test
+    public void testOwnerUsersAttributeValidation() throws AtlasBaseException {
+        AtlasEntity entity = new AtlasEntity();
+        entity.setAttribute(QUALIFIED_NAME, "test-asset");
+        entity.setAttribute(ATTR_OWNER_USERS, List.of("validUser"));
+
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+
+        assertTrue(((List<?>) entity.getAttribute(ATTR_OWNER_USERS)).contains("validUser"));
+    }
+
+    @Test
+    public void testViewerGroupsAndUsersValidation() throws AtlasBaseException {
+        // Setup additional valid viewer users/groups
+        RangerUserStore mockUserStore = mock(RangerUserStore.class);
+        Map<String, Set<String>> userGroupMap = new HashMap<>();
+        userGroupMap.put("validUser", Collections.emptySet());
+        userGroupMap.put("viewerUser", Collections.emptySet());
+
+        Map<String, Map<String, String>> groupMap = new HashMap<>();
+        groupMap.put("validGroup", new HashMap<>());
+        groupMap.put("viewerGroup", new HashMap<>());
+
+        when(mockUserStore.getUserGroupMapping()).thenReturn(userGroupMap);
+        when(mockUserStore.getGroupAttrMapping()).thenReturn(groupMap);
+        UsersStore.getInstance().setUserStore(mockUserStore);
+
+        AtlasEntity entity = new AtlasEntity();
+        entity.setAttribute(QUALIFIED_NAME, "test-asset");
+        entity.setAttribute(ATTR_VIEWER_USERS, List.of("viewerUser"));
+        entity.setAttribute(ATTR_VIEWER_GROUPS, List.of("viewerGroup"));
+
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+
+        assertTrue(((List<?>) entity.getAttribute(ATTR_VIEWER_USERS)).contains("viewerUser"));
+        assertTrue(((List<?>) entity.getAttribute(ATTR_VIEWER_GROUPS)).contains("viewerGroup"));
+    }
+
+    @Test
+    public void testInvalidViewerGroupThrowsException() {
+        AtlasEntity entity = new AtlasEntity();
+        entity.setAttribute(QUALIFIED_NAME, "test-asset");
+        entity.setAttribute(ATTR_VIEWER_GROUPS, List.of("invalidViewerGroup"));
+
+        try {
+            preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+            fail("Should have thrown exception for invalid viewer group");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.BAD_REQUEST);
+            assertTrue(e.getMessage().contains("Invalid group name: invalidViewerGroup"));
         }
     }
 }
