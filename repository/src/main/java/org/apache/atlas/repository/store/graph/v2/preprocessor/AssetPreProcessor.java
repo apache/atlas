@@ -84,8 +84,9 @@ public class AssetPreProcessor implements PreProcessor {
     public void processAttributes(AtlasStruct entityStruct, EntityMutationContext context,
                                   EntityMutations.EntityOperation operation) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
+            Object qualifiedName = entityStruct.getAttribute(QUALIFIED_NAME);
             LOG.debug("AssetPreProcessor.processAttributes: pre processing {}, {}",
-                    entityStruct.getAttribute(QUALIFIED_NAME), operation);
+                    qualifiedName != null ? qualifiedName.toString().replaceAll("[\r\n]", "_") : "null", operation);
         }
         this.context = context;
 
@@ -321,8 +322,9 @@ public class AssetPreProcessor implements PreProcessor {
                 }
 
                 if (validNames != null) {
+                    if (LOG.isDebugEnabled()) {
                         LOG.debug("[DEBUG_SECURITY] Valid {} count: {}", isGroup ? "group" : "user", validNames.size());
-
+                    }
                 } else {
                     LOG.warn("[DEBUG_SECURITY] Mapping is null for {}", isGroup ? "group" : "user");
                 }
@@ -331,28 +333,34 @@ public class AssetPreProcessor implements PreProcessor {
             }
 
             if (attributeValue instanceof Collection) {
-                Collection<String> values = (Collection<String>) attributeValue;
+                Collection<?> values = (Collection<?>) attributeValue;
                 List<String> validValues = new ArrayList<>();
 
-                for (String item : values) {
-                    if (item != null) {
-                        if (isValidAndExists(item, isGroup ? "group" : "user", validNames)) {
-                            validValues.add(item);
-                        } else {
-                            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + (isGroup ? "group" : "user") + " name: " + item);
-                        }
+                for (Object itemObj : values) {
+                    if (!(itemObj instanceof String)) {
+                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + (isGroup ? "group" : "user") + " name: must be string, got " + (itemObj == null ? "null" : itemObj.getClass().getSimpleName()));
+                    }
+                    String item = ((String) itemObj).trim();
+                    if (isValidAndExists(item, isGroup ? "group" : "user", validNames)) {
+                        validValues.add(item);
+                    } else {
+                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + (isGroup ? "group" : "user") + " name: " + item);
                     }
                 }
                 // Update the attribute with only valid values
                 entity.setAttribute(attributeName, validValues);
 
             } else {
-                String value = (String) attributeValue;
+                if (!(attributeValue instanceof String)) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + (isGroup ? "group" : "user") + " attribute: must be string or collection of strings");
+                }
+                String value = ((String) attributeValue).trim();
                 if (!isValidAndExists(value, isGroup ? "group" : "user", validNames)) {
                     // For single values, if invalid or non-existent, we set to null or handle appropriately
                     entity.setAttribute(attributeName, null);
                     throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + (isGroup ? "group" : "user") + " name: " + value);
                 }
+                entity.setAttribute(attributeName, value);
             }
         }
     }
@@ -361,6 +369,8 @@ public class AssetPreProcessor implements PreProcessor {
         if (StringUtils.isEmpty(name)) {
             return false;
         }
+
+        name = name.trim();
 
         // 1. Sanitization (Security) - Fail Fast
         if (SSI_TAG_PATTERN.matcher(name).find()) {
@@ -376,13 +386,17 @@ public class AssetPreProcessor implements PreProcessor {
         // 2. Existence Check (Cleanup)
         // If we have a list of valid names, and the name is NOT in it, return false (filter it out).
         if (validNames != null && !validNames.contains(name)) {
-            LOG.debug("[DEBUG_SECURITY] Invalid/Non-existent {}: {}. Rejecting.", type, name.replaceAll("[\r\n]", "_"));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("[DEBUG_SECURITY] Invalid/Non-existent {} rejected.", type);
+            }
             
             return false;
         }
         
         if (validNames == null) {
-            LOG.debug("[DEBUG_SECURITY] validNames is null for {}. Skipping existence check for: {}", type, name.replaceAll("[\r\n]", "_"));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("[DEBUG_SECURITY] validNames is null for {}. Skipping existence check.", type);
+            }
             
         }
 
