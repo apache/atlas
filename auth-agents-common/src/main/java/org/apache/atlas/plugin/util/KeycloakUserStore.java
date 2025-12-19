@@ -413,6 +413,14 @@ public class KeycloakUserStore {
         return groupInfoSet;
     }
 
+    // Reserved attribute keys that should not be overwritten by custom attributes from Heracles
+    // These keys are used for structured fields and cloud identity mapping
+    private static final Set<String> RESERVED_ATTRIBUTE_KEYS = new HashSet<>(Arrays.asList(
+            RangerUserStore.CLOUD_IDENTITY_NAME,  // "cloud_id" - used for cloud identity mapping
+            "path",
+            "realmId"
+    ));
+
     /**
      * Converts a HeraclesGroupViewRepresentation to a GroupInfo object.
      * Maps group attributes from Heracles to the GroupInfo format used by RangerUserStore.
@@ -439,11 +447,19 @@ public class KeycloakUserStore {
         }
         
         // Convert multi-valued attributes to single string (comma-separated) if needed
+        // Skip reserved keys to prevent overwriting structured fields (especially cloud_id
+        // which is critical for cloud identity mapping in RangerUserStore.buildMap())
         Map<String, List<String>> attributes = heraclesGroup.getAttributes();
         if (MapUtils.isNotEmpty(attributes)) {
             for (Map.Entry<String, List<String>> entry : attributes.entrySet()) {
+                String key = entry.getKey();
+                if (RESERVED_ATTRIBUTE_KEYS.contains(key)) {
+                    LOG.warn("convertToGroupInfo: Skipping reserved attribute key '{}' for group '{}' to prevent overwriting structured field",
+                            key, heraclesGroup.getName());
+                    continue;
+                }
                 if (CollectionUtils.isNotEmpty(entry.getValue())) {
-                    otherAttributes.put(entry.getKey(), String.join(",", entry.getValue()));
+                    otherAttributes.put(key, String.join(",", entry.getValue()));
                 }
             }
         }
