@@ -1404,7 +1404,24 @@
         "end-two-entity-classification:*"
 
       ],
-      "actions": ["add-relationship", "remove-relationship", "update-relationship"]
+      "actions": ["add-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink this DQRule to any Asset",
+      "resources": [
+        "relationship-type:*",
+        "end-one-entity:*",
+        "end-one-entity-type:Asset",
+        "end-one-entity-classification:*",
+
+        "end-two-entity:{entity}/*/rule/*",
+        "end-two-entity-type:DataQualityRule",
+        "end-two-entity-classification:*"
+
+      ],
+      "actions": ["add-relationship"]
     }
   ],
   "persona-dq-update": [
@@ -1433,6 +1450,22 @@
         "end-two-entity-classification:*"
       ],
       "actions": ["add-relationship", "remove-relationship", "update-relationship"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity:*",
+        "end-one-entity-type:Asset",
+        "end-one-entity-classification:*",
+
+        "end-two-entity:{entity}/*/rule/*",
+        "end-two-entity-type:DataQualityRule",
+        "end-two-entity-classification:*"
+      ],
+      "actions": ["add-relationship", "remove-relationship", "update-relationship"]
     }
   ],
   "persona-dq-delete": [
@@ -1445,6 +1478,38 @@
         "entity-classification:*"
       ],
       "actions": ["entity-delete"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity:{entity}/*/rule/*",
+        "end-one-entity-type:DataQualityRule",
+        "end-one-entity-classification:*",
+
+        "end-two-entity:*",
+        "end-two-entity-type:Asset",
+        "end-two-entity-classification:*"
+      ],
+      "actions": ["remove-relationship"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity:*",
+        "end-one-entity-type:Asset",
+        "end-one-entity-classification:*",
+
+        "end-two-entity:{entity}/*/rule/*",
+        "end-two-entity-type:DataQualityRule",
+        "end-two-entity-classification:*"
+      ],
+      "actions": ["remove-relationship"]
     }
   ],
 
