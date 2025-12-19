@@ -343,7 +343,7 @@ public class AssetPreProcessor implements PreProcessor {
                 }
                 if (StringUtils.isNotEmpty(message) && SSI_TAG_PATTERN.matcher(message).find()) {
                     String assetIdentifier = getAssetIdentifier(entity);
-                    LOG.warn("SSI tags detected in announcementMessage for asset: {}, message: {}", assetIdentifier, message);
+                    LOG.warn("SSI tags detected in announcementMessage for asset: {}, message: {}", assetIdentifier, sanitizeForLogging(message));
                     throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid announcementMessage: SSI tags are not allowed");
                 }
             }
@@ -353,9 +353,20 @@ public class AssetPreProcessor implements PreProcessor {
     private String getAssetIdentifier(AtlasEntity entity) {
         Object qualifiedName = entity.getAttribute(QUALIFIED_NAME);
         if (qualifiedName != null) {
-            return qualifiedName.toString();
+            return sanitizeForLogging(qualifiedName.toString());
         }
         return entity.getGuid() != null ? entity.getGuid() : "unknown";
+    }
+
+    /**
+     * Sanitizes a string for safe logging by replacing newline characters.
+     * This prevents log forging attacks where an attacker could inject fake log entries.
+     */
+    private String sanitizeForLogging(String value) {
+        if (value == null) {
+            return null;
+        }
+        return value.replaceAll("[\r\n]", "_");
     }
 
     private void validateAttribute(AtlasEntity entity, String attributeName, String type, Set<String> validNames) throws AtlasBaseException {
@@ -381,7 +392,7 @@ public class AssetPreProcessor implements PreProcessor {
                 if (isValidAndExists(item, type, validNames)) {
                     validValues.add(item);
                 } else {
-                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + type + " name: " + item);
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + type + " name: " + sanitizeForLogging(item));
                 }
             }
             entity.setAttribute(attributeName, validValues);
@@ -393,7 +404,7 @@ public class AssetPreProcessor implements PreProcessor {
             }
             String value = ((String) attributeValue).trim();
             if (!isValidAndExists(value, type, validNames)) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + type + " name: " + value);
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + type + " name: " + sanitizeForLogging(value));
             }
             entity.setAttribute(attributeName, value);
         }
