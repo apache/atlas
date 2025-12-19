@@ -379,8 +379,7 @@ public class AssetPreProcessor implements PreProcessor {
             return;
         }
 
-        if (attributeValue instanceof Collection) {
-            Collection<?> values = (Collection<?>) attributeValue;
+        if (attributeValue instanceof Collection<?> values) {
             List<String> validValues = new ArrayList<>();
 
             for (Object itemObj : values) {
