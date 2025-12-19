@@ -25,13 +25,8 @@ import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.commons.lang.StringUtils;
-
-import org.apache.atlas.authorizer.store.UsersStore;
-import org.apache.atlas.plugin.util.RangerUserStore;
 
 import java.util.*;
-import java.util.regex.Pattern;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
@@ -45,26 +40,26 @@ public class AssetPreProcessor implements PreProcessor {
     private EntityGraphRetriever entityRetriever;
     private EntityGraphRetriever retrieverNoRelation = null;
     private EntityDiscoveryService discovery;
+    private final UserGroupAttributeValidator userGroupAttributeValidator;
     private final Set<String> referenceAttributeNames = new HashSet<>(Arrays.asList(OUTPUT_PORT_GUIDS_ATTR, INPUT_PORT_GUIDS_ATTR));
     private final Set<String> referencingEntityTypes = new HashSet<>(Arrays.asList(DATA_PRODUCT_ENTITY_TYPE));
 
 
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(ATLAS_GLOSSARY_ENTITY_TYPE, ATLAS_GLOSSARY_TERM_ENTITY_TYPE, ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE, DATA_PRODUCT_ENTITY_TYPE, DATA_DOMAIN_ENTITY_TYPE));
 
-    private static final Pattern SSI_TAG_PATTERN = Pattern.compile("<!--#\\s*\\w+.*-->", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-
     public AssetPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
         this(typeRegistry, entityRetriever, graph, null);
     }
 
     public AssetPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, EntityDiscoveryService discovery) {
-        this(typeRegistry, entityRetriever, graph, discovery, new EntityGraphRetriever(entityRetriever, true));
+        this(typeRegistry, entityRetriever, graph, discovery, new EntityGraphRetriever(entityRetriever, true), new UserGroupAttributeValidator());
     }
 
-    AssetPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, EntityDiscoveryService discovery, EntityGraphRetriever retrieverNoRelation) {
+    AssetPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, EntityDiscoveryService discovery, EntityGraphRetriever retrieverNoRelation, UserGroupAttributeValidator userGroupAttributeValidator) {
         this.typeRegistry = typeRegistry;
         this.entityRetriever = entityRetriever;
         this.retrieverNoRelation = retrieverNoRelation;
+        this.userGroupAttributeValidator = userGroupAttributeValidator;
 
         if (discovery != null) {
             this.discovery = discovery;
@@ -104,7 +99,7 @@ public class AssetPreProcessor implements PreProcessor {
     private void processCreateAsset(AtlasEntity entity, AtlasVertex vertex, EntityMutations.EntityOperation operation) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateAsset");
 
-        validateUserAndGroupAttributes(entity);
+        userGroupAttributeValidator.validate(entity);
         processDomainLinkAttribute(entity, vertex, operation);
 
         RequestContext.get().endMetricRecord(metricRecorder);
@@ -114,7 +109,7 @@ public class AssetPreProcessor implements PreProcessor {
     private void processUpdateAsset(AtlasEntity entity, AtlasVertex vertex, EntityMutations.EntityOperation operation) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateAsset");
 
-        validateUserAndGroupAttributes(entity);
+        userGroupAttributeValidator.validate(entity);
         processDomainLinkAttribute(entity, vertex, operation);
 
         RequestContext.get().endMetricRecord(metricRecorder);
@@ -273,179 +268,5 @@ public class AssetPreProcessor implements PreProcessor {
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
         return entityType != null && entityType.getTypeAndAllSuperTypes().contains("Asset");
-    }
-
-    private void validateUserAndGroupAttributes(AtlasEntity entity) throws AtlasBaseException {
-        validateGroupAttributes(entity);
-        validateUserAttributes(entity);
-        validateAnnouncementMessage(entity);
-    }
-
-    private void validateGroupAttributes(AtlasEntity entity) throws AtlasBaseException {
-        RangerUserStore userStore = UsersStore.getInstance().getUserStore();
-        Set<String> validGroups = null;
-
-        if (userStore != null) {
-            Map<String, Map<String, String>> groupAttrMapping = userStore.getGroupAttrMapping();
-            if (groupAttrMapping != null) {
-                validGroups = groupAttrMapping.keySet();
-            }
-
-            if (validGroups != null) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("[DEBUG_SECURITY] Valid group count: {}", validGroups.size());
-                }
-            } else {
-                LOG.warn("[DEBUG_SECURITY] Group mapping is null");
-            }
-        } else {
-            LOG.warn("[DEBUG_SECURITY] RangerUserStore is null. Cannot validate groups.");
-        }
-
-        validateAttribute(entity, ATTR_OWNER_GROUPS, "group", validGroups);
-        validateAttribute(entity, ATTR_ADMIN_GROUPS, "group", validGroups);
-        validateAttribute(entity, ATTR_VIEWER_GROUPS, "group", validGroups);
-    }
-
-    private void validateUserAttributes(AtlasEntity entity) throws AtlasBaseException {
-        RangerUserStore userStore = UsersStore.getInstance().getUserStore();
-        Set<String> validUsers = null;
-
-        if (userStore != null) {
-            Map<String, Set<String>> userGroupMapping = userStore.getUserGroupMapping();
-            if (userGroupMapping != null) {
-                validUsers = userGroupMapping.keySet();
-            }
-
-            if (validUsers != null) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("[DEBUG_SECURITY] Valid user count: {}", validUsers.size());
-                }
-            } else {
-                LOG.warn("[DEBUG_SECURITY] User mapping is null");
-            }
-        } else {
-            LOG.warn("[DEBUG_SECURITY] RangerUserStore is null. Cannot validate users.");
-        }
-
-        validateAttribute(entity, OWNER_ATTRIBUTE, "user", validUsers);
-        validateAttribute(entity, ATTR_OWNER_USERS, "user", validUsers);
-        validateAttribute(entity, ATTR_ADMIN_USERS, "user", validUsers);
-        validateAttribute(entity, ATTR_VIEWER_USERS, "user", validUsers);
-    }
-
-    private void validateAnnouncementMessage(AtlasEntity entity) throws AtlasBaseException {
-        if (entity.hasAttribute(ATTR_ANNOUNCEMENT_MESSAGE)) {
-            Object attributeValue = entity.getAttribute(ATTR_ANNOUNCEMENT_MESSAGE);
-            if (attributeValue != null) {
-                if (!(attributeValue instanceof String message)) {
-                    LOG.warn("Invalid announcementMessage: must be string for asset: {}", getAssetIdentifier(entity));
-                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid announcementMessage: must be string");
-                }
-                if (StringUtils.isNotEmpty(message) && SSI_TAG_PATTERN.matcher(message).find()) {
-                    LOG.warn("SSI tags detected in announcementMessage for asset: {}, message: {}", getAssetIdentifier(entity), sanitizeForLogging(message));
-                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid announcementMessage: SSI tags are not allowed");
-                }
-            }
-        }
-    }
-
-    private String getAssetIdentifier(AtlasEntity entity) {
-        Object qualifiedName = entity.getAttribute(QUALIFIED_NAME);
-        if (qualifiedName != null) {
-            return sanitizeForLogging(qualifiedName.toString());
-        }
-        return entity.getGuid() != null ? entity.getGuid() : "unknown";
-    }
-
-    /**
-     * Sanitizes a string for safe logging by replacing newline characters.
-     * This prevents log forging attacks where an attacker could inject fake log entries.
-     */
-    private String sanitizeForLogging(String value) {
-        if (value == null) {
-            return null;
-        }
-        return value.replaceAll("[\r\n]", "_");
-    }
-
-    private void validateAttribute(AtlasEntity entity, String attributeName, String type, Set<String> validNames) throws AtlasBaseException {
-        if (!entity.hasAttribute(attributeName)) {
-            return;
-        }
-
-        Object attributeValue = entity.getAttribute(attributeName);
-        if (attributeValue == null) {
-            return;
-        }
-
-        if (attributeValue instanceof Collection<?> values) {
-            List<String> validValues = new ArrayList<>();
-
-            for (Object itemObj : values) {
-                if (!(itemObj instanceof String)) {
-                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, 
-                            "Invalid " + type + " name: must be string, got " + (itemObj == null ? "null" : itemObj.getClass().getSimpleName()));
-                }
-                String item = ((String) itemObj).trim();
-                if (isValidAndExists(item, type, validNames)) {
-                    validValues.add(item);
-                } else {
-                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + type + " name: " + sanitizeForLogging(item));
-                }
-            }
-            entity.setAttribute(attributeName, validValues);
-
-        } else {
-            if (!(attributeValue instanceof String)) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, 
-                        "Invalid " + type + " attribute: must be string or collection of strings");
-            }
-            String value = ((String) attributeValue).trim();
-            if (!isValidAndExists(value, type, validNames)) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + type + " name: " + sanitizeForLogging(value));
-            }
-            entity.setAttribute(attributeName, value);
-        }
-    }
-
-    private boolean isValidAndExists(String name, String type, Set<String> validNames) throws AtlasBaseException {
-        if (StringUtils.isEmpty(name)) {
-            return false;
-        }
-
-        name = name.trim();
-
-        // 1. Sanitization (Security) - Fail Fast
-        if (SSI_TAG_PATTERN.matcher(name).find()) {
-             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + type + " name: SSI tags are not allowed");
-        }
-        if (name.contains("<") || name.contains(">")) {
-             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + type + " name: Special characters < > are not allowed");
-        }
-        if (name.toLowerCase().startsWith("http:") || name.toLowerCase().startsWith("https:")) {
-             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + type + " name: URLs are not allowed");
-        }
-
-        // 2. Existence Check (Cleanup)
-        // If we have a list of valid names, and the name is NOT in it, return false (filter it out).
-        // Also skip validation if validNames is empty - this indicates a failed load from Heracles/auth service,
-        // and we should not block requests due to transient API failures.
-        if (validNames != null && !validNames.isEmpty() && !validNames.contains(name)) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("[DEBUG_SECURITY] Invalid/Non-existent {} rejected.", type);
-            }
-            
-            return false;
-        }
-        
-        if (validNames == null || validNames.isEmpty()) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("[DEBUG_SECURITY] validNames is null or empty for {}. Skipping existence check.", type);
-            }
-            
-        }
-
-        return true;
     }
 }

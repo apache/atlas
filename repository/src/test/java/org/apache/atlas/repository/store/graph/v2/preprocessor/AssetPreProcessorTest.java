@@ -68,7 +68,10 @@ public class AssetPreProcessorTest {
     @BeforeMethod
     public void setup() {
         closeable = MockitoAnnotations.openMocks(this);
-        preProcessor = new AssetPreProcessor(typeRegistry, entityRetriever, graph, discovery, retrieverNoRelation);
+        
+        // Create the validator with default UsersStore
+        UserGroupAttributeValidator validator = new UserGroupAttributeValidator();
+        preProcessor = new AssetPreProcessor(typeRegistry, entityRetriever, graph, discovery, retrieverNoRelation, validator);
         originalUserStore = UsersStore.getInstance().getUserStore();
 
         // Setup default valid users/groups
@@ -404,4 +407,3 @@ public class AssetPreProcessorTest {
         }
     }
 }
-
