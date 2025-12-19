@@ -339,11 +339,11 @@ public class AssetPreProcessor implements PreProcessor {
             Object attributeValue = entity.getAttribute(ATTR_ANNOUNCEMENT_MESSAGE);
             if (attributeValue != null) {
                 if (!(attributeValue instanceof String message)) {
+                    LOG.warn("Invalid announcementMessage: must be string for asset: {}", getAssetIdentifier(entity));
                     throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid announcementMessage: must be string");
                 }
                 if (StringUtils.isNotEmpty(message) && SSI_TAG_PATTERN.matcher(message).find()) {
-                    String assetIdentifier = getAssetIdentifier(entity);
-                    LOG.warn("SSI tags detected in announcementMessage for asset: {}, message: {}", assetIdentifier, sanitizeForLogging(message));
+                    LOG.warn("SSI tags detected in announcementMessage for asset: {}, message: {}", getAssetIdentifier(entity), sanitizeForLogging(message));
                     throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid announcementMessage: SSI tags are not allowed");
                 }
             }
