@@ -382,7 +382,7 @@ public class KeycloakUserStore {
                 LOG.info("loadGroupsFromHeracles: Fetching groups from Heracles: offset={}, limit={}", groupFrom, groupSize);
                 groupRetrievalResult = getHeraclesClient().getGroupsMappingsV2(groupFrom, groupSize, GROUPS_FETCH_COLUMNS);
                 
-                if (!CollectionUtils.isEmpty(groupRetrievalResult)) {
+                if (CollectionUtils.isNotEmpty(groupRetrievalResult)) {
                     LOG.info("loadGroupsFromHeracles: Received {} groups from Heracles in current page", groupRetrievalResult.size());
                     
                     for (HeraclesGroupViewRepresentation heraclesGroup : groupRetrievalResult) {
@@ -398,7 +398,7 @@ public class KeycloakUserStore {
                     LOG.info("loadGroupsFromHeracles: No groups received from Heracles (empty response)");
                 }
                 
-            } while (!CollectionUtils.isEmpty(groupRetrievalResult) && groupRetrievalResult.size() == groupSize);
+            } while (CollectionUtils.isNotEmpty(groupRetrievalResult) && groupRetrievalResult.size() == groupSize);
             
             LOG.info("loadGroupsFromHeracles: Successfully loaded {} groups from Heracles", groupInfoSet.size());
             
@@ -413,12 +413,4 @@ public class KeycloakUserStore {
         
         return groupInfoSet;
     }
-
-    // Reserved attribute keys that should not be overwritten by custom attributes from Heracles
-    // These keys are used for structured fields and cloud identity mapping
-    private static final Set<String> RESERVED_ATTRIBUTE_KEYS = new HashSet<>(Arrays.asList(
-            RangerUserStore.CLOUD_IDENTITY_NAME,  // "cloud_id" - used for cloud identity mapping
-            "path",
-            "realmId"
-    ));
 }
