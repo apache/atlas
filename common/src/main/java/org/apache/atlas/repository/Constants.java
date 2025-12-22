@@ -504,6 +504,9 @@ public final class Constants {
     public static final String ATTR_ADMIN_ROLES = "adminRoles";
     public static final String ATTR_VIEWER_USERS = "viewerUsers";
     public static final String ATTR_VIEWER_GROUPS = "viewerGroups";
+    public static final String ATTR_OWNER_USERS = "ownerUsers";
+    public static final String ATTR_OWNER_GROUPS = "ownerGroups";
+    public static final String ATTR_ANNOUNCEMENT_MESSAGE = "announcementMessage";
 
     public static final String ATTR_STARRED_BY = "starredBy";
     public static final String ATTR_STARRED_COUNT = "starredCount";

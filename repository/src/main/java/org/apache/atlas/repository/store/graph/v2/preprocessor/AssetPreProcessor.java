@@ -40,6 +40,7 @@ public class AssetPreProcessor implements PreProcessor {
     private EntityGraphRetriever entityRetriever;
     private EntityGraphRetriever retrieverNoRelation = null;
     private EntityDiscoveryService discovery;
+    private final UserGroupAttributeValidator userGroupAttributeValidator;
     private final Set<String> referenceAttributeNames = new HashSet<>(Arrays.asList(OUTPUT_PORT_GUIDS_ATTR, INPUT_PORT_GUIDS_ATTR));
     private final Set<String> referencingEntityTypes = new HashSet<>(Arrays.asList(DATA_PRODUCT_ENTITY_TYPE));
 
@@ -47,14 +48,27 @@ public class AssetPreProcessor implements PreProcessor {
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(ATLAS_GLOSSARY_ENTITY_TYPE, ATLAS_GLOSSARY_TERM_ENTITY_TYPE, ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE, DATA_PRODUCT_ENTITY_TYPE, DATA_DOMAIN_ENTITY_TYPE));
 
     public AssetPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
+        this(typeRegistry, entityRetriever, graph, null);
+    }
+
+    public AssetPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, EntityDiscoveryService discovery) {
+        this(typeRegistry, entityRetriever, graph, discovery, new EntityGraphRetriever(entityRetriever, true), new UserGroupAttributeValidator());
+    }
+
+    AssetPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, EntityDiscoveryService discovery, EntityGraphRetriever retrieverNoRelation, UserGroupAttributeValidator userGroupAttributeValidator) {
         this.typeRegistry = typeRegistry;
         this.entityRetriever = entityRetriever;
-        this.retrieverNoRelation = new EntityGraphRetriever(entityRetriever, true);
+        this.retrieverNoRelation = retrieverNoRelation;
+        this.userGroupAttributeValidator = userGroupAttributeValidator;
 
-        try {
-            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
-        } catch (AtlasException e) {
-            e.printStackTrace();
+        if (discovery != null) {
+            this.discovery = discovery;
+        } else {
+            try {
+                this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
+            } catch (AtlasException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -62,8 +76,9 @@ public class AssetPreProcessor implements PreProcessor {
     public void processAttributes(AtlasStruct entityStruct, EntityMutationContext context,
                                   EntityMutations.EntityOperation operation) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
+            Object qualifiedName = entityStruct.getAttribute(QUALIFIED_NAME);
             LOG.debug("AssetPreProcessor.processAttributes: pre processing {}, {}",
-                    entityStruct.getAttribute(QUALIFIED_NAME), operation);
+                    qualifiedName != null ? qualifiedName.toString().replaceAll("[\r\n]", "_") : "null", operation);
         }
         this.context = context;
 
@@ -84,6 +99,7 @@ public class AssetPreProcessor implements PreProcessor {
     private void processCreateAsset(AtlasEntity entity, AtlasVertex vertex, EntityMutations.EntityOperation operation) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateAsset");
 
+        userGroupAttributeValidator.validate(entity);
         processDomainLinkAttribute(entity, vertex, operation);
 
         RequestContext.get().endMetricRecord(metricRecorder);
@@ -93,6 +109,7 @@ public class AssetPreProcessor implements PreProcessor {
     private void processUpdateAsset(AtlasEntity entity, AtlasVertex vertex, EntityMutations.EntityOperation operation) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateAsset");
 
+        userGroupAttributeValidator.validate(entity);
         processDomainLinkAttribute(entity, vertex, operation);
 
         RequestContext.get().endMetricRecord(metricRecorder);
