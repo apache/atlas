@@ -23,6 +23,8 @@ public class UserGroupAttributeValidator {
     private static final Logger LOG = LoggerFactory.getLogger(UserGroupAttributeValidator.class);
 
     private static final Pattern SSI_TAG_PATTERN = Pattern.compile("<!--#\\s*\\w+.*-->", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    private static final String TYPE_USER = "user";
+    private static final String TYPE_GROUP = "group";
 
     private final UsersStore usersStore;
 
@@ -69,9 +71,9 @@ public class UserGroupAttributeValidator {
             LOG.warn("RangerUserStore is null. Cannot validate groups.");
         }
 
-        validateAttribute(entity, ATTR_OWNER_GROUPS, "group", validGroups);
-        validateAttribute(entity, ATTR_ADMIN_GROUPS, "group", validGroups);
-        validateAttribute(entity, ATTR_VIEWER_GROUPS, "group", validGroups);
+        validateAttribute(entity, ATTR_OWNER_GROUPS, TYPE_GROUP, validGroups);
+        validateAttribute(entity, ATTR_ADMIN_GROUPS, TYPE_GROUP, validGroups);
+        validateAttribute(entity, ATTR_VIEWER_GROUPS, TYPE_GROUP, validGroups);
     }
 
     private void validateUserAttributes(AtlasEntity entity) throws AtlasBaseException {
@@ -95,10 +97,10 @@ public class UserGroupAttributeValidator {
             LOG.warn("RangerUserStore is null. Cannot validate users.");
         }
 
-        validateAttribute(entity, OWNER_ATTRIBUTE, "user", validUsers);
-        validateAttribute(entity, ATTR_OWNER_USERS, "user", validUsers);
-        validateAttribute(entity, ATTR_ADMIN_USERS, "user", validUsers);
-        validateAttribute(entity, ATTR_VIEWER_USERS, "user", validUsers);
+        validateAttribute(entity, OWNER_ATTRIBUTE, TYPE_USER, validUsers);
+        validateAttribute(entity, ATTR_OWNER_USERS, TYPE_USER, validUsers);
+        validateAttribute(entity, ATTR_ADMIN_USERS, TYPE_USER, validUsers);
+        validateAttribute(entity, ATTR_VIEWER_USERS, TYPE_USER, validUsers);
     }
 
     private void validateAnnouncementMessage(AtlasEntity entity) throws AtlasBaseException {
@@ -137,51 +139,36 @@ public class UserGroupAttributeValidator {
     }
 
     private void validateAttribute(AtlasEntity entity, String attributeName, String type, Set<String> validNames) throws AtlasBaseException {
-        if (!entity.hasAttribute(attributeName)) {
-            return;
-        }
-
         Object attributeValue = entity.getAttribute(attributeName);
         if (attributeValue == null) {
             return;
         }
 
         if (attributeValue instanceof Collection<?> values) {
-            List<String> validValues = new ArrayList<>();
-
             for (Object itemObj : values) {
-                if (!(itemObj instanceof String)) {
-                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
-                            "Invalid " + type + " name: must be string, got " + (itemObj == null ? "null" : itemObj.getClass().getSimpleName()));
-                }
-                String item = ((String) itemObj).trim();
-                if (isValidAndExists(item, type, validNames)) {
-                    validValues.add(item);
-                } else {
-                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + type + " name: " + sanitizeForLogging(item));
-                }
+                validateAttribute(itemObj, type, validNames);
             }
-            entity.setAttribute(attributeName, validValues);
-
         } else {
-            if (!(attributeValue instanceof String)) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
-                        "Invalid " + type + " attribute: must be string or collection of strings");
-            }
-            String value = ((String) attributeValue).trim();
-            if (!isValidAndExists(value, type, validNames)) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + type + " name: " + sanitizeForLogging(value));
-            }
-            entity.setAttribute(attributeName, value);
+            validateAttribute(attributeValue, type, validNames);
         }
+    }
+
+    private boolean validateAttribute(Object attributeValue, String attributeType, Set<String> validNames) throws AtlasBaseException {
+        if (!(attributeValue instanceof String)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
+                    "Invalid " + attributeType + " attribute: must be string or collection of strings");
+        }
+        String value = ((String) attributeValue);
+        if (!isValidAndExists(value, attributeType, validNames)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + attributeType + " name: " + sanitizeForLogging(value));
+        }
+        return true;
     }
 
     private boolean isValidAndExists(String name, String type, Set<String> validNames) throws AtlasBaseException {
         if (StringUtils.isEmpty(name)) {
             return false;
         }
-
-        name = name.trim();
 
         // 1. Sanitization (Security) - Fail Fast
         if (SSI_TAG_PATTERN.matcher(name).find()) {

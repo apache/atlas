@@ -59,28 +59,15 @@ public class AtlasHeraclesClient {
     }
 
     /**
-     * Fetch groups from Heracles API
-     * 
-     * @param start Offset for pagination
-     * @param size The numbers of items to return
-     * @param columns Column names to project
-     * @return List of groups
-     */
-    public List<HeraclesGroupViewRepresentation> getGroupsMappings(int start, int size, String[] columns) throws AtlasBaseException {
-        return HERACLES.getGroupsMappings(start, size, columns);
-    }
-
-    /**
      * Fetch groups from Heracles API (v2) with relation lookups
      * 
      * @param start Offset for pagination
      * @param size The numbers of items to return
      * @param columns Column names to project
-     * @param relations Column names to lookup (e.g., users, roles)
      * @return List of groups
      */
-    public List<HeraclesGroupViewRepresentation> getGroupsMappingsV2(int start, int size, String[] columns, String[] relations) throws AtlasBaseException {
-        var response = HERACLES.getGroupsV2(start, size, new String[]{HeraclesGroupViewRepresentation.sortBy}, columns, null, null, relations);
+    public List<HeraclesGroupViewRepresentation> getGroupsMappingsV2(int start, int size, String[] columns) throws AtlasBaseException {
+        var response = HERACLES.getGroupsV2(start, size, new String[]{HeraclesGroupViewRepresentation.sortBy}, columns, null, null, null);
         var body = response.body();
         return body != null ? body.getRecords() : null;
     }

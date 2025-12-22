@@ -101,7 +101,7 @@ public class RangerUserStore implements Serializable {
     }
 
     public Map<String, Set<String>> getUserGroupMapping() {
-                return userGroupMapping;
+        return userGroupMapping;
     }
 
     public void setUserGroupMapping(Map<String, Set<String>> userGroupMapping) {

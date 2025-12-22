@@ -57,6 +57,8 @@ public class KeycloakUserStore {
     private static List<String> OPERATION_TYPES = Arrays.asList("CREATE", "UPDATE", "DELETE");
     private static List<String> RESOURCE_TYPES = Arrays.asList("USER", "GROUP", "REALM_ROLE", "CLIENT", "REALM_ROLE_MAPPING", "GROUP_MEMBERSHIP", "CLIENT_ROLE_MAPPING");
 
+    private static String[] GROUPS_FETCH_COLUMNS = new String[]{"name"};
+
     private enum KEYCLOAK_FIELDS {
         ROLES,
         COMPOSITE_ROLES,
@@ -378,15 +380,14 @@ public class KeycloakUserStore {
             
             do {
                 LOG.info("loadGroupsFromHeracles: Fetching groups from Heracles: offset={}, limit={}", groupFrom, groupSize);
-                groupRetrievalResult = getHeraclesClient().getGroupsMappings(groupFrom, groupSize, null);
+                groupRetrievalResult = getHeraclesClient().getGroupsMappingsV2(groupFrom, groupSize, GROUPS_FETCH_COLUMNS);
                 
                 if (!CollectionUtils.isEmpty(groupRetrievalResult)) {
                     LOG.info("loadGroupsFromHeracles: Received {} groups from Heracles in current page", groupRetrievalResult.size());
                     
                     for (HeraclesGroupViewRepresentation heraclesGroup : groupRetrievalResult) {
                         if (heraclesGroup.getName() != null) {
-                            GroupInfo groupInfo = convertToGroupInfo(heraclesGroup);
-                            groupInfoSet.add(groupInfo);
+                            groupInfoSet.add(new GroupInfo(heraclesGroup.getName()));
                         } else {
                             LOG.warn("loadGroupsFromHeracles: Skipping group with null name from Heracles response");
                         }
@@ -420,50 +421,4 @@ public class KeycloakUserStore {
             "path",
             "realmId"
     ));
-
-    /**
-     * Converts a HeraclesGroupViewRepresentation to a GroupInfo object.
-     * Maps group attributes from Heracles to the GroupInfo format used by RangerUserStore.
-     * 
-     * @param heraclesGroup The group representation from Heracles
-     * @return GroupInfo object with mapped attributes
-     */
-    private GroupInfo convertToGroupInfo(HeraclesGroupViewRepresentation heraclesGroup) {
-        Map<String, String> otherAttributes = new HashMap<>();
-        
-        // Store the group ID as cloud_id for cloud identity mapping
-        if (heraclesGroup.getId() != null) {
-            otherAttributes.put(RangerUserStore.CLOUD_IDENTITY_NAME, heraclesGroup.getId());
-        }
-        
-        // Store path as an attribute if available
-        if (heraclesGroup.getPath() != null) {
-            otherAttributes.put("path", heraclesGroup.getPath());
-        }
-        
-        // Store realmId as an attribute if available
-        if (heraclesGroup.getRealmId() != null) {
-            otherAttributes.put("realmId", heraclesGroup.getRealmId());
-        }
-        
-        // Convert multi-valued attributes to single string (comma-separated) if needed
-        // Skip reserved keys to prevent overwriting structured fields (especially cloud_id
-        // which is critical for cloud identity mapping in RangerUserStore.buildMap())
-        Map<String, List<String>> attributes = heraclesGroup.getAttributes();
-        if (MapUtils.isNotEmpty(attributes)) {
-            for (Map.Entry<String, List<String>> entry : attributes.entrySet()) {
-                String key = entry.getKey();
-                if (RESERVED_ATTRIBUTE_KEYS.contains(key)) {
-                    LOG.warn("convertToGroupInfo: Skipping reserved attribute key '{}' for group '{}' to prevent overwriting structured field",
-                            key, heraclesGroup.getName());
-                    continue;
-                }
-                if (CollectionUtils.isNotEmpty(entry.getValue())) {
-                    otherAttributes.put(key, String.join(",", entry.getValue()));
-                }
-            }
-        }
-        
-        return new GroupInfo(heraclesGroup.getName(), null, otherAttributes);
-    }
 }

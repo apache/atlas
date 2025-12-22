@@ -26,21 +26,6 @@ public class HeraclesRestClient extends AbstractAuthClient {
     }
 
     /**
-     * Fetch groups from Heracles API (v1)
-     * 
-     * @param offset Offset for pagination
-     * @param limit The numbers of items to return
-     * @param sort Column names for sorting (+/-)
-     * @param columns Column names to project
-     * @param filter Filter string (optional)
-     * @param count Whether to process count (optional)
-     * @return Response containing wrapped groups response
-     */
-    public Response<HeraclesGroupsResponse> getGroups(int offset, int limit, String[] sort, String[] columns, String filter, Boolean count) throws AtlasBaseException {
-        return processResponse(this.retrofitHeraclesClient.getGroups(offset, limit, sort, columns, filter, count));
-    }
-
-    /**
      * Fetch groups from Heracles API (v2) with relation lookups
      * 
      * @param offset Offset for pagination
@@ -54,20 +39,5 @@ public class HeraclesRestClient extends AbstractAuthClient {
      */
     public Response<HeraclesGroupsResponse> getGroupsV2(int offset, int limit, String[] sort, String[] columns, String filter, Boolean count, String[] relations) throws AtlasBaseException {
         return processResponse(this.retrofitHeraclesClient.getGroupsV2(offset, limit, sort, columns, filter, count, relations));
-    }
-
-    /**
-     * Simplified method to fetch groups with default parameters
-     * Returns the list of groups from the wrapped response
-     * 
-     * @param offset Offset for pagination
-     * @param limit The numbers of items to return
-     * @param columns Column names to project
-     * @return List of groups
-     */
-    public List<HeraclesGroupViewRepresentation> getGroupsMappings(int offset, int limit, String[] columns) throws AtlasBaseException {
-        Response<HeraclesGroupsResponse> response = processResponse(this.retrofitHeraclesClient.getGroups(offset, limit, null, columns, null, null));
-        HeraclesGroupsResponse body = response.body();
-        return body != null ? body.getRecords() : null;
     }
 }
