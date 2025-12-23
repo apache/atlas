@@ -25,6 +25,7 @@ import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
+import org.apache.atlas.repository.graphdb.janus.cassandra.ESConnector;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasMetricType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -821,7 +822,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             // Discard prefix "S" from doc id
             // TODO: This should not fail in case of migrated vertices
             String docId = String.valueOf(hit.get("_id"));
-            return docId.substring(1);
+            if (docId.startsWith(ESConnector.JG_ES_DOC_ID_PREFIX)) {
+                return docId.substring(1);
+            } else {
+                return String.valueOf(LongEncoding.decode(docId));
+            }
         }
 
         @Override
