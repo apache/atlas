@@ -160,7 +160,11 @@ public class UserGroupAttributeValidator {
         }
         String value = ((String) attributeValue);
         if (!isValidAndExists(value, attributeType, validNames)) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid " + attributeType + " name: " + sanitizeForLogging(value));
+            // For backward compatibility, silently skip invalid/non-existent users/groups
+            // instead of blocking the entire request. Security validations (SSI, special chars, URLs)
+            // are still enforced in isValidAndExists() and will throw exceptions.
+            LOG.warn("Skipping invalid/non-existent {} '{}' for backward compatibility", attributeType, sanitizeForLogging(value));
+            return false;
         }
         return true;
     }
