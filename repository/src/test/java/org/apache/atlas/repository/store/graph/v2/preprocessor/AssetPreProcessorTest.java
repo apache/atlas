@@ -117,33 +117,33 @@ public class AssetPreProcessorTest {
     }
 
     @Test
-    public void testProcessAttributesInvalidUserThrowsException() {
+    public void testProcessAttributesInvalidUserSkippedSilently() throws AtlasBaseException {
+        // For backward compatibility, invalid/non-existent users are silently skipped
         AtlasEntity entity = new AtlasEntity();
         entity.setAttribute(QUALIFIED_NAME, "test-asset");
         entity.setAttribute(OWNER_ATTRIBUTE, "invalidUser");
 
-        try {
-            preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
-            fail("Should have thrown exception for invalid user");
-        } catch (AtlasBaseException e) {
-            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.BAD_REQUEST);
-            assertTrue(e.getMessage().contains("Invalid user name: invalidUser"));
-        }
+        // Should not throw exception - invalid user is silently skipped
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+
+        // Attribute value is preserved (validator only logs a warning)
+        assertEquals(entity.getAttribute(OWNER_ATTRIBUTE), "invalidUser");
     }
 
     @Test
-    public void testProcessAttributesInvalidGroupThrowsException() {
+    public void testProcessAttributesInvalidGroupSkippedSilently() throws AtlasBaseException {
+        // For backward compatibility, invalid/non-existent groups are silently skipped
         AtlasEntity entity = new AtlasEntity();
         entity.setAttribute(QUALIFIED_NAME, "test-asset");
         entity.setAttribute(ATTR_OWNER_GROUPS, Arrays.asList("validGroup", "invalidGroup"));
 
-        try {
-            preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
-            fail("Should have thrown exception for invalid group");
-        } catch (AtlasBaseException e) {
-            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.BAD_REQUEST);
-            assertTrue(e.getMessage().contains("Invalid group name: invalidGroup"));
-        }
+        // Should not throw exception - invalid group is silently skipped
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+
+        // Attribute values are preserved (validator only logs a warning)
+        List<?> groups = (List<?>) entity.getAttribute(ATTR_OWNER_GROUPS);
+        assertTrue(groups.contains("validGroup"));
+        assertTrue(groups.contains("invalidGroup"));
     }
 
     @Test
@@ -239,20 +239,18 @@ public class AssetPreProcessorTest {
     }
 
     @Test
-    public void testProcessAttributesSingleValueInvalidUserPreservesValue() {
+    public void testProcessAttributesSingleValueInvalidUserPreservesValue() throws AtlasBaseException {
+        // For backward compatibility, invalid users are skipped silently and values preserved
         AtlasEntity entity = new AtlasEntity();
         String invalidUser = "nonExistentUser";
         entity.setAttribute(QUALIFIED_NAME, "test-asset");
         entity.setAttribute(OWNER_ATTRIBUTE, invalidUser);
 
-        try {
-            preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
-            fail("Should have thrown exception for invalid user");
-        } catch (AtlasBaseException e) {
-            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.BAD_REQUEST);
-            // Verify that the attribute value is preserved and NOT set to null
-            assertEquals(entity.getAttribute(OWNER_ATTRIBUTE), invalidUser, "Attribute value should be preserved even if invalid");
-        }
+        // Should not throw exception - invalid user is silently skipped
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+
+        // Verify that the attribute value is preserved
+        assertEquals(entity.getAttribute(OWNER_ATTRIBUTE), invalidUser, "Attribute value should be preserved");
     }
 
     @Test
@@ -318,18 +316,17 @@ public class AssetPreProcessorTest {
     }
 
     @Test
-    public void testInvalidViewerGroupThrowsException() {
+    public void testInvalidViewerGroupSkippedSilently() throws AtlasBaseException {
+        // For backward compatibility, invalid/non-existent groups are silently skipped
         AtlasEntity entity = new AtlasEntity();
         entity.setAttribute(QUALIFIED_NAME, "test-asset");
         entity.setAttribute(ATTR_VIEWER_GROUPS, List.of("invalidViewerGroup"));
 
-        try {
-            preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
-            fail("Should have thrown exception for invalid viewer group");
-        } catch (AtlasBaseException e) {
-            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.BAD_REQUEST);
-            assertTrue(e.getMessage().contains("Invalid group name: invalidViewerGroup"));
-        }
+        // Should not throw exception - invalid group is silently skipped
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+
+        // Attribute value is preserved (validator only logs a warning)
+        assertTrue(((List<?>) entity.getAttribute(ATTR_VIEWER_GROUPS)).contains("invalidViewerGroup"));
     }
 
     @Test
