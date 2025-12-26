@@ -214,9 +214,10 @@
         "end-one-entity-classification:*",
         "end-one-entity:*",
 
-        "end-two-entity-type:*",
+        "end-two-entity-type:{entity-type}",
         "end-two-entity-classification:*",
-        "end-two-entity:*"
+        "end-two-entity:{entity}",
+        "end-two-entity:{entity}/*"
       ],
       "actions": ["add-relationship"]
     }
@@ -232,9 +233,10 @@
         "end-one-entity-classification:*",
         "end-one-entity:*",
 
-        "end-two-entity-type:*",
+        "end-two-entity-type:{entity-type}",
         "end-two-entity-classification:*",
-        "end-two-entity:*"
+        "end-two-entity:{entity}",
+        "end-two-entity:{entity}/*"
       ],
       "actions": ["remove-relationship"]
     }
@@ -288,6 +290,27 @@
         "entity-classification:*"
       ],
       "actions": ["entity-update"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:AtlasGlossary",
+        "end-one-entity-type:AtlasGlossaryTerm",
+        "end-one-entity-type:AtlasGlossaryCategory",
+        "end-one-entity-classification:*",
+        "end-one-entity:*{entity}",
+
+        "end-two-entity-type:Readme",
+        "end-two-entity-type:Link",
+        "end-two-entity-type:AtlasGlossaryTerm",
+        "end-two-entity-type:AtlasGlossaryCategory",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     },
     {
       "policyType": "ACCESS",
