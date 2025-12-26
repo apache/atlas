@@ -214,10 +214,9 @@
         "end-one-entity-classification:*",
         "end-one-entity:*",
 
-        "end-two-entity-type:{entity-type}",
+        "end-two-entity-type:*",
         "end-two-entity-classification:*",
-        "end-two-entity:{entity}",
-        "end-two-entity:{entity}/*"
+        "end-two-entity:*"
       ],
       "actions": ["add-relationship"]
     }
@@ -233,10 +232,9 @@
         "end-one-entity-classification:*",
         "end-one-entity:*",
 
-        "end-two-entity-type:{entity-type}",
+        "end-two-entity-type:*",
         "end-two-entity-classification:*",
-        "end-two-entity:{entity}",
-        "end-two-entity:{entity}/*"
+        "end-two-entity:*"
       ],
       "actions": ["remove-relationship"]
     }
