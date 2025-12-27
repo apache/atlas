@@ -27,10 +27,12 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasBusinessMetadataType;
 import org.apache.atlas.type.AtlasStructType;
@@ -57,6 +59,9 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
     private static final Logger LOG = LoggerFactory.getLogger(AtlasBusinessMetadataDefStoreV2.class);
 
     private final EntityDiscoveryService entityDiscoveryService;
+
+    @Inject
+    private AtlasGraph graph;
 
     @Inject
     public AtlasBusinessMetadataDefStoreV2(AtlasTypeDefGraphStoreV2 typeDefStore, AtlasTypeRegistry typeRegistry, EntityDiscoveryService entityDiscoveryService) {
@@ -363,44 +368,71 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
     private void checkBusinessMetadataRef(String typeName) throws AtlasBaseException {
         AtlasBusinessMetadataDef businessMetadataDef = typeRegistry.getBusinessMetadataDefByName(typeName);
 
-        if (businessMetadataDef != null) {
-            List<AtlasStructDef.AtlasAttributeDef> attributeDefs = businessMetadataDef.getAttributeDefs();
+        if (businessMetadataDef == null || CollectionUtils.isEmpty(businessMetadataDef.getAttributeDefs())) {
+            return;
+        }
 
-            for (AtlasStructDef.AtlasAttributeDef attributeDef : attributeDefs) {
-                String      qualifiedName      = AtlasStructType.AtlasAttribute.getQualifiedAttributeName(businessMetadataDef, attributeDef.getName());
-                String      vertexPropertyName = AtlasStructType.AtlasAttribute.generateVertexPropertyName(businessMetadataDef, attributeDef, qualifiedName);
-                Set<String> applicableTypes    = AtlasJson.fromJson(attributeDef.getOption(AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES), Set.class);
+        for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
+            String applicableTypesStr = attributeDef.getOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES);
+            Set<String> applicableTypes = StringUtils.isBlank(applicableTypesStr) ? null : AtlasJson.fromJson(applicableTypesStr, Set.class);
 
-                if (CollectionUtils.isNotEmpty(applicableTypes) && isBusinessAttributePresent(vertexPropertyName, applicableTypes)) {
-                    throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, typeName);
-                }
+            if (CollectionUtils.isEmpty(applicableTypes)) {
+                continue;
+            }
+
+            String qualifiedName      = AtlasStructType.AtlasAttribute.getQualifiedAttributeName(businessMetadataDef, attributeDef.getName());
+            String vertexPropertyName = AtlasStructType.AtlasAttribute.generateVertexPropertyName(businessMetadataDef, attributeDef, qualifiedName);
+
+            boolean isPresent;
+
+            if (Boolean.TRUE.equals(attributeDef.getIsIndexable())) {
+                isPresent = isBusinessAttributePresent(vertexPropertyName, applicableTypes);
+            } else {
+                isPresent = isBusinessAttributePresentInGraph(vertexPropertyName, applicableTypes);
+            }
+
+            if (isPresent) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, typeName);
             }
         }
     }
 
     private boolean isBusinessAttributePresent(String attrName, Set<String> applicableTypes) throws AtlasBaseException {
         SearchParameters.FilterCriteria criteria = new SearchParameters.FilterCriteria();
-
         criteria.setAttributeName(attrName);
-        criteria.setOperator(SearchParameters.Operator.NOT_EMPTY);
+        criteria.setOperator(SearchParameters.Operator.NOT_NULL);
 
         SearchParameters.FilterCriteria entityFilters = new SearchParameters.FilterCriteria();
-
         entityFilters.setCondition(SearchParameters.FilterCriteria.Condition.OR);
         entityFilters.setCriterion(Collections.singletonList(criteria));
 
         SearchParameters searchParameters = new SearchParameters();
-
         searchParameters.setTypeName(String.join(SearchContext.TYPENAME_DELIMITER, applicableTypes));
         searchParameters.setExcludeDeletedEntities(true);
         searchParameters.setIncludeSubClassifications(false);
         searchParameters.setEntityFilters(entityFilters);
-        searchParameters.setAttributes(Collections.singleton(attrName));
-        searchParameters.setOffset(0);
+        searchParameters.setAttributes(Collections.emptySet());
         searchParameters.setLimit(1);
 
         AtlasSearchResult atlasSearchResult = entityDiscoveryService.searchWithParameters(searchParameters);
+        return atlasSearchResult != null && CollectionUtils.isNotEmpty(atlasSearchResult.getEntities());
+    }
 
-        return CollectionUtils.isNotEmpty(atlasSearchResult.getEntities());
+    private boolean isBusinessAttributePresentInGraph(String vertexPropertyName, Set<String> applicableTypes) {
+        for (String typeName : applicableTypes) {
+
+            Iterable<AtlasVertex> vertices = graph.getVertices(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName);
+
+            if (vertices != null) {
+                for (AtlasVertex vertex : vertices) {
+
+                    if (vertex.getProperty(vertexPropertyName, Object.class) != null &&
+                            AtlasGraphUtilsV2.getState(vertex) == AtlasEntity.Status.ACTIVE) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 }
