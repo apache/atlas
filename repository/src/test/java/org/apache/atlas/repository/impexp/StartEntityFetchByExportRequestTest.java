@@ -38,11 +38,14 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import static org.apache.atlas.model.impexp.AtlasExportRequest.MATCH_TYPE_FOR_TYPE;
 import static org.apache.atlas.repository.impexp.StartEntityFetchByExportRequest.BINDING_PARAMETER_ATTR_NAME;
 import static org.apache.atlas.repository.impexp.StartEntityFetchByExportRequest.BINDING_PARAMETER_TYPENAME;
 import static org.apache.atlas.repository.impexp.StartEntityFetchByExportRequest.BINDING_PARAMTER_ATTR_VALUE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class StartEntityFetchByExportRequestTest extends AtlasTestBase {
@@ -78,6 +81,55 @@ public class StartEntityFetchByExportRequestTest extends AtlasTestBase {
         assertEquals(startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMETER_TYPENAME), "hive_db");
         assertEquals(startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMETER_ATTR_NAME), "Referenceable.qualifiedName");
         assertEquals(startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMTER_ATTR_VALUE), "stocks@cl1");
+    }
+
+    @Test
+    public void fetchReferenceableUniqueAttributes() {
+        String             exportRequestJson = "{ \"itemsToExport\": [ { \"typeName\": \"Referenceable\", \"uniqueAttributes\": {\"qualifiedName\": \"stocks@cl1\"} } ]}";
+        AtlasExportRequest exportRequest     = AtlasType.fromJson(exportRequestJson, AtlasExportRequest.class);
+
+        startEntityFetchByExportRequestSpy.get(exportRequest);
+
+        assertEquals(startEntityFetchByExportRequestSpy.getGeneratedQuery(), startEntityFetchByExportRequestSpy.getQueryTemplateForMatchType(MATCH_TYPE_FOR_TYPE));
+
+        Object typeNameBinding = startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMETER_TYPENAME);
+        assertTrue(typeNameBinding instanceof Set);
+
+        Set<String> boundTypes = (Set<String>) typeNameBinding;
+        assertTrue(boundTypes.size() > 1);
+        assertTrue(boundTypes.contains("hive_table"));
+    }
+
+    @Test
+    public void fetchTypeExpansion() {
+        String             exportRequestJson = "{ \"itemsToExport\": [ { \"typeName\": \"Asset\" } ], \"options\": {\"matchType\": \"forType\"} }";
+        AtlasExportRequest exportRequest     = AtlasType.fromJson(exportRequestJson, AtlasExportRequest.class);
+
+        startEntityFetchByExportRequestSpy.get(exportRequest);
+
+        Set<String> boundTypes = (Set<String>) startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMETER_TYPENAME);
+        assertTrue(boundTypes.contains("Asset"));
+        assertTrue(boundTypes.contains("hive_db"));
+    }
+
+    @Test
+    public void fetchEmptyTypeUniqueAttributes() {
+        String             exportRequestJson = "{ \"itemsToExport\": [ { \"typeName\": \"\", \"uniqueAttributes\": {\"qualifiedName\": \"stocks@cl1\"} } ]}";
+        AtlasExportRequest exportRequest     = AtlasType.fromJson(exportRequestJson, AtlasExportRequest.class);
+
+        startEntityFetchByExportRequestSpy.get(exportRequest);
+
+        Set<String> boundTypes = (Set<String>) startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMETER_TYPENAME);
+        assertEquals(boundTypes.size(), typeRegistry.getAllEntityDefNames().size());
+    }
+
+    @Test
+    public void fetchUnknownType() {
+        String             exportRequestJson = "{ \"itemsToExport\": [ { \"typeName\": \"InvalidType\" } ]}";
+        AtlasExportRequest exportRequest     = AtlasType.fromJson(exportRequestJson, AtlasExportRequest.class);
+
+        List<AtlasObjectId> result = startEntityFetchByExportRequestSpy.get(exportRequest);
+        assertTrue(result.isEmpty());
     }
 
     @BeforeClass
