@@ -47,7 +47,7 @@ spec:
                     import time
                     import socket
                     
-                    host = 'atlas-cassandra.atlas.svc.cluster.local'
+                    host = 'atlas-cassandra-online-dc.atlas.svc.cluster.local'
                     port = 9042
                     max_retries = 30
                     
@@ -74,7 +74,7 @@ spec:
                     print("Connecting to Cassandra...")
                     cluster = Cluster(
                         [host],
-                        load_balancing_policy=DCAwareRoundRobinPolicy(local_dc='datacenter1'),
+                        load_balancing_policy=DCAwareRoundRobinPolicy(local_dc='online-dc'),
                         connection_class=LibevConnection
                     )
                     session = cluster.connect()
@@ -82,7 +82,7 @@ spec:
                     print("Creating keyspace reaper_db...")
                     session.execute("""
                         CREATE KEYSPACE IF NOT EXISTS reaper_db 
-                        WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 3}
+                        WITH replication = {'class': 'NetworkTopologyStrategy', 'online-dc': 3}
                         AND durable_writes = true
                     """)
                     print("Keyspace reaper_db created/verified successfully!")
