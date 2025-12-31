@@ -48,6 +48,10 @@ define(['require',
                 enumValueSelector: "[data-id='enumValueSelector']",
                 multiValueSelect: "[data-id='multiValueSelect']",
                 multiValueSelectStatus: "[data-id='multiValueSelectStatus']",
+                cardinalityToggleContainer: "[data-id='cardinalityToggleContainer']",
+                cardinalityToggle: "[data-id='cardinalityToggle']",
+                cardinalitySET: "[data-id='cardinalitySET']",
+                cardinalityLIST: "[data-id='cardinalityLIST']",
                 stringLengthContainer: "[data-id='stringLengthContainer']",
                 stringLengthValue: "[data-id='stringLength']",
                 createNewEnum: "[data-id='createNewEnum']"
@@ -122,14 +126,71 @@ define(['require',
                     this.model.set({ "enumValues": this.ui.enumValueSelector.val() });
                 };
                 events["change " + this.ui.multiValueSelectStatus] = function(e) {
+                    var that = this;
                     this.model.set({ "multiValueSelect": e.target.checked });
                     var typename = this.model.get('typeName');
                     if (e.target.checked) {
                         typename = "array<" + typename + ">";
+                        // Show cardinality toggle when multivalues is enabled
+                        that.ui.cardinalityToggleContainer.show();
+                        // Disable cardinality toggle buttons in edit mode
+                        if (that.isAttrEdit) {
+                            that.ui.cardinalitySET.attr('disabled', 'disabled');
+                            that.ui.cardinalityLIST.attr('disabled', 'disabled');
+                            that.ui.cardinalitySET.addClass('disabled');
+                            that.ui.cardinalityLIST.addClass('disabled');
+                        } else {
+                            that.ui.cardinalitySET.removeAttr('disabled');
+                            that.ui.cardinalityLIST.removeAttr('disabled');
+                            that.ui.cardinalitySET.removeClass('disabled');
+                            that.ui.cardinalityLIST.removeClass('disabled');
+                        }
+                        // Set default cardinality to SET if not already set
+                        if (!that.model.get('cardinalityToggle')) {
+                            that.model.set({ "cardinalityToggle": "SET" });
+                            that.ui.cardinalitySET.addClass('active');
+                            that.ui.cardinalityLIST.removeClass('active');
+                        } else {
+                            // Set active button based on current value
+                            var currentCardinality = that.model.get('cardinalityToggle');
+                            if (currentCardinality === "LIST") {
+                                that.ui.cardinalityLIST.addClass('active');
+                                that.ui.cardinalitySET.removeClass('active');
+                            } else {
+                                that.ui.cardinalitySET.addClass('active');
+                                that.ui.cardinalityLIST.removeClass('active');
+                            }
+                        }
                     } else {
                         typename = typename.replace('array<', '').replace('>', '');
+                        // Hide cardinality toggle when multivalues is disabled
+                        that.ui.cardinalityToggleContainer.hide();
+                        // Reset cardinality toggle
+                        that.model.set({ "cardinalityToggle": "SET" });
                     }
                     this.model.set({ "typeName": typename });
+                };
+                events["click " + this.ui.cardinalitySET] = function(e) {
+                    e.preventDefault();
+                    var that = this;
+                    // Disable cardinality toggle in edit mode
+                    if (that.isAttrEdit) {
+                        return;
+                    }
+                    that.model.set({ "cardinalityToggle": "SET" });
+                    that.ui.cardinalitySET.addClass('active');
+                    that.ui.cardinalityLIST.removeClass('active');
+                };
+                events["click " + this.ui.cardinalityLIST] = function(e) {
+                    e.preventDefault();
+                    var that = this;
+                    // Disable cardinality toggle in edit mode
+                    if (that.isAttrEdit) {
+                        return;
+                    }
+                    that.model.set({ "cardinalityToggle": "LIST" });
+                    that.ui.cardinalityLIST.addClass('active');
+                    that.ui.cardinalitySET.removeClass('active');
                 };
                 events["change " + this.ui.entityTypeSelector] = function(e) {
                     var options = this.model.get('options') || {};
@@ -223,6 +284,24 @@ define(['require',
                         this.ui.multiValueSelect.show();
                         $(this.ui.multiValueSelectStatus).prop('checked', true).trigger('change');
                         this.ui.multiValueSelectStatus.attr("disabled", "false");
+                        // Set cardinality toggle based on existing cardinality (SET or LIST), default to SET
+                        var existingCardinality = this.model.get("cardinality");
+                        var cardinalityToggle = (existingCardinality === "LIST") ? "LIST" : "SET";
+                        this.model.set({ "cardinalityToggle": cardinalityToggle });
+                        if (cardinalityToggle === "LIST") {
+                            this.ui.cardinalityLIST.addClass('active');
+                            this.ui.cardinalitySET.removeClass('active');
+                        } else {
+                            this.ui.cardinalitySET.addClass('active');
+                            this.ui.cardinalityLIST.removeClass('active');
+                        }
+                        // Disable cardinality toggle buttons in edit mode
+                        if (this.isAttrEdit) {
+                            this.ui.cardinalitySET.attr('disabled', 'disabled');
+                            this.ui.cardinalityLIST.attr('disabled', 'disabled');
+                            this.ui.cardinalitySET.addClass('disabled');
+                            this.ui.cardinalityLIST.addClass('disabled');
+                        }
                     }
                 }
             },
