@@ -179,10 +179,19 @@ const BusinessMetadataDetailsLayout = () => {
     let attributeDefsData = [...formAttributes];
 
     let attributes = attributeDefsData.map((item) => {
-      const { multiValueSelect, enumValues, enumType, ...rest } = item;
+      const { multiValueSelect, enumValues, enumType, cardinality, cardinalityToggle, ...rest } = item;
+
+      // Determine cardinality based on multiValueSelect and cardinality toggle
+      let finalCardinality = "SINGLE";
+      if (multiValueSelect) {
+        // If multivalues is enabled, use the cardinalityToggle (SET or LIST)
+        // Default to SET if not specified
+        finalCardinality = cardinalityToggle === "LIST" ? "LIST" : (cardinality === "LIST" ? "LIST" : "SET");
+      }
 
       return {
         ...rest,
+        cardinality: finalCardinality,
         ...{
           options: {
             applicableEntityTypes: JSON.stringify(

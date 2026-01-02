@@ -244,11 +244,11 @@ define(['require',
                         accordion: false,
                         alwaysVisible: true,
                         expand: function(el, model) {
-                            el.attr('colspan', '8');
+                            el.attr('colspan', '9');
                             var attrValues = '',
                                 attrTable = $('table'),
                                 attrTableBody = $('tbody'),
-                                attrTableHeading = "<thead><td style='display:table-cell'><b>Attribute</b></td><td style='display:table-cell'><b>Type</b></td><td style='display:table-cell'><b>Search Weight</b></td><td style='display:table-cell'><b>Enable Multivalues</b></td><td style='display:table-cell'><b>Max Length</b></td><td style='display:table-cell'><b>Applicable Type(s)</b></td><td style='display:table-cell'><b>Action</b></td></thead>",
+                                attrTableHeading = "<thead><td style='display:table-cell'><b>Attribute</b></td><td style='display:table-cell'><b>Type</b></td><td style='display:table-cell'><b>Search Weight</b></td><td style='display:table-cell'><b>Enable Multivalues</b></td><td style='display:table-cell'><b>Cardinality</b></td><td style='display:table-cell'><b>Max Length</b></td><td style='display:table-cell'><b>Applicable Type(s)</b></td><td style='display:table-cell'><b>Action</b></td></thead>",
                                 attrRow = '',
                                 attrTableDetails = '';
                             if (model.attributes && model.attributes.attributeDefs.length) {
@@ -256,7 +256,8 @@ define(['require',
                                     var applicableEntityTypes = '',
                                         typeName = attrObj.typeName,
                                         multiSelect = '',
-                                        maxString = 'NA';
+                                        maxString = 'NA',
+                                        cardinality = 'SINGLE';
                                     if (attrObj.options && attrObj.options.applicableEntityTypes) {
                                         var entityTypes = JSON.parse(attrObj.options.applicableEntityTypes);
                                         _.each(entityTypes, function(values) {
@@ -266,12 +267,21 @@ define(['require',
                                     if (typeName.includes('array')) {
                                         typeName = _.escape(typeName);
                                         multiSelect = 'checked';
+                                        // Determine cardinality - use existing cardinality value or default to SET
+                                        if (attrObj.cardinality) {
+                                            cardinality = attrObj.cardinality;
+                                        } else {
+                                            cardinality = 'SET';
+                                        }
+                                    } else {
+                                        // For non-array types, cardinality is SINGLE
+                                        cardinality = 'SINGLE';
                                     }
                                     if (typeName.includes('string') && attrObj.options && attrObj.options.maxStrLength) {
                                         maxString = attrObj.options.maxStrLength;
                                     }
 
-                                    attrRow += "<tr> <td style='display:table-cell'>" + _.escape(attrObj.name) + "</td><td style='display:table-cell'>" + typeName + "</td><td style='display:table-cell'>" + _.escape(attrObj.searchWeight) + "</td><td style='display:table-cell'><input type='checkbox' class='form-check-input multi-value-select' " + multiSelect + " disabled='disabled'> </td><td style='display:table-cell'>" + maxString + "</td><td style='display:table-cell'>" + applicableEntityTypes + "</td><td style='display:table-cell'> <div class='btn btn-action btn-sm' style='margin-left:0px;' data-id='attributeEdit' data-guid='" + model.get('guid') + "' data-name ='" + _.escape(attrObj.name) + "' data-action='attributeEdit' >Edit</div> </td></tr> ";
+                                    attrRow += "<tr> <td style='display:table-cell'>" + _.escape(attrObj.name) + "</td><td style='display:table-cell'>" + typeName + "</td><td style='display:table-cell'>" + _.escape(attrObj.searchWeight) + "</td><td style='display:table-cell'><input type='checkbox' class='form-check-input multi-value-select' " + multiSelect + " disabled='disabled'> </td><td style='display:table-cell'>" + _.escape(cardinality) + "</td><td style='display:table-cell'>" + maxString + "</td><td style='display:table-cell'>" + applicableEntityTypes + "</td><td style='display:table-cell'> <div class='btn btn-action btn-sm' style='margin-left:0px;' data-id='attributeEdit' data-guid='" + model.get('guid') + "' data-name ='" + _.escape(attrObj.name) + "' data-action='attributeEdit' >Edit</div> </td></tr> ";
                                 });
                                 var adminText = '<div class="row"><div class="col-sm-12 attr-details"><table style="padding: 50px;">' + attrTableHeading + attrRow + '</table></div></div>';
                                 $(el).append($('<div>').html(adminText));
