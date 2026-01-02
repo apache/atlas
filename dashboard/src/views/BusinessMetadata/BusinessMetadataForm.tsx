@@ -115,7 +115,9 @@ const BusinessMetaDataForm = ({
       ...(currentTypeName == "enumeration" && {
         enumValues: enumTypeOptions
       }),
-      multiValueSelect: str.indexOf("<") != -1 ? true : false
+      multiValueSelect: str.indexOf("<") != -1 ? true : false,
+      // Set cardinalityToggle based on existing cardinality (SET or LIST), default to SET
+      cardinalityToggle: editbmAttribute?.cardinality === "LIST" ? "LIST" : "SET"
     }
   ];
   const dispatchState = useAppDispatch();
@@ -142,6 +144,7 @@ const BusinessMetaDataForm = ({
                 },
                 isOptional: true,
                 cardinality: "SINGLE",
+                cardinalityToggle: "SET", // Default toggle value when multivalues is enabled
                 valuesMinCount: 0,
                 valuesMaxCount: 1,
                 isUnique: false,
@@ -157,7 +160,7 @@ const BusinessMetaDataForm = ({
     control,
     name: "attributeDefs",
     rules: {
-      required: true
+      required: false // Allow creating BM without attributes
     }
   });
 
@@ -203,7 +206,9 @@ const BusinessMetaDataForm = ({
         ...(currentTypeName == "enumeration" && {
           enumValues: enumTypeOptions
         }),
-        multiValueSelect: str.indexOf("<") != -1 ? true : false
+        multiValueSelect: str.indexOf("<") != -1 ? true : false,
+        // Set cardinalityToggle based on existing cardinality (SET or LIST), default to SET
+        cardinalityToggle: editbmAttribute?.cardinality === "LIST" ? "LIST" : "SET"
       }
     ];
     if (!isEmpty(editbmAttribute)) {
@@ -255,10 +260,19 @@ const BusinessMetaDataForm = ({
 
     let attributes = !isEmpty(attributeDefsData)
       ? attributeDefsData.map((item) => {
-          const { multiValueSelect, enumType, enumValues, ...rest } = item;
+          const { multiValueSelect, enumType, enumValues, cardinality, cardinalityToggle, ...rest } = item;
+
+          // Determine cardinality based on multiValueSelect and cardinality toggle
+          let finalCardinality = "SINGLE";
+          if (multiValueSelect) {
+            // If multivalues is enabled, use the cardinalityToggle (SET or LIST)
+            // Default to SET if not specified
+            finalCardinality = cardinalityToggle === "LIST" ? "LIST" : (cardinality === "LIST" ? "LIST" : "SET");
+          }
 
           const baseObj = {
             ...rest,
+            cardinality: finalCardinality,
             options: {
               applicableEntityTypes: JSON.stringify(
                 rest.options.applicableEntityTypes
@@ -508,6 +522,7 @@ const BusinessMetaDataForm = ({
                               },
                               isOptional: true,
                               cardinality: "SINGLE",
+                              cardinalityToggle: "SET", // Default toggle value when multivalues is enabled
                               valuesMinCount: 0,
                               valuesMaxCount: 1,
                               isUnique: false,

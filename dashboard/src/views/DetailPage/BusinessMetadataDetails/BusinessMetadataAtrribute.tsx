@@ -85,6 +85,18 @@ const BusinessMetadataAtrribute = ({ componentProps, row }: any) => {
         enableSorting: false
       },
       {
+        accessorKey: "cardinality",
+        cell: (info: any) =>
+          !isEmpty(info.getValue()) ? (
+            <Typography>{info.getValue()}</Typography>
+          ) : (
+            <span>N/A</span>
+          ),
+        header: "Cardinality",
+        enableSorting: true,
+        show: true
+      },
+      {
         accessorKey: "maxStrLength",
         cell: (info: any) => {
           const { maxStrLength } = info.row.original.options || {};
@@ -217,7 +229,9 @@ const BusinessMetadataAtrribute = ({ componentProps, row }: any) => {
                     ...(currentTypeName == "enumeration" && {
                       enumValues: enumTypeOptions
                     }),
-                    multiValueSelect: str.indexOf("<") != -1 ? true : false
+                    multiValueSelect: str.indexOf("<") != -1 ? true : false,
+                    // Set cardinalityToggle based on existing cardinality (SET or LIST), default to SET
+                    cardinalityToggle: original?.cardinality === "LIST" ? "LIST" : "SET"
                   }
                 ];
                 setForm(true);
