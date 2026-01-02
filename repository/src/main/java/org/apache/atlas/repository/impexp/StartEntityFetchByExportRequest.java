@@ -40,6 +40,7 @@ import javax.script.ScriptException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -104,6 +105,10 @@ public class StartEntityFetchByExportRequest {
                 return ret;
             }
 
+            if (StringUtils.isEmpty(item.getTypeName()) && MapUtils.isNotEmpty(item.getUniqueAttributes())) {
+                return getEntitiesForMatchTypeType(item, MATCH_TYPE_FOR_TYPE);
+            }
+
             if (StringUtils.isNotEmpty(item.getTypeName()) && MapUtils.isNotEmpty(item.getUniqueAttributes())) {
                 ret = getEntitiesForMatchTypeUsingUniqueAttributes(item, matchType);
 
@@ -145,9 +150,16 @@ public class StartEntityFetchByExportRequest {
     }
 
     private List<String> getEntitiesForMatchTypeUsingUniqueAttributes(AtlasObjectId item, String matchType) throws AtlasBaseException {
+        final String typeName = item.getTypeName();
+        final AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+        if (entityType == null || (CollectionUtils.isNotEmpty(entityType.getAllSubTypes()) && entityType.getSuperTypes().isEmpty())) {
+            LOG.info("Unique attribute lookup requested for abstract/generic type '{}'. Rerouting to general search.", typeName);
+
+            return getEntitiesForMatchTypeType(item, AtlasExportRequest.MATCH_TYPE_FOR_TYPE);
+        }
+
         final String          queryTemplate = getQueryTemplateForMatchType(matchType);
-        final String          typeName      = item.getTypeName();
-        final AtlasEntityType entityType    = typeRegistry.getEntityTypeByName(typeName);
 
         Set<String> ret = new HashSet<>();
 
@@ -177,15 +189,61 @@ public class StartEntityFetchByExportRequest {
         return new ArrayList<>(ret);
     }
 
-    private List<String> getEntitiesForMatchTypeType(AtlasObjectId item, String matchType) {
-        return executeGremlinQuery(getQueryTemplateForMatchType(matchType), getBindingsForTypeName(item.getTypeName()));
+    private List<String> getEntitiesForMatchTypeType(AtlasObjectId item, String matchType) throws AtlasBaseException {
+        String typeName = item.getTypeName();
+
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+        if (StringUtils.isNotEmpty(typeName) && entityType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, typeName);
+        }
+
+        boolean isRootOrGenericSearch = StringUtils.isEmpty(typeName) || (CollectionUtils.isNotEmpty(entityType.getAllSubTypes()) && entityType.getSuperTypes().isEmpty());
+
+        if (isRootOrGenericSearch) {
+            LOG.info("Handling export for root or generic type: Executing generic query for all concrete entities.");
+
+            Collection<String> allConcreteEntityTypes = typeRegistry.getAllEntityDefNames();
+
+            if (CollectionUtils.isEmpty(allConcreteEntityTypes)) {
+                return new ArrayList<>();
+            }
+
+            String allForTypeQuery = getQueryTemplateForMatchType(AtlasExportRequest.MATCH_TYPE_FOR_TYPE);
+
+            HashMap<String, Object> bindings = new HashMap<>();
+            bindings.put(BINDING_PARAMETER_TYPENAME, new HashSet<>(allConcreteEntityTypes));
+
+            return executeGremlinQuery(allForTypeQuery, bindings);
+        }
+
+        return executeGremlinQuery(getQueryTemplateForMatchType(matchType), getBindingsForTypeName(typeName));
     }
 
-    private HashMap<String, Object> getBindingsForTypeName(String typeName) {
+    private HashMap<String, Object> getBindingsForTypeName(String typeName) throws AtlasBaseException {
         HashMap<String, Object> ret = new HashMap<>();
+        Set<String> typeNamesToQuery = new HashSet<>();
 
-        ret.put(BINDING_PARAMETER_TYPENAME, new HashSet<>(Arrays.asList(StringUtils.split(typeName, ","))));
+        List<String> providedTypeNames = Arrays.asList(StringUtils.split(typeName, ","));
 
+        for (String name : providedTypeNames) {
+            AtlasType type = typeRegistry.getType(name);
+
+            if (type instanceof AtlasEntityType) {
+                AtlasEntityType entityType = (AtlasEntityType) type;
+
+                typeNamesToQuery.add(entityType.getTypeName());
+
+                Set<String> subTypes = entityType.getAllSubTypes();
+                if (CollectionUtils.isNotEmpty(subTypes)) {
+                    typeNamesToQuery.addAll(subTypes);
+                }
+            } else {
+                typeNamesToQuery.add(name);
+            }
+        }
+
+        ret.put(BINDING_PARAMETER_TYPENAME, typeNamesToQuery);
         return ret;
     }
 
