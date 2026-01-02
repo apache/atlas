@@ -33,7 +33,6 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.notification.EntityNotification;
-import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.graph.FullTextMapperV2;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -59,7 +58,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_DELETE;
@@ -68,8 +67,6 @@ import static org.apache.atlas.repository.Constants.ENTITY_TEXT_PROPERTY_KEY;
 @Component
 public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityChangeNotifier.class);
-
-    private static final Predicate<AtlasEntityHeader> PRED_IS_NOT_TYPE_AUDIT_ENTITY = obj -> !obj.getTypeName().equals(AtlasAuditService.ENTITY_TYPE_AUDIT_ENTRY);
 
     private final Set<EntityChangeListener>   entityChangeListeners;
     private final Set<EntityChangeListenerV2> entityChangeListenersV2;
@@ -400,24 +397,32 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         return listener.getClass().getSimpleName();
     }
 
-    private boolean skipAuditEntries(List<AtlasEntityHeader> entityHeaders) {
-        return CollectionUtils.isEmpty(entityHeaders) || entityHeaders.stream().noneMatch(PRED_IS_NOT_TYPE_AUDIT_ENTITY);
+    private List<AtlasEntityHeader> filterNonInternalEntities(List<AtlasEntityHeader> entityHeaders) {
+        if (CollectionUtils.isEmpty(entityHeaders)) {
+            return Collections.emptyList();
+        }
+
+        return entityHeaders.stream().filter(atlasEntityHeader -> !GraphHelper.isInternalType(atlasEntityHeader.getTypeName())).collect(Collectors.toList());
     }
 
     private void notifyListeners(List<AtlasEntityHeader> entityHeaders, EntityOperation operation, boolean isImport) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(entityHeaders)) {
             return;
         }
-        if (skipAuditEntries(entityHeaders)) {
+
+        List<AtlasEntityHeader> nonInternalEntities = filterNonInternalEntities(entityHeaders);
+
+        if (CollectionUtils.isEmpty(nonInternalEntities)) {
+            LOG.info("Skipping notifications: All entities are internal types");
             return;
         }
 
         MetricRecorder metric = RequestContext.get().startMetricRecord("notifyListeners");
 
         if (isV2EntityNotificationEnabled) {
-            notifyV2Listeners(entityHeaders, operation, isImport);
+            notifyV2Listeners(nonInternalEntities, operation, isImport);
         } else {
-            notifyV1Listeners(entityHeaders, operation, isImport);
+            notifyV1Listeners(nonInternalEntities, operation, isImport);
         }
 
         RequestContext.get().endMetricRecord(metric);
