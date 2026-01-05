@@ -85,12 +85,6 @@ data:
         CLIENT_EXISTS=true
       fi
     done
-    
-    echo "[+] Checking for Cache Invalidation Proxy"
-    until printf "." && curl -s http://cinv.atlas.svc.cluster.local:5000/health; do
-      sleep 2;
-    done;
-    echo '[+] Cache Invalidation Proxy OK ✓'
 
     echo "[+] Checking for Zookeeper"
     while true

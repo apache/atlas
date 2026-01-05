@@ -273,8 +273,6 @@ data:
     {{- else }}
     atlas.server.ha.enabled=false
     {{- end }}
-    atlas.server.type.cache-refresher=http://cinv.atlas.svc.cluster.local:5000/cinv
-    atlas.server.type.cache-refresher-health=http://cinv.atlas.svc.cluster.local:5000/health
     #### Enabled the configs below as per need if HA is enabled #####
     atlas.server.ids=id1,id2
     atlas.server.address.id1=atlas-read-0.atlas-read-service-atlas.atlas.svc.cluster.local:21000
