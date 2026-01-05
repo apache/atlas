@@ -48,6 +48,10 @@ atlas:
   cache:
     enabled: false
   podAntiAffinity: true
+  serviceAccount:
+    name: atlas-read-sa
+    annotations: {}
+    automountServiceAccountToken: true
   custom_deployment:
     enabled: false
     instance_type:
