@@ -25,6 +25,7 @@ import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.janus.query.AtlasJanusGraphQuery;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import org.janusgraph.core.Cardinality;
@@ -32,6 +33,7 @@ import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.JanusGraphIndex;
 
 import static org.apache.atlas.repository.Constants.LEAN_GRAPH_ENABLED;
+import static org.apache.atlas.type.Constants.GUID_PROPERTY_KEY;
 
 
 /**
@@ -70,6 +72,9 @@ public final class GraphDbObjectFactory {
 
     /**
      * Creates an AtlasJanusVertex that corresponds to the given Gremlin Vertex.
+     * When LEAN_GRAPH_ENABLED, checks diffVertexCache first to reuse existing vertex instances.
+     * This ensures that property changes (like hasLineage) are made on the same vertex instance
+     * that will be committed.
      *
      * @param graph The graph that contains the vertex
      * @param source the Gremlin vertex
@@ -77,6 +82,19 @@ public final class GraphDbObjectFactory {
     public static AtlasJanusVertex createVertex(AtlasJanusGraph graph, Vertex source) {
         if (source == null) {
             return null;
+        }
+
+        // Check diffVertexCache first when LEAN_GRAPH_ENABLED to reuse existing vertex instances
+        if (LEAN_GRAPH_ENABLED) {
+            // __guid is in VERTEX_CORE_PROPERTIES, so it's stored in JanusGraph
+            Property<String> guidProperty = source.property(GUID_PROPERTY_KEY);
+            if (guidProperty.isPresent()) {
+                String guid = guidProperty.value();
+                Object cached = RequestContext.get().getDifferentialVertex(guid);
+                if (cached instanceof AtlasJanusVertex) {
+                    return (AtlasJanusVertex) cached;
+                }
+            }
         }
 
         AtlasJanusVertex ret = new AtlasJanusVertex(graph, source);
