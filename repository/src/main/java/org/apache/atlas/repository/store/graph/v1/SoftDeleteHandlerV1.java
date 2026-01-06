@@ -39,11 +39,8 @@ import javax.inject.Inject;
 import java.util.Collection;
 
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
-import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassifications;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassificationsV2;
+import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.graph.GraphHelper.*;
 
 public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
@@ -77,19 +74,35 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("==> SoftDeleteHandlerV1.deleteEdge({}, {})", GraphHelper.string(edge), force);
             }
+
+            if (edge == null) {
+                LOG.warn("Edge is null. Nothing to delete");
+                return;
+            }
+
+            //tag vertex do not have typeName, but they have a label
+            if (!CLASSIFICATION_LABEL.equalsIgnoreCase(edge.getLabel())
+                    && getTypeName(edge) == null) {
+                LOG.warn("Edge is not a tag type and typeName is empty. Nothing to delete");
+                return;
+            }
+
             boolean isRelationshipEdge = isRelationshipEdge(edge);
             authorizeRemoveRelation(edge);
 
-
-            if (DEFERRED_ACTION_ENABLED && RequestContext.get().getCurrentTask() == null) {
-                Collection propagatableTags = org.apache.atlas.service.FeatureFlagStore.isTagV2Enabled()
-                        ? getPropagatableClassificationsV2(edge)
-                        : getPropagatableClassifications(edge);
-                if (CollectionUtils.isNotEmpty(propagatableTags)) {
-                    RequestContext.get().addToDeletedEdgesIds(edge.getIdForDisplay());
+            try {
+                if (DEFERRED_ACTION_ENABLED && RequestContext.get().getCurrentTask() == null) {
+                    Collection propagatableTags = org.apache.atlas.service.FeatureFlagStore.isTagV2Enabled()
+                            ? getPropagatableClassificationsV2(edge)
+                            : getPropagatableClassifications(edge);
+                    if (CollectionUtils.isNotEmpty(propagatableTags)) {
+                        RequestContext.get().addToDeletedEdgesIds(edge.getIdForDisplay());
+                    }
+                } else {
+                    removeTagPropagation(edge);
                 }
-            } else {
-                removeTagPropagation(edge);
+            } catch (NullPointerException npe) {
+                LOG.error("Error while removing propagated tags for edge {}. gracefully continuing with deletion...", GraphHelper.string(edge), npe);
             }
 
             if (force) {
@@ -105,9 +118,6 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
             }
             if (isRelationshipEdge)
                 AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_SOFT_DELETE, edge, entityRetriever);
-        } catch (NullPointerException npe) {
-            LOG.error("Error while deleting edge {}", GraphHelper.string(edge), npe);
-            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_SERVER_ERROR, npe);
         } catch (Exception e) {
             LOG.error("Error while deleting edge {}", GraphHelper.string(edge), e);
             throw new AtlasBaseException(e);

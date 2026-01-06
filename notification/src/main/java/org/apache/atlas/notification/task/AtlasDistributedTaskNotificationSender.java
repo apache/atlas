@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 public class AtlasDistributedTaskNotificationSender {
@@ -33,6 +34,14 @@ public class AtlasDistributedTaskNotificationSender {
         AtlasDistributedTaskNotification notification = new AtlasDistributedTaskNotification(AtlasDistributedTaskNotification.AtlasTaskType.CLEANUP_ARCHIVED_RELATIONSHIPS, taskParams);
 
        return notification;
+    }
+
+    public AtlasDistributedTaskNotification createHasLineageCalculationTasks(Map<String, String> typeByVertexId) {
+        Map<String, Object> taskParams = new HashMap<>();
+        taskParams.put("typeByVertexId", typeByVertexId);
+        AtlasDistributedTaskNotification notification = new AtlasDistributedTaskNotification(AtlasDistributedTaskNotification.AtlasTaskType.CALCULATE_HAS_LINEAGE, taskParams);
+
+        return  notification;
     }
 
     public void send(AtlasDistributedTaskNotification notification) {

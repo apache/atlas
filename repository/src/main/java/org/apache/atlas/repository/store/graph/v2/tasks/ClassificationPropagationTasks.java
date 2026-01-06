@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2.tasks;
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.repository.metrics.TaskMetricsService;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -34,8 +35,8 @@ public class ClassificationPropagationTasks {
     private static final Logger LOG = LoggerFactory.getLogger(ClassificationPropagationTasks.class);
 
     public static class Add extends ClassificationTask {
-        public Add(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
-            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+        public Add(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore, TaskMetricsService taskMetricsService) {
+            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
         }
 
         @Override
@@ -62,8 +63,8 @@ public class ClassificationPropagationTasks {
     }
 
     public static class UpdateText extends ClassificationTask {
-        public UpdateText(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
-            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+        public UpdateText(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore, TaskMetricsService taskMetricsService) {
+            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
         }
 
         @Override
@@ -85,8 +86,8 @@ public class ClassificationPropagationTasks {
     }
 
     public static class Delete extends ClassificationTask {
-        public Delete(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
-            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+        public Delete(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore, TaskMetricsService taskMetricsService) {
+            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
         }
 
         @Override
@@ -110,8 +111,8 @@ public class ClassificationPropagationTasks {
     }
 
     public static class RefreshPropagation extends ClassificationTask {
-        public RefreshPropagation(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
-            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+        public RefreshPropagation(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore, TaskMetricsService taskMetricsService) {
+            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
         }
 
         @Override
@@ -134,8 +135,8 @@ public class ClassificationPropagationTasks {
     }
 
     public static class UpdateRelationship extends ClassificationTask {
-        public UpdateRelationship(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
-            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+        public UpdateRelationship(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore, TaskMetricsService taskMetricsService) {
+            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
         }
 
         @Override
@@ -148,8 +149,8 @@ public class ClassificationPropagationTasks {
     }
 
     public static class CleanUpClassificationPropagation extends ClassificationTask {
-        public CleanUpClassificationPropagation(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
-            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+        public CleanUpClassificationPropagation(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore, TaskMetricsService taskMetricsService) {
+            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
         }
 
         @Override

@@ -93,5 +93,9 @@ public final class Constants {
         ES_ATLAN_KEYWORD_ANALYZER_CONFIG.put("normalizer", "atlan_normalizer");
     }
 
+    public static final String INDEX_NAME_VERTEX_INDEX = "vertex_index";
+    public static final String INDEX_NAME_FULLTEXT_INDEX = "fulltext_index";
+    public static final String INDEX_NAME_EDGE_INDEX = "edge_index";
+
     private Constants() {}
 }

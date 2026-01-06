@@ -32,6 +32,7 @@ import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.store.graph.v2.utils.MDCScope;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasStructType;
@@ -47,11 +48,13 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.ATTRIBUTE_NAME_TYPENAME;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.GLOSSARY_TERMS_EDGE_LABEL;
@@ -64,6 +67,7 @@ import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.UNIQUE_QUALIFIED_NAME;
 import static org.apache.atlas.repository.graph.AtlasGraphProvider.getGraphInstance;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
@@ -79,6 +83,7 @@ public class AtlasGraphUtilsV2 {
     public static final String ENTITYTYPE_EDGE_LABEL = PROPERTY_PREFIX + ".entitytype";
     public static final String RELATIONSHIPTYPE_EDGE_LABEL = PROPERTY_PREFIX + ".relationshipType";
     public static final String VERTEX_TYPE = "typeSystem";
+    private static final String COMPOSITE_INDEX_QN_TYPE = "__u_qualifiedName__typeName";
 
     private static boolean USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES = false;
     private static boolean USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY = true;
@@ -473,6 +478,72 @@ public class AtlasGraphUtilsV2 {
         return hasInstanceVertex;
     }
 
+    /**
+     * Check if a classification type has references using Elasticsearch.
+     * This method searches for entities that have the classification attached
+     * either directly or through propagation.
+     * 
+     * @param typeName the classification type name to check
+     * @return true if any active entities have this classification, false otherwise
+     *
+     */
+    public static boolean classificationHasReferences(String typeName) {
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Checking if classification {} has references using ES", typeName);
+            }
+
+            String indexName = Constants.getESIndex();
+            AtlasIndexQuery indexQuery = getGraphInstance().elasticsearchQuery(indexName);
+
+            String esQuery = buildClassificationReferenceQuery(typeName);
+            Long count = indexQuery.countIndexQuery(esQuery);
+
+            boolean hasReferences = count != null && count > 0;
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Classification {} has references: {} (count: {})", typeName, hasReferences, count);
+            }
+
+            return hasReferences;
+        } catch (Exception e) {
+            LOG.error("Error checking classification references for {}: {}", typeName, e.getMessage(), e);
+            // Conservative approach: if ES query fails, assume there are references to prevent accidental deletion
+            return true;
+        }
+    }
+
+    /**
+     * Build Elasticsearch query to check for classification references.
+     * Searches for entities that have the classification in either __traitNames or __propagatedTraitNames.
+     * 
+     * @param typeName the classification type name
+     * @return JSON query string
+     */
+    private static String buildClassificationReferenceQuery(String typeName) {
+        return String.format(
+            "{\n" +
+            "  \"query\": {\n" +
+            "    \"bool\": {\n" +
+            "      \"filter\": [\n" +
+            "        {\n" +
+            "          \"bool\": {\n" +
+            "            \"should\": [\n" +
+            "              {\"term\": {\"%s\": \"%s\"}},\n" +
+            "              {\"term\": {\"%s\": \"%s\"}}\n" +
+            "            ],\n" +
+            "            \"minimum_should_match\": 1\n" +
+            "          }\n" +
+            "        }\n" +
+            "      ]\n" +
+            "    }\n" +
+            "  }\n" +
+            "}",
+            Constants.TRAIT_NAMES_PROPERTY_KEY, typeName,
+            Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, typeName
+        );
+    }
+
     public static AtlasVertex findByTypeAndUniquePropertyName(String typeName, String propertyName, Object attrVal) {
         return findByTypeAndUniquePropertyName(getGraphInstance(), typeName, propertyName, attrVal);
     }
@@ -529,6 +600,7 @@ public class AtlasGraphUtilsV2 {
         MetricRecorder  metric          = RequestContext.get().startMetricRecord(metricName);
         String          typePropertyKey = isSuperType ? SUPER_TYPES_PROPERTY_KEY : ENTITY_TYPE_PROPERTY_KEY;
         AtlasGraphQuery query           = graph.query().has(typePropertyKey, typeName);
+        String uniqueQualifiedName = "";
 
         for (Map.Entry<String, Object> entry : attributeValues.entrySet()) {
             String attrName  = entry.getKey();
@@ -536,6 +608,9 @@ public class AtlasGraphUtilsV2 {
 
             if (attrName != null && attrValue != null) {
                 query.has(attrName, attrValue);
+                if (UNIQUE_QUALIFIED_NAME.equals(attrName)){
+                    uniqueQualifiedName =  (String) attrValue;
+                }
             }
         }
 
@@ -543,6 +618,28 @@ public class AtlasGraphUtilsV2 {
         AtlasVertex           vertex  = results.hasNext() ? results.next() : null;
 
         RequestContext.get().endMetricRecord(metric);
+
+        return logIfVertexIndexIsCorrupt(vertex, typeName, uniqueQualifiedName);
+    }
+
+    private static AtlasVertex logIfVertexIndexIsCorrupt(AtlasVertex vertex, String typeName, String uniqueQualifiedName) {
+        if (vertex == null) {
+            return vertex;
+        }
+
+        if (vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class) != null &&
+                vertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class) != null &&
+                vertex.getProperty(UNIQUE_QUALIFIED_NAME, String.class) != null) {
+            return vertex;
+
+        }
+
+        // definitely a corrupted vertex
+        if (vertex.getPropertyKeys().isEmpty() && StringUtils.isNotEmpty(uniqueQualifiedName)) {
+            try (MDCScope corruptedVertexDetails = new MDCScope(Map.of("id", vertex.getIdForDisplay(), ATTRIBUTE_NAME_TYPENAME, typeName, QUALIFIED_NAME, uniqueQualifiedName))) {
+                LOG.warn("findByTypeAndUniquePropertyName: vertex is corrupted {}::{}::{} ", vertex.getIdForDisplay(), typeName, uniqueQualifiedName);
+            }
+        }
 
         return vertex;
     }

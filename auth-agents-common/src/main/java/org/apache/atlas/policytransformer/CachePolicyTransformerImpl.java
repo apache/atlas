@@ -375,6 +375,10 @@ public class CachePolicyTransformerImpl {
 
         for (RangerPolicy policy : rangerPolicies) {
             Integer changeType = auditEventToDeltaChangeType.get(policyChanges.get(policy.getAtlasGuid()));
+            if (changeType == null) {
+                LOG.warn("PolicyDelta: {}: No change type found for policy guid={} audit_event={}", serviceName, policy.getAtlasGuid(), policyChanges.get(policy.getAtlasGuid()));
+                continue;
+            }
             RangerPolicyDelta delta = new RangerPolicyDelta(policy.getId(), changeType, policy.getVersion(), policy);
             policyDeltas.add(delta);
         }
@@ -384,8 +388,9 @@ public class CachePolicyTransformerImpl {
         for (String policyGuid : policyGuids) {
             Integer deltaChangeType = auditEventToDeltaChangeType.get(policyChanges.get(policyGuid));
             if (deltaChangeType == null) {
-                LOG.warn("PolicyDelta: {}: No change type found for policy audit guid={} audit_event={}", serviceName, policyGuid, policyChanges.get(policyGuid));
-            } else if (deltaChangeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE) {
+                continue;
+            }
+            if (deltaChangeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE) {
                 RangerPolicy deletedPolicy = new RangerPolicy();
                 deletedPolicy.setGuid(policyGuid);
                 deletedPolicy.setService(serviceName);
@@ -413,6 +418,10 @@ public class CachePolicyTransformerImpl {
         Map<String, EntityAuditActionV2> policyChanges = new HashMap<>();
         for (EntityAuditEventV2 event : events) {
             if (POLICY_ENTITY_TYPE.equals(event.getTypeName()) && !policyChanges.containsKey(event.getEntityId())) {
+                if (auditEventToDeltaChangeType.get(event.getAction()) == null) {
+                    LOG.warn("PolicyDelta: {}: No delta type found for audit_event={} guid={}", serviceName, event.getAction(), event.getEntityId());
+                    continue;
+                }
                 policyChanges.put(event.getEntityId(), event.getAction());
             }
         }
@@ -543,7 +552,12 @@ public class CachePolicyTransformerImpl {
         List<RangerPolicyItemAccess> accesses = new ArrayList<>();
         List<String> actions = (List<String>) atlasPolicy.getAttribute("policyActions");
 
-        actions.forEach(action -> accesses.add(new RangerPolicyItemAccess(action)));
+        if (actions != null) {
+            actions.forEach(action -> accesses.add(new RangerPolicyItemAccess(action)));
+        } else {
+            // Handle the null case - either throw an exception or use an empty list
+            LOG.warn("Policy actions is null for policy: {}", atlasPolicy.getGuid());
+        }
 
 
         if ("allow".equals(policyType)) {

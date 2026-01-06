@@ -43,6 +43,7 @@ import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.*;
+import org.apache.atlas.repository.store.graph.v2.repair.AtlasRepairAttributeService;
 import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -109,14 +110,18 @@ public class EntityREST {
     private final ESBasedAuditRepository  esBasedAuditRepository;
     private final EntityGraphRetriever entityGraphRetriever;
     private final EntityMutationService entityMutationService;
+    private final AtlasRepairAttributeService repairAttributeService;
+    private final RepairIndex repairIndex;
 
     @Inject
-    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository, EntityGraphRetriever retriever, EntityMutationService entityMutationService) {
+    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository, EntityGraphRetriever retriever, EntityMutationService entityMutationService, AtlasRepairAttributeService repairAttributeService, RepairIndex repairIndex) {
         this.typeRegistry      = typeRegistry;
         this.entitiesStore     = entitiesStore;
         this.esBasedAuditRepository = esBasedAuditRepository;
         this.entityGraphRetriever = retriever;
         this.entityMutationService = entityMutationService;
+        this.repairAttributeService = repairAttributeService;
+        this.repairIndex = repairIndex;
     }
 
     /**
@@ -1696,6 +1701,47 @@ public class EntityREST {
         }
     }
 
+    /**
+     * repairHasLineageByIds API to correct hasLineage attribute for entities by vertex IDs.
+     * This endpoint accepts a list of vertex IDs and repairs the hasLineage flag for both
+     * Process and Asset entities based on their current lineage state.
+     * 
+     * @param typeByVertexId Map of vertex IDs to repair
+     * @throws AtlasBaseException if repair operation fails
+     */
+    @POST
+    @Path("/repairhaslineagebyids")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
+    public void repairHasLineageByIds(Map<String, String> typeByVertexId) throws AtlasBaseException {
+        
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairHasLineageByIds(typeByVertexId count=" +
+                        (typeByVertexId != null ? typeByVertexId.size() : 0) + ")");
+            }
+
+            if (typeByVertexId == null || typeByVertexId.isEmpty()) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "typeByVertexId map cannot be empty");
+            }
+
+            entitiesStore.repairHasLineageByIds(typeByVertexId);
+
+
+        } catch (AtlasBaseException e) {
+            LOG.error("Failed to repair hasLineage by IDs", e);
+            throw e;
+        } catch (Exception e) {
+            LOG.error("Unexpected error during repairHasLineageByIds", e);
+            throw new AtlasBaseException(e);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
     private boolean hasNoGUIDAndTypeNameAttributes(ClassificationAssociateRequest request) {
         return (request == null || (CollectionUtils.isEmpty(request.getEntityGuids()) &&
                 (CollectionUtils.isEmpty(request.getEntitiesUniqueAttributes()) || request.getEntityTypeName() == null)));
@@ -1820,9 +1866,6 @@ public class EntityREST {
 
             AtlasEntityWithExtInfo entity = entitiesStore.getById(guid);
             Map<String, AtlasEntity> referredEntities = entity.getReferredEntities();
-            RepairIndex repairIndex = new RepairIndex();
-            repairIndex.setupGraph();
-
             repairIndex.restoreSelective(guid, referredEntities);
         } catch (Exception e) {
             LOG.error("Exception while repairEntityIndex ", e);
@@ -1844,12 +1887,41 @@ public class EntityREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairEntityIndexBulk(" + guids.size() + ")");
             }
-            RepairIndex repairIndex = new RepairIndex();
-            repairIndex.setupGraph();
-
             repairIndex.restoreByIds(guids);
         } catch (Exception e) {
             LOG.error("Exception while repairEntityIndexBulk ", e);
+            throw new AtlasBaseException(e);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Repair attributes for the entity GUID.
+     * @param guids
+     * @throws AtlasBaseException
+     */
+
+    @POST
+    @Path("/guid/bulk/repairattributes")
+    public void repairEntityAttributesBulk(Set<String> guids, @QueryParam("repairType") String repairType, @QueryParam("repairAttributeName") String repairAttributeName) throws AtlasBaseException {
+
+        Servlets.validateQueryParamLength("repairType", repairType);
+        Servlets.validateQueryParamLength("repairAttributeName", repairAttributeName);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_REPAIR_INDEX), "Admin Repair Attributes");
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairEntityAttributesBulk(" + guids.size() + ")");
+            }
+
+            repairAttributeService.repairAttributes(repairAttributeName, repairType, guids);
+
+        } catch (Exception e) {
+            LOG.error("Exception while repairEntityAttributesBulk ", e);
             throw new AtlasBaseException(e);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -1869,9 +1941,6 @@ public class EntityREST {
             }
 
             AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_REPAIR_INDEX), "Admin Repair Index");
-
-            RepairIndex repairIndex = new RepairIndex();
-            repairIndex.setupGraph();
 
             LOG.info("Repairing index for entities in " + typename);
 

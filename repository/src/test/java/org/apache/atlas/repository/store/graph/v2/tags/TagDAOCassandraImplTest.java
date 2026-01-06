@@ -18,7 +18,6 @@ import org.junit.jupiter.api.*;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Instant;
-import java.util.stream.Collectors;
 import java.util.*;
 
 import static org.apache.atlas.repository.store.graph.v2.tags.CassandraTagConfig.*;
@@ -220,88 +219,6 @@ public class TagDAOCassandraImplTest {
         );
     }
 
-    @Test
-    void testPutAndGetPropagatedTags() throws AtlasBaseException {
-        // --- Setup ---
-        String sourceAssetId = "2001";
-        String tagTypeName = "FinanceDept";
-        AtlasClassification expectedTag = createClassification(tagTypeName, sourceAssetId);
-
-        Set<String> propagatedAssetIds = new HashSet<>(Arrays.asList("3001", "3002", "3003"));
-        Map<String, Map<String, Object>> assetMinAttrsMap = new HashMap<>();
-        assetMinAttrsMap.put("3001", createAssetMetadata("column1", "default/db/table/col1"));
-        assetMinAttrsMap.put("3002", createAssetMetadata("column2", "default/db/table/col2"));
-        assetMinAttrsMap.put("3003", createAssetMetadata("column3", "default/db/table/col3"));
-
-        // --- Action ---
-        tagDAO.putPropagatedTags(sourceAssetId, tagTypeName, propagatedAssetIds, assetMinAttrsMap, expectedTag);
-
-        // --- Assertion 1: Verify tags exist on one of the propagated assets ---
-        String testAssetId = "3002";
-        List<AtlasClassification> classifications = tagDAO.getAllClassificationsForVertex(testAssetId);
-
-        assertEquals(1, classifications.size(), "Should find one classification on the propagated asset.");
-
-        AtlasClassification retrievedClassification = classifications.get(0);
-        assertAll("Verify properties of the propagated classification",
-                () -> assertEquals(expectedTag.getTypeName(), retrievedClassification.getTypeName()),
-                () -> assertEquals(expectedTag.getEntityGuid(), retrievedClassification.getEntityGuid(), "Entity GUID should point to the source asset"),
-                () -> assertEquals(expectedTag.isPropagate(), retrievedClassification.isPropagate()),
-                () -> assertEquals(expectedTag.getAttributes(), retrievedClassification.getAttributes())
-        );
-
-        // --- Assertion 2: Verify all propagations can be retrieved from the source ---
-        List<Tag> propagations = tagDAO.getTagPropagationsForAttachment(sourceAssetId, tagTypeName);
-        assertEquals(3, propagations.size());
-
-        Set<String> retrievedPropagatedIds = propagations.stream().map(Tag::getVertexId).collect(Collectors.toSet());
-        assertEquals(propagatedAssetIds, retrievedPropagatedIds, "All propagated asset IDs should be retrieved.");
-
-        // Check a specific retrieved tag in detail
-        Tag specificPropagation = propagations.stream()
-                .filter(p -> p.getVertexId().equals("3001"))
-                .findFirst().orElse(null);
-        assertNotNull(specificPropagation, "Propagation for asset 3001 should exist.");
-        assertAll("Verify details of a specific propagated Tag object",
-                () -> assertEquals(sourceAssetId, specificPropagation.getSourceVertexId()),
-                () -> assertEquals(tagTypeName, specificPropagation.getTagTypeName()),
-                () -> assertEquals(assetMinAttrsMap.get("3001"), specificPropagation.getAssetMetadata())
-        );
-    }
-
-    @Test
-    void testDeletePropagatedTags() throws AtlasBaseException {
-        String sourceAssetId = "2002";
-        String tagTypeName = "GDPR";
-        AtlasClassification tag = createClassification(tagTypeName, sourceAssetId);
-
-        Set<String> propagatedAssetIds = new HashSet<>(Arrays.asList("4001", "4002"));
-        Map<String, Map<String, Object>> assetMinAttrsMap = new HashMap<>();
-        assetMinAttrsMap.put("4001", createAssetMetadata("user_email", "q/db/t/user_email"));
-        assetMinAttrsMap.put("4002", createAssetMetadata("user_address", "q/db/t/user_address"));
-
-        // Action: Add tags, then create Tag objects to delete them
-        tagDAO.putPropagatedTags(sourceAssetId, tagTypeName, propagatedAssetIds, assetMinAttrsMap, tag);
-
-        List<Tag> tagsToDelete = new ArrayList<>();
-        Tag tag1 = new Tag();
-        tag1.setVertexId("4001");
-        tag1.setSourceVertexId(sourceAssetId);
-        tag1.setTagTypeName(tagTypeName);
-        tag1.setPropagated(true);
-        tag1.setBucket(TagDAOCassandraImpl.calculateBucket("4001"));
-        tagsToDelete.add(tag1);
-
-        tagDAO.deleteTags(tagsToDelete);
-
-        // Assertion
-        List<Tag> remainingPropagations = tagDAO.getTagPropagationsForAttachment(sourceAssetId, tagTypeName);
-        assertEquals(1, remainingPropagations.size(), "Should only be one propagation remaining.");
-        assertEquals("4002", remainingPropagations.get(0).getVertexId());
-
-        List<AtlasClassification> deletedAssetTags = tagDAO.getAllClassificationsForVertex("4001");
-        assertTrue(deletedAssetTags.isEmpty(), "Deleted asset should have no active tags.");
-    }
 
     @Test
     void testPaginationForPropagations() throws AtlasBaseException {

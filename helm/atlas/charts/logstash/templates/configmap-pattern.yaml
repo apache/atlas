@@ -1,0 +1,19 @@
+{{- if .Values.global.atlasLogstash.enabled }}
+{{- if .Values.logstashPattern }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "logstash.fullname" . }}-pattern
+  namespace: {{ template "logstash.namespace" . }}
+  labels:
+    app: "{{ template "logstash.fullname" . }}"
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+data:
+{{- range $path, $config := .Values.logstashPattern }}
+  {{ $path }}: |
+{{ tpl $config $ | indent 4 -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

@@ -1,0 +1,19 @@
+{{- if or .Values.global.esIsolation.enabled .Values.global.globalSvcIsolation.enabled }}
+{{- if .Values.podSecurityPolicies.enabled -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ template "elasticsearch-exporter.fullname" . }}
+  namespace: {{ .Values.Namespace }}
+  labels:
+    app: {{ template "elasticsearch-exporter.name" . }}
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+rules:
+- apiGroups: ['extensions']
+  resources: ['podsecuritypolicies']
+  verbs:     ['use']
+  resourceNames:
+  - {{ template "elasticsearch-exporter.fullname" . }}
+{{- end }}
+{{- end }}

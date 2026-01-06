@@ -1,0 +1,13 @@
+{
+  "realm": "default",
+  "auth-server-url": "https://experience.atlan.com/auth",
+  "ssl-required": "external",
+  "resource": "atlan-web",
+  "public-client": false,
+  "confidential-port": 443,
+  "principal-attribute": "preferred_username",
+  "autodetect-bearer-only": true,
+  "credentials": {
+    "secret": "fb377fda-f894-4b6d-b3b4-1e0a058a25f6"
+  }
+}

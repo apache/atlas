@@ -1,0 +1,211 @@
+---
+description: Cache based feature flag implementation based on redis
+alwaysApply: false
+---
+# Feature Flag Implementation Rules
+
+## Core Architecture Principles
+
+### Feature Flag Definition
+- ALL feature flags MUST be defined in the FeatureFlag enum with explicit keys and default values
+- Default values are ALWAYS false unless explicitly documented otherwise
+- NO dynamic feature flag creation - only predefined flags allowed
+- Feature flag keys should be descriptive and follow SCREAMING_SNAKE_CASE convention
+
+### Dual Cache Architecture
+- Primary cache: Time-bound cache (configurable TTL with jitter, typically 30 minutes)
+- Fallback cache: Permanent cache storing last known Redis values
+- NEVER fallback to default values during runtime - use cached values instead
+- Cache operations must be atomic to prevent dirty writes
+
+### Redis Integration
+- RedisService MUST be initialized before FeatureFlagStore (@DependsOn annotation required)
+- All Redis operations include retry logic with exponential backoff
+- Redis connectivity MUST be validated during startup with actual read/write/delete test
+- Startup MUST fail-fast if Redis is not operational
+
+## Code Patterns & Conventions
+
+### Thread Safety
+- Use `synchronized` methods instead of manual lock management for write operations
+- Read operations should be lock-free for performance
+- Method names ending with `Internal` indicate synchronized operations
+- Cache update operations must be synchronized: `updateBothCaches()`, `setFlagInternal()`, `deleteFlagInternal()`
+
+### Error Handling
+- Constructor validation: Use `Objects.requireNonNull()` for critical dependencies
+- Startup validation: Comprehensive dependency and connectivity testing
+- Runtime validation: Null checks and state validation with clear error messages
+- NO silent failures - log all errors with appropriate levels (WARN for retries, ERROR for failures)
+
+### Method Naming Conventions
+```java
+// Public static API methods (validation + delegation)
+public static String getFlag(String key)
+public static boolean evaluate(String key, String expectedValue)
+public static void setFlag(String key, String value)
+
+// Private synchronized implementation methods
+private synchronized void setFlagInternal(String key, String value)
+private synchronized void deleteFlagInternal(String key) 
+private synchronized void updateBothCaches(String namespacedKey, String value)
+
+// Validation and utility methods
+private static boolean isValidFlag(String key)
+private void validateDependencies()
+```
+
+### Spring Integration Patterns
+- Use `@DependsOn("redisService")` to ensure proper initialization order
+- Use `@PostConstruct` for initialization with comprehensive validation
+- Use `@Component` for Spring bean registration
+- Use `@Inject` for constructor dependency injection
+- ApplicationContextProvider pattern for static method access to Spring beans
+
+### Configuration Management
+- All configuration values must have sensible defaults
+- Configuration validation during startup (retry attempts > 0, timeouts > 0)
+- Cache sizes and TTL values should be configurable via application properties
+- Property names follow pattern: `atlas.feature.flag.{component}.{property}`
+
+### Validation Patterns
+```java
+// Flag validation - reject unknown flags immediately
+if (!isValidFlag(key)) {
+    LOG.error("Invalid feature flag requested: '{}'", key);
+    return null; // or appropriate default
+}
+
+// Null safety - fail fast with descriptive messages
+Objects.requireNonNull(redisService, "RedisService cannot be null - critical dependency missing!");
+
+// State validation - prevent operations on uninitialized objects
+if (!initialized) {
+    throw new IllegalStateException("FeatureFlagStore not initialized");
+}
+```
+
+### Retry Logic Patterns
+- Use simple for-loop: `for (int attempt = 1; attempt <= maxAttempts; attempt++)`
+- Early return on success: `return redisService.getValue(key);`
+- Last attempt handling: `boolean isLastAttempt = (attempt == maxAttempts);`
+- Clear logging differentiation: WARN for retries, ERROR for final failures
+- Thread interruption handling with proper cleanup
+
+### Logging Standards
+- Startup: INFO level for successful initialization with timing
+- Errors: ERROR level with full exception details and context
+- Retries: WARN level with attempt numbers and total attempts
+- Debug: DEBUG level for cache hits/misses and internal operations
+- Health checks: DEBUG level to avoid log noise
+
+## API Design Principles
+
+### Public Static API
+- Keep public methods simple and focused
+- Always validate inputs before processing
+- Return null for invalid requests (don't throw exceptions in getters)
+- Provide convenience methods for common use cases
+
+### Internal Implementation
+- Separate concerns: validation, caching, Redis operations
+- Use meaningful method names that indicate thread safety
+- Keep synchronized blocks minimal and focused
+- Handle all exceptions gracefully with appropriate logging
+
+## Performance & Reliability
+
+### Caching Strategy
+- Read path: Primary cache → Redis → Fallback cache → null
+- Write path: Redis + Both caches (atomic)
+- Cache invalidation: Remove from both caches simultaneously. Only current k8s pod updates both caches in real-time. Other pods will have wait for cache expiration
+- No cache stampeding - single writer per flag per Atlas pod
+
+### Startup Reliability
+- Fail-fast: Application won't start with broken feature flags store initialization.
+- Comprehensive testing: Redis connectivity + configuration validation
+- Clear error messages: Operators can quickly identify and fix issues
+- Timeout protection: Prevent infinite startup hangs
+
+### Runtime Reliability
+- Graceful degradation: Use cached values when Redis is unavailable
+- Health monitoring: Provide methods for operational visibility
+- Exception isolation: One bad flag doesn't break others
+- Thread safety: Concurrent access without data corruption
+
+## Testing & Monitoring
+
+### Health Check Integration
+```java
+// Operational health checks
+public static boolean isFeatureFlagStoreHealthy()
+public boolean isRedisHealthy()
+public boolean isInitialized()
+```
+
+### Debugging Support
+- Comprehensive startup logging with timing information
+- Clear error messages with actionable information
+- Health check methods for operational monitoring
+- Flag access logging for usage analysis
+
+## Anti-Patterns to Avoid
+
+❌ Manual lock management (`lock.lock(); try { ... } finally { lock.unlock(); }`)
+❌ Default fallbacks during runtime (use cached values instead)
+❌ Dynamic feature flag creation (only predefined flags)
+❌ Silent failures (always log errors appropriately)
+❌ Complex async initialization (keep startup simple and sequential)
+❌ Missing dependency validation (always validate critical dependencies)
+❌ Tight coupling between components (use clear interfaces)
+❌ Runtime exceptions for normal operations (reserve for serious errors)
+
+## Example Implementation Template
+
+```java
+@Component
+@DependsOn("redisService")
+public class FeatureService {
+    
+    private final RedisService redisService;
+    
+    @Inject
+    public FeatureService(RedisService redisService) {
+        this.redisService = Objects.requireNonNull(redisService, 
+            "RedisService cannot be null - critical dependency missing!");
+    }
+    
+    @PostConstruct
+    public void initialize() {
+        try {
+            validateDependencies();
+            // ... initialization logic
+            initialized = true;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize - cannot start application", e);
+        }
+    }
+    
+    public static ReturnType publicMethod(String key) {
+        if (!isValidInput(key)) {
+            LOG.warn("Invalid input: '{}'", key);
+            return appropriateDefault;
+        }
+        
+        Instance instance = getInstance();
+        if (instance == null) {
+            LOG.warn("Service not initialized");
+            return appropriateDefault;
+        }
+        
+        return instance.internalMethod(key);
+    }
+    
+    private synchronized void writeOperation(String key, String value) {
+        // Synchronized method for write operations
+        // Clean, focused implementation
+    }
+}
+```
+
+Follow these rules to maintain consistency, reliability, and performance in the feature flag system.

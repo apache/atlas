@@ -17,13 +17,12 @@
 package org.apache.atlas.util;
 
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.audit.utils.CredentialsProviderUtil;
+import org.apache.atlas.AtlasException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
-import org.apache.http.client.CredentialsProvider;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.elasticsearch.client.Request;
@@ -42,11 +41,11 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.apache.atlas.repository.audit.ESBasedAuditRepository.INDEX_BACKEND_CONF;
+import static org.apache.atlas.repository.audit.ESBasedAuditRepository.INDEX_WRITE_BACKEND_CONF;
+import static org.apache.atlas.repository.audit.ESBasedAuditRepository.getESHosts;
 
 public class AccessAuditLogsIndexCreator extends Thread {
     private static final Logger LOG = LoggerFactory.getLogger(AccessAuditLogsIndexCreator.class);
@@ -88,13 +87,13 @@ public class AccessAuditLogsIndexCreator extends Thread {
     private int no_of_shards;
     private boolean is_completed = false;
 
-    public AccessAuditLogsIndexCreator(Configuration configuration) throws IOException {
+    public AccessAuditLogsIndexCreator(Configuration configuration) throws IOException, AtlasException {
         LOG.debug("Starting Ranger audit schema setup in ElasticSearch.");
         time_interval = configuration.getLong(ES_TIME_INTERVAL, DEFAULT_ES_TIME_INTERVAL_MS);
         user = configuration.getString(ES_CONFIG_USERNAME);
 
-        hosts = getHttpHosts(configuration);
-        port = getPort(configuration);
+        hosts = getHttpHosts();
+        port = getPort();
 
         protocol = configuration.getString(ES_CONFIG_PROTOCOL, "http");
         index = configuration.getString(ES_CONFIG_INDEX, DEFAULT_INDEX_NAME);
@@ -156,7 +155,7 @@ public class AccessAuditLogsIndexCreator extends Thread {
                 }
             }
         } else {
-            LOG.error("elasticsearch hosts values are empty. Please set property " + INDEX_BACKEND_CONF);
+            LOG.error("elasticsearch hosts values are empty. Please set property "+ INDEX_WRITE_BACKEND_CONF);
         }
 
     }
@@ -196,28 +195,6 @@ public class AccessAuditLogsIndexCreator extends Thread {
                 }
             });
         }
-    }
-
-    public static RestClientBuilder getRestClientBuilder(String urls, String protocol, String user, String password, int port) {
-        RestClientBuilder restClientBuilder = RestClient.builder(
-                toArray(urls, ",").stream()
-                        .map(x -> new HttpHost(x, port, protocol))
-                        .<HttpHost>toArray(i -> new HttpHost[i])
-        );
-        if (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password) && !user.equalsIgnoreCase("NONE") && !password.equalsIgnoreCase("NONE")) {
-
-            final CredentialsProvider credentialsProvider =
-                    CredentialsProviderUtil.getBasicCredentials(user, password);
-            restClientBuilder.setHttpClientConfigCallback(clientBuilder ->
-                    clientBuilder.setDefaultCredentialsProvider(credentialsProvider));
-
-        } else {
-            LOG.error("ElasticSearch Credentials not provided!!");
-            final CredentialsProvider credentialsProvider = null;
-            restClientBuilder.setHttpClientConfigCallback(clientBuilder ->
-                    clientBuilder.setDefaultCredentialsProvider(credentialsProvider));
-        }
-        return restClientBuilder;
     }
 
     private boolean createIndex() {
@@ -295,23 +272,10 @@ public class AccessAuditLogsIndexCreator extends Thread {
         }
     }
 
-    private static String getHosts(Configuration configuration) {
-        StringBuilder urls = new StringBuilder();
-        String indexConf = configuration.getString(INDEX_BACKEND_CONF);
-        String[] hosts = indexConf.split(",");
-        for (String host : hosts) {
-            host = host.trim();
-            String[] hostAndPort = host.split(":");
-            urls.append(hostAndPort[0]);
-
-        }
-        return urls.toString();
-    }
-
-    public static List<HttpHost> getHttpHosts(Configuration configuration) {
+    public static List<HttpHost> getHttpHosts() throws AtlasException {
         List<HttpHost> httpHosts = new ArrayList<>();
 
-        String indexConf = configuration.getString(INDEX_BACKEND_CONF);
+        String indexConf = getESHosts();
         String[] hosts = indexConf.split(",");
         for (String host : hosts) {
             host = host.trim();
@@ -326,10 +290,9 @@ public class AccessAuditLogsIndexCreator extends Thread {
     }
 
 
-    private static int getPort(Configuration configuration) {
+    private static int getPort() throws AtlasException {
         int port = 9200;
-        StringBuilder urls = new StringBuilder();
-        String indexConf = configuration.getString(INDEX_BACKEND_CONF);
+        String indexConf = getESHosts();
         try {
             String[] hosts = indexConf.split(",");
             String host = hosts[0];
@@ -341,16 +304,5 @@ public class AccessAuditLogsIndexCreator extends Thread {
         }
 
         return port;
-    }
-
-    public static List<String> toArray(String destListStr, String delim) {
-        List<String> list = new ArrayList<String>();
-        if (StringUtils.isNotBlank(destListStr)) {
-            StringTokenizer tokenizer = new StringTokenizer(destListStr, delim.trim());
-            while (tokenizer.hasMoreTokens()) {
-                list.add(tokenizer.nextToken());
-            }
-        }
-        return list;
     }
 }

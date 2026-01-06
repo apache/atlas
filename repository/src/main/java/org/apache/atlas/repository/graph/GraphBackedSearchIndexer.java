@@ -388,7 +388,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, PATCH_STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, MEANINGS_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false, true);
             createCommonVertexIndex(management, MEANINGS_TEXT_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, ES_ATLAN_TEXT_COMMA_ANALYZER_CONFIG, new HashMap<>());
-            createCommonVertexIndex(management, MEANING_NAMES_PROPERTY_KEY, UniqueKind.NONE, String.class, LIST, true, false, true, new HashMap<>(), ES_GLOSSARY_ANALYZER_MULTIFIELD);
+            createCommonVertexIndex(management, MEANING_NAMES_PROPERTY_KEY, UniqueKind.NONE, String.class, LIST, true, false, true, ES_KEYWORD_FIELD, ES_GLOSSARY_ANALYZER_MULTIFIELD);
             createCommonVertexIndex(management, GLOSSARY_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, true);
             createCommonVertexIndex(management, CATEGORIES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false, true);
             createCommonVertexIndex(management, CATEGORIES_PARENT_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, true);

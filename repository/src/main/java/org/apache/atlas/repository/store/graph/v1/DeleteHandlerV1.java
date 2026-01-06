@@ -66,6 +66,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -281,7 +282,9 @@ public abstract class DeleteHandlerV1 {
             if (entityType == null) {
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), typeName);
             }
-
+            entity.setVertexId(vertex.getIdForDisplay());
+            entity.setDocId(LongEncoding.encode(Long.parseLong(vertex.getIdForDisplay())));
+            entity.setSuperTypeNames(entityType.getAllSuperTypes());
             vertexInfoMap.put(guid, new GraphHelper.VertexInfo(entity, vertex));
 
             for (AtlasStructType.AtlasAttribute attributeInfo : entityType.getOwnedRefAttributes()) {
@@ -1643,9 +1646,14 @@ public abstract class DeleteHandlerV1 {
     public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeHasLineageOnDelete");
 
+        long lineageCalcStart = System.currentTimeMillis();
+
         if (RequestContext.get().skipHasLineageCalculation()) {
             return;
         }
+
+        boolean distributedHasLineageCalculationEnabled = AtlasConfiguration.ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()
+                && AtlasConfiguration.ENABLE_DISTRIBUTED_HAS_LINEAGE_CALCULATION.getBoolean();
 
         for (AtlasVertex vertexToBeDeleted : vertices) {
             if (ACTIVE.equals(getStatus(vertexToBeDeleted))) {
@@ -1666,15 +1674,37 @@ public abstract class DeleteHandlerV1 {
                         }
                     }
 
-                    resetHasLineageOnInputOutputDelete(edgesToBeDeleted, vertexToBeDeleted);
+                    if (!distributedHasLineageCalculationEnabled){
+                        resetHasLineageOnInputOutputDelete(edgesToBeDeleted, vertexToBeDeleted);
+                    } else {
+                        // Populate RemovedElementsMap for async hasLineage calculation
+                        if (!edgesToBeDeleted.isEmpty()) {
+                            String guid = getGuid(vertexToBeDeleted);
+                            List<Object> removedElement = RequestContext.get().getRemovedElementsMap().get(guid);
+                            
+                            if (removedElement == null) {
+                                removedElement = new ArrayList<>();
+                                removedElement.addAll(edgesToBeDeleted);
+                                RequestContext.get().getRemovedElementsMap().put(guid, removedElement);
+                            } else {
+                                removedElement.addAll(edgesToBeDeleted);
+                            }
+                        }
+                    }
                 }
             }
         }
+        // Record lineage calculation time
+        long lineageCalcTime = System.currentTimeMillis() - lineageCalcStart;
+        RequestContext.get().addLineageCalcTime(lineageCalcTime);
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     public void resetHasLineageOnInputOutputDelete(Collection<AtlasEdge> removedEdges, AtlasVertex deletedVertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("resetHasLineageOnInputOutputDelete");
+
+        // Timing: Lineage calculation
+        long lineageCalcStart = System.currentTimeMillis();
 
         for (AtlasEdge atlasEdge : removedEdges) {
 
@@ -1723,6 +1753,10 @@ public abstract class DeleteHandlerV1 {
 
                 if (!activeEdgeFound) {
                     AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, false);
+                    AtlasEntity diffEntity = entityRetriever.getOrInitializeDiffEntity(processVertex);
+                    diffEntity.setAttribute(HAS_LINEAGE, false);
+                    // Add removed relationship attribute for notification
+                    addRemovedProcessRelationshipToDiffEntity(diffEntity, atlasEdge, removedEdges);
 
                     String oppositeEdgeLabel = isOutputEdge ? PROCESS_INPUTS : PROCESS_OUTPUTS;
 
@@ -1747,6 +1781,9 @@ public abstract class DeleteHandlerV1 {
                 }
             }
         }
+        // Record lineage calculation time
+        long lineageCalcTime = System.currentTimeMillis() - lineageCalcStart;
+        RequestContext.get().addLineageCalcTime(lineageCalcTime);
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
@@ -1838,9 +1875,9 @@ public abstract class DeleteHandlerV1 {
         }
 
     }
+
     private void updateAssetHasLineageStatusV1(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatusV1");
-
         removedEdges.forEach(edge -> RequestContext.get().addToDeletedEdgesIdsForResetHasLineage(edge.getIdForDisplay()));
 
         Iterator<AtlasEdge> edgeIterator = assetVertex.query()
@@ -1866,9 +1903,109 @@ public abstract class DeleteHandlerV1 {
 
         if (processHasLineageCount == 0) {
             AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
+            AtlasEntity diffEntity = entityRetriever.getOrInitializeDiffEntity(assetVertex);
+            diffEntity.setAttribute(HAS_LINEAGE, false);
+            // Add removed relationship attribute for notification
+            addRemovedProcessRelationshipToDiffEntity(diffEntity, currentEdge, removedEdges);
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+
+    /**
+     * Helper method to add removed process relationship to diff entity's removedRelationshipAttributes
+     * when hasLineage changes to false
+     */
+    private void addRemovedProcessRelationshipToDiffEntity(AtlasEntity diffEntity, AtlasEdge removedEdge, Collection<AtlasEdge> removedEdgesList) {
+        try {
+            // Null checks for input parameters
+            if (diffEntity == null) {
+                LOG.warn("Cannot add removed process relationship: diffEntity is null");
+                return;
+            }
+            
+            if (removedEdge == null) {
+                LOG.warn("Cannot add removed process relationship: currentEdge is null");
+                return;
+            }
+
+
+            String edgeIdForDisplay = removedEdge.getIdForDisplay();
+            boolean isEdgeInDeletedList = false;
+            if (edgeIdForDisplay != null && RequestContext.get() != null) {
+                isEdgeInDeletedList = RequestContext.get().getDeletedEdgesIdsForResetHasLineage().contains(edgeIdForDisplay);
+            }
+
+            Set<AtlasEdge> removedEdges = new HashSet<>(removedEdgesList);
+            if (!isEdgeInDeletedList && !removedEdges.contains(removedEdge)) {
+                // Edge is not deleted and not in the deleted list, skip processing
+                return;
+            }
+            
+            // Get vertices from the edge
+            AtlasVertex vertexA = removedEdge.getOutVertex();
+            AtlasVertex vertexB = removedEdge.getInVertex();
+            String edgeLabel = removedEdge.getLabel();
+
+            if (edgeLabel == null) {
+                LOG.warn("Cannot add removed process relationship: edgeLabel is null");
+                return;
+            }
+
+            // Determine which end the diffEntity corresponds to
+            // vertexA (OutVertex) corresponds to EndDef1, vertexB (InVertex) corresponds to EndDef2
+            AtlasRelationshipDef relationshipDef = typeRegistry.getRelationshipDefByLabel(edgeLabel);
+            if (relationshipDef == null) {
+                LOG.warn("Cannot add removed process relationship: relationshipDef not found for edgeLabel: {}", edgeLabel);
+                return;
+            }
+
+            AtlasVertex otherVertex;
+            AtlasVertex diffVertex;
+            String attributeName;
+            if (diffEntity.getGuid().equals(GraphHelper.getGuid(vertexA))) {
+                otherVertex = vertexB;
+                diffVertex = vertexA;
+                // diffEntity is EndDef1 (OutVertex)
+                attributeName = relationshipDef.getEndDef1().getName();
+            } else {
+                otherVertex = vertexA;
+                diffVertex = vertexB;
+                // diffEntity is EndDef2 (InVertex)
+                attributeName = relationshipDef.getEndDef2().getName();
+            }
+            
+            if (otherVertex == null) {
+                LOG.warn("Cannot add removed process relationship: otherVertex is null");
+                return;
+            }
+
+            if (diffVertex == null) {
+                LOG.warn("Cannot add removed process relationship: diffVertex is null");
+                return;
+            }
+
+
+
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(getTypeName(diffVertex));
+            AtlasAttribute relationshipAttribute = entityType != null ? 
+                entityType.getRelationshipAttribute(attributeName, relationshipDef.getName()) : null;
+            
+            TypeCategory typeCategory = relationshipAttribute != null && relationshipAttribute.getAttributeType() != null ?
+                relationshipAttribute.getAttributeType().getTypeCategory() : null;
+            
+            AtlasObjectId objectId = new AtlasObjectId(getGuid(otherVertex), getTypeName(otherVertex));
+            
+            // If attribute is an array type, pass as a list; otherwise pass as a single object
+            if (typeCategory == TypeCategory.ARRAY) {
+                diffEntity.addOrAppendRemovedRelationshipAttribute(attributeName, objectId);
+            } else {
+                diffEntity.setRemovedRelationshipAttribute(attributeName, objectId);
+            }
+        } catch (Exception e) {
+            LOG.warn("Failed to add removed process relationship to diff entity for notification: {}", e.getMessage(), e);
+        }
     }
 
     private void updateAssetHasLineageStatusV2(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
@@ -1888,6 +2025,10 @@ public abstract class DeleteHandlerV1 {
         // Only update if no active lineage found
         if (!hasActiveLineage) {
             AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
+            AtlasEntity diffEntity = entityRetriever.getOrInitializeDiffEntity(assetVertex);
+            diffEntity.setAttribute(HAS_LINEAGE, false);
+            // Add removed relationship attribute for notification
+            addRemovedProcessRelationshipToDiffEntity(diffEntity, currentEdge, removedEdges);
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);

@@ -1,0 +1,1142 @@
+---
+global:
+  atlasLogstash:
+    enabled: false
+
+replicas: 1
+
+# Namespace for Logstash deployment
+namespaceOverride: "atlas"
+
+# Allows you to add any config files in /usr/share/logstash/config/
+# such as logstash.yml and log4j2.properties
+#
+# Note that when overriding logstash.yml, `api.http.host: "0.0.0.0"` should always be included
+# to make default probes work.
+logstashConfig:
+  logstash.yml: |
+    api.http.host: "0.0.0.0"
+    api.http.port: 9600
+    pipeline.workers: 3
+    pipeline.batch.size: 800
+
+    # Dead Letter Queue configuration
+    dead_letter_queue.enable: true
+    dead_letter_queue.max_bytes: 1gb
+    path.dead_letter_queue: /usr/share/logstash/dlq
+    # Pipeline metrics
+    metric.collect: true
+    # Queue configuration  
+    queue.type: persisted
+    queue.max_bytes: 2gb
+    queue.checkpoint.writes: 1024
+    pipeline.batch.delay: 50
+    path.queue: /usr/share/logstash/data/queue
+    queue.page_capacity: 64mb
+    queue.max_events: 0
+    
+  log4j2.properties: |
+    status = error
+    name = LogstashPropertiesConfig
+    
+    appender.console.type = Console
+    appender.console.name = plain_console
+    appender.console.layout.type = PatternLayout
+    appender.console.layout.pattern = [%d{ISO8601}][%-5p][%-25c] %m%n
+    
+    rootLogger.level = info
+    rootLogger.appenderRef.console.ref = plain_console
+
+# Allows you to add any pipeline files in /usr/share/logstash/pipeline/
+### ***warn*** there is a hardcoded logstash.conf in the image, override it first
+logstashPipeline:
+  atlas-entities.conf: |
+    input {
+      kafka {
+        bootstrap_servers => "kafka-0.kafka-headless.kafka.svc.cluster.local:9092,kafka-1.kafka-headless.kafka.svc.cluster.local:9092,kafka-2.kafka-headless.kafka.svc.cluster.local:9092"
+        topics => ["ATLAS_ENTITIES"]
+        group_id => "logstash-atlas-indexing"
+        client_id => "logstash-atlas-client"
+        consumer_threads => 3
+        partition_assignment_strategy => "org.apache.kafka.clients.consumer.RoundRobinAssignor"
+        fetch_min_bytes => 1024
+        fetch_max_bytes => 2097152
+        codec => "json"
+        auto_offset_reset => "latest"
+        enable_auto_commit => true
+        session_timeout_ms => 30000
+        heartbeat_interval_ms => 3000
+      }
+
+      # Uncomment for local testing with stdin
+      # stdin { codec => json_lines }
+    }
+
+    filter {
+      # If Kafka codec failed to parse JSON -> drop
+      if "_jsonparsefailure" in [tags] {
+        drop { }
+      }
+
+      # Extract nested message fields to top level
+      if [message][entity] {
+        ruby {
+          code => "
+            # Copy nested message fields to top level
+            message = event.get('message')
+            if message
+              event.set('entity', message['entity']) if message['entity']
+              event.set('operationType', message['operationType']) if message['operationType']
+              event.set('eventTime', message['eventTime']) if message['eventTime']
+              event.set('mutatedDetails', message['mutatedDetails']) if message['mutatedDetails']
+              
+              # Extract internalAttributes from entity for easy access
+              if message['entity'] && message['entity']['internalAttributes']
+                event.set('internalAttributes', message['entity']['internalAttributes'])
+              end
+            end
+          "
+        }
+      }
+
+      # Debug: Log business attribute operations
+      if [operationType] == "BUSINESS_ATTRIBUTE_UPDATE" {
+        mutate {
+          add_field => { "[@metadata][debug_ba_operation_detected]" => "true" }
+        }
+      }
+      
+      # Only process relevant operations
+      if [operationType] not in ["ENTITY_CREATE", "ENTITY_UPDATE", "ENTITY_DELETE", "CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE", "BUSINESS_ATTRIBUTE_UPDATE"] {
+        drop { }
+      }
+
+      # If no entity object, drop
+      if ![entity] {
+        mutate {
+          add_tag => [ "no_entity_field" ]
+          add_field => { 
+            "[@metadata][drop_reason]" => "Missing entity field"
+            "[@metadata][dropped_at]" => "%{+YYYY.MM.dd HH:mm:ss}"
+          }
+        }
+        drop { }
+      }
+
+      # Transform Atlas entity to ES document (skip for classification and business attribute operations)
+      if [operationType] not in ["CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE", "BUSINESS_ATTRIBUTE_UPDATE"] {
+        ruby {
+          code => "
+            require 'json'
+            require 'time'
+
+            entity = event.get('entity')
+            mutated_details = event.get('mutatedDetails')
+            operation_type = event.get('operationType')
+
+            # Skip if no entity
+            if entity.nil?
+              event.cancel
+              return
+            end
+
+          # Get attributes based on operation type
+          attrs = {}
+          if operation_type == 'ENTITY_UPDATE'
+            # For UPDATE: Only use changed fields from mutatedDetails.attributes
+            if !mutated_details.nil? && !mutated_details['attributes'].nil?
+              attrs = mutated_details['attributes']
+            end
+          else
+            # For CREATE/DELETE: Use mutatedDetails.attributes or entity.attributes  
+            if !mutated_details.nil? && !mutated_details['attributes'].nil?
+              attrs = mutated_details['attributes']
+            elsif !entity['attributes'].nil?
+              attrs = entity['attributes']
+            end
+          end
+
+          # Skip UPDATE if no attributes to prevent empty document overwrites
+          if operation_type == 'ENTITY_UPDATE'
+            if attrs.nil? || attrs.empty?
+              event.cancel
+              return
+            end
+          end
+
+          # Build document based on operation type
+          if operation_type == 'ENTITY_UPDATE'
+            # For UPDATE: Build minimal document with only changed fields + essential metadata
+            document = {
+              '__modificationTimestamp' => (entity['updateTime'] || (Time.now.to_f * 1000).to_i),
+              '__modifiedBy' => (entity['updatedBy'] || 'atlas-kafka-sync')
+            }
+            
+            # internalAttributes priority override will happen later after all processing
+            
+            # addedRelationshipAttributes processing removed for testing
+          else
+            # For CREATE/DELETE: Build complete document with metadata
+            document = {
+              '__typeName' => entity['typeName'],
+              '__guid' => entity['guid'],
+              '__esDocId' => (entity['docId'] || entity['guid']),
+              '__state' => (entity['status'] || 'ACTIVE'),
+              '__timestamp' => (entity['createTime'] || (Time.now.to_f * 1000).to_i),
+              '__modificationTimestamp' => (entity['updateTime'] || (Time.now.to_f * 1000).to_i),
+              '__createdBy' => (entity['createdBy'] || 'atlas-kafka-sync'),
+              '__modifiedBy' => (entity['updatedBy'] || 'atlas-kafka-sync'),
+              '__superTypeNames' => (entity['superTypeNames'] || [])
+            }
+            
+            # internalAttributes priority override will happen later after all processing
+          end
+
+          # For non-UPDATE operations: Build additional metadata
+          if operation_type != 'ENTITY_UPDATE'
+            # superTypeNames building removed for testing
+          end
+
+          # Function to check if field should be excluded
+          def should_exclude_field(key, value, operation_type = nil)
+            # Always exclude nil values
+            return true if value.nil?
+            
+            # Operation-aware empty value handling (arrays, strings, hashes)
+            if (value.is_a?(Array) && value.empty?) || value == '' || (value.is_a?(Hash) && value.empty?)
+              if operation_type == 'ENTITY_UPDATE'
+                return false  # Preserve empty values in updates (semantic meaning)
+              else
+                return true   # Exclude empty values in create/delete (prevent clutter)
+              end
+            end
+
+            # Exclude arrays with relationship objects
+            if value.is_a?(Array) && !value.empty?
+              first_item = value[0]
+              if first_item.is_a?(Hash) &&
+                first_item.key?('guid') &&
+                first_item.key?('typeName') &&
+                first_item.key?('uniqueAttributes')
+                return true
+              end
+            end
+
+            # Exclude complex objects (but keep simple primitives/arrays)
+            if value.is_a?(Hash) && !value.empty?
+              return true
+            end
+
+            false
+          end
+
+          # Add non-excluded attributes
+          attrs.each do |key, value|
+            unless should_exclude_field(key, value, operation_type)
+              document[key] = value
+            end
+          end
+
+          # For non-UPDATE operations: Compute lineage and hierarchy
+          if operation_type != 'ENTITY_UPDATE'
+            # relationshipAttributes lineage computation removed for testing
+
+            # Defaults
+            document['tenantId'] = document['tenantId'] || 'default'
+            document['name'] = document['name'] || entity['displayText']
+          end
+
+          # qualifiedNameHierarchy building removed for testing
+
+          # Custom attributes now handled automatically via internalAttributes
+
+          # FINAL PRIORITY OVERRIDE: internalAttributes values are authoritative
+          # This happens LAST to ensure they override any entity attribute values
+          internal_attrs = event.get('internalAttributes')
+          if internal_attrs && internal_attrs.is_a?(Hash)
+            internal_attrs.each do |key, value|
+              document[key] = value  # Final override - internalAttributes wins!
+            end
+          end
+
+          # Put metadata and transformed fields back into event  
+          # Enhanced docId resolution with ES lookup fallback
+          if document['__esDocId']
+            es_doc_id = document['__esDocId']
+          elsif entity['docId']
+            es_doc_id = entity['docId']
+          else
+            # FALLBACK: Query ES to find existing document by __guid
+            # This prevents orphaned GUID documents in UPDATE operations
+            es_doc_id = entity['guid']  # Default fallback
+            
+            # This will be handled by HTTP fallback filter below
+            # Don't override es_doc_id here - let the fallback logic handle it
+          end
+          
+          event.set('[@metadata][es_doc_id]', es_doc_id)
+          event.set('[@metadata][needs_guid_lookup]', es_doc_id == entity['guid'] && ['ENTITY_UPDATE', 'ENTITY_DELETE'].include?(operation_type))
+          event.set('[@metadata][guid]', entity['guid'])  # Store GUID for HTTP lookup
+          event.set('[@metadata][operation_type]', operation_type)
+          
+          # Extract deleteHandler for delete operations
+          if operation_type == 'ENTITY_DELETE'
+            delete_handler = entity['deleteHandler'] || 'SOFT'
+            event.set('[@metadata][delete_handler]', delete_handler)
+          end
+
+          document.each do |k, v|
+            event.set(k, v)
+          end
+
+          # Clean up
+          event.remove('entity')
+          event.remove('mutatedDetails')
+          event.remove('operationType')
+          event.remove('message')
+          event.remove('internalAttributes')
+          
+          # Remove Kafka message wrapper fields
+          event.remove('msgCreatedBy')
+          event.remove('msgSourceIP')
+          event.remove('msgCreationTime') 
+          event.remove('msgSplitIdx')
+          event.remove('msgSplitCount')
+          event.remove('spooled')
+          event.remove('eventTime')
+          event.remove('version')
+          event.remove('source')
+          event.remove('msgCompressionKind')
+
+          # Remove Logstash metadata
+          event.remove('@timestamp')
+          event.remove('@version')
+          event.remove('event')
+        "
+      }
+      }
+      
+      # Classification operations transformation
+      if [operationType] in ["CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE"] {
+        ruby {
+          code => "
+            require 'json'
+            require 'time'
+            
+            entity = event.get('entity')
+            mutated_details = event.get('mutatedDetails')
+            operation_type = event.get('operationType')
+            
+            # Skip if no entity
+            if entity.nil?
+              event.cancel
+              return
+            end
+            
+            # Skip if no mutatedDetails for classification operations
+            if mutated_details.nil? || mutated_details.empty?
+              event.cancel
+              return
+            end
+            
+            # Ensure mutatedDetails is an array
+            if !mutated_details.is_a?(Array)
+              event.cancel
+              return
+            end
+            
+            # Detect direct vs propagated operation
+            # Compare entity.guid with mutatedDetails[0].entityGuid
+            entity_guid = entity['guid']
+            first_mutated = mutated_details[0]
+            
+            if first_mutated.nil? || !first_mutated.is_a?(Hash)
+              event.cancel
+              return
+            end
+            
+            mutated_entity_guid = first_mutated['entityGuid']
+            is_direct = (entity_guid == mutated_entity_guid)
+            
+            # Build base document with essential metadata
+            document = {
+              '__modificationTimestamp' => (entity['updateTime'] || (Time.now.to_f * 1000).to_i),
+              '__modifiedBy' => (entity['updatedBy'] || 'atlas-kafka-sync')
+            }
+            
+            # PRIORITY OVERRIDE: Use internalAttributes (same pattern as entity operations)
+            # This contains the authoritative, correctly computed classification fields
+            internal_attrs = event.get('internalAttributes')
+            if internal_attrs && internal_attrs.is_a?(Hash)
+              internal_attrs.each do |key, value|
+                document[key] = value  # internalAttributes wins! (fixes classificationsText bug)
+              end
+              event.set('[@metadata][used_internal_attrs]', true)
+              event.set('[@metadata][internal_attrs_count]', internal_attrs.keys.length)
+            else
+              # Fallback logging if internalAttributes is missing (shouldn't happen)
+              event.set('[@metadata][used_internal_attrs]', false)
+              event.set('[@metadata][internal_attrs_missing]', true)
+            end
+            
+            # Set ES document ID and metadata (preserve existing logic)
+            es_doc_id = entity['docId'] || entity['guid']
+            event.set('[@metadata][es_doc_id]', es_doc_id)
+            event.set('[@metadata][guid]', entity['guid'])
+            event.set('[@metadata][operation_type]', operation_type)
+            event.set('[@metadata][needs_guid_lookup]', es_doc_id == entity['guid'])
+            event.set('[@metadata][is_direct]', is_direct)
+            event.set('[@metadata][is_propagated]', !is_direct)
+            
+            # Enhanced debug info (improved from previous version)
+            event.set('[@metadata][debug_entity_guid]', entity_guid)
+            event.set('[@metadata][debug_mutated_guid]', mutated_entity_guid)
+            event.set('[@metadata][debug_operation]', operation_type)
+            event.set('[@metadata][debug_direct_operation]', is_direct)
+            
+            # Add classification-specific debug info
+            if operation_type == 'CLASSIFICATION_DELETE'
+              deleted_types = mutated_details.map { |md| md['typeName'] }.compact
+              event.set('[@metadata][debug_deleted_types]', deleted_types.join(','))
+            elsif operation_type == 'CLASSIFICATION_ADD'
+              added_types = mutated_details.map { |md| md['typeName'] }.compact
+              event.set('[@metadata][debug_added_types]', added_types.join(','))
+            end
+            
+            # Log final classification data for debugging
+            if document['__classificationsText']
+              event.set('[@metadata][debug_classificationstext_length]', document['__classificationsText'].length)
+            end
+            if document['__traitNames']
+              event.set('[@metadata][debug_direct_traits_count]', document['__traitNames'].length)
+            end
+            if document['__propagatedTraitNames']
+              event.set('[@metadata][debug_propagated_traits_count]', document['__propagatedTraitNames'].length)
+            end
+            
+            # Add all fields to event
+            document.each do |k, v|
+              event.set(k, v)
+            end
+            
+            # Clean up original fields (preserve existing cleanup logic)
+            event.remove('entity')
+            event.remove('mutatedDetails') 
+            event.remove('operationType')
+            event.remove('message')
+            event.remove('internalAttributes')
+            event.remove('msgCreatedBy')
+            event.remove('msgSourceIP')
+            event.remove('msgCreationTime')
+            event.remove('msgSplitIdx')
+            event.remove('msgSplitCount')
+            event.remove('spooled')
+            event.remove('eventTime')
+            event.remove('version')
+            event.remove('source')
+            event.remove('msgCompressionKind')
+            event.remove('@timestamp')
+            event.remove('@version')
+            event.remove('event')
+          "
+        }
+      }
+      
+      # Business Attribute Update transformation
+      if [operationType] == "BUSINESS_ATTRIBUTE_UPDATE" {
+        ruby {
+          code => "
+            require 'json'
+            require 'time'
+            
+            entity = event.get('entity')
+            mutated_details = event.get('mutatedDetails')
+            operation_type = event.get('operationType')
+            
+            # Skip if no entity
+            if entity.nil?
+              event.cancel
+              return
+            end
+            
+            # Skip if no mutatedDetails for business attribute operations
+            if mutated_details.nil? || mutated_details.empty?
+              event.cancel
+              return
+            end
+            
+            # Ensure mutatedDetails is a hash
+            if !mutated_details.is_a?(Hash)
+              event.cancel
+              return
+            end
+            
+            # Build base document with essential metadata
+            document = {
+              '__modificationTimestamp' => (entity['updateTime'] || (Time.now.to_f * 1000).to_i),
+              '__modifiedBy' => (entity['updatedBy'] || 'atlas-kafka-sync')
+            }
+            
+            # Flatten business attributes: iterate through each BA and its properties
+            # mutatedDetails structure: { ba_id: { property_id: value } }
+            mutated_details.each do |ba_id, properties|
+              next if properties.nil? || !properties.is_a?(Hash)
+              
+              # Iterate through properties and only add non-null values
+              properties.each do |property_id, property_value|
+                # Only include property if value is not null
+                unless property_value.nil?
+                  document[property_id] = property_value
+                end
+              end
+            end
+            
+            # Set ES document ID from docId or guid
+            es_doc_id = entity['docId'] || entity['guid']
+            event.set('[@metadata][es_doc_id]', es_doc_id)
+            event.set('[@metadata][guid]', entity['guid'])
+            event.set('[@metadata][operation_type]', operation_type)
+            event.set('[@metadata][needs_guid_lookup]', es_doc_id == entity['guid'])
+            
+            # Debug metadata
+            event.set('[@metadata][debug_ba_count]', mutated_details.keys.length)
+            non_null_properties = 0
+            mutated_details.each do |ba_id, properties|
+              next unless properties.is_a?(Hash)
+              non_null_properties += properties.values.count { |v| !v.nil? }
+            end
+            event.set('[@metadata][debug_non_null_properties]', non_null_properties)
+            
+            # Add all fields to event
+            document.each do |k, v|
+              event.set(k, v)
+            end
+            
+            # Clean up original fields
+            event.remove('entity')
+            event.remove('mutatedDetails') 
+            event.remove('operationType')
+            event.remove('message')
+            event.remove('internalAttributes')
+            event.remove('msgCreatedBy')
+            event.remove('msgSourceIP')
+            event.remove('msgCreationTime')
+            event.remove('msgSplitIdx')
+            event.remove('msgSplitCount')
+            event.remove('spooled')
+            event.remove('eventTime')
+            event.remove('version')
+            event.remove('source')
+            event.remove('msgCompressionKind')
+            event.remove('@timestamp')
+            event.remove('@version')
+            event.remove('event')
+          "
+        }
+      }
+      
+      # ES Lookup Fallback for operations missing docId (UPDATE, DELETE, CLASSIFICATION_ADD, CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE, BUSINESS_ATTRIBUTE_UPDATE)
+      if [@metadata][needs_guid_lookup] {
+        http {
+          url => "http://atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200/janusgraph_vertex_index/_search"
+          verb => "POST"
+          headers => { "Content-Type" => "application/json" }
+          body_format => "json"
+          body => {
+            "query" => {
+              "term" => {
+                "__guid" => "%{[@metadata][guid]}"
+              }
+            }
+            "size" => 1
+            "_source" => false
+          }
+          target_body => "es_lookup_response"
+          add_field => { "[@metadata][lookup_attempted]" => "true" }
+        }
+        
+        # Process ES lookup response
+        ruby {
+          code => "
+            response = event.get('es_lookup_response')
+            if response && response['hits'] && response['hits']['total']['value'] > 0
+              # Found existing document - use its _id
+              existing_doc_id = response['hits']['hits'][0]['_id']
+              event.set('[@metadata][es_doc_id]', existing_doc_id)
+              event.set('[@metadata][lookup_success]', true)
+            else
+              # No existing document found - keep GUID fallback
+              event.set('[@metadata][lookup_success]', false)
+            end
+            
+            # Clean up response
+            event.remove('es_lookup_response')
+          "
+        }
+      }
+
+      # Remove empty/null fields to match Atlas behavior (skip for classification and business attribute operations)
+      if [@metadata][operation_type] not in ["CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE", "BUSINESS_ATTRIBUTE_UPDATE"] {
+        ruby {
+          code => "
+            # Remove fields with empty/null values (operation-aware)
+            operation_type = event.get('[@metadata][operation_type]') || 'ENTITY_CREATE'
+            
+            event.to_hash.each do |key, value|
+              should_remove = false
+              
+              if value.nil?
+                should_remove = true  # Always remove nil values
+              elsif (value.is_a?(Array) && value.empty?) || value == '' || (value.is_a?(Hash) && value.empty?)
+                # Operation-aware empty value handling (same logic as should_exclude_field)
+                if operation_type == 'ENTITY_UPDATE'
+                  should_remove = false  # Preserve empty values in updates (semantic meaning)
+                else
+                  should_remove = true   # Remove empty values in create/delete (prevent clutter)
+                end
+              end
+              
+              if should_remove
+                event.remove(key)
+              end
+            end
+          "
+        }
+      }
+
+      # decide ES action metadata
+      if [@metadata][operation_type] == "ENTITY_CREATE" {
+        mutate { add_field => { "[@metadata][es_action]" => "create" } }
+      } else if [@metadata][operation_type] == "ENTITY_UPDATE" {
+        mutate { add_field => { "[@metadata][es_action]" => "update" } }
+      } else if [@metadata][operation_type] == "ENTITY_DELETE" {
+        # Route based on deleteHandler type
+        if [@metadata][delete_handler] == "SOFT" {
+          mutate {
+            add_field => { "[@metadata][es_action]" => "update" }
+            add_field => { "[@metadata][is_soft_delete]" => "true" }
+          }
+        } else if [@metadata][delete_handler] == "HARD" {
+          mutate { add_field => { "[@metadata][es_action]" => "delete" } }
+        } else if [@metadata][delete_handler] == "PURGE" {
+          mutate { add_field => { "[@metadata][es_action]" => "purge" } }
+        } else {
+          # DEFAULT: fallback to soft delete for unknown handlers
+          mutate {
+            add_field => { "[@metadata][es_action]" => "update" }
+            add_field => { "[@metadata][is_soft_delete]" => "true" }
+          }
+        }
+      } else if [@metadata][operation_type] in ["CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE"] {
+        mutate { add_field => { "[@metadata][es_action]" => "update" } }
+      } else if [@metadata][operation_type] == "BUSINESS_ATTRIBUTE_UPDATE" {
+        mutate { add_field => { "[@metadata][es_action]" => "update" } }
+      }
+      
+      # Removed internal metrics - using Prometheus exporter instead
+      
+      # Add comprehensive logging for debugging
+      if "_grokparsefailure" in [tags] or "_rubyexception" in [tags] {
+        mutate {
+          add_field => { 
+            "[@metadata][error_type]" => "transformation_error"
+            "[@metadata][error_timestamp]" => "%{+YYYY.MM.dd HH:mm:ss}"
+          }
+        }
+      }
+    }
+
+    output {
+      # create path
+      if [@metadata][es_action] == "create" {
+        elasticsearch {
+          hosts => ["atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200"]
+          index => "janusgraph_vertex_index"
+          action => "%{[@metadata][es_action]}"
+          document_id => "%{[@metadata][es_doc_id]}"
+          timeout => 90
+          compression_level => 3
+          retry_max_interval => 60
+          retry_initial_interval => 1
+          ilm_enabled => false
+          manage_template => false
+        }
+      }
+
+      # update path - partial document updates
+      if [@metadata][es_action] == "update" and [@metadata][is_soft_delete] != "true" and [@metadata][operation_type] not in ["CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE", "BUSINESS_ATTRIBUTE_UPDATE"] {
+        elasticsearch {
+          hosts => ["atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200"]
+          index => "janusgraph_vertex_index"
+          action => "update"
+          document_id => "%{[@metadata][es_doc_id]}"
+          doc_as_upsert => true
+          timeout => 90
+          retry_max_interval => 60
+          retry_initial_interval => 1
+          ilm_enabled => false
+          manage_template => false
+        }
+      }
+
+      # classification operations - partial document updates
+      if [@metadata][es_action] == "update" and [@metadata][operation_type] in ["CLASSIFICATION_ADD", "CLASSIFICATION_DELETE", "CLASSIFICATION_UPDATE"] {
+        elasticsearch {
+          hosts => ["atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200"]
+          index => "janusgraph_vertex_index"
+          action => "update"
+          document_id => "%{[@metadata][es_doc_id]}"
+          doc_as_upsert => false
+          timeout => 90
+          retry_max_interval => 60
+          retry_initial_interval => 1
+          ilm_enabled => false
+          manage_template => false
+        }
+      }
+
+      # business attribute operations - partial document updates
+      if [@metadata][es_action] == "update" and [@metadata][operation_type] == "BUSINESS_ATTRIBUTE_UPDATE" {
+        elasticsearch {
+          hosts => ["atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200"]
+          index => "janusgraph_vertex_index"
+          action => "update"
+          document_id => "%{[@metadata][es_doc_id]}"
+          doc_as_upsert => false
+          timeout => 90
+          retry_max_interval => 60
+          retry_initial_interval => 1
+          ilm_enabled => false
+          manage_template => false
+        }
+      }
+
+      # soft-delete via update + inline painless script
+      if [@metadata][es_action] == "update" and [@metadata][is_soft_delete] == "true" {
+        elasticsearch {
+          hosts => ["atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200"]
+          index => "janusgraph_vertex_index"
+          action => "update"
+          document_id => "%{[@metadata][es_doc_id]}"
+          timeout => 90
+          retry_max_interval => 60
+          retry_initial_interval => 1
+          script_lang => "painless"
+          script => 'ctx._source.__state = "DELETED"; ctx._source.__modificationTimestamp = System.currentTimeMillis();'
+          script_type => "inline"
+          scripted_upsert => false
+          ilm_enabled => false
+          manage_template => false
+        }
+      }
+
+      # hard-delete - physically remove document from ES
+      if [@metadata][es_action] == "delete" {
+        elasticsearch {
+          hosts => ["atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200"]
+          index => "janusgraph_vertex_index"
+          action => "delete"
+          document_id => "%{[@metadata][es_doc_id]}"
+          timeout => 90
+          retry_max_interval => 60
+          retry_initial_interval => 1
+          ilm_enabled => false
+          manage_template => false
+        }
+      }
+
+      # purge-delete - remove from main index and log for audit
+      if [@metadata][es_action] == "purge" {
+        # Delete from main index
+        elasticsearch {
+          hosts => ["atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200"]
+          index => "janusgraph_vertex_index"
+          action => "delete"
+          document_id => "%{[@metadata][es_doc_id]}"
+          timeout => 90
+          retry_max_interval => 60
+          retry_initial_interval => 1
+          ilm_enabled => false
+          manage_template => false
+        }
+        
+        # Log PURGE operation for audit trail
+        elasticsearch {
+          hosts => ["atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200"]
+          index => "logstash-purge-audit-%{+YYYY.MM.dd}"
+          document_type => "_doc"
+          manage_template => false
+        }
+      }
+      
+      # Error logging
+      if "_grokparsefailure" in [tags] or "_rubyexception" in [tags] or "no_entity_field" in [tags] {
+        elasticsearch {
+          hosts => ["atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200"]
+          index => "logstash-errors-%{+YYYY.MM.dd}"
+          document_type => "_doc"
+          manage_template => false
+        }
+        
+        # Also log to stdout for immediate visibility
+        stdout {
+          codec => json_lines
+        }
+      }
+      
+      # Removed metrics output - using Prometheus exporter for monitoring
+    }
+
+# Allows you to add any pattern files in your custom pattern dir
+logstashPatternDir: "/usr/share/logstash/patterns/"
+logstashPattern: {}
+#    pattern.conf: |
+#      DPKG_VERSION [-+~<>\.0-9a-zA-Z]+
+
+# Extra environment variables to append to this nodeGroup
+# This will be appended to the current 'env:' key. You can use any of the kubernetes env
+# syntax here
+extraEnvs: []
+#  - name: MY_ENVIRONMENT_VAR
+#    value: the_value_goes_here
+
+# Allows you to load environment variables from kubernetes secret or config map
+envFrom: []
+# - secretRef:
+#     name: env-secret
+# - configMapRef:
+#     name: config-map
+
+# Add sensitive data to k8s secrets
+secrets: []
+#  - name: "env"
+#    value:
+#      ELASTICSEARCH_PASSWORD: "LS1CRUdJTiBgUFJJVkFURSB"
+#      api_key: ui2CsdUadTiBasRJRkl9tvNnw
+#  - name: "tls"
+#    value:
+#      ca.crt: |
+#        LS0tLS1CRUdJT0K
+#        LS0tLS1CRUdJT0K
+#        LS0tLS1CRUdJT0K
+#        LS0tLS1CRUdJT0K
+#      cert.crt: "LS0tLS1CRUdJTiBlRJRklDQVRFLS0tLS0K"
+#      cert.key.filepath: "secrets.crt" # The path to file should be relative to the `values.yaml` file.
+
+# A list of secrets and their paths to mount inside the pod
+secretMounts: []
+
+hostAliases: []
+#- ip: "127.0.0.1"
+#  hostnames:
+#  - "foo.local"
+#  - "bar.local"
+
+image: "ghcr.io/atlanhq/logstash"
+imageTag: "9.1.2-multiarch"
+imagePullPolicy: "IfNotPresent"
+imagePullSecrets: []
+
+podAnnotations:
+  # Prometheus annotations for pod metrics scraping
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9304"
+  prometheus.io/path: "/metrics"
+  co.elastic.logs/module: logstash
+  co.elastic.logs/fileset.stdout: access
+  co.elastic.logs/fileset.stderr: error
+  # Pipeline status annotations
+  atlan.com/pipeline: "kafka-to-elasticsearch"
+  atlan.com/component: "logstash"
+  configmap.reloader.stakater.com/reload: "atlas-logstash-config,atlas-logstash-pipeline,atlas-logstash-metricbeat-config"
+
+# additionals labels
+labels:
+  # Prometheus labels for service discovery
+  app.kubernetes.io/component: "data-pipeline"
+  app.kubernetes.io/part-of: "atlas"
+  atlan.com/monitoring: "enabled"
+  prometheus/scrape: "true"
+
+logstashJavaOpts: "-Xmx2g -Xms2g"
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "2560Mi"
+  limits:
+    cpu: "2000m"
+    memory: "3072Mi"
+
+volumeClaimTemplate:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
+
+rbac:
+  create: true
+  serviceAccountAnnotations: {}
+  serviceAccountName: ""
+  annotations:
+    {}
+    #annotation1: "value1"
+    #annotation2: "value2"
+    #annotation3: "value3"
+
+podSecurityPolicy:
+  create: false
+  name: ""
+  spec:
+    privileged: false
+    fsGroup:
+      rule: RunAsAny
+    runAsUser:
+      rule: RunAsAny
+    seLinux:
+      rule: RunAsAny
+    supplementalGroups:
+      rule: RunAsAny
+    volumes:
+      - secret
+      - configMap
+      - persistentVolumeClaim
+
+persistence:
+  enabled: true
+  annotations: {}
+
+extraVolumes:
+  # Dead letter queue for failed messages
+  - name: dlq
+    emptyDir: {}
+    
+  # Metrics data directory - DISABLED (not using metricbeat)
+  # - name: metrics-data
+  #   emptyDir: {}
+    
+  # Metricbeat configuration (created by template) - DISABLED (not using metricbeat)
+  # - name: metricbeat-config
+  #   configMap:
+  #     name: atlas-logstash-metricbeat-config
+  #     defaultMode: 0644
+
+extraVolumeMounts:
+  []
+  # - name: extras
+  #   mountPath: /usr/share/extras
+  #   readOnly: true
+
+extraContainers:
+  # Metricbeat sidecar for detailed metrics collection - DISABLED (not using the data)
+  # - name: metricbeat
+  #   image: docker.elastic.co/beats/metricbeat:8.11.0
+  #   args:
+  #     - "-c"
+  #     - "/etc/metricbeat.yml"
+  #     - "-e"
+  #
+  #   env:
+  #     - name: ELASTIC_HOSTS
+  #       value: "atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200"
+  #     - name: POD_NAME
+  #       valueFrom:
+  #         fieldRef:
+  #           fieldPath: metadata.name
+  #   resources:
+  #     requests:
+  #       cpu: "50m"
+  #       memory: "128Mi"
+  #     limits:
+  #       cpu: "200m"
+  #       memory: "256Mi"
+  #   volumeMounts:
+  #     - name: metricbeat-config
+  #       mountPath: /etc/metricbeat.yml
+  #       subPath: metricbeat.yml
+  #       readOnly: true
+  #     - name: metrics-data
+  #       mountPath: /usr/share/metricbeat/data
+        
+  # Prometheus exporter sidecar
+  - name: logstash-exporter
+    image: ghcr.io/atlanhq/prometheus-logstash-exporter:0.7.15-multiarch
+    args:
+      - "-logstash.host=localhost"
+      - "-logstash.port=9600"
+      - "-web.listen-address=:9304"
+    ports:
+      - containerPort: 9304
+        name: metrics
+        protocol: TCP
+    resources:
+      requests:
+        cpu: "20m"
+        memory: "64Mi"
+      limits:
+        cpu: "100m"
+        memory: "128Mi"
+
+extraInitContainers:
+  []
+  # - name: do-something
+  #   image: busybox
+  #   command: ['do', 'something']
+
+# This is the PriorityClass settings as defined in
+# https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
+priorityClassName: ""
+
+# By default this will make sure two pods don't end up on the same node
+# Changing this to a region would allow you to spread pods across regions
+antiAffinityTopologyKey: "kubernetes.io/hostname"
+
+# Hard means that by default pods will only be scheduled if there are enough nodes for them
+# and that they will never end up on the same node. Setting this to soft will do this "best effort"
+antiAffinity: "hard"
+
+# This is the node affinity settings as defined in
+# https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
+nodeAffinity: {}
+
+# This is inter-pod affinity settings as defined in
+# https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+podAffinity: {}
+
+# The default is to deploy all pods serially. By setting this to parallel all pods are started at
+# the same time when bootstrapping the cluster
+podManagementPolicy: "Parallel"
+
+httpPort: 9600
+
+# Custom ports to add to logstash
+extraPorts:
+  []
+  # - name: beats
+  #   containerPort: 5001
+
+updateStrategy: RollingUpdate
+
+# This is the max unavailable setting for the pod disruption budget
+# The default value of 1 will make sure that kubernetes won't allow more than 1
+# of your pods to be unavailable during maintenance
+maxUnavailable: 1
+
+podSecurityContext:
+  fsGroup: 1000
+  runAsUser: 1000
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  # readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# How long to wait for logstash to stop gracefully
+terminationGracePeriod: 60
+
+# Probes
+# Default probes are using `httpGet` which requires that `api.http.host: "0.0.0.0"` is part of
+# `logstash.yml`. If needed probes can be disabled or overridden using the following syntaxes:
+#
+# disable livenessProbe
+# livenessProbe: null
+#
+# replace httpGet default readinessProbe by some exec probe
+# readinessProbe:
+#   httpGet: null
+#   exec:
+#     command:
+#       - curl
+#      - localhost:9600
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 300
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+  successThreshold: 1
+
+## Use an alternate scheduler.
+## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+##
+schedulerName: ""
+
+nodeSelector: {}
+tolerations: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+lifecycle:
+  {}
+  # preStop:
+  #   exec:
+  #     command: ["/bin/sh", "-c", "echo Hello from the postStart handler > /usr/share/message"]
+  # postStart:
+  #   exec:
+  #     command: ["/bin/sh", "-c", "echo Hello from the postStart handler > /usr/share/message"]
+
+service:
+  annotations: {}
+  type: ClusterIP
+  loadBalancerIP: ""
+  ports:
+    - name: beats
+      port: 5044
+      protocol: TCP
+      targetPort: 5044
+    - name: http
+      port: 9600
+      protocol: TCP
+      targetPort: 9600
+    - name: metrics
+      port: 9304
+      protocol: TCP
+      targetPort: 9304
+
+# ServiceMonitor for Prometheus scraping
+serviceMonitor:
+  enabled: true
+  interval: "15s"
+  scrapeTimeout: "10s"
+  labels:
+    prometheus: kube-prometheus
+    release: prometheus-operator
+    app.kubernetes.io/name: logstash
+  annotations:
+    prometheus.io/scrape: "true"
+
+ingress:
+  enabled: false
+  annotations:
+    {}
+    # kubernetes.io/tls-acme: "true"
+  className: "nginx"
+  pathtype: ImplementationSpecific
+  hosts:
+    - host: logstash-example.local
+      paths:
+        - path: /beats
+          servicePort: 5044
+        - path: /http
+          servicePort: 8080
+  tls: []
+  #  - secretName: logstash-example-tls
+  #    hosts:
+  #      - logstash-example.local

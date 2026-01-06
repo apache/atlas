@@ -1,0 +1,151 @@
+{{- if or .Values.global.svcIsolation.enabled (or .Values.global.esIsolation.enabled .Values.global.globalSvcIsolation.enabled) }}
+{{- if .Values.atlas.telegraf.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-read-telegrafd
+  namespace: {{ .Values.Namespace  }}
+  labels:
+    app: {{ template "name" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  telegraf.conf: |-
+    # Telegraf Configuration
+    # Global Agent Configuration
+    [agent]
+      interval = "10s" # Default data collection interval
+      round_interval = true
+      metric_batch_size = 1000
+      metric_buffer_limit = 10000
+      collection_jitter = "0s"
+      flush_interval = "10s"
+      flush_jitter = "0s"
+      precision = ""
+      # debug = false
+      # quiet = false
+      hostname = "" # Will be set by Telegraf automatically
+      omit_hostname = false
+    {{- if and .Values.nginx.enabled .Values.nginx.ratelimit.enabled }}
+    # Input plugin for basic Nginx stub_status metrics
+    [[inputs.nginx]]
+      ## An array of Nginx stub_status URI to gather stats from.
+      urls = ["http://127.0.0.1:8081/nginx_status"]
+      ## Response timeout.
+      # response_timeout = "5s"
+    # Add new input plugin for Prometheus format from Nginx VTS
+    [[inputs.prometheus]]
+      ## An array of URLs to scrape Prometheus metrics from.
+      urls = ["http://127.0.0.1:8082/vts_status"] # URL of the VTS status endpoint
+      ## Metric version for parsing. Default is 0 (auto), try 2 if issues.
+      # metric_version = 0 # Or 2 for OpenMetrics if VTS outputs that
+      ## Timeout for scraping.
+      # response_timeout = "5s"
+      ## Optional: Add tags to metrics from this input
+      # [inputs.prometheus.tags]
+      #   source = "nginx_vts"
+    {{- end }}
+    [global_tags]
+      deployment="atlas"
+    [[inputs.http]]
+      urls = ["http://127.0.0.1:21000/api/atlas/admin/metrics/prometheus"]
+      data_format = "prometheus"
+      name_override = "atlas-metastore"
+    [[inputs.statsd]]
+      service_address = ":8125"
+    [[inputs.jolokia2_agent]]
+      name_override = "atlas"
+      urls = ["http://127.0.0.1:7777/jolokia"]
+    [[inputs.jolokia2_agent.metric]]
+      name = "heap_memory_usage"
+      mbean  = "java.lang:type=Memory"
+      paths = ["HeapMemoryUsage"]
+      field_prefix = "memory_"
+    [[inputs.jolokia2_agent.metric]]
+      name = "non_heap_memory_usage"
+      mbean  = "java.lang:type=Memory"
+      paths = ["NonHeapMemoryUsage"]
+      field_prefix = "memory_"
+    [[inputs.jolokia2_agent.metric]]
+      name = "thread_count"
+      mbean  = "java.lang:type=Threading"
+      paths = ["TotalStartedThreadCount,ThreadCount,DaemonThreadCount,PeakThreadCount"]
+      field_prefix = "thread_"
+    [[inputs.jolokia2_agent.metric]]
+      name = "class_count"
+      mbean  = "java.lang:type=ClassLoading"
+      paths = ["LoadedClassCount,UnloadedClassCount,TotalLoadedClassCount"]
+      field_prefix = "class_"
+    [[inputs.jolokia2_agent.metric]]
+      name = "os"
+      mbean  = "java.lang:type=OperatingSystem"
+      paths = ["MaxFileDescriptorCount,ProcessCpuTime,AvailableProcessors,SystemCpuLoad,TotalSwapSpaceSize,OpenFileDescriptorCount,FreePhysicalMemorySize,CommittedVirtualMemorySize,ProcessCpuLoad,FreeSwapSpaceSize,TotalPhysicalMemorySize"]
+      field_prefix = "os_"
+    [[inputs.jolokia2_agent.metric]]
+      name = "tenured_gen_memorypool"
+      mbean = "java.lang:name=Tenured Gen,type=MemoryPool"
+      paths = ["CollectionUsageThresholdExceeded,CollectionUsage,CollectionUsageThresholdSupported,CollectionUsageThreshold,Usage,UsageThresholdCount,UsageThreshold,PeakUsage"]
+      field_prefix = "memory_tenured_gen_"
+    [[inputs.jolokia2_agent.metric]]
+      name = "par_eden_space_gen_memorypool"
+      mbean = "java.lang:name=Par Eden Space,type=MemoryPool"
+      paths = ["CollectionUsageThresholdExceeded,CollectionUsage,CollectionUsageThresholdSupported,CollectionUsageThreshold,Usage,PeakUsage"]
+      field_prefix = "memory_par_eden_"
+    [[inputs.jolokia2_agent.metric]]
+      name = "par_survivor_memorypool"
+      mbean = "java.lang:name=Par Survivor Space,type=MemoryPool"
+      paths = ["CollectionUsageThresholdExceeded,CollectionUsage,CollectionUsageThresholdSupported,CollectionUsageThreshold,Usage,PeakUsage"]
+      field_prefix = "memory_par_survivor_"
+    [[inputs.jolokia2_agent.metric]]
+      name = "g1_survivor_memorypool"
+      mbean = "java.lang:name=G1 Survivor Space,type=MemoryPool"
+      paths = ["CollectionUsageThresholdExceeded,CollectionUsage,CollectionUsageThresholdSupported,CollectionUsageThreshold,Usage,PeakUsage"]
+      field_prefix = "memory_g1_survivor_"
+    [[inputs.jolokia2_agent.metric]]
+      name = "g1_eden_memorypool"
+      mbean = "java.lang:name=G1 Eden Space,type=MemoryPool"
+      paths = ["CollectionUsageThresholdExceeded,CollectionUsage,CollectionUsageThresholdSupported,CollectionUsageThreshold,Usage,PeakUsage"]
+      field_prefix = "memory_g1_eden_"
+    [[inputs.jolokia2_agent.metric]]
+      name = "g1_oldgen_memorypool"
+      mbean = "java.lang:name=G1 Old Gen,type=MemoryPool"
+      paths = ["CollectionUsageThresholdExceeded,CollectionUsage,CollectionUsageThresholdSupported,CollectionUsageThreshold,Usage,UsageThresholdCount,UsageThreshold,PeakUsage"]
+      field_prefix = "memory_g1_oldgen_"
+    [[inputs.jolokia2_agent.metric]]
+      name = "garbage_collection_parnew"
+      mbean  = "java.lang:name=ParNew,type=GarbageCollector"
+      paths = ["ObjectName,CollectionCount,Valid,CollectionTime,LastGcInfo,MemoryPoolNames"]
+      field_prefix = "gc_parnew_"
+    [[inputs.jolokia2_agent.metric]]
+      name = "garbage_collection_marksweep"
+      mbean  = "java.lang:name=MarkSweepCompact,type=GarbageCollector"
+      paths = ["ObjectName,CollectionCount,Valid,CollectionTime,LastGcInfo,MemoryPoolNames"]
+      field_prefix = "gc_marksweep_"
+    [[inputs.jolokia2_agent.metric]]
+      name  = "jvm_runtime"
+      mbean  = "java.lang:type=Runtime"
+      paths = ["Uptime"]
+      field_prefix = "uptime_"
+    [[inputs.jolokia2_agent.metric]]
+      name = "garbage_collection_g1_young"
+      mbean  = "java.lang:name=G1 Young Generation,type=GarbageCollector"
+      paths = ["ObjectName,CollectionCount,Valid,CollectionTime,LastGcInfo,MemoryPoolNames"]
+      field_prefix = "gc_g1_young_"
+    [[inputs.jolokia2_agent.metric]]
+      name = "garbage_collection_g1_old"
+      mbean  = "java.lang:name=G1 Old Generation,type=GarbageCollector"
+      paths = ["ObjectName,CollectionCount,Valid,CollectionTime,LastGcInfo,MemoryPoolNames"]
+      field_prefix = "gc_g1_old_"
+    [[inputs.jolokia2_agent.metric]]
+      name = "janusgraph_metrics"
+      mbean  = "metrics:name=org.janusgraph.*,*"
+      field_prefix = "$1"
+      paths = ["Max", "Min", "Mean", "StdDev", "50thPercentile",
+                  "75thPercentile", "95thPercentile", "98thPercentile",
+                  "99thPercentile", "999thPercentile", "Count", "FifteenMinuteRate",
+                  "FiveMinuteRate", "MeanRate", "OneMinuteRate", "SnapshotSize"]
+    [[outputs.prometheus_client]]
+      ## Address to listen on.
+      listen = ":9273"
+{{- end }}
+{{- end }}

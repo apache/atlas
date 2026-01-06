@@ -1,0 +1,46 @@
+{{- if .Values.atlas.statsdJob.enabled }}
+{{- if and (.Capabilities.APIVersions.Has "batch/v1") (semverCompare ">= 1.19-0" .Capabilities.KubeVersion.Version) -}}
+apiVersion: batch/v1
+{{- else -}}
+apiVersion: batch/v1beta1
+{{- end }}
+kind: CronJob
+metadata:
+  name: atlas-statsd-job
+  namespace: {{ .Values.Namespace  }}
+  labels:
+    app: {{ template "name" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  failedJobsHistoryLimit: 1
+  successfulJobsHistoryLimit: 1
+  concurrencyPolicy: Replace
+  schedule: "{{ .Values.atlas.statsdJob.schedule }}"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          {{- if .Values.atlas.imagePullSecrets }}
+          imagePullSecrets:
+          {{- toYaml .Values.atlas.imagePullSecrets | nindent 12 }}
+          {{- end }}
+          containers:
+          - name: metrics-job
+            {{- if and .Values.multiarch.enabled .Values.multiarch.image.alpine_curl }}
+            image: {{ .Values.multiarch.image.alpine_curl }}
+            {{- else }}
+            image: ghcr.io/atlanhq/alpine-curl:3.14
+            {{- end }}
+            command:
+              - sh
+              - -c
+              - |
+                echo "[+] Checking for Atlas"
+                until printf "." && curl -X GET "http://atlas-service-atlas.atlas.svc.cluster.local/api/atlas/admin/health"; do
+                  sleep 2;
+                done;
+                echo 'Atlas OK ✓'
+                curl -X GET "http://atlas-service-atlas.atlas.svc.cluster.local/api/atlas/admin/pushMetricsToStatsd"
+          restartPolicy: Never
+{{- end -}}

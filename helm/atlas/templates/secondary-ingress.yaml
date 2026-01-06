@@ -1,0 +1,170 @@
+{{- if .Values.atlas.secondaryIngress.enabled -}}
+{{- if eq .Values.albTenant true }}
+{{- $ingressApiIsStable := eq (include "atlas.ingress.isStable" .) "true" -}}
+{{- $ingressSupportsIngressClassName := eq (include "atlas.ingress.supportsIngressClassName" .) "true" -}}
+{{- $ingressSupportsPathType := eq (include "atlas.ingress.supportsPathType" .) "true" -}}
+{{- $servicePort := .Values.atlas.service.port -}}
+{{- $ingressPath := .Values.atlas.secondaryIngress.path -}}
+{{- $ingressPathType := .Values.atlas.secondaryIngress.pathType -}}
+{{- $extraPaths := .Values.atlas.secondaryIngress.extraPaths -}}
+apiVersion: {{ include "atlas.ingress.apiVersion" . }}
+kind: Ingress
+metadata:
+  name: atlas-atlas-secondary	
+  namespace: {{ .Values.Namespace  }}
+  labels:
+    app: {{ template "name" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  {{- if .Values.atlas.secondaryIngress.annotations }}
+  annotations:
+    {{- range $key, $value := .Values.atlas.secondaryIngress.annotations }}
+      {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- if and $ingressSupportsIngressClassName .Values.atlas.secondaryIngress.ingressClassName }}
+  ingressClassName: {{ .Values.atlas.secondaryIngress.ingressClassName }}
+  {{- end -}}
+{{- if .Values.atlas.secondaryIngress.tls }}
+  tls:
+{{ tpl (toYaml .Values.atlas.secondaryIngress.tls) $ | indent 4 }}
+{{- end }}
+  rules:
+  {{- if .Values.atlas.secondaryIngress.hosts  }}
+  {{- range .Values.atlas.secondaryIngress.hosts }}
+    - host: {{ tpl . $}}
+      http:
+        paths:
+{{- if $extraPaths }}
+{{ toYaml $extraPaths | indent 10 }}
+{{- end }}
+          - path: {{ $ingressPath }}
+            {{- if $ingressSupportsPathType }}
+            pathType: {{ $ingressPathType }}
+            {{- end }}
+            backend:
+              {{- if $ingressApiIsStable }}
+              service:
+                {{- if eq $.Values.global.atlasNginx.enabled true }}
+                name: atlas-ratelimited
+                {{- else }}
+                name: atlas-service-atlas
+                {{- end }}
+                port:
+                  number: {{ $servicePort }}
+              {{- else }}
+              serviceName: atlas-service-atlas
+              servicePort: {{ $servicePort }}
+              {{- end }}
+  {{- end }}
+  {{- else }}
+    - http:
+        paths:
+          - backend:
+              service:
+                name: redirect-to-home
+                port:
+                  name: use-annotation
+            path: /api/meta/admin/
+            pathType: Prefix
+          - backend:
+              {{- if $ingressApiIsStable }}
+              service:
+                name: atlas-service-atlas
+                port:
+                  number: {{ $servicePort }}
+              {{- else }}
+              serviceName: atlas-service-atlas
+              servicePort: {{ $servicePort }}
+              {{- end }}
+            {{- if $ingressPath }}
+            path: {{ $ingressPath }}
+            {{- end }}
+            {{- if $ingressSupportsPathType }}
+            pathType: {{ $ingressPathType }}
+            {{- end }}
+  {{- end -}}
+{{- else }}
+{{- $ingressApiIsStable := eq (include "atlas.ingress.isStable" .) "true" -}}
+{{- $ingressSupportsIngressClassName := eq (include "atlas.ingress.supportsIngressClassName" .) "true" -}}
+{{- $ingressSupportsPathType := eq (include "atlas.ingress.supportsPathType" .) "true" -}}
+{{- $servicePort := .Values.atlas.service.port -}}
+{{- $ingressPath := .Values.atlas.secondaryIngress.path -}}
+{{- $ingressPathType := .Values.atlas.secondaryIngress.pathType -}}
+{{- $extraPaths := .Values.atlas.secondaryIngress.extraPaths -}}
+apiVersion: {{ include "atlas.ingress.apiVersion" . }}
+kind: Ingress
+metadata:
+  name: atlas-atlas-secondary 
+  namespace: {{ .Values.Namespace  }}
+  labels:
+    app: {{ template "name" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+{{- if eq .Values.global.cloud "azure" }}
+  annotations:
+    {{- range $key, $value := .Values.atlas.secondaryIngress.annotations }}
+      {{ $key }}: {{ $value | quote }}
+    {{- end }}
+{{- else }}
+  annotations:
+    kubernetes.io/ingress.class: "kong"
+    konghq.com/strip-path: "true"
+    konghq.com/preserve-host: "true"
+    konghq.com/plugins: keycloak-jwt, xss
+{{- end }}
+spec:
+  {{- if and $ingressSupportsIngressClassName .Values.atlas.secondaryIngress.ingressClassName }}
+  ingressClassName: {{ .Values.atlas.secondaryIngress.ingressClassName }}
+  {{- end -}}
+{{- if .Values.atlas.secondaryIngress.tls }}
+  tls:
+{{ tpl (toYaml .Values.atlas.secondaryIngress.tls) $ | indent 4 }}
+{{- end }}
+  rules:
+  {{- if .Values.atlas.secondaryIngress.hosts  }}
+  {{- range .Values.atlas.secondaryIngress.hosts }}
+    - host: {{ tpl . $}}
+      http:
+        paths:
+{{- if $extraPaths }}
+{{ toYaml $extraPaths | indent 10 }}
+{{- end }}
+          - path: {{ $ingressPath }}
+            {{- if $ingressSupportsPathType }}
+            pathType: {{ $ingressPathType }}
+            {{- end }}
+            backend:
+              {{- if $ingressApiIsStable }}
+              service:
+                name: atlas-service-atlas
+                port:
+                  number: {{ $servicePort }}
+              {{- else }}
+              serviceName: atlas-service-atlas
+              servicePort: {{ $servicePort }}
+              {{- end }}
+  {{- end }}
+  {{- else }}
+    - http:
+        paths:
+          - backend:
+              {{- if $ingressApiIsStable }}
+              service:
+                name: atlas-service-atlas
+                port:
+                  number: {{ $servicePort }}
+              {{- else }}
+              serviceName: atlas-service-atlas
+              servicePort: {{ $servicePort }}
+              {{- end }}
+            {{- if $ingressPath }}
+            path: {{ $ingressPath }}
+            {{- end }}
+            {{- if $ingressSupportsPathType }}
+            pathType: {{ $ingressPathType }}
+            {{- end }}
+  {{- end -}}
+{{- end }}
+{{- end }}

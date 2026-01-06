@@ -1,5 +1,8 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
@@ -20,6 +23,7 @@ import org.apache.atlas.repository.util.AtlasEntityUtils;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -86,6 +90,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         entity.removeAttribute(OUTPUT_PORT_GUIDS_ATTR);
         entity.removeAttribute(INPUT_PORT_GUIDS_ATTR);
 
+        validateProductAssetDSLAttr(entity);
+
         if (parentDomainObject == null) {
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot create a Product without a Domain Relationship");
         } else {
@@ -119,20 +125,24 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         String state = vertex.getProperty(STATE_PROPERTY_KEY, String.class);
 
         if (DELETED.name().equals(state)) {
-            //  To allow product restoration but block all other updates if the product is archived
+            //  To allow product restoration and update on daapLineageStatus but block all other updates if the product is archived
             boolean isBeingRestored = false;
 
             if (context != null && context.getEntitiesToRestore() != null) {
                 isBeingRestored = context.getEntitiesToRestore().contains(vertex);
             }
 
-            if (!isBeingRestored) {
+            if (!isBeingRestored && !entity.hasAttribute(DAAP_LINEAGE_STATUS_ATTR)) {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot update DataProduct that is Archived!");
             }
         }
 
         entity.removeAttribute(OUTPUT_PORT_GUIDS_ATTR);
         entity.removeAttribute(INPUT_PORT_GUIDS_ATTR);
+
+        if (entity.hasAttribute(DAAP_ASSET_DSL_ATTR)) {
+            validateProductAssetDSLAttr(entity);
+        }
 
         if(entity.hasRelationshipAttribute(DATA_DOMAIN_REL_TYPE) && entity.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE) == null){
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProduct can only be moved to another Domain.");
@@ -467,6 +477,25 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         return isDaapVisibilityChanged;
     }
 
+    private void validateProductAssetDSLAttr(AtlasEntity entity) throws AtlasBaseException {
+        if (entity.getAttribute(DAAP_ASSET_DSL_ATTR) == null) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "dataProductAssetsDSL attribute is mandatory for DataProducts");
+        }
+
+        String dslString = ((String) entity.getAttribute(DAAP_ASSET_DSL_ATTR)).trim();
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Object> dslMap = mapper.readValue(dslString, new TypeReference<>() {});
+
+            if (dslMap == null || dslMap.isEmpty()) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "dataProductAssetsDSL attribute cannot be empty");
+            }
+        } catch (JsonProcessingException e) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "dataProductAssetsDSL attribute must be a valid JSON object: " + e.getMessage());
+        }
+    }
+
     public static boolean compareLists(List<String> list1, List<String> list2) {
         return !CollectionUtils.disjunction(list1, list2).isEmpty();
     }
@@ -505,5 +534,37 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
 
+    }
+
+    /**
+     * Validates that for archived DataProducts, only business metadata removals (null values) are allowed.
+     * Any additions or updates (non-null values) in the updatedBusinessAttributes are blocked.
+     */
+    public static void validateBusinessMetadataUpdateOnArchivedProduct(AtlasVertex entityVertex, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException {
+        if (entityVertex == null || MapUtils.isEmpty(updatedBusinessAttributes)) {
+            return;
+        }
+
+        if (!DATA_PRODUCT_ENTITY_TYPE.equals(entityVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class))) {
+            return;
+        }
+
+        String entityState = entityVertex.getProperty(STATE_PROPERTY_KEY, String.class);
+
+        if (!AtlasEntity.Status.DELETED.name().equals(entityState)) {
+            return;
+        }
+
+        for (Map.Entry<String, Map<String, Object>> bmEntry : updatedBusinessAttributes.entrySet()) {
+            Map<String, Object> bmAttributes = bmEntry.getValue();
+
+            if (MapUtils.isNotEmpty(bmAttributes)) {
+                boolean hasNonNullValue = bmAttributes.values().stream().anyMatch(Objects::nonNull);
+
+                if (hasNonNullValue) {
+                    throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot add or update custom metadata on archived DataProduct.");
+                }
+            }
+        }
     }
 }

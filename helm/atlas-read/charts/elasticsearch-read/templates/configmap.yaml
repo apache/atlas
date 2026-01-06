@@ -1,0 +1,18 @@
+{{- if or .Values.global.esIsolation.enabled .Values.global.globalSvcIsolation.enabled }}
+{{- if .Values.esConfig }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "elasticsearch.uname" . }}-config
+  namespace: {{ .Values.Namespace }}
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    app: "{{ template "elasticsearch.uname" . }}"
+data:
+{{- range $path, $config := .Values.esConfig }}
+  {{ $path }}: |
+{{ $config | indent 4 -}}
+{{- end -}}
+{{- end -}}
+{{- end }}

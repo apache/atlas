@@ -1,0 +1,475 @@
+---
+
+multiarch:
+  enabled: false
+  image: {}
+
+
+clusterName: "atlas-elasticsearch"
+nodeGroup: "master"
+
+# The service that non master groups will try to connect to when joining the cluster
+# This should be set to clusterName + "-" + nodeGroup for your master group
+global:
+  Tier_Type: ""
+  Deployment_Type: ""
+masterService: ""
+
+# Elasticsearch roles that will be applied to this nodeGroup
+# These will be set as environment variables. E.g. node.master=true
+roles:
+  master: "true"
+  ingest: "true"
+  data: "true"
+
+replicas: 3
+esMajorVersion: 7
+minimumMasterNodes: 1
+
+# JVM automatically uses 50% of container memory as max heap using MaxRAMPercentage
+# This is simpler and more reliable than manual calculation
+esJavaOpts: "-XX:MaxRAMPercentage=50.0 -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:G1HeapRegionSize=16m -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:+G1UseAdaptiveIHOP -XX:G1MixedGCCountTarget=8"
+
+# Allows you to add any config files in /usr/share/elasticsearch/config/
+# such as elasticsearch.yml and log4j2.properties
+esConfig:
+  elasticsearch.yml: |
+    http.max_content_length: 2147483647b
+    ingest.geoip.downloader.enabled: false
+    xpack.security.enabled: false
+  log4j2.properties: |
+    -Dlog4j2.formatMsgNoLookups=true
+
+# Extra environment variables to append to this nodeGroup
+# This will be appended to the current 'env:' key. You can use any of the kubernetes env
+# syntax here
+# Env variable for elasticsearch
+envFrom: []
+extraEnvs:
+  # - name: S3_BUCKET_NAME
+  #   value: ''
+  - name: S3_BUCKET_PATH
+    value: 'backup/elasticsearch'
+  # - name: S3_BUCKET_ROLE_ARN
+  #   value: ''
+  # - name: S3_BUCKET_REGION
+  #   value: ''
+#  - name: MY_ENVIRONMENT_VAR
+#    value: the_value_goes_here
+
+# A list of secrets and their paths to mount inside the pod
+# This is useful for mounting certificates for security and for mounting
+# the X-Pack license
+secretMounts: []
+#  - name: elastic-certificates
+#    secretName: elastic-certificates
+#    path: /usr/share/elasticsearch/config/certs
+
+image: "ghcr.io/atlanhq/elasticsearch-atlan-v2"
+imageTag: "7.17.4"
+imagePullPolicy: "IfNotPresent"
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "6Gi"
+  limits:
+    cpu: "2000m"
+    memory: "7Gi"
+
+resources_basic:
+  requests:
+    memory: "50Mi"
+  limits:
+    memory: "4Gi"
+
+resources_standard:
+  requests:
+    memory: "50Mi"
+  limits:
+    memory: "5Gi"
+
+podAnnotations: {}
+  # iam.amazonaws.com/role: es-cluster
+
+# additionals labels
+labels: {}
+
+
+initResources: {}
+
+sidecarResources: {}
+
+networkHost: "0.0.0.0"
+
+maxShardsPerNode: "4000"
+
+volumeClaimTemplate:
+  accessModes: [ "ReadWriteOnce" ]
+  resources:
+    requests:
+      storage: 20Gi
+
+rbac:
+  create: false
+  serviceAccountName: ""
+
+podSecurityPolicy:
+  create: false
+  name: ""
+  spec:
+    privileged: true
+    fsGroup:
+      rule: RunAsAny
+    runAsUser:
+      rule: RunAsAny
+    seLinux:
+      rule: RunAsAny
+    supplementalGroups:
+      rule: RunAsAny
+    volumes:
+      - secret
+      - configMap
+      - persistentVolumeClaim
+
+persistence:
+  enabled: true
+  annotations: {}
+
+extraVolumes:
+  - name: varlog
+    emptyDir: {}
+
+extraVolumeMounts:
+  - name: varlog
+    mountPath: /usr/share/elasticsearch/logs
+
+extraContainers:
+  - name: atlas-es-gclog-sidecar
+    image: ghcr.io/atlanhq/busybox:1.32-multiarch
+    args: [/bin/sh, -c, 'sleep 60 && tail -n+1 -F /usr/share/elasticsearch/logs/gc.log']
+    volumeMounts:
+    - name: varlog
+      mountPath: /usr/share/elasticsearch/logs/
+
+# This is the PriorityClass settings as defined in
+# https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
+priorityClassName: ""
+
+# By default this will make sure two pods don't end up on the same node
+# Changing this to a region would allow you to spread pods across regions
+antiAffinityTopologyKey: "kubernetes.io/hostname"
+
+# Hard means that by default pods will only be scheduled if there are enough nodes for them
+# and that they will never end up on the same node. Setting this to soft will do this "best effort"
+antiAffinity: "hard"
+
+# This is the node affinity settings as defined in
+# https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#node-affinity-beta-feature
+nodeAffinity:
+  preferredDuringSchedulingIgnoredDuringExecution:
+  - weight: 1
+    preference:
+      matchExpressions:
+      - key: lifecycle     #Azure
+        operator: In
+        values:
+        - ondemand
+  - weight: 1
+    preference:
+      matchExpressions:
+      - key: cloud.google.com/gke-provisioning  #GCP
+        operator: In
+        values:
+        - standard 
+  requiredDuringSchedulingIgnoredDuringExecution:
+    nodeSelectorTerms:
+    - matchExpressions:
+      - key: eks.amazonaws.com/capacityType   #AWS
+        operator: In
+        values:
+        - ON_DEMAND
+    - matchExpressions:
+      - key: lifecycle     #Azure
+        operator: In
+        values:
+        - ondemand
+    - matchExpressions:
+      - key: cloud.google.com/gke-provisioning  #GCP
+        operator: In
+        values:
+        - standard 
+
+# The default is to deploy all pods serially. By setting this to parallel all pods are started at
+# the same time when bootstrapping the cluster
+podManagementPolicy: "Parallel"
+
+protocol: http
+httpPort: 9200
+transportPort: 9300
+
+service:
+  labels: {}
+  labelsHeadless: {}
+  type: ClusterIP
+  nodePort: ""
+  annotations: {}
+  httpPortName: http
+  transportPortName: transport
+  loadBalancerSourceRanges: []
+
+updateStrategy: RollingUpdate
+
+# This is the max unavailable setting for the pod disruption budget
+# The default value of 1 will make sure that kubernetes won't allow more than 1
+# of your pods to be unavailable during maintenance
+minAvailable: 2
+
+podSecurityContext:
+  fsGroup: 1000
+  runAsUser: 1000
+
+# The following value is deprecated,
+# please use the above podSecurityContext.fsGroup instead
+fsGroup: ""
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  # readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# How long to wait for elasticsearch to stop gracefully
+terminationGracePeriod: 120
+
+sysctlVmMaxMapCount: 262144
+
+readinessProbe:
+  failureThreshold: 3
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  successThreshold: 3
+  timeoutSeconds: 5
+
+custom_deployment:
+  enabled: false
+  instance_type:
+  - m6a.2xlarge
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-health.html#request-params wait_for_status
+clusterHealthCheckParams: "wait_for_status=yellow&timeout=1s"
+
+# Timeout for readiness probe health check when ES is already running
+healthCheckProbeTimeout: "1s"
+
+## Use an alternate scheduler.
+## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+##
+schedulerName: ""
+
+imagePullSecrets: []
+nodeSelector: {}
+tolerations: []
+
+# Enabling this will publically expose your Elasticsearch instance.
+# Only enable this if you have security enabled on your cluster
+ingress:
+  enabled: false
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  path: /
+  hosts:
+    - chart-example.local
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+nameOverride: ""
+fullnameOverride: ""
+
+# https://github.com/elastic/helm-charts/issues/63
+masterTerminationFix: false
+
+lifecycle: {}
+  # preStop:
+  #   exec:
+  #     command: ["/bin/sh", "-c", "echo Hello from the postStart handler > /usr/share/message"]
+  # postStart:
+  #   exec:
+  #     command:
+  #       - bash
+  #       - -c
+  #       - |
+  #         #!/bin/bash
+  #         # Add a template to adjust number of shards/replicas
+  #         TEMPLATE_NAME=my_template
+  #         INDEX_PATTERN="logstash-*"
+  #         SHARD_COUNT=8
+  #         REPLICA_COUNT=1
+  #         ES_URL=http://localhost:9200
+  #         while [[ "$(curl -s -o /dev/null -w '%{http_code}\n' $ES_URL)" != "200" ]]; do sleep 1; done
+  #         curl -XPUT "$ES_URL/_template/$TEMPLATE_NAME" -H 'Content-Type: application/json' -d'{"index_patterns":['\""$INDEX_PATTERN"\"'],"settings":{"number_of_shards":'$SHARD_COUNT',"number_of_replicas":'$REPLICA_COUNT'}}'
+
+sysctlInitContainer:
+  enabled: true
+
+keystore: []
+
+backup:
+  enabled: false
+  image: ghcr.io/atlanhq/alpine-curl-atlan-v2:3.21.0
+  #imageTag: latest
+  schedule: '0 3 * * *'
+
+esClusterName: "atlas-elasticsearch2"
+deploymentTier: Enterprise
+isolation:
+  enabled: false
+  names:
+    - "ui-search"
+    - "non-ui-search"
+  replicaCount:
+    ui-search: 3
+    non-ui-search: 3
+
+  resources_enterprise:
+    master:
+      requests:
+        cpu: "100m"
+        memory: "3Gi"
+      limits:
+        cpu: "1000m"
+        memory: "4Gi"
+    ui-search:
+      requests:
+        cpu: "2"
+        memory: "6Gi"
+      limits:
+        cpu: "2"
+        memory: "7Gi"
+    non-ui-search:
+      requests:
+        cpu: "2"
+        memory: "6Gi"
+      limits:
+        cpu: "2"
+        memory: "7Gi"
+
+  resources_standard:
+    master:
+      requests:
+        cpu: "500m"
+        memory: "2Gi"
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+    ui-search:
+      requests:
+        cpu: "1000m"
+        memory: "4Gi"
+      limits:
+        cpu: "2000m"
+        memory: "4Gi"
+    non-ui-search:
+      requests:
+        cpu: "1000m"
+        memory: "4Gi"
+      limits:
+        cpu: "2000m"
+        memory: "4Gi"
+
+  resources_basic:
+    master:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+    ui-search:
+      requests:
+        cpu: "500m"
+        memory: "2Gi"
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+    non-ui-search:
+      requests:
+        cpu: "500m"
+        memory: "2Gi"
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+
+  # JVM automatically uses 50% of container memory as max heap using MaxRAMPercentage for isolation mode
+  esJavaOpts:
+    master: "-XX:MaxRAMPercentage=50.0 -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:G1HeapRegionSize=16m -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:+G1UseAdaptiveIHOP -XX:G1MixedGCCountTarget=8"
+    ui-search: "-XX:MaxRAMPercentage=50.0 -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:G1HeapRegionSize=16m -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:+G1UseAdaptiveIHOP -XX:G1MixedGCCountTarget=8"
+    non-ui-search: "-XX:MaxRAMPercentage=50.0 -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:G1HeapRegionSize=16m -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:+G1UseAdaptiveIHOP -XX:G1MixedGCCountTarget=8"
+
+  roles:
+    master:
+      - "master"
+    ui-search:
+      - "data"
+      - "ingest"
+    non-ui-search:
+      - "data"
+      - "ingest"
+  # Enterprise tier storage
+  volumeClaimTemplate:
+    master:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 20Gi
+    ui-search:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 200Gi
+    non-ui-search:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 200Gi
+
+  # Standard tier storage
+  volumeClaimTemplate_standard:
+    master:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 20Gi
+    ui-search:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 100Gi
+    non-ui-search:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 100Gi
+
+  # Basic tier storage
+  volumeClaimTemplate_basic:
+    master:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 20Gi
+    ui-search:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 50Gi
+    non-ui-search:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 50Gi

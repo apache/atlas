@@ -1,5 +1,6 @@
 package org.apache.atlas.service.metrics;
 
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
@@ -32,7 +33,10 @@ public class MetricUtils {
     private static final String HTTP_SERVER_REQUESTS = "http.server.requests";
     private static final String ATLAS_METRICS_URI_PATTERNS = "atlas.metrics.uri_patterns";
     private static final double[] PERCENTILES = {0.5, 0.90, 0.99};
-
+    
+    // Redis metrics constants
+    private static final String REDIS_CONNECTION_FAILURES = "redis.connection.failures";
+    
     private static Map<String, String> METRIC_URI_PATTERNS_MAP;
     private static final PrometheusMeterRegistry METER_REGISTRY;
 
@@ -93,5 +97,26 @@ public class MetricUtils {
     public static PrometheusMeterRegistry getMeterRegistry() {
         return METER_REGISTRY;
     }
+    
+    // =================================
+    // Redis Metrics Integration
+    // =================================
+    
+    /**
+     * Record Redis connection failure
+     */
+    public static void recordRedisConnectionFailure() {
+        try {
+            Counter.builder(REDIS_CONNECTION_FAILURES)
+                    .description("Total count of Redis connection failures")
+                    .tags(Tags.of(SERVICE, ATLAS_METASTORE, INTEGRATION, LOCAL))
+                    .register(METER_REGISTRY)
+                    .increment();
+        } catch (Exception e) {
+            LOG.warn("Failed to record Redis connection failure metric", e);
+        }
+    }
+
+
 
 }

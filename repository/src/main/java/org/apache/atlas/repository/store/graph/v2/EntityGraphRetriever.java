@@ -83,8 +83,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.graphdb.relations.CacheVertexProperty;
+import org.janusgraph.util.encoding.LongEncoding;
 import org.javatuples.Pair;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -1123,7 +1123,6 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    @NotNull
     private static Map<String, List<?>> getStringArrayListMap(Map<Object, Object> properties) {
         Map<String, List<?>> vertexProperties = new HashMap<>();
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
@@ -1269,6 +1268,54 @@ public class EntityGraphRetriever {
         }
     }
 
+    public List<Map<String, Object>> getConnectedRelationEdgesVertexBatching(
+            Set<String> vertexIds, Set<String> edgeLabels, int relationAttrsSize) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getConnectedRelationEdgesVertexBatching");
+        try {
+            if (CollectionUtils.isEmpty(vertexIds)) {
+                return Collections.emptyList();
+            }
+
+            List<Map<String, Object>> allResults = new ArrayList<>();
+            List<String> vertexIdList = new ArrayList<>(vertexIds);
+            int vertexBatchSize = AtlasConfiguration.ATLAS_INDEXSEARCH_EDGE_BULK_FETCH_BATCH_SIZE.getInt(); // Process 100 vertices at a time
+
+            for (int i = 0; i < vertexIdList.size(); i += vertexBatchSize) {
+                int end = Math.min(i + vertexBatchSize, vertexIdList.size());
+                List<String> vertexBatch = vertexIdList.subList(i, end);
+
+                GraphTraversal<Edge, Map<String, Object>> edgeTraversal =
+                        ((AtlasJanusGraph) graph).V(vertexBatch)
+                                .bothE();
+
+                if (!CollectionUtils.isEmpty(edgeLabels)) {
+                    edgeTraversal = edgeTraversal.hasLabel(P.within(edgeLabels));
+                }
+
+                List<Map<String, Object>> batchResults = edgeTraversal
+                        .has(STATE_PROPERTY_KEY, ACTIVE.name())
+                        .has(RELATIONSHIP_GUID_PROPERTY_KEY)
+                        .dedup()
+                        .project("id", "valueMap", "label", "inVertexId", "outVertexId")
+                        .by(__.id())
+                        .by(__.valueMap(true))
+                        .by(__.label())
+                        .by(__.inV().id())
+                        .by(__.outV().id())
+                        .toList();
+
+                allResults.addAll(batchResults);
+
+                LOG.debug("Processed vertex batch {}-{} of {}, found {} edges",
+                        i, end, vertexIdList.size(), batchResults.size());
+            }
+
+            return allResults;
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
 
     public VertexEdgePropertiesCache enrichVertexPropertiesByVertexIds(Set<String> vertexIds, Set<String> attributes) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("enrichVertexPropertiesByVertexIds");
@@ -1304,7 +1351,13 @@ public class EntityGraphRetriever {
 
            Set<String> vertexIdsToProcess = new HashSet<>();
            if (!CollectionUtils.isEmpty(edgeLabelsToProcess)) {
-               List<Map<String, Object>> relationEdges = getConnectedRelationEdges(vertexIds, edgeLabelsToProcess, relationAttrsSize);
+               List<Map<String, Object>> relationEdges;
+               if (AtlasConfiguration.ATLAS_INDEXSEARCH_EDGE_BULK_FETCH_ENABLE.getBoolean()) {
+                   relationEdges = getConnectedRelationEdgesVertexBatching(vertexIds, edgeLabelsToProcess, relationAttrsSize);
+               } else {
+                   relationEdges = getConnectedRelationEdges(vertexIds, edgeLabelsToProcess, relationAttrsSize);
+               }
+
 
                for(String vertexId : vertexIds) {
                    for (Map<String, Object> relationEdge : relationEdges) {
@@ -1400,6 +1453,9 @@ public class EntityGraphRetriever {
             }
 
             mapSystemAttributes(entityVertex, entity);
+
+            entity.setDocId(LongEncoding.encode(Long.parseLong(entityVertex.getIdForDisplay())));
+            entity.setSuperTypeNames(typeRegistry.getEntityTypeByName(entity.getTypeName()).getAllSuperTypes());
 
             mapBusinessAttributes(entityVertex, entity);
 
@@ -1680,7 +1736,9 @@ public class EntityGraphRetriever {
             }
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
+            ret.setDocId(LongEncoding.encode(Long.parseLong(entityVertex.getIdForDisplay())));
             if (entityType != null) {
+                ret.setSuperTypeNames(entityType.getAllSuperTypes());
                 for (AtlasAttribute headerAttribute : entityType.getHeaderAttributes().values()) {
                     Object attrValue = getVertexAttribute(entityVertex, headerAttribute, vertexEdgePropertiesCache);
 
@@ -1725,6 +1783,8 @@ public class EntityGraphRetriever {
                         }
                     }
                 }
+            } else {
+                LOG.warn("Entity type not found for type name: {} for entityVertexId {}", typeName, entityVertex.getIdForDisplay());
             }
         }
         finally {
@@ -1765,14 +1825,14 @@ public class EntityGraphRetriever {
             ret.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
 
             // Set entity creation time if available
-            Long createdTime = GraphHelper.getCreatedTime(entityVertex);
-            if (createdTime != null) {
+            long createdTime = GraphHelper.getCreatedTime(entityVertex);
+            if (createdTime != 0L) {
                 ret.setCreateTime(new Date(createdTime));
             }
 
             // Set entity last update time if available
-            Long updatedTime = GraphHelper.getModifiedTime(entityVertex);
-            if (updatedTime != null) {
+            long updatedTime = GraphHelper.getModifiedTime(entityVertex);
+            if (updatedTime != 0L) {
                 ret.setUpdateTime(new Date(updatedTime));
             }
 
@@ -1785,7 +1845,10 @@ public class EntityGraphRetriever {
             }
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
+            ret.setDocId(LongEncoding.encode(Long.parseLong(entityVertex.getIdForDisplay())));
+
             if (entityType != null) {
+                ret.setSuperTypeNames(entityType.getAllSuperTypes());
                 for (AtlasAttribute headerAttribute : entityType.getHeaderAttributes().values()) {
                     Object attrValue = getVertexAttribute(entityVertex, headerAttribute);
 
@@ -1833,6 +1896,8 @@ public class EntityGraphRetriever {
                         }
                     }
                 }
+            } else {
+                LOG.warn("Entity type not found for type name: {} for entityVertexId {}", typeName, entityVertex.getIdForDisplay());
             }
         }
         finally {
@@ -1857,6 +1922,13 @@ public class EntityGraphRetriever {
 
             ret.setTypeName(typeName);
             ret.setGuid(guid);
+
+            ret.setDocId(LongEncoding.encode(Long.parseLong(entityVertex.getIdForDisplay())));
+            if (entityType != null) {
+                ret.setSuperTypeNames(entityType.getAllSuperTypes());
+            } else {
+                LOG.warn("Entity type not found for type name: {} for entityVertexId {}", typeName, entityVertex.getIdForDisplay());
+            }
 
             String state = (String)properties.get(Constants.STATE_PROPERTY_KEY);
             Id.EntityState entityState = state == null ? null : Id.EntityState.valueOf(state);
@@ -2851,7 +2923,20 @@ public class EntityGraphRetriever {
                     return ret;
                 }
 
-                String typeName = getTypeName(referenceVertex);
+                String typeName = null;
+                try {
+                    typeName = getTypeName(referenceVertex);
+                } catch (IllegalStateException ile) {
+                    String entityVertexId = entityVertex.getIdForDisplay();
+                    String entityGuid = getGuid(entityVertex);
+                    LOG.error("IllegalStateException for vertexId {}, entityGuid {}, GraphHelper.elementExists(referenceVertex) {}",
+                            entityVertexId, entityGuid, GraphHelper.elementExists(referenceVertex));
+                    if (!GraphHelper.elementExists(referenceVertex)) {
+                        return null;
+                    } else {
+                        throw ile;
+                    }
+                }
 
                 if (StringUtils.isEmpty(typeName)) {
                     LOG.error("typeName not found on edge {} from vertex {} ", edge.getId(), getGuid(entityVertex));
@@ -3220,6 +3305,17 @@ public class EntityGraphRetriever {
         return ret;
     }
 
+    public AtlasEntity getOrInitializeDiffEntity(AtlasVertex vertex) {
+        AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(GraphHelper.getGuid(vertex));
+        if (diffEntity == null) {
+            diffEntity = new AtlasEntity();
+            diffEntity.setTypeName(GraphHelper.getTypeName(vertex));
+            diffEntity.setGuid(GraphHelper.getGuid(vertex));
+            diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
+            RequestContext.get().cacheDifferentialEntity(diffEntity);
+        }
+        return diffEntity;
+    }
     private AtlasRelationshipWithExtInfo mapSystemAttributes(AtlasEdge edge, AtlasRelationshipWithExtInfo relationshipWithExtInfo, boolean extendedInfo) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Mapping system attributes for relationship");
@@ -3349,6 +3445,7 @@ public class EntityGraphRetriever {
 
         return new HashSet<>(ret);
     }
+
 
     private boolean isInactiveEdge(Object element, boolean ignoreInactive) {
         return ignoreInactive && element instanceof AtlasEdge && getStatus((AtlasEdge) element) != AtlasEntity.Status.ACTIVE;

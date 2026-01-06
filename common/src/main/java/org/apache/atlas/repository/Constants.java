@@ -21,6 +21,7 @@ package org.apache.atlas.repository;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.service.FeatureFlag;
 import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -38,6 +39,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.apache.atlas.service.FeatureFlag.USE_TEMP_ES_INDEX;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 import static org.apache.atlas.type.AtlasStructType.UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX;
 
@@ -502,6 +504,9 @@ public final class Constants {
     public static final String ATTR_ADMIN_ROLES = "adminRoles";
     public static final String ATTR_VIEWER_USERS = "viewerUsers";
     public static final String ATTR_VIEWER_GROUPS = "viewerGroups";
+    public static final String ATTR_OWNER_USERS = "ownerUsers";
+    public static final String ATTR_OWNER_GROUPS = "ownerGroups";
+    public static final String ATTR_ANNOUNCEMENT_MESSAGE = "announcementMessage";
 
     public static final String ATTR_STARRED_BY = "starredBy";
     public static final String ATTR_STARRED_COUNT = "starredCount";
@@ -521,6 +526,8 @@ public final class Constants {
 
     public static final String REQUEST_HEADER_USER_AGENT = "User-Agent";
     public static final String REQUEST_HEADER_HOST       = "Host";
+
+    public static final String ACTION_READ = "entity-read";
 
     public static final Set<String> SKIP_UPDATE_AUTH_CHECK_TYPES = new HashSet<String>() {{
         add(README_ENTITY_TYPE);
@@ -559,7 +566,7 @@ public final class Constants {
         String indexSuffix  = null;
         if(AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean()) {
             try {
-                if (FeatureFlagStore.evaluate("use_temp_es_index", "true")) {
+                if (FeatureFlagStore.evaluate( USE_TEMP_ES_INDEX.getKey(), "true")) {
                     indexSuffix = "_temp";
                 }
             } catch (Exception e) {

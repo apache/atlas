@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph.v2;
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
@@ -38,9 +39,12 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import javax.inject.Inject;
 import java.util.*;
@@ -51,6 +55,11 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
     private static final Logger LOG = LoggerFactory.getLogger(AtlasBusinessMetadataDefStoreV2.class);
 
     private final EntityDiscoveryService entityDiscoveryService;
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+
+    private static final int DEFAULT_RICH_TEXT_ATTRIBUTE_LIMIT = 50;
+    private static final String RICH_TEXT_ATTRIBUTE_LIMIT_PROPERTY = "atlas.business.metadata.richtext.limit";
+    private static final Set<String> ATTR_OPTION_FIELDS_TO_SKIP = Set.of("enumType");
 
     @Inject
     public AtlasBusinessMetadataDefStoreV2(AtlasTypeDefGraphStoreV2 typeDefStore, AtlasTypeRegistry typeRegistry, EntityDiscoveryService entityDiscoveryService) {
@@ -101,6 +110,15 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         return ret;
     }
 
+    private int getRichTextAttributeLimit() {
+        try {
+            return ApplicationProperties.get().getInt(RICH_TEXT_ATTRIBUTE_LIMIT_PROPERTY, DEFAULT_RICH_TEXT_ATTRIBUTE_LIMIT);
+        } catch (Exception e) {
+            LOG.warn("Failed to read rich text attribute limit configuration, using default: {}", DEFAULT_RICH_TEXT_ATTRIBUTE_LIMIT);
+            return DEFAULT_RICH_TEXT_ATTRIBUTE_LIMIT;
+        }
+    }
+
     @Override
     public void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
         super.validateType(typeDef);
@@ -116,11 +134,11 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
         if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
             for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
-                if (!isValidName(attributeDef.getName())) {
-                    throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_INVALID_CHARS, attributeDef.getName());
-                }
+                validateBusinessAttributeDef(attributeDef);
             }
         }
+
+        validateRichTextAttributeLimit(businessMetadataDef);
     }
 
     @Override
@@ -370,6 +388,9 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         // Load up current struct definition for matching attributes
         AtlasBusinessMetadataDef currentBusinessMetadataDef = toBusinessMetadataDef(vertex);
 
+        // Check if assets are attached with the attributes that are being archived
+        checkAttributesAttachedToAssets(businessMetadataDef, currentBusinessMetadataDef);
+
         // Check to verify that in an update call we only allow addition of new entity types, not deletion of existing
         // entity types
         if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
@@ -423,6 +444,57 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         }
     }
 
+    private void checkAttributesAttachedToAssets(AtlasBusinessMetadataDef updatedDef, AtlasBusinessMetadataDef currentDef) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AtlasBusinessMetadataDefStoreV2.checkAttributesAttachedToAssets({})", updatedDef.getName());
+        }
+
+        if (CollectionUtils.isEmpty(currentDef.getAttributeDefs())) {
+            return;
+        }
+
+        Map<String, AtlasStructDef.AtlasAttributeDef> updatedAttributeMap = new HashMap<>();
+
+        if (CollectionUtils.isNotEmpty(updatedDef.getAttributeDefs())) {
+            for (AtlasStructDef.AtlasAttributeDef attributeDef : updatedDef.getAttributeDefs()) {
+                updatedAttributeMap.put(attributeDef.getName(), attributeDef);
+            }
+        }
+
+        for (AtlasStructDef.AtlasAttributeDef currentAttribute : currentDef.getAttributeDefs()) {
+            AtlasStructDef.AtlasAttributeDef updatedAttr = updatedAttributeMap.get(currentAttribute.getName());
+            if (updatedAttr == null) {
+                continue;
+            }
+
+            //  Diff Calculation: Check if attribute is being archived now but was not archived earlier
+            boolean previouslyArchived = isArchivedAttribute(currentAttribute);
+            boolean currentlyArchived = isArchivedAttribute(updatedAttr);
+            boolean isBeingArchived = !previouslyArchived && currentlyArchived;
+            if (!isBeingArchived) {
+                continue;
+            }
+
+            String vertexPropertyName = AtlasStructType.AtlasAttribute.generateVertexPropertyName(currentAttribute);
+            Set<String> applicableTypes = AtlasJson.fromJson(
+                    currentAttribute.getOption(AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES),
+                    Set.class
+            );
+
+            if (isBusinessAttributePresent(vertexPropertyName, applicableTypes)) {
+                LOG.warn("Business metadata attribute '{}' cannot be archived as it is currently attached to one or more assets", currentAttribute.getName());
+                throw new AtlasBaseException(
+                    AtlasErrorCode.TYPE_HAS_REFERENCES,
+                        currentAttribute.getName()
+                );
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AtlasBusinessMetadataDefStoreV2.checkAttributesAttachedToAssets({})", updatedDef.getName());
+        }
+    }
+
     private Map<String, Object> getMap(String key, Object value) {
         Map<String, Object> map = new HashMap<>();
         map.put(key, value);
@@ -440,5 +512,122 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         AtlasSearchResult atlasSearchResult = entityDiscoveryService.directIndexSearch(indexSearchParams);
 
         return CollectionUtils.isNotEmpty(atlasSearchResult.getEntities());
+    }
+
+    private void validateRichTextAttributeLimit(AtlasBusinessMetadataDef businessMetadataDef) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(businessMetadataDef.getAttributeDefs())) {
+            return;
+        }
+
+        int newRichTextCount = 0;
+        for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
+            if (isRichTextAttribute(attributeDef) && !isArchivedAttribute(attributeDef)) {
+                newRichTextCount++;
+            }
+        }
+
+        if (newRichTextCount == 0) {
+            return;
+        }
+
+        int existingRichTextCount = countExistingRichTextAttributes(businessMetadataDef.getGuid());
+        int totalRichTextCount = existingRichTextCount + newRichTextCount;
+
+        int limit = getRichTextAttributeLimit();
+
+        if (totalRichTextCount > limit) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
+                    String.format("Cannot create business metadata attributes. Total rich text attributes would exceed limit of %d. " +
+                                    "Current: %d, Attempting to add: %d, Limit: %d",
+                            limit, existingRichTextCount, newRichTextCount, limit));
+        }
+    }
+
+    private boolean isRichTextAttribute(AtlasStructDef.AtlasAttributeDef attributeDef) {
+        if (attributeDef.getOptions() == null) {
+            return false;
+        }
+
+        String isRichText = attributeDef.getOptions().get("isRichText");
+        return "true".equalsIgnoreCase(isRichText);
+    }
+
+    private boolean isArchivedAttribute(AtlasStructDef.AtlasAttributeDef attributeDef) {
+        if (attributeDef.getOptions() == null) {
+            return false;
+        }
+
+        String isArchived = attributeDef.getOptions().get("isArchived");
+        return "true".equalsIgnoreCase(isArchived);
+    }
+
+    private int countExistingRichTextAttributes(String excludeBusinessMetadataGuid) throws AtlasBaseException {
+        int count = 0;
+
+        try {
+            List<AtlasBusinessMetadataDef> allBusinessMetadataDefs = getAll();
+
+            for (AtlasBusinessMetadataDef bmDef : allBusinessMetadataDefs) {
+                if (excludeBusinessMetadataGuid != null && excludeBusinessMetadataGuid.equals(bmDef.getGuid())) {
+                    continue;
+                }
+
+                if (CollectionUtils.isNotEmpty(bmDef.getAttributeDefs())) {
+                    for (AtlasStructDef.AtlasAttributeDef attributeDef : bmDef.getAttributeDefs()) {
+                        if (isRichTextAttribute(attributeDef) && !isArchivedAttribute(attributeDef)) {
+                            count++;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOG.error("Failed to count existing rich text attributes, at business metadata : {}", excludeBusinessMetadataGuid, e);
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Failed to validate rich text attribute limit");
+        }
+
+        return count;
+    }
+
+    private void validateBusinessAttributeDef(AtlasStructDef.AtlasAttributeDef attributeDef) throws AtlasBaseException {
+        if (!isValidName(attributeDef.getName())) {
+            throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_INVALID_CHARS, attributeDef.getName());
+        }
+
+        Map<String, String> options = attributeDef.getOptions();
+        if (MapUtils.isNotEmpty(options)) {
+            validateOptionsMap(options, attributeDef.getName());
+        }
+    }
+
+    private void validateOptionsMap(Map<String, String> options, String attrName) throws AtlasBaseException {
+        // Validate the entire options map is serializable as JSON
+        try {
+            JSON_MAPPER.writeValueAsString(options);
+        } catch (JsonProcessingException e) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "options map for attribute " + attrName + " is not a valid JSON object: " + e.getMessage());
+        }
+
+        for (Map.Entry<String, String> entry : options.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+
+            if (StringUtils.isBlank(value) && !ATTR_OPTION_FIELDS_TO_SKIP.contains(key)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "options['" + key + "'] for attribute " + attrName + " has null/empty value");
+            }
+
+            if (ATTR_OPTION_FIELDS_TO_SKIP.contains(key) && value == null) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "options['" + key + "'] value for attribute " + attrName + " cannot be null");
+            }
+
+            String trimmedValue = value.trim();
+            if (trimmedValue.startsWith("[")) {
+                try {
+                    JSON_MAPPER.readTree(trimmedValue);
+                } catch (JsonProcessingException e) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "options['" + key + "'] for attribute " + attrName +  " contains invalid JSON string: " + e.getMessage());
+                }
+            }
+            // Other string values (booleans, integers, strings) are valid JSON primitives when quoted
+        }
     }
 }

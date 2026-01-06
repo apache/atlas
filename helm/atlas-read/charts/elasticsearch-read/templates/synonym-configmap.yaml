@@ -1,0 +1,29 @@
+{{- if or .Values.global.esIsolation.enabled .Values.global.globalSvcIsolation.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elasticsearch-read-synonym-config
+  namespace: {{ .Values.Namespace }}
+  labels:
+    app: {{ template "name" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  synonym.txt: |
+    customer, consumer
+    hr, hour
+    country, nation
+    delete, archive
+    updated, modified, altered
+    lat, latitude
+    long, longitude
+    profit, loss, revenue
+    customer, consumer, buyer
+    id, userid, user_id, guid
+    qty, quantity
+    cus_id, customer_id, customerid
+    amt, amount
+    review, rating
+    cost, price
+    home for data teams, atlan
+{{- end }}

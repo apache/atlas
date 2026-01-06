@@ -65,6 +65,7 @@ import java.util.*;
 
 import static java.nio.charset.Charset.defaultCharset;
 import static org.apache.atlas.repository.Constants.DOMAIN_GUIDS;
+import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.INDEX_BACKEND_CONF;
 import static org.springframework.util.StreamUtils.copyToString;
 
 /**
@@ -76,7 +77,7 @@ import static org.springframework.util.StreamUtils.copyToString;
 @ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepositorySearch.impl")
 public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository {
     private static final Logger LOG = LoggerFactory.getLogger(ESBasedAuditRepository.class);
-    public static final String INDEX_BACKEND_CONF = "atlas.graph.index.search.hostname";
+    public static final String INDEX_WRITE_BACKEND_CONF = "atlas.graph.index.search.write.hostname";
     private static final String TOTAL_FIELD_LIMIT = "atlas.index.audit.elasticsearch.total_field_limit";
     public static final String INDEX_NAME = "entity_audits";
     private static final String ENTITYID = "entityId";
@@ -190,7 +191,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
                     String responseBody = EntityUtils.toString(response.getEntity());
 
-                    if (statusCode >= 500 && statusCode < 600) {
+                    if ((statusCode >= 500 && statusCode < 600) || statusCode==429) {
                         LOG.warn("Failed to push entity audits to ES due to server error ({}). Retrying... ({}/{}) Response: {}",
                                 statusCode, retryCount + 1, maxRetries, responseBody);
                     } else {
@@ -547,8 +548,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     public static List<HttpHost> getHttpHosts() throws AtlasException {
         List<HttpHost> httpHosts = new ArrayList<>();
-        Configuration configuration = ApplicationProperties.get();
-        String indexConf = configuration.getString(INDEX_BACKEND_CONF);
+        String indexConf = getESHosts();
         String[] hosts = indexConf.split(",");
         for (String host : hosts) {
             host = host.trim();
@@ -562,6 +562,17 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             }
         }
         return httpHosts;
+    }
+
+    public static String getESHosts() throws AtlasException {
+        Configuration configuration = ApplicationProperties.get();
+        //get es write hosts if available (ES Isolation)
+        String esHostNames = configuration.getString(INDEX_WRITE_BACKEND_CONF);
+        if (StringUtils.isNotEmpty(esHostNames)) {
+            return esHostNames;
+        } else {
+            return configuration.getString(INDEX_BACKEND_CONF);
+        }
     }
 
     private boolean isSuccess(Response response) {

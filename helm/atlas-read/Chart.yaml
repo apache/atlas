@@ -1,0 +1,34 @@
+apiVersion: v2
+name: atlas-read
+description: Apache Atlas Read Replica for Metadata Management
+type: application
+version: 1.0.0
+appVersion: "3.0.0"  # Will be updated by CI with commit ID
+maintainers:
+  - name: Atlan Engineering
+    email: engineering@atlan.com
+keywords:
+  - atlas
+  - atlas-read
+  - metadata
+  - read-replica
+  - apache-atlas
+sources:
+  - https://github.com/atlanhq/atlas-metastore
+home: https://github.com/atlanhq/atlas-metastore
+dependencies:
+  # Infrastructure charts - disabled by default (published separately as OCI)
+  # Charts exist in charts/ subdirectory for individual OCI publishing
+  # Consumed as peers in parent atlan chart, not as subcharts here
+  - name: cassandra-online-dc
+    repository: file://./charts/cassandra-online-dc
+    version: 0.x.x
+    condition: cassandra-online-dc.enabled  # Disabled in values.yaml
+  - name: elasticsearch-read
+    repository: file://./charts/elasticsearch-read
+    version: 7.x.x
+    condition: elasticsearch-read.enabled  # Disabled in values.yaml
+  - name: elasticsearch-exporter-read
+    repository: file://./charts/elasticsearch-exporter-read
+    version: 3.3.0
+    condition: elasticsearch-exporter-read.enabled  # Disabled in values.yaml

@@ -70,6 +70,7 @@ public class PreProcessorUtils {
     public static final String INPUT_PORT_GUIDS_ATTR = "daapInputPortGuids";
     public static final String DAAP_STATUS_ATTR = "daapStatus";
     public static final String DAAP_ARCHIVED_STATUS = "Archived";
+    public static final String DAAP_ACTIVE_STATUS = "Active";
     public static final String DAAP_ASSET_DSL_ATTR = "dataProductAssetsDSL";
     public static final String DAAP_LINEAGE_STATUS_ATTR = "daapLineageStatus";
     public static final String DAAP_LINEAGE_STATUS_IN_PROGRESS = "InProgress";

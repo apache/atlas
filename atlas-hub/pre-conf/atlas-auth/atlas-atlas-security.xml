@@ -59,7 +59,7 @@
 
 	<property>
 		<name>atlas.plugin.atlas.policy.cache.dir</name>
-		<value>/etc/atlas/atlasdev/policycache</value>
+		<value>/tmp/atlasdev/policycache</value>
 		<description>
 			Directory where Ranger policies are cached after successful retrieval from the source
 		</description>

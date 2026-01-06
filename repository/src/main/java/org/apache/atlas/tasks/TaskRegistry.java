@@ -416,8 +416,7 @@ public class TaskRegistry {
     public List<AtlasTask> getTasksForReQueueIndexSearch() {
         DirectIndexQueryResult indexQueryResult = null;
         List<AtlasTask> ret = new ArrayList<>();
-
-        int size = 1000;
+        int size = AtlasConfiguration.TASKS_QUEUE_SIZE.getInt();
         int from = 0;
 
         IndexSearchParams indexSearchParams = new IndexSearchParams();

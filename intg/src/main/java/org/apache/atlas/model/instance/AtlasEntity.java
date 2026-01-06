@@ -35,14 +35,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -71,6 +64,8 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     public static final String KEY_CREATE_TIME     = "createTime";
     public static final String KEY_UPDATE_TIME     = "updateTime";
     public static final String KEY_VERSION         = "version";
+    public static final String KEY_DOC_ID          = "docId";
+    public static final String KEY_SUPER_TYPES     = "superTypeNames";
 
     /**
      * Status of the entity - can be active or deleted. Deleted entities are not removed from Atlas store.
@@ -91,6 +86,9 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Long    version        = 0L;
     private Boolean starred       = null;
 
+    private Set<String>                     superTypeNames      = new HashSet<>();
+    private String                          docId               = null;
+
     private Map<String, Object>              relationshipAttributes;
     private Map<String, Object>              appendRelationshipAttributes;
     private Map<String, Object>              removeRelationshipAttributes;
@@ -103,7 +101,15 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Set<String>                      labels;
     private Set<String>                      pendingTasks; // read-only field i.e. value provided is ignored during entity create/update
     private String                           deleteHandler;
+
+    /*
+    * Only for notifications
+    * */
     private Map<String, Object>              addedRelationshipAttributes;
+
+    /*
+     * Only for notifications
+     * */
     private Map<String, Object>              removedRelationshipAttributes;
 
     @JsonIgnore
@@ -241,6 +247,22 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             setAddedRelationshipAttributes(other.getAddedRelationshipAttributes());
             setRemovedRelationshipAttributes(other.getRemovedRelationshipAttributes());
         }
+    }
+
+    public Set<String> getSuperTypeNames() {
+        return superTypeNames;
+    }
+
+    public void setSuperTypeNames(Set<String> superTypeNames) {
+        this.superTypeNames = superTypeNames;
+    }
+
+    public String getDocId() {
+        return docId;
+    }
+
+    public void setDocId(String docId) {
+        this.docId = docId;
     }
 
     public String getGuid() {
@@ -610,8 +632,14 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     private void addToMapList(Map<String, Object> map, String key, Object value) {
         List<Object> values = (List<Object>) map.getOrDefault(key, new ArrayList<>(1));
-        values.add(value);
-        map.put(key, values);
+        try {
+            values.add(value);
+            map.put(key, values);
+        } catch (UnsupportedOperationException use) {
+            List<Object> mutableValues = new ArrayList<>(values);
+            mutableValues.add(value);
+            map.put(key, mutableValues);
+        }
     }
 
     private void init() {

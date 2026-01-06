@@ -1,0 +1,304 @@
+multiarch:
+  enabled: false
+  image: {}
+
+## number of exporter instances
+##
+#replicaCount: 1
+global:
+  Tier_Type: ""
+  esIsolation:
+    enabled: false
+  globalSvcIsolation:
+    enabled: false
+## restart policy for all containers
+##
+Namespace: monitoring
+restartPolicy: Always
+
+image:
+  repository: ghcr.io/atlanhq/elasticsearch-exporter
+  tag: 1.6.0
+  pullPolicy: IfNotPresent
+  pullSecret: ""
+
+## Set enabled to false if you don't want securityContext
+## in your Deployment.
+## The below values are the default for kubernetes.
+## Openshift won't deploy with runAsUser: 1000 without additional permissions.
+securityContext:
+  enabled: true  # Should be set to false when running on OpenShift
+  runAsUser: 1000
+
+resources:
+  requests:
+    #cpu: 100m
+    memory: 128Mi
+  limits:
+   # cpu: 100m
+    memory: 128Mi
+
+resources_basic:
+  requests:
+    memory: 10Mi
+  limits:
+    memory: 128Mi
+
+resources_standard:
+  requests:
+    memory: 20Mi
+  limits:
+    memory: 128Mi
+
+priorityClassName: ""
+
+nodeSelector: {}
+  # nodegroup: atlan-services
+tolerations: {}
+
+podAnnotations: {}
+
+affinity:
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 1
+      preference:
+        matchExpressions:
+        - key: eks.amazonaws.com/capacityType   #AWS
+          operator: In
+          values:
+          - SPOT
+    - weight: 1
+      preference:
+        matchExpressions:
+        - key: lifecycle     #Azure
+          operator: In
+          values:
+          - spot
+    - weight: 1
+      preference:
+        matchExpressions:
+        - key: cloud.google.com/gke-provisioning  #GCP
+          operator: In
+          values:
+          - spot
+  podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 1
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - elasticsearch-exporter
+          topologyKey: kubernetes.io/hostname
+#   podAntiAffinity:
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#     - labelSelector:
+#         matchExpressions:
+#         - key: release
+#           operator: In
+#           values:
+#           - atlas
+#           - postgresql
+#           - redis
+#           - zookeeper
+#       topologyKey: "kubernetes.io/hostname"
+#   nodeAffinity:
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#      nodeSelectorTerms:
+#      - matchExpressions:
+#        - key: nodegroup
+#          operator: NotIn
+#          values:
+#          - atlan-spark
+
+service:
+  type: ClusterIP
+  httpPort: 9108
+  metricsPort:
+    name: http
+  annotations: {}
+  labels: {}
+
+## Extra environment variables that will be passed into the exporter pod
+## example:
+## env:
+##   KEY_1: value1
+##   KEY_2: value2
+env: {}
+
+## The name of a secret in the same kubernetes namespace which contain values to be added to the environment
+## This can be useful for auth tokens, etc
+envFromSecret: ""
+
+## A list of environment variables from secret refs that will be passed into the exporter pod
+## example:
+## This will set ${ES_PASSWORD} to the 'password' key from the 'my-secret' secret
+## extraEnvSecrets:
+##   ES_PASSWORD:
+##     secret: my-secret
+##     key: password
+extraEnvSecrets: {}
+
+# A list of secrets and their paths to mount inside the pod
+# This is useful for mounting certificates for security
+secretMounts: []
+#  - name: elastic-certs
+#    secretName: elastic-certs
+#    path: /ssl
+
+es:
+  ## Address (host and port) of the Elasticsearch node we should connect to.
+  ## This could be a local node (localhost:9200, for instance), or the address
+  ## of a remote Elasticsearch server. When basic auth is needed,
+  ## specify as: <proto>://<user>:<password>@<host>:<port>. e.g., http://admin:pass@localhost:9200.
+  ##
+  uri: http://atlas-elasticsearch-read-master.atlas.svc.cluster.local:9200
+
+  ## If true, query stats for all nodes in the cluster, rather than just the
+  ## node we connect to.
+  ##
+  all: true
+
+  ## If true, query stats for all indices in the cluster.
+  ##
+  indices: true
+
+  ## If true, query settings stats for all indices in the cluster.
+  ##
+  indices_settings: true
+
+  ## If true, query mapping stats for all indices in the cluster.
+  ##
+  indices_mappings: true
+
+
+  ## If true, query stats for shards in the cluster.
+  ##
+  shards: true
+
+  ## If true, query stats for snapshots in the cluster.
+  ##
+  snapshots: true
+
+  ## If true, query stats for cluster settings.
+  ##
+  cluster_settings: false
+
+  ## Timeout for trying to get stats from Elasticsearch. (ex: 20s)
+  ##
+  timeout: 30s
+
+  ## Skip SSL verification when connecting to Elasticsearch
+  ## (only available if image.tag >= 1.0.4rc1)
+  ##
+  sslSkipVerify: false
+
+
+  ssl:
+    ## If true, a secure connection to ES cluster is used
+    ##
+    enabled: false
+
+    ## If true, certs from secretMounts will be need to be referenced instead of certs below
+    ##
+    useExistingSecrets: false
+
+    ca:
+
+      ## PEM that contains trusted CAs used for setting up secure Elasticsearch connection
+      ##
+      # pem:
+
+      # Path of ca pem file which should match a secretMount path
+      path: /ssl/ca.pem
+    client:
+      ## if true, client SSL certificate is used for authentication
+      ##
+      enabled: true
+
+      ## PEM that contains the client cert to connect to Elasticsearch.
+      ##
+      # pem:
+
+      # Path of client pem file which should match a secretMount path
+      pemPath: /ssl/client.pem
+
+      ## Private key for client auth when connecting to Elasticsearch
+      ##
+      # key:
+
+      # Path of client key file which should match a secretMount path
+      keyPath: /ssl/client.key
+web:
+  ## Path under which to expose metrics.
+  ##
+  path: /metrics
+
+serviceMonitor:
+  ## If true, a ServiceMonitor CRD is created for a prometheus operator
+  ## https://github.com/coreos/prometheus-operator
+  ##
+  #enabled: true
+  namespace: monitoring
+  labels:
+    release: "prometheus-operator"
+  interval: 5m
+  scrapeTimeout: 10s
+  scheme: http
+  relabelings: []
+
+prometheusRule:
+  ## If true, a PrometheusRule CRD is created for a prometheus operator
+  ## https://github.com/coreos/prometheus-operator
+  ##
+  ## The rules will be processed as Helm template, allowing to set variables in them.
+  #enabled: true
+  namespace: monitoring
+  labels:
+    release: prometheus-operator
+  rules:
+    - record: elasticsearch_filesystem_data_used_percent
+      expr: |
+         100 * (elasticsearch_filesystem_data_size_bytes{service="{{ template "elasticsearch-exporter.fullname" . }}"} - elasticsearch_filesystem_data_free_bytes{service="{{ template "elasticsearch-exporter.fullname" . }}"})
+         / elasticsearch_filesystem_data_size_bytes{service="{{ template "elasticsearch-exporter.fullname" . }}"}
+    - record: elasticsearch_filesystem_data_free_percent
+      expr: |
+          (100 - elasticsearch_filesystem_data_used_percent{service="{{ template "elasticsearch-exporter.fullname" . }}"})
+    - alert: ElasticsearchTooFewNodesRunning
+      expr: |
+          elasticsearch_cluster_health_number_of_nodes{service="{{ template "elasticsearch-exporter.fullname" . }}"} < 3
+      for: 5m
+      labels:
+        severity: critical
+        team: infra
+        component: ElasticSearch
+      annotations:
+        description: There are only {{ "{{ $value }}" }} < 3 ElasticSearch nodes running
+        summary: ElasticSearch running on less than 3 nodes
+    - alert: ElasticsearchHeapTooHigh
+      expr: |
+        elasticsearch_jvm_memory_used_bytes{service="{{ template "elasticsearch-exporter.fullname" . }}", area="heap"} / elasticsearch_jvm_memory_max_bytes{service="{{ template "elasticsearch-exporter.fullname" . }}", area="heap"}
+        > 0.9
+      for: 15m
+      labels:
+        severity: critical
+        team: infra
+        component: ElasticSearch
+      annotations:
+        description: The heap usage is over 90% for 15m
+        summary: ElasticSearch node {{ "{{ $labels.node }}" }} heap usage is high
+
+# Create a service account
+# To use a service account not handled by the chart, set the name here
+# and set create to false
+serviceAccount:
+  create: false
+  name: default
+
+# Creates a PodSecurityPolicy and the role/rolebinding
+# allowing the serviceaccount to use it
+podSecurityPolicies:
+  enabled: false

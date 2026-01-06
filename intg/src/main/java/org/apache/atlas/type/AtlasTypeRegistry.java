@@ -293,6 +293,97 @@ public class AtlasTypeRegistry {
         }
     }
 
+    public void addTypes(AtlasTypesDef typesDef) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AtlasTypeRegistry.addTypes({})", typesDef);
+        }
+
+        if (typesDef != null) {
+            addTypesWithNoRefResolve(typesDef.getEnumDefs());
+            addTypesWithNoRefResolve(typesDef.getStructDefs());
+            addTypesWithNoRefResolve(typesDef.getClassificationDefs());
+            addTypesWithNoRefResolve(typesDef.getEntityDefs());
+            addTypesWithNoRefResolve(typesDef.getRelationshipDefs());
+            addTypesWithNoRefResolve(typesDef.getBusinessMetadataDefs());
+        }
+
+        resolveReferences();
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AtlasTypeRegistry.addTypes({})", typesDef);
+        }
+    }
+
+    private void addTypesWithNoRefResolve(Collection<? extends AtlasBaseTypeDef> typeDefs) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AtlasTypeRegistry.addTypesWithNoRefResolve(length={})",
+                    (typeDefs == null ? 0 : typeDefs.size()));
+        }
+
+        if (CollectionUtils.isNotEmpty(typeDefs)) {
+            for (AtlasBaseTypeDef typeDef : typeDefs) {
+                addTypeWithNoRefResolve(typeDef);
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AtlasTypeRegistry.addTypesWithNoRefResolve(length={})",
+                    (typeDefs == null ? 0 : typeDefs.size()));
+        }
+    }
+
+    private void resolveReferences() throws AtlasBaseException {
+        for (AtlasType type : registryData.allTypes.getAllTypes()) {
+            type.resolveReferences(this);
+        }
+
+        for (AtlasType type : registryData.allTypes.getAllTypes()) {
+            type.resolveReferencesPhase2(this);
+        }
+
+        for (AtlasType type : registryData.allTypes.getAllTypes()) {
+            type.resolveReferencesPhase3(this);
+        }
+    }
+
+    private void addTypeWithNoRefResolve(AtlasBaseTypeDef typeDef) throws AtlasBaseException{
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AtlasTypeRegistry.addTypeWithNoRefResolve({})", typeDef);
+        }
+
+        if (typeDef != null) {
+            if (typeDef.getClass().equals(AtlasEnumDef.class)) {
+                AtlasEnumDef enumDef = (AtlasEnumDef) typeDef;
+
+                registryData.enumDefs.addType(enumDef, new AtlasEnumType(enumDef));
+            } else if (typeDef.getClass().equals(AtlasStructDef.class)) {
+                AtlasStructDef structDef = (AtlasStructDef) typeDef;
+
+                registryData.structDefs.addType(structDef, new AtlasStructType(structDef));
+            } else if (typeDef.getClass().equals(AtlasClassificationDef.class)) {
+                AtlasClassificationDef classificationDef = (AtlasClassificationDef) typeDef;
+
+                registryData.classificationDefs.addType(classificationDef,
+                        new AtlasClassificationType(classificationDef));
+            } else if (typeDef.getClass().equals(AtlasEntityDef.class)) {
+                AtlasEntityDef entityDef = (AtlasEntityDef) typeDef;
+
+                registryData.entityDefs.addType(entityDef, new AtlasEntityType(entityDef));
+            } else if (typeDef.getClass().equals(AtlasRelationshipDef.class)) {
+                AtlasRelationshipDef relationshipDef = (AtlasRelationshipDef) typeDef;
+
+                registryData.relationshipDefs.addType(relationshipDef, new AtlasRelationshipType(relationshipDef));
+            } else if (typeDef.getClass().equals(AtlasBusinessMetadataDef.class)) {
+                AtlasBusinessMetadataDef businessMetadataDef = (AtlasBusinessMetadataDef) typeDef;
+                registryData.businessMetadataDefs.addType(businessMetadataDef, new AtlasBusinessMetadataType(businessMetadataDef));
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AtlasTypeRegistry.addTypeWithNoRefResolve({})", typeDef);
+        }
+    }
+
     private void resolveIndexFieldNamesForRootTypes() {
         for (AtlasStructType structType : Arrays.asList(AtlasEntityType.ENTITY_ROOT, AtlasClassificationType.CLASSIFICATION_ROOT)) {
             for (AtlasAttribute attribute : structType.getAllAttributes().values()) {

@@ -1,0 +1,163 @@
+{
+  "aggs": {
+    "group_by_typeName": {
+      "terms": {
+        "field": "__typeName.keyword",
+        "size": 100
+      }
+    }
+  },
+  "query": {
+    "bool": {
+      "filter": {
+        "bool": {
+          "must": [
+            {
+              "bool": {
+                "must": [
+                  {
+                    "bool": {
+                      "should": [
+                        {
+                          "term": {
+                            "schemaQualifiedName": "default/snowflake/1657275059/HARMONIZED_DB_DEV"
+                          }
+                        },
+                        {
+                          "term": {
+                            "schemaQualifiedName": "default/snowflake/1657275059/HARMONIZED_DB_DEV/PUBLIC"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "terms": {
+                      "__typeName.keyword": [
+                        "Table",
+                        "View",
+                        "AIModel",
+                        "Query"
+                      ]
+                    }
+                  },
+                  {
+                    "bool": {
+                      "should": [
+                        {
+                          "bool": {
+                            "should": [
+                              {
+                                "wildcard": {
+                                  "name.keyword": {
+                                    "value": "*cust*",
+                                    "case_insensitive": true
+                                  }
+                                }
+                              },
+                              {
+                                "wildcard": {
+                                  "displayName.keyword": {
+                                    "value": "*cust*",
+                                    "case_insensitive": true
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "term": {
+                "__state": "ACTIVE"
+              }
+            }
+          ],
+          "should": [
+            {
+              "terms": {
+                "__superTypeNames.keyword": [
+                  "AI",
+                  "SQL",
+                  "BI",
+                  "SaaS",
+                  "ObjectStore",
+                  "EventStore",
+                  "DataQuality",
+                  "Dbt",
+                  "API",
+                  "Airflow",
+                  "Spark",
+                  "MWAA",
+                  "GCP_Cloud_Composer",
+                  "Astronomer",
+                  "SchemaRegistry",
+                  "Matillion",
+                  "NoSQL",
+                  "MultiDimensionalDataset",
+                  "ERD",
+                  "DataModeling",
+                  "ADF",
+                  "model",
+                  "Fivetran",
+                  "App",
+                  "Custom",
+                  "SAP",
+                  "Alteryx",
+                  "Flow"
+                ]
+              }
+            },
+            {
+              "terms": {
+                "__typeName.keyword": [
+                  "Query",
+                  "Collection",
+                  "AtlasGlossary",
+                  "AtlasGlossaryCategory",
+                  "AtlasGlossaryTerm",
+                  "Connection",
+                  "File",
+                  "Process",
+                  "DataDomain",
+                  "DataProduct"
+                ]
+              }
+            }
+          ],
+          "must_not": [
+            {
+              "terms": {
+                "__typeName.keyword": [
+                  "MCIncident",
+                  "Procedure",
+                  "DbtColumnProcess",
+                  "BIProcess",
+                  "MatillionComponent",
+                  "ModelVersion",
+                  "DataQualityRule",
+                  "FlowDatasetOperation",
+                  "FlowFieldOperation",
+                  "SnowflakeTag",
+                  "DbtTag",
+                  "BigqueryTag"
+                ]
+              }
+            },
+            {
+              "term": {
+                "isPartial": "true"
+              }
+            }
+          ],
+          "minimum_should_match": 1
+        }
+      }
+    }
+  }
+}
