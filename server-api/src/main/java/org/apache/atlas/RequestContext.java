@@ -60,7 +60,6 @@ public class RequestContext {
     private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache   = new HashMap<>();
     private final Map<String, AtlasEntity>               diffEntityCache      = new HashMap<>();
     private final Map<String, Object>                    diffVertexCache      = new HashMap<>();
-    private final Map<String, Object>                    guidVertexCache      = new HashMap<>();
     private final Map<String, List<AtlasClassification>> addedPropagations    = new HashMap<>();
     private final Map<String, List<AtlasClassification>> removedPropagations  = new HashMap<>();
     private final Map<String, String>                    requestContextHeaders= new HashMap<>();
@@ -176,7 +175,6 @@ public class RequestContext {
         this.entityHeaderCache.clear();
         this.entityExtInfoCache.clear();
         this.diffEntityCache.clear();
-        this.guidVertexCache.clear();
         this.addedPropagations.clear();
         this.removedPropagations.clear();
         this.entitiesToSkipUpdate.clear();
@@ -652,16 +650,6 @@ public class RequestContext {
 
     public Object getDifferentialVertex(String guid) {
         return diffVertexCache.get(guid);
-    }
-
-    public void cacheVertex(String guid, Object vertex) {
-        if (guid != null && vertex != null) {
-            guidVertexCache.put(guid, vertex);
-        }
-    }
-
-    public Object getCachedVertex(String guid) {
-        return guid != null ? guidVertexCache.get(guid) : null;
     }
 
     public Collection<AtlasEntity> getDifferentialEntities() { return diffEntityCache.values(); }
