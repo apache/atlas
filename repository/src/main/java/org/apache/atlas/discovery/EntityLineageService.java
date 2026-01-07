@@ -498,7 +498,14 @@ public class EntityLineageService implements AtlasLineageService {
                             setEntityLimitReachedFlag(isInput, ret);
                     }
                     if (entityVertex != null && !visitedVertices.contains(getId(entityVertex))) {
-                        traverseEdgesOnDemand(entityVertex, isInput, depth - 1, nextLevel, visitedVertices, atlasLineageOnDemandContext, ret, baseGuid, entitiesTraversed, traversalOrder); // execute inner depth
+                        String entityGuid = AtlasGraphUtilsV2.getIdFromVertex(entityVertex);
+                        LineageOnDemandConstraints entityLineageConstraints = getAndValidateLineageConstraintsByGuid(entityGuid, atlasLineageOnDemandContext);
+
+                        if (!ret.getRelationsOnDemand().containsKey(entityGuid)) {
+                            ret.getRelationsOnDemand().put(entityGuid, new LineageInfoOnDemand(entityLineageConstraints));
+                        }
+
+                        traverseEdgesOnDemand(entityVertex, isInput, depth - 1, nextLevel, visitedVertices, atlasLineageOnDemandContext, ret, baseGuid, entitiesTraversed, traversalOrder);
                         AtlasEntityHeader traversedEntity = ret.getGuidEntityMap().get(AtlasGraphUtilsV2.getIdFromVertex(entityVertex));
                         traversedEntity.setFinishTime(traversalOrder.get());
                     }
