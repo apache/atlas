@@ -592,10 +592,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
             this.removedRelationshipAttributes = r;
         }
-
-        // Remove from addedRelationshipAttributes if the same entity is being removed
-        // This handles the scenario where removed is set after added
-        removeFromAddedRelationshipAttributesByGuid(name, value);
     }
 
     public Map<String, Object> getAddedRelationshipAttributes() {
@@ -695,64 +691,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         }
     }
 
-    /**
-     * Removes an entry from addedRelationshipAttributes if it matches the given name and guid.
-     * This is used when removed is set after added.
-     */
-    private void removeFromAddedRelationshipAttributesByGuid(String name, Object removedValue) {
-        Map<String, Object> added = this.addedRelationshipAttributes;
-        if (added == null || removedValue == null) {
-            return;
-        }
-
-        String removedGuid = extractGuid(removedValue);
-        if (removedGuid == null) {
-            return;
-        }
-
-        Object addedValue = added.get(name);
-        if (addedValue == null) {
-            return;
-        }
-
-        String addedGuid = extractGuid(addedValue);
-        if (removedGuid.equals(addedGuid)) {
-            added.remove(name);
-        }
-    }
-
-    /**
-     * Removes an entry from addedRelationshipAttributes list if it matches the given guid.
-     * This is used for array-type relationships when removed is set after added.
-     */
-    @SuppressWarnings("unchecked")
-    private void removeFromAddedRelationshipAttributeListByGuid(String name, AtlasObjectId removedRelationship) {
-        Map<String, Object> added = this.addedRelationshipAttributes;
-        if (added == null || removedRelationship == null || removedRelationship.getGuid() == null) {
-            return;
-        }
-
-        Object addedValue = added.get(name);
-        if (addedValue == null) {
-            return;
-        }
-
-        String removedGuid = removedRelationship.getGuid();
-
-        if (addedValue instanceof List) {
-            List<Object> addedList = (List<Object>) addedValue;
-            addedList.removeIf(item -> removedGuid.equals(extractGuid(item)));
-            if (addedList.isEmpty()) {
-                added.remove(name);
-            }
-        } else {
-            String addedGuid = extractGuid(addedValue);
-            if (removedGuid.equals(addedGuid)) {
-                added.remove(name);
-            }
-        }
-    }
-
     public void addOrAppendAddedRelationshipAttribute(String name, AtlasObjectId relationship) {
         if (this.addedRelationshipAttributes == null) {
             this.addedRelationshipAttributes = new HashMap<>(1);
@@ -770,10 +708,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             this.removedRelationshipAttributes = new HashMap<>(1);
         }
         addToMapList(this.removedRelationshipAttributes, name, relationship);
-
-        // Remove from addedRelationshipAttributes if the same entity is being removed
-        // This handles the scenario where removed is set after added for array-type relationships
-        removeFromAddedRelationshipAttributeListByGuid(name, relationship);
     }
 
     private void addToMapList(Map<String, Object> map, String key, Object value) {
