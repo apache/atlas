@@ -72,7 +72,7 @@ public final class GraphDbObjectFactory {
 
     /**
      * Creates an AtlasJanusVertex that corresponds to the given Gremlin Vertex.
-     * When LEAN_GRAPH_ENABLED, checks diffVertexCache first to reuse existing vertex instances.
+     * When LEAN_GRAPH_ENABLED, checks vertex caches first to reuse existing vertex instances.
      * This ensures that property changes (like hasLineage) are made on the same vertex instance
      * that will be committed.
      *
@@ -84,13 +84,23 @@ public final class GraphDbObjectFactory {
             return null;
         }
 
-        // Check diffVertexCache first when LEAN_GRAPH_ENABLED to reuse existing vertex instances
+        // Check vertex caches first when LEAN_GRAPH_ENABLED to reuse existing vertex instances.
+        // This ensures that property changes (like hasLineage) are made on the same vertex instance
+        // that will be committed.
         if (LEAN_GRAPH_ENABLED) {
             // __guid is in VERTEX_CORE_PROPERTIES, so it's stored in JanusGraph
             Property<String> guidProperty = source.property(GUID_PROPERTY_KEY);
             if (guidProperty.isPresent()) {
                 String guid = guidProperty.value();
+
+                // First check diffVertexCache (entities modified in this transaction)
                 Object cached = RequestContext.get().getDifferentialVertex(guid);
+                if (cached instanceof AtlasJanusVertex) {
+                    return (AtlasJanusVertex) cached;
+                }
+
+                // Fallback to guidVertexCache (vertices looked up via findByGuid/findDeletedByGuid)
+                cached = RequestContext.get().getCachedVertex(guid);
                 if (cached instanceof AtlasJanusVertex) {
                     return (AtlasJanusVertex) cached;
                 }
