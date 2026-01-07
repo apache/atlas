@@ -233,6 +233,9 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
         Map<String, AtlasVertex> cache = guidVertexCache.get();
 
         cache.put(guid, vertex);
+
+        // Also add to RequestContext cache for access from graphdb module
+        RequestContext.get().cacheVertex(guid, vertex);
     }
 
     public static void removeFromVertexCache(String guid) {
