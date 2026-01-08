@@ -39,8 +39,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
