@@ -625,134 +625,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         removeFromRemovedRelationshipAttributesByGuid(name, value);
     }
 
-    /**
-     * Removes an entry from removedRelationshipAttributes if it matches the given name and guid.
-     * This is used to deduplicate when the same entity is both removed and added (e.g., unlink-relink scenario).
-     */
-    private void removeFromRemovedRelationshipAttributesByGuid(String name, Object addedValue) {
-        Map<String, Object> removed = this.removedRelationshipAttributes;
-        if (removed == null || addedValue == null) {
-            return;
-        }
-
-        String addedGuid = extractGuid(addedValue);
-        if (addedGuid == null) {
-            return;
-        }
-
-        Object removedValue = removed.get(name);
-        if (removedValue == null) {
-            return;
-        }
-
-        String removedGuid = extractGuid(removedValue);
-        if (addedGuid.equals(removedGuid)) {
-            removed.remove(name);
-        }
-    }
-
-    /**
-     * Extracts the guid from a relationship attribute value.
-     * The value can be a Map with "guid" key or an AtlasObjectId.
-     */
-    private String extractGuid(Object value) {
-        if (value instanceof Map) {
-            Object guid = ((Map<?, ?>) value).get("guid");
-            return guid != null ? guid.toString() : null;
-        } else if (value instanceof AtlasObjectId) {
-            return ((AtlasObjectId) value).getGuid();
-        }
-        return null;
-    }
-
-    /**
-     * Checks if an entity with the same guid already exists in addedRelationshipAttributes.
-     * Used to prevent adding to removed when the same entity has already been added.
-     */
-    private boolean existsInAddedRelationshipAttributesByGuid(String name, Object value) {
-        Map<String, Object> added = this.addedRelationshipAttributes;
-        if (added == null || value == null) {
-            return false;
-        }
-
-        String valueGuid = extractGuid(value);
-        if (valueGuid == null) {
-            return false;
-        }
-
-        Object addedValue = added.get(name);
-        if (addedValue == null) {
-            return false;
-        }
-
-        String addedGuid = extractGuid(addedValue);
-        return valueGuid.equals(addedGuid);
-    }
-
-    /**
-     * Checks if an entity with the same guid already exists in addedRelationshipAttributes list.
-     * Used for array-type relationships to prevent adding to removed when the same entity has already been added.
-     */
-    @SuppressWarnings("unchecked")
-    private boolean existsInAddedRelationshipAttributeListByGuid(String name, AtlasObjectId relationship) {
-        Map<String, Object> added = this.addedRelationshipAttributes;
-        if (added == null || relationship == null || relationship.getGuid() == null) {
-            return false;
-        }
-
-        Object addedValue = added.get(name);
-        if (addedValue == null) {
-            return false;
-        }
-
-        String relationshipGuid = relationship.getGuid();
-
-        if (addedValue instanceof List) {
-            List<Object> addedList = (List<Object>) addedValue;
-            for (Object item : addedList) {
-                if (relationshipGuid.equals(extractGuid(item))) {
-                    return true;
-                }
-            }
-        } else {
-            return relationshipGuid.equals(extractGuid(addedValue));
-        }
-
-        return false;
-    }
-
-    /**
-     * Removes an entry from removedRelationshipAttributes list if it matches the given guid.
-     * This is used for array-type relationships in the unlink-relink scenario.
-     */
-    @SuppressWarnings("unchecked")
-    private void removeFromRemovedRelationshipAttributeListByGuid(String name, AtlasObjectId addedRelationship) {
-        Map<String, Object> removed = this.removedRelationshipAttributes;
-        if (removed == null || addedRelationship == null || addedRelationship.getGuid() == null) {
-            return;
-        }
-
-        Object removedValue = removed.get(name);
-        if (removedValue == null) {
-            return;
-        }
-
-        String addedGuid = addedRelationship.getGuid();
-
-        if (removedValue instanceof List) {
-            List<Object> removedList = (List<Object>) removedValue;
-            removedList.removeIf(item -> addedGuid.equals(extractGuid(item)));
-            if (removedList.isEmpty()) {
-                removed.remove(name);
-            }
-        } else {
-            String removedGuid = extractGuid(removedValue);
-            if (addedGuid.equals(removedGuid)) {
-                removed.remove(name);
-            }
-        }
-    }
-
     public void addOrAppendAddedRelationshipAttribute(String name, AtlasObjectId relationship) {
         if (this.addedRelationshipAttributes == null) {
             this.addedRelationshipAttributes = new HashMap<>(1);
@@ -1274,6 +1146,134 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         public AtlasEntities(List list, long startIndex, int pageSize, long totalCount,
                              SortType sortType, String sortBy) {
             super(list, startIndex, pageSize, totalCount, sortType, sortBy);
+        }
+    }
+
+    /**
+     * Removes an entry from removedRelationshipAttributes if it matches the given name and guid.
+     * This is used to deduplicate when the same entity is both removed and added (e.g., unlink-relink scenario).
+     */
+    private void removeFromRemovedRelationshipAttributesByGuid(String name, Object addedValue) {
+        Map<String, Object> removed = this.removedRelationshipAttributes;
+        if (removed == null || addedValue == null) {
+            return;
+        }
+
+        String addedGuid = extractGuid(addedValue);
+        if (addedGuid == null) {
+            return;
+        }
+
+        Object removedValue = removed.get(name);
+        if (removedValue == null) {
+            return;
+        }
+
+        String removedGuid = extractGuid(removedValue);
+        if (addedGuid.equals(removedGuid)) {
+            removed.remove(name);
+        }
+    }
+
+    /**
+     * Extracts the guid from a relationship attribute value.
+     * The value can be a Map with "guid" key or an AtlasObjectId.
+     */
+    private String extractGuid(Object value) {
+        if (value instanceof Map) {
+            Object guid = ((Map<?, ?>) value).get("guid");
+            return guid != null ? guid.toString() : null;
+        } else if (value instanceof AtlasObjectId) {
+            return ((AtlasObjectId) value).getGuid();
+        }
+        return null;
+    }
+
+    /**
+     * Checks if an entity with the same guid already exists in addedRelationshipAttributes.
+     * Used to prevent adding to removed when the same entity has already been added.
+     */
+    private boolean existsInAddedRelationshipAttributesByGuid(String name, Object value) {
+        Map<String, Object> added = this.addedRelationshipAttributes;
+        if (added == null || value == null) {
+            return false;
+        }
+
+        String valueGuid = extractGuid(value);
+        if (valueGuid == null) {
+            return false;
+        }
+
+        Object addedValue = added.get(name);
+        if (addedValue == null) {
+            return false;
+        }
+
+        String addedGuid = extractGuid(addedValue);
+        return valueGuid.equals(addedGuid);
+    }
+
+    /**
+     * Checks if an entity with the same guid already exists in addedRelationshipAttributes list.
+     * Used for array-type relationships to prevent adding to removed when the same entity has already been added.
+     */
+    @SuppressWarnings("unchecked")
+    private boolean existsInAddedRelationshipAttributeListByGuid(String name, AtlasObjectId relationship) {
+        Map<String, Object> added = this.addedRelationshipAttributes;
+        if (added == null || relationship == null || relationship.getGuid() == null) {
+            return false;
+        }
+
+        Object addedValue = added.get(name);
+        if (addedValue == null) {
+            return false;
+        }
+
+        String relationshipGuid = relationship.getGuid();
+
+        if (addedValue instanceof List) {
+            List<Object> addedList = (List<Object>) addedValue;
+            for (Object item : addedList) {
+                if (relationshipGuid.equals(extractGuid(item))) {
+                    return true;
+                }
+            }
+        } else {
+            return relationshipGuid.equals(extractGuid(addedValue));
+        }
+
+        return false;
+    }
+
+    /**
+     * Removes an entry from removedRelationshipAttributes list if it matches the given guid.
+     * This is used for array-type relationships in the unlink-relink scenario.
+     */
+    @SuppressWarnings("unchecked")
+    private void removeFromRemovedRelationshipAttributeListByGuid(String name, AtlasObjectId addedRelationship) {
+        Map<String, Object> removed = this.removedRelationshipAttributes;
+        if (removed == null || addedRelationship == null || addedRelationship.getGuid() == null) {
+            return;
+        }
+
+        Object removedValue = removed.get(name);
+        if (removedValue == null) {
+            return;
+        }
+
+        String addedGuid = addedRelationship.getGuid();
+
+        if (removedValue instanceof List) {
+            List<Object> removedList = (List<Object>) removedValue;
+            removedList.removeIf(item -> addedGuid.equals(extractGuid(item)));
+            if (removedList.isEmpty()) {
+                removed.remove(name);
+            }
+        } else {
+            String removedGuid = extractGuid(removedValue);
+            if (addedGuid.equals(removedGuid)) {
+                removed.remove(name);
+            }
         }
     }
 }
