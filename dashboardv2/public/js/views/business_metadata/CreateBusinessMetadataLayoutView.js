@@ -216,6 +216,27 @@ define(['require',
                 }
 
             },
+            processAttributes: function(attributes) {
+                var that = this;
+                return attributes.map(function(item) {
+                    var multiValueSelect = item.multiValueSelect || false;
+                    var cardinalityToggle = item.cardinalityToggle || "SET";
+                    
+                    // Determine cardinality based on multiValueSelect and cardinality toggle
+                    var finalCardinality = "SINGLE";
+                    if (multiValueSelect) {
+                        // If multivalues is enabled, use the cardinalityToggle (SET or LIST)
+                        // Default to SET if not specified
+                        finalCardinality = cardinalityToggle === "LIST" ? "LIST" : (item.cardinality === "LIST" ? "LIST" : "SET");
+                    }
+                    
+                    // Remove cardinalityToggle from the final object as it's not part of API
+                    var processedItem = _.omit(item, 'cardinalityToggle');
+                    processedItem.cardinality = finalCardinality;
+                    
+                    return processedItem;
+                });
+            },
             onCreateBusinessMetadata: function() {
                 var that = this;
                 if (this.validateValues()) {
@@ -227,6 +248,9 @@ define(['require',
                 var attributeObj = this.collection.toJSON();
                 if (this.collection.length === 1 && this.collection.first().get("name") === "") {
                     attributeObj = [];
+                } else {
+                    // Process attributes to include cardinality
+                    attributeObj = this.processAttributes(attributeObj);
                 }
                 this.json = {
                     "enumDefs": [],
@@ -279,7 +303,9 @@ define(['require',
                     if (selectedBusinessMetadataClone.attributeDefs === undefined) {
                         selectedBusinessMetadataClone.attributeDefs = [];
                     }
-                    selectedBusinessMetadataClone.attributeDefs = selectedBusinessMetadataClone.attributeDefs.concat(this.collection.toJSON());
+                    // Process new attributes to include cardinality
+                    var newAttributes = this.processAttributes(this.collection.toJSON());
+                    selectedBusinessMetadataClone.attributeDefs = selectedBusinessMetadataClone.attributeDefs.concat(newAttributes);
                     this.json = {
                         "enumDefs": [],
                         "structDefs": [],

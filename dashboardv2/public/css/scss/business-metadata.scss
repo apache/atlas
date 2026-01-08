@@ -241,3 +241,11 @@
         width: 30%;
     }
 }
+
+// Disabled state for cardinality toggle buttons
+.cardinality-btn.disabled,
+.cardinality-btn[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}

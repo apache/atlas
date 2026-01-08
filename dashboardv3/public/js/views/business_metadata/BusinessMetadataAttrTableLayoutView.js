@@ -108,6 +108,15 @@ define(['require',
                                 attrDetails.typeName = attrObj.typeName.replace("array<", "").replace(">", "");
                                 attrDetails.multiValued = true;
                             }
+                            // Set cardinalityToggle based on existing cardinality (SET or LIST), default to SET
+                            if (attrObj.cardinality) {
+                                attrDetails.cardinalityToggle = (attrObj.cardinality === "LIST") ? "LIST" : "SET";
+                            } else {
+                                // If cardinality is not set but it's an array type, default to SET
+                                if (attrObj.typeName.includes('array')) {
+                                    attrDetails.cardinalityToggle = "SET";
+                                }
+                            }
                         }
                     });
                     this.showDetails = false;
@@ -194,6 +203,27 @@ define(['require',
                                     enableMultipleValue = 'checked';
                                 }
                                 return '<input type="checkbox" class="form-check-input multi-value-select" data-id="multiValueSelectStatus" ' + enableMultipleValue + ' disabled="disabled">';
+                            }
+                        })
+                    },
+                    cardinality: {
+                        label: "Cardinality",
+                        cell: "html",
+                        editable: false,
+                        sortable: true,
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                var cardinality = model.get('cardinality');
+                                if (!cardinality) {
+                                    // If cardinality is not set, determine from typeName
+                                    if (model.get('typeName').indexOf('array<') > -1) {
+                                        // Default to SET for array types if cardinality is not specified
+                                        cardinality = "SET";
+                                    } else {
+                                        cardinality = "SINGLE";
+                                    }
+                                }
+                                return _.escape(cardinality);
                             }
                         })
                     },
