@@ -22,7 +22,12 @@ global:
     enabled: false
   atlasNginx:
     enabled: false
-
+  leangraph:
+    enabled: false
+    dedicated:
+      enabled: false  # Creates dedicated Cassandra and Elasticsearch StatefulSets
+      active: false   # Uses dedicated resources in configmap
+    
 Namespace: atlas
 sentry_flag: disable
 albTenant: false
@@ -53,6 +58,17 @@ atlas:
     enabled: false
     instance_type:
       - m6a.2xlarge
+    
+  leangraph:
+    replicaCount: 2
+    image: ghcr.io/atlanhq/atlas-metastore-leangraphsts:c281ce1abcd
+    service:
+      portName: leangraph
+      type: ClusterIP
+      path: /api/atlas/v2/
+      port: 80
+      targetPort: 21000
+
   sentry:
     sampleRate: 0.5
   ranger:

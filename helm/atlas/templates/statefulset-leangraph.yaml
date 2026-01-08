@@ -1,0 +1,260 @@
+{{- if .Values.global.leangraph.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.atlas.name }}-leangraph
+  namespace: {{ .Values.Namespace  }}
+  labels:
+    app: {{ template "name" . }}-leangraph
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    configmap.reloader.stakater.com/reload: "atlas-leangraph-config,atlas-logback-config,atlas-audit-index,atlas-keycloak-config,atlas-init-script,atlas-init-container-script,rate-limit-nginx-config"
+    secret.reloader.stakater.com/reload: "atlas-secret-manager,atlas-init-secret,atlas-keycloak-config"
+spec:
+  selector:
+    matchLabels:
+      app: {{ template "name" . }}-leangraph
+      release: {{ .Release.Name }}
+  replicas: {{ .Values.atlas.replicaCount }}
+  serviceName: "atlas-service-leangraph"
+  template:
+    metadata:
+      labels:
+        app: {{ template "name" . }}-leangraph
+        release: {{ .Release.Name }}
+      annotations:
+{{ toYaml .Values.atlas.podAnnotations | indent 8 }}
+    spec:
+      {{- with .Values.atlas.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if and .Values.atlas.affinity (ne .Values.global.Tier_Type "Basic") (ne .Values.global.Tier_Type "Standard") }}
+      affinity:
+        nodeAffinity:
+          {{- if eq .Values.atlas.custom_deployment.enabled true }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            {{- if (default false .Values.atlas.custom_deployment.karpenter_enabled) }}
+            - matchExpressions:
+              - key: purpose
+                operator: In
+                values:
+                - search
+              - key: karpenter.sh/capacity-type
+                operator: In
+                values:
+                - on-demand
+            {{- else }}
+            - matchExpressions:
+              - key: node.kubernetes.io/instance-type
+                operator: In
+                values:
+                {{- range .Values.atlas.custom_deployment.instance_type }}
+                - {{ . }}
+                {{- end }}
+            {{- end }}
+          {{- else }}
+          {{- if eq .Values.global.Deployment_Type "Development" }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+            {{- toYaml .Values.atlas.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution | nindent 10 }}
+          {{- else }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            {{- toYaml .Values.atlas.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution | nindent 12 }}
+          {{- end }}
+          {{- end }}
+        {{- if eq .Values.atlas.podAntiAffinity true }}
+        podAntiAffinity:
+          {{- toYaml .Values.atlas.affinity.podAntiAffinity | nindent 10 }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
+      initContainers:
+      {{- if .Values.atlas.initContainers }}
+        {{- toYaml .Values.atlas.initContainers | nindent 8 }}
+      {{- end }}
+      serviceAccountName: cinv-sa
+      containers:
+        - name: {{ .Chart.Name }}-main
+          command: [
+            "/bin/bash",
+            "-c",
+            "/create-atlas-keycloak-config.sh;
+            /env_change.sh;
+            /opt/apache-atlas/bin/atlas_start.py;
+            tail -F /opt/apache-atlas/logs/*.log;"
+          ]
+          image: "{{ .Values.atlas.leangraph.image }}"
+          imagePullPolicy: {{ .Values.atlas.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.atlas.service.targetPort }}
+          env:
+          {{- toYaml .Values.atlas.env | nindent 12 }}
+            - name: K8S_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: Namespace
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: OTEL_SERVICE_NAME
+              value: atlas_leangraph
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(HOST_IP):4317
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                k8s.pod.name=$(K8S_POD_NAME),k8s.container.image={{ .Values.atlas.image.repository }}:{{ .Values.atlas.image.tag }},k8s.pod.uid=$(POD_UID),k8s.node.name=$(K8S_NODE_NAME),k8s.namespace.name=$(Namespace),k8s.log.type=service-logs
+          {{- if eq .Values.albTenant true }}
+            - name: ALB_ENABLED
+              value: "true"
+          {{- end }}
+          envFrom:
+            - secretRef:
+                name: atlas-keycloak-config
+          {{- if .Values.multitenant }}
+            - secretRef:
+                name: atlas-secret-manager
+            - secretRef:
+                name: atlas-secret-parameter-store
+            - secretRef:
+                name: instance-domain-name
+          {{- end }}
+          resources:
+          {{- $tierType := .Values.global.Tier_Type | default "" }}
+          {{- if eq $tierType "Enterprise" }}
+          {{ toYaml .Values.atlas.resources | nindent 12 }}
+          {{- else if eq $tierType "Basic" }}
+          {{ toYaml .Values.atlas.resources_basic | nindent 12 }}
+          {{- else if eq $tierType "Standard" }}
+          {{ toYaml .Values.atlas.resources_standard | nindent 12 }}
+          {{- else }}
+          {{- toYaml .Values.atlas.resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: atlas-config
+              mountPath: /opt/apache-atlas/conf/atlas-application.properties
+              subPath: atlas-application.properties
+            - name: atlas-logback-config
+              mountPath: /opt/apache-atlas/conf/atlas-logback.xml
+              subPath: atlas-logback.xml
+            - name: create-atlas-keycloak-config
+              mountPath: /create-atlas-keycloak-config.sh
+              subPath: create-atlas-keycloak-config.sh
+            - name: atlas-logs
+              mountPath: /opt/apache-atlas/logs
+          {{- if .Values.atlas.lifecycle }}
+          lifecycle:
+          {{- toYaml .Values.atlas.lifecycle | nindent 12 }}
+          {{- end }}
+          {{- if .Values.atlas.livenessProbe }}
+          livenessProbe:
+          {{- toYaml .Values.atlas.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.atlas.readinessProbe }}
+          readinessProbe:
+          {{- toYaml .Values.atlas.readinessProbe | nindent 12 }}
+          {{- end }}
+        {{- if .Values.atlas.telegraf.enabled }}
+        - name: telegrafd
+          imagePullPolicy: IfNotPresent
+          {{- if and .Values.multiarch.enabled .Values.multiarch.image.telegrafd }}
+          image: {{ .Values.multiarch.image.telegrafd }}
+          {{- else }}
+          image: ghcr.io/atlanhq/telegraf:1.24.3
+          {{- end }}
+          volumeMounts:
+            - name: telegraf-conf
+              mountPath: /etc/telegraf/
+            {{- if .Values.nginx.enabled }}
+            - name: nginx-log-volume
+              mountPath: /var/log/nginx
+              readOnly: true
+            {{- end }}
+          ports:
+            - name: telegrafd
+              containerPort: 9273
+        {{- end }}
+        {{- if .Values.nginx.enabled }}
+        - name: nginx-ratelimit
+          image: ghcr.io/atlanhq/nginx-vts-atlan-v2:1.27.5.1-multiarch
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+            - name: nginx-log-volume
+              mountPath: /var/log/nginx
+        {{- end }}
+      {{- if .Values.atlas.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml .Values.atlas.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: atlas-logs
+          emptyDir: {}
+        - name: atlas-config-map-rw-vol
+          emptyDir: {}
+        {{- if .Values.nginx.enabled }}
+        - name: nginx-log-volume
+          emptyDir: {}
+        - name: nginx-config
+          configMap:
+            name: rate-limit-nginx-config
+        {{- end }}
+        - name: atlas-config
+          configMap:
+            name: atlas-leangraph-config
+        - name: atlas-logback-config
+          configMap:
+            name: atlas-logback-config
+        - name: create-atlas-keycloak-config
+          configMap:
+            name: create-atlas-keycloak-config-cm
+            defaultMode: 0755
+        - name: atlas-init-script
+          configMap:
+            name: atlas-init-script
+            defaultMode: 0755
+        - name: atlas-init-container-script
+          configMap:
+            name: atlas-init-container-script
+            defaultMode: 0755
+        - name: atlas-audit-index
+          configMap:
+            name: atlas-audit-index
+            defaultMode: 0755
+        {{- if .Values.atlas.telegraf.enabled }}
+        - name: telegraf-conf
+          configMap:
+            name: atlas-telegrafd
+        {{- end }}
+{{- end }}

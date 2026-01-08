@@ -9,6 +9,11 @@ multiarch:
 global:
   Tier_Type: ""
   Deployment_Type: ""
+  leangraph:
+    enabled: false
+    dedicated:
+      enabled: true  # Creates dedicated Cassandra and Elasticsearch StatefulSets
+      active: false   # Uses dedicated resources in configmap
 image:
   repo: ghcr.io/atlanhq/cassandra
   tag: 3.11.12
