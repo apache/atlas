@@ -4773,7 +4773,9 @@ public class EntityGraphMapper {
         Tag currentTag = tagDAO.findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(entityVertex.getIdForDisplay(), classificationName, false);
         if (Objects.isNull(currentTag)) {
             LOG.error(AtlasErrorCode.CLASSIFICATION_NOT_FOUND.getFormattedErrorMessage(classificationName));
-            throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classificationName);
+            // Temporary fix for clearing dangling tag references are found. [Ticket: MS-402]
+            addEsDeferredOperation(entityVertex);
+            return; // Returning from here  instead of throwing error to delete ES for dangling tag references are found.
         }
 
         // Get in progress task to see if there already is a propagation for this particular vertex
@@ -4868,6 +4870,23 @@ public class EntityGraphMapper {
             entityChangeNotifier.onClassificationDeletedFromEntities(Collections.singletonList(entityRetriever.toAtlasEntity(entityGuid)), currentClassification);
         }
         AtlasPerfTracer.log(perf);
+    }
+
+    private void addEsDeferredOperation(AtlasVertex entityVertex) throws AtlasBaseException {
+        LOG.info("Adding ES deferred operation for Entity not found in cassandra. id : [{}]", entityVertex.getId());
+        List<AtlasClassification> currentTags = tagDAO.getAllClassificationsForVertex(entityVertex.getIdForDisplay());
+
+        Map<String, Map<String, Object>> deNormMap = new HashMap<>();
+        deNormMap.put(entityVertex.getIdForDisplay(), TagDeNormAttributesUtil.getDirectTagAttachmentAttributesForDeleteTag(new AtlasClassification(), currentTags, typeRegistry, fullTextMapperV2));
+
+        // ES operation collected to be executed in the end
+        RequestContext.get().addESDeferredOperation(
+                new ESDeferredOperation(
+                        ESDeferredOperation.OperationType.TAG_DENORM_FOR_DELETE_CLASSIFICATIONS,
+                        entityVertex.getIdForDisplay(),
+                        deNormMap
+                )
+        );
     }
 
     private boolean isTaskMatchingWithVertexIdAndEntityGuid(AtlasTask task, String tagTypeName, String entityGuid) {
