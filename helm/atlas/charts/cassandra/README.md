@@ -92,6 +92,26 @@ nodes:
       cloud.google.com/gke-nodepool: pool-db
 ```
 
+## Resource Configuration
+
+### Production Tenants (Default)
+For production tenants, the atlas-cassandra container is configured with:
+- **CPU**: 1300m (requests = limits)
+- **Memory**: 4Gi requests, 5Gi limits
+- **Heap Size**: 2048M max heap, 512M new generation
+
+This configuration covers ~80% of customers under 4 vCPU total Cassandra usage while preserving P99 coverage.
+
+### Development Tenants
+For development tenants (when `global.Deployment_Type=Development`), the atlas-cassandra container uses reduced resources:
+- **CPU**: 300m (requests = limits)
+- **Memory**: 4Gi (requests = limits)
+- **Heap Size**: 1536M max heap, 384M new generation
+
+The heap configuration is automatically adjusted based on the deployment type to ensure optimal performance within the memory limits.
+
+**Note**: Icarus sidecar container resources (CPU: 500m, Memory: 2Gi) remain unchanged and are not part of this optimization scope.
+
 ## Configuration
 
 The following table lists the configurable parameters of the Cassandra chart and their default values.
