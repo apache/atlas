@@ -522,4 +522,5 @@ data:
     atlas.cassandra.vanilla.keyspace=leangraph_atlas
     atlas.cassandra.vertex.table=assets
     atlas.graph.lean.graph.enabled={{ .Values.global.leangraph.enabled }}
+    atlas.k8s.pod.labels=atlas,atlas-leangraph
 {{- end }}
