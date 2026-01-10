@@ -12,7 +12,7 @@ global:
   leangraph:
     enabled: false
     dedicated:
-      enabled: true  # Creates dedicated Cassandra and Elasticsearch StatefulSets
+      enabled: false  # Creates dedicated Cassandra and Elasticsearch StatefulSets
       active: false   # Uses dedicated resources in configmap
 image:
   repo: ghcr.io/atlanhq/cassandra
