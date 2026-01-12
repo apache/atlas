@@ -497,6 +497,8 @@ data:
 
     ######### Atlas Distributed Task configs #########
     atlas.distributed.task.enabled={{ .Values.atlas.distributed_task.enabled }}
+    atlas.distributed.task.relationship.cleanup={{ .Values.atlas.distributed_task.relationship_cleanup }}
+    atlas.distributed.task.haslineage.calculation={{ .Values.atlas.distributed_task.haslineage_calculation }}
     {{- if eq .Values.atlas.distributed_task.enabled true }}
     atlas.relationship.cleanup.supported.asset.types={{ .Values.atlas.distributed_task.cleanup_supported_asset_types }}
     atlas.relationship.cleanup.supported.relationship.labels={{ .Values.atlas.distributed_task.cleanup_supported_relationship_labels }}
