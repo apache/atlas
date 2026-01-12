@@ -110,8 +110,10 @@ export const attributeFilter = {
                 : typeof (obj.value || obj.attributeValue) === "string"
                 ? (obj.value || obj.attributeValue).trim()
                 : obj.value || obj.attributeValue;
+            // Prioritize field (used by react-querybuilder), then id, then attributeName
+            // For business metadata, field should contain full name like "test_businessMetadata.attr1"
             let url = [
-              obj.field || obj.attributeName,
+              obj.field || obj.id || obj.attributeName,
               mapApiOperatorToUI(obj.operator),
               value
             ];
