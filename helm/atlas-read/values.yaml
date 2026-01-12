@@ -96,6 +96,8 @@ atlas:
     audit_index_refresh_interval: 1s
   distributed_task:
     enabled: false
+    relationship_cleanup: false
+    haslineage_calculation: false
     cleanup_supported_asset_types: "Process,AirflowTask"
     cleanup_supported_relationship_labels: "__Process.inputs,__Process.outputs,__AirflowTask.inputs,__AirflowTask.outputs"
   types_update:
