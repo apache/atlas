@@ -261,7 +261,11 @@ const Filters = ({
           "Business Attributes: " + businessMetadataKey
         );
         if (returnObj) {
-          returnObj.id = businessMetadataKey + "." + returnObj.id;
+          // Update both id and name to include full business metadata name
+          // This ensures rule.field contains the full name like "test_businessMetadata.attr1"
+          const fullName = businessMetadataKey + "." + returnObj.id;
+          returnObj.id = fullName;
+          returnObj.name = fullName; // Also update name so query builder uses the full name
           returnObj.label = returnObj.label;
           returnObj.data = { entityType: "businessMetadata" };
           filters.push(returnObj);
