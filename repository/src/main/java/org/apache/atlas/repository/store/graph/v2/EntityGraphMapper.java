@@ -4774,7 +4774,7 @@ public class EntityGraphMapper {
         if (Objects.isNull(currentTag)) {
             LOG.error(AtlasErrorCode.CLASSIFICATION_NOT_FOUND.getFormattedErrorMessage(classificationName));
             // Temporary fix for clearing dangling tag references are found. [Ticket: MS-402]
-            addEsDeferredOperation(entityVertex);
+            addEsDeferredOperation(entityVertex, classificationName);
             return; // Returning from here  instead of throwing error to delete ES for dangling tag references are found.
         }
 
@@ -4872,12 +4872,13 @@ public class EntityGraphMapper {
         AtlasPerfTracer.log(perf);
     }
 
-    private void addEsDeferredOperation(AtlasVertex entityVertex) throws AtlasBaseException {
+    private void addEsDeferredOperation(AtlasVertex entityVertex, String classificationName) throws AtlasBaseException {
         LOG.info("Adding ES deferred operation for Entity not found in cassandra. id : [{}]", entityVertex.getId());
         List<AtlasClassification> currentTags = tagDAO.getAllClassificationsForVertex(entityVertex.getIdForDisplay());
 
         Map<String, Map<String, Object>> deNormMap = new HashMap<>();
-        deNormMap.put(entityVertex.getIdForDisplay(), TagDeNormAttributesUtil.getDirectTagAttachmentAttributesForDeleteTag(new AtlasClassification(), currentTags, typeRegistry, fullTextMapperV2));
+        deNormMap.put(entityVertex.getIdForDisplay(), TagDeNormAttributesUtil.getDirectTagAttachmentAttributesForDeleteTag(
+                new AtlasClassification(classificationName), currentTags, typeRegistry, fullTextMapperV2));
 
         // ES operation collected to be executed in the end
         RequestContext.get().addESDeferredOperation(
