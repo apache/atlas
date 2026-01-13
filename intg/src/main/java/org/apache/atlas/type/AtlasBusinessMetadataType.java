@@ -17,19 +17,26 @@
  */
 package org.apache.atlas.type;
 
+import java.lang.reflect.Array;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
+import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.ATTR_MAX_STRING_LENGTH;
+import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES;
+import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.ATTR_VALID_PATTERN;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.reflect.Array;
-import java.util.*;
-
-import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.*;
 
 
 public class AtlasBusinessMetadataType extends AtlasStructType {
@@ -144,7 +151,11 @@ public class AtlasBusinessMetadataType extends AtlasStructType {
     private void attachCustomESMappingsOnBMAttributeDef (AtlasType attrType, AtlasAttributeDef attributeDef) {
         if (attrType instanceof AtlasBuiltInTypes.AtlasStringType || attrType instanceof AtlasEnumType) {
             attributeDef.setIndexType(AtlasAttributeDef.IndexType.STRING);
-            attributeDef.setIndexTypeESConfig(Constants.ES_ATLAN_KEYWORD_ANALYZER_CONFIG);
+
+            HashMap<String, Object> indexTypeESConfig = new HashMap<>(Constants.ES_ATLAN_KEYWORD_ANALYZER_CONFIG);
+            indexTypeESConfig.put("ignore_above", 5120);
+
+            attributeDef.setIndexTypeESConfig(indexTypeESConfig);
             attributeDef.setIndexTypeESFields(Constants.TEXT_MULTIFIELD);
         } else if (attrType instanceof AtlasBuiltInTypes.AtlasDateType) {
             attributeDef.setIndexTypeESFields(Constants.DATE_MULTIFIELD);

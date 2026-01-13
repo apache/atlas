@@ -1,8 +1,8 @@
-{{- if or .Values.global.svcIsolation.enabled (or .Values.global.esIsolation.enabled .Values.global.globalSvcIsolation.enabled) }}
+{{ if .Values.global.leangraph.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: atlas-read-config
+  name: atlas-leangraph-config
   namespace: {{ .Values.Namespace }}
   labels:
     app: {{ template "name" . }}
@@ -62,13 +62,12 @@ data:
     #atlas.graph.storage.clustername=
     #atlas.graph.storage.port=
     atlas.graph.storage.backend=cql
-    {{ if or (eq .Values.global.svcIsolation.enabled true) (eq .Values.global.globalSvcIsolation.enabled true) }}
-    atlas.graph.storage.hostname=atlas-cassandra-online-dc
-    atlas.graph.storage.cql.local-datacenter=online-dc
-    {{ else }}
-    atlas.graph.storage.hostname=atlas-cassandra
-    {{ end }}
-    atlas.graph.storage.cql.keyspace=atlas
+    {{- if .Values.global.leangraph.dedicated.active }}
+    atlas.graph.storage.hostname=atlas-leangraph-cassandra
+    {{- else }}
+    atlas.graph.storage.hostname={{ .Chart.Name }}-cassandra
+    {{- end }}
+    # atlas.graph.storage.cql.keyspace={{ .Chart.Name }}
     atlas.graph.storage.cql.replication-factor={{ .Values.cassandra.config.cluster_size }}
     atlas.graph.storage.clustername={{ .Values.cassandra.config.cluster_name  }}
     atlas.graph.storage.port={{ .Values.cassandra.config.ports.cql }}
@@ -146,11 +145,11 @@ data:
     # Alternatively, the JanusGraph documentation provides some tips on how to secure Elasticsearch without additional
     # plugins: http://docs.janusgraph.org/latest/elasticsearch.html
     
-    {{ if or (eq .Values.global.esIsolation.enabled true) (eq .Values.global.globalSvcIsolation.enabled true) }}
-    atlas.graph.index.search.hostname=atlas-elasticsearch-read-master:9200
-    {{ else }}
+    {{- if .Values.global.leangraph.dedicated.active }}
+    atlas.graph.index.search.hostname=atlas-leangraph-elasticsearch-master:9200
+    {{- else }}
     atlas.graph.index.search.hostname=atlas-elasticsearch-master:9200
-    {{ end }}
+    {{- end }}
     atlas.graph.index.search.elasticsearch.client-only=true
     atlas.graph.index.search.elasticsearch.retry_on_conflict=5
     atlas.graph.index.search.max-result-set-size=1000
@@ -273,10 +272,12 @@ data:
     {{- else }}
     atlas.server.ha.enabled=false
     {{- end }}
+    atlas.server.type.cache-refresher=http://cinv.atlas.svc.cluster.local:5000/cinv
+    atlas.server.type.cache-refresher-health=http://cinv.atlas.svc.cluster.local:5000/health
     #### Enabled the configs below as per need if HA is enabled #####
     atlas.server.ids=id1,id2
-    atlas.server.address.id1=atlas-read-0.atlas-read-service-atlas.atlas.svc.cluster.local:21000
-    atlas.server.address.id2=atlas-read-1.atlas-read-service-atlas.atlas.svc.cluster.local:21000
+    atlas.server.address.id1=atlas-0.atlas-service-atlas.atlas.svc.cluster.local:21000
+    atlas.server.address.id2=atlas-1.atlas-service-atlas.atlas.svc.cluster.local:21000
     atlas.server.ha.zookeeper.connect=zookeeper-0.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-1.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-2.zookeeper-headless.atlas.svc.cluster.local:2181
     atlas.server.ha.zookeeper.retry.sleeptime.ms=10000
     atlas.server.ha.zookeeper.num.retries=18
@@ -433,7 +434,7 @@ data:
     
     ########## Atlas deferred-actions (background tasks) #############
     
-    atlas.tasks.enabled = false
+    atlas.tasks.enabled = true
 
 
     ########## Ranger Credentials
@@ -463,7 +464,7 @@ data:
     atlas.metrics.uri_patterns=/api/(meta|atlas/v2)/glossary/terms/[^/]+/assignedEntities,/api/(meta|atlas/v2)/lineage/[^/]+,/api/(meta|atlas/v2)/lineage/list,/api/(meta|atlas/v2)/entity/accessors,/api/(meta|atlas/v2)/entity/auditSearch,/api/(meta|atlas/v2)/entity/bulk,/api/(meta|atlas/v2)/entity/bulk/setClassifications,/api/(meta|atlas/v2)/entity/bulk/uniqueAttribute,/api/(meta|atlas/v2)/entity/evaluator,/api/(meta|atlas/v2)/entity/guid/[^/]+,/api/(meta|atlas/v2)/entity/guid/[^/]+/businessmetadata,/api/(meta|atlas/v2)/entity/uniqueAttribute/type/[^/]+,/api/(meta|atlas/v2)/search/indexsearch,/api/(meta|atlas/v2)/entity/repairhaslineage,/api/(meta|atlas/v2)/types/typedef/name/[^/]+,/api/(meta|atlas/v2)/types/typedefs,/api/atlas/admin/metrics/prometheus,/api/atlas/admin/pushMetricsToStatsd,/api/atlas/v2/auth/download/policies/[^/]+,/api/atlas/v2/auth/download/roles/[^/]+,/api/atlas/v2/auth/download/users/[^/]+,/api/meta/entity/uniqueAttribute/type/[^/]+,/auth/admin/realms/[^/]+/admin-events,/auth/admin/realms/[^/]+/admin-events,/auth/admin/realms/[^/]+/events,/auth/admin/realms/[^/]+/events,/auth/admin/realms/[^/]+/groups,/auth/admin/realms/[^/]+/groups/[^/]+/role-mappings/realm,/auth/admin/realms/[^/]+/roles,/auth/admin/realms/[^/]+/roles-by-id/[^/]+,/auth/admin/realms/[^/]+/roles/[^/]+,/auth/admin/realms/[^/]+/roles/[^/]+/composites,/auth/admin/realms/[^/]+/roles/[^/]+/groups,/auth/admin/realms/[^/]+/roles/[^/]+/users,/auth/admin/realms/[^/]+/users,/auth/admin/realms/[^/]+/users/[^/]+/groups,/auth/admin/realms/[^/]+/users/[^/]+/role-mappings/realm,/auth/realms/[^/]+/protocol/openid-connect/token,/auth/realms/[^/]+/protocol/openid-connect/token/introspect,/users/mappings,/roles/mappings,/api/(meta|atlas/v2)/business-policy/[^/]+/unlink-business-policy,/api/(meta|atlas/v2)/business-policy/link-business-policy,/api/(meta|atlas/v2)/direct/search,/api/(meta|atlas/v2)/attribute/update
     
     atlas.metrics.method_level.enable=true
-    atlas.metrics.method_patterns=policiesPrefetchFailed,mapVertexToAtlasEntityHeaderWithoutPrefetch,mapVertexToAtlasEntityHeaderWithPrefetch,processTermAssignments,elasticSearchQuery,mapVertexToAtlasEntityHeader,elasticQueryTimeout,getAllClassifications,scrubSearchResults,getAdjacentEdgesByLabel,preCreateOrUpdate,createOrUpdate,mapAttributes,graphCommit,getAtlasLineageInfo,getLineageInfoOnDemand,getLineageListInfoOnDemand,repairHasLineageForAssetGetById,repairHasLineageForAssetGetRelations,repairHasLineageForRequiredAsset,repairHasLineage,getRelationshipEdge,hasEdges,getEdgeBetweenVertices,removeHasLineageOnDelete,resetHasLineageOnInputOutputDelete,updateAssetHasLineageStatus,isAccessAllowed
+    atlas.metrics.method_patterns=policiesPrefetchFailed,mapVertexToAtlasEntityHeaderWithoutPrefetch,mapVertexToAtlasEntityHeaderWithPrefetch,processTermAssignments,elasticSearchQuery,mapVertexToAtlasEntityHeader,elasticQueryTimeout,getAllClassifications,scrubSearchResults,getAdjacentEdgesByLabel,preCreateOrUpdate,createOrUpdate,mapAttributes,graphCommit,getAtlasLineageInfo,getLineageInfoOnDemand,getLineageListInfoOnDemand,repairHasLineageForAssetGetById,repairHasLineageForAssetGetRelations,repairHasLineageForRequiredAsset,repairHasLineage,getRelationshipEdge,hasEdges,getEdgeBetweenVertices,removeHasLineageOnDelete,resetHasLineageOnInputOutputDelete,updateAssetHasLineageStatus,isAccessAllowed,findDuplicatePendingTasksV2
     {{ if .Values.atlas.janusgraph.atomic_mutation }}
     ### Atomic batch related configs ###
     atlas.graph.storage.cql.atomic-batch-mutate={{ .Values.atlas.janusgraph.atomic_mutation }}
@@ -497,8 +498,6 @@ data:
 
     ######### Atlas Distributed Task configs #########
     atlas.distributed.task.enabled={{ .Values.atlas.distributed_task.enabled }}
-    atlas.distributed.task.relationship.cleanup={{ .Values.atlas.distributed_task.relationship_cleanup }}
-    atlas.distributed.task.haslineage.calculation={{ .Values.atlas.distributed_task.haslineage_calculation }}
     {{- if eq .Values.atlas.distributed_task.enabled true }}
     atlas.relationship.cleanup.supported.asset.types={{ .Values.atlas.distributed_task.cleanup_supported_asset_types }}
     atlas.relationship.cleanup.supported.relationship.labels={{ .Values.atlas.distributed_task.cleanup_supported_relationship_labels }}
@@ -507,5 +506,21 @@ data:
          ######### Atlas Typedefs update configs #########
     atlas.types.update.async.enable={{ .Values.atlas.types_update.async_enable }}
     atlas.types.update.thread.count={{ .Values.atlas.types_update.thread_count }}
-    atlas.typedef.lock.name={{ .Values.atlas.types_update.lock_name }}
+
+    ######### Atlas notification configs #########
+    atlas.notification.differential.entity.changes.enabled={{ .Values.atlas.notification.differential_entity_changes_enabled }}
+
+    ######### Atlas Leangraph configs #########
+    OTEL_RESOURCE_ATTRIBUTES="service.name=leangraph_atlas"
+    OTEL_SERVICE_NAME=leangraph_atlas
+    atlas.graph.new.keyspace=leangraph_tags
+    atlas.graph.storage.cql.keyspace=leangraph_atlas
+    atlas.graph.index.search.index-name=janus_leangraph
+    atlas.graph.lean.graph.enabled=true
+    atlas.graph.graph.set-vertex-id=true
+    atlas.graph.graph.allow-custom-vid-types=true
+    atlas.cassandra.vanilla.keyspace=leangraph_atlas
+    atlas.cassandra.vertex.table=assets
+    atlas.graph.lean.graph.enabled={{ .Values.global.leangraph.enabled }}
+    atlas.k8s.pod.labels=atlas,atlas-leangraph
 {{- end }}

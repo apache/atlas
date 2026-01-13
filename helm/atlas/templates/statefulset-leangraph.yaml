@@ -1,26 +1,27 @@
+{{- if .Values.global.leangraph.enabled }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Values.atlas.name }}
+  name: {{ .Values.atlas.name }}-leangraph
   namespace: {{ .Values.Namespace  }}
   labels:
-    app: {{ template "name" . }}
+    app: {{ template "name" . }}-leangraph
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
   annotations:
-    configmap.reloader.stakater.com/reload: "atlas-config,atlas-logback-config,atlas-audit-index,atlas-keycloak-config,atlas-init-script,atlas-init-container-script,rate-limit-nginx-config"
+    configmap.reloader.stakater.com/reload: "atlas-leangraph-config,atlas-logback-config,atlas-audit-index,atlas-keycloak-config,atlas-init-script,atlas-init-container-script,rate-limit-nginx-config"
     secret.reloader.stakater.com/reload: "atlas-secret-manager,atlas-init-secret,atlas-keycloak-config"
 spec:
   selector:
     matchLabels:
-      app: {{ template "name" . }}
+      app: {{ template "name" . }}-leangraph
       release: {{ .Release.Name }}
   replicas: {{ .Values.atlas.replicaCount }}
-  serviceName: "atlas-service-atlas"
+  serviceName: "atlas-service-leangraph"
   template:
     metadata:
       labels:
-        app: {{ template "name" . }}
+        app: {{ template "name" . }}-leangraph
         release: {{ .Release.Name }}
       annotations:
 {{ toYaml .Values.atlas.podAnnotations | indent 8 }}
@@ -75,7 +76,7 @@ spec:
       {{- if .Values.atlas.initContainers }}
         {{- toYaml .Values.atlas.initContainers | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ .Values.atlas.serviceAccount.name }}
+      serviceAccountName: atlas-sa
       containers:
         - name: {{ .Chart.Name }}-main
           command: [
@@ -86,7 +87,7 @@ spec:
             /opt/apache-atlas/bin/atlas_start.py;
             tail -F /opt/apache-atlas/logs/*.log;"
           ]
-          image: "{{ .Values.atlas.image.repository }}:{{ .Values.atlas.image.tag }}"
+          image: "{{ .Values.atlas.leangraph.image }}"
           imagePullPolicy: {{ .Values.atlas.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.atlas.service.targetPort }}
@@ -117,7 +118,7 @@ spec:
                 fieldRef:
                   fieldPath: status.hostIP
             - name: OTEL_SERVICE_NAME
-              value: atlas
+              value: atlas_leangraph
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(HOST_IP):4317
             - name: OTEL_RESOURCE_ATTRIBUTES
@@ -231,7 +232,7 @@ spec:
         {{- end }}
         - name: atlas-config
           configMap:
-            name: atlas-config
+            name: atlas-leangraph-config
         - name: atlas-logback-config
           configMap:
             name: atlas-logback-config
@@ -256,3 +257,4 @@ spec:
           configMap:
             name: atlas-telegrafd
         {{- end }}
+{{- end }}

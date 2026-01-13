@@ -19,7 +19,61 @@ spec:
         backoffLimit: {{ .Values.reaper.backoffLimit }}
         template:
           spec:
+            shareProcessNamespace: {{ .Values.reaper.shareProcessNamespace }}
             restartPolicy: {{ .Values.reaper.restartPolicy }}
+            initContainers:
+              - name: create-reaper-keyspace
+                image: {{ .Values.reaper.initContainer.image.repository }}:{{ .Values.reaper.initContainer.image.tag }}
+                imagePullPolicy: {{ .Values.reaper.initContainer.image.pullPolicy }}
+                command:
+                  - /bin/bash
+                  - -c
+                  - |
+                    python3 << 'EOF'
+                    import time
+                    import socket
+                    
+                    host = 'atlas-cassandra.atlas.svc.cluster.local'
+                    port = 9042
+                    max_retries = 30
+                    
+                    # Wait for Cassandra to be reachable
+                    for attempt in range(max_retries):
+                        try:
+                            print(f"Checking Cassandra availability (attempt {attempt + 1}/{max_retries})...")
+                            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            sock.settimeout(5)
+                            result = sock.connect_ex((host, port))
+                            sock.close()
+                            if result == 0:
+                                print("Cassandra is reachable!")
+                                break
+                        except Exception as e:
+                            print(f"Socket error: {e}")
+                        time.sleep(5)
+                    
+                    # Now connect with cassandra-driver
+                    from cassandra.cluster import Cluster
+                    from cassandra.policies import DCAwareRoundRobinPolicy
+                    from cassandra.io.libevreactor import LibevConnection
+                    
+                    print("Connecting to Cassandra...")
+                    cluster = Cluster(
+                        [host],
+                        load_balancing_policy=DCAwareRoundRobinPolicy(local_dc='datacenter1'),
+                        connection_class=LibevConnection
+                    )
+                    session = cluster.connect()
+                    
+                    print("Creating keyspace reaper_db...")
+                    session.execute("""
+                        CREATE KEYSPACE IF NOT EXISTS reaper_db 
+                        WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 3}
+                        AND durable_writes = true
+                    """)
+                    print("Keyspace reaper_db created/verified successfully!")
+                    cluster.shutdown()
+                    EOF
             containers:
                 - name: reaper
                   {{- if and .Values.multiarch.enabled .Values.multiarch.image.reaper }}
@@ -28,6 +82,16 @@ spec:
                   image: "{{ .Values.reaper.image.repository }}:{{ .Values.reaper.image.tag }}"
                   {{- end }}
                   imagePullPolicy: {{ .Values.reaper.image.pullPolicy }}
+                  command:
+                    - /bin/bash
+                    - -c
+                  args:
+                    - |
+                      /usr/local/bin/entrypoint.sh cassandra-reaper &
+                      child=$!
+                      wait "$child"
+                      echo "Reaper process exited, exiting wrapper with code 0"
+                      exit 0
                   env:
                   {{- range $key, $value := .Values.reaper.env }}
                     - name: {{ $key }}
@@ -38,17 +102,25 @@ spec:
                       containerPort: {{ .Values.reaper.port }}
                       protocol: TCP
                   livenessProbe:
+                    failureThreshold: 3
                     httpGet:
                       path: /ping
                       port: http
-                    initialDelaySeconds: 30
+                      scheme: HTTP
+                    initialDelaySeconds: 120
                     periodSeconds: 10
+                    successThreshold: 1
+                    timeoutSeconds: 5
                   readinessProbe:
+                    failureThreshold: 3
                     httpGet:
                       path: /ping
                       port: http
-                    initialDelaySeconds: 30
+                      scheme: HTTP
+                    initialDelaySeconds: 120
                     periodSeconds: 10
+                    successThreshold: 1
+                    timeoutSeconds: 5
                   resources:
                     requests:
                       cpu: {{ .Values.reaper.resources.requests.cpu }}

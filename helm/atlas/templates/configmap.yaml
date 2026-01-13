@@ -263,8 +263,6 @@ data:
     {{- else }}
     atlas.server.ha.enabled=false
     {{- end }}
-    atlas.server.type.cache-refresher=http://cinv.atlas.svc.cluster.local:5000/cinv
-    atlas.server.type.cache-refresher-health=http://cinv.atlas.svc.cluster.local:5000/health
     #### Enabled the configs below as per need if HA is enabled #####
     atlas.server.ids=id1,id2
     atlas.server.address.id1=atlas-0.atlas-service-atlas.atlas.svc.cluster.local:21000
@@ -489,6 +487,8 @@ data:
 
     ######### Atlas Distributed Task configs #########
     atlas.distributed.task.enabled={{ .Values.atlas.distributed_task.enabled }}
+    atlas.distributed.task.relationship.cleanup={{ .Values.atlas.distributed_task.relationship_cleanup }}
+    atlas.distributed.task.haslineage.calculation={{ .Values.atlas.distributed_task.haslineage_calculation }}
     {{- if eq .Values.atlas.distributed_task.enabled true }}
     atlas.relationship.cleanup.supported.asset.types={{ .Values.atlas.distributed_task.cleanup_supported_asset_types }}
     atlas.relationship.cleanup.supported.relationship.labels={{ .Values.atlas.distributed_task.cleanup_supported_relationship_labels }}
