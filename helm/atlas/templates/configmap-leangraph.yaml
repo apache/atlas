@@ -514,12 +514,12 @@ data:
     OTEL_RESOURCE_ATTRIBUTES="service.name=leangraph_atlas"
     OTEL_SERVICE_NAME=leangraph_atlas
     atlas.graph.new.keyspace=leangraph_tags
-    atlas.graph.storage.cql.keyspace=leangraph_atlas
-    atlas.graph.index.search.index-name=janus_leangraph
+    atlas.graph.storage.cql.keyspace=leangraph_janusgraph
+    atlas.graph.index.search.index-name=leangraph_janusgraph
     atlas.graph.lean.graph.enabled=true
     atlas.graph.graph.set-vertex-id=true
     atlas.graph.graph.allow-custom-vid-types=true
-    atlas.cassandra.vanilla.keyspace=leangraph_atlas
+    atlas.cassandra.vanilla.keyspace=leangraph_janusgraph
     atlas.cassandra.vertex.table=assets
     atlas.graph.lean.graph.enabled={{ .Values.global.leangraph.enabled }}
     atlas.k8s.pod.labels=atlas,atlas-leangraph
