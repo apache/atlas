@@ -431,13 +431,17 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     }
 
     private void rollback() {
-        management.rollback();
+        if (management != null && management.isOpen()) {
+            management.rollback();
+        }
     }
 
     private void commit() {
         graph.addMultiProperties(newMultProperties);
         newMultProperties.clear();
-        management.commit();
+        if (management != null && management.isOpen()) {
+            management.commit();
+        }
     }
 
     private static void checkName(String name) {
