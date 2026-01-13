@@ -4877,8 +4877,10 @@ public class EntityGraphMapper {
         List<AtlasClassification> currentTags = tagDAO.getAllClassificationsForVertex(entityVertex.getIdForDisplay());
 
         Map<String, Map<String, Object>> deNormMap = new HashMap<>();
+        var atlasClassification = new AtlasClassification(classificationName);
+        atlasClassification.setEntityGuid(entityVertex.getProperty("__guid", String.class));
         deNormMap.put(entityVertex.getIdForDisplay(), TagDeNormAttributesUtil.getDirectTagAttachmentAttributesForDeleteTag(
-                new AtlasClassification(classificationName), currentTags, typeRegistry, fullTextMapperV2));
+                atlasClassification, currentTags, typeRegistry, fullTextMapperV2));
 
         // ES operation collected to be executed in the end
         RequestContext.get().addESDeferredOperation(
