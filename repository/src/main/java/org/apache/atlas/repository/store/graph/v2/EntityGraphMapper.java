@@ -3033,6 +3033,8 @@ public class EntityGraphMapper {
 
         // Update __meaningsText based on final state (must be done AFTER __meaningNames is updated)
         updateMeaningsTextProperty(ctx, isAppend, names, deletedMeaningsNames, qNames, deletedMeaningsQNames);
+
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     /**
