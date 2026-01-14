@@ -90,6 +90,7 @@ public class RequestContext {
     private String clientIPAddress;
     private List<String> forwardedAddresses;
     private String clientOrigin;
+    private String playbookName;
     private DeleteType deleteType = DeleteType.DEFAULT;
     private boolean isPurgeRequested = false;
     private int maxAttempts = 1;
@@ -797,6 +798,14 @@ public class RequestContext {
 
     public void setClientOrigin(String clientOrigin) {
         this.clientOrigin = StringUtils.isEmpty(clientOrigin) ? "other" :clientOrigin;
+    }
+
+    public String getPlaybookName() {
+        return playbookName;
+    }
+
+    public void setPlaybookName(String playbookName) {
+        this.playbookName = StringUtils.isEmpty(playbookName) ? "NA" :playbookName;
     }
 
     public Map<String, String> getEvaluateEntityHeaderCache() {

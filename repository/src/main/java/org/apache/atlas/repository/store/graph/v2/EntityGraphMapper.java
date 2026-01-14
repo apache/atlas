@@ -4775,8 +4775,8 @@ public class EntityGraphMapper {
         if (Objects.isNull(currentTag)) {
             LOG.error(AtlasErrorCode.CLASSIFICATION_NOT_FOUND.getFormattedErrorMessage(classificationName));
                 // Temporary fix for clearing dangling tag references are found. [Ticket: MS-402]
-            String clientOrigin = RequestContext.get().getClientOrigin();
-            if(CLIENT_ORIGIN_PLAYBOOK.equals(clientOrigin)) {
+            String playbookName = RequestContext.get().getPlaybookName();
+            if(StringUtils.isNotEmpty(playbookName)) {
                 addEsDeferredOperation(entityVertex, classificationName);
                 return;
             }

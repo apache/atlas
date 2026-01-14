@@ -61,6 +61,7 @@ public class AuditFilter implements Filter {
     public static final String TRACE_ID   = "trace_id";
     public static final String X_ATLAN_REQUEST_ID = "X-Atlan-Request-Id";
     public static final String X_ATLAN_CLIENT_ORIGIN = "X-Atlan-Client-Origin";
+    public static final String X_ATLAN_PLAYBOOK_NAME = "x-atlan-playbook-name";
     private boolean deleteTypeOverrideEnabled                = false;
     private boolean createShellEntityForNonExistingReference = false;
 
@@ -105,6 +106,7 @@ public class AuditFilter implements Filter {
             requestContext.setForwardedAddresses(AtlasAuthorizationUtils.getForwardedAddressesFromRequest(httpRequest));
             requestContext.setSkipFailedEntities(skipFailedEntities);
             requestContext.setClientOrigin(httpRequest.getHeader(X_ATLAN_CLIENT_ORIGIN));
+            requestContext.setPlaybookName(httpRequest.getHeader(X_ATLAN_PLAYBOOK_NAME));
             requestContext.setMetricRegistry(metricsRegistry);
             MDC.put(TRACE_ID, internalRequestId);
             MDC.put(X_ATLAN_CLIENT_ORIGIN, ofNullable(httpRequest.getHeader(X_ATLAN_CLIENT_ORIGIN)).orElse(EMPTY));
