@@ -524,6 +524,7 @@ public class AtlasJanusGraphManagementTest {
         when(mockPropertyKeyMaker.cardinality(any(Cardinality.class))).thenReturn(mockPropertyKeyMaker);
         when(mockPropertyKeyMaker.make()).thenReturn(mockJanusPropertyKey);
         when(mockJanusPropertyKey.name()).thenReturn("multiProp");
+        when(mockJanusManagement.isOpen()).thenReturn(true);
 
         // Create a multi-cardinality property to add to newMultProperties
         management.makePropertyKey("multiProp", String.class, AtlasCardinality.SET);
@@ -538,6 +539,8 @@ public class AtlasJanusGraphManagementTest {
 
     @Test
     public void testRollback() throws Exception {
+        when(mockJanusManagement.isOpen()).thenReturn(true);
+
         management.setIsSuccess(false);
         management.close();
 
