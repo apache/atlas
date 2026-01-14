@@ -228,7 +228,7 @@ const SideBarBody = (props: {
               style={{
                 width: "100%",
                 textAlign: "center",
-                "padding-left": "12px",
+                paddingLeft: "12px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
