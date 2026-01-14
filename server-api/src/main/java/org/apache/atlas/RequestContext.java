@@ -805,7 +805,7 @@ public class RequestContext {
     }
 
     public void setPlaybookName(String playbookName) {
-        this.playbookName = StringUtils.isEmpty(playbookName) ? "NA" :playbookName;
+        this.playbookName = StringUtils.isEmpty(playbookName) ? "" :playbookName;
     }
 
     public Map<String, String> getEvaluateEntityHeaderCache() {
