@@ -720,7 +720,7 @@
         <httpcomponents-httpcore.version>4.4.13</httpcomponents-httpcore.version>
         <jackson.databind.version>2.13.4.2</jackson.databind.version>
         <jackson.version>2.12.4</jackson.version>
-        <janusgraph.version>1.0.2-atlan</janusgraph.version>
+        <janusgraph.version>1.0.3-atlan</janusgraph.version>
         <janusgraph.cassandra.version>0.5.3</janusgraph.cassandra.version>
         <jaxb.api.version>2.3.1</jaxb.api.version>
         <javax-inject.version>1</javax-inject.version>
