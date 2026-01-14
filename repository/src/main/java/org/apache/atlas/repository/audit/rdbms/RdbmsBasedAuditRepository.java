@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 
 @Singleton
 @Component
-@ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl", isDefault = true)
+@ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl", isDefault = false)
 @Order(0)
 public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditRepository {
     @Override
