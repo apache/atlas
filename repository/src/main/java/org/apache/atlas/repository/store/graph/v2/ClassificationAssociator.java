@@ -59,6 +59,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES;
+import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery.CLIENT_ORIGIN_PLAYBOOK;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateProductStatus;
 
 @Component
@@ -282,7 +283,10 @@ public class ClassificationAssociator {
                         String typeName = key.split("\\|")[1];
                         LOG.info("Classification {} is not associated with entity {}", typeName, entityToBeChanged.getGuid());
                         //TODO -> remove after MS-402 fix
-                        filteredRemoveClassifications.add(classification);
+                        String clientOrigin = RequestContext.get().getClientOrigin();
+                        if(CLIENT_ORIGIN_PLAYBOOK.equals(clientOrigin)) {
+                            filteredRemoveClassifications.add(classification);
+                        }
 
                     } else {
                         filteredRemoveClassifications.add(classification);

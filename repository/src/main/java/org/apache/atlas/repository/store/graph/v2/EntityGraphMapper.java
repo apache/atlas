@@ -121,6 +121,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMe
 import static org.apache.atlas.repository.graph.GraphHelper.getEntityHasLineage;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
+import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery.CLIENT_ORIGIN_PLAYBOOK;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
 import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_ADD;
 import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_DELETE;
@@ -4773,9 +4774,13 @@ public class EntityGraphMapper {
         Tag currentTag = tagDAO.findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(entityVertex.getIdForDisplay(), classificationName, false);
         if (Objects.isNull(currentTag)) {
             LOG.error(AtlasErrorCode.CLASSIFICATION_NOT_FOUND.getFormattedErrorMessage(classificationName));
-            // Temporary fix for clearing dangling tag references are found. [Ticket: MS-402]
-            addEsDeferredOperation(entityVertex, classificationName);
-            return; // Returning from here  instead of throwing error to delete ES for dangling tag references are found.
+                // Temporary fix for clearing dangling tag references are found. [Ticket: MS-402]
+            String clientOrigin = RequestContext.get().getClientOrigin();
+            if(CLIENT_ORIGIN_PLAYBOOK.equals(clientOrigin)) {
+                addEsDeferredOperation(entityVertex, classificationName);
+                return;
+            }
+            throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classificationName);// Returning from here  instead of throwing error to delete ES for dangling tag references are found.
         }
 
         // Get in progress task to see if there already is a propagation for this particular vertex
