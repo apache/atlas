@@ -25,6 +25,7 @@ import {
   useRef,
 } from "react";
 import atlasLogo from "/img/atlas_logo.svg";
+import apacheAtlasLogo from "/img/apache-atlas-logo.svg";
 import {
   matchRoutes,
   Outlet,
@@ -221,6 +222,43 @@ const SideBarBody = (props: {
             backgroundColor: "#034858",
           }}
         >
+          {/* Collapsed sidebar logo */}
+          {!open && (
+            <div
+              style={{
+                width: "100%",
+                textAlign: "center",
+                "padding-left": "12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: "64px",
+                cursor: "pointer",
+                boxSizing: "border-box",
+              }}
+              onClick={() => {
+                navigate(
+                  {
+                    pathname: "/search",
+                  },
+                  { replace: true }
+                );
+              }}
+              data-cy="apache-atlas-logo-collapsed"
+            >
+              <img
+                src={apacheAtlasLogo}
+                alt="Apache Atlas logo"
+                style={{
+                  width: "29px",
+                  height: "auto",
+                  maxWidth: "100%",
+                  display: "block",
+                }}
+              />
+            </div>
+          )}
+
           {open && (
             <DrawerHeader
               ref={headerRef}
