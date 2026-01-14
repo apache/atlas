@@ -144,7 +144,7 @@ const Header: React.FC<Header> = ({
   };
 
   const handleLogout = () => {
-    localStorage.setItem("atlas_ui", "v3");
+    localStorage.setItem("last_ui_load", "v3");
     let path = getBaseUrl(window.location.pathname);
     window.location.href = path + "/logout.html";
     handleClose();
