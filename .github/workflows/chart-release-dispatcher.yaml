@@ -20,6 +20,7 @@ on:
       - idonlycanarybeta
       - atlas_ci_cd_updates
       - ids_beta_updated
+      - lite_staging
     types:
       - completed
 
