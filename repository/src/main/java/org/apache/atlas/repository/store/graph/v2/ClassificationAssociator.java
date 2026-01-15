@@ -283,8 +283,8 @@ public class ClassificationAssociator {
                         String typeName = key.split("\\|")[1];
                         LOG.info("Classification {} is not associated with entity {}", typeName, entityToBeChanged.getGuid());
                         //TODO -> remove after MS-402 fix
-                        String clientOrigin = RequestContext.get().getClientOrigin();
-                        if(CLIENT_ORIGIN_PLAYBOOK.equals(clientOrigin)) {
+                        String playbookName = RequestContext.get().getPlaybookName();
+                        if(StringUtils.isNotEmpty(playbookName)) {
                             filteredRemoveClassifications.add(classification);
                         }
 
