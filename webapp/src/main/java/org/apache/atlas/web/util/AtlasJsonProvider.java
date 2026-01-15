@@ -23,6 +23,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
+import org.apache.atlas.RequestContext;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -60,10 +62,29 @@ public class AtlasJsonProvider extends JacksonJaxbJsonProvider {
             return super.readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);
         } catch (JsonParseException jpe) {
             LOG.error("Malformed json passed to server", jpe);
+            logRequestBodyOnError(jpe);
             throw new WebApplicationException(Servlets.getErrorResponse(jpe.getMessage(), Response.Status.BAD_REQUEST));
         } catch (JsonMappingException jme) {
             LOG.error("Malformed json passed to server, incorrect data type used", jme);
+            logRequestBodyOnError(jme);
             throw new WebApplicationException(Servlets.getErrorResponse(jme.getMessage(), Response.Status.BAD_REQUEST));
+        }
+    }
+
+    /**
+     * Logs the request body when a JSON parsing/mapping error occurs.
+     * Only logs if the request body was cached (for bulk endpoints).
+     */
+    private void logRequestBodyOnError(Exception exception) {
+        try {
+            String requestBody = RequestContext.get().getRequestBody();
+            if (StringUtils.isNotEmpty(requestBody)) {
+                String requestUri = RequestContext.get().getRequestUri();
+                String traceId = RequestContext.get().getTraceId();
+                LOG.error("Request body for JSON error (traceId={}, uri={}): {}", traceId, requestUri, requestBody);
+            }
+        } catch (Exception e) {
+            LOG.debug("Failed to log request body for JSON error", e);
         }
     }
 }
