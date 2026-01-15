@@ -21,6 +21,7 @@ on:
       - atlas_ci_cd_updates
       - ids_beta_updated
       - lite_staging
+      - lite_master
     types:
       - completed
 
