@@ -43,7 +43,10 @@ public class AtlasBaseExceptionMapper implements ExceptionMapper<AtlasBaseExcept
     public Response toResponse(AtlasBaseException exception) {
         final long id = ThreadLocalRandom.current().nextLong();
 
-        // Only log the exception is there's an internal error
+        // Log request body for all errors on bulk endpoints (if body was cached)
+        ExceptionMapperUtil.logRequestBodyOnError(id, exception);
+
+        // Only log the full exception if there's an internal error
         if (exception.getAtlasErrorCode().getHttpCode() == Response.Status.INTERNAL_SERVER_ERROR) {
             ExceptionMapperUtil.logException(id, exception);
         }

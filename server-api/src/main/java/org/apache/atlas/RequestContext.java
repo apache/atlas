@@ -118,6 +118,7 @@ public class RequestContext {
     private boolean skipAuthorizationCheck = false;
     private Set<String> deletedEdgesIdsForResetHasLineage = new HashSet<>(0);
     private String requestUri;
+    private String requestBody;
     private boolean delayTagNotifications = false;
     private boolean skipHasLineageCalculation = false;
     private boolean isInvokedByIndexSearch = false;
@@ -194,6 +195,7 @@ public class RequestContext {
         this.currentTask = null;
         this.skipAuthorizationCheck = false;
         this.delayTagNotifications = false;
+        this.requestBody = null;
         deletedClassificationAndVertices.clear();
         addedClassificationAndVertices.clear();
         esDeferredOperations.clear();
@@ -781,6 +783,14 @@ public class RequestContext {
 
     public String getRequestUri() {
         return this.requestUri;
+    }
+
+    public void setRequestBody(String requestBody) {
+        this.requestBody = requestBody;
+    }
+
+    public String getRequestBody() {
+        return this.requestBody;
     }
 
     public boolean isIncludeClassificationNames() {

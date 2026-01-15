@@ -17,7 +17,9 @@
  */
 package org.apache.atlas.web.errors;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
@@ -95,6 +97,27 @@ public class ExceptionMapperUtil {
 
     protected static void logException(long id, Exception exception) {
         LOGGER.error(formatLogMessage(id, exception), exception);
+    }
+
+    /**
+     * Logs the request body when an error occurs, if available in RequestContext.
+     * This is used for bulk endpoints where the request body is cached for debugging purposes.
+     *
+     * @param id        the unique error identifier
+     * @param exception the exception that occurred
+     */
+    protected static void logRequestBodyOnError(long id, Exception exception) {
+        try {
+            String requestBody = RequestContext.get().getRequestBody();
+            if (StringUtils.isNotEmpty(requestBody)) {
+                String requestUri = RequestContext.get().getRequestUri();
+                String traceId = RequestContext.get().getTraceId();
+                LOGGER.error("Request body for error {} (traceId={}, uri={}): {}",
+                        String.format("%016x", id), traceId, requestUri, requestBody);
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to log request body for error {}", String.format("%016x", id), e);
+        }
     }
 
     @SuppressWarnings("UnusedParameters")

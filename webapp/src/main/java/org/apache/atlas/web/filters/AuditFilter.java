@@ -23,9 +23,11 @@ import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.atlas.service.metrics.MetricsRegistry;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
+import org.apache.atlas.web.util.CachedBodyHttpServletRequest;
 import org.apache.atlas.web.util.DateTimeHelper;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +45,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
@@ -61,8 +64,12 @@ public class AuditFilter implements Filter {
     public static final String TRACE_ID   = "trace_id";
     public static final String X_ATLAN_REQUEST_ID = "X-Atlan-Request-Id";
     public static final String X_ATLAN_CLIENT_ORIGIN = "X-Atlan-Client-Origin";
+    private static final String BULK_ENDPOINT_PATTERN = "/entity/bulk";
+    private static final String CONTENT_TYPE_JSON = "application/json";
+
     private boolean deleteTypeOverrideEnabled                = false;
     private boolean createShellEntityForNonExistingReference = false;
+    private int bulkErrorLogBodyMaxSize                      = 102400; // 100KB default
 
     @Inject
     private MetricsRegistry metricsRegistry;
@@ -73,8 +80,10 @@ public class AuditFilter implements Filter {
 
         deleteTypeOverrideEnabled                = REST_API_ENABLE_DELETE_TYPE_OVERRIDE.getBoolean();
         createShellEntityForNonExistingReference = REST_API_CREATE_SHELL_ENTITY_FOR_NON_EXISTING_REF.getBoolean();
+        bulkErrorLogBodyMaxSize                  = AtlasConfiguration.REST_API_BULK_ERROR_LOG_BODY_MAX_SIZE.getInt();
         SpringBeanAutowiringSupport.processInjectionBasedOnCurrentContext(this);
         LOG.info("REST_API_ENABLE_DELETE_TYPE_OVERRIDE={}", deleteTypeOverrideEnabled);
+        LOG.info("REST_API_BULK_ERROR_LOG_BODY_MAX_SIZE={}", bulkErrorLogBodyMaxSize);
     }
 
     @Override
@@ -82,7 +91,7 @@ public class AuditFilter implements Filter {
     throws IOException, ServletException {
         final long                startTime          = System.currentTimeMillis();
         final Date                requestTime         = new Date();
-        final HttpServletRequest  httpRequest        = (HttpServletRequest) request;
+        HttpServletRequest        httpRequest        = (HttpServletRequest) request;
         final HttpServletResponse httpResponse       = (HttpServletResponse) response;
         final String              internalRequestId          = UUID.randomUUID().toString();
         final Thread              currentThread      = Thread.currentThread();
@@ -122,9 +131,12 @@ public class AuditFilter implements Filter {
 
             HeadersUtil.setRequestContextHeaders((HttpServletRequest)request);
 
+            // Cache request body for bulk endpoints to enable error logging
+            httpRequest = cacheRequestBodyForBulkEndpoints(httpRequest, requestContext);
+
             // Use wrapper to set response headers before the response is committed
             AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse, startTime);
-            filterChain.doFilter(request, responseWrapper);
+            filterChain.doFilter(httpRequest, responseWrapper);
         } finally {
             long timeTaken = System.currentTimeMillis() - startTime;
 
@@ -177,6 +189,45 @@ public class AuditFilter implements Filter {
     } catch (AtlasException e) {
         return false;
     }
+    }
+
+    /**
+     * Cache request body for bulk endpoints to enable error logging.
+     * Only caches for POST/PUT/DELETE requests to /entity/bulk paths with JSON content.
+     */
+    private HttpServletRequest cacheRequestBodyForBulkEndpoints(HttpServletRequest httpRequest, RequestContext requestContext) {
+        try {
+            String requestUri = httpRequest.getRequestURI();
+            String method = httpRequest.getMethod();
+            String contentType = httpRequest.getContentType();
+
+            // Only cache for bulk endpoints with POST/PUT/DELETE and JSON content
+            if (requestUri != null && requestUri.contains(BULK_ENDPOINT_PATTERN) &&
+                    ("POST".equals(method) || "PUT".equals(method) || "DELETE".equals(method)) &&
+                    StringUtils.isNotEmpty(contentType) && contentType.contains(CONTENT_TYPE_JSON)) {
+
+                CachedBodyHttpServletRequest cachedRequest = new CachedBodyHttpServletRequest(httpRequest);
+                String body = IOUtils.toString(cachedRequest.getInputStream(), StandardCharsets.UTF_8);
+
+                // Truncate if exceeds max size
+                if (body != null && body.length() > bulkErrorLogBodyMaxSize) {
+                    body = body.substring(0, bulkErrorLogBodyMaxSize) + "... [TRUNCATED]";
+                }
+
+                requestContext.setRequestBody(body);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Cached request body for bulk endpoint: {} (size: {} bytes)", requestUri,
+                            body != null ? body.length() : 0);
+                }
+
+                return cachedRequest;
+            }
+        } catch (IOException e) {
+            LOG.warn("Failed to cache request body for error logging", e);
+        }
+
+        return httpRequest;
     }
 
     @Override
