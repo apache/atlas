@@ -130,11 +130,6 @@
         </dependency>
 
         <dependency>
-            <groupId>javax.servlet.jsp</groupId>
-            <artifactId>jsp-api</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
         </dependency>
@@ -268,6 +263,10 @@
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.servlet.jsp</groupId>
+                    <artifactId>jsp-api</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.apache.commons</groupId>
@@ -544,7 +543,7 @@
                             <addClasspath>true</addClasspath>
                         </manifest>
                     </archive>
-                    <packagingExcludes>WEB-INF/lib/dom4j-*.jar,${packages.to.exclude}</packagingExcludes>
+                    <packagingExcludes>WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/jsp-api*.jar,${packages.to.exclude}</packagingExcludes>
                 </configuration>
             </plugin>
 
