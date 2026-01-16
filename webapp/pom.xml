@@ -265,6 +265,10 @@
                     <artifactId>servlet-api</artifactId>
                 </exclusion>
                 <exclusion>
+                    <groupId>javax.servlet.jsp</groupId>
+                    <artifactId>jsp-api</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.apache.commons</groupId>
                     <artifactId>commons-configuration2</artifactId>
                 </exclusion>
