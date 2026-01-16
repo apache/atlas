@@ -16,7 +16,7 @@
 -- DB objects for Atlas entity audit
 CREATE SEQUENCE IF NOT EXISTS atlas_entity_audit_seq INCREMENT BY 1 CACHE 1000;
 
-CREATE TABLE IF NOT EXISTS atlas_entity_audit(id BIGINT, entity_id VARCHAR(64) NOT NULL, event_time BIGINT NOT NULL, event_idx INT NOT NULL, user_name  VARCHAR(64) NOT NULL, operation INT NOT NULL, details TEXT DEFAULT NULL, entity TEXT DEFAULT NULL, audit_type INT NOT NULL, PRIMARY KEY(id));
+CREATE TABLE IF NOT EXISTS atlas_entity_audit(id BIGINT, entity_id VARCHAR(64) NOT NULL, event_time BIGINT NOT NULL, event_idx INT NOT NULL, user_name  VARCHAR(64) NOT NULL, operation VARCHAR(64) NOT NULL, details TEXT DEFAULT NULL, entity TEXT DEFAULT NULL, audit_type INT NOT NULL, PRIMARY KEY(id));
 
 CREATE INDEX IF NOT EXISTS atlas_entity_audit_idx_entity_id            ON atlas_entity_audit (entity_id);
 CREATE INDEX IF NOT EXISTS atlas_entity_audit_idx_event_time           ON atlas_entity_audit (event_time);
