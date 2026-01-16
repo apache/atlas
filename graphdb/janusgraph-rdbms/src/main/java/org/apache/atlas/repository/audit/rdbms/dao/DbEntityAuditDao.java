@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.audit.rdbms.dao;
 
-import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.repository.audit.rdbms.entity.DbEntityAudit;
 import org.apache.commons.collections.CollectionUtils;
 
@@ -101,19 +100,9 @@ public class DbEntityAuditDao extends BaseDao<DbEntityAudit> {
         return orderByQuery.toString();
     }
 
-    public List<DbEntityAudit> getLatestAuditsByEntityIdAction(String entityId, String action, boolean createEventsAgeoutAllowed) {
+    public List<DbEntityAudit> getLatestAuditsByEntityIdAction(String entityId, String action, List<String> filterActions) {
         try {
             StringBuilder query = new StringBuilder("SELECT e FROM DbEntityAudit e WHERE e.entityId = :entityId");
-            if (!createEventsAgeoutAllowed) {
-                String createEvent = EntityAuditEventV2.EntityAuditActionV2.ENTITY_CREATE.name();
-                String importCreateEvent = EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_CREATE.name();
-
-                if (action != null && (action.equals(createEvent) || action.equals(importCreateEvent))) { //if action is create event and create events ageout is not allowed, return empty list
-                    return Collections.emptyList();
-                }
-
-                query.append(" and e.action NOT IN ('").append(createEvent).append("','").append(importCreateEvent).append("')");
-            }
 
             if (action != null) {
                 query.append(" and e.action = :action");
@@ -123,6 +112,16 @@ public class DbEntityAuditDao extends BaseDao<DbEntityAudit> {
                         .setParameter("action", action)
                         .getResultList();
             } else {
+                if (CollectionUtils.isNotEmpty(filterActions)) {
+                    query.append(" and e.action NOT IN (");
+                    for (int i = 0; i < filterActions.size(); i++) {
+                        query.append("'").append(filterActions.get(i)).append("'");
+                        if (i != filterActions.size() - 1) {
+                            query.append(", ");
+                        }
+                    }
+                    query.append(")");
+                }
                 query.append(" ORDER BY e.eventTime DESC, e.eventIndex DESC");
                 return em.createQuery(query.toString(), DbEntityAudit.class)
                         .setParameter("entityId", entityId)

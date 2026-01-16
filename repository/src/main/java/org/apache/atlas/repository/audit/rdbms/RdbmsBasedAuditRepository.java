@@ -43,6 +43,7 @@ import javax.inject.Singleton;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -145,42 +146,23 @@ public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditReposito
             List<EntityAuditEventV2> deletedEvents = new ArrayList<>();
 
             boolean allowAgeoutByAuditCount = allowedAuditCount > 0 || (auditAgingType == Constants.AtlasAuditAgingType.SWEEP);
+            List<String> ageoutActionsNotAllowed = createEventsAgeoutAllowed ? Collections.emptyList() :
+                    Arrays.asList(EntityAuditEventV2.EntityAuditActionV2.ENTITY_CREATE.name(),
+                            EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_CREATE.name());
 
             List<DbEntityAudit> eventsEligibleForAgeout = new ArrayList<>();
             List<DbEntityAudit> eventsToKeep = new ArrayList<>();
 
             if (CollectionUtils.isEmpty(entityAuditActions)) {
-                List<DbEntityAudit> dbEvents = dao.getLatestAuditsByEntityIdAction(entityId, null, createEventsAgeoutAllowed);
+                List<DbEntityAudit> dbEvents = dao.getLatestAuditsByEntityIdAction(entityId, null, ageoutActionsNotAllowed);
 
-                if (!allowAgeoutByAuditCount) {
-                    eventsToKeep.addAll(dbEvents);
-                } else {
-                    int limit = Math.max(0, allowedAuditCount);
-                    for (int i = 0; i < dbEvents.size(); i++) {
-                        if (i < limit) {
-                            eventsToKeep.add(dbEvents.get(i));
-                        } else {
-                            eventsEligibleForAgeout.add(dbEvents.get(i));
-                        }
-                    }
-                }
+                splitEventsToKeepAndAgeoutByAuditCount(dbEvents, allowAgeoutByAuditCount, allowedAuditCount, eventsToKeep, eventsEligibleForAgeout);
             } else {
                 for (EntityAuditEventV2.EntityAuditActionV2 action : entityAuditActions) {
                     String actionName = action == null ? null : action.name();
-                    List<DbEntityAudit> dbEvents = dao.getLatestAuditsByEntityIdAction(entityId, actionName, createEventsAgeoutAllowed);
+                    List<DbEntityAudit> dbEvents = dao.getLatestAuditsByEntityIdAction(entityId, actionName, ageoutActionsNotAllowed);
 
-                    if (!allowAgeoutByAuditCount) {
-                        eventsToKeep.addAll(dbEvents);
-                    } else {
-                        int limit = Math.max(0, allowedAuditCount);
-                        for (int i = 0; i < dbEvents.size(); i++) {
-                            if (i < limit) {
-                                eventsToKeep.add(dbEvents.get(i));
-                            } else {
-                                eventsEligibleForAgeout.add(dbEvents.get(i));
-                            }
-                        }
-                    }
+                    splitEventsToKeepAndAgeoutByAuditCount(dbEvents, allowAgeoutByAuditCount, allowedAuditCount, eventsToKeep, eventsEligibleForAgeout);
                 }
             }
 
@@ -245,13 +227,34 @@ public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditReposito
         }
     }
 
+    private void splitEventsToKeepAndAgeoutByAuditCount(List<DbEntityAudit> dbEvents, boolean allowAgeoutByAuditCount, int allowedAuditCount,
+            List<DbEntityAudit> eventsToKeep, List<DbEntityAudit> eventsEligibleForAgeout) {
+
+        if (CollectionUtils.isEmpty(dbEvents)) {
+            return;
+        }
+
+        if (!allowAgeoutByAuditCount) {
+            eventsToKeep.addAll(dbEvents);
+        } else {
+            int limit = Math.max(0, allowedAuditCount);
+            for (int i = 0; i < dbEvents.size(); i++) {
+                if (i < limit) {
+                    eventsToKeep.add(dbEvents.get(i));
+                } else {
+                    eventsEligibleForAgeout.add(dbEvents.get(i));
+                }
+            }
+        }
+    }
+
     public static DbEntityAudit toDbEntityAudit(EntityAuditEventV2 event) {
         DbEntityAudit ret = new DbEntityAudit();
 
         ret.setEntityId(event.getEntityId());
         ret.setEventTime(event.getTimestamp());
         ret.setUser(event.getUser());
-        ret.setAction(event.getAction());
+        ret.setAction(event.getAction() != null ? event.getAction().name() : null);
         ret.setDetails(event.getDetails());
 
         if (event.getType() == null) {
@@ -273,10 +276,7 @@ public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditReposito
         ret.setEntityId(dbEntityAudit.getEntityId());
         ret.setTimestamp(dbEntityAudit.getEventTime());
         ret.setUser(dbEntityAudit.getUser());
-        EntityAuditEventV2.EntityAuditActionV2 actionEnum = dbEntityAudit.getActionEnum();
-        if (actionEnum != null) {
-            ret.setAction(actionEnum);
-        }
+        ret.setAction(dbEntityAudit.getAction() != null ? EntityAuditEventV2.EntityAuditActionV2.valueOf(dbEntityAudit.getAction()) : null);
         ret.setDetails(dbEntityAudit.getDetails());
         ret.setType(EntityAuditEventV2.EntityAuditType.values()[dbEntityAudit.getAuditType()]);
 

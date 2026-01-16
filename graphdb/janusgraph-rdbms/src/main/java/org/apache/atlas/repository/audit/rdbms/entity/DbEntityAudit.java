@@ -30,8 +30,6 @@ import javax.persistence.Table;
 
 import java.util.Objects;
 
-import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
-
 /**
  * RDBMS representation of a JanusGraph Column - name/value pair in a JanusGraph key
  *
@@ -123,19 +121,6 @@ public class DbEntityAudit implements java.io.Serializable {
 
     public void setAction(String action) {
         this.action = action;
-    }
-
-    public void setAction(EntityAuditActionV2 actionEnum) {
-        this.action = (actionEnum == null) ? null : actionEnum.name();
-    }
-
-    public EntityAuditActionV2 getActionEnum() {
-        if (action == null) return null;
-        try {
-            return EntityAuditActionV2.valueOf(action);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
     }
 
     public String getDetails() {
