@@ -390,21 +390,27 @@ Common causes:
 
 ## Testing
 
-
+**Important:** Running tests directly on a module may fail with dependency resolution errors. Use the two-step approach:
 
 ```bash
+# Step 1: Build dependencies first (skip tests)
+JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home /opt/homebrew/bin/mvn install -pl repository -am -DskipTests -Drat.skip=true
 
-# Run specific test class
-
+# Step 2: Run the specific test
 JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home /opt/homebrew/bin/mvn test -pl repository -Dtest=EntityGraphMapperTest -Drat.skip=true
-
- 
-
-# Run tests with pattern
-
-JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home /opt/homebrew/bin/mvn test -pl repository -Dtest=*Glossary* -Drat.skip=true
-
 ```
+
+**Run tests with pattern:**
+```bash
+JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home /opt/homebrew/bin/mvn test -pl repository -Dtest=*Glossary* -Drat.skip=true
+```
+
+**Alternative (single command, slower):**
+```bash
+JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home /opt/homebrew/bin/mvn test -pl repository -am -Dtest=EntityGraphMapperTest -Drat.skip=true -Dsurefire.failIfNoSpecifiedTests=false
+```
+
+**Note:** Tests can also be run directly from IntelliJ IDEA without these issues.
 
 
 
