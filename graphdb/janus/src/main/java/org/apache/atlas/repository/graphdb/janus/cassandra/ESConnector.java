@@ -98,12 +98,10 @@ public class ESConnector {
             StringBuilder bulkRequestBody = new StringBuilder();
 
             if (!MapUtils.isEmpty(entitiesMapForUpdate)) {
-                for (String assetVertexId : entitiesMapForUpdate.keySet()) {
-                    Map<String, Object> toUpdate = new HashMap<>(entitiesMapForUpdate.get(assetVertexId));
+                for (String assetDocId : entitiesMapForUpdate.keySet()) {
+                    Map<String, Object> toUpdate = new HashMap<>(entitiesMapForUpdate.get(assetDocId));
 
-                    String docId =  JG_ES_DOC_ID_PREFIX + assetVertexId;
-
-                    bulkRequestBody.append("{\"update\":{\"_index\":\"").append(VERTEX_INDEX_NAME).append("\",\"_id\":\"" + docId + "\" }}\n");
+                    bulkRequestBody.append("{\"update\":{\"_index\":\"").append(VERTEX_INDEX_NAME).append("\",\"_id\":\"" + assetDocId + "\" }}\n");
 
                     bulkRequestBody.append("{");
 

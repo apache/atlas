@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.graphdb.janus;
 
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertex;
 import org.janusgraph.core.EdgeLabel;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
@@ -32,6 +33,7 @@ import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.JanusGraphIndex;
 
+import static org.apache.atlas.repository.Constants.LEANGRAPH_MODE;
 import static org.apache.atlas.repository.Constants.LEAN_GRAPH_ENABLED;
 import static org.apache.atlas.type.Constants.GUID_PROPERTY_KEY;
 
@@ -70,7 +72,7 @@ public final class GraphDbObjectFactory {
         return new AtlasJanusGraphQuery(graph, isChildQuery);
     }
 
-    private static final String ASSET_LABEL = "Asset";
+    //private static final String ASSET_LABEL = "asset";
 
     /**
      * Creates an AtlasJanusVertex that corresponds to the given Gremlin Vertex.
@@ -116,6 +118,7 @@ public final class GraphDbObjectFactory {
                 DynamicVertex dynamicVertex = graph.getDynamicVertexRetrievalService().retrieveVertex(source.id().toString());
                 if (dynamicVertex == null) {
                     dynamicVertex = new DynamicVertex();
+                    dynamicVertex.setProperty(LEANGRAPH_MODE, true);
                 }
                 ret.setDynamicVertex(dynamicVertex);
 
@@ -191,7 +194,7 @@ public final class GraphDbObjectFactory {
     }
 
     private static boolean isAssetVertex(Vertex source) {
-        return source != null && ASSET_LABEL.equals(source.label());
+        return source != null && Constants.ASSET_VERTEX_LABEL.equals(source.label());
     }
 
 }

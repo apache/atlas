@@ -401,7 +401,10 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         Vertex result = null;
         if (LEAN_GRAPH_ENABLED) {
             String id = generateCustomId();
-            result = getGraph().addVertex(T.id, id);
+            result = getGraph().addVertex(
+                    T.id, id,
+                    LEANGRAPH_MODE, true
+            );
         } else {
             result = getGraph().addVertex();
         }
@@ -414,7 +417,11 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         Vertex result = null;
         if (LEAN_GRAPH_ENABLED) {
             String id = generateCustomId();
-            result = getGraph().addVertex(T.id, id, T.label, ASSET_VERTEX_LABEL);
+            result = getGraph().addVertex(
+                    T.id, id,
+                    T.label, ASSET_VERTEX_LABEL,
+                    LEANGRAPH_MODE, true
+            );
         } else {
             result = getGraph().addVertex();
         }
@@ -478,10 +485,10 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
                             .collect(Collectors.toSet()));
                 }
 
-                Map<String, Map<String, Object>> normalisedAttributes = normalizeAttributes(updatedVertexList, typeRegistry);
+                Map<String, Map<String, Object>> normalisedAttributesForCassandra = normalizeAttributes(updatedVertexList, typeRegistry);
 
                 if (CollectionUtils.isNotEmpty(updatedVertexList)) {
-                    dynamicVertexService.insertVertices(normalisedAttributes);
+                    dynamicVertexService.insertVertices(normalisedAttributesForCassandra);
                 }
                 RequestContext.get().endMetricRecord(recorder);
 
@@ -511,7 +518,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
                         .toList();
 
                 ESConnector.syncToEs(
-                        getESPropertiesForUpdateFromMap(normalisedAttributes, typeRegistry),
+                        getESPropertiesForUpdateFromMap(updatedVertexList, normalisedAttributesForCassandra, typeRegistry),
                         true,
                         docIdsToDelete);
 
@@ -539,20 +546,24 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         return rt;
     }
 
-    public Map<String, Map<String, Object>> getESPropertiesForUpdateFromMap(Map<String, Map<String, Object>> normalisedAttributes, AtlasTypeRegistry typeRegistry) {
+    public Map<String, Map<String, Object>> getESPropertiesForUpdateFromMap(Set<AtlasVertex> vertices,
+                                                                            Map<String, Map<String, Object>> normalisedAttributes,
+                                                                            AtlasTypeRegistry typeRegistry) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getESPropertiesForUpdateFromMap");
-        if (MapUtils.isEmpty(normalisedAttributes)) {
+        if (CollectionUtils.isEmpty(vertices) || MapUtils.isEmpty(normalisedAttributes)) {
             return null;
         }
+        Map<String, Map<String, Object>> rt = new HashMap<>(vertices.size());
 
         try {
-            return normalisedAttributes.keySet().stream().collect(Collectors.toMap(
-                    k -> k,
-                    v -> getESPropertiesForUpdate(normalisedAttributes.get(v), typeRegistry)
-            ));
+            for (AtlasVertex vertex : vertices) {
+                rt.put(vertex.getDocId(), getESPropertiesForUpdate(normalisedAttributes.get(vertex.getIdForDisplay()), typeRegistry));
+            }
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
+
+        return rt;
     }
 
     public Map<String, Map<String, Object>> getESPropertiesForUpdateFromVertices(Set<AtlasVertex> vertices, AtlasTypeRegistry typeRegistry) {
@@ -562,7 +573,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         }
         try {
             return vertices.stream().collect(Collectors.toMap(
-                    k -> k.getIdForDisplay(),
+                    k -> k.getDocId(),
                     v -> getESPropertiesForUpdate(((AtlasJanusVertex) v).getDynamicVertex().getAllProperties(), typeRegistry)
             ));
         } finally {

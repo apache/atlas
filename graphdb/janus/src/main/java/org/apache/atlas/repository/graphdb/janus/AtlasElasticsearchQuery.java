@@ -63,6 +63,7 @@ import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 import static org.apache.atlas.AtlasErrorCode.INDEX_NOT_FOUND;
+import static org.apache.atlas.repository.Constants.LEANGRAPH_MODE;
 import static org.apache.atlas.repository.Constants.LEAN_GRAPH_ENABLED;
 
 
@@ -819,10 +820,12 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         @Override
         public String getVertexId() {
-            // Discard prefix "S" from doc id
-            // TODO: This should not fail in case of migrated vertices
             String docId = String.valueOf(hit.get("_id"));
-            if (docId.startsWith(ESConnector.JG_ES_DOC_ID_PREFIX)) {
+            if (docId.startsWith(ESConnector.JG_ES_DOC_ID_PREFIX) ) {
+                // Only checking startsWith "S" is enough as LongEncoding.BASE_SYMBOLS does not have S at all
+                // We can safely assume that no migrated DOC id will contain "S" char
+
+                // Discard prefix "S" from doc id
                 return docId.substring(1);
             } else {
                 return String.valueOf(LongEncoding.decode(docId));

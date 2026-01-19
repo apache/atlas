@@ -45,6 +45,7 @@ import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.util.encoding.LongEncoding;
 
+import static org.apache.atlas.repository.Constants.LEANGRAPH_MODE;
 import static org.apache.atlas.repository.Constants.LEAN_GRAPH_ENABLED;
 import static org.apache.atlas.repository.graphdb.janus.cassandra.DynamicVertexService.VERTEX_CORE_PROPERTIES;
 import static org.apache.atlas.repository.graphdb.janus.cassandra.ESConnector.JG_ES_DOC_ID_PREFIX;
@@ -55,6 +56,7 @@ import static org.apache.atlas.repository.graphdb.janus.cassandra.ESConnector.JG
 public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> {
 
     private DynamicVertex dynamicVertex;
+    private String docId;
 
     public DynamicVertex getDynamicVertex() {
         return dynamicVertex;
@@ -217,10 +219,18 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
 
     @Override
     public String getDocId() {
-        if (LEAN_GRAPH_ENABLED) {
-            return JG_ES_DOC_ID_PREFIX + this.getIdForDisplay();
-        } else {
-            return LongEncoding.encode(Long.parseLong(this.getIdForDisplay()));
+        if (docId == null) {
+            if (LEAN_GRAPH_ENABLED && isAssetVertex()) {
+                Boolean leanMode = this.getProperty(LEANGRAPH_MODE, Boolean.class);
+                if (leanMode != null && leanMode) {
+                    docId = JG_ES_DOC_ID_PREFIX + this.getIdForDisplay();
+                } else  {
+                    docId = LongEncoding.encode(Long.parseLong(this.getIdForDisplay()));
+                }
+            } else {
+                docId = LongEncoding.encode(Long.parseLong(this.getIdForDisplay()));
+            }
         }
+        return docId;
     }
 }

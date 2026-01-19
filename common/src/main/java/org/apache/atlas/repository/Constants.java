@@ -66,6 +66,9 @@ public final class Constants {
     public static final String TERMS_REQUEST_HANDLER            = "/terms";
     public static final String ES_API_ALIASES                   = "/_aliases";
 
+    // To distinguish assets created with Leangraph feature enabled
+    public static final String LEANGRAPH_MODE                   = "leangraph";
+
     /**
      * Entity type name property key.
      */
