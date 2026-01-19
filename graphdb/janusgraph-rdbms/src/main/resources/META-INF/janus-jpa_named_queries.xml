@@ -13,19 +13,6 @@
                  xmlns="http://java.sun.com/xml/ns/persistence/orm" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                  xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_1_0.xsd ">
 
-    <named-query name="DbEntityAudit.getByEntityId">
-        <query>SELECT obj FROM DbEntityAudit obj
-            WHERE obj.entityId = :entityId
-        </query>
-    </named-query>
-
-    <named-query name="DbEntityAudit.getByEntityIdAction">
-        <query>SELECT obj FROM DbEntityAudit obj
-            WHERE obj.entityId = :entityId
-            AND obj.action     = :action
-        </query>
-    </named-query>
-
     <named-query name="DbEntityAudit.getByEntityIdActionStartTimeStartIdx">
         <query>SELECT obj FROM DbEntityAudit obj
             WHERE obj.entityId = :entityId
