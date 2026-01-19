@@ -40,10 +40,10 @@ public class EntityCreateOrUpdateMutationPostProcessor implements EntityMutation
 
             LOG.info("Executing {} ES operations", esDeferredOperations.size());
 
-            // MS-456: Group by entity ID instead of operation type to avoid overwrites.
-            // When multiple operations target the same entity (e.g., UPDATE + ADD), 
-            // we keep only the operation with the most complete denorm data.
-            // ADD operations are processed last and contain the complete tag list.
+            /* MS-456: Group by entity ID instead of operation type to avoid overwrites.
+             When multiple operations target the same entity (e.g., UPDATE + ADD),
+             we keep only the operation with the most complete denorm data.
+             ADD operations are processed last and contain the complete tag list. */
             Map<String, ESDeferredOperation> latestOpByEntity = new LinkedHashMap<>();
 
             for (ESDeferredOperation op : esDeferredOperations) {
@@ -58,9 +58,6 @@ public class EntityCreateOrUpdateMutationPostProcessor implements EntityMutation
             LOG.info("Merged {} ES operations into {} unique entity updates", 
                     esDeferredOperations.size(), latestOpByEntity.size());
 
-            // Separate operations by upsert requirement:
-            // - ADD operations need upsert=true (entity might be newly created in same request)
-            // - UPDATE/DELETE operations use upsert=false (entity must already exist)
             List<ESDeferredOperation> addOps = new ArrayList<>();
             List<ESDeferredOperation> otherOps = new ArrayList<>();
 
@@ -73,11 +70,7 @@ public class EntityCreateOrUpdateMutationPostProcessor implements EntityMutation
             }
 
             int batchSize = AtlasConfiguration.ES_BULK_BATCH_SIZE.getInt();
-
-            // Process ADD operations with upsert=true
             processOperationBatch(addOps, batchSize, true);
-
-            // Process UPDATE/DELETE operations with upsert=false
             processOperationBatch(otherOps, batchSize, false);
 
             LOG.info("Completed execution of ES operations.");
