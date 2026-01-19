@@ -39,6 +39,10 @@
             <version>${HikariCP.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-intg</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.eclipse.persistence</groupId>
             <artifactId>eclipselink</artifactId>
             <version>${eclipse.jpa.version}</version>
