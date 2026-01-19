@@ -40,34 +40,43 @@ public class EntityCreateOrUpdateMutationPostProcessor implements EntityMutation
 
             LOG.info("Executing {} ES operations", esDeferredOperations.size());
 
-            // Group by operation type
-            Map<ESDeferredOperation.OperationType, List<ESDeferredOperation>> opsByType = new HashMap<>();
+            // MS-456: Group by entity ID instead of operation type to avoid overwrites.
+            // When multiple operations target the same entity (e.g., UPDATE + ADD), 
+            // we keep only the operation with the most complete denorm data.
+            // ADD operations are processed last and contain the complete tag list.
+            Map<String, ESDeferredOperation> latestOpByEntity = new LinkedHashMap<>();
+
             for (ESDeferredOperation op : esDeferredOperations) {
-                opsByType.computeIfAbsent(op.getOperationType(), k -> new ArrayList<>()).add(op);
+                String entityId = op.getEntityId();
+                ESDeferredOperation existing = latestOpByEntity.get(entityId);
+
+                if (existing == null || shouldReplaceOperation(existing.getOperationType(), op.getOperationType())) {
+                    latestOpByEntity.put(entityId, op);
+                }
             }
 
-            for (Map.Entry<ESDeferredOperation.OperationType, List<ESDeferredOperation>> entry : opsByType.entrySet()) {
-                ESDeferredOperation.OperationType opType = entry.getKey();
-                List<ESDeferredOperation> ops = entry.getValue();
+            LOG.info("Merged {} ES operations into {} unique entity updates", 
+                    esDeferredOperations.size(), latestOpByEntity.size());
 
-                boolean upsert = (opType == ESDeferredOperation.OperationType.TAG_DENORM_FOR_ADD_CLASSIFICATIONS);
+            // Process merged operations in batches
+            int batchSize = AtlasConfiguration.ES_BULK_BATCH_SIZE.getInt();
+            List<ESDeferredOperation> mergedOps = new ArrayList<>(latestOpByEntity.values());
 
-                int batchSize = AtlasConfiguration.ES_BULK_BATCH_SIZE.getInt();
-                for (int i = 0; i < ops.size(); i += batchSize) {
-                    int end = Math.min(i + batchSize, ops.size());
-                    List<ESDeferredOperation> batch = ops.subList(i, end);
+            for (int i = 0; i < mergedOps.size(); i += batchSize) {
+                int end = Math.min(i + batchSize, mergedOps.size());
+                List<ESDeferredOperation> batch = mergedOps.subList(i, end);
 
-                    Map<String, Map<String, Object>> batchPayload = new HashMap<>();
-                    for (ESDeferredOperation op : batch) {
-                        Map<String, Map<String, Object>> payload = op.getPayload();
-                        if (payload != null) {
-                            batchPayload.putAll(payload);
-                        }
+                Map<String, Map<String, Object>> batchPayload = new HashMap<>();
+                for (ESDeferredOperation op : batch) {
+                    Map<String, Map<String, Object>> payload = op.getPayload();
+                    if (payload != null) {
+                        batchPayload.putAll(payload);
                     }
+                }
 
-                    if (!batchPayload.isEmpty()) {
-                        ESConnector.writeTagProperties(batchPayload, upsert);
-                    }
+                if (!batchPayload.isEmpty()) {
+                    // Use upsert=false since we're updating existing documents
+                    ESConnector.writeTagProperties(batchPayload, false);
                 }
             }
 
@@ -75,6 +84,42 @@ public class EntityCreateOrUpdateMutationPostProcessor implements EntityMutation
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    /**
+     * Determines if the incoming operation should replace the existing one for the same entity.
+     * 
+     * Rules:
+     * 1. Same type: always replace (later operation has more up-to-date state after Cassandra writes)
+     * 2. Cross-type priority: ADD > UPDATE > DELETE
+     *    - ADD operations are processed last in commitChanges() and read from Cassandra after
+     *      all deletes and updates are complete, so they have the complete final tag list.
+     *    - UPDATE operations run after DELETE, so they have more recent state than DELETE.
+     *
+     * @param existing  the operation type currently stored for this entity
+     * @param incoming  the new operation type being considered
+     * @return true if incoming should replace existing
+     */
+    private boolean shouldReplaceOperation(ESDeferredOperation.OperationType existing,
+                                           ESDeferredOperation.OperationType incoming) {
+        // Same type: always replace - later operations have more up-to-date state
+        // (each operation reads from Cassandra AFTER the previous write)
+        if (existing == incoming) {
+            return true;
+        }
+
+        // ADD operations have the most complete denorm - always prefer them
+        if (incoming == ESDeferredOperation.OperationType.TAG_DENORM_FOR_ADD_CLASSIFICATIONS) {
+            return true;
+        }
+
+        // UPDATE should replace DELETE (UPDATE runs after DELETE in commitChanges)
+        if (incoming == ESDeferredOperation.OperationType.TAG_DENORM_FOR_UPDATE_CLASSIFICATIONS
+                && existing == ESDeferredOperation.OperationType.TAG_DENORM_FOR_DELETE_CLASSIFICATIONS) {
+            return true;
+        }
+
+        return false;
     }
 
     @Override
