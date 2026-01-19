@@ -18,6 +18,7 @@
 package org.apache.atlas.util;
 
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -113,6 +114,38 @@ public class RankFeatureUtils {
             if (floatValue < minValue) {
                 LOG.debug("Normalizing rank_feature value for attribute '{}' from {} to {}",
                         attrDef.getName(), floatValue, minValue);
+                return minValue;
+            }
+        }
+
+        return value;
+    }
+
+    /**
+     * Normalizes a numeric value for a rank_feature field using cached attribute metadata.
+     * This is the preferred method for hot paths (e.g., EntityGraphMapper.mapAttribute)
+     * as it uses O(1) cached checks instead of iterating through indexTypeESFields.
+     *
+     * @param value the value to normalize
+     * @param attribute the AtlasAttribute with cached rank_feature metadata
+     * @return the normalized value, or the original value if not a rank_feature field
+     */
+    public static Object normalizeValue(Object value, AtlasAttribute attribute) {
+        if (value == null || attribute == null) {
+            return value;
+        }
+
+        if (!attribute.isRankFeatureField()) {
+            return value;  // O(1) check
+        }
+
+        if (value instanceof Number) {
+            float floatValue = ((Number) value).floatValue();
+            float minValue = attribute.getRankFeatureMinValue();  // O(1) access
+
+            if (floatValue < minValue) {
+                LOG.debug("Normalizing rank_feature value for attribute '{}' from {} to {}",
+                        attribute.getName(), floatValue, minValue);
                 return minValue;
             }
         }

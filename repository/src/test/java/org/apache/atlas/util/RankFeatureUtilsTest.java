@@ -18,12 +18,15 @@
 package org.apache.atlas.util;
 
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.HashMap;
 
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.*;
 
 /**
@@ -195,7 +198,7 @@ public class RankFeatureUtilsTest {
     @Test
     public void testNormalizeValue_withNullAttrDef_returnsOriginalValue() {
         float originalValue = 0.0f;
-        Object result = RankFeatureUtils.normalizeValue(originalValue, null);
+        Object result = RankFeatureUtils.normalizeValue(originalValue, (AtlasAttributeDef) null);
         assertEquals(result, originalValue);
     }
 
@@ -339,6 +342,160 @@ public class RankFeatureUtilsTest {
     @Test
     public void testConstants_esFieldTypeKey_hasCorrectValue() {
         assertEquals(RankFeatureUtils.ES_FIELD_TYPE_KEY, "type");
+    }
+
+    // ==================== AtlasAttribute-based normalizeValue Tests (O(1) cached) ====================
+
+    @Test
+    public void testNormalizeValueWithAtlasAttribute_withRankFeatureField_normalizesZeroValue() {
+        AtlasAttribute mockAttribute = Mockito.mock(AtlasAttribute.class);
+        when(mockAttribute.isRankFeatureField()).thenReturn(true);
+        when(mockAttribute.getRankFeatureMinValue()).thenReturn(Float.MIN_NORMAL);
+        when(mockAttribute.getName()).thenReturn("testAttr");
+
+        Object result = RankFeatureUtils.normalizeValue(0.0f, mockAttribute);
+
+        assertTrue(result instanceof Float);
+        assertEquals((Float) result, Float.MIN_NORMAL, 1e-45f);
+    }
+
+    @Test
+    public void testNormalizeValueWithAtlasAttribute_withRankFeatureField_normalizesNegativeValue() {
+        AtlasAttribute mockAttribute = Mockito.mock(AtlasAttribute.class);
+        when(mockAttribute.isRankFeatureField()).thenReturn(true);
+        when(mockAttribute.getRankFeatureMinValue()).thenReturn(Float.MIN_NORMAL);
+        when(mockAttribute.getName()).thenReturn("testAttr");
+
+        Object result = RankFeatureUtils.normalizeValue(-1.0f, mockAttribute);
+
+        assertTrue(result instanceof Float);
+        assertEquals((Float) result, Float.MIN_NORMAL, 1e-45f);
+    }
+
+    @Test
+    public void testNormalizeValueWithAtlasAttribute_withRankFeatureField_returnsValidValueUnchanged() {
+        AtlasAttribute mockAttribute = Mockito.mock(AtlasAttribute.class);
+        when(mockAttribute.isRankFeatureField()).thenReturn(true);
+        when(mockAttribute.getRankFeatureMinValue()).thenReturn(Float.MIN_NORMAL);
+
+        float validValue = 0.5f;
+        Object result = RankFeatureUtils.normalizeValue(validValue, mockAttribute);
+
+        assertEquals(result, validValue);
+    }
+
+    @Test
+    public void testNormalizeValueWithAtlasAttribute_withNonRankFeatureField_returnsOriginalValue() {
+        AtlasAttribute mockAttribute = Mockito.mock(AtlasAttribute.class);
+        when(mockAttribute.isRankFeatureField()).thenReturn(false);
+
+        float originalValue = 0.0f;
+        Object result = RankFeatureUtils.normalizeValue(originalValue, mockAttribute);
+
+        assertEquals(result, originalValue);
+    }
+
+    @Test
+    public void testNormalizeValueWithAtlasAttribute_withNullAttribute_returnsOriginalValue() {
+        float originalValue = 0.0f;
+        Object result = RankFeatureUtils.normalizeValue(originalValue, (AtlasAttribute) null);
+
+        assertEquals(result, originalValue);
+    }
+
+    @Test
+    public void testNormalizeValueWithAtlasAttribute_withNullValue_returnsNull() {
+        AtlasAttribute mockAttribute = Mockito.mock(AtlasAttribute.class);
+
+        Object result = RankFeatureUtils.normalizeValue(null, mockAttribute);
+
+        assertNull(result);
+    }
+
+    @Test
+    public void testNormalizeValueWithAtlasAttribute_withCustomMinValue_usesCustomMin() {
+        float customMinValue = 0.001f;
+        AtlasAttribute mockAttribute = Mockito.mock(AtlasAttribute.class);
+        when(mockAttribute.isRankFeatureField()).thenReturn(true);
+        when(mockAttribute.getRankFeatureMinValue()).thenReturn(customMinValue);
+        when(mockAttribute.getName()).thenReturn("customAttr");
+
+        // Value below custom min should be normalized
+        Object result = RankFeatureUtils.normalizeValue(0.0001f, mockAttribute);
+        assertTrue(result instanceof Float);
+        assertEquals((Float) result, customMinValue, 1e-10f);
+
+        // Value above custom min should be unchanged
+        Object result2 = RankFeatureUtils.normalizeValue(0.01f, mockAttribute);
+        assertEquals(result2, 0.01f);
+    }
+
+    @Test
+    public void testNormalizeValueWithAtlasAttribute_withDoubleValue_normalizesCorrectly() {
+        AtlasAttribute mockAttribute = Mockito.mock(AtlasAttribute.class);
+        when(mockAttribute.isRankFeatureField()).thenReturn(true);
+        when(mockAttribute.getRankFeatureMinValue()).thenReturn(Float.MIN_NORMAL);
+        when(mockAttribute.getName()).thenReturn("testAttr");
+
+        Object result = RankFeatureUtils.normalizeValue(0.0d, mockAttribute);
+
+        assertTrue(result instanceof Float);
+        assertEquals((Float) result, Float.MIN_NORMAL, 1e-45f);
+    }
+
+    @Test
+    public void testNormalizeValueWithAtlasAttribute_withIntegerValue_normalizesCorrectly() {
+        AtlasAttribute mockAttribute = Mockito.mock(AtlasAttribute.class);
+        when(mockAttribute.isRankFeatureField()).thenReturn(true);
+        when(mockAttribute.getRankFeatureMinValue()).thenReturn(Float.MIN_NORMAL);
+        when(mockAttribute.getName()).thenReturn("testAttr");
+
+        Object result = RankFeatureUtils.normalizeValue(0, mockAttribute);
+
+        assertTrue(result instanceof Float);
+        assertEquals((Float) result, Float.MIN_NORMAL, 1e-45f);
+    }
+
+    @Test
+    public void testNormalizeValueWithAtlasAttribute_withNonNumericValue_returnsOriginalValue() {
+        AtlasAttribute mockAttribute = Mockito.mock(AtlasAttribute.class);
+        when(mockAttribute.isRankFeatureField()).thenReturn(true);
+
+        String originalValue = "not-a-number";
+        Object result = RankFeatureUtils.normalizeValue(originalValue, mockAttribute);
+
+        assertEquals(result, originalValue);
+    }
+
+    @DataProvider(name = "atlasAttributeNormalizeValueTestCases")
+    public Object[][] atlasAttributeNormalizeValueTestCases() {
+        return new Object[][]{
+                // {inputValue, isRankFeature, minValue, expectedToBeNormalized}
+                {0.0f, true, Float.MIN_NORMAL, true},
+                {-1.0f, true, Float.MIN_NORMAL, true},
+                {0.5f, true, Float.MIN_NORMAL, false},
+                {1.0f, true, Float.MIN_NORMAL, false},
+                {0.0f, false, Float.MIN_NORMAL, false},
+                {0.0001f, true, 0.001f, true},  // Custom min value
+                {0.01f, true, 0.001f, false},   // Above custom min
+        };
+    }
+
+    @Test(dataProvider = "atlasAttributeNormalizeValueTestCases")
+    public void testNormalizeValueWithAtlasAttribute_withDataProvider(
+            float inputValue, boolean isRankFeature, float minValue, boolean shouldNormalize) {
+        AtlasAttribute mockAttribute = Mockito.mock(AtlasAttribute.class);
+        when(mockAttribute.isRankFeatureField()).thenReturn(isRankFeature);
+        when(mockAttribute.getRankFeatureMinValue()).thenReturn(minValue);
+        when(mockAttribute.getName()).thenReturn("testAttr");
+
+        Object result = RankFeatureUtils.normalizeValue(inputValue, mockAttribute);
+
+        if (shouldNormalize) {
+            assertEquals((Float) result, minValue, 1e-10f);
+        } else {
+            assertEquals(result, inputValue);
+        }
     }
 
     // ==================== Helper Methods ====================

@@ -1269,8 +1269,8 @@ public class EntityGraphMapper {
             }
 
             // Normalize rank_feature values to ensure they meet ES minimum threshold
-            if (attrValue != null && attrType.getTypeCategory() == TypeCategory.PRIMITIVE) {
-                attrValue = RankFeatureUtils.normalizeValue(attrValue, attribute.getAttributeDef());
+            if (attrValue != null && attribute.isRankFeatureField()) {
+                attrValue = RankFeatureUtils.normalizeValue(attrValue, attribute);
             }
 
             if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE || attrType.getTypeCategory() == TypeCategory.ENUM) {
