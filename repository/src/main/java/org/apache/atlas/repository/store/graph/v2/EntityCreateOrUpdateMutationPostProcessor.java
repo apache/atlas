@@ -75,8 +75,10 @@ public class EntityCreateOrUpdateMutationPostProcessor implements EntityMutation
                 }
 
                 if (!batchPayload.isEmpty()) {
-                    // Use upsert=false since we're updating existing documents
-                    ESConnector.writeTagProperties(batchPayload, false);
+                    // Use upsert=true to handle cases where entity creation and tag attachment
+                    // happen in the same request (e.g., /entity/bulk with classifications).
+                    // The entity's ES document may not exist yet when tag ops execute.
+                    ESConnector.writeTagProperties(batchPayload, true);
                 }
             }
 
