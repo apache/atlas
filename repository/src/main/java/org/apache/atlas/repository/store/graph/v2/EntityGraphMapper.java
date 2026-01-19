@@ -65,6 +65,7 @@ import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.repository.store.graph.v2.utils.TagAttributeMapper;
 import org.apache.atlas.repository.util.TagDeNormAttributesUtil;
 import org.apache.atlas.service.FeatureFlagStore;
+import org.apache.atlas.util.RankFeatureUtils;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
@@ -1265,6 +1266,11 @@ public class EntityGraphMapper {
                         }
                     }
                 }
+            }
+
+            // Normalize rank_feature values to ensure they meet ES minimum threshold
+            if (attrValue != null && attrType.getTypeCategory() == TypeCategory.PRIMITIVE) {
+                attrValue = RankFeatureUtils.normalizeValue(attrValue, attribute.getAttributeDef());
             }
 
             if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE || attrType.getTypeCategory() == TypeCategory.ENUM) {
