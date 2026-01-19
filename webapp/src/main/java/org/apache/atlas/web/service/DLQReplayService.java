@@ -517,7 +517,14 @@ public class DLQReplayService {
                 for (Map.Entry<String, SerializableIndexMutation> ve : vertexIndex.entrySet()) {
                     log.debug("DLQ Entry Vertex Index Mutation - DocID: {}, Additions: {}, Deletions: {}",
                             ve.getKey(), ve.getValue().getAdditions().size(), ve.getValue().getDeletions().size());
-                    vertexIds.add(LongEncoding.decode(ve.getKey()));
+                    // check if ve.getValue() has a additions and if it has a field called assetInternalPopularityScore
+                    if(ve.getValue().getAdditions().stream().anyMatch(
+                            addition -> ("assetInternalPopularityScore".equalsIgnoreCase(addition.getField()
+                            ) && ((Double) addition.getValue() < 1.17549435E-38)))) {
+                        log.warn("Skipping vertex ID {} due to invalid assetInternalPopularityScore value", ve.getKey());
+                    } else {
+                        vertexIds.add(LongEncoding.decode(ve.getKey()));
+                    }
                 }
                 repairIndex.reindexVerticesByIds(INDEX_NAME_VERTEX_INDEX, vertexIds);
                 log.debug("Replayed vertex index mutations for {} vertices", vertexIds.size());
