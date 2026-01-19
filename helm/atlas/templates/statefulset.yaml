@@ -45,6 +45,12 @@ spec:
                 operator: In
                 values:
                 - on-demand
+            {{- else if eq .Values.global.cloud "azure" }}
+            - matchExpressions:
+              - key: service
+                operator: In
+                values:
+                - metastore
             {{- else }}
             - matchExpressions:
               - key: node.kubernetes.io/instance-type

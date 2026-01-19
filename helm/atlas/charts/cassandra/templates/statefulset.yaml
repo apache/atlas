@@ -66,6 +66,12 @@ spec:
                 operator: In
                 values:
                 - on-demand
+            {{- else if eq $cloud "azure" }}
+            - matchExpressions:
+              - key: service
+                operator: In
+                values:
+                - metastore
             {{- else }}
             - matchExpressions:
               - key: node.kubernetes.io/instance-type
