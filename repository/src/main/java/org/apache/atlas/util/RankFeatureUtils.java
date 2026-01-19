@@ -91,37 +91,6 @@ public class RankFeatureUtils {
     }
 
     /**
-     * Normalizes a numeric value for a rank_feature field.
-     * If the value is below the minimum threshold, returns the minimum value.
-     *
-     * @param value the value to normalize
-     * @param attrDef the attribute definition
-     * @return the normalized value, or the original value if not a rank_feature field
-     */
-    public static Object normalizeValue(Object value, AtlasAttributeDef attrDef) {
-        if (value == null || attrDef == null) {
-            return value;
-        }
-
-        if (!isRankFeatureField(attrDef)) {
-            return value;
-        }
-
-        if (value instanceof Number) {
-            float floatValue = ((Number) value).floatValue();
-            float minValue = getMinimumValue(attrDef);
-
-            if (floatValue < minValue) {
-                LOG.debug("Normalizing rank_feature value for attribute '{}' from {} to {}",
-                        attrDef.getName(), floatValue, minValue);
-                return minValue;
-            }
-        }
-
-        return value;
-    }
-
-    /**
      * Normalizes a numeric value for a rank_feature field using cached attribute metadata.
      * This is the preferred method for hot paths (e.g., EntityGraphMapper.mapAttribute)
      * as it uses O(1) cached checks instead of iterating through indexTypeESFields.

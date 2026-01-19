@@ -155,90 +155,6 @@ public class RankFeatureUtilsTest {
 
     // ==================== normalizeValue Tests ====================
 
-    @Test
-    public void testNormalizeValue_withZeroValue_returnsMinimum() {
-        Object result = RankFeatureUtils.normalizeValue(0.0f, rankFeatureWithCustomDefault);
-        assertTrue(result instanceof Float);
-        assertEquals((Float) result, Float.parseFloat(CUSTOM_DEFAULT_VALUE), 1e-45f);
-    }
-
-    @Test
-    public void testNormalizeValue_withNegativeValue_returnsMinimum() {
-        Object result = RankFeatureUtils.normalizeValue(-1.0f, rankFeatureWithCustomDefault);
-        assertTrue(result instanceof Float);
-        assertEquals((Float) result, Float.parseFloat(CUSTOM_DEFAULT_VALUE), 1e-45f);
-    }
-
-    @Test
-    public void testNormalizeValue_withValueAboveMinimum_returnsOriginalValue() {
-        float originalValue = 0.5f;
-        Object result = RankFeatureUtils.normalizeValue(originalValue, rankFeatureWithCustomDefault);
-        assertEquals(result, originalValue);
-    }
-
-    @Test
-    public void testNormalizeValue_withValueExactlyAtMinimum_returnsOriginalValue() {
-        float minValue = Float.parseFloat(CUSTOM_DEFAULT_VALUE);
-        Object result = RankFeatureUtils.normalizeValue(minValue, rankFeatureWithCustomDefault);
-        assertEquals((Float) result, minValue, 1e-45f);
-    }
-
-    @Test
-    public void testNormalizeValue_withNonRankFeatureAttr_returnsOriginalValue() {
-        float originalValue = 0.0f;
-        Object result = RankFeatureUtils.normalizeValue(originalValue, nonRankFeatureAttrDef);
-        assertEquals(result, originalValue);
-    }
-
-    @Test
-    public void testNormalizeValue_withNullValue_returnsNull() {
-        assertNull(RankFeatureUtils.normalizeValue(null, rankFeatureWithCustomDefault));
-    }
-
-    @Test
-    public void testNormalizeValue_withNullAttrDef_returnsOriginalValue() {
-        float originalValue = 0.0f;
-        Object result = RankFeatureUtils.normalizeValue(originalValue, (AtlasAttributeDef) null);
-        assertEquals(result, originalValue);
-    }
-
-    @Test
-    public void testNormalizeValue_withDoubleValue_normalizesCorrectly() {
-        Object result = RankFeatureUtils.normalizeValue(0.0d, rankFeatureWithCustomDefault);
-        assertTrue(result instanceof Float);
-        assertEquals((Float) result, Float.parseFloat(CUSTOM_DEFAULT_VALUE), 1e-45f);
-    }
-
-    @Test
-    public void testNormalizeValue_withIntegerValue_normalizesCorrectly() {
-        Object result = RankFeatureUtils.normalizeValue(0, rankFeatureWithCustomDefault);
-        assertTrue(result instanceof Float);
-        assertEquals((Float) result, Float.parseFloat(CUSTOM_DEFAULT_VALUE), 1e-45f);
-    }
-
-    @Test
-    public void testNormalizeValue_withLongValue_normalizesCorrectly() {
-        Object result = RankFeatureUtils.normalizeValue(0L, rankFeatureWithCustomDefault);
-        assertTrue(result instanceof Float);
-        assertEquals((Float) result, Float.parseFloat(CUSTOM_DEFAULT_VALUE), 1e-45f);
-    }
-
-    @Test
-    public void testNormalizeValue_withNonNumericValue_returnsOriginalValue() {
-        String originalValue = "not-a-number";
-        Object result = RankFeatureUtils.normalizeValue(originalValue, rankFeatureWithCustomDefault);
-        assertEquals(result, originalValue);
-    }
-
-    @Test
-    public void testNormalizeValue_withPositiveValueJustBelowMinimum_returnsMinimum() {
-        // Value that is positive but below MIN_NORMAL
-        float verySmallValue = MIN_POSITIVE_NORMAL / 2;
-        Object result = RankFeatureUtils.normalizeValue(verySmallValue, rankFeatureAttrDef);
-        assertTrue(result instanceof Float);
-        assertEquals((Float) result, MIN_POSITIVE_NORMAL, 1e-45f);
-    }
-
     // ==================== isValidRankFeatureValue Tests ====================
 
     @Test
@@ -297,34 +213,6 @@ public class RankFeatureUtilsTest {
     public void testIsValidRankFeatureValue_withIntegerValue_validatesCorrectly() {
         assertFalse(RankFeatureUtils.isValidRankFeatureValue(0, rankFeatureWithCustomDefault));
         assertTrue(RankFeatureUtils.isValidRankFeatureValue(1, rankFeatureWithCustomDefault));
-    }
-
-    // ==================== Data Provider Tests ====================
-
-    @DataProvider(name = "normalizeValueTestCases")
-    public Object[][] normalizeValueTestCases() {
-        return new Object[][]{
-                // {inputValue, isRankFeature, expectedNormalized}
-                {0.0f, true, true},           // Zero should be normalized
-                {-1.0f, true, true},          // Negative should be normalized
-                {0.5f, true, false},          // Valid value should not be normalized
-                {1.0f, true, false},          // Valid value should not be normalized
-                {0.0f, false, false},         // Non-rank_feature should not be normalized
-                {Float.MAX_VALUE, true, false}, // Large value should not be normalized
-        };
-    }
-
-    @Test(dataProvider = "normalizeValueTestCases")
-    public void testNormalizeValue_withDataProvider(float inputValue, boolean isRankFeature, boolean shouldNormalize) {
-        AtlasAttributeDef attrDef = isRankFeature ? rankFeatureWithCustomDefault : nonRankFeatureAttrDef;
-        Object result = RankFeatureUtils.normalizeValue(inputValue, attrDef);
-
-        if (shouldNormalize) {
-            float minValue = RankFeatureUtils.getMinimumValue(attrDef);
-            assertEquals((Float) result, minValue, 1e-45f);
-        } else {
-            assertEquals(result, inputValue);
-        }
     }
 
     // ==================== Edge Case Tests ====================
