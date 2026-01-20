@@ -3,6 +3,7 @@ package org.apache.atlas.web.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.RepairIndex;
 import org.janusgraph.diskstorage.dlq.DLQEntry;
 import org.janusgraph.diskstorage.dlq.SerializableIndexMutation;
@@ -49,7 +50,7 @@ class DLQReplayServiceTest {
         when(mockConfig.getString("atlas.graph.kafka.bootstrap.servers")).thenReturn("localhost:9092");
 
         // Create service - now it will use mocked esIndex
-        dlqReplayService = spy(new DLQReplayService(repairIndex));
+        dlqReplayService = spy(new DLQReplayService(repairIndex, new AtlasTypeRegistry()));
         
         // Set test configuration values
         ReflectionTestUtils.setField(dlqReplayService, "dlqTopic", "TEST_DLQ");
