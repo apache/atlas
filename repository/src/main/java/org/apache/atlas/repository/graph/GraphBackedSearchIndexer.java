@@ -20,6 +20,7 @@ package org.apache.atlas.repository.graph;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import io.micrometer.core.instrument.Timer;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -29,6 +30,7 @@ import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.listener.TypeDefChangeListener;
+import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -295,9 +297,11 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
      * Initializes the indices for the graph - create indices for Global AtlasVertex and AtlasEdge Keys
      */
     private void initialize(AtlasGraph graph) throws RepositoryException, IndexException {
-        AtlasGraphManagement management = graph.getManagementSystem();
+        Timer.Sample sample = Timer.start(MetricUtils.getMeterRegistry());
+        AtlasGraphManagement management = null;
 
         try {
+            management = graph.getManagementSystem();
             LOG.debug("Creating indexes for graph.");
 
             if (management.getGraphIndex(VERTEX_INDEX) == null) {
@@ -447,8 +451,14 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         } catch (Throwable t) {
             LOG.error("GraphBackedSearchIndexer.initialize() failed", t);
 
-            rollback(management);
+            if (management != null) {
+                rollback(management);
+            }
             throw new RepositoryException(t);
+        } finally {
+            sample.stop(Timer.builder("atlas.startup.graph.index.init.duration")
+                    .description("Time taken to initialize graph indices during Atlas startup")
+                    .register(MetricUtils.getMeterRegistry()));
         }
     }
 
