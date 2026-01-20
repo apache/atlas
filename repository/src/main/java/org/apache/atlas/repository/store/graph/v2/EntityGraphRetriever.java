@@ -3377,18 +3377,12 @@ public class EntityGraphRetriever {
         AtlasRelationship relationship = relationshipWithExtInfo.getRelationship();
         Set<AtlasClassification> propagatedClassifications = new HashSet<>();
         Set<AtlasClassification> blockedClassifications = new HashSet<>();
-        List<String> blockedClassificationIds = getBlockedClassificationIds(edge);
 
         if (FeatureFlagStore.isTagV2Enabled()) {
             List<AtlasClassification> classifications = getPropagatableClassificationsV2(edge);
 
             for (AtlasClassification classification : classifications) {
-                String classificationId = classification.getEntityGuid();
-                if (blockedClassificationIds.contains(classificationId)) {
-                    blockedClassifications.add(classification);
-                } else {
-                    propagatedClassifications.add(classification);
-                }
+                propagatedClassifications.add(classification);
 
                 if (extendedInfo) {
                     addToReferredEntities(relationshipWithExtInfo, classification.getEntityGuid());
@@ -3396,6 +3390,7 @@ public class EntityGraphRetriever {
             }
         } else {
             List<AtlasVertex> classificationVertices = getPropagatableClassifications(edge);
+            List<String> blockedClassificationIds = getBlockedClassificationIds(edge);
 
             for (AtlasVertex classificationVertex : classificationVertices) {
                 String classificationId = classificationVertex.getIdForDisplay();
