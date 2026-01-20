@@ -303,7 +303,10 @@
         "end-one-entity-classification:*",
         "end-one-entity:*{entity}",
 
-        "end-two-entity-type:*",
+        "end-two-entity-type:Readme",
+        "end-two-entity-type:Link",
+        "end-two-entity-type:AtlasGlossaryTerm",
+        "end-two-entity-type:AtlasGlossaryCategory",
         "end-two-entity-classification:*",
         "end-two-entity:*"
       ],
