@@ -72,8 +72,6 @@ public final class GraphDbObjectFactory {
         return new AtlasJanusGraphQuery(graph, isChildQuery);
     }
 
-    //private static final String ASSET_LABEL = "asset";
-
     /**
      * Creates an AtlasJanusVertex that corresponds to the given Gremlin Vertex.
      * When LEAN_GRAPH_ENABLED, checks diffVertexCache first to reuse existing vertex instances.

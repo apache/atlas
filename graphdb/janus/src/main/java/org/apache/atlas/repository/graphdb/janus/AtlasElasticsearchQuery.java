@@ -63,7 +63,6 @@ import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 import static org.apache.atlas.AtlasErrorCode.INDEX_NOT_FOUND;
-import static org.apache.atlas.repository.Constants.LEANGRAPH_MODE;
 import static org.apache.atlas.repository.Constants.LEAN_GRAPH_ENABLED;
 
 
