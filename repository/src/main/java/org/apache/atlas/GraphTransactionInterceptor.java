@@ -254,6 +254,9 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
     boolean logException(Throwable t) {
         if (t instanceof AtlasBaseException) {
             Response.Status httpCode = ((AtlasBaseException) t).getAtlasErrorCode().getHttpCode();
+            if (AtlasErrorCode.TYPE_NAME_NOT_FOUND.equals(((AtlasBaseException) t).getAtlasErrorCode())) {
+                return true;
+            }
             return httpCode != Response.Status.NOT_FOUND && httpCode != Response.Status.NO_CONTENT;
         } else if (t instanceof NotFoundException) {
             return false;
