@@ -3374,29 +3374,46 @@ public class EntityGraphRetriever {
     }
 
     private void readClassificationsFromEdge(AtlasEdge edge, AtlasRelationshipWithExtInfo relationshipWithExtInfo, boolean extendedInfo) throws AtlasBaseException {
-        List<AtlasVertex>        classificationVertices    = getPropagatableClassifications(edge);
-        List<String>             blockedClassificationIds  = getBlockedClassificationIds(edge);
-        AtlasRelationship        relationship              = relationshipWithExtInfo.getRelationship();
+        AtlasRelationship relationship = relationshipWithExtInfo.getRelationship();
         Set<AtlasClassification> propagatedClassifications = new HashSet<>();
-        Set<AtlasClassification> blockedClassifications    = new HashSet<>();
+        Set<AtlasClassification> blockedClassifications = new HashSet<>();
+        List<String> blockedClassificationIds = getBlockedClassificationIds(edge);
 
-        for (AtlasVertex classificationVertex : classificationVertices) {
-            String              classificationId = classificationVertex.getIdForDisplay();
-            AtlasClassification classification   = toAtlasClassification(classificationVertex);
+        if (FeatureFlagStore.isTagV2Enabled()) {
+            List<AtlasClassification> classifications = getPropagatableClassificationsV2(edge);
 
-            if (classification == null) {
-                continue;
+            for (AtlasClassification classification : classifications) {
+                String classificationId = classification.getEntityGuid();
+                if (blockedClassificationIds.contains(classificationId)) {
+                    blockedClassifications.add(classification);
+                } else {
+                    propagatedClassifications.add(classification);
+                }
+
+                if (extendedInfo) {
+                    addToReferredEntities(relationshipWithExtInfo, classification.getEntityGuid());
+                }
             }
+        } else {
+            List<AtlasVertex> classificationVertices = getPropagatableClassifications(edge);
 
-            if (blockedClassificationIds.contains(classificationId)) {
-                blockedClassifications.add(classification);
-            } else {
-                propagatedClassifications.add(classification);
-            }
+            for (AtlasVertex classificationVertex : classificationVertices) {
+                String classificationId = classificationVertex.getIdForDisplay();
+                AtlasClassification classification = toAtlasClassification(classificationVertex);
 
-            // add entity headers to referred entities
-            if (extendedInfo) {
-                addToReferredEntities(relationshipWithExtInfo, classification.getEntityGuid());
+                if (classification == null) {
+                    continue;
+                }
+                if (blockedClassificationIds.contains(classificationId)) {
+                    blockedClassifications.add(classification);
+                } else {
+                    propagatedClassifications.add(classification);
+                }
+
+                // add entity headers to referred entities
+                if (extendedInfo) {
+                    addToReferredEntities(relationshipWithExtInfo, classification.getEntityGuid());
+                }
             }
         }
 
