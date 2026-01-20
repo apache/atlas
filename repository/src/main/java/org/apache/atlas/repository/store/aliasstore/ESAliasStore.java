@@ -28,7 +28,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
-import org.apache.atlas.service.FeatureFlagStore;
+import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
@@ -175,7 +175,7 @@ public class ESAliasStore implements IndexAliasStore {
             policies.add(policy);
         }
         if (CollectionUtils.isNotEmpty(policies)) {
-            boolean useHierarchicalQualifiedNameFilter =  FeatureFlagStore.evaluate(ENABLE_PERSONA_HIERARCHY_FILTER, "true");
+            boolean useHierarchicalQualifiedNameFilter = DynamicConfigStore.isPersonaHierarchyFilterEnabled();
             personaPolicyToESDslClauses(policies, allowClauseList, denyClauseList, useHierarchicalQualifiedNameFilter);
         }
 
