@@ -3,7 +3,7 @@
 Atlan's fork of [Apache Atlas](https://atlas.apache.org/) - a metadata governance framework for data cataloging, lineage tracking, and access control.
 
 ## Overview
-
+ 
 Atlas Metastore provides:
 - **Metadata Management** - Centralized metadata store for data assets
 - **Data Lineage** - Track data flow and transformations
