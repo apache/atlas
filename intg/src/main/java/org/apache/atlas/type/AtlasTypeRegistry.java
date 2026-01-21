@@ -88,6 +88,11 @@ public class AtlasTypeRegistry {
             LOG.debug("==> AtlasTypeRegistry.getType({})", typeName);
         }
 
+        if (typeName == null) {
+            LOG.error("ATLAS_TYPE_REGISTRY_NULL_TYPENAME: getType() called with null typeName. This indicates a corrupt entity or reference in the graph.", new Exception("Stack trace for null typeName"));
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, "null (typeName is null - possible corrupt entity/reference)");
+        }
+
         AtlasType ret = registryData.allTypes.getTypeByName(typeName);
 
         if (ret == null ) {

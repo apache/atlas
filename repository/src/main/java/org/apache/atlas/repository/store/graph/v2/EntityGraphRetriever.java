@@ -2125,10 +2125,20 @@ public class EntityGraphRetriever {
 
     private void mapAttributes(AtlasVertex entityVertex, AtlasStruct struct, AtlasEntityExtInfo entityExtInfo, boolean isMinExtInfo, boolean includeReferences) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapAttributes");
-        AtlasType objType = typeRegistry.getType(struct.getTypeName());
+        String structTypeName = struct.getTypeName();
+
+        if (structTypeName == null) {
+            String vertexId = entityVertex != null ? entityVertex.getIdForDisplay() : "null";
+            String vertexGuid = entityVertex != null ? GraphHelper.getGuid(entityVertex) : "null";
+            LOG.error("ATLAS_CORRUPT_STRUCT_NULL_TYPENAME: mapAttributes - struct has null typeName. vertexId={}, vertexGuid={}, struct={}",
+                    vertexId, vertexGuid, struct, new Exception("Stack trace for null struct typeName"));
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, "null (struct typeName is null - vertexId: " + vertexId + ", guid: " + vertexGuid + ")");
+        }
+
+        AtlasType objType = typeRegistry.getType(structTypeName);
 
         if (!(objType instanceof AtlasStructType)) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, struct.getTypeName());
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, structTypeName);
         }
 
         AtlasStructType structType = (AtlasStructType) objType;
@@ -3432,10 +3442,20 @@ public class EntityGraphRetriever {
 
     private void mapAttributes(AtlasEdge edge, AtlasRelationshipWithExtInfo relationshipWithExtInfo) throws AtlasBaseException {
         AtlasRelationship relationship = relationshipWithExtInfo.getRelationship();
-        AtlasType         objType      = typeRegistry.getType(relationship.getTypeName());
+        String relationshipTypeName = relationship.getTypeName();
+
+        if (relationshipTypeName == null) {
+            String edgeId = edge != null ? edge.getIdForDisplay() : "null";
+            String relationshipGuid = relationship.getGuid();
+            LOG.error("ATLAS_CORRUPT_RELATIONSHIP_NULL_TYPENAME: mapAttributes - relationship has null typeName. edgeId={}, relationshipGuid={}, relationship={}",
+                    edgeId, relationshipGuid, relationship, new Exception("Stack trace for null relationship typeName"));
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, "null (relationship typeName is null - edgeId: " + edgeId + ", relationshipGuid: " + relationshipGuid + ")");
+        }
+
+        AtlasType objType = typeRegistry.getType(relationshipTypeName);
 
         if (!(objType instanceof AtlasRelationshipType)) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, relationship.getTypeName());
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, relationshipTypeName);
         }
 
         AtlasRelationshipType relationshipType = (AtlasRelationshipType) objType;
