@@ -114,9 +114,13 @@ public class AtlasJanusGraphTraversal extends AtlasGraphTraversal<AtlasJanusVert
             ret = new HashMap<>(map.size());
 
             for (Object key : map.keySet()) {
-                if (!(key instanceof String)) {
-                    continue;
-                }
+                LOG.info("Printing Key DataType: {}", key.getClass());
+
+                // Non-string keys are now converted to String // Use case: DSL search — groupBy(createTime) was failing earlier.
+                // Example: DSL query "earlier" failing - Table groupBy(createTime) select owner, name, max(createTime)
+                //Exampled: DSL query passing - Table groupBy(owner) select owner, count()
+                // So non-string key(createTime) were earlier not getting results
+                String keyStr = (key instanceof String) ? (String) key : String.valueOf(key);
 
                 Object value = map.get(key);
 
@@ -131,7 +135,7 @@ public class AtlasJanusGraphTraversal extends AtlasGraphTraversal<AtlasJanusVert
                         }
                     }
 
-                    ret.put((String) key, values);
+                    ret.put(keyStr, values);
                 }
             }
         } else {
