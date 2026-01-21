@@ -108,17 +108,11 @@ data:
         echo "[-] Zookeeper not yet in Leader or Standalone mode. Retrying..."
       fi
 {{- else }}
-
     sleep 5
-
     echo "[+] checking for zookeeper service"
-
     leader=`echo stat | nc zookeeper 2181 | grep leader |wc -l`
-
     echo $leader
-
     if [ $leader -eq 1 ]; then echo "Zookeeper cluster up"; break; fi
-
 {{- end }}
 
     done
