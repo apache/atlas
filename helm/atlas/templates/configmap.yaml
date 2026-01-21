@@ -63,7 +63,11 @@ data:
     atlas.graph.storage.backend=cql
     atlas.graph.storage.hostname={{ .Chart.Name }}-cassandra
     atlas.graph.storage.cql.keyspace={{ .Chart.Name }}
+    {{- if eq .Values.global.Deployment_Type "Lite" }}
+    atlas.graph.storage.cql.replication-factor=1
+    {{- else }}
     atlas.graph.storage.cql.replication-factor={{ .Values.cassandra.config.cluster_size }}
+    {{- end }}
     atlas.graph.storage.clustername={{ .Values.cassandra.config.cluster_name  }}
     atlas.graph.storage.port={{ .Values.cassandra.config.ports.cql }}
     atlas.graph.query.fast-property=true
@@ -156,8 +160,11 @@ data:
     atlas.kafka.zookeeper.session.timeout.ms=60000
     atlas.kafka.zookeeper.connection.timeout.ms=30000
     atlas.kafka.zookeeper.sync.time.ms=20
+    {{- if eq .Values.global.Deployment_Type "Lite" }}
+    atlas.kafka.zookeeper.connect=zookeeper-0.zookeeper-headless.atlas.svc.cluster.local:2181
+    {{- else }}
     atlas.kafka.zookeeper.connect=zookeeper-0.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-1.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-2.zookeeper-headless.atlas.svc.cluster.local:2181
-
+    {{- end }}
     atlas.kafka.auto.commit.interval.ms=1000
     atlas.kafka.hook.group.id=atlas
     atlas.kafka.enable.auto.commit=false
@@ -267,7 +274,11 @@ data:
     atlas.server.ids=id1,id2
     atlas.server.address.id1=atlas-0.atlas-service-atlas.atlas.svc.cluster.local:21000
     atlas.server.address.id2=atlas-1.atlas-service-atlas.atlas.svc.cluster.local:21000
+    {{- if eq .Values.global.Deployment_Type "Lite" }}
+    atlas.server.ha.zookeeper.connect=zookeeper-0.zookeeper-headless.atlas.svc.cluster.local:2181
+    {{- else }}
     atlas.server.ha.zookeeper.connect=zookeeper-0.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-1.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-2.zookeeper-headless.atlas.svc.cluster.local:2181
+    {{- end }}
     atlas.server.ha.zookeeper.retry.sleeptime.ms=10000
     atlas.server.ha.zookeeper.num.retries=18
     atlas.server.ha.zookeeper.session.timeout.ms=20000
@@ -315,7 +326,11 @@ data:
     atlas.graph.cache.redis-cache-size=100000
     atlas.graph.cache.redis-cache-server-mode=sentinel
     atlas.graph.cache.redis-cache-server-url=redis://{{ .Values.atlas.redis.host }}:{{ .Values.atlas.redis.port }}
+    {{- if eq .Values.global.Deployment_Type "Lite" }}
+    atlas.graph.cache.redis-cache-sentinel-urls={{ .Values.atlas.redis.sentinel_urls_lite }}
+    {{- else }}
     atlas.graph.cache.redis-cache-sentinel-urls={{ .Values.atlas.redis.sentinel_urls }}
+    {{- end }}
     atlas.graph.cache.redis-cache-lock-watchdog-ms=300000
     atlas.graph.cache.redis-cache-username={{ .Values.atlas.redis.username }}
     atlas.graph.cache.redis-cache-password={{ .Values.atlas.redis.password }}
@@ -439,7 +454,11 @@ data:
     # org.apache.atlas.service.redis.NoRedisServiceImpl - default, dummy redis implementation.
     atlas.redis.service.impl = org.apache.atlas.service.redis.RedisServiceImpl
     atlas.redis.url = redis://{{ .Values.atlas.redis.host }}:{{ .Values.atlas.redis.port }}
+    {{- if eq .Values.global.Deployment_Type "Lite" }}
+    atlas.redis.sentinel.urls = {{ .Values.atlas.redis.sentinel_urls_lite }}
+    {{- else }}
     atlas.redis.sentinel.urls = {{ .Values.atlas.redis.sentinel_urls }}
+    {{- end }}
     atlas.redis.username = {{ .Values.atlas.redis.username }}
     atlas.redis.password = {{ .Values.atlas.redis.password }}
     atlas.redis.master_name = {{ .Values.atlas.redis.master_name }}

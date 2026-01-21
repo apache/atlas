@@ -94,6 +94,14 @@ resources_standard:
   limits:
     memory: "5Gi"
 
+resources_lite:
+  requests:
+    cpu: "100m"
+    memory: "5Gi"
+  limits:
+    cpu: "1000m"
+    memory: "6Gi"
+
 podAnnotations: {}
   # iam.amazonaws.com/role: es-cluster
 
@@ -168,6 +176,27 @@ antiAffinityTopologyKey: "kubernetes.io/hostname"
 # Hard means that by default pods will only be scheduled if there are enough nodes for them
 # and that they will never end up on the same node. Setting this to soft will do this "best effort"
 antiAffinity: "hard"
+
+affinity_lite:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: eks.amazonaws.com/capacityType
+          operator: In
+          values:
+            - ON_DEMAND
+      - matchExpressions:
+        - key: lifecycle
+          operator: In
+          values:
+            - ondemand
+      - matchExpressions:
+        - key: cloud.google.com/gke-provisioning
+          operator: In
+          values:
+            - standard
+
 
 # This is the node affinity settings as defined in
 # https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#node-affinity-beta-feature

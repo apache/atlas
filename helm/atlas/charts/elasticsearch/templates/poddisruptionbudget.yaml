@@ -1,5 +1,5 @@
 {{- if .Values.minAvailable }}
----
+{{- if not (eq .Values.global.Deployment_Type "Lite") }}
 {{- if and (.Capabilities.APIVersions.Has "policy/v1") (semverCompare ">= 1.19-0" .Capabilities.KubeVersion.Version) }}
 apiVersion: policy/v1
 {{- else }}
@@ -15,3 +15,4 @@ spec:
     matchLabels:
       app: "{{ template "elasticsearch.uname" . }}"
 {{- end }}
+{{- end -}}
