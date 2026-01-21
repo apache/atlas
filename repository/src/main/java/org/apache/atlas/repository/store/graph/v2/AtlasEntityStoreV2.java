@@ -78,6 +78,7 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.ReadmePr
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryFolderPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.tags.PaginatedGuidResult;
 import org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTask;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.*;
@@ -1353,6 +1354,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         return entityHeader.getClassifications();
     }
+
+    @Override
+    @GraphTransaction
+    public PaginatedGuidResult getGuidsFromTagsByIdTableWithPagination(String pagingState, int pageSize) throws AtlasBaseException {
+        return entityGraphMapper.getGuidsFromTagsByIdTableWithPagination(pagingState, pageSize);
+    }
+
+
 
     @Override
     @GraphTransaction

@@ -58,6 +58,7 @@ import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.DataProductPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.tags.PaginatedGuidResult;
 import org.apache.atlas.repository.store.graph.v2.tags.PaginatedTagResult;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
@@ -4510,6 +4511,21 @@ public class EntityGraphMapper {
 
         return propagatedEntitiesGuids;
 
+    }
+
+    public PaginatedGuidResult getGuidsFromTagsByIdTableWithPagination(String pagingState, int pageSize) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getGuidsFromTagsByIdTableWithPagination( pageSize={})", pageSize);
+        }
+
+        PaginatedGuidResult result = tagDAO.getGuidsFromTagsByIdTableWithPagination(pagingState, pageSize);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getGuidsFromTagsByIdTableWithPagination(pageSize={}): found {} unique GUIDs, hasMorePages={}",
+                     pageSize, result.getGuids().size(), result.hasMorePages());
+        }
+
+        return result;
     }
 
     public int processClassificationPropagationAdditionV2(Map<String, Object> parameters,

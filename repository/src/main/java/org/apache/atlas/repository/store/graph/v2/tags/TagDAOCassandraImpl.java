@@ -637,6 +637,68 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         }
     }
 
+    public PaginatedGuidResult getGuidsFromTagsByIdTableWithPagination(String pagingStateStr, int pageSize) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getGuidsFromTagsByIdTableWithPagination");
+        try {
+            String queryStr = String.format("SELECT tag_meta_json FROM %s.%s", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME);
+
+            SimpleStatement statement = SimpleStatement.builder(queryStr)
+                    .setPageSize(pageSize)
+                    .build();
+
+            if (pagingStateStr != null && !pagingStateStr.isEmpty()) {
+                statement = statement.setPagingState(ByteBuffer.wrap(Base64.getDecoder().decode(pagingStateStr)));
+            }
+
+            ResultSet rs = executeWithRetry(statement);
+            Set<String> guids = new LinkedHashSet<>();
+
+            Iterator<Row> iterator = rs.iterator();
+            int count = 0;
+
+            while (count < pageSize && iterator.hasNext()) {
+                Row row = iterator.next();
+                String tagMetaJson = row.getString("tag_meta_json");
+                if (org.apache.commons.lang3.StringUtils.isNotEmpty(tagMetaJson)) {
+                    try {
+                        Map<String, Object> tagMetaMap = objectMapper.readValue(tagMetaJson, Map.class);
+                        String entityGuid = (String) tagMetaMap.get("entityGuid");
+                        if (org.apache.commons.lang3.StringUtils.isNotEmpty(entityGuid)) {
+                            guids.add(entityGuid);
+                        }
+                    } catch (Exception e) {
+                        LOG.warn("Failed to parse tag_meta_json: {}", e.getMessage());
+                    }
+                }
+                count++;
+            }
+
+            LOG.debug("Fetched {} unique GUIDs in this page", guids.size());
+
+            ByteBuffer pagingStateBuffer = rs.getExecutionInfo().getPagingState();
+            String nextPagingState = null;
+
+            if (pagingStateBuffer != null) {
+                byte[] bytes = new byte[pagingStateBuffer.remaining()];
+                pagingStateBuffer.get(bytes);
+                if (bytes.length > 0) {
+                    nextPagingState = Base64.getEncoder().encodeToString(bytes);
+                }
+            }
+
+            boolean done = (nextPagingState == null || nextPagingState.isEmpty());
+            LOG.debug("Next paging state. Has more pages: {}", !done);
+
+            return new PaginatedGuidResult(guids, nextPagingState, done);
+
+        } catch (Exception e) {
+            LOG.error("Error fetching GUIDs from tags_by_id table", e);
+            throw new AtlasBaseException("Error fetching GUIDs from tags_by_id table", e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
     private static List<Tag> resultSetToTags(String vertexId, ResultSet rs) {
         List<Tag> tags = new ArrayList<>();
         for (Row row : rs) {
