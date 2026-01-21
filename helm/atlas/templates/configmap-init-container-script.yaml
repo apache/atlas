@@ -114,7 +114,6 @@ data:
     echo $leader
     if [ $leader -eq 1 ]; then echo "Zookeeper cluster up"; break; fi
 {{- end }}
-
     done
     echo 'Zookeeper OK ✓'
 
