@@ -165,6 +165,7 @@ data:
     {{- else }}
     atlas.kafka.zookeeper.connect=zookeeper-0.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-1.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-2.zookeeper-headless.atlas.svc.cluster.local:2181
     {{- end }}
+    
     atlas.kafka.auto.commit.interval.ms=1000
     atlas.kafka.hook.group.id=atlas
     atlas.kafka.enable.auto.commit=false
