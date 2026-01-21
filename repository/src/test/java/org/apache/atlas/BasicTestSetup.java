@@ -92,8 +92,8 @@ public abstract class BasicTestSetup extends AtlasTestBase {
     protected static final String HIVE_TABLE_TYPE   = "hive_table";
     protected static final String DATASET_SUBTYPE   = "Asset";
     protected static final String HDFS_PATH         = "hdfs_path";
+    protected static final String COLUMN_TYPE       = "hive_column";
 
-    private static final String COLUMN_TYPE       = "hive_column";
     private static final String HIVE_PROCESS_TYPE = "hive_process";
     private static final String STORAGE_DESC_TYPE = "hive_storagedesc";
     private static final String VIEW_TYPE         = "hive_process";
@@ -289,6 +289,45 @@ public abstract class BasicTestSetup extends AtlasTestBase {
 
         entities.add(datasetSubType);
 
+        List<AtlasEntity> sampleColumns = ImmutableList.of(column("sm_time_id", "int", "time id"),
+                column("sm_product_id", "int", "product id"),
+                column("sm_customer_id", "int", "customer id"),
+                column("sm_sales", "double", "product id"),
+                column("sm_test", "int", "test 1"),
+                column("sm_test_limit", "int", "test limit 1"));
+
+        entities.addAll(sampleColumns);
+
+        AtlasEntity sampleTable = table("sample_table", "sample table", salesDB, sd, "Dev 1", "Managed", sampleColumns);
+        sampleTable.setAttribute("createTime", new Date(2018, 01, 01));
+
+        entities.add(sampleTable);
+
+        List<AtlasEntity> longTableNameColumns = ImmutableList.of(column("l_id", "int", "time id"),
+                column("l_product_id", "int", "product id"),
+                column("l_customer_id", "int", "customer id"),
+                column("l_sales", "double", "product id"),
+                column("l_test", "int", "test 1"));
+
+        entities.addAll(longTableNameColumns);
+
+        AtlasEntity longTableName = table("rltdvhrxhocivajyqojaxulwzhgzgzpkfolziacfnndzncjkthzeaeykdhhrjqdeibhdgiepwqkinvqzqxevushydtwjaabzgbfjmzvcbsoxewruhyhciyjefzsnokxvbeiiowzbhlkmujcnwilslgeswobzwwvkugyupsemqxsbdcmgrlpxmeuljvxyddvpccvcloupjorziwhogwnjvsdrwksvrbxcxjlcrcmrvvmbdmenafmvgrqzcaqbgpnhxiqbvxcbnudafsmjzvlzzzzpqmjkngbximmbjbijrqfb", "table name length 300", salesDB, sd, "Dev 2", "Managed", longTableNameColumns);
+        longTableName.setAttribute("createTime", new Date(2025, 05, 16));
+
+        entities.add(longTableName);
+
+        List<AtlasEntity> longTokenizeTableNameColumns = ImmutableList.of(column("l_tknz_id", "int", "time id"),
+                column("l_tknz_product_id", "int", "product id"),
+                column("l_tknz_sales", "double", "product id"),
+                column("l_tknz_test", "int", "test 1"));
+
+        entities.addAll(longTokenizeTableNameColumns);
+
+        AtlasEntity longTokenizeTableName = table("rrrrtokenizeeeeivajaxulwzhgzgzpkfoianndzncjkthzeaeykdhhrjqdeibhdgiepwqkinvqzqxevushydtwjaabzgbfjmzvcbsoxewruhyhciyjefzsnokxvbeiiowzbhlkmujcnwilslgeswobzwwvkugyupsemqxsbdcmgrlpxmeuljvxyddvpccvcloupjogrqzcaqbgpnhxiqbvxcbnudafsmaajzvlzzzzpqmjkngbximmbjbijrq1", "table name length 300, Tokenized", salesDB, sd, "Dev 3", "Managed", longTokenizeTableNameColumns);
+        longTokenizeTableName.setAttribute("createTime", new Date(2025, 05, 16));
+
+        entities.add(longTokenizeTableName);
+
         return new AtlasEntity.AtlasEntitiesWithExtInfo(entities);
     }
 
@@ -315,6 +354,24 @@ public abstract class BasicTestSetup extends AtlasTestBase {
 
         filterCriteria.setCriterion(criteria);
         return filterCriteria;
+    }
+
+    public SearchParameters.FilterCriteria getSingleFilterCriteria(String attName, SearchParameters.Operator op, String attrValue) {
+        SearchParameters.FilterCriteria f1 = new SearchParameters.FilterCriteria();
+        f1.setAttributeName(attName);
+        f1.setOperator(op);
+        f1.setAttributeValue(attrValue);
+        return f1;
+    }
+
+    public SearchParameters getSearchParameters(String typeName, SearchParameters.FilterCriteria entityFilter, int limit) {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(typeName);
+        if (entityFilter != null) {
+            params.setEntityFilters(entityFilter);
+        }
+        params.setLimit(limit);
+        return params;
     }
 
     public void assignGlossary() {
@@ -530,7 +587,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
 
         AtlasEntity table = new AtlasEntity(HIVE_TABLE_TYPE);
         table.setAttribute("name", name);
-        table.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName + "." + name);
+        table.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName + "." + name + "@" + clusterName);
         table.setAttribute("description", description);
         table.setAttribute("owner", owner);
         table.setAttribute("tableType", tableType);
