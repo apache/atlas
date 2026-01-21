@@ -1791,7 +1791,17 @@ public class EntityGraphMapper {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, (ctx.getValue() == null ? null : ctx.getValue().toString()));
             }
 
-            AtlasType type = typeRegistry.getType(AtlasGraphUtilsV2.getTypeName(entityVertex));
+            String vertexTypeName = AtlasGraphUtilsV2.getTypeName(entityVertex);
+
+            if (vertexTypeName == null) {
+                String vertexId = entityVertex != null ? entityVertex.getIdForDisplay() : "null";
+                String vertexGuid = entityVertex != null ? GraphHelper.getGuid(entityVertex) : "null";
+                LOG.error("ATLAS_CORRUPT_VERTEX_NULL_TYPENAME: mapObjectIdValueUsingRelationship - vertex has null typeName. vertexId={}, vertexGuid={}, attributeValue={}",
+                        vertexId, vertexGuid, ctx.getValue(), new Exception("Stack trace for corrupt vertex"));
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, "Vertex has null typeName - vertexId: " + vertexId + ", guid: " + vertexGuid);
+            }
+
+            AtlasType type = typeRegistry.getType(vertexTypeName);
 
             if (type instanceof AtlasEntityType) {
                 AtlasEntityType entityType = (AtlasEntityType) type;
@@ -1899,7 +1909,17 @@ public class EntityGraphMapper {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, (ctx.getValue() == null ? null : ctx.getValue().toString()));
         }
 
-        AtlasType type = typeRegistry.getType(AtlasGraphUtilsV2.getTypeName(entityVertex));
+        String vertexTypeName = AtlasGraphUtilsV2.getTypeName(entityVertex);
+
+        if (vertexTypeName == null) {
+            String vertexId = entityVertex != null ? entityVertex.getIdForDisplay() : "null";
+            String vertexGuid = entityVertex != null ? GraphHelper.getGuid(entityVertex) : "null";
+            LOG.error("ATLAS_CORRUPT_VERTEX_NULL_TYPENAME: mapObjectIdValueUsingRelationship (append/remove) - vertex has null typeName. vertexId={}, vertexGuid={}, attributeValue={}",
+                    vertexId, vertexGuid, ctx.getValue(), new Exception("Stack trace for corrupt vertex"));
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, "Vertex has null typeName - vertexId: " + vertexId + ", guid: " + vertexGuid);
+        }
+
+        AtlasType type = typeRegistry.getType(vertexTypeName);
 
         if (type instanceof AtlasEntityType) {
             AtlasEntityType entityType = (AtlasEntityType) type;
@@ -3356,6 +3376,12 @@ public class EntityGraphMapper {
 
                         if (vertex != null) {
                             typeName = AtlasGraphUtilsV2.getTypeName(vertex);
+
+                            if (typeName == null) {
+                                String vertexId = vertex.getIdForDisplay();
+                                LOG.error("ATLAS_CORRUPT_VERTEX_NULL_TYPENAME: getInstanceType - resolved vertex has null typeName. vertexId={}, guid={}, objectIdValue={}",
+                                        vertexId, guid, val, new Exception("Stack trace for corrupt resolved vertex"));
+                            }
                         }
                     }
                 }
@@ -3366,6 +3392,8 @@ public class EntityGraphMapper {
             }
 
             if (ret == null) {
+                String errorContext = String.format("objectId=%s, guid=%s, typeName=%s", val, guid, typeName);
+                LOG.error("ATLAS_INVALID_OBJECT_ID: getInstanceType - could not resolve entity type. {}", errorContext, new Exception("Stack trace for invalid object id"));
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, val.toString());
             }
         }
