@@ -925,8 +925,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     public void onRelationshipsMutated(Map<String, Set<AtlasRelationship>> relationshipsMutationMap) throws AtlasBaseException {
         entityChangeNotifier.notifyPropagatedEntities();
-        RelationshipMutationContext relationshipMutationContext = getRelationshipMutationContext(relationshipsMutationMap);
         if (notificationsEnabled) {
+            RelationshipMutationContext relationshipMutationContext = getRelationshipMutationContext(relationshipsMutationMap);
             entityChangeNotifier.notifyRelationshipMutation(relationshipMutationContext.getCreatedRelationships(), OperationType.RELATIONSHIP_CREATE);
             entityChangeNotifier.notifyRelationshipMutation(relationshipMutationContext.getUpdatedRelationships(), OperationType.RELATIONSHIP_UPDATE);
             entityChangeNotifier.notifyRelationshipMutation(relationshipMutationContext.getDeletedRelationships(), OperationType.RELATIONSHIP_DELETE);
@@ -974,7 +974,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
     }
 
-    private static Map<String, String> builsESDocIdMapping(AtlasRelationship r) {
+    private Map<String, String> builsESDocIdMapping(AtlasRelationship r) {
 
         final Map<String, String> esDocIdMapping = new HashMap<>();
 
@@ -993,7 +993,12 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                         return esDocIdMapping;
                     }
 
-                    final String docId = AtlasGraphUtilsV2.getDocIdForVertexId(relationshipEndToVertexIdMap.get(atlasObjectId));
+                    AtlasVertex relationshipEndVertex = graph.getVertex(relationshipEndToVertexIdMap.get(atlasObjectId));
+                    if (relationshipEndVertex == null) {
+                        return esDocIdMapping;
+                    }
+
+                    final String docId = relationshipEndVertex.getDocId();
                     String guid = atlasObjectId.getGuid();
                     AtlasObjectId end1 = r.getEnd1();
                     AtlasObjectId end2 = r.getEnd2();

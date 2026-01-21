@@ -1060,17 +1060,6 @@ public class AtlasGraphUtilsV2 {
         element.removePropertyValue(property, value);
     }
 
-    public static String getDocIdForVertexId(String vertexId) {
-        if (LEAN_GRAPH_ENABLED) {
-            if (StringUtils.isNotEmpty(vertexId)) {
-                return JG_ES_DOC_ID_PREFIX + vertexId;
-            }
-        } else {
-            return LongEncoding.encode(Long.parseLong(vertexId));
-        }
-        return vertexId;
-    }
-
     public static String getVertexIdForDocId(String docId) {
         if (StringUtils.isNotEmpty(docId) && docId.startsWith(JG_ES_DOC_ID_PREFIX)) {
             return docId.substring(1);
