@@ -23,7 +23,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 
@@ -55,6 +54,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.graphdb.janus.cassandra.ESConnector;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
@@ -5581,7 +5581,7 @@ public class EntityGraphMapper {
                         .map(Tag::getVertexId)
                         .toList();
 
-                List<AtlasEntity> entities = batchToDelete.stream().map(x->getEntityForNotification(x.getAssetMetadata())).toList();
+                batchToDelete.stream().map(x->getEntityForNotification(x.getAssetMetadata())).toList();
 
                 // Delete from Cassandra. The DAO correctly performs a hard delete on the lookup table.
                 deletePropagations(batchToDelete);
