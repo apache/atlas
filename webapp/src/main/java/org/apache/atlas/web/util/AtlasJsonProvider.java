@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.util.concurrent.ThreadLocalRandom;
 
 
 @Provider
@@ -68,11 +67,11 @@ public class AtlasJsonProvider extends JacksonJaxbJsonProvider {
             return super.readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);
         } catch (JsonParseException jpe) {
             LOG.error("Malformed json passed to server", jpe);
-            ExceptionMapperUtil.logRequestBodyOnError(ThreadLocalRandom.current().nextLong(), httpServletRequest);
+            ExceptionMapperUtil.logRequestBodyOnError(httpServletRequest);
             throw new WebApplicationException(Servlets.getErrorResponse(jpe.getMessage(), Response.Status.BAD_REQUEST));
         } catch (JsonMappingException jme) {
             LOG.error("Malformed json passed to server, incorrect data type used", jme);
-            ExceptionMapperUtil.logRequestBodyOnError(ThreadLocalRandom.current().nextLong(), httpServletRequest);
+            ExceptionMapperUtil.logRequestBodyOnError(httpServletRequest);
             throw new WebApplicationException(Servlets.getErrorResponse(jme.getMessage(), Response.Status.BAD_REQUEST));
         }
     }

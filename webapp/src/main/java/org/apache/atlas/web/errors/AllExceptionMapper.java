@@ -46,7 +46,7 @@ public class AllExceptionMapper implements ExceptionMapper<Exception> {
         final long id = ThreadLocalRandom.current().nextLong();
 
         // Log request body for bulk endpoints on error (reads from cached request)
-        ExceptionMapperUtil.logRequestBodyOnError(id, httpServletRequest);
+        ExceptionMapperUtil.logRequestBodyOnError(httpServletRequest);
 
         // Log the response and use the error codes from the Exception
         ExceptionMapperUtil.logException(id, exception);

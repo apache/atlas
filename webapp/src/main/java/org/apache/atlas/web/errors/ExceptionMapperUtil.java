@@ -111,10 +111,9 @@ public class ExceptionMapperUtil {
      * This only reads the body when an error actually occurs, avoiding memory overhead for successful requests.
      * Works only if the request was wrapped with CachedBodyHttpServletRequest by AuditFilter.
      *
-     * @param id      the unique error identifier
      * @param request the HTTP servlet request (should be CachedBodyHttpServletRequest for bulk endpoints)
      */
-    protected static void logRequestBodyOnError(long id, HttpServletRequest request) {
+    public static void logRequestBodyOnError(HttpServletRequest request) {
         if (request == null) {
             return;
         }
@@ -138,11 +137,11 @@ public class ExceptionMapperUtil {
                 }
 
                 String traceId = RequestContext.get().getTraceId();
-                LOGGER.error("Request body for error {} (traceId={}, uri={}): {}",
-                        String.format("%016x", id), traceId, requestUri, body);
+                LOGGER.error("Request body for error (traceId={}, uri={}): {}",
+                        traceId, requestUri, body);
             }
         } catch (Exception e) {
-            LOGGER.debug("Failed to log request body for error {}", String.format("%016x", id), e);
+            LOGGER.debug("Failed to log request body for error", e);
         }
     }
 
