@@ -17,11 +17,16 @@
  */
 package org.apache.atlas.web.errors;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServletRequest;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -99,21 +104,42 @@ public class ExceptionMapperUtil {
         LOGGER.error(formatLogMessage(id, exception), exception);
     }
 
+    private static final String BULK_ENDPOINT_PATTERN = "/entity/bulk";
+
     /**
-     * Logs the request body when an error occurs, if available in RequestContext.
-     * This is used for bulk endpoints where the request body is cached for debugging purposes.
+     * Logs the request body when an error occurs, reading directly from the HttpServletRequest.
+     * This only reads the body when an error actually occurs, avoiding memory overhead for successful requests.
+     * Works only if the request was wrapped with CachedBodyHttpServletRequest by AuditFilter.
      *
-     * @param id        the unique error identifier
-     * @param exception the exception that occurred
+     * @param id      the unique error identifier
+     * @param request the HTTP servlet request (should be CachedBodyHttpServletRequest for bulk endpoints)
      */
-    protected static void logRequestBodyOnError(long id, Exception exception) {
+    protected static void logRequestBodyOnError(long id, HttpServletRequest request) {
+        if (request == null) {
+            return;
+        }
+
         try {
-            String requestBody = RequestContext.get().getRequestBody();
-            if (StringUtils.isNotEmpty(requestBody)) {
-                String requestUri = RequestContext.get().getRequestUri();
+            String requestUri = request.getRequestURI();
+
+            // Only log for bulk endpoints
+            if (requestUri == null || !requestUri.contains(BULK_ENDPOINT_PATTERN)) {
+                return;
+            }
+
+            String body = IOUtils.toString(request.getInputStream(), StandardCharsets.UTF_8);
+
+            if (StringUtils.isNotEmpty(body)) {
+                int maxSize = AtlasConfiguration.REST_API_BULK_ERROR_LOG_BODY_MAX_SIZE.getInt();
+
+                // Truncate if exceeds max size
+                if (body.length() > maxSize) {
+                    body = body.substring(0, maxSize) + "... [TRUNCATED]";
+                }
+
                 String traceId = RequestContext.get().getTraceId();
                 LOGGER.error("Request body for error {} (traceId={}, uri={}): {}",
-                        String.format("%016x", id), traceId, requestUri, requestBody);
+                        String.format("%016x", id), traceId, requestUri, body);
             }
         } catch (Exception e) {
             LOGGER.debug("Failed to log request body for error {}", String.format("%016x", id), e);

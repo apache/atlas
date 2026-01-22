@@ -23,13 +23,15 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
-import org.apache.atlas.RequestContext;
-import org.apache.commons.lang.StringUtils;
+import org.apache.atlas.web.errors.ExceptionMapperUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -38,6 +40,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.concurrent.ThreadLocalRandom;
 
 
 @Provider
@@ -48,6 +51,9 @@ public class AtlasJsonProvider extends JacksonJaxbJsonProvider {
 
     private static final ObjectMapper mapper = new ObjectMapper()
                                                     .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+
+    @Context
+    private HttpServletRequest httpServletRequest;
 
     public AtlasJsonProvider() {
         super(mapper, JacksonJaxbJsonProvider.DEFAULT_ANNOTATIONS);
@@ -62,29 +68,12 @@ public class AtlasJsonProvider extends JacksonJaxbJsonProvider {
             return super.readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);
         } catch (JsonParseException jpe) {
             LOG.error("Malformed json passed to server", jpe);
-            logRequestBodyOnError(jpe);
+            ExceptionMapperUtil.logRequestBodyOnError(ThreadLocalRandom.current().nextLong(), httpServletRequest);
             throw new WebApplicationException(Servlets.getErrorResponse(jpe.getMessage(), Response.Status.BAD_REQUEST));
         } catch (JsonMappingException jme) {
             LOG.error("Malformed json passed to server, incorrect data type used", jme);
-            logRequestBodyOnError(jme);
+            ExceptionMapperUtil.logRequestBodyOnError(ThreadLocalRandom.current().nextLong(), httpServletRequest);
             throw new WebApplicationException(Servlets.getErrorResponse(jme.getMessage(), Response.Status.BAD_REQUEST));
-        }
-    }
-
-    /**
-     * Logs the request body when a JSON parsing/mapping error occurs.
-     * Only logs if the request body was cached (for bulk endpoints).
-     */
-    private void logRequestBodyOnError(Exception exception) {
-        try {
-            String requestBody = RequestContext.get().getRequestBody();
-            if (StringUtils.isNotEmpty(requestBody)) {
-                String requestUri = RequestContext.get().getRequestUri();
-                String traceId = RequestContext.get().getTraceId();
-                LOG.error("Request body for JSON error (traceId={}, uri={}): {}", traceId, requestUri, requestBody);
-            }
-        } catch (Exception e) {
-            LOG.debug("Failed to log request body for JSON error", e);
         }
     }
 }

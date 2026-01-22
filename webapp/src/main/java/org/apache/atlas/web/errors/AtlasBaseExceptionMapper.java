@@ -25,6 +25,8 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Component;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
@@ -39,12 +41,15 @@ import java.util.concurrent.ThreadLocalRandom;
 @Component
 public class AtlasBaseExceptionMapper implements ExceptionMapper<AtlasBaseException> {
 
+    @Context
+    private HttpServletRequest httpServletRequest;
+
     @Override
     public Response toResponse(AtlasBaseException exception) {
         final long id = ThreadLocalRandom.current().nextLong();
 
-        // Log request body for all errors on bulk endpoints (if body was cached)
-        ExceptionMapperUtil.logRequestBodyOnError(id, exception);
+        // Log request body for bulk endpoints on error (reads from cached request)
+        ExceptionMapperUtil.logRequestBodyOnError(id, httpServletRequest);
 
         // Only log the full exception if there's an internal error
         if (exception.getAtlasErrorCode().getHttpCode() == Response.Status.INTERNAL_SERVER_ERROR) {

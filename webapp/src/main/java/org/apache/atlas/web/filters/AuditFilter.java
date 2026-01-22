@@ -27,7 +27,6 @@ import org.apache.atlas.web.util.CachedBodyHttpServletRequest;
 import org.apache.atlas.web.util.DateTimeHelper;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +44,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
@@ -194,8 +192,9 @@ public class AuditFilter implements Filter {
     }
 
     /**
-     * Cache request body for bulk endpoints to enable error logging.
-     * Only caches for POST/PUT/DELETE requests to /entity/bulk paths with JSON content.
+     * Wrap request with CachedBodyHttpServletRequest for bulk endpoints to enable error logging.
+     * The body is only read when an error occurs (in exception mappers), not pre-cached.
+     * Only wraps for POST/PUT/DELETE requests to /entity/bulk paths with JSON content.
      */
     private HttpServletRequest cacheRequestBodyForBulkEndpoints(HttpServletRequest httpRequest, RequestContext requestContext) {
         try {
@@ -203,30 +202,19 @@ public class AuditFilter implements Filter {
             String method = httpRequest.getMethod();
             String contentType = httpRequest.getContentType();
 
-            // Only cache for bulk endpoints with POST/PUT/DELETE and JSON content
+            // Only wrap for bulk endpoints with POST/PUT/DELETE and JSON content
             if (requestUri != null && requestUri.contains(BULK_ENDPOINT_PATTERN) &&
                     ("POST".equals(method) || "PUT".equals(method) || "DELETE".equals(method)) &&
                     StringUtils.isNotEmpty(contentType) && contentType.contains(CONTENT_TYPE_JSON)) {
 
-                CachedBodyHttpServletRequest cachedRequest = new CachedBodyHttpServletRequest(httpRequest);
-                String body = IOUtils.toString(cachedRequest.getInputStream(), StandardCharsets.UTF_8);
-
-                // Truncate if exceeds max size
-                if (body != null && body.length() > bulkErrorLogBodyMaxSize) {
-                    body = body.substring(0, bulkErrorLogBodyMaxSize) + "... [TRUNCATED]";
-                }
-
-                requestContext.setRequestBody(body);
-
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("Cached request body for bulk endpoint: {} (size: {} bytes)", requestUri,
-                            body != null ? body.length() : 0);
+                    LOG.debug("Wrapping request with CachedBodyHttpServletRequest for bulk endpoint: {}", requestUri);
                 }
 
-                return cachedRequest;
+                return new CachedBodyHttpServletRequest(httpRequest);
             }
         } catch (IOException e) {
-            LOG.warn("Failed to cache request body for error logging", e);
+            LOG.warn("Failed to wrap request for error logging", e);
         }
 
         return httpRequest;
