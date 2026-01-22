@@ -120,8 +120,7 @@ import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
-import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
-import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateProductStatus;
+import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
@@ -158,6 +157,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private static final List<String> RELATIONSHIP_CLEANUP_SUPPORTED_TYPES = Arrays.asList(AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_ASSET_TYPES.getStringArray());
     private static final List<String> RELATIONSHIP_CLEANUP_RELATIONSHIP_LABELS = Arrays.asList(AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_RELATIONSHIP_LABELS.getStringArray());
+
 
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
@@ -1146,6 +1146,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
+        String entityTypeName = AtlasGraphUtilsV2.getTypeName(entityVertex);
+        if (CLASSIFICATION_ADD_EXCLUDE_LIST.contains(entityTypeName)) {
+            throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED,
+                    String.format("Adding classifications to entity type '%s' is not supported", entityTypeName));
+        }
+
         AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
 
         for (AtlasClassification classification : classifications) {
@@ -1247,6 +1253,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                 if (entityVertex == null) {
                     throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+                }
+
+                String entityTypeName = AtlasGraphUtilsV2.getTypeName(entityVertex);
+                if (CLASSIFICATION_ADD_EXCLUDE_LIST.contains(entityTypeName)) {
+                    throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED,
+                            String.format("Adding classifications to entity type '%s' is not supported", entityTypeName));
                 }
 
                 AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);

@@ -210,6 +210,7 @@ public class EntityGraphMapper {
     private final TagDAO                    tagDAO;
     private final TagAttributeMapper        tagAttributeMapper;
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
+    public static final Set<String> CLASSIFICATION_ADD_EXCLUDE_LIST = new HashSet<>(Arrays.asList(ATLAS_GLOSSARY_ENTITY_TYPE, ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE, DATA_DOMAIN_ENTITY_TYPE));
 
     @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
@@ -4064,6 +4065,14 @@ public class EntityGraphMapper {
     }
 
     public void handleAddClassifications(final EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(classifications)) {
+            AtlasEntityType entityType = context.getType(guid);
+            if (entityType != null && CLASSIFICATION_ADD_EXCLUDE_LIST.contains(entityType.getTypeName())) {
+                throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED,
+                        String.format("Adding classifications to entity type '%s' is not supported", entityType.getTypeName()));
+            }
+        }
+
         if(!RequestContext.get().isSkipAuthorizationCheck() && FeatureFlagStore.isTagV2Enabled()){
             addClassificationsV2(context, guid, classifications);
         } else {
