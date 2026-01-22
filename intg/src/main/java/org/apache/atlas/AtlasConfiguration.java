@@ -111,6 +111,7 @@ public enum AtlasConfiguration {
     ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_RELATIONSHIP_LABELS("atlas.relationship.cleanup.supported.relationship.labels", "__Process.inputs,__Process.outputs,__AirflowTask.inputs,__AirflowTask.outputs"),
     REST_API_XSS_FILTER_MASK_STRING("atlas.rest.xss.filter.mask.string", "map<[a-zA-Z _,:<>0-9\\x60]*>|struct<[a-zA-Z _,:<>0-9\\x60]*>|array<[a-zA-Z _,:<>0-9\\x60]*>|\\{\\{[a-zA-Z _,-:0-9\\x60\\{\\}]*\\}\\}"),
     REST_API_XSS_FILTER_EXLUDE_SERVER_NAME("atlas.rest.xss.filter.exclude.server.name", "atlas-service-atlas.atlas.svc.cluster.local"),
+    REST_API_BULK_ERROR_LOG_BODY_MAX_SIZE("atlas.rest.bulk.error.log.body.maxsize", 102400),
 
 
     INDEX_CLIENT_CONNECTION_TIMEOUT("atlas.index.client.connection.timeout.ms", 900000),

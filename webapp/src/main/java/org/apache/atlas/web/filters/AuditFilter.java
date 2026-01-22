@@ -23,6 +23,7 @@ import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.atlas.service.metrics.MetricsRegistry;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
+import org.apache.atlas.web.util.CachedBodyHttpServletRequest;
 import org.apache.atlas.web.util.DateTimeHelper;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
@@ -62,6 +63,9 @@ public class AuditFilter implements Filter {
     public static final String X_ATLAN_REQUEST_ID = "X-Atlan-Request-Id";
     public static final String X_ATLAN_CLIENT_ORIGIN = "X-Atlan-Client-Origin";
     public static final String X_ATLAN_PLAYBOOK_NAME = "x-atlan-playbook-name";
+    private static final String BULK_ENDPOINT_PATTERN = "/entity/bulk";
+    private static final String CONTENT_TYPE_JSON = "application/json";
+
     private boolean deleteTypeOverrideEnabled                = false;
     private boolean createShellEntityForNonExistingReference = false;
 
@@ -83,7 +87,7 @@ public class AuditFilter implements Filter {
     throws IOException, ServletException {
         final long                startTime          = System.currentTimeMillis();
         final Date                requestTime         = new Date();
-        final HttpServletRequest  httpRequest        = (HttpServletRequest) request;
+        HttpServletRequest        httpRequest        = (HttpServletRequest) request;
         final HttpServletResponse httpResponse       = (HttpServletResponse) response;
         final String              internalRequestId          = UUID.randomUUID().toString();
         final Thread              currentThread      = Thread.currentThread();
@@ -124,9 +128,12 @@ public class AuditFilter implements Filter {
 
             HeadersUtil.setRequestContextHeaders((HttpServletRequest)request);
 
+            // Wrap request body for bulk endpoints to enable error logging on failures
+            httpRequest = wrapRequestForBulkEndpoints(httpRequest);
+
             // Use wrapper to set response headers before the response is committed
             AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse, startTime);
-            filterChain.doFilter(request, responseWrapper);
+            filterChain.doFilter(httpRequest, responseWrapper);
         } finally {
             long timeTaken = System.currentTimeMillis() - startTime;
 
@@ -179,6 +186,30 @@ public class AuditFilter implements Filter {
     } catch (AtlasException e) {
         return false;
     }
+    }
+
+    /**
+     * Wraps the request with CachedBodyHttpServletRequest for bulk endpoints.
+     * This allows the request body to be re-read for error logging if the request fails.
+     * Only wraps POST/PUT/DELETE requests to /entity/bulk paths with JSON content.
+     */
+    private HttpServletRequest wrapRequestForBulkEndpoints(HttpServletRequest httpRequest) {
+        try {
+            String requestUri = httpRequest.getRequestURI();
+            String method = httpRequest.getMethod();
+            String contentType = httpRequest.getContentType();
+
+            boolean isBulkEndpoint = requestUri != null && requestUri.contains(BULK_ENDPOINT_PATTERN);
+            boolean isWriteMethod = "POST".equals(method) || "PUT".equals(method) || "DELETE".equals(method);
+            boolean isJsonContent = StringUtils.isNotEmpty(contentType) && contentType.contains(CONTENT_TYPE_JSON);
+
+            if (isBulkEndpoint && isWriteMethod && isJsonContent) {
+                return new CachedBodyHttpServletRequest(httpRequest);
+            }
+        } catch (IOException e) {
+            LOG.warn("Failed to wrap request for error logging", e);
+        }
+        return httpRequest;
     }
 
     @Override
