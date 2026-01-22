@@ -200,6 +200,34 @@ require([
     'bootstrap'
 ], function(Marionette, Helper) {
     var that = this;
+	var sanitizeBootstrapButtonLoadingText = function() {
+		if (!window.jQuery || !$.fn || !$.fn.button ||
+			!$.fn.button.Constructor) {
+			return
+		}
+
+		var Button = $.fn.button.Constructor
+		if (Button.prototype._safeSetState) {
+			return
+		}
+
+		var originalSetState = Button.prototype.setState
+		if (!originalSetState) {
+			return
+		}
+
+		Button.prototype.setState = function(state) {
+			var data = this.$element ? this.$element.data() : null
+			var key = state + 'Text'
+			if (data && data[key]) {
+				data[key] = $('<div/>').text(data[key]).text()
+			}
+			return originalSetState.call(this, state)
+		}
+		Button.prototype._safeSetState = true
+	}
+
+	sanitizeBootstrapButtonLoadingText()
     var App = new Marionette.Application();
 
     App.addRegions({
