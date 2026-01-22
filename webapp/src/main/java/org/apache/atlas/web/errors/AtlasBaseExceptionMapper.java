@@ -32,7 +32,6 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * AtlasBaseException mapper for Jersey.
@@ -46,15 +45,14 @@ public class AtlasBaseExceptionMapper implements ExceptionMapper<AtlasBaseExcept
 
     @Override
     public Response toResponse(AtlasBaseException exception) {
-        final long id = ThreadLocalRandom.current().nextLong();
-
         // Log request body for bulk endpoints on error (reads from cached request)
         ExceptionMapperUtil.logRequestBodyOnError(httpServletRequest);
 
-        // Only log the full exception if there's an internal error
+        // Only log the full exception stack trace for internal server errors
         if (exception.getAtlasErrorCode().getHttpCode() == Response.Status.INTERNAL_SERVER_ERROR) {
-            ExceptionMapperUtil.logException(id, exception);
+            ExceptionMapperUtil.logException(exception);
         }
+
         return buildAtlasBaseExceptionResponse(exception);
     }
 

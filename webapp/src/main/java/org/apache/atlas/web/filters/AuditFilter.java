@@ -68,7 +68,6 @@ public class AuditFilter implements Filter {
 
     private boolean deleteTypeOverrideEnabled                = false;
     private boolean createShellEntityForNonExistingReference = false;
-    private int bulkErrorLogBodyMaxSize                      = 102400; // 100KB default
 
     @Inject
     private MetricsRegistry metricsRegistry;
@@ -79,10 +78,8 @@ public class AuditFilter implements Filter {
 
         deleteTypeOverrideEnabled                = REST_API_ENABLE_DELETE_TYPE_OVERRIDE.getBoolean();
         createShellEntityForNonExistingReference = REST_API_CREATE_SHELL_ENTITY_FOR_NON_EXISTING_REF.getBoolean();
-        bulkErrorLogBodyMaxSize                  = AtlasConfiguration.REST_API_BULK_ERROR_LOG_BODY_MAX_SIZE.getInt();
         SpringBeanAutowiringSupport.processInjectionBasedOnCurrentContext(this);
         LOG.info("REST_API_ENABLE_DELETE_TYPE_OVERRIDE={}", deleteTypeOverrideEnabled);
-        LOG.info("REST_API_BULK_ERROR_LOG_BODY_MAX_SIZE={}", bulkErrorLogBodyMaxSize);
     }
 
     @Override
@@ -131,8 +128,8 @@ public class AuditFilter implements Filter {
 
             HeadersUtil.setRequestContextHeaders((HttpServletRequest)request);
 
-            // Cache request body for bulk endpoints to enable error logging
-            httpRequest = cacheRequestBodyForBulkEndpoints(httpRequest, requestContext);
+            // Wrap request body for bulk endpoints to enable error logging on failures
+            httpRequest = wrapRequestForBulkEndpoints(httpRequest);
 
             // Use wrapper to set response headers before the response is committed
             AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse, startTime);
@@ -192,31 +189,26 @@ public class AuditFilter implements Filter {
     }
 
     /**
-     * Wrap request with CachedBodyHttpServletRequest for bulk endpoints to enable error logging.
-     * The body is only read when an error occurs (in exception mappers), not pre-cached.
-     * Only wraps for POST/PUT/DELETE requests to /entity/bulk paths with JSON content.
+     * Wraps the request with CachedBodyHttpServletRequest for bulk endpoints.
+     * This allows the request body to be re-read for error logging if the request fails.
+     * Only wraps POST/PUT/DELETE requests to /entity/bulk paths with JSON content.
      */
-    private HttpServletRequest cacheRequestBodyForBulkEndpoints(HttpServletRequest httpRequest, RequestContext requestContext) {
+    private HttpServletRequest wrapRequestForBulkEndpoints(HttpServletRequest httpRequest) {
         try {
             String requestUri = httpRequest.getRequestURI();
             String method = httpRequest.getMethod();
             String contentType = httpRequest.getContentType();
 
-            // Only wrap for bulk endpoints with POST/PUT/DELETE and JSON content
-            if (requestUri != null && requestUri.contains(BULK_ENDPOINT_PATTERN) &&
-                    ("POST".equals(method) || "PUT".equals(method) || "DELETE".equals(method)) &&
-                    StringUtils.isNotEmpty(contentType) && contentType.contains(CONTENT_TYPE_JSON)) {
+            boolean isBulkEndpoint = requestUri != null && requestUri.contains(BULK_ENDPOINT_PATTERN);
+            boolean isWriteMethod = "POST".equals(method) || "PUT".equals(method) || "DELETE".equals(method);
+            boolean isJsonContent = StringUtils.isNotEmpty(contentType) && contentType.contains(CONTENT_TYPE_JSON);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Wrapping request with CachedBodyHttpServletRequest for bulk endpoint: {}", requestUri);
-                }
-
+            if (isBulkEndpoint && isWriteMethod && isJsonContent) {
                 return new CachedBodyHttpServletRequest(httpRequest);
             }
         } catch (IOException e) {
             LOG.warn("Failed to wrap request for error logging", e);
         }
-
         return httpRequest;
     }
 

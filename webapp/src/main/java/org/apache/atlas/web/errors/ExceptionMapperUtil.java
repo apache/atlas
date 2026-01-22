@@ -100,8 +100,8 @@ public class ExceptionMapperUtil {
         return cause;
     }
 
-    protected static void logException(long id, Exception exception) {
-        LOGGER.error(formatLogMessage(id, exception), exception);
+    protected static void logException(Exception exception) {
+        LOGGER.error("Error handling a request", exception);
     }
 
     private static final String BULK_ENDPOINT_PATTERN = "/entity/bulk";
@@ -145,8 +145,4 @@ public class ExceptionMapperUtil {
         }
     }
 
-    @SuppressWarnings("UnusedParameters")
-    protected static String formatLogMessage(long id, Throwable exception) {
-        return String.format("Error handling a request: %016x", id);
-    }
 }
