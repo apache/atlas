@@ -28,7 +28,6 @@ import org.apache.atlas.authorize.*;
 import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.CassandraTagOperation;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.audit.AuditSearchParams;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
@@ -40,12 +39,10 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
-import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.repository.store.graph.v2.repair.AtlasRepairAttributeService;
-import org.apache.atlas.repository.store.graph.v2.tags.PaginatedGuidResult;
-import org.apache.atlas.service.FeatureFlagStore;
+import org.apache.atlas.repository.store.graph.v2.tags.PaginatedVertexIdResult;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
@@ -80,8 +77,6 @@ import java.util.stream.Stream;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
 import static org.apache.atlas.authorize.AtlasPrivilege.*;
-import static org.apache.atlas.repository.Constants.ATTR_CONTRACT;
-import static org.apache.atlas.repository.Constants.ATTR_CONTRACT_JSON;
 
 
 /**
@@ -1992,93 +1987,14 @@ public class EntityREST {
     public void repairAllClassifications(@QueryParam("delay") @DefaultValue("0") int delay, @QueryParam("batchSize") @DefaultValue("1000") int batchSize, @QueryParam("fetchSize") @DefaultValue("5000") int fetchSize) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairAllClassifications");
+        }
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_REPAIR_INDEX), "Admin Repair Classifications");
         try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairAllClassifications");
-            }
-
-            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_REPAIR_INDEX), "Admin Repair Classifications");
-
-            LOG.info("Starting repair classifications for all entities from tags_by_id table");
-
-            long overallStartTime = System.currentTimeMillis();
-            int totalGuidsProcessed = 0;
-
-                try {
-
-                    long bucketStartTime = System.currentTimeMillis();
-                    String pagingState = null;
-                    boolean hasMorePages = true;
-                    int bucketGuidsCount = 0;
-                    int pageCount = 0;
-
-                    Set<String> allGuids = new LinkedHashSet<>();
-
-                    while (hasMorePages) {
-                        pageCount++;
-                        PaginatedGuidResult result =
-                            entitiesStore.getGuidsFromTagsByIdTableWithPagination( pagingState, fetchSize);
-                        
-                        Set<String> pageGuids = result.getGuids();
-                        LOG.info("Page {}: Found {} unique GUIDs", pageCount, pageGuids.size());
-
-                        allGuids.addAll(pageGuids);
-                        bucketGuidsCount += pageGuids.size();
-
-                        pagingState = result.getPagingState();
-                        hasMorePages = result.hasMorePages();
-                    }
-
-                    LOG.info("Processed in {} ms. Total unique GUIDs in bucket: {}. ",
-                            (System.currentTimeMillis() - bucketStartTime), bucketGuidsCount);
-
-                    if (allGuids.isEmpty()) {
-                        LOG.info("No GUIDs found to repair");
-                        return;
-                    }
-
-                    List<String> guidList = new ArrayList<>(allGuids);
-                    List<List<String>> guidBatches = Lists.partition(guidList, batchSize);
-
-                    LOG.info("Processing {} GUIDs in {} batches of size {}", guidList.size(), guidBatches.size(), batchSize);
-
-                    for (int i = 0; i < guidBatches.size(); i++) {
-                        List<String> batch = guidBatches.get(i);
-
-                        try {
-                            LOG.info("Processing batch {}/{} with {} GUIDs", (i + 1), guidBatches.size(), batch.size());
-
-                            long batchStartTime = System.currentTimeMillis();
-
-                            entityMutationService.repairClassificationMappings(batch);
-
-                            totalGuidsProcessed += batch.size();
-
-                            LOG.info("Completed batch {}/{}. Processed {} GUIDs in {} ms. Total processed: {}",
-                                    (i + 1), guidBatches.size(), batch.size(), (System.currentTimeMillis() - batchStartTime), totalGuidsProcessed);
-
-                            if (delay > 0 && i < guidBatches.size() - 1) {
-                                try {
-                                    LOG.info("Sleep for {} ms before next batch", delay);
-                                    Thread.sleep(delay);
-                                } catch(InterruptedException ex) {
-                                    Thread.currentThread().interrupt();
-                                    LOG.warn("Thread interrupted while processing batch: {}", (i + 1));
-                                    break;
-                                }
-                            }
-
-                        } catch (Exception e) {
-                            LOG.error("Exception while processing batch {}/{}", (i + 1), guidBatches.size(), e);
-                        }
-                    }
-
-                    LOG.info("Completed repair classifications. Repaired {} GUIDs in {} ms",
-                            totalGuidsProcessed, (System.currentTimeMillis() - overallStartTime));
-
-                } catch (Exception e) {
-                    LOG.error("Exception while processing : ", e);
-                }
+            Set<Long> vertexIds = entitiesStore.getVertexIdFromTags(fetchSize);
+            entityMutationService.repairClassificationMappingsByVertexIds(vertexIds, batchSize, delay);
 
         } catch (Exception e) {
             LOG.error("Exception while repairAllClassifications", e);

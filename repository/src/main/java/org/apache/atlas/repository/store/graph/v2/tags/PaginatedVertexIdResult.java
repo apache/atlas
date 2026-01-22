@@ -6,19 +6,19 @@ import java.util.Set;
  * A class to represent paginated results from GUID queries.
  * Includes both the set of GUIDs and the pagination state for subsequent requests.
  */
-public class PaginatedGuidResult {
-    private final Set<String> guids;
+public class PaginatedVertexIdResult {
+    private final Set<Long> vertexIds;
     private final String pagingState;
     private final Boolean done;
 
-    public PaginatedGuidResult(Set<String> guids, String pagingState, Boolean done) {
-        this.guids = guids;
+    public PaginatedVertexIdResult(Set<Long> vertexIds, String pagingState, Boolean done) {
+        this.vertexIds = vertexIds;
         this.pagingState = pagingState;
         this.done = done;
     }
 
-    public Set<String> getGuids() {
-        return guids;
+    public Set<Long> getVertexIds() {
+        return vertexIds;
     }
 
     public String getPagingState() {

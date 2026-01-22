@@ -637,10 +637,10 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         }
     }
 
-    public PaginatedGuidResult getGuidsFromTagsByIdTableWithPagination(String pagingStateStr, int pageSize) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getGuidsFromTagsByIdTableWithPagination");
+    public PaginatedVertexIdResult getVertexIdFromTagsByIdTableWithPagination(String pagingStateStr, int pageSize) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getVertexIdFromTagsByIdTableWithPagination");
         try {
-            String queryStr = String.format("SELECT tag_meta_json FROM %s.%s", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME);
+            String queryStr = String.format("SELECT id FROM %s.%s", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME);
 
             SimpleStatement statement = SimpleStatement.builder(queryStr)
                     .setPageSize(pageSize)
@@ -651,29 +651,18 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             }
 
             ResultSet rs = executeWithRetry(statement);
-            Set<String> guids = new LinkedHashSet<>();
+            Set<Long> vertexIds = new LinkedHashSet<>();
 
             Iterator<Row> iterator = rs.iterator();
             int count = 0;
 
             while (count < pageSize && iterator.hasNext()) {
                 Row row = iterator.next();
-                String tagMetaJson = row.getString("tag_meta_json");
-                if (org.apache.commons.lang3.StringUtils.isNotEmpty(tagMetaJson)) {
-                    try {
-                        Map<String, Object> tagMetaMap = objectMapper.readValue(tagMetaJson, Map.class);
-                        String entityGuid = (String) tagMetaMap.get("entityGuid");
-                        if (org.apache.commons.lang3.StringUtils.isNotEmpty(entityGuid)) {
-                            guids.add(entityGuid);
-                        }
-                    } catch (Exception e) {
-                        LOG.warn("Failed to parse tag_meta_json: {}", e.getMessage());
-                    }
-                }
+                vertexIds.add(Long.parseLong(row.getString("id")));
                 count++;
             }
 
-            LOG.debug("Fetched {} unique GUIDs in this page", guids.size());
+            LOG.debug("Fetched {} unique vertex ids in this page", vertexIds.size());
 
             ByteBuffer pagingStateBuffer = rs.getExecutionInfo().getPagingState();
             String nextPagingState = null;
@@ -689,7 +678,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             boolean done = (nextPagingState == null || nextPagingState.isEmpty());
             LOG.debug("Next paging state. Has more pages: {}", !done);
 
-            return new PaginatedGuidResult(guids, nextPagingState, done);
+            return new PaginatedVertexIdResult(vertexIds, nextPagingState, done);
 
         } catch (Exception e) {
             LOG.error("Error fetching GUIDs from tags_by_id table", e);
