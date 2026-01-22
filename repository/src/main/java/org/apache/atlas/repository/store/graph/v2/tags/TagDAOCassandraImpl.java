@@ -632,11 +632,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             BoundStatement bound = findAllTagDetailsForAssetStmt.bind(bucket, vertexId);
             ResultSet rs = executeWithRetry(bound);
 
-            List<Tag> tags = resultSetToTags(vertexId, rs);
-            if (tags.isEmpty()) {
-                LOG.warn("No active tags found for vertexId={}, bucket={}", vertexId, bucket);
-            }
-            return tags;
+            return resultSetToTags(vertexId, rs);
         } catch (Exception e) {
             LOG.error("Error in getAllTagsByVertexId for vertexId={}", vertexId, e);
             throw new AtlasBaseException("Error getting all tags by vertexId", e);

@@ -86,4 +86,5 @@ distro/solr/*.tgz
 # local models and configurations
 /deploy
 **.class
-*/bin
+*/bin.vscode/
+**/bin

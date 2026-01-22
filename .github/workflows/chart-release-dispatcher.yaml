@@ -9,6 +9,8 @@ on:
       - master
       - staging
       - beta
+      - leangraphsts
+      - leangraphdep
       - mlh41-integration-tests
       - mlh41tests
       - mlh40java17
@@ -17,7 +19,9 @@ on:
       - idonlycanary
       - idonlycanarybeta
       - atlas_ci_cd_updates
-      - ids_beta_updated
+      - lite_beta
+      - lite_staging
+      - lite_master
     types:
       - completed
 

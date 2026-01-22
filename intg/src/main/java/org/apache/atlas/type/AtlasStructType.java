@@ -86,7 +86,16 @@ public class AtlasStructType extends AtlasType {
         Map<String, AtlasAttribute> a = new HashMap<>();
 
         for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
-            AtlasType      attrType  = typeRegistry.getType(attributeDef.getTypeName());
+            String typeName = attributeDef.getTypeName();
+            String attributeName = attributeDef.getName();
+            
+            if (StringUtils.isBlank(typeName)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
+                    String.format("Attribute '%s' has missing or empty typeName. typeName is required and cannot be null or empty.",
+                        attributeName));
+            }
+            
+            AtlasType      attrType  = typeRegistry.getType(typeName);
             AtlasAttribute attribute = new AtlasAttribute(this, attributeDef, attrType);
 
             Cardinality cardinality = attributeDef.getCardinality();
@@ -765,6 +774,10 @@ public class AtlasStructType extends AtlasType {
         private boolean isDynAttributeEvalTrigger = false;
         private boolean isSyncToESRequired        = false;
 
+        // Cached rank_feature field status for O(1) access during entity mutations
+        private final boolean isRankFeatureField;
+        private final float   rankFeatureMinValue;
+
         public AtlasAttribute(AtlasStructType definedInType, AtlasAttributeDef attrDef, AtlasType attributeType, String relationshipName, String relationshipLabel) {
             this.definedInType            = definedInType;
             this.attributeDef             = attrDef;
@@ -831,6 +844,34 @@ public class AtlasStructType extends AtlasType {
                     this.isSyncToESRequired = typeCategory == TypeCategory.PRIMITIVE || typeCategory == TypeCategory.ENUM;
                 }
             }
+
+            // Compute rank_feature field status from indexTypeESFields for O(1) access
+            boolean rankFeatureField = false;
+            float   minValue         = Float.MIN_NORMAL;
+
+            HashMap<String, HashMap<String, Object>> indexTypeESFields = attrDef.getIndexTypeESFields();
+            if (MapUtils.isNotEmpty(indexTypeESFields)) {
+                for (HashMap<String, Object> config : indexTypeESFields.values()) {
+                    if (config != null && "rank_feature".equals(config.get("type"))) {
+                        rankFeatureField = true;
+                        break;
+                    }
+                }
+            }
+
+            if (rankFeatureField) {
+                String defaultValue = attrDef.getDefaultValue();
+                if (StringUtils.isNotEmpty(defaultValue)) {
+                    try {
+                        minValue = Float.parseFloat(defaultValue);
+                    } catch (NumberFormatException e) {
+                        // Keep default Float.MIN_NORMAL
+                    }
+                }
+            }
+
+            this.isRankFeatureField  = rankFeatureField;
+            this.rankFeatureMinValue = minValue;
         }
 
         public AtlasAttribute(AtlasStructType definedInType, AtlasAttributeDef attrDef, AtlasType attributeType) {
@@ -855,6 +896,8 @@ public class AtlasStructType extends AtlasType {
             this.indexFieldName            = other.indexFieldName;
             this.isDynAttribute            = false;
             this.isDynAttributeEvalTrigger = false;
+            this.isRankFeatureField        = other.isRankFeatureField;
+            this.rankFeatureMinValue       = other.rankFeatureMinValue;
             this.isSyncToESRequired        = other.isSyncToESRequired;
         }
 
@@ -887,6 +930,10 @@ public class AtlasStructType extends AtlasType {
         public boolean isOwnedRef() { return isOwnedRef; }
 
         public boolean isObjectRef() { return isObjectRef; }
+
+        public boolean isRankFeatureField() { return isRankFeatureField; }
+
+        public float getRankFeatureMinValue() { return rankFeatureMinValue; }
 
         public String getInverseRefAttributeName() { return inverseRefAttributeName; }
 

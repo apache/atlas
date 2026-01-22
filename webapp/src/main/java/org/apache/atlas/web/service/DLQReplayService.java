@@ -6,6 +6,10 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.RankFeatureUtils;
 import org.apache.atlas.util.RepairIndex;
 import org.apache.commons.collections.MapUtils;
 import org.apache.kafka.clients.consumer.*;
@@ -125,12 +129,15 @@ public class DLQReplayService {
 
     private ObjectMapper mapper;
     private RepairIndex repairIndex;
+    private AtlasTypeRegistry typeRegistry;
 
     private final static String INDEX_NAME = "search";
+    private static final String ASSET_TYPE_NAME = "Asset";
 
-    public DLQReplayService(RepairIndex repairIndex) throws AtlasException {
+    public DLQReplayService(RepairIndex repairIndex, AtlasTypeRegistry typeRegistry) throws AtlasException {
         this.mapper = configureMapper();
         this.repairIndex = repairIndex;
+        this.typeRegistry = typeRegistry;
         this.bootstrapServers = ApplicationProperties.get().getString("atlas.graph.kafka.bootstrap.servers");
     }
 
@@ -517,7 +524,13 @@ public class DLQReplayService {
                 for (Map.Entry<String, SerializableIndexMutation> ve : vertexIndex.entrySet()) {
                     log.debug("DLQ Entry Vertex Index Mutation - DocID: {}, Additions: {}, Deletions: {}",
                             ve.getKey(), ve.getValue().getAdditions().size(), ve.getValue().getDeletions().size());
-                    vertexIds.add(AtlasGraphUtilsV2.getVertexIdForDocId(ve.getKey()));
+
+                    // Check if any addition has an invalid rank_feature value using typedef-aware validation
+                    if (hasInvalidRankFeatureValue(ve.getValue())) {
+                        log.warn("Skipping vertex ID {} due to invalid rank_feature value", ve.getKey());
+                    } else {
+                        vertexIds.add(AtlasGraphUtilsV2.getVertexIdForDocId(ve.getKey()));
+                    }
                 }
                 repairIndex.reindexVerticesByIds(INDEX_NAME_VERTEX_INDEX, vertexIds);
                 log.debug("Replayed vertex index mutations for {} vertices", vertexIds.size());
@@ -533,6 +546,44 @@ public class DLQReplayService {
             log.error("Error replaying DLQ entry - treating as permanent failure", e);
             throw e;
         }
+    }
+
+    /**
+     * Checks if a vertex mutation contains any invalid rank_feature values.
+     * Uses the typedef registry to determine which fields are rank_feature fields
+     * and validates their values against the minimum threshold.
+     *
+     * @param mutation the index mutation to check
+     * @return true if any addition has an invalid rank_feature value
+     */
+    private boolean hasInvalidRankFeatureValue(SerializableIndexMutation mutation) {
+        if (mutation == null || mutation.getAdditions() == null) {
+            return false;
+        }
+
+        AtlasEntityType assetType = typeRegistry.getEntityTypeByName(ASSET_TYPE_NAME);
+        if (assetType == null) {
+            log.debug("Asset type not found in registry, skipping rank_feature validation");
+            return false;
+        }
+
+        for (SerializableIndexMutation.SerializableIndexEntry addition : mutation.getAdditions()) {
+            String fieldName = addition.getField();
+            Object value = addition.getValue();
+
+            if (value instanceof Number) {
+                AtlasAttributeDef attrDef = assetType.getAttributeDef(fieldName);
+                if (attrDef != null && RankFeatureUtils.isRankFeatureField(attrDef)) {
+                    if (!RankFeatureUtils.isValidRankFeatureValue((Number) value, attrDef)) {
+                        log.debug("Invalid rank_feature value for field '{}': {} (minimum: {})",
+                                fieldName, value, RankFeatureUtils.getMinimumValue(attrDef));
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -172,17 +172,27 @@ public class RangerUserStore implements Serializable {
                 }
             }
         }
+        
+        // Always initialize groupAttrMapping to ensure it's not null for validation
+        // Even if groups set is empty, we need an empty map (not null)
+        groupAttrMapping = new HashMap<>();
+        groupCloudIdMapping = new HashMap<>();
+        
         if (CollectionUtils.isNotEmpty(groups)) {
-            groupAttrMapping = new HashMap<>();
-            groupCloudIdMapping = new HashMap<>();
             for (GroupInfo group : groups) {
-                String groupname = group.getName();
+                String groupName = group.getName();
+                if (StringUtils.isEmpty(groupName)) {
+                    continue;
+                }
                 Map<String, String> groupAttrs = group.getOtherAttributes();
+                // Always add group to groupAttrMapping (with empty map if no attributes)
+                // This ensures all groups are available for validation
+                groupAttrMapping.put(groupName, groupAttrs != null ? groupAttrs : new HashMap<>());
+                
                 if (MapUtils.isNotEmpty(groupAttrs)) {
-                    groupAttrMapping.put(groupname, groupAttrs);
                     String cloudId = groupAttrs.get(CLOUD_IDENTITY_NAME);
                     if (StringUtils.isNotEmpty(cloudId)) {
-                        groupCloudIdMapping.put(cloudId, groupname);
+                        groupCloudIdMapping.put(cloudId, groupName);
                     }
                 }
             }

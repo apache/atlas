@@ -21,6 +21,7 @@ package org.apache.atlas.repository.store.graph.v2;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.ESDeferredOperation;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -33,6 +34,7 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.util.TagDeNormAttributesUtil;
 import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -57,6 +59,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES;
+import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery.CLIENT_ORIGIN_PLAYBOOK;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateProductStatus;
 
 @Component
@@ -279,6 +282,12 @@ public class ClassificationAssociator {
                     if (!preExistingClassificationKeys.contains(key)) {
                         String typeName = key.split("\\|")[1];
                         LOG.info("Classification {} is not associated with entity {}", typeName, entityToBeChanged.getGuid());
+                        //TODO -> remove after MS-402 fix
+                        String playbookName = RequestContext.get().getPlaybookName();
+                        if(StringUtils.isNotEmpty(playbookName)) {
+                            filteredRemoveClassifications.add(classification);
+                        }
+
                     } else {
                         filteredRemoveClassifications.add(classification);
                     }

@@ -46,7 +46,9 @@ spec:
             backend:
               {{- if $ingressApiIsStable }}
               service:
-                {{- if eq $.Values.global.atlasNginx.enabled true }}
+                {{- if $.Values.global.leangraph.enabled }}
+                name: atlas-ratelimited
+                {{- else if eq $.Values.global.atlasNginx.enabled true }}
                 name: atlas-ratelimited
                 {{- else }}
                 name: atlas-service-atlas
@@ -54,7 +56,11 @@ spec:
                 port:
                   number: {{ $servicePort }}
               {{- else }}
+              {{- if $.Values.global.leangraph.enabled }}
+              serviceName: atlas-ratelimited
+              {{- else }}
               serviceName: atlas-service-atlas
+              {{- end }}
               servicePort: {{ $servicePort }}
               {{- end }}
   {{- end }}
@@ -71,11 +77,19 @@ spec:
           - backend:
               {{- if $ingressApiIsStable }}
               service:
+                {{- if $.Values.global.leangraph.enabled }}
+                name: atlas-ratelimited
+                {{- else }}
                 name: atlas-service-atlas
+                {{- end }}
                 port:
                   number: {{ $servicePort }}
               {{- else }}
+              {{- if $.Values.global.leangraph.enabled }}
+              serviceName: atlas-ratelimited
+              {{- else }}
               serviceName: atlas-service-atlas
+              {{- end }}
               servicePort: {{ $servicePort }}
               {{- end }}
             {{- if $ingressPath }}
@@ -138,11 +152,19 @@ spec:
             backend:
               {{- if $ingressApiIsStable }}
               service:
+                {{- if $.Values.global.leangraph.enabled }}
+                name: atlas-ratelimited
+                {{- else }}
                 name: atlas-service-atlas
+                {{- end }}
                 port:
                   number: {{ $servicePort }}
               {{- else }}
+              {{- if $.Values.global.leangraph.enabled }}
+              serviceName: atlas-ratelimited
+              {{- else }}
               serviceName: atlas-service-atlas
+              {{- end }}
               servicePort: {{ $servicePort }}
               {{- end }}
   {{- end }}
@@ -152,11 +174,19 @@ spec:
           - backend:
               {{- if $ingressApiIsStable }}
               service:
+                {{- if $.Values.global.leangraph.enabled }}
+                name: atlas-ratelimited
+                {{- else }}
                 name: atlas-service-atlas
+                {{- end }}
                 port:
                   number: {{ $servicePort }}
               {{- else }}
+              {{- if $.Values.global.leangraph.enabled }}
+              serviceName: atlas-ratelimited
+              {{- else }}
               serviceName: atlas-service-atlas
+              {{- end }}
               servicePort: {{ $servicePort }}
               {{- end }}
             {{- if $ingressPath }}

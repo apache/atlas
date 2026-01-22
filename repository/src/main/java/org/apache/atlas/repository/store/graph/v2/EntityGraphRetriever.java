@@ -2206,11 +2206,21 @@ public class EntityGraphRetriever {
     }
 
     private void mapAttributes(AtlasVertex entityVertex, AtlasStruct struct, AtlasEntityExtInfo entityExtInfo, boolean isMinExtInfo, boolean includeReferences) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("retriever.mapAttributes");
-        AtlasType objType = typeRegistry.getType(struct.getTypeName());
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapAttributes");
+        String structTypeName = struct.getTypeName();
+
+        if (structTypeName == null) {
+            String vertexId = entityVertex != null ? entityVertex.getIdForDisplay() : "null";
+            String vertexGuid = entityVertex != null ? GraphHelper.getGuid(entityVertex) : "null";
+            LOG.error("ATLAS_CORRUPT_STRUCT_NULL_TYPENAME: mapAttributes - struct has null typeName. vertexId={}, vertexGuid={}, struct={}",
+                    vertexId, vertexGuid, struct, new Exception("Stack trace for null struct typeName"));
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, "null (struct typeName is null - vertexId: " + vertexId + ", guid: " + vertexGuid + ")");
+        }
+
+        AtlasType objType = typeRegistry.getType(structTypeName);
 
         if (!(objType instanceof AtlasStructType)) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, struct.getTypeName());
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, structTypeName);
         }
 
         AtlasStructType structType = (AtlasStructType) objType;
@@ -3525,29 +3535,41 @@ public class EntityGraphRetriever {
     }
 
     private void readClassificationsFromEdge(AtlasEdge edge, AtlasRelationshipWithExtInfo relationshipWithExtInfo, boolean extendedInfo) throws AtlasBaseException {
-        List<AtlasVertex>        classificationVertices    = getPropagatableClassifications(edge);
-        List<String>             blockedClassificationIds  = getBlockedClassificationIds(edge);
-        AtlasRelationship        relationship              = relationshipWithExtInfo.getRelationship();
+        AtlasRelationship relationship = relationshipWithExtInfo.getRelationship();
         Set<AtlasClassification> propagatedClassifications = new HashSet<>();
-        Set<AtlasClassification> blockedClassifications    = new HashSet<>();
+        Set<AtlasClassification> blockedClassifications = new HashSet<>();
 
-        for (AtlasVertex classificationVertex : classificationVertices) {
-            String              classificationId = classificationVertex.getIdForDisplay();
-            AtlasClassification classification   = toAtlasClassification(classificationVertex);
+        if (FeatureFlagStore.isTagV2Enabled()) {
+            List<AtlasClassification> classifications = getPropagatableClassificationsV2(edge);
 
-            if (classification == null) {
-                continue;
-            }
-
-            if (blockedClassificationIds.contains(classificationId)) {
-                blockedClassifications.add(classification);
-            } else {
+            for (AtlasClassification classification : classifications) {
                 propagatedClassifications.add(classification);
-            }
 
-            // add entity headers to referred entities
-            if (extendedInfo) {
-                addToReferredEntities(relationshipWithExtInfo, classification.getEntityGuid());
+                if (extendedInfo) {
+                    addToReferredEntities(relationshipWithExtInfo, classification.getEntityGuid());
+                }
+            }
+        } else {
+            List<AtlasVertex> classificationVertices = getPropagatableClassifications(edge);
+            List<String> blockedClassificationIds = getBlockedClassificationIds(edge);
+
+            for (AtlasVertex classificationVertex : classificationVertices) {
+                String classificationId = classificationVertex.getIdForDisplay();
+                AtlasClassification classification = toAtlasClassification(classificationVertex);
+
+                if (classification == null) {
+                    continue;
+                }
+                if (blockedClassificationIds.contains(classificationId)) {
+                    blockedClassifications.add(classification);
+                } else {
+                    propagatedClassifications.add(classification);
+                }
+
+                // add entity headers to referred entities
+                if (extendedInfo) {
+                    addToReferredEntities(relationshipWithExtInfo, classification.getEntityGuid());
+                }
             }
         }
 
@@ -3571,10 +3593,20 @@ public class EntityGraphRetriever {
 
     private void mapAttributes(AtlasEdge edge, AtlasRelationshipWithExtInfo relationshipWithExtInfo) throws AtlasBaseException {
         AtlasRelationship relationship = relationshipWithExtInfo.getRelationship();
-        AtlasType         objType      = typeRegistry.getType(relationship.getTypeName());
+        String relationshipTypeName = relationship.getTypeName();
+
+        if (relationshipTypeName == null) {
+            String edgeId = edge != null ? edge.getIdForDisplay() : "null";
+            String relationshipGuid = relationship.getGuid();
+            LOG.error("ATLAS_CORRUPT_RELATIONSHIP_NULL_TYPENAME: mapAttributes - relationship has null typeName. edgeId={}, relationshipGuid={}, relationship={}",
+                    edgeId, relationshipGuid, relationship, new Exception("Stack trace for null relationship typeName"));
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, "null (relationship typeName is null - edgeId: " + edgeId + ", relationshipGuid: " + relationshipGuid + ")");
+        }
+
+        AtlasType objType = typeRegistry.getType(relationshipTypeName);
 
         if (!(objType instanceof AtlasRelationshipType)) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, relationship.getTypeName());
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, relationshipTypeName);
         }
 
         AtlasRelationshipType relationshipType = (AtlasRelationshipType) objType;

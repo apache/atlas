@@ -9,6 +9,11 @@ multiarch:
 global:
   Tier_Type: ""
   Deployment_Type: ""
+  leangraph:
+    enabled: false
+    dedicated:
+      enabled: false  # Creates dedicated Cassandra and Elasticsearch StatefulSets
+      active: false   # Uses dedicated resources in configmap
 image:
   repo: ghcr.io/atlanhq/cassandra
   tag: 3.11.12
@@ -87,6 +92,10 @@ service:
 max_heap_size: 2048M
 heap_new_size: 512M
 
+# Development tenant heap configuration (smaller for 4Gi memory limit)
+max_heap_size_development: 1536M
+heap_new_size_development: 384M
+
 config:
   cluster_domain: cluster.local
   cluster_name: cassandra
@@ -162,10 +171,19 @@ updateStrategy:
 resources:
   requests:
     memory: 4Gi
-    cpu: 500m
+    cpu: 1300m
   limits:
     memory: 5Gi
-    cpu: 3000m
+    cpu: 1300m
+
+# Development tenant resources (when global.Deployment_Type=Development)
+resources_development:
+  requests:
+    memory: 4Gi
+    cpu: 300m
+  limits:
+    memory: 4Gi
+    cpu: 300m
 
 # Persistence changes for cassandra
 persistence:
@@ -376,7 +394,7 @@ reaper:
   failedJobsHistoryLimit: 1
   successfulJobsHistoryLimit: 1
   concurrencyPolicy: Forbid
-  activeDeadlineSeconds: 129600 # 36 hours
+  activeDeadlineSeconds: 259200 # 3 days
   backoffLimit: 0
   port: 8080
   resources:
@@ -388,20 +406,22 @@ reaper:
       cpu: 500m
   env:
     REAPER_AUTH_ENABLED: "false"
-    CASSANDRA_REAPER_STORAGE_TYPE: "cassandra"
-    CASSANDRA_REAPER_CASS_CONTACT_POINTS: "datacenter1"
-    CASSANDRA_REAPER_CASS_CLUSTER_NAME: "[atlas-cassandra.atlas.svc.cluster.local]"
+    REAPER_STORAGE_TYPE: "cassandra"
+    REAPER_CASS_CONTACT_POINTS: "[atlas-cassandra.atlas.svc.cluster.local]"
+    REAPER_CASS_CLUSTER_NAME: "cassandra"
     REAPER_CASS_KEYSPACE: "reaper_db"
     REAPER_ENABLE_DYNAMIC_SEED_LIST: "true"
     REAPER_ENABLE_CROSS_ORIGIN: "false"
     REAPER_HANGING_REPAIR_TIMEOUT_MINS: "10"
     REAPER_REPAIR_INTENSITY: "0.9"
     REAPER_REPAIR_PARALELLISM: "SEQUENTIAL"
+    REAPER_REPAIR_MANAGER_SCHEDULING_INTERVAL_SECONDS: "5"
   restartPolicy: OnFailure
+  shareProcessNamespace: true
   sidecar:
     image:
       repository: ghcr.io/atlanhq/cassandra-reaper-atlan-v2
-      tag: 1.4.0
+      tag: 1.6.0
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -411,8 +431,14 @@ reaper:
     env:
       REAPER_URL: "http://localhost:8080"
       CLUSTER_SEED_HOST: "atlas-cassandra-0.atlas-cassandra.atlas.svc.cluster.local,atlas-cassandra-1.atlas-cassandra.atlas.svc.cluster.local,atlas-cassandra-2.atlas-cassandra.atlas.svc.cluster.local"
-      KEYSPACE_NAME: "atlas"
+      KEYSPACE_NAME: "all"
       PROMETHEUS_PUSHGATEWAY: "http://prometheus-pushgateway.monitoring.svc.cluster.local:9091"
-      POLLING_FREQUENCY_IN_SECONDS: "900"
-    
+      POLLING_FREQUENCY_IN_SECONDS: "60"
+      SEGMENT_COUNT_PER_NODE: "64"
+      ADAPTIVE_REPAIR: "true"
+  initContainer:
+    image:
+      repository: ghcr.io/atlanhq/mt-utils-atlan-v2
+      tag: 1.8.58-multiarch
+      pullPolicy: IfNotPresent
   

@@ -24,6 +24,7 @@ import org.apache.atlas.repository.util.AtlasEntityUtils;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -535,5 +536,37 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
 
+    }
+
+    /**
+     * Validates that for archived DataProducts, only business metadata removals (null values) are allowed.
+     * Any additions or updates (non-null values) in the updatedBusinessAttributes are blocked.
+     */
+    public static void validateBusinessMetadataUpdateOnArchivedProduct(AtlasVertex entityVertex, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException {
+        if (entityVertex == null || MapUtils.isEmpty(updatedBusinessAttributes)) {
+            return;
+        }
+
+        if (!DATA_PRODUCT_ENTITY_TYPE.equals(entityVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class))) {
+            return;
+        }
+
+        String entityState = entityVertex.getProperty(STATE_PROPERTY_KEY, String.class);
+
+        if (!AtlasEntity.Status.DELETED.name().equals(entityState)) {
+            return;
+        }
+
+        for (Map.Entry<String, Map<String, Object>> bmEntry : updatedBusinessAttributes.entrySet()) {
+            Map<String, Object> bmAttributes = bmEntry.getValue();
+
+            if (MapUtils.isNotEmpty(bmAttributes)) {
+                boolean hasNonNullValue = bmAttributes.values().stream().anyMatch(Objects::nonNull);
+
+                if (hasNonNullValue) {
+                    throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot add or update custom metadata on archived DataProduct.");
+                }
+            }
+        }
     }
 }

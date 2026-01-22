@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
@@ -76,13 +77,20 @@ public class TagDeNormAttributesUtil {
             deNormAttrs.put(TRAIT_NAMES_PROPERTY_KEY, Collections.EMPTY_LIST);
 
         } else {
-            currentTags.remove(tagDeleted);
+            // Filtering by both typeName and entityGuid ensures we never include the deleted tag in ES updates.
+            String deletedTagTypeName = tagDeleted.getTypeName();
+            String deletedTagEntityGuid = tagDeleted.getEntityGuid();
+            
+            List<AtlasClassification> remainingTags = currentTags.stream()
+                    .filter(tag -> !(Objects.equals(deletedTagTypeName, tag.getTypeName()) && 
+                                     Objects.equals(deletedTagEntityGuid, tag.getEntityGuid())))
+                    .collect(Collectors.toList());
 
-            deNormAttrs.put(CLASSIFICATION_TEXT_KEY, getClassificationTextKey(currentTags, typeRegistry, fullTextMapperV2));
+            deNormAttrs.put(CLASSIFICATION_TEXT_KEY, getClassificationTextKey(remainingTags, typeRegistry, fullTextMapperV2));
 
             //filter direct attachments
-            List<String> directTraits = currentTags.stream()
-                    .filter(tag -> tagDeleted.getEntityGuid().equals(tag.getEntityGuid()))
+            List<String> directTraits = remainingTags.stream()
+                    .filter(tag -> Objects.equals(deletedTagEntityGuid, tag.getEntityGuid()))
                     .map(AtlasStruct::getTypeName)
                     .collect(Collectors.toList());
             deNormAttrs.put(CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(directTraits));

@@ -1,0 +1,20 @@
+{{- if or .Values.global.svcIsolation.enabled (or .Values.global.esIsolation.enabled .Values.global.globalSvcIsolation.enabled) }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Values.atlas.serviceAccount.name }}-rolebinding
+  namespace: {{ .Values.Namespace }}
+  labels:
+    app: {{ template "name" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ .Values.atlas.serviceAccount.name }}-role
+subjects:
+- kind: ServiceAccount
+  name: {{ .Values.atlas.serviceAccount.name }}
+  namespace: {{ .Values.Namespace }}
+{{- end }}
+

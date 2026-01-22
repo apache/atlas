@@ -1,0 +1,58 @@
+version: '3.9'
+services:
+  elasticsearch: 
+     image: elasticsearch:7.17.4
+     ports:
+       - 9200:9200
+       - 9300:9300
+     environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+  cassandra:
+    image: cassandra:2.1
+    ports:
+      - 7000:7000
+      - 7001:7001
+      - 7199:7199
+      - 9042:9042
+      - 9160:9160
+  zookeeper:
+    image: zookeeper
+    ports:
+      - 2181:2181
+    restart: always
+
+  redis-master:
+    image: redis:6.2.14
+    ports:
+      - 6379:6379
+    restart: always
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_PASSWORD=redis
+      - REDIS_DATABASES=16
+
+  redis-slave:
+    image: redis:6.2.14
+    command: ["redis-server", "--slaveof", "redis-master", "6379"]
+    ports:
+      - 6380:6379
+    depends_on:
+      - redis-master
+
+  sentinel:
+    image: redis:6.2.14
+    command: ["redis-sentinel", "/etc/redis/sentinel.conf"]
+    ports:
+      - 26379:26379
+    environment:
+      - SENTINEL_DOWN_AFTER=5000
+      - SENTINEL_FAILOVER=500
+      - SENTINEL_QUORUM=2
+    volumes:
+      - ./sentinel.conf:/etc/redis/sentinel.conf
+    links:
+      - redis-master
+    depends_on:
+      - redis-master
+      - redis-slave

@@ -45,6 +45,12 @@ spec:
                 operator: In
                 values:
                 - on-demand
+            {{- else if eq .Values.global.cloud "azure" }}
+            - matchExpressions:
+              - key: service
+                operator: In
+                values:
+                - metastore
             {{- else }}
             - matchExpressions:
               - key: node.kubernetes.io/instance-type
@@ -75,7 +81,7 @@ spec:
       {{- if .Values.atlas.initContainers }}
         {{- toYaml .Values.atlas.initContainers | nindent 8 }}
       {{- end }}
-      serviceAccountName: cinv-sa
+      serviceAccountName: {{ .Values.atlas.serviceAccount.name }}
       containers:
         - name: {{ .Chart.Name }}-main
           command: [

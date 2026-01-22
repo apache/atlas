@@ -134,6 +134,94 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ============================================
+      # AGGRESSIVE DISK CLEANUP - RUN FIRST
+      # GitHub runners have ~14GB free but pre-installed
+      # software consumes most of it. This frees ~30GB.
+      # ============================================
+      - name: Free up disk space (aggressive)
+        run: |
+          echo "=========================================="
+          echo "INITIAL DISK SPACE"
+          echo "=========================================="
+          df -h / | tail -1
+          
+          echo ""
+          echo "=========================================="
+          echo "REMOVING PRE-INSTALLED SOFTWARE"
+          echo "=========================================="
+          
+          # Remove Android SDK (~12GB)
+          sudo rm -rf /usr/local/lib/android || true
+          
+          # Remove .NET (~2GB)
+          sudo rm -rf /usr/share/dotnet || true
+          
+          # Remove Haskell/GHC (~5GB)
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/.ghcup || true
+          
+          # Remove Swift (~2GB)
+          sudo rm -rf /usr/share/swift || true
+          
+          # Remove CodeQL (~1GB)
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          
+          # Remove Go (~1GB)
+          sudo rm -rf /opt/hostedtoolcache/go || true
+          
+          # Remove Python versions we don't need
+          sudo rm -rf /opt/hostedtoolcache/Python/3.7.* || true
+          sudo rm -rf /opt/hostedtoolcache/Python/3.8.* || true
+          sudo rm -rf /opt/hostedtoolcache/Python/3.9.* || true
+          
+          # Remove Ruby
+          sudo rm -rf /opt/hostedtoolcache/Ruby || true
+          
+          # Remove Node.js versions
+          sudo rm -rf /opt/hostedtoolcache/node || true
+          
+          # Remove PyPy
+          sudo rm -rf /opt/hostedtoolcache/PyPy || true
+          
+          # Remove large apt packages
+          sudo apt-get remove -y '^dotnet-.*' '^llvm-.*' 'php.*' '^mongodb-.*' '^mysql-.*' azure-cli google-cloud-cli google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri --fix-missing 2>/dev/null || true
+          sudo apt-get autoremove -y || true
+          sudo apt-get clean || true
+          
+          # Clean apt cache
+          sudo rm -rf /var/lib/apt/lists/* || true
+          sudo rm -rf /var/cache/apt/archives/* || true
+          
+          # Remove swap file (~4GB)
+          sudo swapoff -a || true
+          sudo rm -f /swapfile || true
+          sudo rm -f /mnt/swapfile || true
+          
+          # Clean Docker (just in case there are pre-pulled images)
+          docker system prune -af --volumes 2>/dev/null || true
+          
+          # Remove other large directories
+          sudo rm -rf /usr/local/share/boost || true
+          sudo rm -rf /usr/local/graalvm || true
+          sudo rm -rf /usr/local/julia* || true
+          
+          echo ""
+          echo "=========================================="
+          echo "DISK SPACE AFTER CLEANUP"
+          echo "=========================================="
+          df -h / | tail -1
+          
+          # Verify we have enough space
+          AVAILABLE_GB=$(df -BG / | tail -1 | awk '{print $4}' | sed 's/G//')
+          echo "Available space: ${AVAILABLE_GB}GB"
+          
+          if [ "$AVAILABLE_GB" -lt 25 ]; then
+            echo "⚠️  Warning: Less than 25GB available, build might fail"
+          else
+            echo "✅ Sufficient disk space available (${AVAILABLE_GB}GB)"
+          fi
+
       - uses: actions/checkout@v3
 
       # Set up Docker
@@ -194,84 +282,53 @@ jobs:
           echo "build without dashboard"
           chmod +x ./build.sh && ./build.sh
 
-      - name: Check disk space before tests
-        id: check_disk
-        if: github.ref_name == 'beta' || github.ref_name == 'staging' || github.ref_name == 'master'
+      - name: Clean up after Maven build
         run: |
           echo "=========================================="
-          echo "DISK SPACE CHECK"
+          echo "POST-BUILD CLEANUP"
           echo "=========================================="
-          df -h / | grep -E '^/dev/' || df -h / | tail -1
-          echo ""
+          df -h / | tail -1
           
-          # Get disk usage percentage (remove % sign)
-          DISK_USAGE=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
-          echo "Current disk usage: ${DISK_USAGE}%"
-          echo "disk_usage=$DISK_USAGE" >> $GITHUB_OUTPUT
+          # Remove Maven build intermediates we don't need
+          echo "Cleaning Maven build intermediates..."
+          find . -type d -name "generated-sources" -exec rm -rf {} + 2>/dev/null || true
+          find . -type d -name "generated-test-sources" -exec rm -rf {} + 2>/dev/null || true
+          find . -type d -name "maven-status" -exec rm -rf {} + 2>/dev/null || true
+          find . -type d -name "test-classes" -exec rm -rf {} + 2>/dev/null || true
           
-          if [ "$DISK_USAGE" -gt 70 ]; then
-            echo "⚠️  Disk usage is high (${DISK_USAGE}%), cleanup will run"
-          else
-            echo "✅ Disk space is adequate (${DISK_USAGE}%), skipping cleanup"
-          fi
-
-      - name: Free up disk space for tests
-        if: steps.check_disk.outputs.disk_usage > 70 && (github.ref_name == 'beta' || github.ref_name == 'staging' || github.ref_name == 'master')
-        run: |
-          echo "=========================================="
-          echo "CLEANING UP DISK SPACE"
-          echo "=========================================="
-          
-          # Clean Docker system
-          echo "Cleaning Docker system..."
-          docker system prune -af --volumes || true
-          
-          # Clean apt cache
-          echo "Cleaning apt cache..."
-          sudo apt-get clean || true
-          sudo rm -rf /var/cache/apt/archives/* || true
+          # Remove duplicate JARs from distro if they exist in webapp
+          echo "Removing duplicate artifacts..."
+          rm -rf distro/target/apache-atlas-*-bin.tar.gz 2>/dev/null || true
+          rm -rf distro/target/apache-atlas-*-sources.tar.gz 2>/dev/null || true
           
           # Clean temp files
-          echo "Cleaning temp files..."
-          sudo rm -rf /tmp/* || true
-          
-          # Clean old GitHub Actions logs
-          echo "Cleaning GitHub Actions logs..."
-          sudo rm -rf /home/runner/work/_temp/_runner_file_commands/* || true
-          
-          # Clean hostedtoolcache if needed (keep essentials)
-          echo "Cleaning hostedtoolcache (non-essential tools)..."
-          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
-          sudo rm -rf /opt/hostedtoolcache/go || true
-          sudo rm -rf /opt/hostedtoolcache/PyPy || true
-          sudo rm -rf /opt/hostedtoolcache/node || true
-          sudo rm -rf /opt/hostedtoolcache/Ruby || true
+          sudo rm -rf /tmp/* 2>/dev/null || true
           
           echo ""
-          echo "Disk space after cleanup:"
-          df -h / | grep -E '^/dev/' || df -h / | tail -1
+          echo "Disk space after post-build cleanup:"
+          df -h / | tail -1
 
-      - name: Verify sufficient disk space
+      - name: Verify disk space for tests
         if: github.ref_name == 'beta' || github.ref_name == 'staging' || github.ref_name == 'master'
         run: |
           echo "=========================================="
-          echo "VERIFYING DISK SPACE"
+          echo "DISK SPACE CHECK BEFORE TESTS"
           echo "=========================================="
           
           DISK_USAGE=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
-          AVAILABLE_GB=$(df -h / | tail -1 | awk '{print $4}')
+          AVAILABLE_GB=$(df -BG / | tail -1 | awk '{print $4}' | sed 's/G//')
           
           echo "Current disk usage: ${DISK_USAGE}%"
-          echo "Available space: ${AVAILABLE_GB}"
+          echo "Available space: ${AVAILABLE_GB}GB"
           
-          # Fail if disk usage is still above 85%
-          if [ "$DISK_USAGE" -gt 85 ]; then
-            echo "ERROR: Insufficient disk space (${DISK_USAGE}% used)"
-            echo "Tests require at least 15% free space to run reliably"
-            echo "Elasticsearch will fail with high disk watermark errors at 90%+"
+          # Fail if less than 10GB available (ES needs space for indices)
+          if [ "$AVAILABLE_GB" -lt 10 ]; then
+            echo "❌ ERROR: Insufficient disk space (${AVAILABLE_GB}GB available)"
+            echo "Tests require at least 10GB free space"
+            echo "Elasticsearch will fail with high disk watermark errors"
             exit 1
           else
-            echo "Sufficient disk space available (${DISK_USAGE}% used)"
+            echo "✅ Sufficient disk space available (${AVAILABLE_GB}GB)"
           fi
 
       - name: Run Integration Tests
@@ -302,29 +359,53 @@ jobs:
       - name: Clean up after integration tests
         if: always() && steps.integration_tests.outcome != 'skipped'
         run: |
-          echo "Cleaning up test environment..."
-          docker ps -a -q | xargs -r docker rm -f || true
-          docker system prune -af || true
-          echo ""
-          echo "Removing other test containers and images..."
-          docker system prune -af --volumes || true
+          echo "=========================================="
+          echo "POST-TEST CLEANUP"
+          echo "=========================================="
           
-          # Clean Maven artifacts to free up space
-          echo "Cleaning Maven artifacts..."
-          rm -rf ~/.m2/repository/org/apache/atlas/ || true
+          # Stop and remove all containers
+          echo "Stopping and removing containers..."
+          docker ps -a -q | xargs -r docker rm -f 2>/dev/null || true
+          
+          # Remove all Docker data aggressively
+          echo "Cleaning Docker system..."
+          docker system prune -af --volumes 2>/dev/null || true
+          
+          # Don't remove Maven cache - it's cached separately and speeds up builds
           
           # Clean test artifacts
           echo "Cleaning test artifacts..."
           rm -rf webapp/target/surefire-reports/ || true
           rm -rf test-debug-logs/ || true
-          rm -rf target/test-logs/ || true
+          # Keep target/test-logs for artifact upload
           
           # Clean temp files
           echo "Cleaning temp files..."
-          sudo rm -rf /tmp/* || true
+          sudo rm -rf /tmp/* 2>/dev/null || true
           
           echo ""
           echo "Disk space after cleanup:"
+          df -h / | tail -1
+
+      - name: Pre-Docker build cleanup
+        run: |
+          echo "=========================================="
+          echo "PRE-DOCKER BUILD CLEANUP"
+          echo "=========================================="
+          df -h / | tail -1
+          
+          # Remove test artifacts we no longer need
+          rm -rf target/test-logs/ 2>/dev/null || true
+          rm -rf webapp/target/surefire-reports/ 2>/dev/null || true
+          
+          # Remove Maven cache for atlas (we've already built, docker will use the JARs)
+          rm -rf ~/.m2/repository/org/apache/atlas/ 2>/dev/null || true
+          
+          # Clean any remaining Docker artifacts
+          docker system prune -af 2>/dev/null || true
+          
+          echo ""
+          echo "Disk space after pre-Docker cleanup:"
           df -h / | tail -1
 
       - name: Get Repository Name

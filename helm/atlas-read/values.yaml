@@ -48,6 +48,10 @@ atlas:
   cache:
     enabled: false
   podAntiAffinity: true
+  serviceAccount:
+    name: atlas-read-sa
+    annotations: {}
+    automountServiceAccountToken: true
   custom_deployment:
     enabled: false
     instance_type:
@@ -92,6 +96,8 @@ atlas:
     audit_index_refresh_interval: 1s
   distributed_task:
     enabled: false
+    relationship_cleanup: false
+    haslineage_calculation: false
     cleanup_supported_asset_types: "Process,AirflowTask"
     cleanup_supported_relationship_labels: "__Process.inputs,__Process.outputs,__AirflowTask.inputs,__AirflowTask.outputs"
   types_update:
@@ -279,10 +285,10 @@ atlas:
     # resources, such as Minikube. If you do want to specify resources, uncomment the following
     # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
     limits:
-      cpu: 3000m
+      cpu: 1500m
       memory: 8Gi
     requests:
-      cpu: 3000m
+      cpu: 1500m
       memory: 8Gi
 
   resources_basic:
