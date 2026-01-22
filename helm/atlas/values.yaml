@@ -435,6 +435,12 @@ atlas:
     slackWebhook: ''
     differential_entity_changes_enabled: true
 
+  # Entity attribute optimization settings
+  entity:
+    # Skip mapping of optional attributes that are absent from payload, have no default value
+    # Improves write performance by reducing unnecessary attribute processing
+    skip_optional_attributes: false
+
 cassandra:
 
   updateStrategy:

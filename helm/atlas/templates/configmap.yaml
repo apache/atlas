@@ -500,3 +500,6 @@ data:
 
     ######### Atlas notification configs #########
     atlas.notification.differential.entity.changes.enabled={{ .Values.atlas.notification.differential_entity_changes_enabled }}
+
+    ######### Atlas Entity Attribute Optimization #########
+    atlas.entity.skip.optional.attributes={{ .Values.atlas.entity.skip_optional_attributes }}
