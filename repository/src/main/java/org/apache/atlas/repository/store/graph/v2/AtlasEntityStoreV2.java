@@ -1146,13 +1146,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
-        AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
-
-        String entityTypeName = entityHeader.getTypeName();
+        String entityTypeName = AtlasGraphUtilsV2.getTypeName(entityVertex);
         if (CLASSIFICATION_ADD_EXCLUDE_LIST.contains(entityTypeName)) {
             throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED,
                     String.format("Adding classifications to entity type '%s' is not supported", entityTypeName));
         }
+
+        AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
 
         for (AtlasClassification classification : classifications) {
             AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, entityHeader, classification),
@@ -1255,13 +1255,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
                 }
 
-                AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
-
-                String entityTypeName = entityHeader.getTypeName();
+                String entityTypeName = AtlasGraphUtilsV2.getTypeName(entityVertex);
                 if (CLASSIFICATION_ADD_EXCLUDE_LIST.contains(entityTypeName)) {
                     throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED,
                             String.format("Adding classifications to entity type '%s' is not supported", entityTypeName));
                 }
+
+                AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
 
                 AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, entityHeader, classification),
                         "add classification: guid=", guid, ", classification=", classification.getTypeName());
