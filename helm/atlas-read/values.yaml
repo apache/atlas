@@ -421,6 +421,7 @@ atlas:
   # can be used to setup slack notifications
   notification:
     slackWebhook: ''
+    tag_notifications_async_enabled: false
 
 cassandra:
 

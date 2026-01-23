@@ -442,6 +442,7 @@ atlas:
   notification:
     slackWebhook: ''
     differential_entity_changes_enabled: true
+    tag_notifications_async_enabled: false
 
   # Entity attribute optimization settings
   entity:
