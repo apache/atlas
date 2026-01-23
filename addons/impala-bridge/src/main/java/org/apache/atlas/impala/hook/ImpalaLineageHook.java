@@ -25,7 +25,7 @@ import org.apache.atlas.impala.hook.events.CreateImpalaProcess;
 import org.apache.atlas.impala.model.ImpalaOperationType;
 import org.apache.atlas.impala.model.ImpalaQuery;
 import org.apache.atlas.type.AtlasType;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

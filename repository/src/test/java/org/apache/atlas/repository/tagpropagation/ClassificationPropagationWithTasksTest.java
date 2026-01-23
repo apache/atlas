@@ -37,7 +37,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;

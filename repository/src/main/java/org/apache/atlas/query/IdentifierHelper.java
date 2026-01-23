@@ -23,7 +23,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.type.AtlasBusinessMetadataType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import org.apache.atlas.type.AtlasType;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 import java.util.HashSet;

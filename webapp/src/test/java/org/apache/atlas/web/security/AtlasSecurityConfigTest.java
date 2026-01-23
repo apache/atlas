@@ -385,7 +385,7 @@ public class AtlasSecurityConfigTest {
 
         // Verify the condition logic was covered
         String migrationFile = mockConfiguration.getString(ATLAS_MIGRATION_MODE_FILENAME);
-        boolean configMigrationEnabled = !org.apache.commons.lang.StringUtils.isEmpty(migrationFile);
+        boolean configMigrationEnabled = !org.apache.commons.lang3.StringUtils.isEmpty(migrationFile);
         assertEquals(migrationEnabled, configMigrationEnabled);
         assertEquals(haEnabled, mockConfiguration.getBoolean("atlas.server.ha.enabled", false));
         assertEquals(keycloakEnabled, mockConfiguration.getBoolean(AtlasAuthenticationProvider.KEYCLOAK_AUTH_METHOD, false));

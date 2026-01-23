@@ -22,7 +22,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.notification.spool.models.IndexRecord;
 import org.apache.atlas.notification.spool.models.IndexRecords;
 import org.apache.atlas.notification.spool.utils.local.FileLockedReadWrite;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

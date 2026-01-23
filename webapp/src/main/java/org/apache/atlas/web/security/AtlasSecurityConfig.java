@@ -26,7 +26,7 @@ import org.apache.atlas.web.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.web.filters.HeadersUtil;
 import org.apache.atlas.web.filters.StaleTransactionCleanupFilter;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.keycloak.adapters.AdapterDeploymentContext;
 import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.KeycloakDeployment;

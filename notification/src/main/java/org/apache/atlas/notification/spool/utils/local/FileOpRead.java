@@ -18,7 +18,7 @@
 package org.apache.atlas.notification.spool.utils.local;
 
 import org.apache.atlas.notification.spool.SpoolUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

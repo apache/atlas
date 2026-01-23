@@ -18,7 +18,7 @@
 package org.apache.atlas.web;
 
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

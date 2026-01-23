@@ -28,7 +28,7 @@ import org.apache.atlas.repository.impexp.AuditsWriter;
 import org.apache.atlas.repository.ogm.AbstractDataTransferObject;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

@@ -20,7 +20,7 @@ package org.apache.atlas.notification.preprocessor;
 import com.google.common.base.Strings;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext.PreprocessAction;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

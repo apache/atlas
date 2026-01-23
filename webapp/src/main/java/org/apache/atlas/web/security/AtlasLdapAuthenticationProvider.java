@@ -22,7 +22,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.model.User;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ldap.core.support.LdapContextSource;
