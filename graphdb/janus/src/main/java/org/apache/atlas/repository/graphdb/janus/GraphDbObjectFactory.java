@@ -113,6 +113,7 @@ public final class GraphDbObjectFactory {
 
         if (LEAN_GRAPH_ENABLED && ret.isAssetVertex()) { // Do only for Asset vertices
             try {
+                //Why do we try to retrieve a vertx here?
                 DynamicVertex dynamicVertex = graph.getDynamicVertexRetrievalService().retrieveVertex(source.id().toString());
                 if (dynamicVertex == null) {
                     dynamicVertex = new DynamicVertex();

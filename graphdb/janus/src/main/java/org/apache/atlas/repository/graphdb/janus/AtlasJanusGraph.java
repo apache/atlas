@@ -40,7 +40,8 @@ import org.apache.atlas.ESAliasRequestBuilder;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
-import org.apache.atlas.idgenerator.DistributedIdGenerator;
+import org.apache.atlas.idgenerator.IdGenerator;
+import org.apache.atlas.idgenerator.StaticIdGenerator;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.Constants;
@@ -156,7 +157,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     private CqlSession cqlSession;
     private DynamicVertexService dynamicVertexService;
 
-    private static DistributedIdGenerator CUSTOM_ID_GENERATOR;
+    private static IdGenerator CUSTOM_ID_GENERATOR;
 
 
     static {
@@ -175,7 +176,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
             }
 
             if (LEAN_GRAPH_ENABLED) {
-                CUSTOM_ID_GENERATOR = new DistributedIdGenerator(hostName, port, podName);
+                CUSTOM_ID_GENERATOR = new StaticIdGenerator();
             }
         } catch (AtlasException e) {
             LOG.error("Failed to initialize DistributedIdGenerator for custom vertex ID generation");
@@ -292,10 +293,9 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         String createAssetsTable = String.format(
                 "CREATE TABLE IF NOT EXISTS %s.%s (" +
                         "id text, " +
-                        "bucket int, " +
                         "json_data text, " +
                         "updated_at timestamp, " +
-                        "PRIMARY KEY ((bucket),id)" +
+                        "PRIMARY KEY (id)" +
                         ") WITH compaction = {'class': 'SizeTieredCompactionStrategy', 'min_threshold': 4, 'max_threshold': 32};",
                 keyspace, "assets");
 

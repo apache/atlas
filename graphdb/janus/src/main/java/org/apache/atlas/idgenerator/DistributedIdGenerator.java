@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 
 
-public class DistributedIdGenerator implements AutoCloseable {
+public class DistributedIdGenerator implements IdGenerator, AutoCloseable {
     private static final Logger logger = LoggerFactory.getLogger(DistributedIdGenerator.class);
     private static final String KEYSPACE = "id_generator";
     private static final String TABLE = "server_ids";

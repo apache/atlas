@@ -3,14 +3,16 @@ package org.apache.atlas.repository.graphdb.janus.cassandra;
 import com.datastax.driver.core.exceptions.QueryValidationException;
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BatchStatement;
+import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.DefaultBatchType;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.google.common.collect.Lists;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -20,16 +22,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
-import static org.apache.atlas.utils.AtlasEntityUtil.calculateBucket;
 
 /**
  * Enhanced Cassandra implementation for vertex data repository with advanced
@@ -44,12 +47,10 @@ class CassandraVertexDataRepository implements VertexDataRepository {
     private final CqlSession session;
     private final String keyspace;
     private final String tableName;
-    private final Map<Integer, PreparedStatement> batchSizeToStatement = new ConcurrentHashMap<>();
+    private final PreparedStatement insertVertexStatement;
+    private final PreparedStatement deleteVertexStatement;
+    private final PreparedStatement selectByIdStatement;
     private final ObjectMapper objectMapper;
-
-    private static String INSERT_VERTEX = "INSERT into %s.%s (bucket, id, json_data, updated_at) values (%s, '%s', '%s', %s)";
-
-    private static String DROP_VERTEX = "DELETE from %s.%s where bucket = %s AND id = '%s'";
 
     /**
      * Creates a new enhanced Cassandra repository.
@@ -61,6 +62,18 @@ class CassandraVertexDataRepository implements VertexDataRepository {
         this.session = session;
         this.keyspace = AtlasConfiguration.ATLAS_CASSANDRA_VANILLA_KEYSPACE.getString();
         this.tableName = AtlasConfiguration.ATLAS_CASSANDRA_VERTEX_TABLE.getString();
+        this.insertVertexStatement = session.prepare(String.format(
+                "INSERT INTO %s.%s (id, json_data, updated_at) VALUES (?, ?, ?)",
+                keyspace,
+                tableName));
+        this.deleteVertexStatement = session.prepare(String.format(
+                "DELETE FROM %s.%s WHERE id = ?",
+                keyspace,
+                tableName));
+        this.selectByIdStatement = session.prepare(String.format(
+                "SELECT id, json_data FROM %s.%s WHERE id = ?",
+                keyspace,
+                tableName));
 
         this.objectMapper = new ObjectMapper();
         SimpleModule module = new SimpleModule("NumbersAsStringModule");
@@ -73,23 +86,26 @@ class CassandraVertexDataRepository implements VertexDataRepository {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("insertVertices");
 
         try {
-            StringBuilder batchQuery = new StringBuilder();
-            batchQuery.append("BEGIN BATCH ");
+            if (serialisedVertices.size() > 1) {
+                BatchStatementBuilder batchBuilder = BatchStatement.builder(DefaultBatchType.UNLOGGED);
+                Instant updatedAt = Instant.ofEpochMilli(RequestContext.get().getRequestTime());
 
-            for (String vertexId : serialisedVertices.keySet()) {
-                int bucket = calculateBucket(vertexId);
-                String insert = String.format(INSERT_VERTEX,
-                        keyspace,
-                        tableName,
-                        bucket,
-                        vertexId,
-                        serialisedVertices.get(vertexId),
-                        RequestContext.get().getRequestTime());
-                batchQuery.append(insert).append(";");
+                for (Map.Entry<String, String> entry : serialisedVertices.entrySet()) {
+                    BoundStatement insertStatement = insertVertexStatement.bind(entry.getKey(), entry.getValue(), updatedAt);
+                    batchBuilder.addStatement(insertStatement);
+                }
+
+                BatchStatement batchStatement = batchBuilder.build();
+                session.execute(batchStatement);
+                return;
             }
 
-            batchQuery.append("APPLY BATCH;");
-            session.execute(batchQuery.toString());
+            if (!serialisedVertices.isEmpty()) {
+                Map.Entry<String, String> entry = serialisedVertices.entrySet().iterator().next();
+                Instant updatedAt = Instant.ofEpochMilli(RequestContext.get().getRequestTime());
+                BoundStatement insertStatement = insertVertexStatement.bind(entry.getKey(), entry.getValue(), updatedAt);
+                session.execute(insertStatement);
+            }
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
@@ -99,55 +115,15 @@ class CassandraVertexDataRepository implements VertexDataRepository {
     public void dropVertices(List<String> vertexIds) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("dropVertices");
         try {
-            StringBuilder batchQuery = new StringBuilder();
-            batchQuery.append("BEGIN BATCH ");
+            BatchStatementBuilder batchBuilder = BatchStatement.builder(DefaultBatchType.UNLOGGED);
             for (String vertexId : vertexIds) {
-                int bucket = calculateBucket(vertexId);
-                String insert = String.format(DROP_VERTEX,
-                        keyspace,
-                        tableName,
-                        bucket,
-                        vertexId);
-                batchQuery.append(insert).append(";");
+                batchBuilder.addStatement(deleteVertexStatement.bind(vertexId));
             }
-            batchQuery.append("APPLY BATCH;");
-            session.execute(batchQuery.toString());
+            BatchStatement batchStatement = batchBuilder.build();
+            session.execute(batchStatement);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
-    }
-
-    /**
-     * Gets a prepared statement for a specific batch size, creating it if needed.
-     */
-    private PreparedStatement getPreparedStatementForBatchSize(int batchSize) {
-        return batchSizeToStatement.computeIfAbsent(batchSize, this::prepareStatementForBatchSize);
-    }
-
-    /**
-     * Prepares a statement for a specific batch size.
-     */
-    private PreparedStatement prepareStatementForBatchSize(int batchSize) {
-        StringBuilder queryBuilder = new StringBuilder();
-
-        // fix this code to use bucket id
-        queryBuilder.append("SELECT id, json_data FROM ")
-                .append(keyspace)
-                .append(".")
-                .append(tableName)
-                .append(" WHERE id IN (");
-
-        for (int i = 0; i < batchSize; i++) {
-            if (i > 0) {
-                queryBuilder.append(", ");
-            }
-            queryBuilder.append("?");
-        }
-
-        queryBuilder.append(")");
-        queryBuilder.append(" ALLOW FILTERING");
-
-        return session.prepare(queryBuilder.toString());
     }
 
     /**
@@ -176,37 +152,16 @@ class CassandraVertexDataRepository implements VertexDataRepository {
             return Collections.emptyMap();
         }
 
-        Map<String, DynamicVertex> results = new HashMap<>();
-
         try {
-            // Split large batches into smaller ones to avoid Cassandra limitations
-            if (sanitizedIds.size() > MAX_IN_CLAUSE_ITEMS) {
-                List<List<String>> batches = Lists.partition(sanitizedIds, MAX_IN_CLAUSE_ITEMS);
-
-                // Process each batch
-                for (List<String> batch : batches) {
-                    try {
-                        Map<String, DynamicVertex> batchResults = fetchSingleBatchDirectly(batch);
-                        results.putAll(batchResults);
-                    } catch (Exception e) {
-                        LOG.error("Error fetching batch of vertex data directly", e);
-                        // Continue with other batches even if one fails
-                    }
-                }
-            } else {
-                results = fetchSingleBatchDirectly(sanitizedIds);
-            }
+            return fetchSingleBatchDirectly(sanitizedIds);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
-
-        return results;
     }
 
     /**
-     * Fetches a single batch of vertices directly as DynamicVertex objects using a single Cassandra call,
-     * even if IDs span multiple buckets.
-     * Uses "WHERE bucket_id IN (...) AND id IN (...)" approach.
+     * Fetches a single batch of vertices directly as DynamicVertex objects using concurrent single-partition queries.
+     * This avoids large IN clauses and aligns with Cassandra best practices.
      */
     private Map<String, DynamicVertex> fetchSingleBatchDirectly(List<String> vertexIdsInBatch) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder mainRecorder = RequestContext.get().startMetricRecord("fetchSingleBatchDirectly");
@@ -217,71 +172,49 @@ class CassandraVertexDataRepository implements VertexDataRepository {
             return Collections.emptyMap();
         }
 
-        // 1. Determine unique bucket_ids and unique, sanitized vertex_ids for the current batch.
-        //    Also, store the original mapping to validate/use results.
-        Map<String, Integer> vertexIdToItsBucketMap = new HashMap<>();
-        Set<Integer> uniqueBucketIdsInBatch = new HashSet<>();
-        List<String> uniqueSanitizedVertexIdsInBatch = new ArrayList<>(); // Order matters for binding to IN clause
-
+        Set<String> uniqueSanitizedVertexIdsInBatch = new LinkedHashSet<>();
         for (String vertexId : vertexIdsInBatch) {
             if (StringUtils.isNotBlank(vertexId)) {
-                try {
-                    int bucket = calculateBucket(vertexId);
-                    if (!vertexIdToItsBucketMap.containsKey(vertexId)) { // Ensure each original vertexId is processed once for uniqueness
-                        vertexIdToItsBucketMap.put(vertexId, bucket);
-                        uniqueSanitizedVertexIdsInBatch.add(vertexId); // Add to list for IN clause
-                        uniqueBucketIdsInBatch.add(bucket);             // Add to set for IN clause
-                    }
-                } catch (NumberFormatException e) {
-                    LOG.warn("Skipping vertexId '{}' as it's not a valid long for bucket calculation (single call strategy).", vertexId);
-                }
+                uniqueSanitizedVertexIdsInBatch.add(vertexId);
             }
         }
 
-        if (uniqueSanitizedVertexIdsInBatch.isEmpty() || uniqueBucketIdsInBatch.isEmpty()) {
+        if (uniqueSanitizedVertexIdsInBatch.isEmpty()) {
             RequestContext.get().endMetricRecord(mainRecorder);
             return Collections.emptyMap();
         }
 
         try {
-            // 2. Construct the dynamic query string
-            StringBuilder queryBuilder = new StringBuilder("SELECT id, json_data FROM ")
-                    .append(keyspace).append(".").append(tableName)
-                    .append(" WHERE bucket IN (");
-            for (int i = 0; i < uniqueBucketIdsInBatch.size(); i++) {
-                queryBuilder.append(i == 0 ? "?" : ", ?");
-            }
-            queryBuilder.append(") AND id IN (");
-            for (int i = 0; i < uniqueSanitizedVertexIdsInBatch.size(); i++) {
-                queryBuilder.append(i == 0 ? "?" : ", ?");
-            }
-            queryBuilder.append(")");
+            LOG.debug("Executing concurrent Cassandra calls for batch: IDs={}", uniqueSanitizedVertexIdsInBatch.size());
 
-            String cqlQuery = queryBuilder.toString();
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Executing single Cassandra call for batch: Query={}, Buckets={}, IDs={}", cqlQuery, uniqueBucketIdsInBatch.size(), uniqueSanitizedVertexIdsInBatch.size());
-            }
-
-            // Prepare the statement (dynamically, less efficient for reuse than cached)
-            PreparedStatement preparedStatement = session.prepare(cqlQuery);
-            BoundStatement boundStatement = preparedStatement.bind();
-
-            int bindIndex = 0;
-            for (Integer bucketId : uniqueBucketIdsInBatch) {
-                boundStatement = boundStatement.setInt(bindIndex++, bucketId);
-            }
+            List<CompletableFuture<List<Row>>> futures = new ArrayList<>(uniqueSanitizedVertexIdsInBatch.size());
             for (String vertexId : uniqueSanitizedVertexIdsInBatch) {
-                boundStatement = boundStatement.setString(bindIndex++, vertexId);
+                BoundStatement boundStatement = selectByIdStatement.bind(vertexId)
+                        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+                CompletableFuture<List<Row>> future = session.executeAsync(boundStatement)
+                        .toCompletableFuture()
+                        .thenCompose(this::fetchAllRows);
+                futures.add(future);
             }
 
-            boundStatement = boundStatement.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-            ResultSet resultSet = session.execute(boundStatement);
+            CompletableFuture<Void> allOf = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            try {
+                allOf.join();
+            } catch (CompletionException e) {
+                LOG.warn("One or more Cassandra queries failed in batch; continuing to process remaining results.", e);
+            }
 
             // 3. Process results.
-            for (Row row : resultSet) {
-                String id = row.getString("id");
-
-                if (vertexIdToItsBucketMap.containsKey(id)) {
+            for (CompletableFuture<List<Row>> future : futures) {
+                List<Row> rows;
+                try {
+                    rows = future.join();
+                } catch (CompletionException e) {
+                    LOG.warn("Failed to fetch vertex data in concurrent batch.", e);
+                    continue;
+                }
+                for (Row row : rows) {
+                    String id = row.getString("id");
                     String jsonData = row.getString("json_data");
                     try {
                         AtlasPerfMetrics.MetricRecorder deserializeRecorder = RequestContext.get().startMetricRecord("fetchSingleBatchDirectly_DeserializeJson");
@@ -298,20 +231,34 @@ class CassandraVertexDataRepository implements VertexDataRepository {
                     } catch (Exception e) { // Catch broader exceptions during DynamicVertex creation
                         LOG.warn("Failed to convert or process data for DynamicVertex ID {}: {}", id, e.getMessage());
                     }
-                } else {
-                    LOG.warn("Fetched vertex ID {} which was not in the original request map for this specific batch processing. Ignoring.", id);
                 }
             }
+
             return results;
 
         } catch (QueryValidationException e) {
-            LOG.error("Invalid query error during single call batch fetch strategy:  Error=\'{}\'.", e.getMessage(), e);
-            throw new AtlasBaseException("Invalid query for single call batch fetch: " + e.getMessage(), e);
+            LOG.error("Invalid query error during concurrent batch fetch strategy:  Error=\'{}\'.", e.getMessage(), e);
+            throw new AtlasBaseException("Invalid query for concurrent batch fetch: " + e.getMessage(), e);
         } catch (Exception e) {
-            LOG.error("Unexpected error during single call batch fetch strategy", e);
-            throw new AtlasBaseException("Failed to fetch vertex data in single call strategy: " + e.getMessage(), e);
+            LOG.error("Unexpected error during concurrent batch fetch strategy", e);
+            throw new AtlasBaseException("Failed to fetch vertex data in concurrent batch strategy: " + e.getMessage(), e);
         } finally {
             RequestContext.get().endMetricRecord(mainRecorder);
         }
+    }
+
+    private CompletableFuture<List<Row>> fetchAllRows(AsyncResultSet resultSet) {
+        List<Row> rows = new ArrayList<>();
+        if (!resultSet.hasMorePages()) {
+            return CompletableFuture.completedFuture(rows);
+        }
+
+        return resultSet.fetchNextPage()
+                .toCompletableFuture()
+                .thenCompose(next -> fetchAllRows(next)
+                        .thenApply(nextRows -> {
+                            rows.addAll(nextRows);
+                            return rows;
+                        }));
     }
 }
