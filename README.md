@@ -66,6 +66,10 @@ distro/target/apache-atlas-<version>-server.tar.gz
 distro/target/apache-atlas-<version>-bin.tar.gz
 ```
 
+## Dummy commit
+If your build fails with yaml linting error, the Java CI Build would be skipped and in which case, remember to do a dummy commit to trigger the build to have a new image.
+To avoid this do a helm linting before pushing your code.
+
 ## License
 
 Licensed under the [Apache License 2.0](LICENSE).
