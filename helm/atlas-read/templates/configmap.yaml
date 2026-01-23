@@ -511,4 +511,4 @@ data:
     
     ######### Atlas notification configs #########
     atlas.enable.tag.notifications.async={{ .Values.atlas.notification.tag_notifications_async_enabled }}
-  { { - end }}
+ 
