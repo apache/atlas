@@ -61,13 +61,21 @@ atlas:
     
   leangraph:
     replicaCount: 2
-    image: ghcr.io/atlanhq/atlas-metastore-leangraphsts:c281ce1abcd
+    image: ghcr.io/atlanhq/atlas-metastore-leangraphsts:ac2b433abcd
     service:
       portName: leangraph
       type: ClusterIP
       path: /api/atlas/v2/
       port: 80
       targetPort: 21000
+    podAntiAffinity: true
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: atlas-leangraph
+            topologyKey: kubernetes.io/hostname
 
   sentry:
     sampleRate: 0.5
