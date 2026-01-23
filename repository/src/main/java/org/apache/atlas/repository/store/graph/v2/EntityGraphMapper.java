@@ -58,6 +58,7 @@ import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.DataProductPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.tags.PaginatedVertexIdResult;
 import org.apache.atlas.repository.store.graph.v2.tags.PaginatedTagResult;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
@@ -123,7 +124,6 @@ import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMe
 import static org.apache.atlas.repository.graph.GraphHelper.getEntityHasLineage;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
-import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery.CLIENT_ORIGIN_PLAYBOOK;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
 import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_ADD;
 import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_DELETE;
@@ -4510,6 +4510,21 @@ public class EntityGraphMapper {
 
         return propagatedEntitiesGuids;
 
+    }
+
+    public PaginatedVertexIdResult getVertexIdFromTagsByIdTableWithPagination(String pagingState, int pageSize) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getVertexIdFromTagsByIdTableWithPagination( pageSize={})", pageSize);
+        }
+
+        PaginatedVertexIdResult result = tagDAO.getVertexIdFromTagsByIdTableWithPagination(pagingState, pageSize);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getVertexIdFromTagsByIdTableWithPagination(pageSize={}): found {} unique GUIDs, hasMorePages={}",
+                     pageSize, result.getVertexIds().size(), result.hasMorePages());
+        }
+
+        return result;
     }
 
     public int processClassificationPropagationAdditionV2(Map<String, Object> parameters,

@@ -11,6 +11,8 @@ import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
+import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.service.FeatureFlagStore;
@@ -22,11 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 @Service
 public class EntityMutationService {
@@ -241,6 +239,55 @@ public class EntityMutationService {
             executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
         }
     }
+
+    public void repairClassificationMappingsByVertexIds(Set<Long> vertexIds, int batchSize, int delay) throws AtlasBaseException {
+        int totalGuidsProcessed = 0;
+        if (vertexIds.isEmpty()) {
+            LOG.info("No GUIDs found to repair");
+            return;
+        }
+
+        List<Long> vertexIdList = new ArrayList<>(vertexIds);
+        List<List<Long>> vertexIdBatches = Lists.partition(vertexIdList, batchSize);
+
+        LOG.info("Processing {} GUIDs in {} batches of size {}", vertexIdList.size(), vertexIdBatches.size(), batchSize);
+
+        for (int i = 0; i < vertexIdBatches.size(); i++) {
+            List<Long> batch = vertexIdBatches.get(i);
+            LOG.info("Processing batch {}/{} with {} GUIDs", (i + 1), vertexIdBatches.size(), batch.size());
+
+            long batchStartTime = System.currentTimeMillis();
+
+            repairClassificationMappingsBatch(batch);
+
+            totalGuidsProcessed += batch.size();
+
+            LOG.info("Completed batch {}/{}. Processed {} GUIDs in {} ms. Total processed: {}",
+                    (i + 1), vertexIdBatches.size(), batch.size(), (System.currentTimeMillis() - batchStartTime), totalGuidsProcessed);
+
+            if (delay > 0 && i < vertexIdBatches.size() - 1) {
+                try {
+                    LOG.info("Sleep for {} ms before next batch", delay);
+                    Thread.sleep(delay);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    LOG.warn("Thread interrupted while processing batch: {}", (i + 1));
+                    break;
+                }
+            }
+        }
+
+        LOG.info("Completed repair classifications. Repaired {} GUIDs ",
+                totalGuidsProcessed);
+
+    }
+
+    private void repairClassificationMappingsBatch(List<Long> vertexIds) throws AtlasBaseException {
+        Set<AtlasVertex> vertices = entitiesStore.getVertices(new HashSet<>(vertexIds));
+        List<String> guids = vertices.stream().map(GraphHelper::getGuid).toList();
+        repairClassificationMappings(guids);
+    }
+
 
     public Map<String, String> repairClassificationMappings(List<String> guids) throws AtlasBaseException {
         Map<String, String> errorMap = new HashMap<>(0);

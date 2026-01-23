@@ -637,6 +637,57 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         }
     }
 
+    public PaginatedVertexIdResult getVertexIdFromTagsByIdTableWithPagination(String pagingStateStr, int pageSize) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getVertexIdFromTagsByIdTableWithPagination");
+        try {
+            String queryStr = String.format("SELECT id FROM %s.%s", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME);
+
+            SimpleStatement statement = SimpleStatement.builder(queryStr)
+                    .setPageSize(pageSize)
+                    .build();
+
+            if (pagingStateStr != null && !pagingStateStr.isEmpty()) {
+                statement = statement.setPagingState(ByteBuffer.wrap(Base64.getDecoder().decode(pagingStateStr)));
+            }
+
+            ResultSet rs = executeWithRetry(statement);
+            Set<Long> vertexIds = new LinkedHashSet<>();
+
+            Iterator<Row> iterator = rs.iterator();
+            int count = 0;
+
+            while (count < pageSize && iterator.hasNext()) {
+                Row row = iterator.next();
+                vertexIds.add(Long.parseLong(row.getString("id")));
+                count++;
+            }
+
+            LOG.debug("Fetched {} unique vertex ids in this page", vertexIds.size());
+
+            ByteBuffer pagingStateBuffer = rs.getExecutionInfo().getPagingState();
+            String nextPagingState = null;
+
+            if (pagingStateBuffer != null) {
+                byte[] bytes = new byte[pagingStateBuffer.remaining()];
+                pagingStateBuffer.get(bytes);
+                if (bytes.length > 0) {
+                    nextPagingState = Base64.getEncoder().encodeToString(bytes);
+                }
+            }
+
+            boolean done = (nextPagingState == null || nextPagingState.isEmpty());
+            LOG.debug("Next paging state. Has more pages: {}", !done);
+
+            return new PaginatedVertexIdResult(vertexIds, nextPagingState, done);
+
+        } catch (Exception e) {
+            LOG.error("Error fetching GUIDs from tags_by_id table", e);
+            throw new AtlasBaseException("Error fetching GUIDs from tags_by_id table", e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
     private static List<Tag> resultSetToTags(String vertexId, ResultSet rs) {
         List<Tag> tags = new ArrayList<>();
         for (Row row : rs) {

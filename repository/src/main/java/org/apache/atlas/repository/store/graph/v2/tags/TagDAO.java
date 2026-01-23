@@ -51,5 +51,7 @@ public interface TagDAO {
      */
     PaginatedTagResult getPropagationsForAttachmentBatchWithPagination(String sourceVertexId, String tagTypeName,
                                                                        String pagingStateStr, int pageSize) throws AtlasBaseException;
+
+    PaginatedVertexIdResult getVertexIdFromTagsByIdTableWithPagination(String pagingStateStr, int pageSize) throws AtlasBaseException;
 }
 

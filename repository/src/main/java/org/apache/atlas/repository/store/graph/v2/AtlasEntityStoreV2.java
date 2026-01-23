@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.*;
@@ -78,6 +79,7 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.ReadmePr
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryFolderPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.tags.PaginatedVertexIdResult;
 import org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTask;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.*;
@@ -1352,6 +1354,40 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, entityHeader), "get classifications: guid=", guid);
 
         return entityHeader.getClassifications();
+    }
+
+    @Override
+    public Set<Long> getVertexIdFromTags(int fetchSize) throws AtlasBaseException {
+            String pagingState = null;
+            boolean hasMorePages = true;
+            int pageCount = 0;
+
+            Set<Long> allVertexIds = new LinkedHashSet<>();
+
+            while (hasMorePages) {
+                pageCount++;
+                PaginatedVertexIdResult result =
+                        getVertexIdFromTagsByIdTableWithPagination(pagingState, fetchSize);
+
+                Set<Long> pageVertexIds = result.getVertexIds();
+                LOG.info("Page {}: Found {} unique GUIDs", pageCount, pageVertexIds.size());
+
+                allVertexIds.addAll(pageVertexIds);
+
+                pagingState = result.getPagingState();
+                hasMorePages = result.hasMorePages();
+            }
+
+            return allVertexIds;
+    }
+
+    private PaginatedVertexIdResult getVertexIdFromTagsByIdTableWithPagination(String pagingState, int pageSize) throws AtlasBaseException {
+        return entityGraphMapper.getVertexIdFromTagsByIdTableWithPagination(pagingState, pageSize);
+    }
+
+    @Override
+    public Set<AtlasVertex> getVertices(Set<Long> vertexIds) {
+        return graphHelper.getVertices(vertexIds);
     }
 
     @Override
