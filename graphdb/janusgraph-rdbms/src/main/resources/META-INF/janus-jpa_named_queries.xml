@@ -13,25 +13,19 @@
                  xmlns="http://java.sun.com/xml/ns/persistence/orm" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                  xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_1_0.xsd ">
 
-    <named-query name="DbEntityAudit.getByEntityId">
-        <query>SELECT obj FROM DbEntityAudit obj
-            WHERE obj.entityId = :entityId
-            ORDER BY obj.eventTime DESC, obj.eventIndex DESC
-        </query>
-    </named-query>
-
-    <named-query name="DbEntityAudit.getByEntityIdAction">
-        <query>SELECT obj FROM DbEntityAudit obj
-            WHERE obj.entityId = :entityId
-            AND obj.action     = :action
-            ORDER BY obj.eventTime DESC, obj.eventIndex DESC
-        </query>
-    </named-query>
-
     <named-query name="DbEntityAudit.getByEntityIdActionStartTimeStartIdx">
         <query>SELECT obj FROM DbEntityAudit obj
             WHERE obj.entityId = :entityId
             AND obj.action     = :action
+            AND obj.eventTime  >= :eventTimeStart
+            AND obj.eventIndex >= :eventIdxStart
+            ORDER BY obj.eventTime DESC, obj.eventIndex DESC
+        </query>
+    </named-query>
+
+    <named-query name="DbEntityAudit.getByEntityIdStartTimeStartIdx">
+        <query>SELECT obj FROM DbEntityAudit obj
+            WHERE obj.entityId = :entityId
             AND obj.eventTime  >= :eventTimeStart
             AND obj.eventIndex >= :eventIdxStart
             ORDER BY obj.eventTime DESC, obj.eventIndex DESC
