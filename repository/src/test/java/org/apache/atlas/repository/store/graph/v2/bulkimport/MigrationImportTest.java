@@ -29,7 +29,7 @@ import org.apache.atlas.repository.migration.DataMigrationStatusService;
 import org.apache.atlas.repository.store.graph.v2.EntityImportStream;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.pc.EntityCreationManager;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

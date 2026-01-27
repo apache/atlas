@@ -32,7 +32,7 @@ import org.apache.atlas.v1.model.lineage.DataSetLineageResponse;
 import org.apache.atlas.v1.model.lineage.SchemaResponse;
 import org.apache.atlas.web.util.LineageUtils;
 import org.apache.atlas.web.util.Servlets;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

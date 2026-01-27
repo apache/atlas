@@ -22,7 +22,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.hive.hook.HiveMetastoreHookImpl.HiveMetastoreHook;
 import org.apache.atlas.hive.hook.HiveHook.PreprocessAction;
 import org.apache.atlas.hive.hook.HiveHook.HiveHookObjectNamesCache;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.hadoop.hive.metastore.IHMSHandler;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.events.*;
