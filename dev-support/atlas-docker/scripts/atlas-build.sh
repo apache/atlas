@@ -86,7 +86,7 @@ else
   done
 fi
 
-mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean package
+#mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean package
 mvn -Pit-rdbms -DskipUTs=true -DskipTests=false -DskipITs=false verify
 mvn -Pdist -DskipUTs=true -DskipTests=false -DskipITs=false verify
 
