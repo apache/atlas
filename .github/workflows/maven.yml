@@ -25,7 +25,6 @@ on:
       - beta
       - master
       - staging
-      - mlh-1887-csa-export
 
 jobs:
   # Detect what changed to optimize workflow execution
