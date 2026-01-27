@@ -508,7 +508,7 @@ public class PolicyRefresher extends Thread {
 		rolesProvider.loadUserGroupRoles(plugIn);
 
 		if(LOG.isDebugEnabled()) {
-			LOG.info("<== PolicyRefresher(serviceName=" + serviceName + ").loadRoles()");
+			LOG.debug("<== PolicyRefresher(serviceName=" + serviceName + ").loadRoles()");
 		}
 	}
 
