@@ -86,6 +86,17 @@ spec:
                         AND durable_writes = true
                     """)
                     print("Keyspace reaper_db created/verified successfully!")
+                    
+                    # Clean stale cluster entries to force Reaper to re-discover with current pod IPs
+                    # This prevents JMX connection failures due to cached stale IPs after pod restarts
+                    print("Cleaning stale Reaper cluster entries...")
+                    try:
+                        session.execute("DELETE FROM reaper_db.cluster WHERE name = 'cassandra'")
+                        print("Stale cluster entry deleted - Reaper will re-register with fresh IPs")
+                    except Exception as e:
+                        # Table might not exist on first run, which is fine
+                        print(f"Note: Could not delete cluster entry (may not exist yet): {e}")
+                    
                     cluster.shutdown()
                     EOF
             containers:
