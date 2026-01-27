@@ -66,6 +66,12 @@ spec:
                 operator: In
                 values:
                 - on-demand
+            {{- else if eq $cloud "azure" }}
+            - matchExpressions:
+              - key: service
+                operator: In
+                values:
+                - metastore
             {{- else }}
             - matchExpressions:
               - key: node.kubernetes.io/instance-type
@@ -183,7 +189,11 @@ spec:
 {{- $tierType := .Values.global.Tier_Type | default "" }}
 {{- if or (eq $tierType "Enterprise") (eq $tierType "") }}
         resources:
+{{- if eq .Values.global.Deployment_Type "Development" }}
+{{ toYaml .Values.resources_development | indent 10 }}
+{{- else }}
 {{ toYaml .Values.resources | indent 10 }}
+{{- end }}
 {{- end }}
         env:
         {{- $seed_size := default 1 .Values.config.seed_size | int -}}
@@ -195,9 +205,17 @@ spec:
           value: "{{- range $i, $e := until $seed_size }}{{ template "cassandra.fullname" $global }}-{{ $i }}.{{ template "cassandra.fullname" $global }}.{{ $global.Values.Namespace }}.svc.{{ $global.Values.config.cluster_domain }}{{- if (lt ( add1 $i ) $seed_size ) }},{{- end }}{{- end }}"
           {{- end }}
         - name: MAX_HEAP_SIZE
+{{- if eq .Values.global.Deployment_Type "Development" }}
+          value: {{ default "1536M" .Values.max_heap_size_development | quote }}
+{{- else }}
           value: {{ default "8192M" .Values.max_heap_size | quote }}
+{{- end }}
         - name: HEAP_NEWSIZE
+{{- if eq .Values.global.Deployment_Type "Development" }}
+          value: {{ default "384M" .Values.heap_new_size_development | quote }}
+{{- else }}
           value: {{ default "200M" .Values.heap_new_size | quote }}
+{{- end }}
         - name: CASSANDRA_ENDPOINT_SNITCH
           value: {{ default "SimpleSnitch" .Values.config.endpoint_snitch | quote }}
         - name: CASSANDRA_CLUSTER_NAME

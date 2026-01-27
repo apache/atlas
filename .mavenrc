@@ -1,0 +1,32 @@
+# Maven configuration for Atlas Metastore
+# This ensures Maven uses Java 17 regardless of system default
+
+# macOS - use java_home utility
+if [ -x /usr/libexec/java_home ]; then
+    export JAVA_HOME=$(/usr/libexec/java_home -v 17 2>/dev/null)
+fi
+
+# Fallback: check common Java 17 locations
+if [ -z "$JAVA_HOME" ] || [ ! -d "$JAVA_HOME" ]; then
+    for java_path in \
+        "/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home" \
+        "/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home" \
+        "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home" \
+        "/usr/lib/jvm/java-17-openjdk" \
+        "/usr/lib/jvm/java-17-openjdk-amd64"; do
+        if [ -d "$java_path" ]; then
+            export JAVA_HOME="$java_path"
+            break
+        fi
+    done
+fi
+
+# Verify Java 17
+if [ -n "$JAVA_HOME" ]; then
+    java_version=$("$JAVA_HOME/bin/java" -version 2>&1 | head -1 | cut -d'"' -f2 | cut -d'.' -f1)
+    if [ "$java_version" != "17" ]; then
+        echo "WARNING: JAVA_HOME ($JAVA_HOME) is not Java 17 (found: $java_version)" >&2
+    fi
+else
+    echo "ERROR: Java 17 not found. Please install Java 17." >&2
+fi

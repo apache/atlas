@@ -21,8 +21,10 @@ package org.apache.atlas.plugin.util;
 
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.auth.client.heracles.models.HeraclesGroupViewRepresentation;
 import org.apache.atlas.auth.client.heracles.models.HeraclesRoleViewRepresentation;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.plugin.model.GroupInfo;
 import org.apache.atlas.plugin.model.RangerRole;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -54,6 +56,8 @@ public class KeycloakUserStore {
     private static List<String> EVENT_TYPES = Arrays.asList("LOGIN");
     private static List<String> OPERATION_TYPES = Arrays.asList("CREATE", "UPDATE", "DELETE");
     private static List<String> RESOURCE_TYPES = Arrays.asList("USER", "GROUP", "REALM_ROLE", "CLIENT", "REALM_ROLE_MAPPING", "GROUP_MEMBERSHIP", "CLIENT_ROLE_MAPPING");
+
+    private static String[] GROUPS_FETCH_COLUMNS = new String[]{"name"};
 
     private enum KEYCLOAK_FIELDS {
         ROLES,
@@ -338,15 +342,75 @@ public class KeycloakUserStore {
 
         } while (userFound && ret.size() % userSize == 0);
 
-        RangerUserStore userStore = new RangerUserStore();
-        userStore.setUserGroupMapping(userGroupMapping);
+        // Fetch groups from Heracles to populate groupAttrMapping
+        Set<GroupInfo> groups = loadGroupsFromHeracles();
+
+        RangerUserStore userStore = new RangerUserStore(-1L, null, groups, userGroupMapping);
         userStore.setUserStoreUpdateTime(new Date());
         userStore.setServiceName(serviceName);
-        userStore.setUserStoreVersion(-1L);
 
         RequestContext.get().endMetricRecord(recorder);
 
 
         return userStore;
+    }
+
+    /**
+     * Fetches groups from Heracles API and converts them to GroupInfo objects.
+     * This populates the groupAttrMapping in RangerUserStore for full group mapping support.
+     * 
+     * If the API call fails, returns an empty set and logs a warning (does not fail the entire loading).
+     * 
+     * @return Set of GroupInfo objects representing all groups from Heracles, or empty set on error
+     */
+    private Set<GroupInfo> loadGroupsFromHeracles() {
+        LOG.info("loadGroupsFromHeracles: Starting to load groups from Heracles");
+        
+        Set<GroupInfo> groupInfoSet = new HashSet<>();
+        AtlasPerfMetrics.MetricRecorder recorder = null;
+        
+        try {
+            recorder = RequestContext.get().startMetricRecord("loadGroupsFromHeracles");
+            
+            int groupSize = AtlasConfiguration.HERACLES_CLIENT_PAGINATION_SIZE.getInt();
+            int groupFrom = 0;
+            List<HeraclesGroupViewRepresentation> groupRetrievalResult;
+            
+            LOG.info("loadGroupsFromHeracles: Using page size: {}", groupSize);
+            
+            do {
+                LOG.info("loadGroupsFromHeracles: Fetching groups from Heracles: offset={}, limit={}", groupFrom, groupSize);
+                groupRetrievalResult = getHeraclesClient().getGroupsMappingsV2(groupFrom, groupSize, GROUPS_FETCH_COLUMNS);
+                
+                if (CollectionUtils.isNotEmpty(groupRetrievalResult)) {
+                    LOG.info("loadGroupsFromHeracles: Received {} groups from Heracles in current page", groupRetrievalResult.size());
+                    
+                    for (HeraclesGroupViewRepresentation heraclesGroup : groupRetrievalResult) {
+                        if (heraclesGroup.getName() != null) {
+                            groupInfoSet.add(new GroupInfo(heraclesGroup.getName()));
+                        } else {
+                            LOG.warn("loadGroupsFromHeracles: Skipping group with null name from Heracles response");
+                        }
+                    }
+                    
+                    groupFrom += groupSize;
+                } else {
+                    LOG.info("loadGroupsFromHeracles: No groups received from Heracles (empty response)");
+                }
+                
+            } while (CollectionUtils.isNotEmpty(groupRetrievalResult) && groupRetrievalResult.size() == groupSize);
+            
+            LOG.info("loadGroupsFromHeracles: Successfully loaded {} groups from Heracles", groupInfoSet.size());
+            
+        } catch (Exception e) {
+            LOG.error("loadGroupsFromHeracles: Error loading groups from Heracles. Group validation will not work properly. Error: {}", e.getMessage(), e);
+            // Return empty set instead of failing - allows user store to still work for user validation
+        } finally {
+            if (recorder != null) {
+                RequestContext.get().endMetricRecord(recorder);
+            }
+        }
+        
+        return groupInfoSet;
     }
 }

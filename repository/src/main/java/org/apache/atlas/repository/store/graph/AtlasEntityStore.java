@@ -28,8 +28,10 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasHasLineageRequests;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.BulkRequestContext;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
+import org.apache.atlas.repository.store.graph.v2.tags.PaginatedVertexIdResult;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 
@@ -305,6 +307,10 @@ public interface AtlasEntityStore {
     void deleteClassification(String guid, String classificationName, String associatedEntityGuid) throws AtlasBaseException;
 
     List<AtlasClassification> getClassifications(String guid) throws AtlasBaseException;
+
+    Set<AtlasVertex> getVertices(Set<Long> vertexIds);
+
+    Set<Long> getVertexIdFromTags(int fetchSize) throws AtlasBaseException;
 
     AtlasClassification getClassification(String guid, String classificationName) throws AtlasBaseException;
 

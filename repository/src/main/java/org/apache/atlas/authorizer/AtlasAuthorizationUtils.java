@@ -61,8 +61,7 @@ import java.util.Set;
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.SERVICE_DEF_ATLAS;
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.isABACAuthorizerEnabled;
 import static org.apache.atlas.constants.RangerAtlasConstants.READ_RESTRICTION_LEVEL_FULL;
-import static org.apache.atlas.repository.Constants.SKIP_DELETE_AUTH_CHECK_TYPES;
-import static org.apache.atlas.repository.Constants.SKIP_UPDATE_AUTH_CHECK_TYPES;
+import static org.apache.atlas.repository.Constants.*;
 
 public class AtlasAuthorizationUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorizationUtils.class);
@@ -114,12 +113,37 @@ public class AtlasAuthorizationUtils {
         if (!isAccessAllowed(request)) {
             String message = (errorMsgParams != null && errorMsgParams.length > 0) ? StringUtils.join(errorMsgParams) : "";
             if (StringUtils.isEmpty(message)){
+                String end1Type = request.getEnd1Entity() != null ? request.getEnd1Entity().getTypeName() : null;
+                String end2Type = request.getEnd2Entity() != null ? request.getEnd2Entity().getTypeName() : null;
+                
+                boolean isTermToAsset = ATLAS_GLOSSARY_TERM_ENTITY_TYPE.equals(end1Type) &&
+                                        end2Type != null &&
+                                        !end2Type.equals(ATLAS_GLOSSARY_TERM_ENTITY_TYPE) &&
+                                        !end2Type.equals(ATLAS_GLOSSARY_ENTITY_TYPE) &&
+                                        !end2Type.equals(ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE) &&
+                                        !end2Type.equals(LINK_ENTITY_TYPE) &&
+                                        !end2Type.equals(README_ENTITY_TYPE);
+
+                boolean isAssetToTerm = ATLAS_GLOSSARY_TERM_ENTITY_TYPE.equals(end2Type) &&
+                                        end1Type != null &&
+                                        !end1Type.equals(ATLAS_GLOSSARY_TERM_ENTITY_TYPE) &&
+                                        !end1Type.equals(ATLAS_GLOSSARY_ENTITY_TYPE) &&
+                                        !end1Type.equals(ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE) &&
+                                        !end1Type.equals(LINK_ENTITY_TYPE) &&
+                                        !end1Type.equals(README_ENTITY_TYPE);
+                
+                if (isTermToAsset || isAssetToTerm) {
+                    AtlasEntityHeader assetEntity = isTermToAsset ? request.getEnd2Entity() : request.getEnd1Entity();
+                    String assetName = (String) assetEntity.getAttribute(NAME);
+                    message = String.format("update on asset '%s'", assetName);
+                }
+                
                 Map<String, String> errorMap = new HashMap<>();
                 errorMap.put("action", request.getAction().toString());
                 errorMap.put("end1", request.getEnd1Entity().getGuid());
                 errorMap.put("end2", request.getEnd2Entity().getGuid());
 
-                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, errorMap, request.getUser(), "");
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, errorMap, request.getUser(), message);
 
             } else {
                 throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, request.getUser(), message);

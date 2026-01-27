@@ -1,0 +1,50 @@
+{{ if .Values.global.leangraph.dedicated.enabled }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: atlas-leangraph-elasticsearch-master
+  namespace: {{ .Values.Namespace }}
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    app: "atlas-leangraph-elasticsearch-master"
+  annotations:
+{{ toYaml .Values.service.annotations | indent 4 }}
+spec:
+  type: {{ default "ClusterIP" .Values.service.type }}
+  selector:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    app: "atlas-leangraph-elasticsearch-master"
+  ports:
+  - name: {{ default "http" .Values.service.httpPortName }}
+    protocol: TCP
+    port: {{ default 9200 .Values.httpPort }}
+  - name: {{ default "transport" .Values.service.transportPortName }}
+    protocol: TCP
+    port: {{ default 9300 .Values.transportPort }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: atlas-leangraph-elasticsearch-master-headless
+  namespace: {{ .Values.Namespace }}
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    app: "atlas-leangraph-elasticsearch-master"
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  clusterIP: None # This is needed for statefulset hostnames like elasticsearch-0 to resolve
+  # Create endpoints also if the related pod isn't ready
+  publishNotReadyAddresses: true
+  selector:
+    app: "atlas-leangraph-elasticsearch-master"
+  ports:
+  - name: {{ default "http" .Values.service.httpPortName }}
+    port: {{ default 9200 .Values.httpPort }}
+  - name: {{ default "transport" .Values.service.transportPortName }}
+    port: {{ default 9300 .Values.transportPort }}
+{{- end }}

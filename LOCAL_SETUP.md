@@ -2,152 +2,284 @@
 
 This guide will help you set up Atlas for local development.
 
+## Quick Start
+
+Run the prerequisites check script to validate your setup:
+```bash
+./scripts/check-prerequisites.sh
+```
+
 ## Prerequisites
 
 ### Required Software
-- Java 17 (Recommended: Zulu OpenJDK 17)
-- Maven 3.8+ 
+- Java 17 (Recommended: Zulu OpenJDK 17 or Temurin)
+- Maven 3.8+
 - Docker (via Colima for macOS)
 - Git
-- Get the source code from the AtlanHQ repository (An override of Apache Atlas)
-- Download the zip and configuration artifacts from https://atlanhq.atlassian.net/wiki/spaces/c873aeb606dd4834a95d9909a757bfa6/pages/800424446/How+to+run+Atlas+on+the+local+machine
 
-### Java Setup
-1. Install Java 17:
-   ```bash
-   brew install zulu17
-   ```
+### 1. Java Setup
 
-2. Set JAVA_HOME:
-   ```bash
-   export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
-   export PATH=$JAVA_HOME/bin:$PATH
-   ```
+Install Java 17:
+```bash
+brew install openjdk@17
+```
 
-### Maven Setup
+The project includes a `.mavenrc` file that automatically sets JAVA_HOME for Maven builds. For other tools, set manually:
+```bash
+export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+export PATH=$JAVA_HOME/bin:$PATH
+```
 
-1. Configure GitHub Package Registry access:
-   Create or update `~/.m2/settings.xml`:
-   ```xml
-   <settings>
-     <servers>
-       <server>
-         <id>github</id>
-         <username>YOUR_GITHUB_USERNAME</username>
-         <password>YOUR_GITHUB_PAT_TOKEN</password>
-       </server>
-     </servers>
-     
-     <profiles>
-       <profile>
-         <id>github</id>
-         <repositories>
-           <repository>
-             <id>github</id>
-             <url>https://maven.pkg.github.com/atlanhq/janusgraph</url>
-           </repository>
-         </repositories>
-       </profile>
-     </profiles>
-     
-     <activeProfiles>
-       <activeProfile>github</activeProfile>
-     </activeProfiles>
-   </settings>
-   ```
+**Tip:** Use `jenv` for managing multiple Java versions:
+```bash
+brew install jenv
+jenv enable-plugin export
+jenv enable-plugin maven
+```
 
-   Note: Generate a GitHub Personal Access Token with `read:packages` scope.
+### 2. GitHub Package Registry Access
 
-### Docker Setup (using Colima)
+The project uses a custom JanusGraph fork hosted on GitHub Packages. You need:
 
-1. Install Colima:
-   ```bash
-   brew install colima
-   ```
+1. **GitHub account with `atlanhq` organization access**
+2. **Personal Access Token** with `read:packages` scope
 
-2. Start Colima:
-   ```bash
-   colima start
-   ```
+Set environment variables:
+```bash
+export GITHUB_USERNAME=<your-github-username>
+export GITHUB_TOKEN=<your-pat-token>
+```
+
+Create or update `~/.m2/settings.xml`:
+```xml
+<settings>
+  <servers>
+    <server>
+      <id>github</id>
+      <username>${env.GITHUB_USERNAME}</username>
+      <password>${env.GITHUB_TOKEN}</password>
+    </server>
+  </servers>
+</settings>
+```
+
+### 3. Keycloak Dependency (One-Time)
+
+Download and cache the Keycloak dependency:
+```bash
+mkdir -p ~/.m2/repository/org/keycloak
+curl https://atlan-public.s3.eu-west-1.amazonaws.com/artifact/keycloak-15.0.2.1.zip -o keycloak-15.0.2.1.zip
+unzip -o keycloak-15.0.2.1.zip -d ~/.m2/repository/org
+rm keycloak-15.0.2.1.zip
+```
+
+### 4. Docker Setup (macOS with Colima)
+
+Install and start Colima:
+```bash
+brew install colima docker docker-compose
+colima start --disk 10 --memory 4
+```
 
 ## Building Atlas
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/atlanhq/atlas-metastore.git
-   cd atlas-metastore
-   ```
+### Clone and Build
 
-2. Build the project:
-   ```bash
-   mvn clean -Dos.detected.classifier=osx-x86_64 -Dmaven.test.skip -DskipTests -Drat.skip=true -DskipOverlay -DskipEnunciate=true install package -Pdist
-   ```
+```bash
+git clone https://github.com/atlanhq/atlas-metastore.git
+cd atlas-metastore
+```
+
+**Intel Mac:**
+```bash
+mvn clean -Dmaven.test.skip -DskipTests -Drat.skip=true -DskipOverlay -DskipEnunciate=true install -Pdist
+```
+
+**Apple Silicon Mac:**
+```bash
+mvn clean -Dos.detected.classifier=osx-x86_64 -Dmaven.test.skip -DskipTests -Drat.skip=true -DskipOverlay -DskipEnunciate=true install -Pdist
+```
+
+**Important:** Use `mvn install` (not just `package`) so IntelliJ can resolve local module dependencies.
 
 ## Running Dependencies
 
-Atlas requires several services to run. Use Docker Compose to start them:
+Start infrastructure services:
+```bash
+docker-compose -f local-dev/docker-compose.yaml up -d
+```
 
-1. Required Services:
-   - Redis (for caching)
-   - Cassandra (for metadata storage)
-   - Elasticsearch (for search functionality)
-   - Kafka (optional - for notifications)
+This starts:
+- Redis Master (6379) + Slave (6380) + Sentinel (26379)
+- Cassandra (9042)
+- Elasticsearch (9200)
+- Zookeeper (2181)
 
-2. Start the services:
-   ```bash
-   cd deploy
-   docker-compose up -d redis cassandra elasticsearch
-   ```
+Wait for services to be healthy before starting Atlas.
 
-   If you need Kafka:
-   ```bash
-   docker-compose up -d kafka
-   ```
+### Copy Logback Configuration (Optional but Recommended)
 
-3. Wait for services to be healthy:
-   - Redis: Default port 6379
-   - Cassandra: Default port 9042
-   - Elasticsearch: Default port 9200
-   - Kafka (if enabled): Default port 9092
+For better formatted logs during local development, copy the logback configuration:
+```bash
+cp local-dev/atlas-logback.xml deploy/conf/atlas-logback.xml
+```
+
+This provides enhanced console output with request tracing and better readability.
 
 ## Running Atlas
 
-1. Start Atlas server:
-   ```bash
-   java -Datlas.home=deploy/ -Datlas.conf=deploy/conf -Datlas.data=deploy/data -Datlas.log.dir=deploy/logs -Dranger.plugin.atlas.policy.pollIntervalMs=300000 -Dembedded.solr.directory=deploy/data -Dlogback.configurationFile=file:./deploy/conf/atlas-logback.xml -Dzookeeper.snapshot.trust.empty=true --add-opens java.base/java.lang=ALL-UNNAMED -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dorg.apache.http.nio.reactor.ioThreadCount=4 -Dcassandra.connection.pool.max=4 -Djanusgraph.connection.pool.max=2 -Dnetty.eventLoopThreads=4 -XX:+UseCompressedOops -XX:+UseCompressedClassPointers -Xms512m
-   org.apache.atlas.Atlas
-   ```
+### Option 1: IntelliJ IDEA (Recommended)
 
-2. Access the UI:
-   - URL: http://localhost:21000
-   - Default credentials: admin/admin
+Create a Run Configuration:
+
+| Setting | Value |
+|---------|-------|
+| Main Class | `org.apache.atlas.Atlas` |
+| Module | `java-17` |
+| Classpath | `atlas-webapp` |
+
+**VM Options:**
+```
+--add-opens java.base/java.lang=ALL-UNNAMED
+-Datlas.home=deploy/
+-Datlas.conf=deploy/conf
+-Datlas.data=deploy/data
+-Datlas.log.dir=deploy/logs
+-Dembedded.solr.directory=deploy/data
+-Dzookeeper.snapshot.trust.empty=true
+-Dlogback.configurationFile=file:./deploy/conf/atlas-logback.xml
+```
+
+**IntelliJ Maven Settings:**
+- Go to **Settings → Build → Build Tools → Maven → Runner**
+- Add Environment variables: `GITHUB_USERNAME` and `GITHUB_TOKEN`
+
+### Option 2: Command Line
+
+```bash
+JAVA_HOME=$(/usr/libexec/java_home -v 17) java \
+  --add-opens java.base/java.lang=ALL-UNNAMED \
+  -Datlas.home=deploy/ \
+  -Datlas.conf=deploy/conf \
+  -Datlas.data=deploy/data \
+  -Datlas.log.dir=deploy/logs \
+  -Dembedded.solr.directory=deploy/data \
+  -Dzookeeper.snapshot.trust.empty=true \
+  -Dlogback.configurationFile=file:./deploy/conf/atlas-logback.xml \
+  -cp "webapp/target/atlas-webapp-3.0.0-SNAPSHOT/WEB-INF/classes:webapp/target/atlas-webapp-3.0.0-SNAPSHOT/WEB-INF/lib/*" \
+  org.apache.atlas.Atlas
+```
+
+### Access Atlas
+
+- **URL:** http://localhost:21000
+- **Username:** `admin`
+- **Password:** `admin`
+
+**Note:** The web UI may not load reliably in local development. Use the REST API instead:
+
+```bash
+# Verify Atlas is running
+curl -u admin:admin http://localhost:21000/api/atlas/v2/types/typedefs/headers
+
+# Example: Get all type definitions
+curl -u admin:admin http://localhost:21000/api/atlas/v2/types/typedefs
+```
 
 ## Troubleshooting
 
-1. If services fail to start, check Docker logs:
-   ```bash
-   docker-compose logs -f [service_name]
-   ```
+### GitHub 401/403 Errors During Build
 
-2. For Atlas server issues, check logs in:
-   ```
-   logs/application.log
-   ```
+- **401 Unauthorized:** GitHub credentials not set. Export `GITHUB_USERNAME` and `GITHUB_TOKEN`
+- **403 Forbidden:** Your GitHub account doesn't have access to `atlanhq` organization. Request access from your team.
 
-3. Common issues:
-   - Port conflicts: Ensure no other services are using required ports
-   - Memory issues: Adjust Docker resource limits in Colima
-   - Connection timeouts: Ensure all required services are healthy before starting Atlas
+### Corrupted Maven Cache
 
-## Additional Resources
+If you see `Invalid CEN header` or ZIP errors:
+```bash
+rm -rf ~/.m2/repository/org/aspectj/aspectjweaver/1.8.9
+mvn dependency:resolve -U
+```
 
-For more detailed information, refer to:
-- [Atlas Documentation](https://atlas.apache.org/documentation.html)
-- [Internal Setup Guide](https://atlanhq.atlassian.net/wiki/spaces/c873aeb606dd4834a95d9909a757bfa6/pages/800424446/How+to+run+Atlas+on+the+local+machine)
+### Maven Using Wrong Java Version
+
+Check Maven's Java:
+```bash
+mvn -version
+```
+
+If not Java 17, the `.mavenrc` file should fix it. Or manually:
+```bash
+JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn <command>
+```
+
+### IntelliJ Cannot Resolve Dependencies
+
+Run `mvn install` (not `package`) to install local modules to your Maven cache:
+```bash
+mvn clean install -Dmaven.test.skip -DskipTests -Drat.skip=true -Pdist
+```
+
+Then in IntelliJ: **Maven → Reload Project**
+
+### Cassandra Tags Keyspace Error
+
+If you see `"errorMessage": "Error fetching all classifications"`:
+
+```bash
+docker exec -it $(docker-compose -f local-dev/docker-compose.yaml ps -q cassandra) cqlsh
+```
+
+```sql
+DROP KEYSPACE IF EXISTS tags;
+CREATE KEYSPACE tags WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'};
+USE tags;
+
+CREATE TABLE tags_by_id (
+    bucket int, id text, is_propagated boolean, source_id text, tag_type_name text,
+    asset_metadata text, is_deleted boolean, tag_meta_json text, updated_at timestamp,
+    PRIMARY KEY ((bucket, id), is_propagated, source_id, tag_type_name)
+);
+
+CREATE TABLE propagated_tags_by_source (
+    source_id text, tag_type_name text, propagated_asset_id text,
+    asset_metadata text, updated_at timestamp,
+    PRIMARY KEY ((source_id, tag_type_name), propagated_asset_id)
+);
+```
+
+### Docker Services Not Starting
+
+Check logs:
+```bash
+docker-compose -f local-dev/docker-compose.yaml logs -f cassandra
+docker-compose -f local-dev/docker-compose.yaml logs -f elasticsearch
+```
+
+### Full Environment Reset
+
+```bash
+docker-compose -f local-dev/docker-compose.yaml down
+docker system prune -a --volumes -f
+colima stop
+```
+
+## Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `deploy/conf/atlas-application.properties` | Main Atlas configuration |
+| `deploy/conf/users-credentials.properties` | User credentials (SHA-256 hashed) |
+| `deploy/conf/atlas-logback.xml` | Logging configuration |
+| `local-dev/docker-compose.yaml` | Local infrastructure services (Docker) |
+| `local-dev/sentinel.conf` | Redis Sentinel configuration |
+| `.mavenrc` | Maven Java version configuration |
+| `.java-version` | jenv Java version (17) |
 
 ## Notes
 
-- The build command skips tests and various checks for faster development builds
+- The build command skips tests for faster development builds
 - For production builds, remove the skip flags
 - Keep your GitHub PAT token secure and never commit it to version control
 - Adjust memory and CPU settings in Colima based on your machine's capabilities
+- Kafka warnings during startup are normal if Kafka is not running (optional service)

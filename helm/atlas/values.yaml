@@ -22,7 +22,12 @@ global:
     enabled: false
   atlasNginx:
     enabled: false
-
+  leangraph:
+    enabled: false
+    dedicated:
+      enabled: false  # Creates dedicated Cassandra and Elasticsearch StatefulSets
+      active: false   # Uses dedicated resources in configmap
+    
 Namespace: atlas
 sentry_flag: disable
 albTenant: false
@@ -45,10 +50,33 @@ atlas:
   cache:
     enabled: false
   podAntiAffinity: true
+  serviceAccount:
+    name: atlas-sa
+    annotations: {}
+    automountServiceAccountToken: true
   custom_deployment:
     enabled: false
     instance_type:
       - m6a.2xlarge
+    
+  leangraph:
+    replicaCount: 2
+    image: ghcr.io/atlanhq/atlas-metastore-leangraphsts:ac2b433abcd
+    service:
+      portName: leangraph
+      type: ClusterIP
+      path: /api/atlas/v2/
+      port: 80
+      targetPort: 21000
+    podAntiAffinity: true
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: atlas-leangraph
+            topologyKey: kubernetes.io/hostname
+
   sentry:
     sampleRate: 0.5
   ranger:
@@ -89,6 +117,8 @@ atlas:
     audit_index_refresh_interval: 1s
   distributed_task:
     enabled: false
+    relationship_cleanup: false
+    haslineage_calculation: false
     cleanup_supported_asset_types: "Process,AirflowTask"
     cleanup_supported_relationship_labels: "__Process.inputs,__Process.outputs,__AirflowTask.inputs,__AirflowTask.outputs"
   types_update:
@@ -268,10 +298,10 @@ atlas:
     # resources, such as Minikube. If you do want to specify resources, uncomment the following
     # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
     limits:
-      cpu: 3000m
+      cpu: 1500m
       memory: 8Gi
     requests:
-      cpu: 3000m
+      cpu: 1500m
       memory: 8Gi
 
   resources_basic:
@@ -412,6 +442,13 @@ atlas:
   notification:
     slackWebhook: ''
     differential_entity_changes_enabled: true
+    tag_notifications_async_enabled: true
+
+  # Entity attribute optimization settings
+  entity:
+    # Skip mapping of optional attributes that are absent from payload, have no default value
+    # Improves write performance by reducing unnecessary attribute processing
+    skip_optional_attributes: false
 
 cassandra:
 
@@ -421,15 +458,28 @@ cassandra:
   resources:
     requests:
       memory: 4Gi
-      #cpu: 1500m
+      cpu: 1300m
     limits:
       memory: 5Gi
-      #cpu: 2000m
+      cpu: 1300m
+
+  # Development tenant resources (when global.Deployment_Type=Development)
+  resources_development:
+    requests:
+      memory: 4Gi
+      cpu: 300m
+    limits:
+      memory: 4Gi
+      cpu: 300m
 
   # Config for cassandra
 
   max_heap_size: 2048M
   heap_new_size: 512M
+
+  # Development tenant heap configuration (smaller for 4Gi memory limit)
+  max_heap_size_development: 1536M
+  heap_new_size_development: 384M
 
   config:
     cluster_domain: cluster.local

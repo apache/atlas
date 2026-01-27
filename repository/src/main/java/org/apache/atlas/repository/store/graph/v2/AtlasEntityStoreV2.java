@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.*;
@@ -78,6 +79,7 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.ReadmePr
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryFolderPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.tags.PaginatedVertexIdResult;
 import org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTask;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.*;
@@ -120,8 +122,7 @@ import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
-import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
-import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateProductStatus;
+import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
@@ -158,6 +159,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private static final List<String> RELATIONSHIP_CLEANUP_SUPPORTED_TYPES = Arrays.asList(AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_ASSET_TYPES.getStringArray());
     private static final List<String> RELATIONSHIP_CLEANUP_RELATIONSHIP_LABELS = Arrays.asList(AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_RELATIONSHIP_LABELS.getStringArray());
+
 
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
@@ -1146,6 +1148,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
+        String entityTypeName = AtlasGraphUtilsV2.getTypeName(entityVertex);
+        if (CLASSIFICATION_ADD_EXCLUDE_LIST.contains(entityTypeName)) {
+            throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED,
+                    String.format("Adding classifications to entity type '%s' is not supported", entityTypeName));
+        }
+
         AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
 
         for (AtlasClassification classification : classifications) {
@@ -1249,6 +1257,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
                 }
 
+                String entityTypeName = AtlasGraphUtilsV2.getTypeName(entityVertex);
+                if (CLASSIFICATION_ADD_EXCLUDE_LIST.contains(entityTypeName)) {
+                    throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED,
+                            String.format("Adding classifications to entity type '%s' is not supported", entityTypeName));
+                }
+
                 AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
 
                 AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, entityHeader, classification),
@@ -1340,6 +1354,40 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, entityHeader), "get classifications: guid=", guid);
 
         return entityHeader.getClassifications();
+    }
+
+    @Override
+    public Set<Long> getVertexIdFromTags(int fetchSize) throws AtlasBaseException {
+            String pagingState = null;
+            boolean hasMorePages = true;
+            int pageCount = 0;
+
+            Set<Long> allVertexIds = new LinkedHashSet<>();
+
+            while (hasMorePages) {
+                pageCount++;
+                PaginatedVertexIdResult result =
+                        getVertexIdFromTagsByIdTableWithPagination(pagingState, fetchSize);
+
+                Set<Long> pageVertexIds = result.getVertexIds();
+                LOG.info("Page {}: Found {} unique GUIDs", pageCount, pageVertexIds.size());
+
+                allVertexIds.addAll(pageVertexIds);
+
+                pagingState = result.getPagingState();
+                hasMorePages = result.hasMorePages();
+            }
+
+            return allVertexIds;
+    }
+
+    private PaginatedVertexIdResult getVertexIdFromTagsByIdTableWithPagination(String pagingState, int pageSize) throws AtlasBaseException {
+        return entityGraphMapper.getVertexIdFromTagsByIdTableWithPagination(pagingState, pageSize);
+    }
+
+    @Override
+    public Set<AtlasVertex> getVertices(Set<Long> vertexIds) {
+        return graphHelper.getVertices(vertexIds);
     }
 
     @Override

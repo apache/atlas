@@ -13,6 +13,11 @@ nodeGroup: "master"
 global:
   Tier_Type: ""
   Deployment_Type: ""
+  leangraph:
+    enabled: false
+    dedicated:
+      enabled: false  # Creates dedicated Cassandra and Elasticsearch StatefulSets
+      active: false
 masterService: ""
 
 # Elasticsearch roles that will be applied to this nodeGroup

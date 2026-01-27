@@ -18,6 +18,7 @@
 
 package org.apache.atlas.util;
 
+import io.micrometer.core.instrument.Timer;
 import org.apache.atlas.AtlanElasticSearchIndex;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -28,6 +29,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationService;
+import org.apache.atlas.service.metrics.MetricUtils;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
@@ -73,11 +75,18 @@ public class RepairIndex {
     @PostConstruct
     protected void setupGraph() {
         LOG.info("Initializing graph: ");
-        graph = AtlasJanusGraphDatabase.getGraphInstance();
+        Timer.Sample sample = Timer.start(MetricUtils.getMeterRegistry());
         try {
-            searchIndex = new AtlanElasticSearchIndex();
-        } catch (AtlasException e) {
-            throw new RuntimeException(e);
+            graph = AtlasJanusGraphDatabase.getGraphInstance();
+            try {
+                searchIndex = new AtlanElasticSearchIndex();
+            } catch (AtlasException e) {
+                throw new RuntimeException(e);
+            }
+        } finally {
+            sample.stop(Timer.builder("atlas.startup.graph.setup.duration")
+                    .description("Time taken to setup graph during Atlas startup")
+                    .register(MetricUtils.getMeterRegistry()));
         }
         LOG.info("Graph Initialized!");
     }

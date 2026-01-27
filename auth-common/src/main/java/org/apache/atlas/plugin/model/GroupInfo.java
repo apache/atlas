@@ -42,6 +42,10 @@ public class GroupInfo extends RangerBaseModelObject implements java.io.Serializ
         this(null, null, null);
     }
 
+    public GroupInfo(String name) {
+        this(name, null, null);
+    }
+
     public GroupInfo(String name, String description, Map<String, String> otherAttributes) {
         setName(name);
         setDescription(description);
