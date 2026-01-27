@@ -4,6 +4,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Repository interface for vertex data access.
@@ -18,7 +19,7 @@ interface VertexDataRepository  {
      * @return Map of vertex ID to parsed JsonElement
      */
 
-    Map<String, DynamicVertex> fetchVerticesDirectly(List<String> vertexIds) throws AtlasBaseException;
+    CompletableFuture<DynamicVertex> fetchVertexAsync(String vertexId);
 
     void insertVertices(Map<String, String> serialisedVertices) throws AtlasBaseException;
 

@@ -182,7 +182,6 @@ public enum AtlasConfiguration {
     /**
      * Cassabdra Configuration
      */
-    ATLAS_CASSANDRA_BATCH_SIZE("atlas.cassandra.batch.size", 10),
     ATLAS_CASSANDRA_VANILLA_KEYSPACE("atlas.cassandra.vanilla.keyspace", "leangraph_janusgraph"),
     ATLAS_CASSANDRA_VERTEX_TABLE("atlas.cassandra.vertex.table", "assets"),
     CASSANDRA_REPLICATION_FACTOR_PROPERTY("atlas.graph.storage.cql.replication-factor", "3"),

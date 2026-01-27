@@ -1,23 +1,26 @@
 package org.apache.atlas.repository.graphdb.janus.cassandra;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusVertex;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Main entry point for the batch vertex retrieval system.
@@ -30,8 +33,6 @@ public class DynamicVertexService {
 
     private final VertexDataRepository repository;
     private final JacksonVertexSerializer serializer;
-
-    private static final int defaultBatchSize = AtlasConfiguration.ATLAS_CASSANDRA_BATCH_SIZE.getInt();
 
     public final static Set<String> VERTEX_CORE_PROPERTIES = ConcurrentHashMap.newKeySet();
 
@@ -61,8 +62,13 @@ public class DynamicVertexService {
      * @return A DynamicVertex
      */
     public DynamicVertex retrieveVertex(String vertexId) throws AtlasBaseException {
-        Map<String, DynamicVertex> ret = retrieveVertices(Collections.singletonList(vertexId));
-        return ret.get(vertexId);
+        try {
+            return repository.fetchVertexAsync(vertexId).get();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void insertVertices(List<AtlasVertex> vertices) throws AtlasBaseException {
@@ -96,39 +102,35 @@ public class DynamicVertexService {
         repository.dropVertices(vertexIds);
     }
 
-    /**
-     * Retrieves multiple vertices by their IDs.
-     *
-     * @param vertexIds The list of vertex IDs to retrieve
-     * @return A map of vertex ID to dynamic vertex data
-     */
-    public Map<String, DynamicVertex> retrieveVertices(List<String> vertexIds) throws AtlasBaseException {
-        return retrieveVertices(vertexIds, defaultBatchSize);
+    public List<CompletableFuture<DynamicVertex>> retrieveVerticesAsync(List<String> vertexIds) {
+        if (vertexIds == null || vertexIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<CompletableFuture<DynamicVertex>> futures = new ArrayList<>(vertexIds.size());
+        for (String vertexId : vertexIds) {
+            futures.add(repository.fetchVertexAsync(vertexId));
+        }
+
+        return futures;
     }
 
-    /**
-     * Retrieves multiple vertices by their IDs with custom batch size.
-     *
-     * @param vertexIds The list of vertex IDs to retrieve
-     * @param batchSize The batch size to use
-     * @return A map of vertex ID to dynamic vertex data
-     */
-    private Map<String, DynamicVertex> retrieveVertices(List<String> vertexIds, int batchSize) throws AtlasBaseException {
-        if (vertexIds == null || vertexIds.isEmpty()) {
-            return Collections.emptyMap();
+    public Map<String, DynamicVertex> retrieveVertices(List<String> vertexIds) {
+        List<CompletableFuture<DynamicVertex>> futures = retrieveVerticesAsync(vertexIds);
+        return mapVerticesByAtlasId(futures);
+    }
+
+    private Map<String, DynamicVertex> mapVerticesByAtlasId(List<CompletableFuture<DynamicVertex>> futures) {
+        Map<String, DynamicVertex> vertexPropertiesMap = new HashMap<>();
+        for (CompletableFuture<DynamicVertex> future : futures) {
+            DynamicVertex vertex = future.join();
+            if (vertex != null) {
+                String atlasId = vertex.getProperty("_atlas_id", String.class);
+                if (StringUtils.isNotEmpty(atlasId)) {
+                    vertexPropertiesMap.put(atlasId, vertex);
+                }
+            }
         }
-
-        Map<String, DynamicVertex> results = new HashMap<>();
-
-        for (int i = 0; i < vertexIds.size(); i += batchSize) {
-            int endIndex = Math.min(i + batchSize, vertexIds.size());
-            List<String> batch = vertexIds.subList(i, endIndex);
-
-            // Use direct loading approach
-            Map<String, DynamicVertex> batchResults = repository.fetchVerticesDirectly(batch);
-            results.putAll(batchResults);
-        }
-
-        return results;
+        return vertexPropertiesMap;
     }
 }

@@ -712,169 +712,156 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             boolean includeClassificationNames = context.isIncludeClassificationNames();
             boolean includeMeanings = context.includeMeanings();
 
-            final int BATCH_SIZE = AtlasConfiguration.ATLAS_CASSANDRA_BATCH_SIZE.getInt();
-            Map<String, Result> batchResults = new LinkedHashMap<>(BATCH_SIZE);
+            Map<String, Result> resultsById = new LinkedHashMap<>();
             Map<String, AtlasEntityHeader> vertexIdHeader = new HashMap<>();
 
-            // Process vertices in batches but collect all relation IDs
             while (iterator.hasNext()) {
-                // Clear previous batch data
-                batchResults.clear();
+                Result result = iterator.next();
+                String id = result.getVertexId().toString();
+                resultsById.putIfAbsent(id, result);
+            }
 
-                // Collect batch of results
-                while (iterator.hasNext() && batchResults.size() < BATCH_SIZE) {
-                    Result result = iterator.next();
-                    String id = result.getVertexId().toString();
-                    batchResults.putIfAbsent(id, result);
-                }
+            if (resultsById.isEmpty()) {
+                return;
+            }
 
-                if (batchResults.isEmpty()) {
-                    break;
-                }
+            List<String> vertexIds = new ArrayList<>(resultsById.keySet());
+            Map<String, DynamicVertex> vertexPropertiesMap = dynamicVertexService.retrieveVertices(vertexIds);
 
-                // Fetch vertex properties in batch
-                List<String> batchVertexIds = new ArrayList<>(batchResults.keySet());
-                Map<String, DynamicVertex> vertexPropertiesMap = dynamicVertexService.retrieveVertices(batchVertexIds);
+            if (vertexPropertiesMap == null || vertexPropertiesMap.isEmpty()) {
+                return;
+            }
 
-                if (vertexPropertiesMap == null || vertexPropertiesMap.isEmpty()) {
+            for (String vertexId : vertexIds) {
+                DynamicVertex vertex = vertexPropertiesMap.get(vertexId);
+                if (vertex == null) {
                     continue;
                 }
 
-                // Process each vertex in the batch
-                for (String vertexId : batchVertexIds) {
-                    DynamicVertex vertex = vertexPropertiesMap.get(vertexId);
-                    if (vertex == null) {
-                        continue;
-                    }
-
-                    Result result = batchResults.get(vertexId);
-                    String typeName = vertex.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class);
-                    if (typeName == null) {
-                        continue;
-                    }
-
-                    AtlasEntityType type = typeRegistry.getEntityTypeByName(typeName);
-
-                    // Create entity header
-                    AtlasEntityHeader header = new AtlasEntityHeader();
-                    String guid = vertex.getProperty(GUID_PROPERTY_KEY, String.class);
-                    header.setGuid(guid);
-                    header.setTypeName(typeName);
-
-                    // Set timestamp properties
-                    Long createTime = vertex.getProperty(TIMESTAMP_PROPERTY_KEY, Long.class);
-                    if (createTime != null) {
-                        header.setCreateTime(new Date(createTime));
-                    }
-
-                    header.setCreatedBy(vertex.getProperty(CREATED_BY_KEY, String.class));
-
-                    Long updateTime = vertex.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
-                    if (updateTime != null) {
-                        header.setUpdateTime(new Date(updateTime));
-                    }
-
-                    header.setUpdatedBy(vertex.getProperty(MODIFIED_BY_KEY, String.class));
-                    header.setDisplayText(getDisplayText(vertex, type).toString());
-                    header.setLabels(parseLabelsString(vertex.getProperty(LABELS_PROPERTY_KEY, String.class)));
-
-                    // Set incomplete flag
-                    Integer value = vertex.getProperty(Constants.IS_INCOMPLETE_PROPERTY_KEY, Integer.class);
-                    header.setIsIncomplete(value != null && value.equals(INCOMPLETE_ENTITY_VALUE));
-
-                    // Set entity status
-                    String state = vertex.getProperty(Constants.STATE_PROPERTY_KEY, String.class);
-                    if (state != null) {
-                        Id.EntityState entityState = Id.EntityState.valueOf(state);
-                        header.setStatus((entityState == Id.EntityState.DELETED) ? AtlasEntity.Status.DELETED : ACTIVE);
-                    } else {
-                        header.setStatus(ACTIVE);
-                    }
-
-                    Set<String> allRequiredAttrs = new HashSet<>();
-                    if (type != null) {
-                        allRequiredAttrs.addAll(type.getHeaderAttributes().keySet());
-                    }
-                    allRequiredAttrs.addAll(resultAttributes);
-
-                    // includes primitives, structs, meanings and enums
-                    header.setAttributes(filterMapByKeys(type, vertex, allRequiredAttrs));
-
-
-
-                    // Handle classifications if needed
-                    // this is additional cassandra call per asset in a batch
-                    if (includeClassifications || includeClassificationNames) {
-                        List<AtlasClassification> tags = entityRetriever.getAllClassifications(vertexId);
-                        if (includeClassifications) {
-                            header.setClassifications(tags);
-                        }
-                        if (includeClassificationNames) {
-                            header.setClassificationNames(getAllTagNames(tags));
-                        }
-                    }
-
-                    // Handle meanings if needed
-                    if (includeMeanings) {
-                        Object meaningsObj = vertex.getProperty("meanings", List.class);
-                        if (meaningsObj instanceof List) {
-                            List<AtlasTermAssignmentHeader> termAssignmentHeaders = (List<AtlasTermAssignmentHeader>) meaningsObj;
-                            header.setMeanings(termAssignmentHeaders);
-
-                            if (!termAssignmentHeaders.isEmpty()) {
-                                List<String> meaningNames = new ArrayList<>(termAssignmentHeaders.size());
-                                for (AtlasTermAssignmentHeader term : termAssignmentHeaders) {
-                                    String displayText = term.getDisplayText();
-                                    if (displayText != null) {
-                                        meaningNames.add(displayText);
-                                    }
-                                }
-                                header.setMeaningNames(meaningNames);
-                            }
-                        }
-                    }
-
-                    // Handle business attributes
-                    Map<String, Map<String, AtlasBusinessMetadataType.AtlasBusinessAttribute>> businessAttributeS = type.getBusinessAttributes();
-                    if (MapUtils.isNotEmpty(businessAttributeS)) {
-                        for (Map.Entry<String, Map<String, AtlasBusinessMetadataType.AtlasBusinessAttribute>> entry : businessAttributeS.entrySet()) {
-                            String businessAttributeName = entry.getKey();
-                            for (Map.Entry<String, AtlasBusinessMetadataType.AtlasBusinessAttribute> attributeTypes : entry.getValue().entrySet()) {
-                                String attributeTypeName = attributeTypes.getKey();
-                                AtlasBusinessMetadataType.AtlasBusinessAttribute businessAttribute = attributeTypes.getValue();
-                                AtlasType atlasType = businessAttribute.getAttributeType();
-                                String fqAttributeName = businessAttributeName + "." + attributeTypeName;
-                                if (resultAttributes.contains(fqAttributeName)) {
-                                    Object attributeValue;
-                                    if (atlasType.getTypeCategory().equals(TypeCategory.PRIMITIVE)) {
-                                        attributeValue = vertex.getProperty(attributeTypeName, getPrimitiveClass(atlasType.getTypeName()));
-                                    } else {
-                                        attributeValue = vertex.getProperty(attributeTypeName, Object.class);
-                                    }
-                                    header.setAttribute(fqAttributeName, attributeValue);
-                                }
-                            }
-                        }
-                    }
-
-
-                    // Store for later relation processing
-                    vertexIdHeader.put(vertexId, header);
-
-                    // Add search metadata
-                    if (showSearchScore) {
-                        ret.addEntityScore(guid, result.getScore());
-                    }
-
-                    if (showSearchMetadata) {
-                        ret.addHighlights(guid, result.getHighLights());
-                        ret.addSort(guid, result.getSort());
-                    } else if (showHighlights) {
-                        ret.addHighlights(guid, result.getHighLights());
-                    }
-
-                    ret.addEntity(header);
+                Result result = resultsById.get(vertexId);
+                String typeName = vertex.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class);
+                if (typeName == null) {
+                    continue;
                 }
+
+                AtlasEntityType type = typeRegistry.getEntityTypeByName(typeName);
+
+                // Create entity header
+                AtlasEntityHeader header = new AtlasEntityHeader();
+                String guid = vertex.getProperty(GUID_PROPERTY_KEY, String.class);
+                header.setGuid(guid);
+                header.setTypeName(typeName);
+
+                // Set timestamp properties
+                Long createTime = vertex.getProperty(TIMESTAMP_PROPERTY_KEY, Long.class);
+                if (createTime != null) {
+                    header.setCreateTime(new Date(createTime));
+                }
+
+                header.setCreatedBy(vertex.getProperty(CREATED_BY_KEY, String.class));
+
+                Long updateTime = vertex.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+                if (updateTime != null) {
+                    header.setUpdateTime(new Date(updateTime));
+                }
+
+                header.setUpdatedBy(vertex.getProperty(MODIFIED_BY_KEY, String.class));
+                header.setDisplayText(getDisplayText(vertex, type).toString());
+                header.setLabels(parseLabelsString(vertex.getProperty(LABELS_PROPERTY_KEY, String.class)));
+
+                // Set incomplete flag
+                Integer value = vertex.getProperty(Constants.IS_INCOMPLETE_PROPERTY_KEY, Integer.class);
+                header.setIsIncomplete(value != null && value.equals(INCOMPLETE_ENTITY_VALUE));
+
+                // Set entity status
+                String state = vertex.getProperty(Constants.STATE_PROPERTY_KEY, String.class);
+                if (state != null) {
+                    Id.EntityState entityState = Id.EntityState.valueOf(state);
+                    header.setStatus((entityState == Id.EntityState.DELETED) ? AtlasEntity.Status.DELETED : ACTIVE);
+                } else {
+                    header.setStatus(ACTIVE);
+                }
+
+                Set<String> allRequiredAttrs = new HashSet<>();
+                if (type != null) {
+                    allRequiredAttrs.addAll(type.getHeaderAttributes().keySet());
+                }
+                allRequiredAttrs.addAll(resultAttributes);
+
+                // includes primitives, structs, meanings and enums
+                header.setAttributes(filterMapByKeys(type, vertex, allRequiredAttrs));
+
+                // Handle classifications if needed
+                // this is additional cassandra call per asset in a batch
+                if (includeClassifications || includeClassificationNames) {
+                    List<AtlasClassification> tags = entityRetriever.getAllClassifications(vertexId);
+                    if (includeClassifications) {
+                        header.setClassifications(tags);
+                    }
+                    if (includeClassificationNames) {
+                        header.setClassificationNames(getAllTagNames(tags));
+                    }
+                }
+
+                // Handle meanings if needed
+                if (includeMeanings) {
+                    Object meaningsObj = vertex.getProperty("meanings", List.class);
+                    if (meaningsObj instanceof List) {
+                        List<AtlasTermAssignmentHeader> termAssignmentHeaders = (List<AtlasTermAssignmentHeader>) meaningsObj;
+                        header.setMeanings(termAssignmentHeaders);
+
+                        if (!termAssignmentHeaders.isEmpty()) {
+                            List<String> meaningNames = new ArrayList<>(termAssignmentHeaders.size());
+                            for (AtlasTermAssignmentHeader term : termAssignmentHeaders) {
+                                String displayText = term.getDisplayText();
+                                if (displayText != null) {
+                                    meaningNames.add(displayText);
+                                }
+                            }
+                            header.setMeaningNames(meaningNames);
+                        }
+                    }
+                }
+
+                // Handle business attributes
+                Map<String, Map<String, AtlasBusinessMetadataType.AtlasBusinessAttribute>> businessAttributeS = type.getBusinessAttributes();
+                if (MapUtils.isNotEmpty(businessAttributeS)) {
+                    for (Map.Entry<String, Map<String, AtlasBusinessMetadataType.AtlasBusinessAttribute>> entry : businessAttributeS.entrySet()) {
+                        String businessAttributeName = entry.getKey();
+                        for (Map.Entry<String, AtlasBusinessMetadataType.AtlasBusinessAttribute> attributeTypes : entry.getValue().entrySet()) {
+                            String attributeTypeName = attributeTypes.getKey();
+                            AtlasBusinessMetadataType.AtlasBusinessAttribute businessAttribute = attributeTypes.getValue();
+                            AtlasType atlasType = businessAttribute.getAttributeType();
+                            String fqAttributeName = businessAttributeName + "." + attributeTypeName;
+                            if (resultAttributes.contains(fqAttributeName)) {
+                                Object attributeValue;
+                                if (atlasType.getTypeCategory().equals(TypeCategory.PRIMITIVE)) {
+                                    attributeValue = vertex.getProperty(attributeTypeName, getPrimitiveClass(atlasType.getTypeName()));
+                                } else {
+                                    attributeValue = vertex.getProperty(attributeTypeName, Object.class);
+                                }
+                                header.setAttribute(fqAttributeName, attributeValue);
+                            }
+                        }
+                    }
+                }
+
+                // Store for later relation processing
+                vertexIdHeader.put(vertexId, header);
+
+                // Add search metadata
+                if (showSearchScore) {
+                    ret.addEntityScore(guid, result.getScore());
+                }
+
+                if (showSearchMetadata) {
+                    ret.addHighlights(guid, result.getHighLights());
+                    ret.addSort(guid, result.getSort());
+                } else if (showHighlights) {
+                    ret.addHighlights(guid, result.getHighLights());
+                }
+
+                ret.addEntity(header);
             }
 
             Map<String, Map<String, Set<String>>> edgeVertices = mapEdges(vertexIdHeader, resultAttributes,
