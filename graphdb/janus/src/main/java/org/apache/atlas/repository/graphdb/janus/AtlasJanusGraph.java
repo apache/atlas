@@ -292,10 +292,9 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         String createAssetsTable = String.format(
                 "CREATE TABLE IF NOT EXISTS %s.%s (" +
                         "id text, " +
-                        "bucket int, " +
                         "json_data text, " +
                         "updated_at timestamp, " +
-                        "PRIMARY KEY ((bucket),id)" +
+                        "PRIMARY KEY (id)" +
                         ") WITH compaction = {'class': 'SizeTieredCompactionStrategy', 'min_threshold': 4, 'max_threshold': 32};",
                 keyspace, "assets");
 
