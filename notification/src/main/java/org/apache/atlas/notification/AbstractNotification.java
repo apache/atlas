@@ -27,7 +27,7 @@ import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.model.notification.MessageVersion;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

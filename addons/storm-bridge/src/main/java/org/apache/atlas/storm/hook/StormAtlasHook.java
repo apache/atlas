@@ -26,6 +26,11 @@ import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.HdfsNameServiceResolver;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.storm.ISubmitterHook;
 import org.apache.storm.generated.Bolt;
 import org.apache.storm.generated.SpoutSpec;
@@ -37,11 +42,6 @@ import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.storm.model.StormDataTypes;
-import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hive.conf.HiveConf;
 import org.slf4j.Logger;
 
 import java.io.Serializable;

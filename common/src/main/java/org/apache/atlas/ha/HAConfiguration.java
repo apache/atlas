@@ -20,7 +20,7 @@ package org.apache.atlas.ha;
 
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;

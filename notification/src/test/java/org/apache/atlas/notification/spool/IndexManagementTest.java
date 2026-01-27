@@ -20,7 +20,7 @@ package org.apache.atlas.notification.spool;
 import org.apache.atlas.notification.spool.models.IndexRecord;
 import org.apache.atlas.notification.spool.models.IndexRecords;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 

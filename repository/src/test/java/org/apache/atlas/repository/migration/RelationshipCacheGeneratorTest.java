@@ -27,7 +27,7 @@ import org.apache.atlas.repository.graphdb.janus.migration.RelationshipCacheGene
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;

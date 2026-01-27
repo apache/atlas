@@ -24,7 +24,7 @@ import org.apache.atlas.query.GremlinQuery;
 import org.apache.atlas.query.SelectClauseComposer;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

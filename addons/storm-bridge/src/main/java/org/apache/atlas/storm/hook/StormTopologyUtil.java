@@ -18,12 +18,12 @@
 
 package org.apache.atlas.storm.hook;
 
-import org.apache.commons.lang.StringUtils;
+import com.google.common.base.Joiner;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.storm.generated.Bolt;
 import org.apache.storm.generated.GlobalStreamId;
 import org.apache.storm.generated.Grouping;
 import org.apache.storm.generated.StormTopology;
-import com.google.common.base.Joiner;
 import org.slf4j.Logger;
 
 import java.lang.reflect.Field;

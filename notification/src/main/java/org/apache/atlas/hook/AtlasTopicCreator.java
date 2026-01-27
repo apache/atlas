@@ -24,7 +24,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.KafkaUtils;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;

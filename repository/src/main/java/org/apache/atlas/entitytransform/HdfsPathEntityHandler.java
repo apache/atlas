@@ -18,7 +18,7 @@
 package org.apache.atlas.entitytransform;
 
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 import java.util.List;

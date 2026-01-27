@@ -56,6 +56,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang3.version}</version>
         </dependency>
 
         <dependency>
@@ -136,11 +137,6 @@
                                     <groupId>commons-collections</groupId>
                                     <artifactId>commons-collections</artifactId>
                                     <version>${commons-collections.version}</version>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>commons-lang</groupId>
-                                    <artifactId>commons-lang</artifactId>
-                                    <version>${commons-lang.version}</version>
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.apache.hadoop</groupId>

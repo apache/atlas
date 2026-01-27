@@ -19,7 +19,8 @@
 package org.apache.atlas.impala.hook;
 
 import org.apache.atlas.impala.model.ImpalaOperationType;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.regex.Pattern;
 
 /**
