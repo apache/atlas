@@ -181,8 +181,10 @@ public class QueryCollectionPreProcessor implements PreProcessor {
 
                 //delete collection policies
                 List<AtlasEntityHeader> policies = getCollectionPolicies(collectionGuid);
-                RequestContext.get().setSkipAuthorizationCheck(true);
-                entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
+                if (CollectionUtils.isNotEmpty(policies)) {
+                    RequestContext.get().setSkipAuthorizationCheck(true);
+                    entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
+                }
 
                 //delete collection roles
                 String adminRoleName = String.format(COLL_ADMIN_ROLE_PATTERN, collectionGuid);
@@ -310,7 +312,7 @@ public class QueryCollectionPreProcessor implements PreProcessor {
         indexSearchParams.setSuppressLogs(true);
 
         AtlasSearchResult result = discovery.directIndexSearch(indexSearchParams);
-        if (result != null) {
+        if (result != null && result.getEntities() != null) {
             ret = result.getEntities();
         }
 
