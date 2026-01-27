@@ -1,13 +1,16 @@
 package org.apache.atlas.service.config;
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.service.FeatureFlag;
 import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.service.config.DynamicConfigCacheStore.ConfigEntry;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -42,6 +45,7 @@ import java.util.Objects;
  *    - Feature flag helper methods read from Cassandra cache
  */
 @Component
+@DependsOn("featureFlagStore")
 public class DynamicConfigStore implements ApplicationContextAware {
     private static final Logger LOG = LoggerFactory.getLogger(DynamicConfigStore.class);
 
@@ -80,7 +84,16 @@ public class DynamicConfigStore implements ApplicationContextAware {
             CassandraConfigDAO.initialize(config);
             cassandraAvailable = true;
 
-            // Load initial data into cache
+            // Phase 1 (enabled=true, activated=false): Sync feature flags from Redis to Cassandra
+            // This ensures Cassandra has the current Redis values before activation
+            // Phase 2 (enabled=true, activated=true): Skip Redis sync, Cassandra is the source of truth
+            if (!config.isActivated()) {
+                syncFeatureFlagsFromRedis();
+            } else {
+                LOG.info("Cassandra config store is activated - skipping Redis sync, using Cassandra as source of truth");
+            }
+
+            // Load initial data into cache from Cassandra
             loadAllConfigsIntoCache();
 
             initialized = true;
@@ -120,6 +133,55 @@ public class DynamicConfigStore implements ApplicationContextAware {
         } catch (Exception e) {
             LOG.error("Failed to load configs from Cassandra", e);
             throw e;
+        }
+    }
+
+    /**
+     * Sync feature flags from Redis to Cassandra.
+     * This is Phase 1 of the migration: populate Cassandra with current Redis values.
+     * Only syncs keys that exist in both FeatureFlag (Redis) and ConfigKey (Cassandra).
+     */
+    private void syncFeatureFlagsFromRedis() {
+        LOG.info("Starting feature flag sync from Redis to Cassandra...");
+        int syncedCount = 0;
+        int skippedCount = 0;
+
+        try {
+            CassandraConfigDAO dao = CassandraConfigDAO.getInstance();
+
+            // Iterate through all Redis feature flags
+            for (String flagKey : FeatureFlag.getAllKeys()) {
+                // Only sync if the key also exists in ConfigKey (Cassandra schema)
+                if (!ConfigKey.isValidKey(flagKey)) {
+                    LOG.debug("Skipping Redis flag '{}' - not defined in ConfigKey", flagKey);
+                    skippedCount++;
+                    continue;
+                }
+
+                try {
+                    // Get current value from Redis
+                    String redisValue = FeatureFlagStore.getFlag(flagKey);
+
+                    if (StringUtils.isNotEmpty(redisValue)) {
+                        // Write to Cassandra
+                        dao.putConfig(flagKey, redisValue, "redis-sync");
+                        syncedCount++;
+                        LOG.debug("Synced flag '{}' from Redis to Cassandra: {}", flagKey, redisValue);
+                    } else {
+                        LOG.debug("Skipping flag '{}' - no value in Redis", flagKey);
+                        skippedCount++;
+                    }
+                } catch (Exception e) {
+                    LOG.warn("Failed to sync flag '{}' from Redis - will use default value", flagKey, e);
+                    skippedCount++;
+                }
+            }
+
+            LOG.info("Feature flag sync from Redis completed - synced: {}, skipped: {}", syncedCount, skippedCount);
+
+        } catch (Exception e) {
+            LOG.error("Failed to sync feature flags from Redis to Cassandra", e);
+            // Don't fail initialization - Cassandra may have existing data or we'll use defaults
         }
     }
 
