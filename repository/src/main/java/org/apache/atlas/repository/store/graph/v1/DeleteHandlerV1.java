@@ -834,7 +834,14 @@ public abstract class DeleteHandlerV1 {
         try {
             if (updateInverseAttribute) {
                 String labelWithoutPrefix = edge.getLabel().substring(GraphHelper.EDGE_LABEL_PREFIX.length());
-                AtlasType      parentType = typeRegistry.getType(AtlasGraphUtilsV2.getTypeName(edge.getOutVertex()));
+                // null safe getTypeName
+                String typeName = AtlasGraphUtilsV2.getTypeName(edge.getOutVertex());
+
+                if (StringUtils.isEmpty(typeName)) {
+                    return; //Skipping as typeName is not found
+                }
+
+                AtlasType parentType = typeRegistry.getType(typeName);
 
                 if (parentType instanceof AtlasEntityType) {
                     AtlasEntityType                parentEntityType = (AtlasEntityType) parentType;
