@@ -22,6 +22,8 @@ import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.service.config.ConfigKey;
+import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.service.metrics.MetricsRegistry;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.repository.metrics.TaskMetricsService;
@@ -30,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.PreDestroy;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -56,6 +59,8 @@ public class TaskQueueWatcher implements Runnable {
     private static final String ATLAS_TASK_LOCK = "atlas:task:lock";
 
     private final AtomicBoolean shouldRun = new AtomicBoolean(false);
+    private final AtomicBoolean maintenanceModeActivated = new AtomicBoolean(false);
+    private final String podId = System.getenv().getOrDefault("HOSTNAME", "unknown-pod");
 
     public TaskQueueWatcher(ExecutorService executorService, TaskRegistry registry,
                             Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
@@ -81,8 +86,7 @@ public class TaskQueueWatcher implements Runnable {
 
     @Override
     public void run() {
-        boolean isMaintenanceMode = AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean();
-        if (isMaintenanceMode) {
+        if (isMaintenanceModeEnabled()) {
             LOG.info("TaskQueueWatcher: Maintenance mode is enabled, new tasks will not be loaded into the queue until next restart");
             return;
         }
@@ -94,6 +98,19 @@ public class TaskQueueWatcher implements Runnable {
         LOG.info("TaskQueueWatcher: Time constants - pollInterval: {}, TASK_WAIT_TIME_MS: {}", pollInterval, AtlasConstants.TASK_WAIT_TIME_MS);
 
         while (shouldRun.get()) {
+            // Quick check - if MM is enabled AND we've already recorded activation, skip lock acquisition
+            // We must still acquire lock at least once to set activation metadata
+            if (isMaintenanceModeEnabled() && maintenanceModeActivated.get()) {
+                LOG.info("TaskQueueWatcher: Maintenance mode enabled (already activated), pausing task processing for {} ms", pollInterval);
+                try {
+                    Thread.sleep(pollInterval);
+                } catch (InterruptedException e) {
+                    LOG.warn("TaskQueueWatcher: Sleep interrupted during maintenance mode");
+                    break;
+                }
+                continue;
+            }
+
             RequestContext requestContext = RequestContext.get();
             requestContext.setMetricRegistry(this.metricRegistry);
             TasksFetcher fetcher = new TasksFetcher(registry);
@@ -106,6 +123,20 @@ public class TaskQueueWatcher implements Runnable {
                 }
                 LOG.info("TaskQueueWatcher: Acquired distributed lock: {}", ATLAS_TASK_LOCK);
                 lockAcquired = true;
+
+                // We now hold the lock - we're the "processing pod"
+                // Check MM again - if enabled, set activation and release lock
+                if (isMaintenanceModeEnabled()) {
+                    if (!maintenanceModeActivated.get()) {
+                        setMaintenanceModeActivated();
+                        LOG.info("TaskQueueWatcher: Maintenance mode ACTIVATED - task processing paused by lock-holding pod {}", podId);
+                    }
+                    continue; // Release lock in finally, don't process
+                }
+
+                // Reset local flag when MM is not enabled
+                maintenanceModeActivated.set(false);
+
                 List<AtlasTask> tasks = fetcher.getTasks();
                 
                 // Update queue size metric
@@ -216,9 +247,45 @@ public class TaskQueueWatcher implements Runnable {
         long totalMemory = runtime.totalMemory();
         long freeMemory = runtime.freeMemory();
         long usedMemory = totalMemory - freeMemory;
-        
+
         return (double) usedMemory / maxMemory;
     }
+
+    /**
+     * Check if maintenance mode is enabled dynamically.
+     * Uses DynamicConfigStore if enabled, otherwise falls back to static configuration.
+     *
+     * @return true if maintenance mode is enabled, false otherwise
+     */
+    private boolean isMaintenanceModeEnabled() {
+        try {
+            if (DynamicConfigStore.isEnabled()) {
+                return DynamicConfigStore.getConfigAsBoolean(ConfigKey.MAINTENANCE_MODE.getKey());
+            }
+        } catch (Exception e) {
+            LOG.debug("Error checking DynamicConfigStore for maintenance mode, falling back to static config", e);
+        }
+        return AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean();
+    }
+
+    /**
+     * Set the maintenance mode activation flags in ConfigStore.
+     * Called when task processing is actually paused due to maintenance mode.
+     */
+    private void setMaintenanceModeActivated() {
+        try {
+            if (DynamicConfigStore.isEnabled()) {
+                String now = Instant.now().toString();
+                DynamicConfigStore.setConfig(ConfigKey.MAINTENANCE_MODE_ACTIVATED_AT.getKey(), now, "system");
+                DynamicConfigStore.setConfig(ConfigKey.MAINTENANCE_MODE_ACTIVATED_BY.getKey(), podId, "system");
+                maintenanceModeActivated.set(true);
+                LOG.info("TaskQueueWatcher: Maintenance mode ACTIVATED at {} by pod {}", now, podId);
+            }
+        } catch (Exception e) {
+            LOG.warn("TaskQueueWatcher: Failed to set maintenance mode activation flags", e);
+        }
+    }
+
 
 
     static class TasksFetcher {

@@ -498,6 +498,17 @@ data:
     atlas.types.update.async.enable={{ .Values.atlas.types_update.async_enable }}
     atlas.types.update.thread.count={{ .Values.atlas.types_update.thread_count }}
 
+    ######### Cassandra Config Store #########
+    # Dynamic configuration backed by Cassandra (for feature flags migration from Redis)
+    atlas.config.store.cassandra.enabled={{ .Values.atlas.configStore.cassandra.enabled }}
+    atlas.config.store.cassandra.activated={{ .Values.atlas.configStore.cassandra.activated }}
+    atlas.config.store.sync.interval.ms={{ .Values.atlas.configStore.cassandra.syncIntervalMs }}
+    atlas.config.store.cassandra.keyspace={{ .Values.atlas.configStore.cassandra.keyspace }}
+    atlas.config.store.cassandra.table={{ .Values.atlas.configStore.cassandra.table }}
+    atlas.config.store.app.name={{ .Values.atlas.configStore.cassandra.appName }}
+    atlas.config.store.cassandra.replication.factor={{ .Values.atlas.configStore.cassandra.replicationFactor }}
+    atlas.config.store.cassandra.consistency.level={{ .Values.atlas.configStore.cassandra.consistencyLevel }}
+
     ######### Atlas notification configs #########
     atlas.notification.differential.entity.changes.enabled={{ .Values.atlas.notification.differential_entity_changes_enabled }}
     atlas.enable.tag.notifications.async={{ .Values.atlas.notification.tag_notifications_async_enabled }}

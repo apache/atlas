@@ -105,6 +105,22 @@ atlas:
     thread_count: 5
     lock_name: "atlas-read:type-def:lock"
 
+  # Cassandra Config Store - Dynamic configuration backed by Cassandra
+  # Migration Strategy:
+  # 1. Set enabled=true, activated=false: Enables Cassandra connectivity and data sync from Redis
+  # 2. Set enabled=true, activated=true: Switches reads to use Cassandra instead of Redis
+  configStore:
+    cassandra:
+      enabled: true           # Enable Cassandra connectivity and data sync
+      activated: false         # Activate Cassandra for reads (use instead of Redis)
+      syncIntervalMs: 60000    # Background sync interval in milliseconds
+      keyspace: config_store   # Cassandra keyspace name
+      table: configs           # Cassandra table name
+      appName: atlas           # Application name for partitioning
+      replicationFactor: 3     # Cassandra replication factor
+      # Consistency level: LOCAL_QUORUM for production (requires 2+ nodes), LOCAL_ONE for local dev (single node)
+      consistencyLevel: LOCAL_QUORUM
+
   podAnnotations:
     backup.velero.io/backup-volumes-excludes: master
 

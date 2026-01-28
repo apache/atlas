@@ -65,13 +65,14 @@ import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.repository.store.graph.v2.utils.TagAttributeMapper;
 import org.apache.atlas.repository.util.TagDeNormAttributesUtil;
-import org.apache.atlas.service.FeatureFlagStore;
-import org.apache.atlas.util.RankFeatureUtils;
+import org.apache.atlas.service.config.ConfigKey;
+import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
+import org.apache.atlas.util.RankFeatureUtils;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -4073,7 +4074,7 @@ public class EntityGraphMapper {
             }
         }
 
-        if(!RequestContext.get().isSkipAuthorizationCheck() && FeatureFlagStore.isTagV2Enabled()){
+        if(!RequestContext.get().isSkipAuthorizationCheck() && DynamicConfigStore.isTagV2Enabled()){
             addClassificationsV2(context, guid, classifications);
         } else {
             addClassificationsV1(context, guid, classifications);
@@ -4369,6 +4370,9 @@ public class EntityGraphMapper {
                 List<String> vertexIdsToAdd = new ArrayList<>(impactedVerticeIds);
                 int assetsAffected = 0;
                 for (int i = 0; i < vertexIdsToAdd.size(); i += BATCH_SIZE_FOR_ADD_PROPAGATION) {
+                    // Check for maintenance mode at each batch boundary
+                    checkMaintenanceModeOrInterrupt();
+
                     int end = Math.min(i + BATCH_SIZE_FOR_ADD_PROPAGATION, vertexIdsToAdd.size());
                     List<String> batchIds = vertexIdsToAdd.subList(i, end);
 
@@ -4441,6 +4445,9 @@ public class EntityGraphMapper {
                         List<String> vertexIdsToAdd = new ArrayList<>(impactedVertexIds);
 
                         for (int i = 0; i < vertexIdsToAdd.size(); i += BATCH_SIZE_FOR_ADD_PROPAGATION) {
+                            // Check for maintenance mode at each batch boundary
+                            checkMaintenanceModeOrInterrupt();
+
                             int end = Math.min(i + BATCH_SIZE_FOR_ADD_PROPAGATION, vertexIdsToAdd.size());
                             List<String> batchIds = vertexIdsToAdd.subList(i, end);
 
@@ -4540,6 +4547,9 @@ public class EntityGraphMapper {
 
         try {
             do {
+                // Check for maintenance mode at each chunk boundary
+                checkMaintenanceModeOrInterrupt();
+
                 toIndex = Math.min(offset + CHUNK_SIZE, impactedVerticesSize);
                 List<AtlasVertex> chunkedVerticesToPropagate = verticesToPropagate.subList(offset, toIndex);
                 Set<AtlasVertex> chunkedVerticesToPropagateSet = new HashSet<>(chunkedVerticesToPropagate);
@@ -4733,7 +4743,7 @@ public class EntityGraphMapper {
     }
 
     public void handleDirectDeleteClassification(String entityGuid, String classificationName) throws AtlasBaseException {
-        if(FeatureFlagStore.isTagV2Enabled()) {
+        if(DynamicConfigStore.isTagV2Enabled()) {
             deleteClassificationV2(entityGuid, classificationName);
         } else {
             deleteClassificationV1(entityGuid, classificationName);
@@ -5195,7 +5205,7 @@ public class EntityGraphMapper {
     }
 
     public void handleUpdateClassifications(EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
-        if (FeatureFlagStore.isTagV2Enabled()) {
+        if (DynamicConfigStore.isTagV2Enabled()) {
             updateClassificationsV2(guid, classifications);
         } else {
             updateClassificationsV1(context, guid, classifications);
@@ -5578,6 +5588,9 @@ public class EntityGraphMapper {
             }
 
             while (!batchToDelete.isEmpty()) {
+                // Check for maintenance mode at each page boundary
+                checkMaintenanceModeOrInterrupt();
+
                 // collect the vertex IDs in this batch
                 List<String> vertexIds = batchToDelete.stream()
                         .map(Tag::getVertexId)
@@ -6822,6 +6835,9 @@ public class EntityGraphMapper {
             int totalCountOfPropagatedTags = 0;
 
             while (hasMorePages) {
+                // Check for maintenance mode at each page boundary
+                checkMaintenanceModeOrInterrupt();
+
                 pageCount++;
                 PaginatedTagResult result = tagDAO.getPropagationsForAttachmentBatchWithPagination(entityVertexId, classificationTypeName, pagingState, BATCH_SIZE);
                 List<Tag> currentPageTags = result.getTags();
@@ -6860,6 +6876,9 @@ public class EntityGraphMapper {
                 LOG.info("classificationRefreshPropagationV2_new: Found {} assets that need the tag '{}' to be newly propagated.", expectedPropagatedVertexIds.size(), classificationTypeName);
                 List<String> vertexIdsToAdd = new ArrayList<>(expectedPropagatedVertexIds);
                 for (int i = 0; i < vertexIdsToAdd.size(); i += BATCH_SIZE) {
+                    // Check for maintenance mode at each batch boundary
+                    checkMaintenanceModeOrInterrupt();
+
                     int end = Math.min(i + BATCH_SIZE, vertexIdsToAdd.size());
                     List<String> batchIds = vertexIdsToAdd.subList(i, end);
 
@@ -7031,6 +7050,42 @@ public class EntityGraphMapper {
             }
         }
         return primitiveAttributes;
+    }
+
+    /**
+     * Check if maintenance mode is enabled and throw an exception if so.
+     * Also checks for thread interruption.
+     * This is used to gracefully stop long-running classification propagation tasks.
+     *
+     * @throws AtlasBaseException if maintenance mode is enabled or thread is interrupted
+     */
+    private void checkMaintenanceModeOrInterrupt() throws AtlasBaseException {
+        if (Thread.currentThread().isInterrupted()) {
+            throw new AtlasBaseException(AtlasErrorCode.TASK_INTERRUPTED,
+                "Task interrupted due to thread interruption");
+        }
+
+        if (isMaintenanceModeEnabled()) {
+            throw new AtlasBaseException(AtlasErrorCode.MAINTENANCE_MODE_ENABLED,
+                "Task stopped due to maintenance mode");
+        }
+    }
+
+    /**
+     * Check if maintenance mode is enabled dynamically.
+     * Uses DynamicConfigStore if enabled, otherwise falls back to static configuration.
+     *
+     * @return true if maintenance mode is enabled, false otherwise
+     */
+    private boolean isMaintenanceModeEnabled() {
+        try {
+            if (DynamicConfigStore.isEnabled()) {
+                return DynamicConfigStore.getConfigAsBoolean(ConfigKey.MAINTENANCE_MODE.getKey());
+            }
+        } catch (Exception e) {
+            LOG.debug("Error checking DynamicConfigStore for maintenance mode, falling back to static config", e);
+        }
+        return AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean();
     }
 
 }

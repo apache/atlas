@@ -15,7 +15,7 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
-import org.apache.atlas.service.FeatureFlagStore;
+import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -293,7 +293,7 @@ public class EntityMutationService {
         Map<String, String> errorMap = new HashMap<>(0);
 
         boolean isGraphTransactionFailed = false;
-        boolean isTagV2Enabled = FeatureFlagStore.isTagV2Enabled();
+        boolean isTagV2Enabled = DynamicConfigStore.isTagV2Enabled();
 
         int batchSize = isTagV2Enabled ? 300 : 20;
         List<List<String>> chunks = Lists.partition(guids, batchSize);
