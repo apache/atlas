@@ -316,7 +316,7 @@ const ProfileTab: React.FC<EntityDetailTabProps> = ({ entity }) => {
               isFetching={isLoading}
               defaultSortCol={getDefaultSort}
               clientSideSorting={false}
-              columnSort={true}
+              columnSort={false}
               columnVisibility={false}
               showRowSelection={true}
               showPagination={true}
