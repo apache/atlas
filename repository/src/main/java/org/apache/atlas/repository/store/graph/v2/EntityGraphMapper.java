@@ -1160,7 +1160,7 @@ public class EntityGraphMapper {
             return false;
         }
         
-        boolean isPresentInPayload = struct.hasAttribute(attribute.getName());
+        boolean isPresentInPayload = struct.hasAttribute(attribute.getName()) || ((AtlasEntity) struct).hasRelationshipAttribute(attribute.getName());
         AtlasAttributeDef attributeDef = attribute.getAttributeDef();
 
         return !isPresentInPayload && attributeDef.getIsOptional() && attributeDef.getDefaultValue() == null
