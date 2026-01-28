@@ -131,8 +131,8 @@ define(['require',
         onRender: function() {
             var that = this;
             if (Globals.userLogedIn.status) {
-                that.$('.userName').html(Globals.userLogedIn.response.userName);
-            }
+               that.$('.userName').text(Globals.userLogedIn.response.userName);
+           }
             if (this.options.fromDefaultSearch !== true) {
                 this.renderGlobalSearch();
             }
