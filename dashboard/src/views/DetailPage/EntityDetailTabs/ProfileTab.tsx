@@ -315,8 +315,8 @@ const ProfileTab: React.FC<EntityDetailTabProps> = ({ entity }) => {
               emptyText="No Records found!"
               isFetching={isLoading}
               defaultSortCol={getDefaultSort}
-              clientSideSorting={true}
-              columnSort={true}
+              clientSideSorting={false}
+              columnSort={false}
               columnVisibility={false}
               showRowSelection={true}
               showPagination={true}
