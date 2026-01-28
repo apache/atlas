@@ -838,6 +838,7 @@ public abstract class DeleteHandlerV1 {
                 String typeName = AtlasGraphUtilsV2.getTypeName(edge.getOutVertex());
 
                 if (StringUtils.isEmpty(typeName)) {
+                    LOG.warn("typeName not found for the vertex {}", edge.getOutVertex().getIdForDisplay());
                     return; //Skipping as typeName is not found
                 }
 
