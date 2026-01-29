@@ -49,7 +49,6 @@ define(['require',
             administrator: "[data-id='administrator']",
             showDebug: "[data-id='showDebug']",
             reactUISwitch: "[data-id='reactUISwitch']",
-            uiSwitch: "[data-id='uiSwitch']",
             glossaryImport: "[data-id='glossaryImport']",
             businessMetadataImport: "[data-id='businessMetadataImport']",
             showDownloads: "[data-id='showDownloads']"
@@ -79,13 +78,6 @@ define(['require',
             };
             events["click " + this.ui.reactUISwitch] = function() {
                 var path = Utils.getBaseUrl(window.location.pathname) + "/n3/index.html";
-                if (window.location.hash.length > 2) {
-                    path += window.location.hash;
-                }
-                window.location.href = path;
-            };
-            events["click " + this.ui.uiSwitch] = function() {
-                var path = Utils.getBaseUrl(window.location.pathname) + "/n/index.html";
                 if (window.location.hash.length > 2) {
                     path += window.location.hash;
                 }

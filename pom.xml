@@ -60,7 +60,6 @@
         <module>common</module>
         <module>dashboard</module>
         <module>dashboardv2</module>
-        <module>dashboardv3</module>
 
         <module>distro</module>
         <module>docs</module>
@@ -171,7 +170,6 @@
         <postgresql.version>42.7.7</postgresql.version>
         <project.build.dashboard.gruntBuild>run build</project.build.dashboard.gruntBuild>
         <project.build.dashboardv2.gruntBuild>build-minify</project.build.dashboardv2.gruntBuild>
-        <project.build.dashboardv3.gruntBuild>build-minify</project.build.dashboardv3.gruntBuild>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <projectBaseDir>${project.basedir}</projectBaseDir>
@@ -444,13 +442,6 @@
             <dependency>
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-dashboardv2</artifactId>
-                <version>${project.version}</version>
-                <type>war</type>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-dashboardv3</artifactId>
                 <version>${project.version}</version>
                 <type>war</type>
             </dependency>
@@ -2384,7 +2375,6 @@
             <id>skipMinify</id>
             <properties>
                 <project.build.dashboardv2.gruntBuild>build</project.build.dashboardv2.gruntBuild>
-                <project.build.dashboardv3.gruntBuild>build</project.build.dashboardv3.gruntBuild>
             </properties>
         </profile>
 
