@@ -107,9 +107,6 @@ function redirect(baseUrl) {
                 case "v1":
                     indexpath = "/index.html";      // classic UI
                     break;
-                case "v2":
-                    indexpath = "/n/index.html";    // beta UI
-                    break;
                 case "v3":
                 default:
                     indexpath = "/n3/index.html";   // react UI

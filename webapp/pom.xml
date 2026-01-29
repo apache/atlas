@@ -172,11 +172,6 @@
         </dependency>
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-dashboardv3</artifactId>
-            <type>war</type>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-graphdb-impls</artifactId>
             <type>pom</type>
             <exclusions>
@@ -521,10 +516,6 @@
                         <overlay>
                             <groupId>org.apache.atlas</groupId>
                             <artifactId>atlas-dashboardv2</artifactId>
-                        </overlay>
-                        <overlay>
-                            <groupId>org.apache.atlas</groupId>
-                            <artifactId>atlas-dashboardv3</artifactId>
                         </overlay>
                         <overlay>
                             <!-- empty groupId/artifactId represents the current build -->
