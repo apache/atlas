@@ -267,7 +267,7 @@ public class ConnectionPreProcessor implements PreProcessor {
 
         List mustClauseList = new ArrayList();
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", POLICY_ENTITY_TYPE)));
-        mustClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, guid + "/*")));
+        mustClauseList.add(mapOf("prefix", mapOf(QUALIFIED_NAME, guid + "/")));
         mustClauseList.add(mapOf("term", mapOf("policyRoles", roleName)));
 
         dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
@@ -276,8 +276,11 @@ public class ConnectionPreProcessor implements PreProcessor {
         indexSearchParams.setSuppressLogs(true);
 
         AtlasSearchResult result = discovery.directIndexSearch(indexSearchParams);
-        if (result != null) {
+        if (result != null && result.getEntities() != null) {
             ret = result.getEntities();
+        }
+        if (CollectionUtils.isEmpty(ret)) {
+            throw new AtlasBaseException("No policies found for connection with guid: " + guid + " and role: " + roleName);
         }
 
         return ret;

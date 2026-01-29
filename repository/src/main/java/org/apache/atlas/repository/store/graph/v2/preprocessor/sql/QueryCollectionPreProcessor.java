@@ -181,10 +181,11 @@ public class QueryCollectionPreProcessor implements PreProcessor {
 
                 //delete collection policies
                 List<AtlasEntityHeader> policies = getCollectionPolicies(collectionGuid);
-                if (CollectionUtils.isNotEmpty(policies)) {
-                    RequestContext.get().setSkipAuthorizationCheck(true);
-                    entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
+                if (CollectionUtils.isEmpty(policies)) {
+                    throw new AtlasBaseException("No policies found for collection with guid: " + collectionGuid);
                 }
+                RequestContext.get().setSkipAuthorizationCheck(true);
+                entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
 
                 //delete collection roles
                 String adminRoleName = String.format(COLL_ADMIN_ROLE_PATTERN, collectionGuid);
@@ -304,7 +305,7 @@ public class QueryCollectionPreProcessor implements PreProcessor {
         mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
 
 
-        mustClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, guid + "/*")));
+        mustClauseList.add(mapOf("prefix", mapOf(QUALIFIED_NAME, guid + "/")));
 
         dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
 
