@@ -32,6 +32,8 @@ import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
+import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
@@ -84,17 +86,19 @@ public class QueryCollectionPreProcessor implements PreProcessor {
     private PreProcessorPoliciesTransformer transformer;
     private FeatureFlagStore featureFlagStore;
     private KeycloakStore keycloakStore;
+    private final DeleteHandlerDelegate deleteDelegate;
 
     public QueryCollectionPreProcessor(AtlasTypeRegistry typeRegistry,
                                        EntityDiscoveryService discovery,
                                        EntityGraphRetriever entityRetriever,
                                        FeatureFlagStore featureFlagStore,
-                                       AtlasEntityStore entityStore) {
+                                       AtlasEntityStore entityStore, DeleteHandlerDelegate deleteDelegate) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
         this.entityStore = entityStore;
         this.featureFlagStore = featureFlagStore;
         this.discovery = discovery;
+        this.deleteDelegate = deleteDelegate;
 
         transformer = new PreProcessorPoliciesTransformer();
         keycloakStore = new KeycloakStore();
@@ -176,16 +180,20 @@ public class QueryCollectionPreProcessor implements PreProcessor {
                 throw new AtlasBaseException("Collection is already deleted/purged");
             }
 
+            if (isDeleteTypeSoft()) {
+                LOG.info("Skipping processDelete for connection as delete type is {}", RequestContext.get().getDeleteType());
+                return;
+            }
+
             if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
                 String collectionGuid = GraphHelper.getGuid(vertex);
 
                 //delete collection policies
                 List<AtlasEntityHeader> policies = getCollectionPolicies(collectionGuid);
-                if (CollectionUtils.isEmpty(policies)) {
-                    throw new AtlasBaseException("No policies found for collection with guid: " + collectionGuid);
+                if (CollectionUtils.isNotEmpty(policies)) {
+                    RequestContext.get().setSkipAuthorizationCheck(true);
+                    entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
                 }
-                RequestContext.get().setSkipAuthorizationCheck(true);
-                entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
 
                 //delete collection roles
                 String adminRoleName = String.format(COLL_ADMIN_ROLE_PATTERN, collectionGuid);
@@ -292,6 +300,10 @@ public class QueryCollectionPreProcessor implements PreProcessor {
                 keycloakStore.updateRoleGroups(viewerRoleName, currentViewerGroups, newViewerGroups, representation);
             }
         }
+    }
+
+    private boolean isDeleteTypeSoft() {
+        return deleteDelegate.getHandler().getClass().equals(SoftDeleteHandlerV1.class);
     }
 
     private List<AtlasEntityHeader> getCollectionPolicies(String guid) throws AtlasBaseException {

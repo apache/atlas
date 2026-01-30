@@ -249,7 +249,9 @@ public class ConnectionPreProcessor implements PreProcessor {
 
             //delete connection policies
             List<AtlasEntityHeader> policies = getConnectionPolicies(connection.getGuid(), roleName);
-            entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
+            if(CollectionUtils.isNotEmpty(policies)){
+                entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
+            }
 
             keycloakStore.removeRoleByName(roleName);
         }
@@ -278,9 +280,6 @@ public class ConnectionPreProcessor implements PreProcessor {
         AtlasSearchResult result = discovery.directIndexSearch(indexSearchParams);
         if (result != null && result.getEntities() != null) {
             ret = result.getEntities();
-        }
-        if (CollectionUtils.isEmpty(ret)) {
-            throw new AtlasBaseException("No policies found for connection with guid: " + guid + " and role: " + roleName);
         }
 
         return ret;

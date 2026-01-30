@@ -2233,7 +2233,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case QUERY_COLLECTION_ENTITY_TYPE:
-                preProcessors.add(new QueryCollectionPreProcessor(typeRegistry, discovery, entityRetriever, featureFlagStore, this));
+                preProcessors.add(new QueryCollectionPreProcessor(typeRegistry, discovery, entityRetriever, featureFlagStore, this, deleteDelegate));
                 break;
 
             case PERSONA_ENTITY_TYPE:
