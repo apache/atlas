@@ -1826,8 +1826,12 @@ public abstract class DeleteHandlerV1 {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord(METRIC_HASLINEAGE_REMOVE);
         long startTime = System.currentTimeMillis();
         int verticesProcessed = 0;
-        int verticesSkipped = 0;
+        int verticesSkippedNonLineageType = 0;
+        int verticesSkippedNoEdges = 0;
+        int verticesSkippedNoActiveEdges = 0;
         int edgesIterated = 0;
+        int edgeIteratorInitCount = 0;
+        int edgeIteratorEmptyCount = 0;
 
         if (RequestContext.get().skipHasLineageCalculation()) {
             if (LOG.isDebugEnabled()) {
@@ -1841,6 +1845,8 @@ public abstract class DeleteHandlerV1 {
         boolean distributedHasLineageCalculationEnabled = AtlasConfiguration.ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()
                 && AtlasConfiguration.ENABLE_DISTRIBUTED_HAS_LINEAGE_CALCULATION.getBoolean();
 
+        boolean earlyExitEnabled = DELETE_HASLINEAGE_EARLYEXIT_ENABLED.getBoolean();
+
         for (AtlasVertex vertexToBeDeleted : vertices) {
             if (ACTIVE.equals(getStatus(vertexToBeDeleted))) {
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(getTypeName(vertexToBeDeleted));
@@ -1848,24 +1854,55 @@ public abstract class DeleteHandlerV1 {
                 boolean isCatalog = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
 
                 if (isCatalog || isProcess) {
+                    // Phase 2A: Early exit - check if vertex has ANY lineage edges before full iteration
+                    // Note: getEdges().iterator() cost is implementation-dependent; we measure it below
+                    if (earlyExitEnabled) {
+                        edgeIteratorInitCount++;
+                        Iterator<AtlasEdge> quickCheckIterator = vertexToBeDeleted.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
+                        if (!quickCheckIterator.hasNext()) {
+                            // No lineage edges at all - skip entirely
+                            edgeIteratorEmptyCount++;
+                            verticesSkippedNoEdges++;
+                            if (LOG.isDebugEnabled()) {
+                                LOG.debug("removeHasLineageOnDelete early-exit: vertex {} has no lineage edges, skipping",
+                                        getGuid(vertexToBeDeleted));
+                            }
+                            continue;
+                        }
+                    }
+
                     verticesProcessed++;
 
+                    // Full edge iteration to collect active edges
+                    edgeIteratorInitCount++;
                     Iterator<AtlasEdge> edgeIterator = vertexToBeDeleted.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
 
                     Set<AtlasEdge> edgesToBeDeleted = new HashSet<>();
 
                     while (edgeIterator.hasNext()) {
-                        edgesIterated++;  // Count edge iterations
+                        edgesIterated++;
                         AtlasEdge edge = edgeIterator.next();
                         if (ACTIVE.equals(getStatus(edge))) {
                             edgesToBeDeleted.add(edge);
                         }
                     }
 
-                    if (!distributedHasLineageCalculationEnabled){
+                    // Phase 2A: Early exit - skip deeper processing if no active edges found
+                    if (earlyExitEnabled && edgesToBeDeleted.isEmpty()) {
+                        verticesSkippedNoActiveEdges++;
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("removeHasLineageOnDelete early-exit: vertex {} has no ACTIVE lineage edges, skipping deeper processing",
+                                    getGuid(vertexToBeDeleted));
+                        }
+                        continue;
+                    }
+
+                    // Process edges - preserve original behavior: call even with empty set when flag is OFF
+                    if (!distributedHasLineageCalculationEnabled) {
                         resetHasLineageOnInputOutputDelete(edgesToBeDeleted, vertexToBeDeleted);
                     } else {
                         // Populate RemovedElementsMap for async hasLineage calculation
+                        // Note: This check was in original code - only populate if non-empty
                         if (!edgesToBeDeleted.isEmpty()) {
                             String guid = getGuid(vertexToBeDeleted);
                             List<Object> removedElement = RequestContext.get().getRemovedElementsMap().get(guid);
@@ -1880,7 +1917,7 @@ public abstract class DeleteHandlerV1 {
                         }
                     }
                 } else {
-                    verticesSkipped++;  // Not a lineage-relevant entity type
+                    verticesSkippedNonLineageType++;
                 }
             }
         }
@@ -1889,25 +1926,43 @@ public abstract class DeleteHandlerV1 {
         long latencyMs = System.currentTimeMillis() - startTime;
         RequestContext.get().addLineageCalcTime(latencyMs);
 
+        int totalSkipped = verticesSkippedNonLineageType + verticesSkippedNoEdges + verticesSkippedNoActiveEdges;
+
         if (LOG.isDebugEnabled()) {
-            LOG.debug("removeHasLineageOnDelete completed: requestId={}, verticesProcessed={}, verticesSkipped={}, edgesIterated={}, latencyMs={}, distributedMode={}, flags=[earlyExit={}, fullDefer={}]",
+            LOG.debug("removeHasLineageOnDelete completed: requestId={}, verticesProcessed={}, skipped=[nonLineageType={}, noEdges={}, noActiveEdges={}], edgesIterated={}, edgeIteratorInit={}, edgeIteratorEmpty={}, latencyMs={}, distributedMode={}, flags=[earlyExit={}, fullDefer={}]",
                     RequestContext.get().getTraceId(),
                     verticesProcessed,
-                    verticesSkipped,
+                    verticesSkippedNonLineageType,
+                    verticesSkippedNoEdges,
+                    verticesSkippedNoActiveEdges,
                     edgesIterated,
+                    edgeIteratorInitCount,
+                    edgeIteratorEmptyCount,
                     latencyMs,
                     distributedHasLineageCalculationEnabled,
-                    DELETE_HASLINEAGE_EARLYEXIT_ENABLED.getBoolean(),
+                    earlyExitEnabled,
                     DELETE_HASLINEAGE_FULLDEFER_ENABLED.getBoolean());
         }
 
         // Log warning for high edge iteration counts
         if (edgesIterated > 1000 || latencyMs > DELETE_SLOW_QUERY_THRESHOLD_MS.getLong()) {
-            LOG.warn("removeHasLineageOnDelete high work: requestId={}, verticesProcessed={}, edgesIterated={}, latencyMs={}",
+            LOG.warn("removeHasLineageOnDelete high work: requestId={}, verticesProcessed={}, totalSkipped={}, edgesIterated={}, latencyMs={}",
                     RequestContext.get().getTraceId(),
                     verticesProcessed,
+                    totalSkipped,
                     edgesIterated,
                     latencyMs);
+        }
+
+        // Log info when early exit saves significant work
+        if (earlyExitEnabled && (verticesSkippedNoEdges > 0 || verticesSkippedNoActiveEdges > 0)) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("removeHasLineageOnDelete early-exit saved work: requestId={}, skippedNoEdges={}, skippedNoActiveEdges={}, edgeIteratorEmpty={}",
+                        RequestContext.get().getTraceId(),
+                        verticesSkippedNoEdges,
+                        verticesSkippedNoActiveEdges,
+                        edgeIteratorEmptyCount);
+            }
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
