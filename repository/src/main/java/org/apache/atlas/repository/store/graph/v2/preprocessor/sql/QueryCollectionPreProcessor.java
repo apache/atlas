@@ -181,7 +181,7 @@ public class QueryCollectionPreProcessor implements PreProcessor {
             }
 
             if (isDeleteTypeSoft()) {
-                LOG.info("Skipping processDelete for connection as delete type is {}", RequestContext.get().getDeleteType());
+                LOG.info("Skipping processDelete for collection as delete type is {}", RequestContext.get().getDeleteType());
                 return;
             }
 
