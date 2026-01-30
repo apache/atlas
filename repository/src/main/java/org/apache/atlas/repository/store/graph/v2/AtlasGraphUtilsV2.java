@@ -426,6 +426,78 @@ public class AtlasGraphUtilsV2 {
         return ret;
     }
 
+    /**
+     * Batch lookup of vertices by GUIDs.
+     *
+     * @param graph the graph instance
+     * @param guids collection of GUIDs to look up (null/empty safe, duplicates handled)
+     * @return Map of GUID to AtlasVertex; missing GUIDs are absent from the map
+     */
+    public static Map<String, AtlasVertex> findByGuids(AtlasGraph graph, Collection<String> guids) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("findByGuids");
+
+        Map<String, AtlasVertex> ret = new HashMap<>();
+
+        if (CollectionUtils.isEmpty(guids)) {
+            RequestContext.get().endMetricRecord(metric);
+            return ret;
+        }
+
+        // Deduplicate and filter nulls
+        Set<String> uniqueGuids = new LinkedHashSet<>();
+        for (String guid : guids) {
+            if (guid != null) {
+                uniqueGuids.add(guid);
+            }
+        }
+
+        if (uniqueGuids.isEmpty()) {
+            RequestContext.get().endMetricRecord(metric);
+            return ret;
+        }
+
+        // Check cache first
+        Set<String> uncachedGuids = new LinkedHashSet<>();
+        for (String guid : uniqueGuids) {
+            AtlasVertex cachedVertex = GraphTransactionInterceptor.getVertexFromCache(guid);
+            if (cachedVertex != null) {
+                ret.put(guid, cachedVertex);
+            } else {
+                uncachedGuids.add(guid);
+            }
+        }
+
+        // Query for uncached GUIDs
+        if (!uncachedGuids.isEmpty()) {
+            try {
+                AtlasGraphQuery query = graph.query().in(Constants.GUID_PROPERTY_KEY, uncachedGuids);
+                Iterable<AtlasVertex> vertices = query.vertices();
+
+                for (AtlasVertex vertex : vertices) {
+                    if (vertex != null) {
+                        String guid = vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+                        if (guid != null) {
+                            ret.put(guid, vertex);
+                            GraphTransactionInterceptor.addToVertexCache(guid, vertex);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                LOG.error("findByGuids: batch query failed for {} guids", uncachedGuids.size(), e);
+                throw e; // Let caller handle fallback
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("findByGuids: requested={}, cached={}, queried={}, found={}",
+                    guids.size(), ret.size() - (uniqueGuids.size() - uncachedGuids.size()),
+                    uncachedGuids.size(), ret.size());
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+        return ret;
+    }
+
     public static AtlasVertex findDeletedByGuid(AtlasGraph graph, String guid) {
         AtlasVertex ret = GraphTransactionInterceptor.getVertexFromCache(guid);
 

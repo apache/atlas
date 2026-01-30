@@ -89,6 +89,11 @@ import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPro
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask.*;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
+import static org.apache.atlas.AtlasConfiguration.DELETE_HASLINEAGE_EARLYEXIT_ENABLED;
+import static org.apache.atlas.AtlasConfiguration.DELETE_HASLINEAGE_FULLDEFER_ENABLED;
+import static org.apache.atlas.AtlasConfiguration.DELETE_OWNED_OPTIMIZED_ENABLED;
+import static org.apache.atlas.AtlasConfiguration.DELETE_OWNED_SHADOW_ENABLED;
+import static org.apache.atlas.AtlasConfiguration.DELETE_SLOW_QUERY_THRESHOLD_MS;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
@@ -98,6 +103,12 @@ import static org.apache.tinkerpop.gremlin.groovy.jsr223.dsl.credential.__.outV;
 
 public abstract class DeleteHandlerV1 {
     public static final Logger  LOG = LoggerFactory.getLogger(DeleteHandlerV1.class);
+
+    // Delete instrumentation metric names
+    private static final String METRIC_DELETE_ENTITIES = "delete.handler.entities";
+    private static final String METRIC_OWNED_DISCOVERY = "delete.owned.discovery";
+    private static final String METRIC_HASLINEAGE_REMOVE = "delete.haslineage.remove";
+    private static final String METRIC_HASLINEAGE_RESET = "delete.haslineage.reset";
 
     static final boolean        DEFERRED_ACTION_ENABLED        = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
     static final     int        PENDING_TASK_QUERY_SIZE_PAGE_SIZE = AtlasConfiguration.TASKS_PENDING_TASK_QUERY_SIZE_PAGE_SIZE.getInt();
@@ -138,12 +149,17 @@ public abstract class DeleteHandlerV1 {
      */
     public void deleteEntities(Collection<AtlasVertex> instanceVertices) throws AtlasBaseException
     {
-        LOG.info("deleteEntities invoked. Requested vertices size: {}", instanceVertices != null ? instanceVertices.size() : 0);
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord(METRIC_DELETE_ENTITIES);
+        long startTime = System.currentTimeMillis();
+        int requestedCount = instanceVertices != null ? instanceVertices.size() : 0;
+
+        LOG.info("deleteEntities invoked. Requested vertices size: {}", requestedCount);
 
         final RequestContext   requestContext            = RequestContext.get();
         final Set<AtlasVertex> deletionCandidateVertices = new HashSet<>();
 
         if (CollectionUtils.isEmpty(instanceVertices)) {
+            RequestContext.get().endMetricRecord(metricRecorder);
             return;
         }
 
@@ -205,7 +221,19 @@ public abstract class DeleteHandlerV1 {
             }
 
         }
-        LOG.info("deleteEntities completed. Total vertices processed: {}", deletionCandidateVertices.size());
+
+        long latencyMs = System.currentTimeMillis() - startTime;
+        LOG.info("deleteEntities completed: requestId={}, requestedCount={}, candidatesCount={}, latencyMs={}, flags=[earlyExit={}, fullDefer={}, ownedShadow={}, ownedOptimized={}]",
+                RequestContext.get().getTraceId(),
+                requestedCount,
+                deletionCandidateVertices.size(),
+                latencyMs,
+                DELETE_HASLINEAGE_EARLYEXIT_ENABLED.getBoolean(),
+                DELETE_HASLINEAGE_FULLDEFER_ENABLED.getBoolean(),
+                DELETE_OWNED_SHADOW_ENABLED.getBoolean(),
+                DELETE_OWNED_OPTIMIZED_ENABLED.getBoolean());
+
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     /**
@@ -251,14 +279,25 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     public Collection<GraphHelper.VertexInfo> getOwnedVertices(AtlasVertex entityVertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord(METRIC_OWNED_DISCOVERY);
+        long startTime = System.currentTimeMillis();
+        int graphLookupCount = 0;
+        int maxDepthReached = 0;
+
         final Map<String, GraphHelper.VertexInfo> vertexInfoMap    = new HashMap<>();
         final Stack<AtlasVertex>                  vertices         = new Stack<>();
+        final Stack<Integer>                      depthStack       = new Stack<>();  // Track depth for instrumentation
         final boolean                             isPurgeRequested = RequestContext.get().isPurgeRequested();
 
         vertices.push(entityVertex);
+        depthStack.push(0);
 
         while (vertices.size() > 0) {
             AtlasVertex        vertex = vertices.pop();
+            int currentDepth = depthStack.pop();
+            if (currentDepth > maxDepthReached) {
+                maxDepthReached = currentDepth;
+            }
             AtlasEntity.Status state  = getState(vertex);
 
             //If the vertex marked for deletion, if we are not purging, skip it
@@ -298,12 +337,14 @@ public abstract class DeleteHandlerV1 {
                     if (attributeInfo.getAttributeDef().isSoftReferenced()) {
                         String        softRefVal = vertex.getProperty(attributeInfo.getVertexPropertyName(), String.class);
                         AtlasObjectId refObjId   = AtlasEntityUtil.parseSoftRefValue(softRefVal);
+                        graphLookupCount++;  // Count the findByGuid call
                         AtlasVertex   refVertex  = refObjId != null ? AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid()) : null;
                         if (refObjId.getGuid() == null) {
                             LOG.warn("OBJECT_ID_TYPE type category - null guid passed in findByGuid!");
                         }
                         if (refVertex != null) {
                             vertices.push(refVertex);
+                            depthStack.push(currentDepth + 1);
                         }
                     } else {
                         AtlasEdge edge = graphHelper.getEdgeForLabel(vertex, edgeLabel);
@@ -313,6 +354,7 @@ public abstract class DeleteHandlerV1 {
                         }
 
                         vertices.push(edge.getInVertex());
+                        depthStack.push(currentDepth + 1);
                     }
                 } else if (typeCategory == ARRAY || typeCategory == MAP) {
                     TypeCategory elementType = null;
@@ -334,12 +376,14 @@ public abstract class DeleteHandlerV1 {
 
                             if (CollectionUtils.isNotEmpty(refObjIds)) {
                                 for (AtlasObjectId refObjId : refObjIds) {
+                                    graphLookupCount++;  // Count the findByGuid call
                                     AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid());
                                     if (refObjId.getGuid() == null) {
                                         LOG.warn("ARRAY type category - null guid passed in findByGuid!");
                                     }
                                     if (refVertex != null) {
                                         vertices.push(refVertex);
+                                        depthStack.push(currentDepth + 1);
                                     }
                                 }
                             }
@@ -349,6 +393,7 @@ public abstract class DeleteHandlerV1 {
 
                             if (MapUtils.isNotEmpty(refObjIds)) {
                                 for (AtlasObjectId refObjId : refObjIds.values()) {
+                                    graphLookupCount++;  // Count the findByGuid call
                                     AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid());
                                     if (refObjId.getGuid() == null) {
                                         LOG.warn("MAP type category - null guid passed in findByGuid!");
@@ -356,6 +401,7 @@ public abstract class DeleteHandlerV1 {
 
                                     if (refVertex != null) {
                                         vertices.push(refVertex);
+                                        depthStack.push(currentDepth + 1);
                                     }
                                 }
                             }
@@ -371,6 +417,7 @@ public abstract class DeleteHandlerV1 {
                                 }
 
                                 vertices.push(edge.getInVertex());
+                                depthStack.push(currentDepth + 1);
                             }
                         }
                     }
@@ -378,6 +425,30 @@ public abstract class DeleteHandlerV1 {
             }
         }
 
+        long latencyMs = System.currentTimeMillis() - startTime;
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("getOwnedVertices completed: requestId={}, rootGuid={}, verticesFound={}, graphLookups={}, maxDepth={}, latencyMs={}",
+                    RequestContext.get().getTraceId(),
+                    GraphHelper.getGuid(entityVertex),
+                    vertexInfoMap.size(),
+                    graphLookupCount,
+                    maxDepthReached,
+                    latencyMs);
+        }
+
+        // Log warning for deep or slow traversals
+        if (latencyMs > DELETE_SLOW_QUERY_THRESHOLD_MS.getLong() || maxDepthReached > 20) {
+            LOG.warn("getOwnedVertices slow/deep traversal: requestId={}, rootGuid={}, verticesFound={}, graphLookups={}, maxDepth={}, latencyMs={}",
+                    RequestContext.get().getTraceId(),
+                    GraphHelper.getGuid(entityVertex),
+                    vertexInfoMap.size(),
+                    graphLookupCount,
+                    maxDepthReached,
+                    latencyMs);
+        }
+
+        RequestContext.get().endMetricRecord(metricRecorder);
         return vertexInfoMap.values();
     }
 
@@ -1752,11 +1823,18 @@ public abstract class DeleteHandlerV1 {
     }
 
     public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeHasLineageOnDelete");
-
-        long lineageCalcStart = System.currentTimeMillis();
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord(METRIC_HASLINEAGE_REMOVE);
+        long startTime = System.currentTimeMillis();
+        int verticesProcessed = 0;
+        int verticesSkipped = 0;
+        int edgesIterated = 0;
 
         if (RequestContext.get().skipHasLineageCalculation()) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("removeHasLineageOnDelete skipped (skipHasLineageCalculation=true): requestId={}",
+                        RequestContext.get().getTraceId());
+            }
+            RequestContext.get().endMetricRecord(metricRecorder);
             return;
         }
 
@@ -1770,12 +1848,14 @@ public abstract class DeleteHandlerV1 {
                 boolean isCatalog = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
 
                 if (isCatalog || isProcess) {
+                    verticesProcessed++;
 
                     Iterator<AtlasEdge> edgeIterator = vertexToBeDeleted.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
 
                     Set<AtlasEdge> edgesToBeDeleted = new HashSet<>();
 
                     while (edgeIterator.hasNext()) {
+                        edgesIterated++;  // Count edge iterations
                         AtlasEdge edge = edgeIterator.next();
                         if (ACTIVE.equals(getStatus(edge))) {
                             edgesToBeDeleted.add(edge);
@@ -1789,7 +1869,7 @@ public abstract class DeleteHandlerV1 {
                         if (!edgesToBeDeleted.isEmpty()) {
                             String guid = getGuid(vertexToBeDeleted);
                             List<Object> removedElement = RequestContext.get().getRemovedElementsMap().get(guid);
-                            
+
                             if (removedElement == null) {
                                 removedElement = new ArrayList<>();
                                 removedElement.addAll(edgesToBeDeleted);
@@ -1799,22 +1879,48 @@ public abstract class DeleteHandlerV1 {
                             }
                         }
                     }
+                } else {
+                    verticesSkipped++;  // Not a lineage-relevant entity type
                 }
             }
         }
+
         // Record lineage calculation time
-        long lineageCalcTime = System.currentTimeMillis() - lineageCalcStart;
-        RequestContext.get().addLineageCalcTime(lineageCalcTime);
+        long latencyMs = System.currentTimeMillis() - startTime;
+        RequestContext.get().addLineageCalcTime(latencyMs);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("removeHasLineageOnDelete completed: requestId={}, verticesProcessed={}, verticesSkipped={}, edgesIterated={}, latencyMs={}, distributedMode={}, flags=[earlyExit={}, fullDefer={}]",
+                    RequestContext.get().getTraceId(),
+                    verticesProcessed,
+                    verticesSkipped,
+                    edgesIterated,
+                    latencyMs,
+                    distributedHasLineageCalculationEnabled,
+                    DELETE_HASLINEAGE_EARLYEXIT_ENABLED.getBoolean(),
+                    DELETE_HASLINEAGE_FULLDEFER_ENABLED.getBoolean());
+        }
+
+        // Log warning for high edge iteration counts
+        if (edgesIterated > 1000 || latencyMs > DELETE_SLOW_QUERY_THRESHOLD_MS.getLong()) {
+            LOG.warn("removeHasLineageOnDelete high work: requestId={}, verticesProcessed={}, edgesIterated={}, latencyMs={}",
+                    RequestContext.get().getTraceId(),
+                    verticesProcessed,
+                    edgesIterated,
+                    latencyMs);
+        }
+
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     public void resetHasLineageOnInputOutputDelete(Collection<AtlasEdge> removedEdges, AtlasVertex deletedVertex) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("resetHasLineageOnInputOutputDelete");
-
-        // Timing: Lineage calculation
-        long lineageCalcStart = System.currentTimeMillis();
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord(METRIC_HASLINEAGE_RESET);
+        long startTime = System.currentTimeMillis();
+        int edgesProcessed = 0;
+        int innerEdgesIterated = 0;
 
         for (AtlasEdge atlasEdge : removedEdges) {
+            edgesProcessed++;
 
             boolean isOutputEdge = PROCESS_OUTPUTS.equals(atlasEdge.getLabel());
 
@@ -1848,6 +1954,7 @@ public abstract class DeleteHandlerV1 {
                 boolean activeEdgeFound = false;
 
                 while (edgeIterator.hasNext()) {
+                    innerEdgesIterated++;
                     AtlasEdge edge = edgeIterator.next();
                     if (!removedEdges.contains(edge)) {
                         AtlasVertex relatedAssetVertex = edge.getInVertex();
@@ -1879,6 +1986,7 @@ public abstract class DeleteHandlerV1 {
                     Iterator<AtlasEdge> processEdgeIterator = GraphHelper.getActiveEdges(processVertex, oppositeEdgeLabel, AtlasEdgeDirection.BOTH);
 
                     while (processEdgeIterator.hasNext()) {
+                        innerEdgesIterated++;
                         AtlasEdge edge = processEdgeIterator.next();
 
                         if (!removedEdges.contains(edge)) {
@@ -1890,8 +1998,17 @@ public abstract class DeleteHandlerV1 {
             }
         }
         // Record lineage calculation time
-        long lineageCalcTime = System.currentTimeMillis() - lineageCalcStart;
-        RequestContext.get().addLineageCalcTime(lineageCalcTime);
+        long latencyMs = System.currentTimeMillis() - startTime;
+        RequestContext.get().addLineageCalcTime(latencyMs);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("resetHasLineageOnInputOutputDelete completed: requestId={}, edgesProcessed={}, innerEdgesIterated={}, latencyMs={}",
+                    RequestContext.get().getTraceId(),
+                    edgesProcessed,
+                    innerEdgesIterated,
+                    latencyMs);
+        }
+
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 

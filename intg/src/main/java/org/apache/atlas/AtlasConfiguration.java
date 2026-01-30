@@ -186,7 +186,32 @@ public enum AtlasConfiguration {
     // Task resource management configuration
     TASK_MEMORY_THRESHOLD_PERCENT("atlas.tasks.memory.threshold.percent", 75),
     TASK_HIGH_MEMORY_PAUSE_MS("atlas.tasks.high.memory.pause.ms", 2000),
-    TASK_MAX_RETRY_ATTEMPTS("atlas.tasks.max.retry.attempts", 3);
+    TASK_MAX_RETRY_ATTEMPTS("atlas.tasks.max.retry.attempts", 3),
+
+    // ========================================================================
+    // Delete Optimization Feature Flags (Phase 1B, 2A, 2B, 3)
+    // All flags default to OFF for safe rollout
+    // ========================================================================
+
+    // Phase 1B: Batch Vertex Lookups
+    DELETE_BATCH_LOOKUP_ENABLED("atlas.delete.batch.lookup.enabled", false),
+    DELETE_BATCH_LOOKUP_SIZE("atlas.delete.batch.lookup.size", 500),
+
+    // Phase 2A: Early Exit for No-Lineage Entities
+    DELETE_HASLINEAGE_EARLYEXIT_ENABLED("atlas.delete.haslineage.earlyexit.enabled", false),
+
+    // Phase 2B: Complete Deferred hasLineage Mode
+    DELETE_HASLINEAGE_FULLDEFER_ENABLED("atlas.delete.haslineage.fulldefer.enabled", false),
+
+    // Phase 3: Owned Vertices Optimization
+    DELETE_OWNED_SHADOW_ENABLED("atlas.delete.owned.shadow.enabled", false),
+    DELETE_OWNED_OPTIMIZED_ENABLED("atlas.delete.owned.optimized.enabled", false),
+    DELETE_OWNED_BATCH_SIZE("atlas.delete.owned.batch.size", 100),
+    DELETE_OWNED_MAX_DEPTH("atlas.delete.owned.max.depth", 50),
+
+    // Logging thresholds for delete operations
+    DELETE_SLOW_QUERY_THRESHOLD_MS("atlas.delete.slow.query.threshold.ms", 1000),
+    DELETE_LARGE_BATCH_THRESHOLD("atlas.delete.large.batch.threshold", 500);
 
     private static final Configuration APPLICATION_PROPERTIES;
 
