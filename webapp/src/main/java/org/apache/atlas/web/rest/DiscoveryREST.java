@@ -55,6 +55,7 @@ import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -561,6 +562,68 @@ public class DiscoveryREST {
             parameters.setIncludeClassificationAttributes(includeClassificationAttributes);
 
             return discoveryService.searchRelatedEntities(guid, relation, getApproximateCount, parameters);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Relationship search using V2 implementation with adaptive query execution.
+     * {@link EntityDiscoveryService#searchRelatedEntitiesV2} selects between
+     * graph-layer paging (unsorted) and Gremlin traversal (sorted).
+     *
+     * @param guid Attribute name
+     * @param relation relationName
+     * @param attributes set of attributes in search result
+     * @param sortByAttribute sort the result using this attribute name
+     * @param sortOrder sorting order
+     * @param excludeDeletedEntities exclude deleted entities from results
+     * @param includeClassificationAttributes include classification attributes in results
+     * @param getApproximateCount calculate approximate count
+     * @param disableDefaultSorting when false (default), applies default "name" sorting if sortBy is not specified;
+     * when true, no default sorting is applied (enables graph-layer optimization for better performance)
+     * @param limit limit the result set
+     * @param offset start offset of the result set
+     * @return Atlas search result
+     * @throws AtlasBaseException
+     */
+    @GET
+    @Path("relationship/v2")
+    @Timed
+    public AtlasSearchResult searchRelatedEntitiesV2(@QueryParam("guid") String guid,
+            @QueryParam("relation") String relation,
+            @QueryParam("attributes") Set<String> attributes,
+            @QueryParam("sortBy") String sortByAttribute,
+            @QueryParam("sortOrder") SortOrder sortOrder,
+            @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
+            @QueryParam("includeClassificationAttributes") boolean includeClassificationAttributes,
+            @QueryParam("getApproximateCount") boolean getApproximateCount,
+            @DefaultValue("false") @QueryParam("disableDefaultSorting") boolean disableDefaultSorting,
+            @QueryParam("limit") int limit,
+            @QueryParam("offset") int offset) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+        Servlets.validateQueryParamLength("relation", relation);
+        Servlets.validateQueryParamLength("sortBy", sortByAttribute);
+
+        AtlasPerfTracer perf       = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG,
+                        "DiscoveryREST.searchRelatedEntitiesV2(" + guid + ", " + relation + ", " + sortByAttribute + ", " + sortOrder + ", " + excludeDeletedEntities + ", " + getApproximateCount + ", " + limit + ", " + offset + ")");
+            }
+
+            SearchParameters parameters = new SearchParameters();
+
+            parameters.setAttributes(attributes);
+            parameters.setSortBy(sortByAttribute);
+            parameters.setSortOrder(sortOrder);
+            parameters.setExcludeDeletedEntities(excludeDeletedEntities);
+            parameters.setLimit(limit);
+            parameters.setOffset(offset);
+            parameters.setIncludeClassificationAttributes(includeClassificationAttributes);
+
+            return discoveryService.searchRelatedEntitiesV2(guid, relation, getApproximateCount, parameters, disableDefaultSorting);
         } finally {
             AtlasPerfTracer.log(perf);
         }

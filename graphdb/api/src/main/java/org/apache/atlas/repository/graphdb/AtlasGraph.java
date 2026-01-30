@@ -160,6 +160,25 @@ public interface AtlasGraph<V, E> {
     AtlasGraphTraversal<AtlasVertex<?, ?>, AtlasEdge<?, ?>> E(Object... edgeIds);
 
     /**
+     * Returns a page of adjacent edges for the given vertex, filtered by direction and label.
+     *
+     * Implementations must provide efficient pagination at the database level (e.g., using
+     * a traversal with range() in JanusGraph) to avoid fetching all edges and skipping in memory.
+     *
+     * @param vertex the vertex to get edges from
+     * @param direction the edge direction (IN, OUT, or BOTH)
+     * @param edgeLabel the edge label to filter by
+     * @param offset the number of edges to skip (0-based)
+     * @param limit the maximum number of edges to return
+     * @return an iterable containing at most {@code limit} edges, starting from position {@code offset}
+     */
+    Iterable<AtlasEdge<V, E>> getAdjacentEdgesPaged(AtlasVertex<V, E> vertex,
+                                                     AtlasEdgeDirection direction,
+                                                     String edgeLabel,
+                                                     int offset,
+                                                     int limit);
+
+    /**
      * Creates an index query.
      *
      * @param indexName index name

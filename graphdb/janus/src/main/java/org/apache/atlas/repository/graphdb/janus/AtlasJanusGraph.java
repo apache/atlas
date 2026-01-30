@@ -29,6 +29,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
@@ -51,6 +52,7 @@ import org.apache.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import org.apache.tinkerpop.gremlin.jsr223.DefaultImportCustomizer;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ImmutablePath;
@@ -265,6 +267,57 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         traversal.addStep(new GraphStep<>(traversal, Vertex.class, true, edgeIds));
 
         return (AtlasGraphTraversal) traversal;
+    }
+
+    @Override
+    public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> getAdjacentEdgesPaged(
+            AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> vertex,
+            AtlasEdgeDirection direction,
+            String edgeLabel,
+            int offset,
+            int limit) {
+        List<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> ret = new ArrayList<>();
+
+        if (vertex == null || edgeLabel == null || offset < 0 || limit <= 0) {
+            return ret;
+        }
+
+        Vertex                       v  = vertex.getV().getWrappedElement();
+        GraphTraversalSource         g  = getGraph().traversal();
+        GraphTraversal<Vertex, Edge> gt = null;
+
+        switch (direction) {
+            case IN:
+                gt = g.V(v.id()).inE(edgeLabel);
+                break;
+
+            case OUT:
+                gt = g.V(v.id()).outE(edgeLabel);
+                break;
+
+            case BOTH:
+                gt = g.V(v.id()).bothE(edgeLabel);
+                break;
+            default:
+                // Unknown direction - nothing to return
+                return ret;
+        }
+
+        if (gt == null) {
+            return ret;
+        }
+
+        gt = gt.range(offset, offset + limit);
+
+        while (gt.hasNext()) {
+            Edge e = gt.next();
+
+            if (e != null) {
+                ret.add(GraphDbObjectFactory.createEdge(this, e));
+            }
+        }
+
+        return ret;
     }
 
     @Override
