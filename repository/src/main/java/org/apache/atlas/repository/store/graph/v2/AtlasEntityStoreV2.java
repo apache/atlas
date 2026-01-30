@@ -112,6 +112,8 @@ import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.ATLAS_DISTRIBUTED_TASK_ENABLED;
 import static org.apache.atlas.AtlasConfiguration.DELETE_BATCH_LOOKUP_ENABLED;
 import static org.apache.atlas.AtlasConfiguration.DELETE_BATCH_LOOKUP_SIZE;
+import static org.apache.atlas.AtlasConfiguration.DELETE_UNIQUEATTR_BATCH_ENABLED;
+import static org.apache.atlas.AtlasConfiguration.DELETE_UNIQUEATTR_BATCH_SIZE;
 import static org.apache.atlas.AtlasConfiguration.DELETE_HASLINEAGE_EARLYEXIT_ENABLED;
 import static org.apache.atlas.AtlasConfiguration.DELETE_HASLINEAGE_FULLDEFER_ENABLED;
 import static org.apache.atlas.AtlasConfiguration.DELETE_LARGE_BATCH_THRESHOLD;
@@ -1071,29 +1073,109 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @Override
     @GraphTransaction
     public EntityMutationResponse deleteByUniqueAttributes(List<AtlasObjectId> objectIds) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("delete.uniqueattr.latency");
+        long startTime = System.currentTimeMillis();
+        int objectIdCount = objectIds != null ? objectIds.size() : 0;
+        int skippedCount = 0;
+        int batchResolvedCount = 0;
+        int singleResolvedCount = 0;
+        boolean usedBatchResolution = false;
+
         if (CollectionUtils.isEmpty(objectIds)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS);
         }
 
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Delete by uniqueAttributes started: requestId={}, count={}, user={}, flags=[batchEnabled={}]",
+                    RequestContext.get().getTraceId(),
+                    objectIdCount,
+                    RequestContext.get().getUser(),
+                    DELETE_UNIQUEATTR_BATCH_ENABLED.getBoolean());
+        }
+
         EntityMutationResponse ret = new EntityMutationResponse();
         Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
+
+        // Validate all objectIds first (fail fast on invalid input)
+        for (AtlasObjectId objectId : objectIds) {
+            if (StringUtils.isEmpty(objectId.getTypeName())) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "typeName not specified");
+            }
+            if (MapUtils.isEmpty(objectId.getUniqueAttributes())) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "uniqueAttributes not specified");
+            }
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(objectId.getTypeName());
+            if (entityType == null) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), objectId.getTypeName());
+            }
+        }
+
         try {
-            for (AtlasObjectId objectId : objectIds) {
-                if (StringUtils.isEmpty(objectId.getTypeName())) {
-                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "typeName not specified");
+            // Track which indices have been resolved
+            Set<Integer> resolvedIndices = new HashSet<>();
+
+            // Phase 1B: Use batch resolution when flag is enabled
+            if (DELETE_UNIQUEATTR_BATCH_ENABLED.getBoolean() && objectIdCount > 1) {
+                try {
+                    AtlasPerfMetrics.MetricRecorder batchMetric = RequestContext.get().startMetricRecord("delete.uniqueattr.batch.latency");
+
+                    int batchSize = DELETE_UNIQUEATTR_BATCH_SIZE.getInt();
+                    Map<Integer, AtlasVertex> batchResults = new HashMap<>();
+
+                    // Process in batches
+                    for (int i = 0; i < objectIds.size(); i += batchSize) {
+                        int end = Math.min(i + batchSize, objectIds.size());
+                        List<AtlasObjectId> batch = objectIds.subList(i, end);
+
+                        Map<Integer, AtlasVertex> batchResult = AtlasGraphUtilsV2.findByUniqueAttributesBatch(graph, typeRegistry, batch);
+
+                        // Adjust indices to global position
+                        for (Map.Entry<Integer, AtlasVertex> entry : batchResult.entrySet()) {
+                            batchResults.put(i + entry.getKey(), entry.getValue());
+                        }
+                    }
+
+                    // Process batch results
+                    for (Map.Entry<Integer, AtlasVertex> entry : batchResults.entrySet()) {
+                        int idx = entry.getKey();
+                        AtlasVertex vertex = entry.getValue();
+                        AtlasObjectId objectId = objectIds.get(idx);
+
+                        AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
+                        AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader,
+                                "delete entity: typeName=" + objectId.getTypeName() + ", uniqueAttributes=" + objectId.getUniqueAttributes());
+
+                        deletionCandidates.add(vertex);
+                        resolvedIndices.add(idx);
+                        batchResolvedCount++;
+                    }
+
+                    usedBatchResolution = true;
+                    RequestContext.get().endMetricRecord(batchMetric);
+
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Delete uniqueattr batch resolution: requestId={}, total={}, batchResolved={}",
+                                RequestContext.get().getTraceId(), objectIdCount, batchResolvedCount);
+                    }
+
+                } catch (Exception e) {
+                    LOG.warn("Batch unique attribute resolution failed; falling back to single lookups: requestId={}, count={}, error={}",
+                            RequestContext.get().getTraceId(), objectIdCount, e.getClass().getSimpleName());
+                    // Continue with fallback - resolvedIndices contains what was successfully processed
+                }
+            }
+
+            // Fallback: resolve remaining items individually
+            for (int i = 0; i < objectIds.size(); i++) {
+                if (resolvedIndices.contains(i)) {
+                    continue; // Already resolved by batch
                 }
 
-                if (MapUtils.isEmpty(objectId.getUniqueAttributes())) {
-                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "uniqueAttributes not specified");
-                }
-
+                AtlasObjectId objectId = objectIds.get(i);
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(objectId.getTypeName());
 
-                if (entityType == null) {
-                    throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), objectId.getTypeName());
-                }
-
                 AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(graph, entityType, objectId.getUniqueAttributes());
+                singleResolvedCount++;
 
                 if (vertex != null) {
                     AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
@@ -1103,12 +1185,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                     deletionCandidates.add(vertex);
                 } else {
+                    skippedCount++;
                     if (LOG.isDebugEnabled()) {
-                        // Entity does not exist - treat as non-error, since the caller
-                        // wanted to delete the entity and it's already gone.
                         LOG.debug("Deletion request ignored for non-existent entity with uniqueAttributes " + objectId.getUniqueAttributes());
                     }
                 }
+            }
+
+            if (deletionCandidates.isEmpty()) {
+                LOG.info("No deletion candidate entities were found for uniqueAttributes");
             }
 
             ret = deleteVertices(deletionCandidates);
@@ -1127,10 +1212,40 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         "deleteByUniqueAttributes", "AtlasEntityStoreV2", jge.getMessage());
             }
             throw new AtlasBaseException(jge);
+        } catch (AtlasBaseException e) {
+            throw e;
         } catch (Exception e) {
             LOG.error("Failed to delete objects:{}", objectIds.stream().map(AtlasObjectId::getUniqueAttributes).collect(Collectors.toList()), e);
             throw new AtlasBaseException(e);
         }
+
+        // End metrics and log
+        RequestContext.get().endMetricRecord(metricRecorder);
+        long latencyMs = System.currentTimeMillis() - startTime;
+        int deletedCount = ret.getDeletedEntities() != null ? ret.getDeletedEntities().size() : 0;
+
+        if (latencyMs > DELETE_SLOW_QUERY_THRESHOLD_MS.getLong() || objectIdCount > DELETE_LARGE_BATCH_THRESHOLD.getInt()) {
+            LOG.warn("Delete by uniqueAttributes completed: requestId={}, count={}, deletedCount={}, skippedCount={}, latencyMs={}, usedBatch={}, batchResolved={}, singleResolved={}",
+                    RequestContext.get().getTraceId(),
+                    objectIdCount,
+                    deletedCount,
+                    skippedCount,
+                    latencyMs,
+                    usedBatchResolution,
+                    batchResolvedCount,
+                    singleResolvedCount);
+        } else if (LOG.isDebugEnabled()) {
+            LOG.debug("Delete by uniqueAttributes completed: requestId={}, count={}, deletedCount={}, skippedCount={}, latencyMs={}, usedBatch={}, batchResolved={}, singleResolved={}",
+                    RequestContext.get().getTraceId(),
+                    objectIdCount,
+                    deletedCount,
+                    skippedCount,
+                    latencyMs,
+                    usedBatchResolution,
+                    batchResolvedCount,
+                    singleResolvedCount);
+        }
+
         return ret;
     }
 

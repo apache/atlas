@@ -27,6 +27,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.repository.Constants;
@@ -496,6 +497,178 @@ public class AtlasGraphUtilsV2 {
 
         RequestContext.get().endMetricRecord(metric);
         return ret;
+    }
+
+    /**
+     * Batch lookup of vertices by unique attributes using OR queries.
+     * Groups input by (typeName, attr keys) and executes one OR query per group.
+     *
+     * @param graph the graph instance
+     * @param typeRegistry the type registry for attribute resolution
+     * @param objectIds list of (typeName, uniqueAttributes) pairs
+     * @return Map of objectId index to AtlasVertex (missing entries for not-found)
+     */
+    public static Map<Integer, AtlasVertex> findByUniqueAttributesBatch(AtlasGraph graph,
+                                                                        AtlasTypeRegistry typeRegistry,
+                                                                        List<AtlasObjectId> objectIds) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("findByUniqueAttributesBatch");
+
+        Map<Integer, AtlasVertex> ret = new HashMap<>();
+
+        if (CollectionUtils.isEmpty(objectIds)) {
+            RequestContext.get().endMetricRecord(metric);
+            return ret;
+        }
+
+        // Group objectIds by (typeName, sorted attr keys) - same query structure
+        Map<String, List<Integer>> groupToIndices = new LinkedHashMap<>();
+        Map<Integer, UniqueAttrLookupKey> indexToLookupKey = new HashMap<>();
+
+        for (int i = 0; i < objectIds.size(); i++) {
+            AtlasObjectId objectId = objectIds.get(i);
+            if (objectId == null || StringUtils.isEmpty(objectId.getTypeName()) ||
+                    MapUtils.isEmpty(objectId.getUniqueAttributes())) {
+                continue;
+            }
+
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(objectId.getTypeName());
+            if (entityType == null) {
+                continue;
+            }
+
+            // Get processed attribute names (vertex property names)
+            Map<String, AtlasStructType.AtlasAttribute> uniqueAttributes = entityType.getUniqAttributes();
+            if (MapUtils.isEmpty(uniqueAttributes)) {
+                continue;
+            }
+
+            Map<String, Object> processedAttrs = new LinkedHashMap<>();
+            for (AtlasStructType.AtlasAttribute attribute : uniqueAttributes.values()) {
+                String attrName = attribute.getVertexUniquePropertyName();
+                Object attrValue = objectId.getUniqueAttributes().get(attribute.getName());
+
+                if (attrName != null && attrValue != null) {
+                    processedAttrs.put(attrName, attrValue);
+                }
+            }
+
+            if (processedAttrs.isEmpty()) {
+                continue;
+            }
+
+            // Create group key: typeName|sortedAttrKeys
+            List<String> sortedKeys = new ArrayList<>(processedAttrs.keySet());
+            Collections.sort(sortedKeys);
+            String groupKey = objectId.getTypeName() + "|" + String.join(",", sortedKeys);
+
+            groupToIndices.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(i);
+
+            // Create lookup key for result matching
+            StringBuilder lookupKeyBuilder = new StringBuilder(objectId.getTypeName());
+            for (String key : sortedKeys) {
+                lookupKeyBuilder.append("|").append(processedAttrs.get(key));
+            }
+            indexToLookupKey.put(i, new UniqueAttrLookupKey(objectId.getTypeName(), sortedKeys, processedAttrs, lookupKeyBuilder.toString()));
+        }
+
+        // Process each group with OR query
+        for (Map.Entry<String, List<Integer>> groupEntry : groupToIndices.entrySet()) {
+            List<Integer> indices = groupEntry.getValue();
+
+            if (indices.size() == 1) {
+                // Single item, use existing method (no benefit from OR query)
+                continue;
+            }
+
+            try {
+                // Build OR query for this group
+                String typeName = indexToLookupKey.get(indices.get(0)).typeName;
+                List<String> attrKeys = indexToLookupKey.get(indices.get(0)).attrKeys;
+
+                AtlasGraphQuery mainQuery = graph.query();
+                List<AtlasGraphQuery> childQueries = new ArrayList<>();
+
+                for (int idx : indices) {
+                    UniqueAttrLookupKey lookupKey = indexToLookupKey.get(idx);
+                    AtlasGraphQuery childQuery = mainQuery.createChildQuery()
+                            .has(ENTITY_TYPE_PROPERTY_KEY, typeName);
+
+                    for (String attrKey : attrKeys) {
+                        childQuery.has(attrKey, lookupKey.processedAttrs.get(attrKey));
+                    }
+                    childQueries.add(childQuery);
+                }
+
+                mainQuery.or(childQueries);
+                Iterable<AtlasVertex> results = mainQuery.vertices();
+
+                // Match results back to indices
+                Map<String, AtlasVertex> lookupKeyToVertex = new HashMap<>();
+                for (AtlasVertex vertex : results) {
+                    if (vertex == null) continue;
+
+                    String vertexTypeName = vertex.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class);
+                    if (vertexTypeName == null) continue;
+
+                    StringBuilder vertexLookupKey = new StringBuilder(vertexTypeName);
+                    for (String attrKey : attrKeys) {
+                        Object attrVal = vertex.getProperty(attrKey, Object.class);
+                        vertexLookupKey.append("|").append(attrVal);
+                    }
+                    lookupKeyToVertex.put(vertexLookupKey.toString(), vertex);
+                }
+
+                // Map results to indices
+                for (int idx : indices) {
+                    UniqueAttrLookupKey lookupKey = indexToLookupKey.get(idx);
+                    AtlasVertex vertex = lookupKeyToVertex.get(lookupKey.lookupKeyString);
+                    if (vertex != null) {
+                        ret.put(idx, vertex);
+                        // Add to cache
+                        String guid = vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+                        if (guid != null) {
+                            GraphTransactionInterceptor.addToVertexCache(guid, vertex);
+                        }
+                    }
+                }
+
+                // Mark successfully processed indices
+                for (int idx : indices) {
+                    if (ret.containsKey(idx) || lookupKeyToVertex.containsKey(indexToLookupKey.get(idx).lookupKeyString)) {
+                        indexToLookupKey.remove(idx); // Processed
+                    }
+                }
+
+            } catch (Exception e) {
+                LOG.warn("findByUniqueAttributesBatch: OR query failed for group {}, will use fallback", groupEntry.getKey(), e);
+                // Don't remove from indexToLookupKey - will be processed individually
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("findByUniqueAttributesBatch: total={}, groups={}, resolved={}",
+                    objectIds.size(), groupToIndices.size(), ret.size());
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+        return ret;
+    }
+
+    /**
+     * Helper class for unique attribute lookup key matching.
+     */
+    private static class UniqueAttrLookupKey {
+        final String typeName;
+        final List<String> attrKeys;
+        final Map<String, Object> processedAttrs;
+        final String lookupKeyString;
+
+        UniqueAttrLookupKey(String typeName, List<String> attrKeys, Map<String, Object> processedAttrs, String lookupKeyString) {
+            this.typeName = typeName;
+            this.attrKeys = attrKeys;
+            this.processedAttrs = processedAttrs;
+            this.lookupKeyString = lookupKeyString;
+        }
     }
 
     public static AtlasVertex findDeletedByGuid(AtlasGraph graph, String guid) {
