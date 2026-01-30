@@ -3788,7 +3788,6 @@
                 "isPolicyEnabled": true,
                 "policyResources": [
                     "entity-type:AtlanAppWorkflow",
-                    "entity-type:AtlanAppWorkflowDefinition",
                     "entity-classification:*",
                     "entity:*"
                 ],
