@@ -93,6 +93,7 @@ import static org.apache.atlas.AtlasConfiguration.DELETE_HASLINEAGE_EARLYEXIT_EN
 import static org.apache.atlas.AtlasConfiguration.DELETE_HASLINEAGE_FULLDEFER_ENABLED;
 import static org.apache.atlas.AtlasConfiguration.DELETE_OWNED_OPTIMIZED_ENABLED;
 import static org.apache.atlas.AtlasConfiguration.DELETE_OWNED_SHADOW_ENABLED;
+import static org.apache.atlas.AtlasConfiguration.DELETE_OWNED_BATCH_SIZE;
 import static org.apache.atlas.AtlasConfiguration.DELETE_SLOW_QUERY_THRESHOLD_MS;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
@@ -109,6 +110,11 @@ public abstract class DeleteHandlerV1 {
     private static final String METRIC_OWNED_DISCOVERY = "delete.owned.discovery";
     private static final String METRIC_HASLINEAGE_REMOVE = "delete.haslineage.remove";
     private static final String METRIC_HASLINEAGE_RESET = "delete.haslineage.reset";
+
+    // Phase 3: Owned vertices soft-ref batching metrics
+    private static final String METRIC_OWNED_SOFTREF_BATCH_LOOKUP = "delete.owned.softref.batch.lookup";
+    private static final String METRIC_OWNED_SOFTREF_SINGLE_LOOKUP = "delete.owned.softref.single.lookup";
+    private static final String METRIC_OWNED_SHADOW_MISMATCH = "delete.owned.shadow.mismatch";
 
     static final boolean        DEFERRED_ACTION_ENABLED        = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
     static final     int        PENDING_TASK_QUERY_SIZE_PAGE_SIZE = AtlasConfiguration.TASKS_PENDING_TASK_QUERY_SIZE_PAGE_SIZE.getInt();
@@ -279,14 +285,71 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     public Collection<GraphHelper.VertexInfo> getOwnedVertices(AtlasVertex entityVertex) throws AtlasBaseException {
+        boolean shadowEnabled    = DELETE_OWNED_SHADOW_ENABLED.getBoolean();
+        boolean optimizedEnabled = DELETE_OWNED_OPTIMIZED_ENABLED.getBoolean();
+
+        // Shadow mode: run both paths, compare results, log mismatches, return old result
+        if (shadowEnabled && !optimizedEnabled) {
+            Collection<GraphHelper.VertexInfo> originalResult = getOwnedVerticesOriginal(entityVertex);
+            Collection<GraphHelper.VertexInfo> batchedResult  = getOwnedVerticesBatched(entityVertex);
+
+            // Compare discovered GUID sets
+            Set<String> originalGuids = originalResult.stream()
+                    .map(vi -> vi.getEntity().getGuid())
+                    .collect(Collectors.toSet());
+            Set<String> batchedGuids = batchedResult.stream()
+                    .map(vi -> vi.getEntity().getGuid())
+                    .collect(Collectors.toSet());
+
+            if (!originalGuids.equals(batchedGuids)) {
+                Set<String> missingInBatched = new HashSet<>(originalGuids);
+                missingInBatched.removeAll(batchedGuids);
+                Set<String> extraInBatched = new HashSet<>(batchedGuids);
+                extraInBatched.removeAll(originalGuids);
+
+                LOG.warn("getOwnedVertices SHADOW MISMATCH: requestId={}, rootGuid={}, originalCount={}, batchedCount={}, missingInBatched={}, extraInBatched={}",
+                        RequestContext.get().getTraceId(),
+                        GraphHelper.getGuid(entityVertex),
+                        originalGuids.size(),
+                        batchedGuids.size(),
+                        missingInBatched,
+                        extraInBatched);
+
+                // Record mismatch metric
+                RequestContext.get().startMetricRecord(METRIC_OWNED_SHADOW_MISMATCH);
+                RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord(METRIC_OWNED_SHADOW_MISMATCH));
+            } else if (LOG.isDebugEnabled()) {
+                LOG.debug("getOwnedVertices shadow mode: results match, originalCount={}, batchedCount={}",
+                        originalGuids.size(), batchedGuids.size());
+            }
+
+            // Always return original result in shadow mode for safety
+            return originalResult;
+        }
+
+        // Optimized mode: use batched path only (shadow has proven safe)
+        if (optimizedEnabled) {
+            return getOwnedVerticesBatched(entityVertex);
+        }
+
+        // Default: use original path
+        return getOwnedVerticesOriginal(entityVertex);
+    }
+
+    /**
+     * Original implementation using individual findByGuid() calls for soft-refs.
+     * Preserved for shadow mode comparison and fallback.
+     */
+    private Collection<GraphHelper.VertexInfo> getOwnedVerticesOriginal(AtlasVertex entityVertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord(METRIC_OWNED_DISCOVERY);
         long startTime = System.currentTimeMillis();
         int graphLookupCount = 0;
+        int softRefSingleLookupCount = 0;
         int maxDepthReached = 0;
 
         final Map<String, GraphHelper.VertexInfo> vertexInfoMap    = new HashMap<>();
         final Stack<AtlasVertex>                  vertices         = new Stack<>();
-        final Stack<Integer>                      depthStack       = new Stack<>();  // Track depth for instrumentation
+        final Stack<Integer>                      depthStack       = new Stack<>();
         final boolean                             isPurgeRequested = RequestContext.get().isPurgeRequested();
 
         vertices.push(entityVertex);
@@ -300,7 +363,6 @@ public abstract class DeleteHandlerV1 {
             }
             AtlasEntity.Status state  = getState(vertex);
 
-            //If the vertex marked for deletion, if we are not purging, skip it
             if (!isPurgeRequested && DELETED.equals(state)) {
                 continue;
             }
@@ -337,9 +399,10 @@ public abstract class DeleteHandlerV1 {
                     if (attributeInfo.getAttributeDef().isSoftReferenced()) {
                         String        softRefVal = vertex.getProperty(attributeInfo.getVertexPropertyName(), String.class);
                         AtlasObjectId refObjId   = AtlasEntityUtil.parseSoftRefValue(softRefVal);
-                        graphLookupCount++;  // Count the findByGuid call
+                        graphLookupCount++;
+                        softRefSingleLookupCount++;
                         AtlasVertex   refVertex  = refObjId != null ? AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid()) : null;
-                        if (refObjId.getGuid() == null) {
+                        if (refObjId != null && refObjId.getGuid() == null) {
                             LOG.warn("OBJECT_ID_TYPE type category - null guid passed in findByGuid!");
                         }
                         if (refVertex != null) {
@@ -376,7 +439,8 @@ public abstract class DeleteHandlerV1 {
 
                             if (CollectionUtils.isNotEmpty(refObjIds)) {
                                 for (AtlasObjectId refObjId : refObjIds) {
-                                    graphLookupCount++;  // Count the findByGuid call
+                                    graphLookupCount++;
+                                    softRefSingleLookupCount++;
                                     AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid());
                                     if (refObjId.getGuid() == null) {
                                         LOG.warn("ARRAY type category - null guid passed in findByGuid!");
@@ -393,7 +457,8 @@ public abstract class DeleteHandlerV1 {
 
                             if (MapUtils.isNotEmpty(refObjIds)) {
                                 for (AtlasObjectId refObjId : refObjIds.values()) {
-                                    graphLookupCount++;  // Count the findByGuid call
+                                    graphLookupCount++;
+                                    softRefSingleLookupCount++;
                                     AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid());
                                     if (refObjId.getGuid() == null) {
                                         LOG.warn("MAP type category - null guid passed in findByGuid!");
@@ -427,23 +492,242 @@ public abstract class DeleteHandlerV1 {
 
         long latencyMs = System.currentTimeMillis() - startTime;
 
+        // Record soft-ref single lookup metric
+        if (softRefSingleLookupCount > 0) {
+            AtlasPerfMetrics.MetricRecorder singleLookupMetric = RequestContext.get().startMetricRecord(METRIC_OWNED_SOFTREF_SINGLE_LOOKUP);
+            RequestContext.get().endMetricRecord(singleLookupMetric);
+        }
+
         if (LOG.isDebugEnabled()) {
-            LOG.debug("getOwnedVertices completed: requestId={}, rootGuid={}, verticesFound={}, graphLookups={}, maxDepth={}, latencyMs={}",
+            LOG.debug("getOwnedVerticesOriginal completed: requestId={}, rootGuid={}, verticesFound={}, graphLookups={}, softRefSingleLookups={}, maxDepth={}, latencyMs={}",
                     RequestContext.get().getTraceId(),
                     GraphHelper.getGuid(entityVertex),
                     vertexInfoMap.size(),
                     graphLookupCount,
+                    softRefSingleLookupCount,
                     maxDepthReached,
                     latencyMs);
         }
 
-        // Log warning for deep or slow traversals
         if (latencyMs > DELETE_SLOW_QUERY_THRESHOLD_MS.getLong() || maxDepthReached > 20) {
-            LOG.warn("getOwnedVertices slow/deep traversal: requestId={}, rootGuid={}, verticesFound={}, graphLookups={}, maxDepth={}, latencyMs={}",
+            LOG.warn("getOwnedVerticesOriginal slow/deep traversal: requestId={}, rootGuid={}, verticesFound={}, graphLookups={}, softRefSingleLookups={}, maxDepth={}, latencyMs={}",
                     RequestContext.get().getTraceId(),
                     GraphHelper.getGuid(entityVertex),
                     vertexInfoMap.size(),
                     graphLookupCount,
+                    softRefSingleLookupCount,
+                    maxDepthReached,
+                    latencyMs);
+        }
+
+        RequestContext.get().endMetricRecord(metricRecorder);
+        return vertexInfoMap.values();
+    }
+
+    /**
+     * Optimized implementation using batched findByGuids() for soft-refs.
+     * Preserves DFS traversal semantics by collecting soft-ref GUIDs per-vertex,
+     * then batch-resolving before pushing to stack.
+     */
+    private Collection<GraphHelper.VertexInfo> getOwnedVerticesBatched(AtlasVertex entityVertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord(METRIC_OWNED_DISCOVERY);
+        long startTime = System.currentTimeMillis();
+        int graphLookupCount = 0;
+        int softRefBatchLookupCount = 0;
+        int softRefGuidsResolved = 0;
+        int maxDepthReached = 0;
+
+        final int batchSize = DELETE_OWNED_BATCH_SIZE.getInt();
+
+        final Map<String, GraphHelper.VertexInfo> vertexInfoMap    = new HashMap<>();
+        final Stack<AtlasVertex>                  vertices         = new Stack<>();
+        final Stack<Integer>                      depthStack       = new Stack<>();
+        final boolean                             isPurgeRequested = RequestContext.get().isPurgeRequested();
+
+        vertices.push(entityVertex);
+        depthStack.push(0);
+
+        while (vertices.size() > 0) {
+            AtlasVertex        vertex = vertices.pop();
+            int currentDepth = depthStack.pop();
+            if (currentDepth > maxDepthReached) {
+                maxDepthReached = currentDepth;
+            }
+            AtlasEntity.Status state  = getState(vertex);
+
+            if (!isPurgeRequested && DELETED.equals(state)) {
+                continue;
+            }
+
+            String guid = GraphHelper.getGuid(vertex);
+
+            if (vertexInfoMap.containsKey(guid)) {
+                continue;
+            }
+
+            String typeName = GraphHelper.getTypeName(vertex);
+            AtlasEntityType   entityType = typeRegistry.getEntityTypeByName(typeName);
+
+            Set<String> attributes = entityType.getAllAttributes().values().stream()
+                    .filter(x -> x.getAttributeDef().getIncludeInNotification())
+                    .map(x -> x.getAttributeDef().getName()).collect(Collectors.toSet());
+
+            AtlasEntityHeader entity     = entityRetriever.toAtlasEntityHeader(vertex, attributes);
+
+            if (entityType == null) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), typeName);
+            }
+            entity.setVertexId(vertex.getIdForDisplay());
+            entity.setDocId(LongEncoding.encode(Long.parseLong(vertex.getIdForDisplay())));
+            entity.setSuperTypeNames(entityType.getAllSuperTypes());
+            vertexInfoMap.put(guid, new GraphHelper.VertexInfo(entity, vertex));
+
+            // Collect all soft-ref GUIDs for this vertex, then batch resolve
+            // Use LinkedHashSet to preserve insertion order and deduplicate
+            LinkedHashSet<String> softRefGuidsToResolve = new LinkedHashSet<>();
+
+            for (AtlasStructType.AtlasAttribute attributeInfo : entityType.getOwnedRefAttributes()) {
+                String       edgeLabel    = attributeInfo.getRelationshipEdgeLabel();
+                AtlasType    attrType     = attributeInfo.getAttributeType();
+                TypeCategory typeCategory = attrType.getTypeCategory();
+
+                if (typeCategory == OBJECT_ID_TYPE) {
+                    if (attributeInfo.getAttributeDef().isSoftReferenced()) {
+                        // Collect GUID for batch resolution
+                        String        softRefVal = vertex.getProperty(attributeInfo.getVertexPropertyName(), String.class);
+                        AtlasObjectId refObjId   = AtlasEntityUtil.parseSoftRefValue(softRefVal);
+                        if (refObjId != null && refObjId.getGuid() != null) {
+                            softRefGuidsToResolve.add(refObjId.getGuid());
+                        } else if (refObjId != null && refObjId.getGuid() == null) {
+                            LOG.warn("OBJECT_ID_TYPE type category - null guid in soft-ref!");
+                        }
+                    } else {
+                        // Edge-based reference - process immediately
+                        AtlasEdge edge = graphHelper.getEdgeForLabel(vertex, edgeLabel);
+
+                        if (edge == null || (!isPurgeRequested && DELETED.equals(getState(edge)))) {
+                            continue;
+                        }
+
+                        vertices.push(edge.getInVertex());
+                        depthStack.push(currentDepth + 1);
+                    }
+                } else if (typeCategory == ARRAY || typeCategory == MAP) {
+                    TypeCategory elementType = null;
+
+                    if (typeCategory == ARRAY) {
+                        elementType = ((AtlasArrayType) attrType).getElementType().getTypeCategory();
+                    } else if (typeCategory == MAP) {
+                        elementType = ((AtlasMapType) attrType).getValueType().getTypeCategory();
+                    }
+
+                    if (elementType != OBJECT_ID_TYPE) {
+                        continue;
+                    }
+
+                    if (attributeInfo.getAttributeDef().isSoftReferenced()) {
+                        // Collect GUIDs for batch resolution
+                        if (typeCategory == ARRAY) {
+                            List                softRefVal = vertex.getListProperty(attributeInfo.getVertexPropertyName(), List.class);
+                            List<AtlasObjectId> refObjIds  = AtlasEntityUtil.parseSoftRefValue(softRefVal);
+
+                            if (CollectionUtils.isNotEmpty(refObjIds)) {
+                                for (AtlasObjectId refObjId : refObjIds) {
+                                    if (refObjId != null && refObjId.getGuid() != null) {
+                                        softRefGuidsToResolve.add(refObjId.getGuid());
+                                    } else if (refObjId != null && refObjId.getGuid() == null) {
+                                        LOG.warn("ARRAY type category - null guid in soft-ref!");
+                                    }
+                                }
+                            }
+                        } else if (typeCategory == MAP) {
+                            Map                        softRefVal = vertex.getProperty(attributeInfo.getVertexPropertyName(), Map.class);
+                            Map<String, AtlasObjectId> refObjIds  = AtlasEntityUtil.parseSoftRefValue(softRefVal);
+
+                            if (MapUtils.isNotEmpty(refObjIds)) {
+                                for (AtlasObjectId refObjId : refObjIds.values()) {
+                                    if (refObjId != null && refObjId.getGuid() != null) {
+                                        softRefGuidsToResolve.add(refObjId.getGuid());
+                                    } else if (refObjId != null && refObjId.getGuid() == null) {
+                                        LOG.warn("MAP type category - null guid in soft-ref!");
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Edge-based collection - process immediately
+                        List<AtlasEdge> edges = getCollectionElementsUsingRelationship(vertex, attributeInfo);
+
+                        if (CollectionUtils.isNotEmpty(edges)) {
+                            for (AtlasEdge edge : edges) {
+                                if (edge == null || (!isPurgeRequested && DELETED.equals(getState(edge)))) {
+                                    continue;
+                                }
+
+                                vertices.push(edge.getInVertex());
+                                depthStack.push(currentDepth + 1);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Batch resolve all collected soft-ref GUIDs for this vertex
+            if (!softRefGuidsToResolve.isEmpty()) {
+                // Process in chunks if exceeds batch size
+                List<String> guidList = new ArrayList<>(softRefGuidsToResolve);
+
+                for (int i = 0; i < guidList.size(); i += batchSize) {
+                    int endIdx = Math.min(i + batchSize, guidList.size());
+                    List<String> batch = guidList.subList(i, endIdx);
+
+                    graphLookupCount++;  // Count batch lookups
+                    softRefBatchLookupCount++;
+
+                    Map<String, AtlasVertex> resolvedVertices = AtlasGraphUtilsV2.findByGuids(this.graphHelper.getGraph(), batch);
+
+                    // Push resolved vertices to stack in order (preserves DFS semantics)
+                    for (String refGuid : batch) {
+                        AtlasVertex refVertex = resolvedVertices.get(refGuid);
+                        if (refVertex != null) {
+                            vertices.push(refVertex);
+                            depthStack.push(currentDepth + 1);
+                            softRefGuidsResolved++;
+                        }
+                        // Missing GUIDs are silently skipped (same as original behavior)
+                    }
+                }
+            }
+        }
+
+        long latencyMs = System.currentTimeMillis() - startTime;
+
+        // Record soft-ref batch lookup metric
+        if (softRefBatchLookupCount > 0) {
+            AtlasPerfMetrics.MetricRecorder batchLookupMetric = RequestContext.get().startMetricRecord(METRIC_OWNED_SOFTREF_BATCH_LOOKUP);
+            RequestContext.get().endMetricRecord(batchLookupMetric);
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("getOwnedVerticesBatched completed: requestId={}, rootGuid={}, verticesFound={}, graphLookups={}, softRefBatchLookups={}, softRefGuidsResolved={}, maxDepth={}, latencyMs={}",
+                    RequestContext.get().getTraceId(),
+                    GraphHelper.getGuid(entityVertex),
+                    vertexInfoMap.size(),
+                    graphLookupCount,
+                    softRefBatchLookupCount,
+                    softRefGuidsResolved,
+                    maxDepthReached,
+                    latencyMs);
+        }
+
+        if (latencyMs > DELETE_SLOW_QUERY_THRESHOLD_MS.getLong() || maxDepthReached > 20) {
+            LOG.warn("getOwnedVerticesBatched slow/deep traversal: requestId={}, rootGuid={}, verticesFound={}, graphLookups={}, softRefBatchLookups={}, softRefGuidsResolved={}, maxDepth={}, latencyMs={}",
+                    RequestContext.get().getTraceId(),
+                    GraphHelper.getGuid(entityVertex),
+                    vertexInfoMap.size(),
+                    graphLookupCount,
+                    softRefBatchLookupCount,
+                    softRefGuidsResolved,
                     maxDepthReached,
                     latencyMs);
         }
