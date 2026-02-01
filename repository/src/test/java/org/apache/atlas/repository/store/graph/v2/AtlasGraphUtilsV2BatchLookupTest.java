@@ -17,27 +17,44 @@
  */
 package org.apache.atlas.repository.store.graph.v2;
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
 import java.util.*;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for AtlasGraphUtilsV2.findByGuids() batch lookup method.
  */
-public class AtlasGraphUtilsV2BatchLookupTest {
+class AtlasGraphUtilsV2BatchLookupTest {
+
+    static {
+        try {
+            PropertiesConfiguration config = new PropertiesConfiguration();
+            config.setProperty("atlas.graph.storage.hostname", "localhost");
+            config.setProperty("atlas.graph.index.search.hostname", "localhost:9200");
+            ApplicationProperties.set(config);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize test configuration", e);
+        }
+    }
 
     @Mock
     private AtlasGraph mockGraph;
@@ -54,15 +71,31 @@ public class AtlasGraphUtilsV2BatchLookupTest {
     @Mock
     private AtlasVertex mockVertex3;
 
-    @BeforeMethod
-    public void setUp() {
+    private MockedStatic<GraphTransactionInterceptor> mockedInterceptor;
+
+    @BeforeEach
+    void setUp() {
         MockitoAnnotations.openMocks(this);
         RequestContext.clear();
         RequestContext.get();
+
+        // Mock the static cache methods to return null (cache miss)
+        mockedInterceptor = mockStatic(GraphTransactionInterceptor.class);
+        mockedInterceptor.when(() -> GraphTransactionInterceptor.getVertexFromCache(anyString()))
+                .thenReturn(null);
+        mockedInterceptor.when(() -> GraphTransactionInterceptor.addToVertexCache(anyString(), any(AtlasVertex.class)))
+                .then(invocation -> null);
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (mockedInterceptor != null) {
+            mockedInterceptor.close();
+        }
     }
 
     @Test
-    public void testFindByGuids_emptyInput() {
+    void testFindByGuids_emptyInput() {
         // Test with null
         Map<String, AtlasVertex> result = AtlasGraphUtilsV2.findByGuids(mockGraph, null);
         assertNotNull(result);
@@ -83,7 +116,7 @@ public class AtlasGraphUtilsV2BatchLookupTest {
     }
 
     @Test
-    public void testFindByGuids_deduplicatesInput() {
+    void testFindByGuids_deduplicatesInput() {
         // Setup
         String guid1 = "guid-1";
         when(mockGraph.query()).thenReturn(mockQuery);
@@ -97,8 +130,8 @@ public class AtlasGraphUtilsV2BatchLookupTest {
 
         // Verify
         assertNotNull(result);
-        assertEquals(result.size(), 1);
-        assertEquals(result.get(guid1), mockVertex1);
+        assertEquals(1, result.size());
+        assertEquals(mockVertex1, result.get(guid1));
 
         // Verify the query was called with deduplicated set (only one guid)
         verify(mockQuery).in(eq(Constants.GUID_PROPERTY_KEY), argThat(collection ->
@@ -106,7 +139,7 @@ public class AtlasGraphUtilsV2BatchLookupTest {
     }
 
     @Test
-    public void testFindByGuids_missingGuids() {
+    void testFindByGuids_missingGuids() {
         // Setup - query returns empty
         String guid1 = "guid-1";
         String guid2 = "guid-2";
@@ -125,8 +158,8 @@ public class AtlasGraphUtilsV2BatchLookupTest {
     }
 
     @Test
-    public void testFindByGuids_mixedExistingAndMissing() {
-        // Setup - only guid1 exists
+    void testFindByGuids_mixedExistingAndMissing() {
+        // Setup - only guid1 and guid3 exist
         String guid1 = "guid-1";
         String guid2 = "guid-missing";
         String guid3 = "guid-3";
@@ -142,14 +175,14 @@ public class AtlasGraphUtilsV2BatchLookupTest {
 
         // Verify
         assertNotNull(result);
-        assertEquals(result.size(), 2);
-        assertEquals(result.get(guid1), mockVertex1);
+        assertEquals(2, result.size());
+        assertEquals(mockVertex1, result.get(guid1));
         assertNull(result.get(guid2)); // Missing guid should be absent
-        assertEquals(result.get(guid3), mockVertex3);
+        assertEquals(mockVertex3, result.get(guid3));
     }
 
     @Test
-    public void testFindByGuids_allExisting() {
+    void testFindByGuids_allExisting() {
         // Setup
         String guid1 = "guid-1";
         String guid2 = "guid-2";
@@ -167,14 +200,14 @@ public class AtlasGraphUtilsV2BatchLookupTest {
 
         // Verify
         assertNotNull(result);
-        assertEquals(result.size(), 3);
-        assertEquals(result.get(guid1), mockVertex1);
-        assertEquals(result.get(guid2), mockVertex2);
-        assertEquals(result.get(guid3), mockVertex3);
+        assertEquals(3, result.size());
+        assertEquals(mockVertex1, result.get(guid1));
+        assertEquals(mockVertex2, result.get(guid2));
+        assertEquals(mockVertex3, result.get(guid3));
     }
 
-    @Test(expectedExceptions = RuntimeException.class)
-    public void testFindByGuids_queryException() {
+    @Test
+    void testFindByGuids_queryException() {
         // Setup - query throws exception
         String guid1 = "guid-1";
         when(mockGraph.query()).thenReturn(mockQuery);
@@ -182,11 +215,12 @@ public class AtlasGraphUtilsV2BatchLookupTest {
         when(mockQuery.vertices()).thenThrow(new RuntimeException("Graph query failed"));
 
         // Execute - should throw exception for caller to handle fallback
-        AtlasGraphUtilsV2.findByGuids(mockGraph, Collections.singletonList(guid1));
+        assertThrows(RuntimeException.class, () ->
+            AtlasGraphUtilsV2.findByGuids(mockGraph, Collections.singletonList(guid1)));
     }
 
     @Test
-    public void testFindByGuids_handlesNullVertex() {
+    void testFindByGuids_handlesNullVertex() {
         // Setup - query returns list with null vertex
         String guid1 = "guid-1";
         when(mockGraph.query()).thenReturn(mockQuery);
@@ -199,12 +233,12 @@ public class AtlasGraphUtilsV2BatchLookupTest {
 
         // Verify
         assertNotNull(result);
-        assertEquals(result.size(), 1);
-        assertEquals(result.get(guid1), mockVertex1);
+        assertEquals(1, result.size());
+        assertEquals(mockVertex1, result.get(guid1));
     }
 
     @Test
-    public void testFindByGuids_handlesVertexWithNullGuid() {
+    void testFindByGuids_handlesVertexWithNullGuid() {
         // Setup - vertex returns null guid
         when(mockGraph.query()).thenReturn(mockQuery);
         when(mockQuery.in(eq(Constants.GUID_PROPERTY_KEY), any(Collection.class))).thenReturn(mockQuery);

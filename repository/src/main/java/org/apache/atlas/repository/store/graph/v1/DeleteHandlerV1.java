@@ -315,9 +315,9 @@ public abstract class DeleteHandlerV1 {
                         missingInBatched,
                         extraInBatched);
 
-                // Record mismatch metric
-                RequestContext.get().startMetricRecord(METRIC_OWNED_SHADOW_MISMATCH);
-                RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord(METRIC_OWNED_SHADOW_MISMATCH));
+                // Record mismatch metric (instantaneous - just to count occurrences)
+                AtlasPerfMetrics.MetricRecorder mismatchMetric = RequestContext.get().startMetricRecord(METRIC_OWNED_SHADOW_MISMATCH);
+                RequestContext.get().endMetricRecord(mismatchMetric);
             } else if (LOG.isDebugEnabled()) {
                 LOG.debug("getOwnedVertices shadow mode: results match, originalCount={}, batchedCount={}",
                         originalGuids.size(), batchedGuids.size());
