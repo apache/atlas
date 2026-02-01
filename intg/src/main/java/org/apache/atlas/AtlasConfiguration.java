@@ -188,26 +188,21 @@ public enum AtlasConfiguration {
     TASK_HIGH_MEMORY_PAUSE_MS("atlas.tasks.high.memory.pause.ms", 2000),
     TASK_MAX_RETRY_ATTEMPTS("atlas.tasks.max.retry.attempts", 3),
 
-    // ========================================================================
-    // Delete Optimization Feature Flags (Phase 1B, 2A, 2B, 3)
-    // All flags default to OFF for safe rollout
-    // ========================================================================
-
-    // Phase 1B: Batch Vertex Lookups (by GUID)
+    // Batch Vertex Lookups (by GUID)
     DELETE_BATCH_LOOKUP_ENABLED("atlas.delete.batch.lookup.enabled", false),
     DELETE_BATCH_LOOKUP_SIZE("atlas.delete.batch.lookup.size", 500),
 
-    // Phase 1B: Batch Unique Attribute Resolution
+    // Batch Unique Attribute Resolution
     DELETE_UNIQUEATTR_BATCH_ENABLED("atlas.delete.uniqueattr.batch.enabled", false),
     DELETE_UNIQUEATTR_BATCH_SIZE("atlas.delete.uniqueattr.batch.size", 200),
 
-    // Phase 2A: Early Exit for No-Lineage Entities
+    // Early Exit for No-Lineage Entities
     DELETE_HASLINEAGE_EARLYEXIT_ENABLED("atlas.delete.haslineage.earlyexit.enabled", false),
 
-    // Phase 2B: Complete Deferred hasLineage Mode
+    // Complete Deferred hasLineage Mode
     DELETE_HASLINEAGE_FULLDEFER_ENABLED("atlas.delete.haslineage.fulldefer.enabled", false),
 
-    // Phase 3: Owned Vertices Optimization
+    // Owned Vertices Optimization
     DELETE_OWNED_SHADOW_ENABLED("atlas.delete.owned.shadow.enabled", false),
     DELETE_OWNED_OPTIMIZED_ENABLED("atlas.delete.owned.optimized.enabled", false),
     DELETE_OWNED_BATCH_SIZE("atlas.delete.owned.batch.size", 100),
