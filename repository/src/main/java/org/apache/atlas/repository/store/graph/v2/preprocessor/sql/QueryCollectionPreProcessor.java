@@ -180,8 +180,8 @@ public class QueryCollectionPreProcessor implements PreProcessor {
                 throw new AtlasBaseException("Collection is already deleted/purged");
             }
 
-            if (isDeleteTypeSoft()) {
-                LOG.info("Skipping processDelete for collection as delete type is {}", RequestContext.get().getDeleteType());
+            if (isDeleteTypeSoft(deleteDelegate)) {
+                LOG.info("Skipping policies and roles delete for collection as delete type is {}", RequestContext.get().getDeleteType());
                 return;
             }
 
@@ -193,6 +193,8 @@ public class QueryCollectionPreProcessor implements PreProcessor {
                 if (CollectionUtils.isNotEmpty(policies)) {
                     RequestContext.get().setSkipAuthorizationCheck(true);
                     entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
+                } else {
+                    LOG.warn("No Collection policy found for collection {}", collectionGuid);
                 }
 
                 //delete collection roles
@@ -300,10 +302,6 @@ public class QueryCollectionPreProcessor implements PreProcessor {
                 keycloakStore.updateRoleGroups(viewerRoleName, currentViewerGroups, newViewerGroups, representation);
             }
         }
-    }
-
-    private boolean isDeleteTypeSoft() {
-        return deleteDelegate.getHandler().getClass().equals(SoftDeleteHandlerV1.class);
     }
 
     private List<AtlasEntityHeader> getCollectionPolicies(String guid) throws AtlasBaseException {

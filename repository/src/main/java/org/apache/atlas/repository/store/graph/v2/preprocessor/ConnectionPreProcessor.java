@@ -230,8 +230,8 @@ public class ConnectionPreProcessor implements PreProcessor {
     @Override
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
         // Process Delete connection role and policies in case of hard delete or purge
-        if (isDeleteTypeSoft()) {
-            LOG.info("Skipping processDelete for connection as delete type is {}", RequestContext.get().getDeleteType());
+        if (isDeleteTypeSoft(deleteDelegate)) {
+            LOG.info("Skipping policies and roles delete for connection as delete type is {}", RequestContext.get().getDeleteType());
             return;
         }
 
@@ -251,14 +251,12 @@ public class ConnectionPreProcessor implements PreProcessor {
             List<AtlasEntityHeader> policies = getConnectionPolicies(connection.getGuid(), roleName);
             if(CollectionUtils.isNotEmpty(policies)){
                 entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
+            } else {
+                LOG.warn("No Collection policy found for connection {}", connection.getGuid());
             }
 
             keycloakStore.removeRoleByName(roleName);
         }
-    }
-
-    private boolean isDeleteTypeSoft() {
-        return deleteDelegate.getHandler().getClass().equals(SoftDeleteHandlerV1.class);
     }
 
     private List<AtlasEntityHeader> getConnectionPolicies(String guid, String roleName) throws AtlasBaseException {
