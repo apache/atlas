@@ -209,7 +209,7 @@ spec:
         {{- end }}
 {{- end }}
         env:
-        {{- $seed_size := 1 -}}
+        {{- $seed_size := default 1 .Values.config.seed_size | int -}}
         {{- if eq .Values.Deployment_Type "Lite" -}}
           {{- $seed_size = 1 -}}
         {{- else -}}
