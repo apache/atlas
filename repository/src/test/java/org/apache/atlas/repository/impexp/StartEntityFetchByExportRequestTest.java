@@ -35,16 +35,17 @@ import org.testng.annotations.Test;
 import javax.inject.Inject;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.model.impexp.AtlasExportRequest.MATCH_TYPE_FOR_TYPE;
 import static org.apache.atlas.repository.impexp.StartEntityFetchByExportRequest.BINDING_PARAMETER_ATTR_NAME;
 import static org.apache.atlas.repository.impexp.StartEntityFetchByExportRequest.BINDING_PARAMETER_TYPENAME;
 import static org.apache.atlas.repository.impexp.StartEntityFetchByExportRequest.BINDING_PARAMTER_ATTR_VALUE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
@@ -61,6 +62,14 @@ public class StartEntityFetchByExportRequestTest extends AtlasTestBase {
     private AtlasGremlin3QueryProvider         atlasGremlin3QueryProvider;
     private StartEntityFetchByExportRequestSpy startEntityFetchByExportRequestSpy;
 
+    @BeforeClass
+    void setup() throws IOException, AtlasBaseException {
+        super.basicSetup(typeDefStore, typeRegistry);
+
+        atlasGremlin3QueryProvider         = new AtlasGremlin3QueryProvider();
+        startEntityFetchByExportRequestSpy = new StartEntityFetchByExportRequestSpy(atlasGraph, typeRegistry);
+    }
+
     @Test
     public void fetchTypeGuid() {
         String              exportRequestJson = "{ \"itemsToExport\": [ { \"typeName\": \"hive_db\", \"guid\": \"111-222-333\" } ]}";
@@ -75,12 +84,17 @@ public class StartEntityFetchByExportRequestTest extends AtlasTestBase {
         String             exportRequestJson = "{ \"itemsToExport\": [ { \"typeName\": \"hive_db\", \"uniqueAttributes\": {\"qualifiedName\": \"stocks@cl1\"} } ]}";
         AtlasExportRequest exportRequest     = AtlasType.fromJson(exportRequestJson, AtlasExportRequest.class);
 
+        startEntityFetchByExportRequestSpy.clearRecordedCalls();
         startEntityFetchByExportRequestSpy.get(exportRequest);
 
-        assertEquals(startEntityFetchByExportRequestSpy.getGeneratedQuery(), startEntityFetchByExportRequestSpy.getQueryTemplateForMatchType(exportRequest.getMatchTypeOptionValue()));
-        assertEquals(startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMETER_TYPENAME), "hive_db");
-        assertEquals(startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMETER_ATTR_NAME), "Referenceable.qualifiedName");
-        assertEquals(startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMTER_ATTR_VALUE), "stocks@cl1");
+        assertFalse(startEntityFetchByExportRequestSpy.getRecordedBindings().isEmpty());
+
+        boolean foundHiveDbSearch = startEntityFetchByExportRequestSpy.getRecordedBindings().stream()
+                .anyMatch(b -> b.get(BINDING_PARAMETER_TYPENAME).equals("hive_db") &&
+                        b.get(BINDING_PARAMETER_ATTR_NAME).equals("Referenceable.qualifiedName") &&
+                        b.get(BINDING_PARAMTER_ATTR_VALUE).equals("stocks@cl1"));
+
+        assertTrue(foundHiveDbSearch, "Should have searched for hive_db specifically");
     }
 
     @Test
@@ -88,16 +102,17 @@ public class StartEntityFetchByExportRequestTest extends AtlasTestBase {
         String             exportRequestJson = "{ \"itemsToExport\": [ { \"typeName\": \"Referenceable\", \"uniqueAttributes\": {\"qualifiedName\": \"stocks@cl1\"} } ]}";
         AtlasExportRequest exportRequest     = AtlasType.fromJson(exportRequestJson, AtlasExportRequest.class);
 
+        startEntityFetchByExportRequestSpy.clearRecordedCalls();
         startEntityFetchByExportRequestSpy.get(exportRequest);
 
-        assertEquals(startEntityFetchByExportRequestSpy.getGeneratedQuery(), startEntityFetchByExportRequestSpy.getQueryTemplateForMatchType(MATCH_TYPE_FOR_TYPE));
+        List<Map<String, Object>> allBindings = startEntityFetchByExportRequestSpy.getRecordedBindings();
 
-        Object typeNameBinding = startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMETER_TYPENAME);
-        assertTrue(typeNameBinding instanceof Set);
+        assertTrue(allBindings.size() > 1, "Should have triggered multiple queries for Referenceable subtypes");
 
-        Set<String> boundTypes = (Set<String>) typeNameBinding;
-        assertTrue(boundTypes.size() > 1);
-        assertTrue(boundTypes.contains("hive_table"));
+        boolean foundHiveTable = allBindings.stream()
+                .anyMatch(b -> b.get(BINDING_PARAMETER_TYPENAME).equals("hive_table"));
+
+        assertTrue(foundHiveTable, "Search should have included subtype: hive_table");
     }
 
     @Test
@@ -105,22 +120,32 @@ public class StartEntityFetchByExportRequestTest extends AtlasTestBase {
         String             exportRequestJson = "{ \"itemsToExport\": [ { \"typeName\": \"Asset\" } ], \"options\": {\"matchType\": \"forType\"} }";
         AtlasExportRequest exportRequest     = AtlasType.fromJson(exportRequestJson, AtlasExportRequest.class);
 
+        startEntityFetchByExportRequestSpy.clearRecordedCalls();
         startEntityFetchByExportRequestSpy.get(exportRequest);
 
-        Set<String> boundTypes = (Set<String>) startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMETER_TYPENAME);
+        Map<String, Object> lastBindings = startEntityFetchByExportRequestSpy.getSuppliedBindingsMap();
+        Set<String> boundTypes = (Set<String>) lastBindings.get(BINDING_PARAMETER_TYPENAME);
+
         assertTrue(boundTypes.contains("Asset"));
-        assertTrue(boundTypes.contains("hive_db"));
+        assertTrue(boundTypes.contains("hive_db")); // Asset is a supertype of hive_db
     }
 
     @Test
-    public void fetchEmptyTypeUniqueAttributes() {
+    public void fetchEmptyTypeUniqueAttributes() throws AtlasBaseException {
         String             exportRequestJson = "{ \"itemsToExport\": [ { \"typeName\": \"\", \"uniqueAttributes\": {\"qualifiedName\": \"stocks@cl1\"} } ]}";
         AtlasExportRequest exportRequest     = AtlasType.fromJson(exportRequestJson, AtlasExportRequest.class);
 
+        startEntityFetchByExportRequestSpy.clearRecordedCalls();
         startEntityFetchByExportRequestSpy.get(exportRequest);
 
-        Set<String> boundTypes = (Set<String>) startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMETER_TYPENAME);
-        assertEquals(boundTypes.size(), typeRegistry.getAllEntityDefNames().size());
+        Map<String, Object> lastBindings = startEntityFetchByExportRequestSpy.getSuppliedBindingsMap();
+
+        assertTrue(lastBindings != null && lastBindings.containsKey(BINDING_PARAMETER_TYPENAME), "Bindings should contain typeName");
+
+        Set<String> boundTypes = (Set<String>) lastBindings.get(BINDING_PARAMETER_TYPENAME);
+        int expectedSize = typeRegistry.getAllEntityDefNames().size();
+
+        assertEquals(boundTypes.size(), expectedSize, "Should contain all entity types from registry");
     }
 
     @Test
@@ -132,34 +157,42 @@ public class StartEntityFetchByExportRequestTest extends AtlasTestBase {
         assertTrue(result.isEmpty());
     }
 
-    @BeforeClass
-    void setup() throws IOException, AtlasBaseException {
-        super.basicSetup(typeDefStore, typeRegistry);
-
-        atlasGremlin3QueryProvider         = new AtlasGremlin3QueryProvider();
-        startEntityFetchByExportRequestSpy = new StartEntityFetchByExportRequestSpy(atlasGraph, typeRegistry);
-    }
-
+    /**
+     * Spy class to capture Gremlin queries and bindings.
+     * to record multiple calls because the new implementation uses loops.
+     */
     private class StartEntityFetchByExportRequestSpy extends StartEntityFetchByExportRequest {
-        String              generatedQuery;
-        Map<String, Object> suppliedBindingsMap;
+        private String                    lastQuery;
+        private Map<String, Object>       lastBindings;
+        private List<Map<String, Object>> recordedBindings = new ArrayList<>();
 
         public StartEntityFetchByExportRequestSpy(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry) {
             super(atlasGraph, typeRegistry, atlasGremlin3QueryProvider);
         }
 
         public String getGeneratedQuery() {
-            return generatedQuery;
+            return lastQuery;
         }
 
         public Map<String, Object> getSuppliedBindingsMap() {
-            return suppliedBindingsMap;
+            return lastBindings;
+        }
+
+        public List<Map<String, Object>> getRecordedBindings() {
+            return recordedBindings;
+        }
+
+        public void clearRecordedCalls() {
+            recordedBindings.clear();
+            lastQuery = null;
+            lastBindings = null;
         }
 
         @Override
         List<String> executeGremlinQuery(String query, Map<String, Object> bindings) {
-            this.generatedQuery      = query;
-            this.suppliedBindingsMap = bindings;
+            this.lastQuery    = query;
+            this.lastBindings = bindings;
+            this.recordedBindings.add(new java.util.HashMap<>(bindings));
 
             return Collections.emptyList();
         }
