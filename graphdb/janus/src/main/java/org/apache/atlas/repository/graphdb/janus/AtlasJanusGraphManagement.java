@@ -25,7 +25,7 @@ import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -431,13 +431,17 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     }
 
     private void rollback() {
-        management.rollback();
+        if (management != null && management.isOpen()) {
+            management.rollback();
+        }
     }
 
     private void commit() {
         graph.addMultiProperties(newMultProperties);
         newMultProperties.clear();
-        management.commit();
+        if (management != null && management.isOpen()) {
+            management.commit();
+        }
     }
 
     private static void checkName(String name) {

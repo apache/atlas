@@ -24,7 +24,7 @@ import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 import org.apache.atlas.v1.model.instance.Referenceable;
-import org.apache.commons.lang.time.DateUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 

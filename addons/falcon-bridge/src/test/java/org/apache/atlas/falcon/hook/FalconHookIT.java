@@ -33,7 +33,7 @@ import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.falcon.entity.FeedHelper;
 import org.apache.falcon.entity.FileSystemStorage;
 import org.apache.falcon.entity.store.ConfigurationStore;

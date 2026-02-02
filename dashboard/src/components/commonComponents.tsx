@@ -312,10 +312,8 @@ export const getValues = (
         ?.typeName
     : "";
 
-  if (
-    keyValue == "profileData" ||
-    (keyValue == "isIncomplete" && keyValue == false)
-  ) {
+  // Filter out profileData, but show isIncomplete (matching Classic UI behavior)
+  if (keyValue == "profileData") {
     return;
   }
 

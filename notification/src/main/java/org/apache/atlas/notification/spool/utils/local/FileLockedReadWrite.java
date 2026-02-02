@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.notification.spool.utils.local;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.DataInput;
 import java.io.DataOutput;

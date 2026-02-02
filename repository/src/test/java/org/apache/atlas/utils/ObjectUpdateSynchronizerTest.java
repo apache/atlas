@@ -18,8 +18,8 @@
 package org.apache.atlas.utils;
 
 import org.apache.atlas.GraphTransactionInterceptor;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

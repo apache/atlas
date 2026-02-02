@@ -47,7 +47,7 @@ import org.apache.atlas.v1.model.typedef.StructTypeDefinition;
 import org.apache.atlas.v1.model.typedef.TraitTypeDefinition;
 import org.apache.atlas.v1.model.typedef.TypesDef;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
