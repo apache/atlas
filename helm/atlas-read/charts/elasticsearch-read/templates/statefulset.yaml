@@ -109,6 +109,29 @@ spec:
           {{- if eq .Values.custom_deployment.enabled true }}
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
+            {{- if (default false .Values.custom_deployment.karpenter_enabled) }}
+            - matchExpressions:
+              - key: purpose
+                operator: In
+                values:
+                - search
+              - key: karpenter.sh/capacity-type
+                operator: In
+                values:
+                - on-demand
+            {{- else if eq .Values.global.cloud "azure" }}
+            - matchExpressions:
+              - key: service
+                operator: In
+                values:
+                - metastore
+            {{- else if eq .Values.global.cloud "gcp" }}
+            - matchExpressions:
+              - key: purpose
+                operator: In
+                values:
+                - atlas
+            {{- else }}
             - matchExpressions:
               - key: node.kubernetes.io/instance-type
                 operator: In
@@ -116,6 +139,7 @@ spec:
                 {{- range .Values.custom_deployment.instance_type }}
                 - {{ . }}
                 {{- end }}
+            {{- end }}
           {{- else }}
           {{- if eq .Values.global.Deployment_Type "Development" }}
           preferredDuringSchedulingIgnoredDuringExecution:
