@@ -21,7 +21,7 @@ package org.apache.atlas.web.filters;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.service.FeatureFlagStore;
+import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.web.service.ActiveInstanceState;
 import org.apache.atlas.web.service.ServiceState;
@@ -46,8 +46,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.HashMap;
 
-import static org.apache.atlas.service.FeatureFlag.DISABLE_WRITE_FLAG;
-
 /**
  * A servlet {@link Filter} that redirects web requests from a passive Atlas server instance to an active one.
  *
@@ -62,7 +60,7 @@ public class ActiveServerFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(ActiveServerFilter.class);
     private static final String MIGRATION_STATUS_STATIC_PAGE = "migration-status.html";
     private static final String[] WHITELISTED_APIS_SIGNATURE = {"search", "lineage", "auditSearch", "accessors"
-        , "evaluator", "featureFlag"};
+        , "evaluator", "featureFlag", "config"};
 
     private final ActiveInstanceState activeInstanceState;
     private ServiceState serviceState;
@@ -90,17 +88,15 @@ public class ActiveServerFilter implements Filter {
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse,
                          FilterChain filterChain) throws IOException, ServletException {
-        // If maintenance mode is enabled, return a 503
-        if (AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean()) {
-            if (FeatureFlagStore.evaluate(DISABLE_WRITE_FLAG.getKey(), "true")) {
-                // Block all the POST, PUT, DELETE operations
-                HttpServletRequest request = (HttpServletRequest) servletRequest;
-                HttpServletResponse response = (HttpServletResponse) servletResponse;
-                if (isBlockedMethod(request.getMethod()) && !isWhitelistedAPI(request.getRequestURI())) {
-                    LOG.error("Maintenance mode enabled. Blocking request: {}", request.getRequestURI());
-                    sendMaintenanceModeResponse(response);
-                    return; // Stop further processing
-                }
+        // If maintenance mode is enabled and writes are disabled, return a 503
+        if (isMaintenanceModeEnabled()) {
+            // Block all the POST, PUT, DELETE operations
+            HttpServletRequest request = (HttpServletRequest) servletRequest;
+            HttpServletResponse response = (HttpServletResponse) servletResponse;
+            if (isBlockedMethod(request.getMethod()) && !isWhitelistedAPI(request.getRequestURI())) {
+                LOG.error("Maintenance mode enabled. Blocking request: {}", request.getRequestURI());
+                sendMaintenanceModeResponse(response);
+                return; // Stop further processing
             }
         }
         
@@ -267,6 +263,21 @@ public class ActiveServerFilter implements Filter {
         return (method.equals(HttpMethod.POST)) ||
                 (method.equals(HttpMethod.PUT)) ||
                 (method.equals(HttpMethod.DELETE));
+    }
+
+    /**
+     * Check if maintenance mode is enabled using DynamicConfigStore (Cassandra).
+     * Falls back to AtlasConfiguration if DynamicConfigStore is not available.
+     */
+    private boolean isMaintenanceModeEnabled() {
+        try {
+            if (DynamicConfigStore.isEnabled()) {
+                return DynamicConfigStore.isMaintenanceModeEnabled();
+            }
+        } catch (Exception e) {
+            LOG.warn("Failed to check maintenance mode from DynamicConfigStore, falling back to config", e);
+        }
+        return AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean();
     }
 
     @Override

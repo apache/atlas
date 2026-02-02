@@ -18,9 +18,13 @@
 package org.apache.atlas.tasks;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.metrics.TaskMetricsService;
+import org.apache.atlas.service.config.ConfigKey;
+import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.service.metrics.MetricsRegistry;
@@ -30,6 +34,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -161,6 +166,32 @@ public class TaskExecutor {
                 TASK_LOG.error("{}: {}: Interrupted!", task, exception);
 
                 statistics.error();
+            } catch (AtlasBaseException exception) {
+                // Handle maintenance mode and task interruption specially
+                // These are not failures - the task will be retried when maintenance mode is disabled
+                AtlasErrorCode errorCode = exception.getAtlasErrorCode();
+                if (errorCode == AtlasErrorCode.MAINTENANCE_MODE_ENABLED ||
+                    errorCode == AtlasErrorCode.TASK_INTERRUPTED) {
+                    LOG.info("Task {} stopped due to {}, will retry when condition clears",
+                            task.getGuid(), errorCode.name());
+                    // Don't mark as failed - keep task in IN_PROGRESS status
+                    // The task will be picked up again when TaskQueueWatcher next polls
+                    registry.updateStatus(taskVertex, task);
+
+                    // Set maintenance mode activation - task propagation has actually stopped
+                    if (errorCode == AtlasErrorCode.MAINTENANCE_MODE_ENABLED) {
+                        setMaintenanceModeActivated();
+                    }
+                } else {
+                    // For other AtlasBaseExceptions, treat as regular error
+                    if (task != null) {
+                        registry.updateStatus(taskVertex, task);
+                        TASK_LOG.error("Error executing task. Please perform the operation again!", task, exception);
+                    } else {
+                        LOG.error("Error executing. Please perform the operation again!", exception);
+                    }
+                    statistics.error();
+                }
             } catch (Exception exception) {
                 if (task != null) {
                     registry.updateStatus(taskVertex, task);
@@ -200,6 +231,25 @@ public class TaskExecutor {
             registry.complete(taskVertex, task);
 
             statistics.successPrint();
+        }
+
+        /**
+         * Set the maintenance mode activation flags in ConfigStore.
+         * Called when a task is interrupted due to maintenance mode being enabled.
+         * This indicates that tag propagation has actually stopped mid-chunk.
+         */
+        private void setMaintenanceModeActivated() {
+            try {
+                if (DynamicConfigStore.isEnabled()) {
+                    String podId = System.getenv().getOrDefault("HOSTNAME", "unknown-pod");
+                    String now = Instant.now().toString();
+                    DynamicConfigStore.setConfig(ConfigKey.MAINTENANCE_MODE_ACTIVATED_AT.getKey(), now, "system");
+                    DynamicConfigStore.setConfig(ConfigKey.MAINTENANCE_MODE_ACTIVATED_BY.getKey(), podId, "system");
+                    LOG.info("TaskConsumer: Maintenance mode ACTIVATED at {} by pod {} (task interrupted mid-chunk)", now, podId);
+                }
+            } catch (Exception e) {
+                LOG.warn("TaskConsumer: Failed to set maintenance mode activation flags", e);
+            }
         }
     }
 

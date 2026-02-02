@@ -26,6 +26,7 @@ on:
       - master
       - staging
       - lite_master
+      - alcon-v2-418
 
 jobs:
   # Detect what changed to optimize workflow execution

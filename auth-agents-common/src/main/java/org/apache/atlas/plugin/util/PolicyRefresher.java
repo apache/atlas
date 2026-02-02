@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.micrometer.core.instrument.Timer;
 import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
 import org.apache.atlas.service.metrics.MetricUtils;
@@ -32,6 +33,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.atlas.authorization.config.RangerPluginConfig;
 import org.apache.atlas.plugin.policyengine.RangerPluginContext;
 import org.apache.atlas.plugin.service.RangerBasePlugin;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 
 import java.io.File;
 import java.io.FileReader;
@@ -439,62 +441,67 @@ public class PolicyRefresher extends Thread {
 		return policies;
 	}
 	public void saveToCache(ServicePolicies policies) {
+		AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("saveToCache");
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> PolicyRefresher(serviceName=" + serviceName + ").saveToCache()");
 		}
 
-		if(policies != null) {
-			File cacheFile = null;
-			if (cacheDir != null) {
-				// Create the cacheDir if it doesn't already exist
-				File cacheDirTmp = new File(cacheDir);
-				if (cacheDirTmp.exists()) {
-					cacheFile =  new File(cacheDir + File.separator + cacheFileName);
-				} else {
-					try {
-						cacheDirTmp.mkdirs();
+		try {
+			if(policies != null) {
+				File cacheFile = null;
+				if (cacheDir != null) {
+					// Create the cacheDir if it doesn't already exist
+					File cacheDirTmp = new File(cacheDir);
+					if (cacheDirTmp.exists()) {
 						cacheFile =  new File(cacheDir + File.separator + cacheFileName);
-					} catch (SecurityException ex) {
-						LOG.error("Cannot create cache directory", ex);
-					}
-				}
-			}
-
-			if(cacheFile != null) {
-
-				RangerPerfTracer perf = null;
-
-				if(RangerPerfTracer.isPerfTraceEnabled(PERF_POLICYENGINE_INIT_LOG)) {
-					perf = RangerPerfTracer.getPerfTracer(PERF_POLICYENGINE_INIT_LOG, "PolicyRefresher.saveToCache(serviceName=" + serviceName + ")");
-				}
-
-				Writer writer = null;
-
-				try {
-					writer = new FileWriter(cacheFile);
-
-					gson.toJson(policies, writer);
-				} catch (Exception excp) {
-					LOG.error("failed to save policies to cache file '" + cacheFile.getAbsolutePath() + "'", excp);
-				} finally {
-					if(writer != null) {
+					} else {
 						try {
-							writer.close();
-						} catch(Exception excp) {
-							LOG.error("error while closing opened cache file '" + cacheFile.getAbsolutePath() + "'", excp);
+							cacheDirTmp.mkdirs();
+							cacheFile =  new File(cacheDir + File.separator + cacheFileName);
+						} catch (SecurityException ex) {
+							LOG.error("Cannot create cache directory", ex);
 						}
 					}
 				}
 
-				RangerPerfTracer.log(perf);
+				if(cacheFile != null) {
 
+					RangerPerfTracer perf = null;
+
+					if(RangerPerfTracer.isPerfTraceEnabled(PERF_POLICYENGINE_INIT_LOG)) {
+						perf = RangerPerfTracer.getPerfTracer(PERF_POLICYENGINE_INIT_LOG, "PolicyRefresher.saveToCache(serviceName=" + serviceName + ")");
+					}
+
+					Writer writer = null;
+
+					try {
+						writer = new FileWriter(cacheFile);
+
+						gson.toJson(policies, writer);
+					} catch (Exception excp) {
+						LOG.error("failed to save policies to cache file '" + cacheFile.getAbsolutePath() + "'", excp);
+					} finally {
+						if(writer != null) {
+							try {
+								writer.close();
+							} catch(Exception excp) {
+								LOG.error("error while closing opened cache file '" + cacheFile.getAbsolutePath() + "'", excp);
+							}
+						}
+					}
+
+					RangerPerfTracer.log(perf);
+
+				}
+			} else {
+				LOG.info("policies is null. Nothing to save in cache");
 			}
-		} else {
-			LOG.info("policies is null. Nothing to save in cache");
-		}
 
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== PolicyRefresher(serviceName=" + serviceName + ").saveToCache()");
+			if(LOG.isDebugEnabled()) {
+				LOG.debug("<== PolicyRefresher(serviceName=" + serviceName + ").saveToCache()");
+			}
+		} finally {
+			RequestContext.get().endMetricRecord(recorder);
 		}
 	}
 

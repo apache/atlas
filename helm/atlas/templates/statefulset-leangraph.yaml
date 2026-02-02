@@ -16,7 +16,7 @@ spec:
     matchLabels:
       app: {{ template "name" . }}-leangraph
       release: {{ .Release.Name }}
-  replicas: {{ .Values.atlas.replicaCount }}
+  replicas: {{ .Values.atlas.leangraph.replicaCount }}
   serviceName: "atlas-service-leangraph"
   template:
     metadata:
@@ -64,9 +64,9 @@ spec:
             {{- toYaml .Values.atlas.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution | nindent 12 }}
           {{- end }}
           {{- end }}
-        {{- if eq .Values.atlas.podAntiAffinity true }}
+        {{- if eq .Values.atlas.leangraph.podAntiAffinity true }}
         podAntiAffinity:
-          {{- toYaml .Values.atlas.affinity.podAntiAffinity | nindent 10 }}
+          {{- toYaml .Values.atlas.leangraph.affinity.podAntiAffinity | nindent 10 }}
         {{- end }}
       {{- end }}
       {{- if .Values.priorityClassName }}

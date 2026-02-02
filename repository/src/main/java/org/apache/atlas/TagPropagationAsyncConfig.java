@@ -1,5 +1,6 @@
 package org.apache.atlas;
 
+import org.apache.atlas.annotation.EnableConditional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -11,6 +12,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 
+@EnableConditional(property = "atlas.enable.tag.notifications.async", isDefault = true)
 @Configuration
 @EnableAsync(proxyTargetClass = true)
 public class TagPropagationAsyncConfig implements AsyncConfigurer {
@@ -19,6 +21,11 @@ public class TagPropagationAsyncConfig implements AsyncConfigurer {
 
     @Bean(destroyMethod = "shutdown")
     public Executor tagPropagationNotifierExecutor() {
+        LOG.info("Creating Tag Propagation Notifier ThreadPoolTaskExecutor with core pool size: {}, max pool size: {}, queue capacity: {}, keep alive seconds: {}",
+                AtlasConfiguration.TAG_ASYNC_NOTIFIER_CORE_POOL_SIZE.getInt(),
+                AtlasConfiguration.TAG_ASYNC_NOTIFIER_MAX_POOL_SIZE.getInt(),
+                AtlasConfiguration.TAG_ASYNC_NOTIFIER_QUEUE_CAPACITY.getInt(),
+                AtlasConfiguration.TAG_ASYNC_NOTIFIER_KEEP_ALIVE_SECONDS.getInt());
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(AtlasConfiguration.TAG_ASYNC_NOTIFIER_CORE_POOL_SIZE.getInt());
         executor.setMaxPoolSize(AtlasConfiguration.TAG_ASYNC_NOTIFIER_MAX_POOL_SIZE.getInt());

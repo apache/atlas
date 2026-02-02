@@ -378,7 +378,7 @@ public class TypeCacheRefresher {
 
             try {
                 int statusCode = response.getStatusLine().getStatusCode();
-                boolean success = statusCode == 200;
+                boolean success = statusCode == 200 || statusCode == 204;
 
                 if (success) {
                     LOG.info("Successfully refreshed pod {} in {}ms (attempt {})", podIp, duration, attempt);

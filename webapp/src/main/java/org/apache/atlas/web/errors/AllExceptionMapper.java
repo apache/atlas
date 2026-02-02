@@ -18,10 +18,10 @@
 
 package org.apache.atlas.web.errors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
@@ -34,14 +34,19 @@ import java.util.concurrent.ThreadLocalRandom;
 @Provider
 @Component
 public class AllExceptionMapper implements ExceptionMapper<Exception> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AllExceptionMapper.class);
+
+    @Context
+    private HttpServletRequest httpServletRequest;
 
     @Override
     public Response toResponse(Exception exception) {
         final long id = ThreadLocalRandom.current().nextLong();
 
-        // Log the response and use the error codes from the Exception
-        ExceptionMapperUtil.logException(id, exception);
+        // Log request body for bulk endpoints on error (reads from cached request)
+        ExceptionMapperUtil.logRequestBodyOnError(httpServletRequest);
+
+        // Log the exception
+        ExceptionMapperUtil.logException(exception);
         return Response
                 .serverError()
                 .entity(ExceptionMapperUtil.formatErrorMessage(id, exception))
