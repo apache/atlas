@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests for Phase 2A: Early Exit for No-Lineage Entities in removeHasLineageOnDelete().
+ * Tests for Early Exit for No-Lineage Entities in removeHasLineageOnDelete().
  *
  * <h2>Early Exit Rules (when DELETE_HASLINEAGE_EARLYEXIT_ENABLED is ON)</h2>
  * <ul>

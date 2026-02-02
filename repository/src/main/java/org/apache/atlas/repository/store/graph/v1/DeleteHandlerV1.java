@@ -1960,29 +1960,25 @@ public abstract class DeleteHandlerV1 {
                 boolean isCatalog = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
 
                 if (isCatalog || isProcess) {
-                    // Phase 2A: Early exit - check if vertex has ANY lineage edges before full iteration
-                    // Note: getEdges().iterator() cost is implementation-dependent; we measure it below
-                    if (earlyExitEnabled) {
-                        edgeIteratorInitCount++;
-                        Iterator<AtlasEdge> quickCheckIterator = vertexToBeDeleted.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
-                        if (!quickCheckIterator.hasNext()) {
-                            // No lineage edges at all - skip entirely
-                            edgeIteratorEmptyCount++;
-                            verticesSkippedNoEdges++;
-                            if (LOG.isDebugEnabled()) {
-                                LOG.debug("removeHasLineageOnDelete early-exit: vertex {} has no lineage edges, skipping",
-                                        getGuid(vertexToBeDeleted));
-                            }
-                            continue;
+                    // Initialize edge iterator once - reuse for both early exit check and full iteration
+                    edgeIteratorInitCount++;
+                    Iterator<AtlasEdge> edgeIterator = vertexToBeDeleted.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
+
+                    //Early exit - check if vertex has ANY lineage edges before full iteration
+                    if (earlyExitEnabled && !edgeIterator.hasNext()) {
+                        // No lineage edges at all - skip entirely
+                        edgeIteratorEmptyCount++;
+                        verticesSkippedNoEdges++;
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("removeHasLineageOnDelete early-exit: vertex {} has no lineage edges, skipping",
+                                    getGuid(vertexToBeDeleted));
                         }
+                        continue;
                     }
 
                     verticesProcessed++;
 
-                    // Full edge iteration to collect active edges
-                    edgeIteratorInitCount++;
-                    Iterator<AtlasEdge> edgeIterator = vertexToBeDeleted.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
-
+                    // Full edge iteration to collect active edges (reusing the same iterator)
                     Set<AtlasEdge> edgesToBeDeleted = new HashSet<>();
 
                     while (edgeIterator.hasNext()) {
@@ -1993,7 +1989,7 @@ public abstract class DeleteHandlerV1 {
                         }
                     }
 
-                    // Phase 2A: Early exit - skip deeper processing if no active edges found
+                    //Early exit - skip deeper processing if no active edges found
                     if (earlyExitEnabled && edgesToBeDeleted.isEmpty()) {
                         verticesSkippedNoActiveEdges++;
                         if (LOG.isDebugEnabled()) {
