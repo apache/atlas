@@ -4,6 +4,8 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
+import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 
 import java.util.HashSet;
@@ -28,5 +30,9 @@ public interface PreProcessor {
 
     default void processDelete(AtlasVertex vertex) throws AtlasBaseException {
         //override this method for implementation
+    }
+
+    default boolean isDeleteTypeSoft(DeleteHandlerDelegate deleteDelegate) {
+        return deleteDelegate.getHandler().getClass().equals(SoftDeleteHandlerV1.class);
     }
 }
