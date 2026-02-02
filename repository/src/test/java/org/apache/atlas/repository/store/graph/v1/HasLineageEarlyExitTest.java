@@ -53,9 +53,5 @@ class HasLineageEarlyExitTest {
         // Verify default flag value is OFF (safe default)
         assertFalse(AtlasConfiguration.DELETE_HASLINEAGE_EARLYEXIT_ENABLED.getBoolean(),
                 "DELETE_HASLINEAGE_EARLYEXIT_ENABLED should default to false for safe rollout");
-
-        // Verify full defer flag is also OFF by default
-        assertFalse(AtlasConfiguration.DELETE_HASLINEAGE_FULLDEFER_ENABLED.getBoolean(),
-                "DELETE_HASLINEAGE_FULLDEFER_ENABLED should default to false");
     }
 }

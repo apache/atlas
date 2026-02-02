@@ -199,9 +199,6 @@ public enum AtlasConfiguration {
     // Early Exit for No-Lineage Entities
     DELETE_HASLINEAGE_EARLYEXIT_ENABLED("atlas.delete.haslineage.earlyexit.enabled", false),
 
-    // Complete Deferred hasLineage Mode
-    DELETE_HASLINEAGE_FULLDEFER_ENABLED("atlas.delete.haslineage.fulldefer.enabled", false),
-
     // Owned Vertices Optimization
     DELETE_OWNED_SHADOW_ENABLED("atlas.delete.owned.shadow.enabled", false),
     DELETE_OWNED_OPTIMIZED_ENABLED("atlas.delete.owned.optimized.enabled", false),

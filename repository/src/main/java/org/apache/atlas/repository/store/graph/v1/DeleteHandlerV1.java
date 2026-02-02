@@ -90,7 +90,6 @@ import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTas
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.AtlasConfiguration.DELETE_HASLINEAGE_EARLYEXIT_ENABLED;
-import static org.apache.atlas.AtlasConfiguration.DELETE_HASLINEAGE_FULLDEFER_ENABLED;
 import static org.apache.atlas.AtlasConfiguration.DELETE_OWNED_OPTIMIZED_ENABLED;
 import static org.apache.atlas.AtlasConfiguration.DELETE_OWNED_SHADOW_ENABLED;
 import static org.apache.atlas.AtlasConfiguration.DELETE_OWNED_BATCH_SIZE;
@@ -229,13 +228,12 @@ public abstract class DeleteHandlerV1 {
         }
 
         long latencyMs = System.currentTimeMillis() - startTime;
-        LOG.info("deleteEntities completed: requestId={}, requestedCount={}, candidatesCount={}, latencyMs={}, flags=[earlyExit={}, fullDefer={}, ownedShadow={}, ownedOptimized={}]",
+        LOG.info("deleteEntities completed: requestId={}, requestedCount={}, candidatesCount={}, latencyMs={}, flags=[earlyExit={}, ownedShadow={}, ownedOptimized={}]",
                 RequestContext.get().getTraceId(),
                 requestedCount,
                 deletionCandidateVertices.size(),
                 latencyMs,
                 DELETE_HASLINEAGE_EARLYEXIT_ENABLED.getBoolean(),
-                DELETE_HASLINEAGE_FULLDEFER_ENABLED.getBoolean(),
                 DELETE_OWNED_SHADOW_ENABLED.getBoolean(),
                 DELETE_OWNED_OPTIMIZED_ENABLED.getBoolean());
 
@@ -2037,7 +2035,7 @@ public abstract class DeleteHandlerV1 {
         int totalSkipped = verticesSkippedNonLineageType + verticesSkippedNoEdges + verticesSkippedNoActiveEdges;
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("removeHasLineageOnDelete completed: requestId={}, verticesProcessed={}, skipped=[nonLineageType={}, noEdges={}, noActiveEdges={}], edgesIterated={}, edgeIteratorInit={}, edgeIteratorEmpty={}, latencyMs={}, distributedMode={}, flags=[earlyExit={}, fullDefer={}]",
+            LOG.debug("removeHasLineageOnDelete completed: requestId={}, verticesProcessed={}, skipped=[nonLineageType={}, noEdges={}, noActiveEdges={}], edgesIterated={}, edgeIteratorInit={}, edgeIteratorEmpty={}, latencyMs={}, distributedMode={}, earlyExit={}",
                     RequestContext.get().getTraceId(),
                     verticesProcessed,
                     verticesSkippedNonLineageType,
@@ -2048,8 +2046,7 @@ public abstract class DeleteHandlerV1 {
                     edgeIteratorEmptyCount,
                     latencyMs,
                     distributedHasLineageCalculationEnabled,
-                    earlyExitEnabled,
-                    DELETE_HASLINEAGE_FULLDEFER_ENABLED.getBoolean());
+                    earlyExitEnabled);
         }
 
         // Log warning for high edge iteration counts

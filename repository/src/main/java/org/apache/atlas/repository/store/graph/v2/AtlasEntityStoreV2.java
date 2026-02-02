@@ -115,7 +115,6 @@ import static org.apache.atlas.AtlasConfiguration.DELETE_BATCH_LOOKUP_SIZE;
 import static org.apache.atlas.AtlasConfiguration.DELETE_UNIQUEATTR_BATCH_ENABLED;
 import static org.apache.atlas.AtlasConfiguration.DELETE_UNIQUEATTR_BATCH_SIZE;
 import static org.apache.atlas.AtlasConfiguration.DELETE_HASLINEAGE_EARLYEXIT_ENABLED;
-import static org.apache.atlas.AtlasConfiguration.DELETE_HASLINEAGE_FULLDEFER_ENABLED;
 import static org.apache.atlas.AtlasConfiguration.DELETE_LARGE_BATCH_THRESHOLD;
 import static org.apache.atlas.AtlasConfiguration.DELETE_SLOW_QUERY_THRESHOLD_MS;
 import static org.apache.atlas.AtlasConfiguration.ENABLE_DISTRIBUTED_HAS_LINEAGE_CALCULATION;
@@ -618,13 +617,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Log at DEBUG level for normal operations
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Delete single started: requestId={}, guid={}, user={}, flags=[batchLookup={}, earlyExit={}, fullDefer={}]",
+            LOG.debug("Delete single started: requestId={}, guid={}, user={}, flags=[batchLookup={}, earlyExit={}]",
                     RequestContext.get().getTraceId(),
                     guid,
                     RequestContext.get().getUser(),
                     DELETE_BATCH_LOOKUP_ENABLED.getBoolean(),
-                    DELETE_HASLINEAGE_EARLYEXIT_ENABLED.getBoolean(),
-                    DELETE_HASLINEAGE_FULLDEFER_ENABLED.getBoolean());
+                    DELETE_HASLINEAGE_EARLYEXIT_ENABLED.getBoolean());
         }
 
         Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
@@ -694,13 +692,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         // Log at DEBUG normally, INFO/WARN for large batches or slow operations (logged at end)
         boolean isLargeBatch = guidCount > DELETE_LARGE_BATCH_THRESHOLD.getInt();
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Delete bulk started: requestId={}, guidCount={}, user={}, deleteType=BULK, flags=[batchLookup={}, earlyExit={}, fullDefer={}]",
+            LOG.debug("Delete bulk started: requestId={}, guidCount={}, user={}, deleteType=BULK, flags=[batchLookup={}, earlyExit={}]",
                     RequestContext.get().getTraceId(),
                     guidCount,
                     RequestContext.get().getUser(),
                     DELETE_BATCH_LOOKUP_ENABLED.getBoolean(),
-                    DELETE_HASLINEAGE_EARLYEXIT_ENABLED.getBoolean(),
-                    DELETE_HASLINEAGE_FULLDEFER_ENABLED.getBoolean());
+                    DELETE_HASLINEAGE_EARLYEXIT_ENABLED.getBoolean());
         }
 
         Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
@@ -818,7 +815,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Log WARN for slow queries or large batches, DEBUG otherwise
         if (latencyMs > DELETE_SLOW_QUERY_THRESHOLD_MS.getLong() || isLargeBatch) {
-            LOG.warn("Delete bulk completed: requestId={}, guidCount={}, deletedCount={}, skippedCount={}, latencyMs={}, usedBatchLookup={}, batchLookupCount={}, batchLookupSize={}, singleLookups={}, deleteType=BULK, flags=[batchLookup={}, earlyExit={}, fullDefer={}]",
+            LOG.warn("Delete bulk completed: requestId={}, guidCount={}, deletedCount={}, skippedCount={}, latencyMs={}, usedBatchLookup={}, batchLookupCount={}, batchLookupSize={}, singleLookups={}, deleteType=BULK, flags=[batchLookup={}, earlyExit={}]",
                     RequestContext.get().getTraceId(),
                     guidCount,
                     deletedCount,
@@ -829,8 +826,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     batchLookupSize,
                     singleLookupCount,
                     DELETE_BATCH_LOOKUP_ENABLED.getBoolean(),
-                    DELETE_HASLINEAGE_EARLYEXIT_ENABLED.getBoolean(),
-                    DELETE_HASLINEAGE_FULLDEFER_ENABLED.getBoolean());
+                    DELETE_HASLINEAGE_EARLYEXIT_ENABLED.getBoolean());
         } else if (LOG.isDebugEnabled()) {
             LOG.debug("Delete bulk completed: requestId={}, guidCount={}, deletedCount={}, skippedCount={}, latencyMs={}, usedBatchLookup={}, batchLookupCount={}, batchLookupSize={}, singleLookups={}",
                     RequestContext.get().getTraceId(),
