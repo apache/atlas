@@ -252,7 +252,7 @@ public class ConnectionPreProcessor implements PreProcessor {
             if(CollectionUtils.isNotEmpty(policies)){
                 entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
             } else {
-                LOG.warn("No Collection policy found for connection {}", connection.getGuid());
+                LOG.warn("No Connection policy found for connection {}", connection.getGuid());
             }
 
             keycloakStore.removeRoleByName(roleName);
