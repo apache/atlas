@@ -206,7 +206,6 @@ public enum AtlasConfiguration {
     DELETE_OWNED_SHADOW_ENABLED("atlas.delete.owned.shadow.enabled", false),
     DELETE_OWNED_OPTIMIZED_ENABLED("atlas.delete.owned.optimized.enabled", false),
     DELETE_OWNED_BATCH_SIZE("atlas.delete.owned.batch.size", 100),
-    DELETE_OWNED_MAX_DEPTH("atlas.delete.owned.max.depth", 50),
 
     // Logging thresholds for delete operations
     DELETE_SLOW_QUERY_THRESHOLD_MS("atlas.delete.slow.query.threshold.ms", 1000),

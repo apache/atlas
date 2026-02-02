@@ -57,7 +57,5 @@ class OwnedVerticesBatchLookupTest {
                 "DELETE_OWNED_OPTIMIZED_ENABLED should default to false");
         assertEquals(100, AtlasConfiguration.DELETE_OWNED_BATCH_SIZE.getInt(),
                 "DELETE_OWNED_BATCH_SIZE should default to 100");
-        assertEquals(50, AtlasConfiguration.DELETE_OWNED_MAX_DEPTH.getInt(),
-                "DELETE_OWNED_MAX_DEPTH should default to 50");
     }
 }
