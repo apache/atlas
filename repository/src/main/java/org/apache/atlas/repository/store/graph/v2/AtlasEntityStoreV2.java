@@ -121,6 +121,7 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
 import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE;
@@ -3434,6 +3435,19 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkMeshEntityToAssets.GraphTransaction");
 
         try {
+            AtlasVertex meshEntityVertex = entityRetriever.getEntityVertex(meshEntityGuid);
+
+            if(meshEntityVertex == null){
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, meshEntityGuid);
+            }
+
+            String entityType = meshEntityVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
+
+            if (!Objects.equals(entityType, DATA_DOMAIN_ENTITY_TYPE)) {
+                throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Cannot link " + entityType + " entity type to assets.");
+            }
+
+
             List<String> assetGuids = new ArrayList<>(linkGuids);
             GraphTransactionInterceptor.lockObjectAndReleasePostCommit(assetGuids);
             List<AtlasVertex> vertices = this.entityGraphMapper.linkMeshEntityToAssets(meshEntityGuid, linkGuids);
