@@ -522,4 +522,20 @@ data:
     atlas.config.store.app.name={{ .Values.atlas.configStore.cassandra.appName }}
     atlas.config.store.cassandra.replication.factor={{ .Values.atlas.configStore.cassandra.replicationFactor }}
     atlas.config.store.cassandra.consistency.level={{ .Values.atlas.configStore.cassandra.consistencyLevel }}
+
+    ######### Delete Optimization Configs #########
+    # Batch GUID lookup for deleteByIds
+    atlas.delete.batch.lookup.enabled={{ .Values.atlas.delete.batch_lookup_enabled }}
+    atlas.delete.batch.lookup.size={{ .Values.atlas.delete.batch_lookup_size }}
+    # Batch unique attribute resolution
+    atlas.delete.uniqueattr.batch.enabled={{ .Values.atlas.delete.uniqueattr_batch_enabled }}
+    atlas.delete.uniqueattr.batch.size={{ .Values.atlas.delete.uniqueattr_batch_size }}
+    # HasLineage early exit optimization
+    atlas.delete.haslineage.earlyexit.enabled={{ .Values.atlas.delete.haslineage_earlyexit_enabled }}
+    # Owned vertices batch optimization
+    atlas.delete.owned.optimized.enabled={{ .Values.atlas.delete.owned_optimized_enabled }}
+    atlas.delete.owned.batch.size={{ .Values.atlas.delete.owned_batch_size }}
+    # Slow query and large batch thresholds
+    atlas.delete.slow.query.threshold.ms={{ .Values.atlas.delete.slow_query_threshold_ms }}
+    atlas.delete.large.batch.threshold={{ .Values.atlas.delete.large_batch_threshold }}
 {{- end }}

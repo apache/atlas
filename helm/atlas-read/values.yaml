@@ -88,6 +88,23 @@ atlas:
     max_entities_allowed: 10000
   lineage:
     optimised_calculation: false
+  # Delete Optimization Settings
+  delete:
+    # Enable batch GUID lookups for deleteByIds (reduces N+1 queries)
+    batch_lookup_enabled: false
+    batch_lookup_size: 500
+    # Enable batch unique attribute resolution for deleteByUniqueAttributes
+    uniqueattr_batch_enabled: false
+    uniqueattr_batch_size: 200
+    # Enable early exit for entities without lineage edges
+    haslineage_earlyexit_enabled: false
+    # Enable optimized owned vertex discovery with batch soft-ref resolution
+    owned_optimized_enabled: false
+    owned_batch_size: 100
+    # Slow query logging threshold (ms)
+    slow_query_threshold_ms: 1000
+    # Large batch detection threshold
+    large_batch_threshold: 500
   authorizer:
     enable_delta_based_refresh: true
     enable_abac: false
