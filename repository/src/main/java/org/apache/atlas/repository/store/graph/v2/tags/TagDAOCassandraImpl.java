@@ -263,15 +263,13 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("putPropagatedTags");
         try {
             // Filter out self-propagation: an asset should not propagate a tag to itself
-            // This prevents data inconsistency where direct tag deletion leaves orphaned self-propagated entries
-            // See: MS-388, MS-405
             List<String> vertexIds = new ArrayList<>(propagatedAssetVertexIds);
             if (vertexIds.remove(sourceAssetId)) {
                 LOG.warn("Skipping self-propagation for sourceAssetId={}, tagTypeName={}", sourceAssetId, tagTypeName);
             }
 
             if (vertexIds.isEmpty()) {
-                LOG.debug("No vertices to propagate tags to after filtering for sourceAssetId={}, tagTypeName={}", sourceAssetId, tagTypeName);
+                LOG.info("No vertices to propagate tags to after filtering for sourceAssetId={}, tagTypeName={}", sourceAssetId, tagTypeName);
                 return;
             }
 
