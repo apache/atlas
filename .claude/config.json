@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "linear": {
+      "env": {
+        "LINEAR_API_KEY": ""
+      }
+    }
+  }
+}

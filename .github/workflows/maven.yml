@@ -27,6 +27,14 @@ on:
       - staging
       - lite_master
       - alcon-v2-418
+    paths-ignore:
+      - '.claude/**'
+      - '.cursor/**'
+      - '.github/**'
+      - 'docs/**'
+      - 'local-dev/**'
+      - 'README.txt'
+      - 'README.md'
 
 jobs:
   # Detect what changed to optimize workflow execution
