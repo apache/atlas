@@ -527,7 +527,11 @@ data:
     atlas.config.store.cassandra.table={{ .Values.atlas.configStore.cassandra.table }}
     atlas.config.store.app.name={{ .Values.atlas.configStore.cassandra.appName }}
     atlas.config.store.cassandra.replication.factor={{ .Values.atlas.configStore.cassandra.replicationFactor }}
+    {{- if eq .Values.global.Deployment_Type "Lite" }}
+    atlas.config.store.cassandra.consistency.level=LOCAL_ONE
+    {{- else }}
     atlas.config.store.cassandra.consistency.level={{ .Values.atlas.configStore.cassandra.consistencyLevel }}
+    {{- end }}
 
     ######### Atlas notification configs #########
     atlas.notification.differential.entity.changes.enabled={{ .Values.atlas.notification.differential_entity_changes_enabled }}
