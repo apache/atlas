@@ -3,7 +3,7 @@ name: atlas
 description: Apache Atlas Metadata Management and Governance Platform
 type: application
 version: 1.0.0
-appVersion: "3.0.0"  # Will be updated by CI with commit ID
+appVersion: "3.0.0"
 maintainers:
   - name: Atlan Engineering
     email: engineering@atlan.com
