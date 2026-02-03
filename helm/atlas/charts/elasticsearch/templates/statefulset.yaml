@@ -19,7 +19,11 @@ spec:
   selector:
     matchLabels:
       app: "{{ template "elasticsearch.uname" . }}"
+  {{- if eq .Values.global.Deployment_Type "Lite" }}
+  replicas: 1
+  {{- else }}
   replicas: {{ .Values.replicas }}
+  {{- end }}
   podManagementPolicy: {{ .Values.podManagementPolicy }}
   updateStrategy:
     type: {{ .Values.updateStrategy }}
@@ -79,10 +83,16 @@ spec:
       {{- if .Values.priorityClassName }}
       priorityClassName: {{ .Values.priorityClassName }}
       {{- end }}
+      {{- if eq .Values.global.Deployment_Type "Lite" }}
+      {{- with .Values.affinity_lite }}
       affinity:
+{{ toYaml . | indent 8 }}
       {{- end }}
+      {{- else if or (eq .Values.antiAffinity "hard") (eq .Values.antiAffinity "soft") .Values.nodeAffinity }}
+      affinity:
       {{- $tierType := .Values.global.Tier_Type | default "" }}
       {{- if or (eq $tierType "Enterprise") (eq $tierType "") }}
+      {{- if not (eq .Values.global.Deployment_Type "Lite") }}
       {{- if eq .Values.antiAffinity "hard" }}
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -104,6 +114,9 @@ spec:
                   - "{{ template "elasticsearch.uname" . }}"
       {{- end }}
       {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- if not (eq .Values.global.Deployment_Type "Lite") }}
         nodeAffinity:
           {{- if eq .Values.custom_deployment.enabled true }}
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -142,6 +155,8 @@ spec:
             {{- toYaml .Values.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution | nindent 12 }}
           {{- end }}
           {{- end }}
+      {{- end }}
+      {{- end }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriod }}
       volumes:
         {{- if .Values.s3_regional_endpoint }}
@@ -296,7 +311,9 @@ spec:
         - name: transport
           containerPort: {{ .Values.transportPort }}
         resources:
-{{- if eq .Values.global.Tier_Type "Enterprise" }}
+{{- if eq .Values.global.Deployment_Type "Lite" }}
+{{ toYaml .Values.resources_lite | indent 10 }}
+{{- else if eq .Values.global.Tier_Type "Enterprise" }}
 {{ toYaml .Values.resources | indent 10 }}
 {{- else if eq .Values.global.Tier_Type "Basic" }}
 {{ toYaml .Values.resources_basic | indent 10 }}
@@ -316,7 +333,11 @@ spec:
           {{- if eq .Values.roles.master "true" }}
           {{- if ge (int (include "elasticsearch.esMajorVersion" .)) 7 }}
           - name: cluster.initial_master_nodes
+            {{- if eq .Values.global.Deployment_Type "Lite" }}
+            value: "atlas-elasticsearch-master-0"
+            {{- else }}
             value: "{{ template "elasticsearch.endpoints" . }}"
+            {{- end }}
           {{- else }}
           - name: discovery.zen.minimum_master_nodes
             value: "{{ .Values.minimumMasterNodes }}"

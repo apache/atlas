@@ -16,7 +16,7 @@ data:
 
     echo "[+] Copying Config File"
     cp /tmp/configfile/atlas-application.properties /tmp/newconfigfile/atlas-application.properties
-    
+
     echo "[+] Checking for Keycloak"
     until printf "." && curl -s $KEYCLOAK_ADDRESS/realms/master; do
       sleep 2;
@@ -89,11 +89,31 @@ data:
     echo "[+] Checking for Zookeeper"
     while true
     do
+{{- if eq .Values.global.Deployment_Type "Lite" }}
+      stat_output=$(echo stat | nc -w 3 zookeeper 2181 2>/dev/null)
+      if [ -z "$stat_output" ]; then
+        echo "[-] No response from Zookeeper or connection failed. Retrying..."
+        sleep 5
+        continue
+      fi
+      is_leader_mode=$(echo "${stat_output}" | grep -c "Mode: leader")
+      is_standalone_mode=$(echo "${stat_output}" | grep -c "Mode: standalone")
+      if [ "$is_leader_mode" -eq 1 ]; then
+        echo "Zookeeper is in LEADER mode. Cluster up."
+        break
+      elif [ "$is_standalone_mode" -eq 1 ]; then
+        echo "Zookeeper is in STANDALONE mode. Service up."
+        break
+      else
+        echo "[-] Zookeeper not yet in Leader or Standalone mode. Retrying..."
+      fi
+{{- else }}
     sleep 5
     echo "[+] checking for zookeeper service"
     leader=`echo stat | nc zookeeper 2181 | grep leader |wc -l`
     echo $leader
     if [ $leader -eq 1 ]; then echo "Zookeeper cluster up"; break; fi
+{{- end }}
     done
     echo 'Zookeeper OK ✓'
 

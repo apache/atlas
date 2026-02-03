@@ -25,6 +25,7 @@ on:
       - beta
       - master
       - staging
+      - lite_master
       - alcon-v2-418
 
 jobs:
