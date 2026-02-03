@@ -3435,16 +3435,16 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkMeshEntityToAssets.GraphTransaction");
 
         try {
-            AtlasVertex domainVertex = entityRetriever.getEntityVertex(meshEntityGuid);
+            AtlasVertex meshEntityVertex = entityRetriever.getEntityVertex(meshEntityGuid);
 
-            if(domainVertex == null){
+            if(meshEntityVertex == null){
                 throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, meshEntityGuid);
             }
 
-            String domainEntityType = domainVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
+            String entityType = meshEntityVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
 
-            if (!Objects.equals(domainEntityType, DATA_DOMAIN_ENTITY_TYPE)) {
-                throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Cannot link " + domainEntityType + " entity type to assets.");
+            if (!Objects.equals(entityType, DATA_DOMAIN_ENTITY_TYPE)) {
+                throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Cannot link " + entityType + " entity type to assets.");
             }
 
 
