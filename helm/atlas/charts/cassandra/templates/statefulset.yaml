@@ -82,6 +82,12 @@ spec:
                 operator: In
                 values:
                 - metastore
+            {{- else if eq $cloud "gcp" }}
+            - matchExpressions:
+              - key: purpose
+                operator: In
+                values:
+                - atlas
             {{- else }}
             - matchExpressions:
               - key: node.kubernetes.io/instance-type
