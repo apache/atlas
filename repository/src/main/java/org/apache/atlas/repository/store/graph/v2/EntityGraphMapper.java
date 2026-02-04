@@ -4770,13 +4770,8 @@ public class EntityGraphMapper {
         Tag currentTag = tagDAO.findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(entityVertex.getIdForDisplay(), classificationName, false);
         if (Objects.isNull(currentTag)) {
             LOG.error(AtlasErrorCode.CLASSIFICATION_NOT_FOUND.getFormattedErrorMessage(classificationName));
-                // Temporary fix for clearing dangling tag references are found. [Ticket: MS-402]
-            String playbookName = RequestContext.get().getPlaybookName();
-            if(StringUtils.isNotEmpty(playbookName)) {
-                addEsDeferredOperation(entityVertex, classificationName);
-                return;
-            }
-            throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classificationName);// Returning from here  instead of throwing error to delete ES for dangling tag references are found.
+            // If a client is trying to delete this tag, it might be existing in ES but not in C*. Allow it to be cleaned in ES.
+            addEsDeferredOperation(entityVertex, classificationName);
         }
 
         // Get in progress task to see if there already is a propagation for this particular vertex
