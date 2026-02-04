@@ -318,14 +318,14 @@ public class DynamicConfigStore implements ApplicationContextAware {
 
     /**
      * Check if Tag V2 (Janus optimization) is enabled.
-     * Note: The flag ENABLE_JANUS_OPTIMISATION being "false" means Tag V2 is ENABLED.
+     * Note: The flag ENABLE_JANUS_OPTIMISATION being "true" means Tag V2 is ENABLED.
      * Falls back to FeatureFlagStore (Redis) if DynamicConfigStore is not activated.
      *
      * @return true if Tag V2 is enabled, false otherwise
      */
     public static boolean isTagV2Enabled() {
         if (isActivated()) {
-            return !getConfigAsBoolean(ConfigKey.ENABLE_JANUS_OPTIMISATION.getKey());
+            return getConfigAsBoolean(ConfigKey.ENABLE_JANUS_OPTIMISATION.getKey());
         }
         // Fall back to FeatureFlagStore (Redis)
         return FeatureFlagStore.isTagV2Enabled();
