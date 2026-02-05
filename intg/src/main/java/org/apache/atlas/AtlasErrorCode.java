@@ -82,7 +82,7 @@ public enum AtlasErrorCode {
     RELATIONSHIPDEF_COMPOSITION_MULTIPLE_PARENTS(400, "ATLAS-400-00-033", "COMPOSITION relationshipDef {0} can only have one parent; so cannot have SET cardinality on children"),
     RELATIONSHIPDEF_LIST_ON_END(400, "ATLAS-400-00-034", "relationshipDef {0} cannot have a LIST cardinality on an end"),
     RELATIONSHIPDEF_INVALID_END_TYPE(400, "ATLAS-400-00-035", "relationshipDef {0} has invalid end type {1}"),
-    INVALID_RELATIONSHIP_END_TYPE(400, "ATLAS-400-00-036", "invalid relationshipDef: {0}: end type 1: {1}, end type 2: {2}"),
+    INVALID_RELATIONSHIP_END_TYPE(400, "ATLAS-400-00-036", "invalid relationshipDef: {0}: actual: [end type 1: {1}, end type 2: {2}]. expected: [end type 1: {3}, end type 2: {4}]"),
     RELATIONSHIPDEF_INVALID_END1_UPDATE(400, "ATLAS-400-00-037", "invalid update for relationshipDef {0}: new end1 {1}, existing end1 {2}"),
     RELATIONSHIPDEF_INVALID_END2_UPDATE(400, "ATLAS-400-00-038", "invalid update for relationshipDef {0}: new end2 {1}, existing end2 {2}"),
     RELATIONSHIPDEF_INVALID_CATEGORY_UPDATE(400, "ATLAS-400-00-039", "invalid  update for relationship {0}: new relationshipDef category {1}, existing relationshipDef category {2}"),

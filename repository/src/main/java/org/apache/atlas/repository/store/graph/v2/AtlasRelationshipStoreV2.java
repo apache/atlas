@@ -480,7 +480,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
 
         if (!validEndTypes) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_END_TYPE, relationshipName, relationshipType.getEnd2Type().getTypeName(), end1TypeName);
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_END_TYPE, relationshipName, end1TypeName, end2TypeName, relationshipType.getEnd1Type().getTypeName(), relationshipType.getEnd2Type().getTypeName());
         }
 
         validateEnds(relationship);
@@ -517,7 +517,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
 
         if (!validEndTypes) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_END_TYPE, relationshipName, relationshipType.getEnd2Type().getTypeName(), end1TypeName);
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_END_TYPE, relationshipName, end1TypeName, end2TypeName, relationshipType.getEnd1Type().getTypeName(), relationshipType.getEnd2Type().getTypeName());
         }
 
         PropagateTags typePropagation = relationshipType.getRelationshipDef().getPropagateTags();
