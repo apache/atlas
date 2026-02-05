@@ -27,7 +27,7 @@ import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.GraphDBMigrator;
 import org.apache.atlas.repository.migration.DataMigrationStatusService;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -30,9 +30,14 @@ import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
+<<<<<<< ATLAS-5187
 import org.apache.atlas.repository.Constants;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
+=======
+import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
+>>>>>>> master
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

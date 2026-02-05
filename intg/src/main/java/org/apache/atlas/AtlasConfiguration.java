@@ -19,7 +19,7 @@
 package org.apache.atlas;
 
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Enum that encapsulated each property name and its default value.

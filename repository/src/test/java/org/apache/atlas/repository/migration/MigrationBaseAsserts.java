@@ -35,7 +35,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.TestResourceFileUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 

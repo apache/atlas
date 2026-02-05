@@ -33,7 +33,7 @@ import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;

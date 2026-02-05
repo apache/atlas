@@ -20,7 +20,7 @@ package org.apache.atlas.repository.graphdb.janus.migration;
 
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.repository.Constants;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;

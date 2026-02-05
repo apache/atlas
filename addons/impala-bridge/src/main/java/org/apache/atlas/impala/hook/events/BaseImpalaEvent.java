@@ -34,7 +34,7 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

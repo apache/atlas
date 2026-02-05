@@ -75,7 +75,7 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 
 import javax.ws.rs.HttpMethod;

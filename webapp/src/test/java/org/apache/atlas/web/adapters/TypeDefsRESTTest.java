@@ -32,7 +32,7 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.web.rest.EntityREST;
 import org.apache.atlas.web.rest.TypesREST;
-import org.apache.commons.lang.time.DateUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;

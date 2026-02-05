@@ -32,7 +32,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.commons.lang.time.DateUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.locationtech.jts.util.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;

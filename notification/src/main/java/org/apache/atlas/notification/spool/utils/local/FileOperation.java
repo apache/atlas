@@ -19,8 +19,8 @@ package org.apache.atlas.notification.spool.utils.local;
 
 import org.apache.atlas.notification.spool.SpoolUtils;
 import org.apache.atlas.notification.spool.models.IndexRecord;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.RandomUtils;
+import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,7 +143,7 @@ public abstract class FileOperation {
                 return;
             } catch (OverlappingFileLockException e) {
                 try {
-                    int timeout = 1 + (50 * RandomUtils.nextInt(10));
+                    int timeout = 1 + (50 * RandomUtils.nextInt(0, 10));
                     LOG.info("FileOperation.performWithRetry(source={}): {}: {}: Waiting: {} ms...", getSource(), getClass().getSimpleName(), file.getName(), timeout);
 
                     TimeUnit.MILLISECONDS.sleep(timeout);

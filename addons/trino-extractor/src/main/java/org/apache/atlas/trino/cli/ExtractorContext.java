@@ -23,7 +23,7 @@ import org.apache.atlas.trino.client.AtlasClientHelper;
 import org.apache.atlas.trino.client.TrinoClientHelper;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 

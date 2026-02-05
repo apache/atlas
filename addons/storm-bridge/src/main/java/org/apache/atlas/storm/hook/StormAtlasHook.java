@@ -31,7 +31,7 @@ import org.apache.atlas.storm.model.StormDataTypes;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.HdfsNameServiceResolver;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;

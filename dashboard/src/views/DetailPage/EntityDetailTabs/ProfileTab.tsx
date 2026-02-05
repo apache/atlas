@@ -79,46 +79,56 @@ const ProfileTab: React.FC<EntityDetailTabProps> = ({ entity }) => {
   const fetchRelationShipResult = useCallback(
     async ({
       pagination,
-      sorting
+      sorting: _sorting
     }: {
       pagination?: any;
       sorting: [{ id: string; desc: boolean }];
     }) => {
-      if (!entity?.typeName) {
+      if (!entity?.typeName || !guid) {
         return;
       }
-      const { pageSize, pageIndex } = pagination || {};
-      const offsetParam = searchParams.get("pageOffset");
-      const limitParam = searchParams.get("pageLimit");
-      if (pageIndex > 1) {
-        searchParams.set("pageOffset", `${pageSize + pageIndex}`);
-      }
-      let params: any = {
-        order: sorting[0]?.desc == false ? "asc" : "desc",
-        offset: !isEmpty(offsetParam) ? offsetParam : pageIndex + pageSize,
-        limit: !isEmpty(limitParam) ? limitParam : pageSize,
-        sort_by: sorting[0]?.id || "timestamp",
+      const { pageSize = 25, pageIndex = 0 } = pagination || {};
+      const includeDeletedEntities = searchParams.get("includeDE") === "true";
+      const baseParams = {
         guid: guid,
-        relation:
-          entity?.typeName === "hive_db"
-            ? "__hive_table.db"
-            : "__hbase_table.namespace",
-        sortBy: sorting[0]?.id || "name",
-        sortOrder: sorting[0]?.desc == false ? "ASCENDING" : "DESCENDING",
-        excludeDeletedEntities: !isEmpty(searchParams.get("includeDE"))
-          ? !searchParams.get("includeDE")
-          : true,
+        limit: pageSize,
+        offset: pageIndex * pageSize,
+        sortBy: "name",
+        sortOrder: "ASCENDING",
+        excludeDeletedEntities: !includeDeletedEntities,
         includeSubClassifications: true,
         includeSubTypes: true,
         includeClassificationAttributes: true
       };
+      const relationList =
+        entity?.typeName === "hive_db"
+          ? ["__hive_table.db", "__iceberg_table.db"]
+          : entity?.typeName === "hbase_namespace"
+          ? ["__hbase_table.namespace"]
+          : [];
       dispatch({ type: "request" });
 
       try {
-        let searchResp = await getRelationShip({ params: params });
+        const responses = await Promise.all(
+          relationList.map((relation) =>
+            getRelationShip({
+              params: {
+                ...baseParams,
+                relation
+              }
+            })
+          )
+        );
+        const mergedEntities = responses.flatMap(
+          (resp) => resp?.data?.entities || []
+        );
+        const uniqueEntities = mergedEntities.filter(
+          (entityObj, index, arr) =>
+            arr.findIndex((item) => item.guid === entityObj.guid) === index
+        );
         dispatch({
           type: "success",
-          respData: searchResp.data.entities
+          respData: uniqueEntities
         });
       } catch (error: any) {
         console.error("Error fetching data:", error.response.data.errorMessage);
@@ -305,8 +315,8 @@ const ProfileTab: React.FC<EntityDetailTabProps> = ({ entity }) => {
               emptyText="No Records found!"
               isFetching={isLoading}
               defaultSortCol={getDefaultSort}
-              clientSideSorting={true}
-              columnSort={true}
+              clientSideSorting={false}
+              columnSort={false}
               columnVisibility={false}
               showRowSelection={true}
               showPagination={true}

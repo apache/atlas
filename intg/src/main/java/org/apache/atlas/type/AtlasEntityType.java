@@ -30,7 +30,7 @@ import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.curator.shaded.com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

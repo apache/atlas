@@ -1109,7 +1109,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications, boolean replaceBusinessAttributes) throws AtlasBaseException {
-        LOG.debug("==> createOrUpdate()");
+        LOG.debug("==> createOrUpdate(isPartialUpdate={}, replaceClassifications={}, replaceBusinessAttributes={})", isPartialUpdate, replaceClassifications, replaceBusinessAttributes);
 
         if (entityStream == null || !entityStream.hasNext()) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
@@ -1303,7 +1303,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         RequestContext.get().endMetricRecord(metric);
-
         return context;
     }
 

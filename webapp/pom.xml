@@ -130,11 +130,6 @@
         </dependency>
 
         <dependency>
-            <groupId>javax.servlet.jsp</groupId>
-            <artifactId>jsp-api</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
         </dependency>
@@ -173,11 +168,6 @@
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-dashboardv2</artifactId>
-            <type>war</type>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-dashboardv3</artifactId>
             <type>war</type>
         </dependency>
         <dependency>
@@ -268,6 +258,10 @@
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.servlet.jsp</groupId>
+                    <artifactId>jsp-api</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.apache.commons</groupId>
@@ -524,10 +518,6 @@
                             <artifactId>atlas-dashboardv2</artifactId>
                         </overlay>
                         <overlay>
-                            <groupId>org.apache.atlas</groupId>
-                            <artifactId>atlas-dashboardv3</artifactId>
-                        </overlay>
-                        <overlay>
                             <!-- empty groupId/artifactId represents the current build -->
                         </overlay>
                     </overlays>
@@ -544,7 +534,7 @@
                             <addClasspath>true</addClasspath>
                         </manifest>
                     </archive>
-                    <packagingExcludes>WEB-INF/lib/dom4j-*.jar,${packages.to.exclude}</packagingExcludes>
+                    <packagingExcludes>WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/jsp-api*.jar,${packages.to.exclude}</packagingExcludes>
                 </configuration>
             </plugin>
 

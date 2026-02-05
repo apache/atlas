@@ -277,17 +277,6 @@ const Header: React.FC<Header> = ({
           >
             Switch to Classic
           </MenuItem>
-           <MenuItem
-            dense
-            data-cy="newUI"
-            onClick={() => {
-              let path = getBaseUrl(window.location.pathname);
-              window.location.href = path + "/n/index.html#!";
-              handleClose();
-            }}
-          >
-            Switch to New
-          </MenuItem>
           <MenuItem
             dense
             data-cy="signOut"

@@ -130,11 +130,6 @@
                                             <version>${commons-conf.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>commons-lang</groupId>
-                                            <artifactId>commons-lang</artifactId>
-                                            <version>${commons-lang.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
                                             <groupId>commons-logging</groupId>
                                             <artifactId>commons-logging</artifactId>
                                             <version>${commons-logging.version}</version>

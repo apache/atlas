@@ -23,7 +23,7 @@ import org.apache.atlas.impala.model.ImpalaQuery;
 import org.apache.atlas.impala.model.LineageVertex;
 import org.apache.atlas.impala.model.LineageVertexMetadata;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collection;
 import java.util.HashMap;

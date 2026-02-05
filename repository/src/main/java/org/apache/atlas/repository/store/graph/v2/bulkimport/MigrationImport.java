@@ -42,7 +42,7 @@ import org.apache.atlas.repository.store.graph.v2.bulkimport.pc.EntityCreationMa
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasStringUtil;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

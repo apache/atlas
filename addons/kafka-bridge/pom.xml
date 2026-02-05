@@ -424,9 +424,9 @@
                                             <version>${commons-logging.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>commons-lang</groupId>
-                                            <artifactId>commons-lang</artifactId>
-                                            <version>${commons-lang.version}</version>
+                                            <groupId>org.apache.commons</groupId>
+                                            <artifactId>commons-lang3</artifactId>
+                                            <version>${commons-lang3.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.apache.kafka</groupId>

@@ -50,7 +50,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -480,7 +480,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
 
         if (!validEndTypes) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_END_TYPE, relationshipName, relationshipType.getEnd2Type().getTypeName(), end1TypeName);
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_END_TYPE, relationshipName, end1TypeName, end2TypeName, relationshipType.getEnd1Type().getTypeName(), relationshipType.getEnd2Type().getTypeName());
         }
 
         validateEnds(relationship);
@@ -517,7 +517,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
 
         if (!validEndTypes) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_END_TYPE, relationshipName, relationshipType.getEnd2Type().getTypeName(), end1TypeName);
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_END_TYPE, relationshipName, end1TypeName, end2TypeName, relationshipType.getEnd1Type().getTypeName(), relationshipType.getEnd2Type().getTypeName());
         }
 
         PropagateTags typePropagation = relationshipType.getRelationshipDef().getPropagateTags();

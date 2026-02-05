@@ -19,7 +19,7 @@ package org.apache.atlas.web.integration;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasServiceException;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.Test;
 
 import java.time.Instant;

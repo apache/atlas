@@ -212,6 +212,34 @@ require(['App',
     'select2'
 ], function(App, Router, Helper, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList, VRelationshipSearchList, Enums, Utils) {
     var that = this;
+	var sanitizeBootstrapButtonLoadingText = function() {
+		if (!window.jQuery || !$.fn || !$.fn.button ||
+			!$.fn.button.Constructor) {
+			return
+		}
+
+		var Button = $.fn.button.Constructor
+		if (Button.prototype._safeSetState) {
+			return
+		}
+
+		var originalSetState = Button.prototype.setState
+		if (!originalSetState) {
+			return
+		}
+
+		Button.prototype.setState = function(state) {
+			var data = this.$element ? this.$element.data() : null
+			var key = state + 'Text'
+			if (data && data[key]) {
+				data[key] = $('<div/>').text(data[key]).text()
+			}
+			return originalSetState.call(this, state)
+		}
+		Button.prototype._safeSetState = true
+	}
+
+	sanitizeBootstrapButtonLoadingText()
     this.asyncFetchCounter = 5 + (Enums.addOnEntities.length + 1);
     // entity
     this.entityDefCollection = new VEntityList();

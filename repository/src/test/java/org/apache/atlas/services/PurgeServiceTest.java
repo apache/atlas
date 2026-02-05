@@ -38,7 +38,7 @@ import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.TestLoadModelUtils;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.testng.annotations.BeforeClass;

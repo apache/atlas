@@ -34,7 +34,7 @@ import org.apache.atlas.v1.model.typedef.TraitTypeDefinition;
 import org.apache.atlas.v1.model.typedef.TypesDef;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
