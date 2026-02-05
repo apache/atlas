@@ -28,7 +28,9 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.atlas.repository.Constants;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -38,6 +40,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Singleton;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -201,6 +204,13 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
     @Override
     public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) {
         return listEventsV2(entityId, auditAction, null, limit);
+    }
+
+    @Override
+    public List<EntityAuditEventV2> deleteEventsV2(String entityId, Set<EntityAuditEventV2.EntityAuditActionV2> entityAuditActions, short auditCount, int ttlInDays, boolean createEventsAgeoutAllowed, Constants.AtlasAuditAgingType auditAgingType)
+            throws AtlasBaseException, AtlasException
+    {
+        return Collections.emptyList();
     }
 
     @Override

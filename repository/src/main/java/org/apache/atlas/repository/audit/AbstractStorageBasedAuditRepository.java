@@ -24,10 +24,10 @@ import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
-import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 import org.apache.atlas.service.Service;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +36,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * This abstract base class should be used when adding support for an audit storage backend.
@@ -81,11 +80,6 @@ public abstract class AbstractStorageBasedAuditRepository implements Service, En
     @Override
     public void putEventsV2(EntityAuditEventV2... events) throws AtlasBaseException {
         putEventsV2(Arrays.asList(events));
-    }
-
-    @Override
-    public List<EntityAuditEventV2> deleteEventsV2(String entityId, Set<EntityAuditEventV2.EntityAuditActionV2> entityAuditActions, short auditCount, int ttlInDays, boolean createEventsAgeoutAllowed, AtlasAuditAgingType auditAgingType) throws AtlasBaseException, AtlasException {
-        return null;
     }
 
     @Override
@@ -168,6 +162,10 @@ public abstract class AbstractStorageBasedAuditRepository implements Service, En
     }
 
     protected long getTimestampFromKey(String key) {
+        if (StringUtils.isEmpty(key)) {
+            return 0L;
+        }
+
         String[] parts = key.split(FIELD_SEPARATOR);
 
         if (parts.length < 3) {
@@ -183,6 +181,10 @@ public abstract class AbstractStorageBasedAuditRepository implements Service, En
     }
 
     protected int getIndexFromKey(String key) {
+        if (StringUtils.isEmpty(key)) {
+            return 0;
+        }
+
         String[] parts = key.split(FIELD_SEPARATOR);
 
         if (parts.length < 3) {

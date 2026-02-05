@@ -61,8 +61,8 @@ public class DbEntityAudit implements java.io.Serializable {
     @Column(name = "user_name", nullable = false, length = 64)
     protected String user;
 
-    @Column(name = "operation", nullable = false)
-    protected int action;
+    @Column(name = "operation", nullable = false, length = 64)
+    protected String action;
 
     @Column(name = "details")
     @Lob
@@ -115,11 +115,11 @@ public class DbEntityAudit implements java.io.Serializable {
         this.user = user;
     }
 
-    public int getAction() {
+    public String getAction() {
         return action;
     }
 
-    public void setAction(int action) {
+    public void setAction(String action) {
         this.action = action;
     }
 
@@ -164,7 +164,7 @@ public class DbEntityAudit implements java.io.Serializable {
                     eventTime == other.eventTime &&
                     eventIndex == other.eventIndex &&
                     Objects.equals(user, other.user) &&
-                    action == other.action &&
+                    Objects.equals(action, other.action) &&
                     Objects.equals(details, other.details) &&
                     Objects.equals(entity, other.entity) &&
                     auditType == other.auditType;
