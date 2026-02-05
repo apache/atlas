@@ -541,17 +541,9 @@ data:
     atlas.entity.skip.optional.attributes={{ .Values.atlas.entity.skip_optional_attributes }}
 
     ######### Delete Optimization Configs #########
-    # Batch GUID lookup for deleteByIds
-    atlas.delete.batch.lookup.enabled={{ .Values.atlas.delete.batch_lookup_enabled }}
+    # Consolidated batch operations flag (controls batch GUID lookups, batch unique attribute resolution, owned vertices batch discovery)
+    atlas.delete.batch.enabled={{ .Values.atlas.delete.batch_enabled }}
+    # Batch sizes for various delete operations
     atlas.delete.batch.lookup.size={{ .Values.atlas.delete.batch_lookup_size }}
-    # Batch unique attribute resolution
-    atlas.delete.uniqueattr.batch.enabled={{ .Values.atlas.delete.uniqueattr_batch_enabled }}
     atlas.delete.uniqueattr.batch.size={{ .Values.atlas.delete.uniqueattr_batch_size }}
-    # HasLineage early exit optimization
-    atlas.delete.haslineage.earlyexit.enabled={{ .Values.atlas.delete.haslineage_earlyexit_enabled }}
-    # Owned vertices batch optimization
-    atlas.delete.owned.optimized.enabled={{ .Values.atlas.delete.owned_optimized_enabled }}
     atlas.delete.owned.batch.size={{ .Values.atlas.delete.owned_batch_size }}
-    # Slow query and large batch thresholds
-    atlas.delete.slow.query.threshold.ms={{ .Values.atlas.delete.slow_query_threshold_ms }}
-    atlas.delete.large.batch.threshold={{ .Values.atlas.delete.large_batch_threshold }}

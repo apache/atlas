@@ -188,25 +188,14 @@ public enum AtlasConfiguration {
     TASK_HIGH_MEMORY_PAUSE_MS("atlas.tasks.high.memory.pause.ms", 2000),
     TASK_MAX_RETRY_ATTEMPTS("atlas.tasks.max.retry.attempts", 3),
 
-    // Batch Vertex Lookups (by GUID)
-    DELETE_BATCH_LOOKUP_ENABLED("atlas.delete.batch.lookup.enabled", false),
+    // Consolidated batch operations flag for delete optimizations
+    // Controls: batch GUID lookups, batch unique attribute resolution, and batch owned vertices discovery
+    DELETE_BATCH_OPERATIONS_ENABLED("atlas.delete.batch.enabled", false),
+
+    // Batch sizes for various delete operations
     DELETE_BATCH_LOOKUP_SIZE("atlas.delete.batch.lookup.size", 500),
-
-    // Batch Unique Attribute Resolution
-    DELETE_UNIQUEATTR_BATCH_ENABLED("atlas.delete.uniqueattr.batch.enabled", false),
     DELETE_UNIQUEATTR_BATCH_SIZE("atlas.delete.uniqueattr.batch.size", 200),
-
-    // Early Exit for No-Lineage Entities
-    DELETE_HASLINEAGE_EARLYEXIT_ENABLED("atlas.delete.haslineage.earlyexit.enabled", false),
-
-    // Owned Vertices Optimization
-    DELETE_OWNED_SHADOW_ENABLED("atlas.delete.owned.shadow.enabled", false),
-    DELETE_OWNED_OPTIMIZED_ENABLED("atlas.delete.owned.optimized.enabled", false),
-    DELETE_OWNED_BATCH_SIZE("atlas.delete.owned.batch.size", 100),
-
-    // Logging thresholds for delete operations
-    DELETE_SLOW_QUERY_THRESHOLD_MS("atlas.delete.slow.query.threshold.ms", 1000),
-    DELETE_LARGE_BATCH_THRESHOLD("atlas.delete.large.batch.threshold", 500);
+    DELETE_OWNED_BATCH_SIZE("atlas.delete.owned.batch.size", 100);
 
     private static final Configuration APPLICATION_PROPERTIES;
 

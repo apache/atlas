@@ -25,12 +25,12 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests for deleteByUniqueAttributes batch resolution behavior.
+ * Tests for deleteByUniqueAttributes batch resolution configuration.
  *
  * <h2>Behavior</h2>
  * <ul>
- * <li>When DELETE_UNIQUEATTR_BATCH_ENABLED is OFF, single lookups are used</li>
- * <li>When DELETE_UNIQUEATTR_BATCH_ENABLED is ON, batch resolution is attempted</li>
+ * <li>When DELETE_BATCH_OPERATIONS_ENABLED is OFF, single lookups are used</li>
+ * <li>When DELETE_BATCH_OPERATIONS_ENABLED is ON, batch resolution is attempted</li>
  * <li>When batch resolution fails, fallback to single lookups occurs</li>
  * </ul>
  */
@@ -49,9 +49,9 @@ class DeleteByUniqueAttributesBatchTest {
 
     @Test
     void testUniqueAttrBatchFlagDefaults() {
-        // Verify default flag values
-        assertFalse(AtlasConfiguration.DELETE_UNIQUEATTR_BATCH_ENABLED.getBoolean(),
-                "DELETE_UNIQUEATTR_BATCH_ENABLED should default to false");
+        // Verify default flag values - consolidated into single flag
+        assertFalse(AtlasConfiguration.DELETE_BATCH_OPERATIONS_ENABLED.getBoolean(),
+                "DELETE_BATCH_OPERATIONS_ENABLED should default to false");
         assertEquals(200, AtlasConfiguration.DELETE_UNIQUEATTR_BATCH_SIZE.getInt(),
                 "DELETE_UNIQUEATTR_BATCH_SIZE should default to 200");
     }
