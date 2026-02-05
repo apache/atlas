@@ -1,6 +1,6 @@
 {{- if .Values.global.atlasLogstash.enabled }}
 {{- if .Values.maxUnavailable }}
-{{- if not (eq .Values.global.Deployment_Type "Lite") }}
+{{- if not (eq .Values.global.Infra_Tier "Lite") }}
 {{- if .Capabilities.APIVersions.Has "policy/v1" -}}
 apiVersion: policy/v1
 {{- else}}
