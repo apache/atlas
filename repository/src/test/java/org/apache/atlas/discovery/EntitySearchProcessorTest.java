@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
@@ -835,5 +836,22 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
         AtlasEntityHeader            entityHeader = response.getCreatedEntities().get(0);
 
         cjkGuid2 = entityHeader.getGuid();
+    }
+
+    @DataProvider(name = "limitProvider")
+    public Integer[] limitProvider() {
+        return new Integer[] {15, 0, 1, 10, 20};
+    }
+
+    @Test(dependsOnMethods = "searchWithNEQ_stringAttr", dataProvider = "limitProvider")
+    public void testEntitySearchApproxCountForAllLimits(int limit) throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setLimit(limit);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.emptySet());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+
+        assertEquals(processor.getResultCount(), 11);
     }
 }
