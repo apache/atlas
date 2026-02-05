@@ -212,6 +212,25 @@ atlas:
               app: atlas
           topologyKey: kubernetes.io/hostname
 
+  affinity_lite:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: eks.amazonaws.com/capacityType
+            operator: In
+            values:
+              - ON_DEMAND
+        - matchExpressions:
+          - key: lifecycle
+            operator: In
+            values:
+              - ondemand
+        - matchExpressions:
+          - key: cloud.google.com/gke-provisioning
+            operator: In
+            values:
+              - standard
   # Kubernetes service for atlas
   service:
     portName: atlas
@@ -348,6 +367,14 @@ atlas:
       memory: 6Gi
     requests:
       memory: 20Mi
+
+  resources_lite:
+    limits:
+      cpu: 2000m
+      memory: 8Gi
+    requests:
+      cpu: 1000m
+      memory: 6Gi
 
   # Liveness and readiness probes for atlas
   livenessProbe:

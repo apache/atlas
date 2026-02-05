@@ -262,7 +262,17 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                                   Map<String, Map<String, Object>> assetMinAttrsMap, AtlasClassification tag) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("putPropagatedTags");
         try {
+            // Filter out self-propagation: an asset should not propagate a tag to itself
             List<String> vertexIds = new ArrayList<>(propagatedAssetVertexIds);
+            if (vertexIds.remove(sourceAssetId)) {
+                LOG.warn("Skipping self-propagation for sourceAssetId={}, tagTypeName={}", sourceAssetId, tagTypeName);
+            }
+
+            if (vertexIds.isEmpty()) {
+                LOG.info("No vertices to propagate tags to after filtering for sourceAssetId={}, tagTypeName={}", sourceAssetId, tagTypeName);
+                return;
+            }
+
             Instant now = Instant.ofEpochMilli(RequestContext.get().getRequestTime());
             String tagJson = AtlasType.toJson(tag);
 

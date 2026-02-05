@@ -17,7 +17,11 @@ spec:
       app: {{ template "cassandra.name" . }}
       release: {{ .Release.Name }}
   serviceName: {{ template "cassandra.fullname" . }}
+  {{- if eq .Values.Deployment_Type "Lite" }}
+  replicas: 1
+  {{- else }}
   replicas: {{ .Values.config.cluster_size }}
+  {{- end }}
   podManagementPolicy: {{ .Values.podManagementPolicy }}
   updateStrategy:
     type: {{ .Values.updateStrategy.type }}
@@ -49,6 +53,12 @@ spec:
         fsGroup: {{ .Values.securityContext.fsGroup }}
         runAsUser: {{ .Values.securityContext.runAsUser }}
       {{- end }}
+{{- if eq .Values.global.Deployment_Type "Lite" }}
+      {{- with .Values.affinity_lite }}
+      affinity:
+{{ toYaml . | indent 8 }}
+      {{- end }}
+      {{- else }}
 {{- $tierType := .Values.global.Tier_Type | default "" }}
 {{- if or (eq $tierType "Enterprise") (eq $tierType "") }}
       affinity:
@@ -72,6 +82,12 @@ spec:
                 operator: In
                 values:
                 - metastore
+            {{- else if eq $cloud "gcp" }}
+            - matchExpressions:
+              - key: purpose
+                operator: In
+                values:
+                - atlas
             {{- else }}
             - matchExpressions:
               - key: node.kubernetes.io/instance-type
@@ -106,6 +122,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             {{- toYaml .Values.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution | nindent 10 }}
         {{- end }}
+{{- end }}
 {{- end }}
 {{- if .Values.tolerations }}
       tolerations:
@@ -189,14 +206,21 @@ spec:
 {{- $tierType := .Values.global.Tier_Type | default "" }}
 {{- if or (eq $tierType "Enterprise") (eq $tierType "") }}
         resources:
-{{- if eq .Values.global.Deployment_Type "Development" }}
-{{ toYaml .Values.resources_development | indent 10 }}
-{{- else }}
+        {{- if eq .Values.global.Deployment_Type "Lite" }}
+{{ toYaml .Values.resources_lite | indent 10 }}
+        {{- else if eq .Values.global.Deployment_Type "Development" }}
+{{ toYaml .Values.resources_development | indent 10 }}  
+        {{- else }}
 {{ toYaml .Values.resources | indent 10 }}
-{{- end }}
+        {{- end }}
 {{- end }}
         env:
         {{- $seed_size := default 1 .Values.config.seed_size | int -}}
+        {{- if eq .Values.Deployment_Type "Lite" -}}
+          {{- $seed_size = 1 -}}
+        {{- else -}}
+          {{- $seed_size = default 1 .Values.config.seed_size | int -}}
+        {{- end -}}
         {{- $global := . }}
         - name: CASSANDRA_SEEDS
           {{- if .Values.hostNetwork }}
@@ -307,7 +331,11 @@ spec:
           runAsUser: {{.Values.securityContext.runAsUser}}
           runAsGroup: {{ .Values.securityContext.fsGroup }}
         resources:
+        {{- if eq .Values.global.Deployment_Type "Lite" }}
+{{ toYaml .Values.icarus.resources_lite | indent 10 }}
+        {{- else }}
 {{ toYaml .Values.icarus.resources | indent 10 }}
+        {{- end }}
         env:
           - name: JMX_HOST
             value: localhost

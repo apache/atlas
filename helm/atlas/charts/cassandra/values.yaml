@@ -185,6 +185,14 @@ resources_development:
     memory: 4Gi
     cpu: 300m
 
+resources_lite:
+  requests:
+    memory: 4Gi
+    cpu: 300m
+  limits:
+    memory: 5Gi
+    cpu: 2000m
+
 # Persistence changes for cassandra
 persistence:
   enabled: true
@@ -214,6 +222,27 @@ custom_deployment:
 
 ## Affinity for pod assignment
 ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+
+affinity_lite:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: eks.amazonaws.com/capacityType
+          operator: In
+          values:
+            - ON_DEMAND
+      - matchExpressions:
+        - key: lifecycle
+          operator: In
+          values:
+            - ondemand
+      - matchExpressions:
+        - key: cloud.google.com/gke-provisioning
+          operator: In
+          values:
+            - standard
+
 affinity:
   nodeAffinity:
     preferredDuringSchedulingIgnoredDuringExecution:
@@ -346,6 +375,13 @@ icarus:
     requests:
       cpu: 0.5
       memory: 2Gi
+  resources_lite:
+    limits:
+      cpu: 1
+      memory: 8Gi
+    requests:
+      cpu: 0.1
+      memory: 1Gi
 
 extraVolumes:
   - name: varlog

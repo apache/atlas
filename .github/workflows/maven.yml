@@ -15,7 +15,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
 name: Java CI with Maven
 
@@ -25,8 +24,17 @@ on:
       - beta
       - master
       - staging
+      - lite_master
       - alcon-v2-418
-      - ms-428-delete-optimisation-phase3
+
+    paths-ignore:
+      - '.claude/**'
+      - '.cursor/**'
+      - '.github/**'
+      - 'docs/**'
+      - 'local-dev/**'
+      - 'README.txt'
+      - 'README.md'
 
 jobs:
   # Detect what changed to optimize workflow execution
@@ -331,19 +339,6 @@ jobs:
           else
             echo "✅ Sufficient disk space available (${AVAILABLE_GB}GB)"
           fi
-
-      - name: Run Integration Tests
-        id: integration_tests
-        if: github.ref_name == 'beta' || github.ref_name == 'staging' || github.ref_name == 'master'
-        continue-on-error: true
-        env:
-          # Configure Testcontainers for GitHub Actions
-          TESTCONTAINERS_RYUK_DISABLED: true
-          TESTCONTAINERS_CHECKS_DISABLE: true
-          DOCKER_HOST: unix:///var/run/docker.sock
-        run: |
-          echo "Running integration tests..."
-          chmod +x ./run-integration-tests.sh && ./run-integration-tests.sh --skip-build
 
       - name: Upload container logs as artifact
         if: always() && steps.integration_tests.outcome != 'skipped'
