@@ -30,7 +30,6 @@ on:
     paths-ignore:
       - '.claude/**'
       - '.cursor/**'
-      - '.github/**'
       - 'docs/**'
       - 'local-dev/**'
       - 'README.txt'
