@@ -112,9 +112,6 @@ atlas:
   # Delete Optimization Settings
   delete:
     # Consolidated batch operations flag - enables all batch optimizations:
-    # - Batch GUID lookups for deleteByIds (reduces N+1 queries)
-    # - Batch unique attribute resolution for deleteByUniqueAttributes
-    # - Batch owned vertices discovery with soft-ref resolution
     batch_enabled: false
     # Batch sizes for various delete operations
     batch_lookup_size: 500
