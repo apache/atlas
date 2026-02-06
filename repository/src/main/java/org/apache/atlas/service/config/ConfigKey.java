@@ -26,7 +26,7 @@ public enum ConfigKey {
     MAINTENANCE_END_TIME("MAINTENANCE_END_TIME", null),
 
     // Tag/Janus optimization flag (mirrors existing feature flag)
-    ENABLE_JANUS_OPTIMISATION("ENABLE_JANUS_OPTIMISATION", "false"),
+    ENABLE_JANUS_OPTIMISATION("ENABLE_JANUS_OPTIMISATION", "true"),
 
     // Write disable flag for maintenance
     DISABLE_WRITE_FLAG("disable_writes", "false"),
