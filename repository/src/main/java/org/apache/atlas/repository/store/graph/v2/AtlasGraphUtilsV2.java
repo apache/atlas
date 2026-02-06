@@ -652,7 +652,6 @@ public class AtlasGraphUtilsV2 {
                 } catch (Exception e) {
                     LOG.warn("findByUniqueAttributesBatch: OR query failed for group {} batch [{}-{}], will use fallback",
                             groupEntry.getKey(), batchStart, batchEnd, e);
-                    // Don't remove from indexToLookupKey - will be processed individually
                 }
             }
         }
