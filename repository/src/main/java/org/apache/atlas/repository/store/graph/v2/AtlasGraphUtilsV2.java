@@ -643,7 +643,8 @@ public class AtlasGraphUtilsV2 {
 
                     // Mark successfully processed indices
                     for (int idx : batchIndices) {
-                        if (ret.containsKey(idx) || lookupKeyToVertex.containsKey(indexToLookupKey.get(idx).lookupKeyString)) {
+                        UniqueAttrLookupKey lookupKey = indexToLookupKey.get(idx);
+                        if (lookupKey != null && (ret.containsKey(idx) || lookupKeyToVertex.containsKey(lookupKey.lookupKeyString))) {
                             indexToLookupKey.remove(idx); // Processed
                         }
                     }
