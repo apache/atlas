@@ -649,3 +649,4 @@ nginx:
 # client_body_timeout: - Time taken by the client to send the request body.
 # client_header_timeout: - Time taken by the client to send the request header.
 # keepalive_timeout: - This timeout applies to an idle client connection after Nginx has finished sending a response and is waiting for the next request on the same TCP connection.
+
