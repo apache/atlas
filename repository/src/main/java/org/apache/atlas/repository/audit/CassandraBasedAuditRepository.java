@@ -208,8 +208,7 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
 
     @Override
     public List<EntityAuditEventV2> deleteEventsV2(String entityId, Set<EntityAuditEventV2.EntityAuditActionV2> entityAuditActions, short auditCount, int ttlInDays, boolean createEventsAgeoutAllowed, Constants.AtlasAuditAgingType auditAgingType)
-            throws AtlasBaseException, AtlasException
-    {
+            throws AtlasBaseException, AtlasException {
         return Collections.emptyList();
     }
 
