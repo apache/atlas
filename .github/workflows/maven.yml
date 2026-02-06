@@ -26,7 +26,6 @@ on:
       - staging
       - lite_master
       - alcon-v2-418
-      - ms-428-delete-optimisation-phase
 
     paths-ignore:
       - '.claude/**'
