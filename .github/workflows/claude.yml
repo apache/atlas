@@ -35,6 +35,8 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           trigger_phrase: "@claude"
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr edit:*)"
 
   # Job 2: Auto-review PRs on open/sync
   claude-review:
@@ -110,9 +112,9 @@ jobs:
                - Workflow correctness
 
             ## Review Style
-            - Be concise and actionable
-            - Use inline comments for specific code issues
-            - Use a top-level summary comment for overall assessment
+            - ALWAYS use the mcp__github_inline_comment__create_inline_comment tool to add review comments directly on the relevant code lines in the diff
+            - Use inline comments for specific code issues — this is the preferred way to give feedback
+            - Use a single top-level PR comment only for a brief overall summary
             - Flag blocking issues as "BLOCKING:" prefix
             - Flag suggestions as "SUGGESTION:" prefix
             - If the PR looks good, say so briefly — don't invent issues
