@@ -111,13 +111,15 @@ jobs:
                - Values.yaml schema changes
                - Workflow correctness
 
-            ## Review Style
-            - ALWAYS use the mcp__github_inline_comment__create_inline_comment tool to add review comments directly on the relevant code lines in the diff
-            - Use inline comments for specific code issues — this is the preferred way to give feedback
-            - Use a single top-level PR comment only for a brief overall summary
-            - Flag blocking issues as "BLOCKING:" prefix
-            - Flag suggestions as "SUGGESTION:" prefix
-            - If the PR looks good, say so briefly — don't invent issues
+            ## Review Rules — IMPORTANT
+            - ONLY leave inline comments for: critical bugs, security vulnerabilities, unexpected runtime issues (NPE, resource leaks, race conditions), or concrete improvement suggestions with code examples
+            - Every inline comment MUST reference the specific code line it's about and explain WHY it's a problem — not just describe WHAT the code does
+            - NEVER leave positive/affirmation comments like "Good change", "Nice refactoring", "This looks correct" — these are noise and waste reviewers' time
+            - NEVER comment on trivial style, formatting, or naming unless it introduces a real bug
+            - If you have a suggestion, include a concrete code snippet showing the improvement
+            - Use a single top-level PR comment for a brief overall summary
+            - If the PR is clean with no real issues, just post a short top-level summary — ZERO inline comments
+            - Fewer high-quality comments >> many low-value comments
 
           claude_args: |
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
