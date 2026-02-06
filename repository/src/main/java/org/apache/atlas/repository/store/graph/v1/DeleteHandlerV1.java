@@ -89,7 +89,6 @@ import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPro
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask.*;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
-import static org.apache.atlas.AtlasConfiguration.DELETE_BATCH_OPERATIONS_ENABLED;
 import static org.apache.atlas.AtlasConfiguration.DELETE_OWNED_BATCH_SIZE;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
@@ -260,7 +259,7 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     public Collection<GraphHelper.VertexInfo> getOwnedVertices(AtlasVertex entityVertex) throws AtlasBaseException {
-        boolean useBatchLookup = DELETE_BATCH_OPERATIONS_ENABLED.getBoolean();
+        boolean useBatchLookup = DynamicConfigStore.isDeleteBatchEnabled();
         return getOwnedVerticesInternal(entityVertex, useBatchLookup);
     }
 

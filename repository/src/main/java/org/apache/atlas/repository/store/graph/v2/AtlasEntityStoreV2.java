@@ -59,6 +59,7 @@ import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
+import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEntityDiffResult;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.AssetPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.AuthPolicyPreProcessor;
@@ -110,7 +111,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.ATLAS_DISTRIBUTED_TASK_ENABLED;
-import static org.apache.atlas.AtlasConfiguration.DELETE_BATCH_OPERATIONS_ENABLED;
 import static org.apache.atlas.AtlasConfiguration.DELETE_BATCH_LOOKUP_SIZE;
 import static org.apache.atlas.AtlasConfiguration.DELETE_UNIQUEATTR_BATCH_SIZE;
 import static org.apache.atlas.AtlasConfiguration.ENABLE_DISTRIBUTED_HAS_LINEAGE_CALCULATION;
@@ -669,7 +669,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         boolean usedBatchLookup = false;
 
         // Use batch lookup when flag is enabled
-        if (DELETE_BATCH_OPERATIONS_ENABLED.getBoolean()) {
+        if (DynamicConfigStore.isDeleteBatchEnabled()) {
             Map<String, AtlasVertex> guidToVertexMap = null;
 
             try {
@@ -1025,7 +1025,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             boolean usedBatchResolution = false;
 
             // Use batch resolution when flag is enabled
-            if (DELETE_BATCH_OPERATIONS_ENABLED.getBoolean() && objectIdCount > 1) {
+            if (DynamicConfigStore.isDeleteBatchEnabled() && objectIdCount > 1) {
                 try {
                     int batchSize = DELETE_UNIQUEATTR_BATCH_SIZE.getInt();
                     Map<Integer, AtlasVertex> batchResults = new HashMap<>();

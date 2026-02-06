@@ -387,6 +387,20 @@ public class DynamicConfigStore implements ApplicationContextAware {
         return FeatureFlagStore.evaluate(ConfigKey.USE_TEMP_ES_INDEX.getKey(), "true");
     }
 
+    /**
+     * Check if delete batch operations are enabled.
+     * Falls back to AtlasConfiguration if DynamicConfigStore is not activated.
+     *
+     * @return true if batch delete operations are enabled, false otherwise
+     */
+    public static boolean isDeleteBatchEnabled() {
+        if (isActivated()) {
+            return getConfigAsBoolean(ConfigKey.DELETE_BATCH_ENABLED.getKey());
+        }
+        // Fall back to static AtlasConfiguration
+        return AtlasConfiguration.DELETE_BATCH_OPERATIONS_ENABLED.getBoolean();
+    }
+
     // ================== Internal Methods ==================
 
     String getConfigInternal(String key) {
