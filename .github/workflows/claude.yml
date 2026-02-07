@@ -106,7 +106,15 @@ jobs:
                - TypeDef changes that could break existing entities
                - Kafka message format changes
 
-            6. **Helm / CI Changes** (if applicable)
+            6. **Feature Flags & Phased Rollout Safety**
+               This is a HIGH PRIORITY review area based on past production incidents (MS-579/MS-580).
+               - **Boolean flag inversions**: Look for `!evaluate(...)`, `!getConfigAsBoolean(...)`, or any double-negation in flag methods. The method name semantics (isXEnabled) must match the boolean return for both the DynamicConfigStore (Cassandra) path AND the FeatureFlagStore (Redis) fallback path.
+               - **Phased rollout assumptions**: If code skips initialization when `activated=true`, verify it handles the case where a previous phase was never deployed to the tenant (ArgoCD sync gaps). Empty Cassandra rows must trigger recovery, not silent defaults.
+               - **Default value consistency**: Verify that `ConfigKey.defaultValue` matches `FeatureFlag.defaultValue` for the same flag. Mismatches cause different behavior depending on which store is active.
+               - **Flag observability**: New flags must have Prometheus metrics registered so they're visible in Grafana per-tenant.
+               - **Naming conventions**: Prefer positive naming (`ENABLE_X`) over negative (`DISABLE_X`). Flag key casing must be consistent between `ConfigKey` and `FeatureFlag` enums.
+
+            7. **Helm / CI Changes** (if applicable)
                - Chart version bumps
                - Values.yaml schema changes
                - Workflow correctness
