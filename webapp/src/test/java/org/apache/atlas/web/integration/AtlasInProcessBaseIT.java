@@ -19,7 +19,6 @@ package org.apache.atlas.web.integration;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClientV2;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 import org.slf4j.Logger;
@@ -102,22 +101,43 @@ public abstract class AtlasInProcessBaseIT {
     private static InProcessAtlasServer atlasServer;
     private static int atlasPort;
     private static Path tempDir;
+    private static volatile boolean serverStarted = false;
 
     @BeforeAll
     void startAtlas() throws Exception {
         startContainers();
+        startServerOnce();
+    }
+
+    /**
+     * Starts the Atlas server exactly once across all test classes.
+     * Subsequent calls are no-ops. The server is stopped via a JVM shutdown hook.
+     */
+    private static synchronized void startServerOnce() throws Exception {
+        if (serverStarted) {
+            LOG.info("Atlas server already running on port {}", atlasPort);
+            return;
+        }
+
         setupConfiguration();
         initElasticsearchTemplate();
         startServer();
         waitForAtlasReady();
         createClient();
-    }
 
-    @AfterAll
-    void stopAtlas() throws Exception {
-        if (atlasServer != null && atlasServer.isRunning()) {
-            atlasServer.stop();
-        }
+        // Register shutdown hook so the server is stopped when the JVM exits
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            LOG.info("Shutdown hook: stopping Atlas server");
+            try {
+                if (atlasServer != null && atlasServer.isRunning()) {
+                    atlasServer.stop();
+                }
+            } catch (Exception e) {
+                LOG.warn("Error stopping Atlas server in shutdown hook", e);
+            }
+        }));
+
+        serverStarted = true;
     }
 
     private static synchronized void startContainers() {
@@ -145,7 +165,7 @@ public abstract class AtlasInProcessBaseIT {
         containersStarted = true;
     }
 
-    private void initElasticsearchTemplate() throws IOException {
+    private static void initElasticsearchTemplate() throws IOException {
         String esAddress = elasticsearch.getHttpHostAddress();
         String deployDir = System.getProperty("atlas.home");
 
@@ -181,7 +201,7 @@ public abstract class AtlasInProcessBaseIT {
         conn.disconnect();
     }
 
-    private void setupConfiguration() throws Exception {
+    private static void setupConfiguration() throws Exception {
         tempDir = Files.createTempDirectory("atlas-test-");
         Path confDir = tempDir.resolve("conf");
         Path dataDir = tempDir.resolve("data");
@@ -225,7 +245,7 @@ public abstract class AtlasInProcessBaseIT {
         LOG.info("Atlas port={}", atlasPort);
     }
 
-    private void generateAtlasProperties(Path confDir, String deployDir, int port) throws IOException {
+    private static void generateAtlasProperties(Path confDir, String deployDir, int port) throws IOException {
         File propsFile = confDir.resolve("atlas-application.properties").toFile();
 
         int cassandraPort = cassandra.getMappedPort(9042);
@@ -333,7 +353,7 @@ public abstract class AtlasInProcessBaseIT {
         }
     }
 
-    private void startServer() throws Exception {
+    private static void startServer() throws Exception {
         String webappPath = resolveWebappPath();
         LOG.info("Starting Atlas in-process (webapp={}, port={})", webappPath, atlasPort);
 
@@ -341,7 +361,7 @@ public abstract class AtlasInProcessBaseIT {
         atlasServer.start();
     }
 
-    private void waitForAtlasReady() {
+    private static void waitForAtlasReady() {
         LOG.info("Waiting for Atlas to become ready (max {}s)...", MAX_STARTUP_WAIT_SECONDS);
         long deadline = System.currentTimeMillis() + MAX_STARTUP_WAIT_SECONDS * 1000L;
 
@@ -375,7 +395,7 @@ public abstract class AtlasInProcessBaseIT {
         throw new RuntimeException("Atlas did not become ready within " + MAX_STARTUP_WAIT_SECONDS + " seconds");
     }
 
-    private void createClient() {
+    private static void createClient() {
         atlasClient = new AtlasClientV2(
                 new String[]{"http://localhost:" + atlasPort},
                 new String[]{"admin", "admin"}
@@ -383,7 +403,7 @@ public abstract class AtlasInProcessBaseIT {
         LOG.info("AtlasClientV2 created (http://localhost:{})", atlasPort);
     }
 
-    private String resolveDeployDir() {
+    private static String resolveDeployDir() {
         // webapp/src/test/resources/deploy (when running from webapp module)
         String[] candidates = {
                 System.getProperty("user.dir") + "/src/test/resources/deploy",
@@ -401,7 +421,7 @@ public abstract class AtlasInProcessBaseIT {
                 "Could not find deploy directory with models/. Checked: " + String.join(", ", candidates));
     }
 
-    private String resolveWebappPath() {
+    private static String resolveWebappPath() {
         String[] candidates = {
                 System.getProperty("user.dir") + "/src/main/webapp",
                 System.getProperty("user.dir") + "/webapp/src/main/webapp",
