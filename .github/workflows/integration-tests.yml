@@ -1,0 +1,208 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Integration Tests
+
+on:
+  pull_request:
+    branches:
+      - master
+      - beta
+      - staging
+    paths-ignore:
+      - '.claude/**'
+      - '.cursor/**'
+      - 'docs/**'
+      - 'helm/**'
+      - 'local-dev/**'
+      - 'README.txt'
+      - 'README.md'
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ============================================
+      # DISK CLEANUP - Testcontainers need space
+      # ============================================
+      - name: Free up disk space
+        run: |
+          echo "=== INITIAL DISK SPACE ==="
+          df -h / | tail -1
+
+          # Remove large pre-installed software
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/.ghcup || true
+          sudo rm -rf /usr/share/swift || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo rm -rf /opt/hostedtoolcache/go || true
+          sudo rm -rf /opt/hostedtoolcache/Ruby || true
+          sudo rm -rf /opt/hostedtoolcache/node || true
+          sudo rm -rf /opt/hostedtoolcache/PyPy || true
+
+          # Remove large apt packages
+          sudo apt-get remove -y '^dotnet-.*' '^llvm-.*' 'php.*' '^mongodb-.*' '^mysql-.*' azure-cli google-cloud-cli google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri --fix-missing 2>/dev/null || true
+          sudo apt-get autoremove -y || true
+          sudo apt-get clean || true
+          sudo rm -rf /var/lib/apt/lists/* || true
+
+          # Remove swap
+          sudo swapoff -a || true
+          sudo rm -f /swapfile /mnt/swapfile || true
+
+          # Clean Docker
+          docker system prune -af --volumes 2>/dev/null || true
+
+          echo "=== DISK SPACE AFTER CLEANUP ==="
+          df -h / | tail -1
+
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-integration-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-integration-
+            ${{ runner.os }}-maven-
+
+      - name: Create Maven Settings
+        uses: s4u/maven-settings-action@v2.8.0
+        with:
+          servers: |
+            [{
+                "id": "github",
+                "username": "atlan-ci",
+                "password": "${{ secrets.ORG_PAT_GITHUB }}"
+            }]
+
+      - name: Verify Docker
+        run: |
+          docker --version
+          docker info
+
+      - name: Build webapp module
+        run: |
+          mvn install -pl webapp -am -DskipTests -Drat.skip=true -q
+        env:
+          MAVEN_OPTS: -Xmx2g
+
+      - name: Run integration tests
+        id: tests
+        continue-on-error: true
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: true
+          TESTCONTAINERS_CHECKS_DISABLE: true
+          DOCKER_HOST: unix:///var/run/docker.sock
+        run: |
+          mvn test -pl webapp \
+            -Dtest="EntityCrudIntegrationTest,GlossaryIntegrationTest,GlossaryExtendedIntegrationTest,SQLAssetHierarchyIntegrationTest,ClassificationIntegrationTest,LineageIntegrationTest,SearchIntegrationTest,RelationshipIntegrationTest,BusinessMetadataIntegrationTest,DataMeshIntegrationTest,PersonaPurposeIntegrationTest,LabelIntegrationTest,TypeDefIntegrationTest" \
+            -Drat.skip=true \
+            -Dsurefire.failIfNoSpecifiedTests=false \
+            2>&1 | tee test-output.log
+
+          # Capture exit code from mvn (not tee)
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always() && steps.tests.outcome != 'skipped'
+        with:
+          name: Integration Test Results
+          path: webapp/target/surefire-reports/TEST-*.xml
+          reporter: java-junit
+          fail-on-error: false
+
+      - name: Test summary
+        if: always() && steps.tests.outcome != 'skipped'
+        run: |
+          echo "## Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Parse surefire results
+          REPORT_DIR="webapp/target/surefire-reports"
+          if [ -d "$REPORT_DIR" ]; then
+            TOTAL=0
+            PASSED=0
+            FAILED=0
+            ERRORS=0
+            SKIPPED=0
+
+            for f in "$REPORT_DIR"/TEST-*.xml; do
+              [ -f "$f" ] || continue
+              t=$(grep -oP 'tests="\K[0-9]+' "$f" | head -1)
+              fa=$(grep -oP 'failures="\K[0-9]+' "$f" | head -1)
+              e=$(grep -oP 'errors="\K[0-9]+' "$f" | head -1)
+              s=$(grep -oP 'skipped="\K[0-9]+' "$f" | head -1)
+
+              TOTAL=$((TOTAL + ${t:-0}))
+              FAILED=$((FAILED + ${fa:-0}))
+              ERRORS=$((ERRORS + ${e:-0}))
+              SKIPPED=$((SKIPPED + ${s:-0}))
+            done
+            PASSED=$((TOTAL - FAILED - ERRORS - SKIPPED))
+
+            if [ "$FAILED" -eq 0 ] && [ "$ERRORS" -eq 0 ]; then
+              echo "| Status | Count |" >> $GITHUB_STEP_SUMMARY
+              echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+              echo "| Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
+              echo "| Skipped | $SKIPPED |" >> $GITHUB_STEP_SUMMARY
+              echo "| **Total** | **$TOTAL** |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| Status | Count |" >> $GITHUB_STEP_SUMMARY
+              echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+              echo "| Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
+              echo "| Failed | $FAILED |" >> $GITHUB_STEP_SUMMARY
+              echo "| Errors | $ERRORS |" >> $GITHUB_STEP_SUMMARY
+              echo "| Skipped | $SKIPPED |" >> $GITHUB_STEP_SUMMARY
+              echo "| **Total** | **$TOTAL** |" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "No test reports found." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: always() && steps.tests.outcome != 'skipped'
+        with:
+          name: integration-test-reports-${{ github.run_id }}
+          path: |
+            webapp/target/surefire-reports/
+            test-output.log
+          retention-days: 14
+
+      - name: Fail if tests failed
+        if: steps.tests.outputs.exit_code != '0'
+        run: |
+          echo "Integration tests failed with exit code ${{ steps.tests.outputs.exit_code }}"
+          exit 1
