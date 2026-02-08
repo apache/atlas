@@ -48,36 +48,8 @@ jobs:
       # ============================================
       - name: Free up disk space
         run: |
-          echo "=== INITIAL DISK SPACE ==="
-          df -h / | tail -1
-
-          # Remove large pre-installed software
-          sudo rm -rf /usr/local/lib/android || true
-          sudo rm -rf /usr/share/dotnet || true
-          sudo rm -rf /opt/ghc || true
-          sudo rm -rf /usr/local/.ghcup || true
-          sudo rm -rf /usr/share/swift || true
-          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
-          sudo rm -rf /opt/hostedtoolcache/go || true
-          sudo rm -rf /opt/hostedtoolcache/Ruby || true
-          sudo rm -rf /opt/hostedtoolcache/node || true
-          sudo rm -rf /opt/hostedtoolcache/PyPy || true
-
-          # Remove large apt packages
-          sudo apt-get remove -y '^dotnet-.*' '^llvm-.*' 'php.*' '^mongodb-.*' '^mysql-.*' azure-cli google-cloud-cli google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri --fix-missing 2>/dev/null || true
-          sudo apt-get autoremove -y || true
-          sudo apt-get clean || true
-          sudo rm -rf /var/lib/apt/lists/* || true
-
-          # Remove swap
-          sudo swapoff -a || true
-          sudo rm -f /swapfile /mnt/swapfile || true
-
-          # Clean Docker
-          docker system prune -af --volumes 2>/dev/null || true
-
-          echo "=== DISK SPACE AFTER CLEANUP ==="
-          df -h / | tail -1
+          echo "Freeing disk space..."
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/share/swift || true
 
       - uses: actions/checkout@v3
 
