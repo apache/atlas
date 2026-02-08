@@ -1,0 +1,264 @@
+[
+    {
+        "typeName": "AuthPolicy",
+        "guid": -1,
+        "attributes": {
+            "qualifiedName": "{guid}/collection-link-assets",
+            "name": "{name}-collection-link-assets",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
+            "policyType": "allow",
+            "policyServiceName": "atlas",
+            "policyRoles": [
+                "collection_admins_{guid}"
+            ],
+            "policyActions": [
+                "add-relationship",
+                "remove-relationship"
+            ],
+            "policyResourceCategory": "RELATIONSHIP",
+            "policyResources": [
+                "end-one-entity-classification:*",
+                "end-one-entity:{entity}",
+                "end-one-entity:{entity}/*",
+                "end-one-entity-type:*",
+
+                "end-two-entity-classification:*",
+                "end-two-entity:*",
+                "end-two-entity-type:Catalog",
+                "end-two-entity-type:collection",
+                "end-two-entity-type:Process",
+                "end-two-entity-type:ProcessExecution",
+                "end-two-entity-type:Namespace",
+
+                "relationship-type:*"
+            ]
+
+        }
+    },
+    {
+        "typeName": "AuthPolicy",
+        "guid": -2,
+        "attributes": {
+            "qualifiedName": "{guid}/collection-add-terms",
+            "name": "{name}-collection-add-terms",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
+            "policyType": "allow",
+            "policyServiceName": "atlas",
+            "policyRoles": [
+                "collection_admins_{guid}"
+            ],
+            "policyActions": [
+                "add-relationship",
+                "remove-relationship"
+            ],
+            "policyResourceCategory": "RELATIONSHIP",
+            "policyResources": [
+                "end-one-entity-classification:*",
+                "end-one-entity:*",
+                "end-one-entity-type:AtlasGlossaryTerm",
+
+                "end-two-entity-classification:*",
+                "end-two-entity:{entity}",
+                "end-two-entity:{entity}/*",
+                "end-two-entity-type:*",
+
+                "relationship-type:*"
+            ]
+        }
+    },
+    {
+        "typeName": "AuthPolicy",
+        "guid": -3,
+        "attributes": {
+            "qualifiedName": "{guid}/collection-CRUD-admin",
+            "name": "{name}-collection-CRUD-admin",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
+            "policyType": "allow",
+            "policyServiceName": "atlas",
+            "policyRoles": [
+                "collection_admins_{guid}"
+            ],
+            "policyActions": [
+                "entity-read",
+                "entity-create",
+                "entity-update",
+                "entity-delete"
+            ],
+            "policyResourceCategory": "ENTITY",
+            "policyResources": [
+                "entity:{entity}",
+                "entity:{entity}/*",
+                "entity-type:*",
+                "entity-classification:*"
+            ]
+        }
+    },
+    {
+        "typeName": "AuthPolicy",
+        "guid": -4,
+        "attributes": {
+            "qualifiedName": "{guid}/collection-CRUD-viewer",
+            "name": "{name}-collection-CRUD-viewer",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
+            "policyType": "allow",
+            "policyServiceName": "atlas",
+            "policyRoles": [
+                "collection_viewer_{guid}"
+            ],
+            "policyActions": [
+                "entity-read"
+            ],
+            "policyResourceCategory": "ENTITY",
+            "policyResources": [
+                "entity:{entity}",
+                "entity:{entity}/*",
+                "entity-type:*",
+                "entity-classification:*"
+            ]
+        }
+    },
+
+    {
+        "typeName": "AuthPolicy",
+        "guid": -5,
+        "attributes": {
+            "qualifiedName": "{guid}/collection-entity-business-metadata",
+            "name": "{name}-collection-entity-business-metadata",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
+            "policyType": "allow",
+            "policyServiceName": "atlas",
+            "policyRoles": [
+                "collection_admins_{guid}"
+            ],
+            "policyActions": [
+                "entity-update-business-metadata"
+            ],
+            "policyResourceCategory": "RELATIONSHIP",
+            "policyResources": [
+                "entity:{entity}",
+                "entity:{entity}/*",
+                "entity-type:*",
+                "entity-classification:*",
+                "entity-business-metadata:*"
+            ]
+        }
+    },
+    {
+        "typeName": "AuthPolicy",
+        "guid": -6,
+        "attributes": {
+            "qualifiedName": "{guid}/collection-classification",
+            "name": "{name}-collection-classification",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
+            "policyType": "allow",
+            "policyServiceName": "atlas",
+            "policyRoles": [
+                "collection_admins_{guid}"
+            ],
+            "policyActions": [
+                "entity-add-classification",
+                "entity-remove-classification",
+                "entity-update-classification"
+            ],
+            "policyResourceCategory": "ENTITY",
+            "policyResources": [
+                "entity:{entity}",
+                "entity:{entity}/*",
+                "entity-type:*",
+                "entity-classification:*",
+                "classification:*"
+            ]
+        }
+    },
+    {
+        "typeName": "AuthPolicy",
+        "guid": -7,
+        "attributes": {
+            "qualifiedName": "{guid}/collection-entity-label",
+            "name": "{name}-collection-entity-label",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
+            "policyType": "allow",
+            "policyServiceName": "atlas",
+            "policyRoles": [
+                "collection_admins_{guid}"
+            ],
+            "policyActions": [
+                "entity-add-label",
+                "entity-remove-label"
+            ],
+            "policyResourceCategory": "ENTITY",
+            "policyResources": [
+                "entity:{entity}",
+                "entity:{entity}/*",
+                "entity-type:*",
+                "entity-classification:*",
+                "entity-label:*"
+            ]
+        }
+    },
+    {
+        "typeName": "AuthPolicy",
+        "guid": -8,
+        "attributes": {
+            "qualifiedName": "{guid}/collection-unlink-queries",
+            "name": "{name}-collection-unlink-queries",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
+            "policyType": "allow",
+            "policyServiceName": "atlas",
+            "policyRoles": [
+                "collection_admins_{guid}"
+            ],
+            "policyActions": [
+                "remove-relationship"
+            ],
+            "policyResourceCategory": "RELATIONSHIP",
+            "policyResources": [
+                "end-one-entity-classification:*",
+                "end-one-entity:*",
+                "end-one-entity-type:*",
+
+                "end-two-entity-classification:*",
+                "end-two-entity:{entity}",
+                "end-two-entity:{entity}/*",
+                "end-two-entity-type:*",
+
+                "relationship-type:*"
+            ]
+
+        }
+    },
+    {
+        "typeName": "AuthPolicy",
+        "guid": -9,
+        "attributes": {
+            "qualifiedName": "{guid}/dataPolicy-collection",
+            "name": "{name}-dataPolicy-collection",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
+            "policyType": "allow",
+            "policyServiceName": "heka",
+            "policyRoles": [
+                "collection_admins_{guid}"
+            ],
+            "policyActions": [
+                "select"
+            ],
+            "policyResourceCategory": "ENTITY",
+            "policyResources": [
+                "entity:{entity}",
+                "entity:{entity}/*",
+                "entity-type:*"
+            ]
+        }
+    }
+]
+
+
