@@ -115,60 +115,21 @@ jobs:
           reporter: java-junit
           fail-on-error: false
 
-      - name: Test summary
-        if: always() && steps.tests.outcome != 'skipped'
-        run: |
-          echo "## Integration Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Parse surefire results
-          REPORT_DIR="webapp/target/surefire-reports"
-          if [ -d "$REPORT_DIR" ]; then
-            TOTAL=0
-            PASSED=0
-            FAILED=0
-            ERRORS=0
-            SKIPPED=0
-
-            for f in "$REPORT_DIR"/TEST-*.xml; do
-              [ -f "$f" ] || continue
-              t=$(grep -oP 'tests="\K[0-9]+' "$f" | head -1)
-              fa=$(grep -oP 'failures="\K[0-9]+' "$f" | head -1)
-              e=$(grep -oP 'errors="\K[0-9]+' "$f" | head -1)
-              s=$(grep -oP 'skipped="\K[0-9]+' "$f" | head -1)
-
-              TOTAL=$((TOTAL + ${t:-0}))
-              FAILED=$((FAILED + ${fa:-0}))
-              ERRORS=$((ERRORS + ${e:-0}))
-              SKIPPED=$((SKIPPED + ${s:-0}))
-            done
-            PASSED=$((TOTAL - FAILED - ERRORS - SKIPPED))
-
-            if [ "$FAILED" -eq 0 ] && [ "$ERRORS" -eq 0 ]; then
-              echo "| Status | Count |" >> $GITHUB_STEP_SUMMARY
-              echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-              echo "| Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
-              echo "| Skipped | $SKIPPED |" >> $GITHUB_STEP_SUMMARY
-              echo "| **Total** | **$TOTAL** |" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "| Status | Count |" >> $GITHUB_STEP_SUMMARY
-              echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-              echo "| Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
-              echo "| Failed | $FAILED |" >> $GITHUB_STEP_SUMMARY
-              echo "| Errors | $ERRORS |" >> $GITHUB_STEP_SUMMARY
-              echo "| Skipped | $SKIPPED |" >> $GITHUB_STEP_SUMMARY
-              echo "| **Total** | **$TOTAL** |" >> $GITHUB_STEP_SUMMARY
-            fi
-          else
-            echo "No test reports found." >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Generate HTML test report
+      - name: Generate test reports
         if: always() && steps.tests.outcome != 'skipped'
         run: |
           python3 webapp/src/test/scripts/generate-test-report.py \
             webapp/target/surefire-reports \
-            webapp/target/site/test-report.html
+            webapp/target/site/test-report.html \
+            --markdown webapp/target/site/test-summary.md \
+          || echo "Report generation failed, falling back to basic summary"
+
+          if [ -f webapp/target/site/test-summary.md ]; then
+            cat webapp/target/site/test-summary.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Integration Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "Report generation failed. Check artifacts for raw XML reports." >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
