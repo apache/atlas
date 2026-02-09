@@ -140,8 +140,15 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 String details = event.getDetails().substring(auditDetailPrefix.length());
 
                 AtlasEntity auditEntity = event.getEntity();
-                String      typeName   = auditEntity.getTypeName();
-                long        updateTimestamp;
+
+                if (auditEntity == null) {
+                    LOG.warn("Audit entity is null for event (entityId={}, action={}); skipping ES audit record",
+                            event.getEntityId(), event.getAction());
+                    continue;
+                }
+
+                String typeName = auditEntity.getTypeName();
+                long   updateTimestamp;
 
                 if (auditEntity.getUpdateTime() != null) {
                     updateTimestamp = auditEntity.getUpdateTime().getTime();
