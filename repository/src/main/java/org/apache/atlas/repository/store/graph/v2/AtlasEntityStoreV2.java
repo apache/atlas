@@ -699,18 +699,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
 
             if (usedBatchLookup && guidToVertexMap != null) {
-                // Process results maintaining input order
-                for (String guid : guids) {
-                    AtlasVertex vertex = guidToVertexMap.get(guid);
+                if (LOG.isDebugEnabled() && guidToVertexMap.size() < guids.size()) {
+                    LOG.debug("Batch lookup resolved {}/{} guids: requestId={}",
+                            guidToVertexMap.size(), guids.size(),
+                            RequestContext.get().getTraceId());
+                }
 
-                    if (vertex == null) {
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug("Deletion request ignored for non-existent entity with guid " + guid);
-                        }
-                        continue;
-                    }
-
+                for (AtlasVertex vertex : guidToVertexMap.values()) {
                     AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
+                    String guid = getGuid(vertex);
                     AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader, "delete entity: guid=" + guid);
                     deletionCandidates.add(vertex);
                 }

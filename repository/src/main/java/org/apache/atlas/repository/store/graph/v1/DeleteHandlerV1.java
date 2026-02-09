@@ -277,15 +277,12 @@ public abstract class DeleteHandlerV1 {
 
         final Map<String, GraphHelper.VertexInfo> vertexInfoMap    = new HashMap<>();
         final Stack<AtlasVertex>                  vertices         = new Stack<>();
-        final Stack<Integer>                      depthStack       = new Stack<>();
         final boolean                             isPurgeRequested = RequestContext.get().isPurgeRequested();
 
         vertices.push(entityVertex);
-        depthStack.push(0);
 
         while (vertices.size() > 0) {
-            AtlasVertex vertex       = vertices.pop();
-            int         currentDepth = depthStack.pop();
+            AtlasVertex vertex = vertices.pop();
 
             AtlasEntity.Status state = getState(vertex);
 
@@ -336,7 +333,6 @@ public abstract class DeleteHandlerV1 {
                                 AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid());
                                 if (refVertex != null) {
                                     vertices.push(refVertex);
-                                    depthStack.push(currentDepth + 1);
                                 }
                             }
                         } else if (refObjId != null && LOG.isDebugEnabled()) {
@@ -350,7 +346,6 @@ public abstract class DeleteHandlerV1 {
                         }
 
                         vertices.push(edge.getInVertex());
-                        depthStack.push(currentDepth + 1);
                     }
                 } else if (typeCategory == ARRAY || typeCategory == MAP) {
                     TypeCategory elementType = (typeCategory == ARRAY)
@@ -384,7 +379,6 @@ public abstract class DeleteHandlerV1 {
                                         AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid());
                                         if (refVertex != null) {
                                             vertices.push(refVertex);
-                                            depthStack.push(currentDepth + 1);
                                         }
                                     }
                                 } else if (refObjId != null && LOG.isDebugEnabled()) {
@@ -402,7 +396,6 @@ public abstract class DeleteHandlerV1 {
                                 }
 
                                 vertices.push(edge.getInVertex());
-                                depthStack.push(currentDepth + 1);
                             }
                         }
                     }
@@ -423,7 +416,6 @@ public abstract class DeleteHandlerV1 {
                         AtlasVertex refVertex = resolvedVertices.get(refGuid);
                         if (refVertex != null) {
                             vertices.push(refVertex);
-                            depthStack.push(currentDepth + 1);
                         }
                     }
                 }

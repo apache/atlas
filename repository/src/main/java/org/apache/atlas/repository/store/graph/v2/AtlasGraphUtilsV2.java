@@ -579,7 +579,22 @@ public class AtlasGraphUtilsV2 {
             List<Integer> indices = groupEntry.getValue();
 
             if (indices.size() == 1) {
-                // Single item, use existing method (no benefit from OR query)
+                // Single item — resolve individually (no benefit from OR query)
+                int idx = indices.get(0);
+                UniqueAttrLookupKey lookupKey = indexToLookupKey.get(idx);
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(lookupKey.typeName);
+
+                if (entityType != null) {
+                    AtlasVertex vertex = findByUniqueAttributes(graph, entityType,
+                            objectIds.get(idx).getUniqueAttributes());
+                    if (vertex != null) {
+                        ret.put(idx, vertex);
+                        String guid = vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+                        if (guid != null) {
+                            GraphTransactionInterceptor.addToVertexCache(guid, vertex);
+                        }
+                    }
+                }
                 continue;
             }
 
