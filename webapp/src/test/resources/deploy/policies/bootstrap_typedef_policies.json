@@ -1,0 +1,632 @@
+{
+    "entities":
+    [
+        {
+            "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 1
+            },
+            "attributes":
+            {
+                "name": "CREATE_CLASSIFICATION",
+                "qualifiedName": "CREATE_CLASSIFICATION",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:classification",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-create"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 1
+            },
+            "attributes":
+            {
+                "name": "READ_CLASSIFICATION",
+                "qualifiedName": "READ_CLASSIFICATION",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$member",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:classification",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-read"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 1
+            },
+            "attributes":
+            {
+                "name": "UPDATE_CLASSIFICATION",
+                "qualifiedName": "UPDATE_CLASSIFICATION",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:classification",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-update"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 1
+            },
+            "attributes":
+            {
+                "name": "DELETE_CLASSIFICATION",
+                "qualifiedName": "DELETE_CLASSIFICATION",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:classification",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 2
+            },
+            "attributes":
+            {
+                "name": "CREATE_BUSINESS_METADATA",
+                "qualifiedName": "CREATE_BUSINESS_METADATA",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:business_metadata",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-create"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 2
+            },
+            "attributes":
+            {
+                "name": "READ_BUSINESS_METADATA",
+                "qualifiedName": "READ_BUSINESS_METADATA",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$member",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:business_metadata",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-read"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 2
+            },
+            "attributes":
+            {
+                "name": "UPDATE_BUSINESS_METADATA",
+                "qualifiedName": "UPDATE_BUSINESS_METADATA",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:business_metadata",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-update"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 2
+            },
+            "attributes":
+            {
+                "name": "DELETE_BUSINESS_METADATA",
+                "qualifiedName": "DELETE_BUSINESS_METADATA",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:business_metadata",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 3
+            },
+            "attributes":
+            {
+                "name": "CREATE_ENUM",
+                "qualifiedName": "CREATE_ENUM",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:enum",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-create"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 3
+            },
+            "attributes":
+            {
+                "name": "READ_ENUM",
+                "qualifiedName": "READ_ENUM",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$member",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:enum",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-read"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 3
+            },
+            "attributes":
+            {
+                "name": "UPDATE_ENUM",
+                "qualifiedName": "UPDATE_ENUM",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:enum",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-update"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 3
+            },
+            "attributes":
+            {
+                "name": "DELETE_ENUM",
+                "qualifiedName": "DELETE_ENUM",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:enum",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 4
+            },
+            "attributes":
+            {
+                "name": "CREATE_TYPEDEF",
+                "qualifiedName": "CREATE_TYPEDEF",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:*",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-create"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 4
+            },
+            "attributes":
+            {
+                "name": "READ_TYPEDEF",
+                "qualifiedName": "READ_TYPEDEF",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [
+                    "admin",
+                    "public"
+                ],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$guest",
+                    "$member",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:*",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-read"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 4
+            },
+            "attributes":
+            {
+                "name": "UPDATE_TYPEDEF",
+                "qualifiedName": "UPDATE_TYPEDEF",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:*",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-update"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 4
+            },
+            "attributes":
+            {
+                "name": "DELETE_TYPEDEF",
+                "qualifiedName": "DELETE_TYPEDEF",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:*",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "CRUD_TYPEDEF",
+                "qualifiedName": "CRUD_TYPEDEF",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyUsers":
+                [
+                    "admin",
+                    "service-account-atlan-argo",
+                    "service-account-atlan-backend"
+                ],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:*",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-create",
+                    "type-read",
+                    "type-update",
+                    "type-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "CUD_TYPEDEF_DENY_GUEST",
+                "qualifiedName": "CUD_TYPEDEF_DENY_GUEST",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "deny",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$guest"
+                ],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:*",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-create",
+                    "type-update",
+                    "type-delete"
+                ]
+            }
+        }
+    ]
+}

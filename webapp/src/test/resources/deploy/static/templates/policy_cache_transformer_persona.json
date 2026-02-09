@@ -1,0 +1,1611 @@
+{
+  "persona-asset-read": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}",
+        "entity:{entity}/*",
+        "entity-type:{entity-type}",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-read"],
+      "policyConditions": [
+        {
+          "policyConditionType": "excludeEntityTypes",
+          "policyConditionValues": [
+            "DataQualityRule"
+          ]
+        }
+      ]
+    }
+  ],
+  "persona-asset-update": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}",
+        "entity:{entity}/*",
+        "entity-type:{entity-type}",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-update"],
+      "policyConditions": [
+        {
+          "policyConditionType": "excludeEntityTypes",
+          "policyConditionValues": [
+            "DataQualityRule"
+          ]
+        }
+      ]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:{entity-type}",
+        "end-one-entity-classification:*",
+        "end-one-entity:{entity}",
+        "end-one-entity:{entity}/*",
+
+        "end-two-entity-type:Catalog",
+        "end-two-entity-type:Connection",
+        "end-two-entity-type:Process",
+        "end-two-entity-type:Namespace",
+        "end-two-entity-type:ProcessExecution",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "remove-relationship"],
+      "policyConditions": [
+        {
+          "policyConditionType": "excludeEntityTypes",
+          "policyConditionValues": [
+            "DataQualityRule"
+          ]
+        }
+      ]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:Catalog",
+        "end-one-entity-type:Connection",
+        "end-one-entity-type:Process",
+        "end-one-entity-type:Namespace",
+        "end-one-entity-type:ProcessExecution",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:{entity-type}",
+        "end-two-entity-classification:*",
+        "end-two-entity:{entity}",
+        "end-two-entity:{entity}/*"
+      ],
+      "actions": ["add-relationship", "remove-relationship"],
+      "policyConditions": [
+        {
+          "policyConditionType": "excludeEntityTypes",
+          "policyConditionValues": [
+            "DataQualityRule"
+          ]
+        }
+      ]
+    }
+  ],
+  "persona-api-create": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}",
+        "entity:{entity}/*",
+        "entity-type:{entity-type}",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create"],
+      "policyConditions": [
+        {
+          "policyConditionType": "excludeEntityTypes",
+          "policyConditionValues": [
+            "DataQualityRule"
+          ]
+        }
+      ]
+    }
+  ],
+  "persona-api-delete": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}",
+        "entity:{entity}/*",
+        "entity-type:{entity-type}",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-delete"],
+      "policyConditions": [
+        {
+          "policyConditionType": "excludeEntityTypes",
+          "policyConditionValues": [
+            "DataQualityRule"
+          ]
+        }
+      ]
+    }
+  ],
+  "persona-business-update-metadata": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}",
+        "entity:{entity}/*",
+        "entity-type:{entity-type}",
+        "entity-classification:*",
+        "entity-business-metadata:*"
+      ],
+      "actions": ["entity-update-business-metadata"]
+    }
+  ],
+  "persona-entity-add-classification": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}",
+        "entity:{entity}/*",
+        "entity-type:{entity-type}",
+        "entity-classification:*",
+        "classification:*"
+      ],
+      "actions": [
+        "entity-add-classification",
+        "entity-update-classification"
+      ]
+    }
+  ],
+  "persona-entity-update-classification": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}",
+        "entity:{entity}/*",
+        "entity-type:{entity-type}",
+        "entity-classification:*",
+        "classification:*"
+      ],
+      "actions": ["entity-update-classification"]
+    }
+  ],
+  "persona-entity-remove-classification": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}",
+        "entity:{entity}/*",
+        "entity-type:{entity-type}",
+        "entity-classification:*",
+        "classification:*"
+      ],
+      "actions": [
+        "entity-remove-classification",
+        "entity-update-classification"
+      ]
+    }
+  ],
+  "persona-add-terms": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:AtlasGlossaryTerm",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:{entity-type}",
+        "end-two-entity-classification:*",
+        "end-two-entity:{entity}",
+        "end-two-entity:{entity}/*"
+      ],
+      "actions": ["add-relationship"]
+    }
+  ],
+  "persona-remove-terms": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:AtlasGlossaryTerm",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:{entity-type}",
+        "end-two-entity-classification:*",
+        "end-two-entity:{entity}",
+        "end-two-entity:{entity}/*"
+      ],
+      "actions": ["remove-relationship"]
+    }
+  ],
+
+
+
+  "persona-glossary-read": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:*{entity}",
+        "entity-type:AtlasGlossary",
+        "entity-type:AtlasGlossaryTerm",
+        "entity-type:AtlasGlossaryCategory",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-read"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:AtlasGlossary",
+        "end-one-entity-type:AtlasGlossaryTerm",
+        "end-one-entity-type:AtlasGlossaryCategory",
+        "end-one-entity-classification:*",
+        "end-one-entity:*{entity}",
+
+        "end-two-entity-type:AtlasGlossary",
+        "end-two-entity-type:AtlasGlossaryTerm",
+        "end-two-entity-type:AtlasGlossaryCategory",
+        "end-two-entity-classification:*",
+        "end-two-entity:*{entity}"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    }
+  ],
+  "persona-glossary-update": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:*{entity}",
+        "entity-type:AtlasGlossary",
+        "entity-type:AtlasGlossaryTerm",
+        "entity-type:AtlasGlossaryCategory",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-update"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:AtlasGlossary",
+        "end-one-entity-type:AtlasGlossaryTerm",
+        "end-one-entity-type:AtlasGlossaryCategory",
+        "end-one-entity-classification:*",
+        "end-one-entity:*{entity}",
+
+        "end-two-entity-type:Readme",
+        "end-two-entity-type:Link",
+        "end-two-entity-type:AtlasGlossaryTerm",
+        "end-two-entity-type:AtlasGlossaryCategory",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:*",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:*",
+        "end-two-entity-classification:*",
+        "end-two-entity:*{entity}"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    }
+  ],
+  "persona-glossary-create": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:*{entity}",
+        "entity-type:AtlasGlossary",
+        "entity-type:AtlasGlossaryTerm",
+        "entity-type:AtlasGlossaryCategory",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create"]
+    }
+  ],
+  "persona-glossary-delete": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:*{entity}",
+        "entity-type:AtlasGlossary",
+        "entity-type:AtlasGlossaryTerm",
+        "entity-type:AtlasGlossaryCategory",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-delete"]
+    }
+  ],
+  "persona-glossary-update-custom-metadata": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:*{entity}",
+        "entity-type:AtlasGlossary",
+        "entity-type:AtlasGlossaryTerm",
+        "entity-type:AtlasGlossaryCategory",
+        "entity-classification:*",
+        "entity-business-metadata:*"
+      ],
+      "actions": ["entity-update-business-metadata"]
+    }
+  ],
+  "persona-glossary-add-classifications": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:*{entity}",
+        "entity-type:AtlasGlossary",
+        "entity-type:AtlasGlossaryTerm",
+        "entity-type:AtlasGlossaryCategory",
+        "entity-classification:*",
+        "classification:*"
+      ],
+      "actions": [
+        "entity-add-classification",
+        "entity-update-classification"
+      ]
+    }
+  ],
+  "persona-glossary-update-classifications": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:*{entity}",
+        "entity-type:AtlasGlossary",
+        "entity-type:AtlasGlossaryTerm",
+        "entity-type:AtlasGlossaryCategory",
+        "entity-classification:*",
+        "classification:*"
+      ],
+      "actions": ["entity-update-classification"]
+    }
+  ],
+  "persona-glossary-delete-classifications": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:*{entity}",
+        "entity-type:AtlasGlossary",
+        "entity-type:AtlasGlossaryTerm",
+        "entity-type:AtlasGlossaryCategory",
+        "entity-classification:*",
+        "classification:*"
+      ],
+      "actions": [
+        "entity-remove-classification",
+        "entity-update-classification"
+      ]
+    }
+  ],
+
+  "persona-domain-read": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}",
+        "entity:{entity}/*",
+        "entity-type:DataDomain",
+        "entity-type:DataProduct",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-read"]
+    }
+  ],
+  "persona-domain-update": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}",
+        "entity-type:DataDomain",
+        "entity-classification:*",
+        "classification:*"
+      ],
+      "actions": [
+        "entity-update",
+        "entity-add-classification",
+        "entity-update-classification",
+        "entity-remove-classification"
+      ]
+    },
+    {
+      "policyResourceCategory": "ENTITY",
+      "description": "Create Stakeholder for this Domain",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:default/*/{entity}",
+        "entity-type:Stakeholder",
+        "entity-classification:*"
+      ],
+      "actions": [
+        "entity-read",
+        "entity-create",
+        "entity-update",
+        "entity-delete"
+      ]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink Stakeholder to this Domain",
+
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-classification:*",
+        "end-one-entity:{entity}",
+
+        "end-two-entity-type:Stakeholder",
+        "end-two-entity-classification:*",
+        "end-two-entity:default/*/{entity}"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink any Stakeholder Title to this Domain's Stakeholder",
+
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:StakeholderTitle",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:Stakeholder",
+        "end-two-entity-classification:*",
+        "end-two-entity:default/*/{entity}"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink any DataDomain, DataProduct OR DataContract to this Domain",
+
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:DataDomain",
+        "end-two-entity-type:DataProduct",
+        "end-one-entity-classification:*",
+        "end-one-entity:{entity}",
+        "end-one-entity:{entity}/*",
+
+        "end-two-entity-type:DataDomain",
+        "end-two-entity-type:DataProduct",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink any DataDomain, DataProduct OR DataContract to this Domain",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-type:DataProduct",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:DataDomain",
+        "end-two-entity-type:DataProduct",
+        "end-two-entity-classification:*",
+        "end-two-entity:{entity}",
+        "end-two-entity:{entity}/*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink resource to this Domain",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-classification:*",
+        "end-one-entity:{entity}",
+
+        "end-two-entity-type:Resource",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink term to this Sub Domain",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:AtlasGlossaryTerm",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:DataDomain",
+        "end-two-entity-classification:*",
+        "end-two-entity:{entity}"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    }
+  ],
+  "persona-domain-business-update-metadata": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}",
+        "entity-type:DataDomain",
+        "entity-classification:*",
+        "entity-business-metadata:*"
+      ],
+      "actions": ["entity-update-business-metadata"]
+    }
+  ],
+
+  "persona-domain-sub-domain-read": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*domain/*",
+        "entity-type:DataDomain",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-read"]
+    }
+  ],
+  "persona-domain-sub-domain-create": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*domain/*",
+        "entity-type:DataDomain",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink this DataProduct to any parent Domain",
+      "resources": [
+        "relationship-type:*",
+        
+        "end-one-entity:{entity}/*",
+        "end-one-entity:{entity}",
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-classification:*",
+        
+        "end-two-entity:{entity}/*",
+        "end-one-entity:{entity}",
+        "end-two-entity-type:DataDomain",
+        "end-two-entity-classification:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    }
+  ],
+  "persona-domain-sub-domain-update": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*domain/*",
+        "entity-type:DataDomain",
+        "entity-classification:*",
+        "classification:*"
+      ],
+      "actions": [
+        "entity-update",
+        "entity-add-classification",
+        "entity-update-classification",
+        "entity-remove-classification"
+      ]
+    },
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "description": "Create Stakeholder for Sub Domains",
+
+      "resources": [
+        "entity:default/*/{entity}/*",
+        "entity-type:Stakeholder",
+        "entity-classification:*"
+      ],
+      "actions": [
+        "entity-read",
+        "entity-create",
+        "entity-update",
+        "entity-delete"
+      ]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink Stakeholder to Sub Domains",
+
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-classification:*",
+        "end-one-entity:{entity}/*domain/*",
+
+        "end-two-entity-type:Stakeholder",
+        "end-two-entity-classification:*",
+        "end-two-entity:default/*/{entity}/*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink any Stakeholder Title to sub-domains's Stakeholder",
+
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:StakeholderTitle",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:Stakeholder",
+        "end-two-entity-classification:*",
+        "end-two-entity:default/*/{entity}/*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink resource to this Sub Domain",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-classification:*",
+        "end-one-entity:{entity}/*domain/*",
+
+        "end-two-entity-type:Resource",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink term to this Sub Domain",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:AtlasGlossaryTerm",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:DataDomain",
+        "end-two-entity-classification:*",
+        "end-two-entity:{entity}/*domain/*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    }
+  ],
+  "persona-domain-sub-domain-delete": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*domain/*",
+        "entity-type:DataDomain",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-delete"]
+    }
+  ],
+  "persona-domain-sub-domain-business-update-metadata": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}/*domain/*",
+        "entity-type:DataDomain",
+        "entity-classification:*",
+        "entity-business-metadata:*"
+      ],
+      "actions": ["entity-update-business-metadata"]
+    }
+  ],
+
+  "persona-domain-product-read": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*product/*",
+        "entity:{entity}",
+        "entity-type:DataProduct",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-read"]
+    }
+  ],
+  "persona-domain-product-create": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*product/*",
+        "entity-type:DataProduct",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink this DataProduct to any parent Domain",
+      "resources": [
+        "relationship-type:*",
+        
+        "end-one-entity:{entity}/*",
+        "end-one-entity:{entity}",
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-classification:*",
+        
+        "end-two-entity:{entity}/*",
+        "end-two-entity-type:DataProduct",
+        "end-two-entity-classification:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink any Asset to this DataProduct",
+
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:Asset",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:DataProduct",
+        "end-two-entity-classification:*",
+        "end-two-entity:{entity}/*product/*"
+      ],
+
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    }
+  ],
+  "persona-domain-product-update": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*product/*",
+        "entity:{entity}",
+        "entity-type:DataProduct",
+        "entity-classification:*",
+        "classification:*"
+      ],
+      "actions": [
+        "entity-update",
+        "entity-add-classification",
+        "entity-update-classification",
+        "entity-remove-classification"
+      ]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink any Asset to this DataProduct",
+
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:Asset",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:DataProduct",
+        "end-two-entity-classification:*",
+        "end-two-entity:{entity}",
+        "end-two-entity:{entity}/*product/*"
+      ],
+
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink any Asset to this DataProduct",
+
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:DataProduct",
+        "end-one-entity-classification:*",
+        "end-one-entity:{entity}",
+        "end-one-entity:{entity}/*product/*",
+
+        "end-two-entity-type:Asset",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    }
+  ],
+  "persona-domain-product-delete": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*product/*",
+        "entity:{entity}",
+        "entity-type:DataProduct",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-delete"]
+    }
+  ],
+  "persona-domain-product-business-update-metadata": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}/*product/*",
+        "entity:{entity}",
+        "entity-type:DataProduct",
+        "entity-classification:*",
+        "entity-business-metadata:*"
+      ],
+      "actions": ["entity-update-business-metadata"]
+    }
+  ],
+
+  "select": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}",
+        "entity:{entity}/*",
+        "entity-type:{entity-type}"
+      ],
+      "actions": ["select"]
+    }
+  ],
+  "persona-ai-application-read": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:*",
+        "entity-type:AIApplication",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-read"]
+    }
+  ],
+  "persona-ai-application-create": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:*",
+        "entity-type:AIApplication",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create", "entity-update"]
+    }
+  ],
+  "persona-ai-application-update": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:*",
+        "entity-type:AIApplication",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-update"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink AIModel to any AIApplication",
+      "resources": [
+        "relationship-type:*",
+        "end-one-entity-type:AIModel",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:AIApplication",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink resource to this AIApplication",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:AIApplication",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:Resource",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "description": "Allow to update relation for linked assets for this AIApplication",
+      "resources": [
+        "relationship-type:*",
+        "end-one-entity-type:AIApplication",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+        "end-one-entity:{entity}/*",
+
+        "end-two-entity-type:Catalog",
+        "end-two-entity-type:Connection",
+        "end-two-entity-type:Process",
+        "end-two-entity-type:Namespace",
+        "end-two-entity-type:ProcessExecution",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "remove-relationship"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "description": "Allow to update relation for linked assets for this AIApplication",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:Catalog",
+        "end-one-entity-type:Connection",
+        "end-one-entity-type:Process",
+        "end-one-entity-type:Namespace",
+        "end-one-entity-type:ProcessExecution",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:AIApplication",
+        "end-two-entity-classification:*",
+        "end-two-entity:*",
+        "end-two-entity:{entity}/*"
+      ],
+      "actions": ["add-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "description": "Create/delete process to update datasets for this AIApplication",
+      "resources": [
+        "entity:*",
+        "entity-type:Process",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create", "entity-update", "entity-delete"]
+    }
+  ],
+  "persona-ai-application-delete": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:*",
+        "entity-type:AIApplication",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-delete"]
+    }
+  ],
+  "persona-ai-application-business-update-metadata": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:*",
+        "entity-type:AIApplication",
+        "entity-classification:*",
+        "entity-business-metadata:*"
+      ],
+      "actions": ["entity-update-business-metadata"]
+    }
+  ],
+  "persona-ai-application-add-terms": [
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link term to this AI asset",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:AtlasGlossaryTerm",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:AIApplication",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "update-relationship"]
+    }
+  ],
+  "persona-ai-application-remove-terms": [
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink term to this AI asset",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:AtlasGlossaryTerm",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:AIApplication",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["remove-relationship"]
+    }
+  ],
+  "persona-ai-application-add-classification": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:*",
+        "entity-type:AIApplication",
+        "entity-classification:*",
+        "classification:*"
+      ],
+      "actions": [
+        "entity-add-classification",
+        "entity-update-classification"
+      ]
+    }
+  ],
+  "persona-ai-application-remove-classification": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:*",
+        "entity-type:AIApplication",
+        "entity-classification:*",
+        "classification:*"
+      ],
+      "actions": [
+        "entity-update-classification",
+        "entity-remove-classification"
+      ]
+    }
+  ],
+  "persona-ai-model-read": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:*",
+        "entity-type:AIModel",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-read"]
+    }
+  ],
+  "persona-ai-model-create": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:*",
+        "entity-type:AIModel",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create", "entity-update"]
+    }
+  ],
+  "persona-ai-model-update": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:*",
+        "entity-type:AIModel",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-update"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink AIModel to any AIApplication",
+      "resources": [
+        "relationship-type:*",
+        "end-one-entity-type:AIModel",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:AIApplication",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink resource to this AIModel",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:AIModel",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:Resource",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "description": "Allow to update relation for datasets for this AIModel",
+      "resources": [
+        "relationship-type:*",
+        "end-one-entity-type:AIModel",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+        "end-one-entity:{entity}/*",
+
+        "end-two-entity-type:Catalog",
+        "end-two-entity-type:Connection",
+        "end-two-entity-type:Process",
+        "end-two-entity-type:Namespace",
+        "end-two-entity-type:ProcessExecution",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "remove-relationship"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "description": "Allow to update relation for datasets for this AIModel",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:Catalog",
+        "end-one-entity-type:Connection",
+        "end-one-entity-type:Process",
+        "end-one-entity-type:Namespace",
+        "end-one-entity-type:ProcessExecution",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:AIModel",
+        "end-two-entity-classification:*",
+        "end-two-entity:*",
+        "end-two-entity:{entity}/*"
+      ],
+      "actions": ["add-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "description": "Create/delete process to update datasets for this AIModel",
+      "resources": [
+        "entity:*",
+        "entity-type:Process",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create", "entity-update", "entity-delete"]
+    }
+  ],
+  "persona-ai-model-delete": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:*",
+        "entity-type:AIModel",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-delete"]
+    }
+  ],
+  "persona-ai-model-business-update-metadata": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:*",
+        "entity-type:AIModel",
+        "entity-classification:*",
+        "entity-business-metadata:*"
+      ],
+      "actions": ["entity-update-business-metadata"]
+    }
+  ],
+  "persona-ai-model-add-terms": [
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link term to this AI asset",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:AtlasGlossaryTerm",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:AIModel",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "update-relationship"]
+    }
+  ],
+  "persona-ai-model-remove-terms": [
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink term to this AI asset",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:AtlasGlossaryTerm",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:AIModel",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["remove-relationship"]
+    }
+  ],
+  "persona-ai-model-add-classification": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:*",
+        "entity-type:AIModel",
+        "entity-classification:*",
+        "classification:*"
+      ],
+      "actions": [
+        "entity-add-classification",
+        "entity-update-classification"
+      ]
+    }
+  ],
+  "persona-ai-model-remove-classification": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:*",
+        "entity-type:AIModel",
+        "entity-classification:*",
+        "classification:*"
+      ],
+      "actions": [
+        "entity-update-classification",
+        "entity-remove-classification"
+      ]
+    }
+  ],
+  "persona-dq-read": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}/*/rule/*",
+        "entity-type:DataQualityRule",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-read"]
+    }
+  ],
+  "persona-dq-create": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*/rule/*",
+        "entity-type:DataQualityRule",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink this DQRule to any Asset",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity:{entity}/*/rule/*",
+        "end-one-entity-type:DataQualityRule",
+        "end-one-entity-classification:*",
+
+        "end-two-entity:*",
+        "end-two-entity-type:Asset",
+        "end-two-entity-classification:*"
+
+      ],
+      "actions": ["add-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink this DQRule to any Asset",
+      "resources": [
+        "relationship-type:*",
+        "end-one-entity:*",
+        "end-one-entity-type:Asset",
+        "end-one-entity-classification:*",
+
+        "end-two-entity:{entity}/*/rule/*",
+        "end-two-entity-type:DataQualityRule",
+        "end-two-entity-classification:*"
+
+      ],
+      "actions": ["add-relationship"]
+    }
+  ],
+  "persona-dq-update": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}/*/rule/*",
+        "entity-type:DataQualityRule",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-update"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity:{entity}/*/rule/*",
+        "end-one-entity-type:DataQualityRule",
+        "end-one-entity-classification:*",
+
+        "end-two-entity:*",
+        "end-two-entity-type:Asset",
+        "end-two-entity-classification:*"
+      ],
+      "actions": ["add-relationship", "remove-relationship", "update-relationship"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity:*",
+        "end-one-entity-type:Asset",
+        "end-one-entity-classification:*",
+
+        "end-two-entity:{entity}/*/rule/*",
+        "end-two-entity-type:DataQualityRule",
+        "end-two-entity-classification:*"
+      ],
+      "actions": ["add-relationship", "remove-relationship", "update-relationship"]
+    }
+  ],
+  "persona-dq-delete": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*/rule/*",
+        "entity-type:DataQualityRule",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-delete"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity:{entity}/*/rule/*",
+        "end-one-entity-type:DataQualityRule",
+        "end-one-entity-classification:*",
+
+        "end-two-entity:*",
+        "end-two-entity-type:Asset",
+        "end-two-entity-classification:*"
+      ],
+      "actions": ["remove-relationship"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity:*",
+        "end-one-entity-type:Asset",
+        "end-one-entity-classification:*",
+
+        "end-two-entity:{entity}/*/rule/*",
+        "end-two-entity-type:DataQualityRule",
+        "end-two-entity-classification:*"
+      ],
+      "actions": ["remove-relationship"]
+    }
+  ],
+
+  "persona-asset-read-abac": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-read"]
+    }
+  ],
+  "persona-asset-update-abac": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-update"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{\"endOneEntity\":{entity-criteria},\"endTwoEntity\":{\"condition\": \"AND\", \"criterion\": [{\"attributeName\": \"__typeName\", \"attributeValue\": [\"Catalog\", \"Connection\", \"Process\", \"Namespace\", \"ProcessExecution\"], \"operator\": \"IN\"}]}}",
+      "actions": ["add-relationship", "remove-relationship"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{\"endOneEntity\":{\"condition\": \"AND\", \"criterion\": [{\"attributeName\": \"__typeName\", \"attributeValue\": [\"Catalog\", \"Connection\", \"Process\", \"Namespace\", \"ProcessExecution\"], \"operator\": \"IN\"}]},\"endTwoEntity\":{entity-criteria}}",
+      "actions": ["add-relationship", "remove-relationship"]
+    }
+  ],
+  "persona-api-create-abac": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-create"]
+    }
+  ],
+  "persona-api-delete-abac": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-delete"]
+    }
+  ],
+  "persona-business-update-metadata-abac": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-update-business-metadata"]
+    }
+  ],
+  "persona-entity-add-classification-abac": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-add-classification", "entity-update-classification"]
+    }
+  ],
+  "persona-entity-update-classification-abac": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-update-classification"]
+    }
+  ],
+  "persona-entity-remove-classification-abac": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-update-classification", "entity-remove-classification"]
+    }
+  ],
+  "persona-add-terms-abac": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyFilterCriteria": "{\"endOneEntity\":{\"condition\": \"AND\", \"criterion\": [{\"attributeName\": \"__typeName\", \"attributeValue\": \"AtlasGlossaryTerm\",\"operator\": \"EQUALS\"}]},\"endTwoEntity\":{entity-criteria}}",
+      "actions": ["add-relationship", "update-relationship"]
+    }
+  ],
+  "persona-remove-terms-abac": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyFilterCriteria": "{\"endOneEntity\":{\"condition\": \"AND\", \"criterion\": [{\"attributeName\": \"__typeName\", \"attributeValue\": \"AtlasGlossaryTerm\",\"operator\": \"EQUALS\"}]},\"endTwoEntity\":{entity-criteria}}",
+      "actions": ["remove-relationship"]
+    }
+  ]
+}

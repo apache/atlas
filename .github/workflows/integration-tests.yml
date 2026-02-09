@@ -1,0 +1,149 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Integration Tests
+
+on:
+  pull_request:
+    branches:
+      - master
+      - beta
+      - staging
+    paths-ignore:
+      - '.claude/**'
+      - '.cursor/**'
+      - 'docs/**'
+      - 'helm/**'
+      - 'local-dev/**'
+      - 'README.txt'
+      - 'README.md'
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ============================================
+      # DISK CLEANUP - Testcontainers need space
+      # ============================================
+      - name: Free up disk space
+        run: |
+          echo "Freeing disk space..."
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/share/swift || true
+
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-integration-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-integration-
+            ${{ runner.os }}-maven-
+
+      - name: Create Maven Settings
+        uses: s4u/maven-settings-action@v2.8.0
+        with:
+          servers: |
+            [{
+                "id": "github",
+                "username": "atlan-ci",
+                "password": "${{ secrets.ORG_PAT_GITHUB }}"
+            }]
+
+      - name: Verify Docker
+        run: |
+          docker --version
+          docker info
+
+      - name: Build webapp module
+        run: |
+          mvn install -pl webapp -am -DskipTests -Drat.skip=true -q
+        env:
+          MAVEN_OPTS: -Xmx2g
+
+      - name: Run integration tests
+        id: tests
+        continue-on-error: true
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: true
+          TESTCONTAINERS_CHECKS_DISABLE: true
+          DOCKER_HOST: unix:///var/run/docker.sock
+        run: |
+          mvn test -pl webapp \
+            -Dtest="EntityCrudIntegrationTest,GlossaryIntegrationTest,GlossaryExtendedIntegrationTest,SQLAssetHierarchyIntegrationTest,ClassificationIntegrationTest,LineageIntegrationTest,SearchIntegrationTest,RelationshipIntegrationTest,BusinessMetadataIntegrationTest,DataMeshIntegrationTest,PersonaPurposeIntegrationTest,LabelIntegrationTest,TypeDefIntegrationTest" \
+            -Drat.skip=true \
+            -Dsurefire.failIfNoSpecifiedTests=false \
+            2>&1 | tee test-output.log
+
+          # Capture exit code from mvn (not tee)
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always() && steps.tests.outcome != 'skipped'
+        with:
+          name: Integration Test Results
+          path: webapp/target/surefire-reports/TEST-*.xml
+          reporter: java-junit
+          fail-on-error: false
+
+      - name: Generate test reports
+        if: always() && steps.tests.outcome != 'skipped'
+        run: |
+          python3 webapp/src/test/scripts/generate-test-report.py \
+            webapp/target/surefire-reports \
+            webapp/target/site/test-report.html \
+            --markdown webapp/target/site/test-summary.md \
+          || echo "Report generation failed, falling back to basic summary"
+
+          if [ -f webapp/target/site/test-summary.md ]; then
+            cat webapp/target/site/test-summary.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Integration Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "Report generation failed. Check artifacts for raw XML reports." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: always() && steps.tests.outcome != 'skipped'
+        with:
+          name: integration-test-reports-${{ github.run_id }}
+          path: |
+            webapp/target/surefire-reports/
+            webapp/target/site/test-report.html
+            test-output.log
+          retention-days: 14
+
+      - name: Fail if tests failed
+        if: steps.tests.outputs.exit_code != '0'
+        run: |
+          echo "Integration tests failed with exit code ${{ steps.tests.outputs.exit_code }}"
+          exit 1
