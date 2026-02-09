@@ -61,7 +61,7 @@ public abstract class AtlasInProcessBaseIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasInProcessBaseIT.class);
 
-    private static final int MAX_STARTUP_WAIT_SECONDS = 300; // 5 minutes
+    private static final int MAX_STARTUP_WAIT_SECONDS = 100; // 5 minutes
 
     // Singleton containers (shared across all test classes, stopped by JVM shutdown hook)
     private static final CassandraContainer<?> cassandra;
@@ -352,8 +352,12 @@ public abstract class AtlasInProcessBaseIT {
             // Index recovery - disable to avoid shutdown hang (monitor thread has while(true) without exit)
             w.println("atlas.index.recovery.enable=false");
 
-            // Config store
-            w.println("atlas.config.store.cassandra.enabled=false");
+            // Config store - DynamicConfigStore for Tags V2
+            // Port falls back to atlas.graph.storage.cql.port (the mapped testcontainer port)
+            w.println("atlas.config.store.cassandra.enabled=true");
+            w.println("atlas.config.store.cassandra.activated=true");
+            w.println("atlas.config.store.cassandra.consistency.level=LOCAL_ONE");
+            w.println("atlas.config.store.cassandra.replication.factor=1");
         }
     }
 
@@ -462,5 +466,9 @@ public abstract class AtlasInProcessBaseIT {
 
     protected String getAtlasBaseUrl() {
         return "http://localhost:" + atlasPort;
+    }
+
+    protected String getElasticsearchAddress() {
+        return elasticsearch.getHttpHostAddress();
     }
 }
