@@ -210,8 +210,14 @@ public class EntityLineageService implements AtlasLineageService {
     public AtlasLineageListInfo getLineageListInfoOnDemand(String guid, LineageListRequest lineageListRequest) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getLineageListInfoOnDemand");
 
-        RequestContext.get().setLineageInputLabel(LINEAGE_MAP.get(lineageListRequest.getLineageType())[0]);
-        RequestContext.get().setLineageOutputLabel(LINEAGE_MAP.get(lineageListRequest.getLineageType())[1]);
+        String[] lineageLabels = LINEAGE_MAP.get(lineageListRequest.getLineageType());
+        if (lineageLabels == null) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
+                    "Invalid lineage type: " + lineageListRequest.getLineageType());
+        }
+
+        RequestContext.get().setLineageInputLabel(lineageLabels[0]);
+        RequestContext.get().setLineageOutputLabel(lineageLabels[1]);
         AtlasLineageListInfo ret = new AtlasLineageListInfo(new ArrayList<>());
         RequestContext.get().setRelationAttrsForSearch(lineageListRequest.getRelationAttributes());
 
@@ -237,7 +243,7 @@ public class EntityLineageService implements AtlasLineageService {
             this.isDataProduct = isDataProduct;
         }
 
-        public boolean CheckIfConnectorVertex(String lineageType){
+        public boolean checkIfConnectorVertex(String lineageType){
 
             if(lineageType.equals(LINEAGE_TYPE_PRODUCT_ASSET_LINEAGE)){
                 return !isDataProduct;
@@ -256,7 +262,7 @@ public class EntityLineageService implements AtlasLineageService {
         if (entityType == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, typeName);
         }
-        HashMap<String, Boolean> dataTypeMap = new HashMap<>();
+
         boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
         boolean isDataProduct = entityType.getTypeName().equals(DATA_PRODUCT_ENTITY_TYPE);
         boolean isConnectionProcess = false;
@@ -360,7 +366,7 @@ public class EntityLineageService implements AtlasLineageService {
         AtomicInteger outputEntitiesTraversed = new AtomicInteger(0);
         AtomicInteger traversalOrder = new AtomicInteger(1);
 
-        boolean isConnectorVertex = entityValidationResult.CheckIfConnectorVertex(atlasLineageOnDemandContext.getLineageType());
+        boolean isConnectorVertex = entityValidationResult.checkIfConnectorVertex(atlasLineageOnDemandContext.getLineageType());
 
         if (!isConnectorVertex) {
             AtlasVertex datasetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
@@ -542,7 +548,7 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasVertex baseVertex = AtlasGraphUtilsV2.findByGuid(this.graph, baseGuid);
         EntityValidationResult entityValidationResult = validateAndGetEntityTypeMap(baseGuid);
 
-        boolean isNotConnectorVertex = !entityValidationResult.CheckIfConnectorVertex(lineageType);
+        boolean isNotConnectorVertex = !entityValidationResult.checkIfConnectorVertex(lineageType);
         // Get the neighbors for the current node
         enqueueNeighbours(baseVertex, entityValidationResult, lineageListContext, traversalQueue, visitedVertices, skippedVertices, lineageParentsForEntityMap, lineageChildrenForEntityMap);
         int currentDepth = 0;
@@ -617,8 +623,8 @@ public class EntityLineageService implements AtlasLineageService {
         String lineageInputLabel = RequestContext.get().getLineageInputLabel();
         String lineageOutputLabel = RequestContext.get().getLineageOutputLabel();
         String lineageType = lineageListContext.getLineageType();
-        boolean isConnecterVertex =  entityValidationResult.CheckIfConnectorVertex(lineageType);
-        if (!isConnecterVertex)
+        boolean isConnectorVertex =  entityValidationResult.checkIfConnectorVertex(lineageType);
+        if (!isConnectorVertex)
             edges = GraphHelper.getActiveEdges(currentVertex, isInputDirection(lineageListContext) ? lineageOutputLabel : lineageInputLabel, IN);
         else
             edges = GraphHelper.getActiveEdges(currentVertex, isInputDirection(lineageListContext) ? lineageInputLabel : lineageOutputLabel, OUT);
@@ -629,7 +635,7 @@ public class EntityLineageService implements AtlasLineageService {
             if (!lineageListContext.evaluateTraversalFilter(currentEdge))
                 continue;
             AtlasVertex neighbourVertex;
-            if (!isConnecterVertex)
+            if (!isConnectorVertex)
                 neighbourVertex = currentEdge.getOutVertex();
             else
                 neighbourVertex = currentEdge.getInVertex();
