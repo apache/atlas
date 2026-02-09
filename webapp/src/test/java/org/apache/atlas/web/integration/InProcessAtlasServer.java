@@ -74,7 +74,12 @@ public class InProcessAtlasServer {
             }
         }, "atlas-server-stop");
         stopThread.start();
-        stopThread.join(30_000); // Wait max 30 seconds for shutdown
+        try {
+            stopThread.join(30_000); // Wait max 30 seconds for shutdown
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while stopping server", e);
+        }
         if (stopThread.isAlive()) {
             LOG.warn("Server stop timed out after 30s, interrupting");
             stopThread.interrupt();

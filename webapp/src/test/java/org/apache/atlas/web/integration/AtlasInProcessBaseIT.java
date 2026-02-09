@@ -33,6 +33,7 @@ import org.testcontainers.utility.DockerImageName;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
@@ -195,7 +196,10 @@ public abstract class AtlasInProcessBaseIT {
         if (responseCode == 200) {
             LOG.info("ES index template 'atlan-template' created successfully");
         } else {
-            String error = new String(conn.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
+            InputStream errorStream = conn.getErrorStream();
+            String error = errorStream != null
+                    ? new String(errorStream.readAllBytes(), StandardCharsets.UTF_8)
+                    : "(no error body)";
             throw new IOException("Failed to create ES index template (HTTP " + responseCode + "): " + error);
         }
         conn.disconnect();
@@ -366,8 +370,9 @@ public abstract class AtlasInProcessBaseIT {
         long deadline = System.currentTimeMillis() + MAX_STARTUP_WAIT_SECONDS * 1000L;
 
         while (System.currentTimeMillis() < deadline) {
+            HttpURLConnection conn = null;
             try {
-                HttpURLConnection conn = (HttpURLConnection)
+                conn = (HttpURLConnection)
                         new URL("http://localhost:" + atlasPort + "/api/atlas/admin/status")
                                 .openConnection();
                 conn.setRequestMethod("GET");
@@ -382,6 +387,10 @@ public abstract class AtlasInProcessBaseIT {
                 LOG.info("Atlas not ready yet (HTTP {}), retrying...", status);
             } catch (Exception e) {
                 LOG.debug("Atlas not ready yet: {}", e.getMessage());
+            } finally {
+                if (conn != null) {
+                    conn.disconnect();
+                }
             }
 
             try {
