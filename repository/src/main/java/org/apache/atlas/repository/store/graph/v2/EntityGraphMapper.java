@@ -5388,6 +5388,15 @@ public class EntityGraphMapper {
                 taskManagement.createTaskV2(propagationType, currentUser, taskParams, classification.getTypeName(), entityGuid);
             }
 
+            // MS-595: copy propagation flags from the request classification onto currentClassification
+            // so that the audit/notification receives the NEW values instead of stale ones.
+            // Cassandra is already updated via putDirectTag() above, but currentClassification
+            // was read before the update and still has the OLD flag values.
+            currentClassification.setPropagate(classification.isPropagate());
+            currentClassification.setRemovePropagationsOnEntityDelete(classification.getRemovePropagationsOnEntityDelete());
+            currentClassification.setRestrictPropagationThroughLineage(classification.getRestrictPropagationThroughLineage());
+            currentClassification.setRestrictPropagationThroughHierarchy(classification.getRestrictPropagationThroughHierarchy());
+
             updatedClassifications.add(currentClassification);
         }
 
