@@ -140,6 +140,9 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasLineageContext lineageRequestContext = new AtlasLineageContext(lineageRequest, atlasTypeRegistry);
         RequestContext.get().setRelationAttrsForSearch(lineageRequest.getRelationAttributes());
 
+        RequestContext.get().setLineageInputLabel(PROCESS_INPUTS_EDGE);
+        RequestContext.get().setLineageOutputLabel(PROCESS_OUTPUTS_EDGE);
+
         AtlasVertex entity = AtlasGraphUtilsV2.findByGuid(guid);
         String entityTypeName = entity.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
 
@@ -439,7 +442,7 @@ public class EntityLineageService implements AtlasLineageService {
             visitedVertices.add(getId(datasetVertex));
 
             AtlasPerfMetrics.MetricRecorder traverseEdgesOnDemandGetEdgesIn = RequestContext.get().startMetricRecord("traverseEdgesOnDemandGetEdgesIn");
-            Iterator<AtlasEdge> incomingEdges = datasetVertex.getEdges(IN, isInput ? lineageOutputLabel : lineageInputLabel).iterator();
+            Iterator<AtlasEdge> incomingEdges = GraphHelper.getActiveEdges(datasetVertex, isInput ? lineageOutputLabel : lineageInputLabel, IN);
             RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdgesIn);
 
             while (incomingEdges.hasNext()) {
@@ -467,7 +470,7 @@ public class EntityLineageService implements AtlasLineageService {
                 }
 
                 AtlasPerfMetrics.MetricRecorder traverseEdgesOnDemandGetEdgesOut = RequestContext.get().startMetricRecord("traverseEdgesOnDemandGetEdgesOut");
-                Iterator<AtlasEdge> outgoingEdges = connectorVertex.getEdges(OUT, isInput ? lineageInputLabel : lineageOutputLabel).iterator();
+                Iterator<AtlasEdge> outgoingEdges = GraphHelper.getActiveEdges(connectorVertex, isInput ? lineageInputLabel : lineageOutputLabel, OUT);
                 RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdgesOut);
 
                 while (outgoingEdges.hasNext()) {
@@ -616,9 +619,9 @@ public class EntityLineageService implements AtlasLineageService {
         String lineageType = lineageListContext.getLineageType();
         boolean isConnecterVertex =  entityValidationResult.CheckIfConnectorVertex(lineageType);
         if (!isConnecterVertex)
-            edges = currentVertex.getEdges(IN, isInputDirection(lineageListContext) ? lineageOutputLabel : lineageInputLabel).iterator();
+            edges = GraphHelper.getActiveEdges(currentVertex, isInputDirection(lineageListContext) ? lineageOutputLabel : lineageInputLabel, IN);
         else
-            edges = currentVertex.getEdges(OUT, isInputDirection(lineageListContext) ? lineageInputLabel : lineageOutputLabel).iterator();
+            edges = GraphHelper.getActiveEdges(currentVertex, isInputDirection(lineageListContext) ? lineageInputLabel : lineageOutputLabel, OUT);
 
         RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdges);
         while (edges.hasNext()) {
