@@ -163,6 +163,13 @@ jobs:
             echo "No test reports found." >> $GITHUB_STEP_SUMMARY
           fi
 
+      - name: Generate HTML test report
+        if: always() && steps.tests.outcome != 'skipped'
+        run: |
+          python3 webapp/src/test/scripts/generate-test-report.py \
+            webapp/target/surefire-reports \
+            webapp/target/site/test-report.html
+
       - name: Upload test reports
         uses: actions/upload-artifact@v4
         if: always() && steps.tests.outcome != 'skipped'
@@ -170,6 +177,7 @@ jobs:
           name: integration-test-reports-${{ github.run_id }}
           path: |
             webapp/target/surefire-reports/
+            webapp/target/site/test-report.html
             test-output.log
           retention-days: 14
 
