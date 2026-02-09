@@ -107,6 +107,15 @@ public class EntityLineageService implements AtlasLineageService {
         put(LINEAGE_TYPE_PRODUCT_ASSET_LINEAGE, new String[]{OUTPUT_PORT_EDGE, INPUT_PORT_EDGE});
     }};
 
+    private static String[] getLineageLabelsForType(String lineageType) throws AtlasBaseException {
+        String[] lineageLabels = LINEAGE_MAP.get(lineageType);
+        if (lineageLabels == null) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
+                    "Invalid lineage type: " + lineageType);
+        }
+        return lineageLabels;
+    }
+
     @Inject
     EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, VertexEdgeCache vertexEdgeCache, EntityGraphRetriever entityRetriever) {
         this.graph = atlasGraph;
@@ -190,8 +199,9 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getAtlasLineageInfo");
 
         RequestContext.get().setRelationAttrsForSearch(lineageOnDemandRequest.getRelationAttributes());
-        RequestContext.get().setLineageInputLabel(LINEAGE_MAP.get(lineageOnDemandRequest.getLineageType())[0]);
-        RequestContext.get().setLineageOutputLabel(LINEAGE_MAP.get(lineageOnDemandRequest.getLineageType())[1]);
+        String[] lineageLabels = getLineageLabelsForType(lineageOnDemandRequest.getLineageType());
+        RequestContext.get().setLineageInputLabel(lineageLabels[0]);
+        RequestContext.get().setLineageOutputLabel(lineageLabels[1]);
 
         AtlasLineageOnDemandContext atlasLineageOnDemandContext = new AtlasLineageOnDemandContext(lineageOnDemandRequest, atlasTypeRegistry);
         EntityValidationResult entityValidationResult = validateAndGetEntityTypeMap(guid);
@@ -210,12 +220,7 @@ public class EntityLineageService implements AtlasLineageService {
     public AtlasLineageListInfo getLineageListInfoOnDemand(String guid, LineageListRequest lineageListRequest) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getLineageListInfoOnDemand");
 
-        String[] lineageLabels = LINEAGE_MAP.get(lineageListRequest.getLineageType());
-        if (lineageLabels == null) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
-                    "Invalid lineage type: " + lineageListRequest.getLineageType());
-        }
-
+        String[] lineageLabels = getLineageLabelsForType(lineageListRequest.getLineageType());
         RequestContext.get().setLineageInputLabel(lineageLabels[0]);
         RequestContext.get().setLineageOutputLabel(lineageLabels[1]);
         AtlasLineageListInfo ret = new AtlasLineageListInfo(new ArrayList<>());
@@ -274,7 +279,7 @@ public class EntityLineageService implements AtlasLineageService {
                 isDataSet = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
                 if (!isDataSet) {
                     isConnection = entityType.getTypeAndAllSuperTypes().contains(CONNECTION_ENTITY_TYPE);
-                    if(!isConnection){
+                    if(!isConnection && !isDataProduct){
                         throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE, guid, typeName);
                     }
                 }
