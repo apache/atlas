@@ -50,8 +50,6 @@ class DeleteByIdsBatchLookupTest {
     @Test
     void testBatchOperationsFlagDefaults() {
         // Verify default flag values
-        assertFalse(AtlasConfiguration.DELETE_BATCH_OPERATIONS_ENABLED.getBoolean(),
-                "DELETE_BATCH_OPERATIONS_ENABLED should default to false");
         assertEquals(500, AtlasConfiguration.DELETE_BATCH_LOOKUP_SIZE.getInt(),
                 "DELETE_BATCH_LOOKUP_SIZE should default to 500");
     }

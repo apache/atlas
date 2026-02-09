@@ -188,7 +188,6 @@ public enum AtlasConfiguration {
     TASK_HIGH_MEMORY_PAUSE_MS("atlas.tasks.high.memory.pause.ms", 2000),
     TASK_MAX_RETRY_ATTEMPTS("atlas.tasks.max.retry.attempts", 3),
 
-    DELETE_BATCH_OPERATIONS_ENABLED("atlas.delete.batch.enabled", false),
     // Batch sizes for various delete operations
     DELETE_BATCH_LOOKUP_SIZE("atlas.delete.batch.lookup.size", 500),
     DELETE_UNIQUEATTR_BATCH_SIZE("atlas.delete.uniqueattr.batch.size", 200),

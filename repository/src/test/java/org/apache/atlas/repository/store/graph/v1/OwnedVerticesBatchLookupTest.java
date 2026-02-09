@@ -48,9 +48,7 @@ class OwnedVerticesBatchLookupTest {
 
     @Test
     void testFlagDefaults() {
-        // Verify default flag values are OFF (safe default)
-        assertFalse(AtlasConfiguration.DELETE_BATCH_OPERATIONS_ENABLED.getBoolean(),
-                "DELETE_BATCH_OPERATIONS_ENABLED should default to false");
+        // Verify default flag values
         assertEquals(100, AtlasConfiguration.DELETE_OWNED_BATCH_SIZE.getInt(),
                 "DELETE_OWNED_BATCH_SIZE should default to 100");
     }

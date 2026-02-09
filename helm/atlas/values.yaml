@@ -111,8 +111,6 @@ atlas:
     optimised_calculation: false
   # Delete Optimization Settings
   delete:
-    # Consolidated batch operations flag - enables all batch optimizations:
-    batch_enabled: false
     # Batch sizes for various delete operations
     batch_lookup_size: 500
     uniqueattr_batch_size: 200

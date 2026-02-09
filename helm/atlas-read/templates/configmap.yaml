@@ -524,7 +524,6 @@ data:
     atlas.config.store.cassandra.consistency.level={{ .Values.atlas.configStore.cassandra.consistencyLevel }}
 
     ######### Delete Optimization Configs #########
-    atlas.delete.batch.enabled={{ .Values.atlas.delete.batch_enabled }}
     # Batch sizes for various delete operations
     atlas.delete.batch.lookup.size={{ .Values.atlas.delete.batch_lookup_size }}
     atlas.delete.uniqueattr.batch.size={{ .Values.atlas.delete.uniqueattr_batch_size }}

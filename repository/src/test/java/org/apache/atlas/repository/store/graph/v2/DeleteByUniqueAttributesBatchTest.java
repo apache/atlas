@@ -49,9 +49,7 @@ class DeleteByUniqueAttributesBatchTest {
 
     @Test
     void testUniqueAttrBatchFlagDefaults() {
-        // Verify default flag values - consolidated into single flag
-        assertFalse(AtlasConfiguration.DELETE_BATCH_OPERATIONS_ENABLED.getBoolean(),
-                "DELETE_BATCH_OPERATIONS_ENABLED should default to false");
+        // Verify default flag values
         assertEquals(200, AtlasConfiguration.DELETE_UNIQUEATTR_BATCH_SIZE.getInt(),
                 "DELETE_UNIQUEATTR_BATCH_SIZE should default to 200");
     }
