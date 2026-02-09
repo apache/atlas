@@ -29,6 +29,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.EntityAuditEvent;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasType;
@@ -138,16 +139,35 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 String auditDetailPrefix = EntityAuditListenerV2.getV2AuditPrefix(event.getAction());
                 String details = event.getDetails().substring(auditDetailPrefix.length());
 
+                AtlasEntity auditEntity = event.getEntity();
+
+                if (auditEntity == null) {
+                    LOG.warn("Audit entity is null for event (entityId={}, action={}); skipping ES audit record",
+                            event.getEntityId(), event.getAction());
+                    continue;
+                }
+
+                String typeName = auditEntity.getTypeName();
+                long   updateTimestamp;
+
+                if (auditEntity.getUpdateTime() != null) {
+                    updateTimestamp = auditEntity.getUpdateTime().getTime();
+                } else {
+                    updateTimestamp = event.getTimestamp();
+                    LOG.warn("Entity updateTime is null for audit event (entityId={}, type={}); using event timestamp as fallback",
+                            event.getEntityId(), typeName);
+                }
+
                 String bulkItem = MessageFormat.format(entityPayloadTemplate,
                         event.getEntityId(),
                         event.getAction(),
                         details,
                         event.getUser(),
-                        event.getEntityId() + ":" + event.getEntity().getUpdateTime().getTime(),
+                        event.getEntityId() + ":" + updateTimestamp,
                         event.getEntityQualifiedName(),
-                        event.getEntity().getTypeName(),
+                        typeName,
                         created,
-                        "" + event.getEntity().getUpdateTime().getTime());
+                        "" + updateTimestamp);
 
                 bulkRequestBody.append(bulkMetadata);
                 bulkRequestBody.append(bulkItem);
