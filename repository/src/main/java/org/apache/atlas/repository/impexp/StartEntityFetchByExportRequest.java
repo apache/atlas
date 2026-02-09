@@ -114,7 +114,6 @@ public class StartEntityFetchByExportRequest {
                 LOG.info("Request missing typeName but has uniqueAttributes. Attempting generic type search.");
                 return getEntitiesForMatchTypeType(item, MATCH_TYPE_FOR_TYPE);
             }
-
         } catch (AtlasBaseException ex) {
             LOG.error("Error fetching starting entity for: {}", item, ex);
         } finally {
@@ -182,7 +181,6 @@ public class StartEntityFetchByExportRequest {
 
                 if (CollectionUtils.isNotEmpty(guids)) {
                     ret.addAll(guids);
-
                 }
             }
         }
