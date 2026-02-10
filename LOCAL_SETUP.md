@@ -150,6 +150,11 @@ Create a Run Configuration:
 -Dlogback.configurationFile=file:./deploy/conf/atlas-logback.xml
 ```
 
+**Environment Variables:**
+```
+OTEL_SDK_DISABLED=true
+```
+
 **IntelliJ Maven Settings:**
 - Go to **Settings → Build → Build Tools → Maven → Runner**
 - Add Environment variables: `GITHUB_USERNAME` and `GITHUB_TOKEN`
@@ -157,7 +162,7 @@ Create a Run Configuration:
 ### Option 2: Command Line
 
 ```bash
-JAVA_HOME=$(/usr/libexec/java_home -v 17) java \
+JAVA_HOME=$(/usr/libexec/java_home -v 17) OTEL_SDK_DISABLED=true java \
   --add-opens java.base/java.lang=ALL-UNNAMED \
   -Datlas.home=deploy/ \
   -Datlas.conf=deploy/conf \
