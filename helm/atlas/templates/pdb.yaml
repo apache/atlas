@@ -1,4 +1,5 @@
 {{- if .Values.podDisruptionBudget.enabled }}
+{{- if not (eq .Values.global.Deployment_Type "Lite") }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -19,4 +20,5 @@ spec:
     matchLabels:
       app: {{ template "name" . }}
       release: {{ .Release.Name }}
-{{- end }}
+{{- end -}}
+{{- end -}}

@@ -2,6 +2,7 @@ package org.apache.atlas.web.service;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.RepairIndex;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
@@ -40,6 +41,8 @@ class DLQReplayServiceIntegrationTest {
     private KafkaConsumer<String, String> mockConsumer;
     @Mock
     private RepairIndex repairIndex;
+    @Mock
+    private AtlasTypeRegistry atlasTypeRegistry;
 
     private DLQReplayService dlqReplayService;
 
@@ -65,7 +68,7 @@ class DLQReplayServiceIntegrationTest {
         mockApplicationProperties.when(ApplicationProperties::get).thenReturn(mockConfig);
         when(mockConfig.getString("atlas.graph.kafka.bootstrap.servers")).thenReturn("localhost:9092");
 
-        dlqReplayService = spy(new DLQReplayService(repairIndex));
+        dlqReplayService = spy(new DLQReplayService(repairIndex, atlasTypeRegistry));
 
         // Inject mocks
         ReflectionTestUtils.setField(dlqReplayService, "consumer", mockConsumer);

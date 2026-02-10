@@ -87,3 +87,4 @@ distro/solr/*.tgz
 /deploy
 **.class
 */bin.vscode/
+**/bin

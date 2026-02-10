@@ -81,6 +81,7 @@ public enum AtlasConfiguration {
     REBUILD_INDEX("atlas.rebuild.index", false),
     PROCESS_NAME_UPDATE_PATCH("atlas.process.name.update.patch", false),
     STORE_DIFFERENTIAL_AUDITS("atlas.entity.audit.differential", false),
+    SKIP_OPTIONAL_ATTRIBUTES("atlas.entity.skip.optional.attributes", false),
     NOTIFY_DIFFERENTIAL_ENTITY_CHANGES("atlas.notification.differential.entity.changes.enabled", false),
     DSL_EXECUTOR_TRAVERSAL("atlas.dsl.executor.traversal", true),
     DSL_CACHED_TRANSLATOR("atlas.dsl.cached.translator", true),
@@ -110,6 +111,7 @@ public enum AtlasConfiguration {
     ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_RELATIONSHIP_LABELS("atlas.relationship.cleanup.supported.relationship.labels", "__Process.inputs,__Process.outputs,__AirflowTask.inputs,__AirflowTask.outputs"),
     REST_API_XSS_FILTER_MASK_STRING("atlas.rest.xss.filter.mask.string", "map<[a-zA-Z _,:<>0-9\\x60]*>|struct<[a-zA-Z _,:<>0-9\\x60]*>|array<[a-zA-Z _,:<>0-9\\x60]*>|\\{\\{[a-zA-Z _,-:0-9\\x60\\{\\}]*\\}\\}"),
     REST_API_XSS_FILTER_EXLUDE_SERVER_NAME("atlas.rest.xss.filter.exclude.server.name", "atlas-service-atlas.atlas.svc.cluster.local"),
+    REST_API_BULK_ERROR_LOG_BODY_MAX_SIZE("atlas.rest.bulk.error.log.body.maxsize", 102400),
 
 
     INDEX_CLIENT_CONNECTION_TIMEOUT("atlas.index.client.connection.timeout.ms", 900000),

@@ -4,6 +4,12 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmHeapPressureMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
+import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import org.apache.atlas.ApplicationProperties;
@@ -50,6 +56,14 @@ public class MetricUtils {
         METER_REGISTRY = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
         METER_REGISTRY.config().withHighCardinalityTagsDetector().commonTags(SERVICE, ATLAS_METASTORE, INTEGRATION, LOCAL);
         Metrics.globalRegistry.add(METER_REGISTRY);
+        
+        // Bind JVM metrics for comprehensive monitoring
+        new ClassLoaderMetrics().bindTo(METER_REGISTRY);
+        new JvmMemoryMetrics().bindTo(METER_REGISTRY);
+        new JvmGcMetrics().bindTo(METER_REGISTRY);
+        new JvmThreadMetrics().bindTo(METER_REGISTRY);
+        new JvmHeapPressureMetrics().bindTo(METER_REGISTRY);
+        new ProcessorMetrics().bindTo(METER_REGISTRY);
     }
 
     public Timer.Sample start(String uri) {

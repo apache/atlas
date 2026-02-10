@@ -21,6 +21,7 @@ package org.apache.atlas.repository.store.bootstrap;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.micrometer.core.instrument.Timer;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
@@ -29,6 +30,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
+import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
@@ -122,12 +124,19 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     @PostConstruct
     public void init() {
         LOG.info("==> AtlasTypeDefStoreInitializer.init()");
+        Timer.Sample sample = Timer.start(MetricUtils.getMeterRegistry());
 
-        if (!HAConfiguration.isHAEnabled(conf)) {
-            startInternal();
-            CURRENT_TYPEDEF_INTERNAL_VERSION = Long.parseLong(redisService.getValue(TYPEDEF_LATEST_VERSION, "1"));
-        } else {
-            LOG.info("AtlasTypeDefStoreInitializer.init(): deferring type loading until instance activation");
+        try {
+            if (!HAConfiguration.isHAEnabled(conf)) {
+                startInternal();
+                CURRENT_TYPEDEF_INTERNAL_VERSION = Long.parseLong(redisService.getValue(TYPEDEF_LATEST_VERSION, "1"));
+            } else {
+                LOG.info("AtlasTypeDefStoreInitializer.init(): deferring type loading until instance activation");
+            }
+        } finally {
+            sample.stop(Timer.builder("atlas.startup.typedef.init.duration")
+                    .description("Time taken to initialize type definitions during Atlas startup")
+                    .register(MetricUtils.getMeterRegistry()));
         }
 
         LOG.info("<== AtlasTypeDefStoreInitializer.init()");
@@ -142,34 +151,41 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
      */
     private void loadBootstrapTypeDefs() {
         LOG.info("==> AtlasTypeDefStoreInitializer.loadBootstrapTypeDefs()");
+        Timer.Sample sample = Timer.start(MetricUtils.getMeterRegistry());
 
-        String atlasHomeDir  = System.getProperty("atlas.home");
-        String modelsDirName = (StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "models";
+        try {
+            String atlasHomeDir  = System.getProperty("atlas.home");
+            String modelsDirName = (StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "models";
 
-        if (modelsDirName == null || modelsDirName.length() == 0) {
-            LOG.info("Types directory {} does not exist or not readable or has no typedef files", modelsDirName);
-        } else {
-            // look for folders we need to load models from
-            File               topModeltypesDir  = new File(modelsDirName);
-            File[]             modelsDirContents = topModeltypesDir.exists() ? topModeltypesDir.listFiles() : null;
-            AtlasPatchRegistry patchRegistry     = new AtlasPatchRegistry(graph);
+            if (modelsDirName == null || modelsDirName.length() == 0) {
+                LOG.info("Types directory {} does not exist or not readable or has no typedef files", modelsDirName);
+            } else {
+                // look for folders we need to load models from
+                File               topModeltypesDir  = new File(modelsDirName);
+                File[]             modelsDirContents = topModeltypesDir.exists() ? topModeltypesDir.listFiles() : null;
+                AtlasPatchRegistry patchRegistry     = new AtlasPatchRegistry(graph);
 
-            if (modelsDirContents != null && modelsDirContents.length > 0) {
-	            Arrays.sort(modelsDirContents);
+                if (modelsDirContents != null && modelsDirContents.length > 0) {
+                    Arrays.sort(modelsDirContents);
 
-	            for (File folder : modelsDirContents) {
-	                    if (folder.isFile()) {
-	                        // ignore files
-	                        continue;
-	                    } else if (!folder.getName().equals(PATCHES_FOLDER_NAME)){
-	                        // load the models alphabetically in the subfolders apart from patches
-	                        loadModelsInFolder(folder, patchRegistry);
-	                    }
-	            }
+                    for (File folder : modelsDirContents) {
+                            if (folder.isFile()) {
+                                // ignore files
+                                continue;
+                            } else if (!folder.getName().equals(PATCHES_FOLDER_NAME)){
+                                // load the models alphabetically in the subfolders apart from patches
+                                loadModelsInFolder(folder, patchRegistry);
+                            }
+                    }
+                }
+
+                // load any files in the top models folder and any associated patches.
+                loadModelsInFolder(topModeltypesDir, patchRegistry);
             }
-
-            // load any files in the top models folder and any associated patches.
-            loadModelsInFolder(topModeltypesDir, patchRegistry);
+        } finally {
+            sample.stop(Timer.builder("atlas.startup.typedef.load.duration")
+                    .description("Time taken to load bootstrap type definitions during Atlas startup")
+                    .register(MetricUtils.getMeterRegistry()));
         }
 
         LOG.info("<== AtlasTypeDefStoreInitializer.loadBootstrapTypeDefs()");

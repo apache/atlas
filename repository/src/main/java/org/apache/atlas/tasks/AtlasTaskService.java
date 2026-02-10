@@ -13,7 +13,7 @@ import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory;
 import org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory;
-import org.apache.atlas.service.FeatureFlagStore;
+import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -193,7 +193,7 @@ public class AtlasTaskService implements TaskService {
                 if (!supportedTypes.contains(taskType)) {
                     throw new AtlasBaseException(AtlasErrorCode.TASK_TYPE_NOT_SUPPORTED, task.getType());
                 }
-                if (!FeatureFlagStore.isTagV2Enabled() && isClassificationTaskType(taskType) && !taskType.equals(ClassificationPropagateTaskFactory.CLEANUP_CLASSIFICATION_PROPAGATION)) {
+                if (!DynamicConfigStore.isTagV2Enabled() && isClassificationTaskType(taskType) && !taskType.equals(ClassificationPropagateTaskFactory.CLEANUP_CLASSIFICATION_PROPAGATION)) {
                     String classificationName = task.getTagTypeName();
                     String entityGuid = task.getEntityGuid();
                     String classificationId = StringUtils.isEmpty(task.getClassificationId()) ? resolveAndReturnClassificationId(classificationName, entityGuid) : task.getClassificationId();

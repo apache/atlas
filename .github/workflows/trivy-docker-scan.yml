@@ -7,6 +7,14 @@ on:
       - development
       - master
       - lineageondemand
+    paths-ignore:
+      - '.claude/**'
+      - '.cursor/**'
+      - '.github/**'
+      - 'docs/**'
+      - 'local-dev/**'
+      - 'README.txt'
+      - 'README.md'
   
 
 jobs:

@@ -57,7 +57,7 @@ import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import org.apache.atlas.repository.store.graph.v2.utils.TagAttributeMapper;
 import org.apache.atlas.repository.util.AccessControlUtils;
-import org.apache.atlas.service.FeatureFlagStore;
+import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
@@ -1471,7 +1471,7 @@ public class EntityGraphRetriever {
                 }
             }
 
-            if(!RequestContext.get().isSkipAuthorizationCheck() && FeatureFlagStore.isTagV2Enabled()) {
+            if(!RequestContext.get().isSkipAuthorizationCheck() && DynamicConfigStore.isTagV2Enabled()) {
                 entity.setClassifications(tagDAO.getAllClassificationsForVertex(entityVertex.getIdForDisplay()));
             } else {
                 mapClassifications(entityVertex, entity);
@@ -2125,10 +2125,20 @@ public class EntityGraphRetriever {
 
     private void mapAttributes(AtlasVertex entityVertex, AtlasStruct struct, AtlasEntityExtInfo entityExtInfo, boolean isMinExtInfo, boolean includeReferences) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapAttributes");
-        AtlasType objType = typeRegistry.getType(struct.getTypeName());
+        String structTypeName = struct.getTypeName();
+
+        if (structTypeName == null) {
+            String vertexId = entityVertex != null ? entityVertex.getIdForDisplay() : "null";
+            String vertexGuid = entityVertex != null ? GraphHelper.getGuid(entityVertex) : "null";
+            LOG.error("ATLAS_CORRUPT_STRUCT_NULL_TYPENAME: mapAttributes - struct has null typeName. vertexId={}, vertexGuid={}, struct={}",
+                    vertexId, vertexGuid, struct, new Exception("Stack trace for null struct typeName"));
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, "null (struct typeName is null - vertexId: " + vertexId + ", guid: " + vertexGuid + ")");
+        }
+
+        AtlasType objType = typeRegistry.getType(structTypeName);
 
         if (!(objType instanceof AtlasStructType)) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, struct.getTypeName());
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, structTypeName);
         }
 
         AtlasStructType structType = (AtlasStructType) objType;
@@ -2157,7 +2167,7 @@ public class EntityGraphRetriever {
     }
 
     public List<AtlasClassification> handleGetAllClassifications(AtlasVertex entityVertex) throws AtlasBaseException {
-        if(!RequestContext.get().isSkipAuthorizationCheck() && FeatureFlagStore.isTagV2Enabled()) {
+        if(!RequestContext.get().isSkipAuthorizationCheck() && DynamicConfigStore.isTagV2Enabled()) {
             return getAllClassifications_V2(entityVertex);
         } else {
             return getAllClassifications_V1(entityVertex);
@@ -3374,29 +3384,41 @@ public class EntityGraphRetriever {
     }
 
     private void readClassificationsFromEdge(AtlasEdge edge, AtlasRelationshipWithExtInfo relationshipWithExtInfo, boolean extendedInfo) throws AtlasBaseException {
-        List<AtlasVertex>        classificationVertices    = getPropagatableClassifications(edge);
-        List<String>             blockedClassificationIds  = getBlockedClassificationIds(edge);
-        AtlasRelationship        relationship              = relationshipWithExtInfo.getRelationship();
+        AtlasRelationship relationship = relationshipWithExtInfo.getRelationship();
         Set<AtlasClassification> propagatedClassifications = new HashSet<>();
-        Set<AtlasClassification> blockedClassifications    = new HashSet<>();
+        Set<AtlasClassification> blockedClassifications = new HashSet<>();
 
-        for (AtlasVertex classificationVertex : classificationVertices) {
-            String              classificationId = classificationVertex.getIdForDisplay();
-            AtlasClassification classification   = toAtlasClassification(classificationVertex);
+        if (DynamicConfigStore.isTagV2Enabled()) {
+            List<AtlasClassification> classifications = getPropagatableClassificationsV2(edge);
 
-            if (classification == null) {
-                continue;
-            }
-
-            if (blockedClassificationIds.contains(classificationId)) {
-                blockedClassifications.add(classification);
-            } else {
+            for (AtlasClassification classification : classifications) {
                 propagatedClassifications.add(classification);
-            }
 
-            // add entity headers to referred entities
-            if (extendedInfo) {
-                addToReferredEntities(relationshipWithExtInfo, classification.getEntityGuid());
+                if (extendedInfo) {
+                    addToReferredEntities(relationshipWithExtInfo, classification.getEntityGuid());
+                }
+            }
+        } else {
+            List<AtlasVertex> classificationVertices = getPropagatableClassifications(edge);
+            List<String> blockedClassificationIds = getBlockedClassificationIds(edge);
+
+            for (AtlasVertex classificationVertex : classificationVertices) {
+                String classificationId = classificationVertex.getIdForDisplay();
+                AtlasClassification classification = toAtlasClassification(classificationVertex);
+
+                if (classification == null) {
+                    continue;
+                }
+                if (blockedClassificationIds.contains(classificationId)) {
+                    blockedClassifications.add(classification);
+                } else {
+                    propagatedClassifications.add(classification);
+                }
+
+                // add entity headers to referred entities
+                if (extendedInfo) {
+                    addToReferredEntities(relationshipWithExtInfo, classification.getEntityGuid());
+                }
             }
         }
 
@@ -3420,10 +3442,20 @@ public class EntityGraphRetriever {
 
     private void mapAttributes(AtlasEdge edge, AtlasRelationshipWithExtInfo relationshipWithExtInfo) throws AtlasBaseException {
         AtlasRelationship relationship = relationshipWithExtInfo.getRelationship();
-        AtlasType         objType      = typeRegistry.getType(relationship.getTypeName());
+        String relationshipTypeName = relationship.getTypeName();
+
+        if (relationshipTypeName == null) {
+            String edgeId = edge != null ? edge.getIdForDisplay() : "null";
+            String relationshipGuid = relationship.getGuid();
+            LOG.error("ATLAS_CORRUPT_RELATIONSHIP_NULL_TYPENAME: mapAttributes - relationship has null typeName. edgeId={}, relationshipGuid={}, relationship={}",
+                    edgeId, relationshipGuid, relationship, new Exception("Stack trace for null relationship typeName"));
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, "null (relationship typeName is null - edgeId: " + edgeId + ", relationshipGuid: " + relationshipGuid + ")");
+        }
+
+        AtlasType objType = typeRegistry.getType(relationshipTypeName);
 
         if (!(objType instanceof AtlasRelationshipType)) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, relationship.getTypeName());
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, relationshipTypeName);
         }
 
         AtlasRelationshipType relationshipType = (AtlasRelationshipType) objType;

@@ -52,7 +52,7 @@ import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.repository.store.graph.v2.tasks.TaskUtil;
-import org.apache.atlas.service.FeatureFlagStore;
+import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -181,7 +181,7 @@ public abstract class DeleteHandlerV1 {
 
             RequestContext.get().getDeletedEdgesIds().clear();
 
-            if (FeatureFlagStore.isTagV2Enabled()) {
+            if (DynamicConfigStore.isTagV2Enabled()) {
                 deleteAllClassificationsV2(deletionCandidateVertex);
             } else {
                 deleteAllClassifications(deletionCandidateVertex);
@@ -503,7 +503,7 @@ public abstract class DeleteHandlerV1 {
     }
 
     private void addTagPropagation(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasEdge edge) throws AtlasBaseException {
-        if(FeatureFlagStore.isTagV2Enabled()) {
+        if(DynamicConfigStore.isTagV2Enabled()) {
             // foreground
             // classificationTypeName can be empty
             List<Tag> tags = tagDAO.getAllTagsByVertexId(fromVertex.getIdForDisplay());
@@ -834,7 +834,15 @@ public abstract class DeleteHandlerV1 {
         try {
             if (updateInverseAttribute) {
                 String labelWithoutPrefix = edge.getLabel().substring(GraphHelper.EDGE_LABEL_PREFIX.length());
-                AtlasType      parentType = typeRegistry.getType(AtlasGraphUtilsV2.getTypeName(edge.getOutVertex()));
+                // null safe getTypeName
+                String typeName = AtlasGraphUtilsV2.getTypeName(edge.getOutVertex());
+
+                if (StringUtils.isEmpty(typeName)) {
+                    LOG.warn("typeName not found for the vertex {}", edge.getOutVertex().getIdForDisplay());
+                    return; //Skipping as typeName is not found
+                }
+
+                AtlasType parentType = typeRegistry.getType(typeName);
 
                 if (parentType instanceof AtlasEntityType) {
                     AtlasEntityType                parentEntityType = (AtlasEntityType) parentType;
@@ -1628,7 +1636,7 @@ public abstract class DeleteHandlerV1 {
             return;
         }
 
-        if (!FeatureFlagStore.isTagV2Enabled()) {
+        if (!DynamicConfigStore.isTagV2Enabled()) {
             LOG.info("JanusGraph optimisations are not enabled, scheduling task for edge {}", edge.getIdForDisplay());
             // Existing flow as it is
             List<AtlasVertex> currentClassificationVertices = GraphHelper.getPropagatableClassifications(edge);

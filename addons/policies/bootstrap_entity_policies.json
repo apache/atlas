@@ -3766,6 +3766,39 @@
                     "entity-read"
                 ]
             }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
+                "name": "CRUD_AUTOMATION_ENTITIES",
+                "qualifiedName": "CRUD_AUTOMATION_ENTITIES",
+                "description": "Allows admins, api tokens, and service accounts to perform CRUD operations on Automation entities.",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "isPolicyEnabled": true,
+                "policyResources": [
+                    "entity-type:AtlanAppWorkflow",
+                    "entity-type:AppWorkflowRun",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions": [
+                    "entity-create",
+                    "entity-read",
+                    "entity-update",
+                    "entity-delete"
+                ]
+            }
         }
     ]
 }
