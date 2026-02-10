@@ -140,6 +140,13 @@ public class DynamicConfigStore implements ApplicationContextAware {
             // Register all metrics
             registerMetrics();
 
+            Gauge.builder("atlas_delete_batch_enabled",
+                            this,
+                            ref -> isDeleteBatchEnabled() ? 1.0 : 0.0)
+                    .description("Whether delete batch optimization is enabled (1=enabled, 0=disabled)")
+                    .tag("component", "delete")
+                    .register(meterRegistry);
+
         } catch (Exception e) {
             LOG.error("Failed to initialize DynamicConfigStore - Cassandra config store will be unavailable", e);
             // Fail-fast if Cassandra is enabled but unavailable
@@ -436,6 +443,19 @@ public class DynamicConfigStore implements ApplicationContextAware {
         }
         // Fall back to FeatureFlagStore (Redis)
         return FeatureFlagStore.evaluate(ConfigKey.USE_TEMP_ES_INDEX.getKey(), "true");
+    }
+
+    /**
+     * Check if delete batch operations are enabled.
+     * Only enabled when DynamicConfigStore is activated and the flag is set to true.
+     *
+     * @return true if batch delete operations are enabled, false otherwise
+     */
+    public static boolean isDeleteBatchEnabled() {
+        if (isActivated()) {
+            return getConfigAsBoolean(ConfigKey.DELETE_BATCH_ENABLED.getKey());
+        }
+        return false;
     }
 
     // ================== Internal Methods ==================
