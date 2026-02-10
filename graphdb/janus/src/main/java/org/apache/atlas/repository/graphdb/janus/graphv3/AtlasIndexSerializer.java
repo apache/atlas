@@ -441,7 +441,7 @@ public class AtlasIndexSerializer extends IndexSerializer {
         }
         final String queryStr = qB.toString();
         if (replacements<=0) log.warn("Could not convert given {} index query: [{}]",resultType, query.getQuery());
-        log.info("Converted query string with {} replacements: [{}] => [{}]",replacements,query.getQuery(),queryStr);
+
         return queryStr;
     }
 
