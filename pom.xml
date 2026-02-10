@@ -743,7 +743,7 @@
         <launch-darkly.version>6.0.5</launch-darkly.version>
         <logback.version>1.3.14</logback.version>
         <lombok.version>1.18.42</lombok.version>
-        <lucene-solr.version>8.8.2</lucene-solr.version>
+        <lucene-solr.version>8.10.1</lucene-solr.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <MaxPermGen>512m</MaxPermGen>
         <node-for-v2.version>v9.11.1</node-for-v2.version>

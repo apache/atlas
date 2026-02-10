@@ -17,6 +17,7 @@
   ~ limitations under the License.
   -->
 
+<!-- Local development logback configuration (without OpenTelemetry) -->
 <configuration>
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
@@ -26,15 +27,6 @@
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
         </filter>
-    </appender>
-
-    <appender name="OpenTelemetry"
-              class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender">
-        <!-- Additional capture options -->
-        <captureExperimentalAttributes>true</captureExperimentalAttributes>
-        <captureMdcAttributes>*</captureMdcAttributes>
-        <captureLoggerContext>true</captureLoggerContext>
-        <captureKeyValuePairAttributes>true</captureKeyValuePairAttributes>
     </appender>
 
     <appender name="consoleAudit" class="ch.qos.logback.core.ConsoleAppender">
@@ -137,86 +129,71 @@
 
     <logger name="org.apache.atlas.auth.perf" additivity="false" level="OFF">
         <appender-ref ref="console"/>
-        <appender-ref ref="OpenTelemetry"/>
     </logger>
-
 
     <logger name="AUTH_AUDIT" additivity="false" level="info">
         <appender-ref ref="consoleAuthAudit"/>
-        <appender-ref ref="OpenTelemetry"/>
     </logger>
 
     <!-- Authz loggers End -->
 
     <logger name="org.apache.atlas.perf" additivity="false" level="debug">
         <appender-ref ref="consolePerf"/>
-        <appender-ref ref="OpenTelemetry"/>
     </logger>
 
     <logger name="org.apache.atlas" additivity="false" level="info">
         <appender-ref ref="consoleAtlas"/>
-        <appender-ref ref="OpenTelemetry"/>
     </logger>
 
     <logger name="org.apache.ranger" additivity="false" level="warn">
         <appender-ref ref="consoleRanger"/>
-        <appender-ref ref="OpenTelemetry"/>
     </logger>
 
     <logger name="org.janusgraph" additivity="false" level="warn">
         <appender-ref ref="console"/>
-        <appender-ref ref="OpenTelemetry"/>
     </logger>
 
     <logger name="org.springframework" additivity="false" level="warn">
         <appender-ref ref="console"/>
-        <appender-ref ref="OpenTelemetry"/>
     </logger>
 
     <logger name="org.eclipse" additivity="false" level="warn">
         <appender-ref ref="console"/>
-        <appender-ref ref="OpenTelemetry"/>
     </logger>
 
     <logger name="com.sun.jersey" additivity="false" level="warn">
         <appender-ref ref="console"/>
-        <appender-ref ref="OpenTelemetry"/>
     </logger>
 
     <!-- to avoid logs - The configuration log.flush.interval.messages = 1 was supplied but isn't a known config -->
     <logger name="org.apache.kafka.common.config.AbstractConfig" additivity="false" level="error">
         <appender-ref ref="console"/>
-        <appender-ref ref="OpenTelemetry"/>
     </logger>
+
+    <!-- Suppress OTel export errors when running locally without a collector -->
+    <logger name="io.opentelemetry" additivity="false" level="OFF"/>
 
     <logger name="AUDIT" additivity="false" level="info">
         <appender-ref ref="consoleAudit"/>
-        <appender-ref ref="OpenTelemetry"/>
     </logger>
 
     <logger name="LARGE_MESSAGES" additivity="false" level="warn">
         <appender-ref ref="console"/>
-        <appender-ref ref="OpenTelemetry"/>
     </logger>
 
     <logger name="METRICS" additivity="false" level="debug">
         <appender-ref ref="consoleMetrics"/>
-        <appender-ref ref="OpenTelemetry"/>
     </logger>
 
     <logger name="FAILED" additivity="false" level="info">
-       // <appender-ref ref="console"/>
-        <appender-ref ref="consoleNewAudit"/>
-        <appender-ref ref="OpenTelemetry"/>
+        <appender-ref ref="console"/>
     </logger>
 
     <logger name="TASKS" additivity="false" level="info">
         <appender-ref ref="consoleTasks"/>
-        <appender-ref ref="OpenTelemetry"/>
     </logger>
 
     <root level="INFO">
-        <appender-ref ref="OpenTelemetry"/>
         <appender-ref ref="console"/>
     </root>
 </configuration>
