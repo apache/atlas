@@ -140,13 +140,6 @@ public class DynamicConfigStore implements ApplicationContextAware {
             // Register all metrics
             registerMetrics();
 
-            Gauge.builder("atlas_delete_batch_enabled",
-                            this,
-                            ref -> isDeleteBatchEnabled() ? 1.0 : 0.0)
-                    .description("Whether delete batch optimization is enabled (1=enabled, 0=disabled)")
-                    .tag("component", "delete")
-                    .register(meterRegistry);
-
         } catch (Exception e) {
             LOG.error("Failed to initialize DynamicConfigStore - Cassandra config store will be unavailable", e);
             // Fail-fast if Cassandra is enabled but unavailable
@@ -641,6 +634,13 @@ public class DynamicConfigStore implements ApplicationContextAware {
                         this,
                         ref -> ConfigKey.values().length)
                 .description("Number of expected config keys defined in ConfigKey enum")
+                .register(meterRegistry);
+
+        Gauge.builder("atlas_delete_batch_enabled",
+                        this,
+                        ref -> isDeleteBatchEnabled() ? 1.0 : 0.0)
+                .description("Whether delete batch optimization is enabled (1=enabled, 0=disabled)")
+                .tag("component", "delete")
                 .register(meterRegistry);
 
         // Per-flag gauges — allows Grafana dashboards per tenant per flag
