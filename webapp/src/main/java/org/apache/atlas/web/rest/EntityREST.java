@@ -848,6 +848,8 @@ public class EntityREST {
                     .setAppendTags(appendTags)
                     .setReplaceBusinessAttributes(replaceBusinessAttributes)
                     .setOverwriteBusinessAttributes(isOverwriteBusinessAttributes)
+                    .setSkipProcessEdgeRestoration(skipProcessEdgeRestoration)
+                    .setOriginalEntities(entities)
                     .build();
             return entityMutationService.createOrUpdate(entityStream, context);
         } finally {

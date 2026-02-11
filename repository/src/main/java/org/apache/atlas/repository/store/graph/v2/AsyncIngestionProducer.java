@@ -1,0 +1,229 @@
+package org.apache.atlas.repository.store.graph.v2;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Timer;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.service.metrics.MetricUtils;
+import org.apache.commons.configuration.Configuration;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * Kafka producer for async ingestion events.
+ * <p>
+ * Publishes request payloads to a Kafka topic after the JanusGraph transaction
+ * succeeds, so a shadow lean-graph consumer can replay the writes in parallel.
+ * <p>
+ * Design principles:
+ * - Lazy producer initialization (created on first use via double-checked locking)
+ * - Best-effort publish (logs errors, does NOT fail the HTTP request)
+ * - Config-gated at the call site via DynamicConfigStore.isAsyncIngestionEnabled()
+ */
+@Service
+public class AsyncIngestionProducer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AsyncIngestionProducer.class);
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private static final String PROPERTY_PREFIX = "atlas.kafka";
+    private static final String CONFIG_TOPIC = "atlas.async.ingestion.topic";
+    private static final String CONFIG_SEND_TIMEOUT = "atlas.async.ingestion.send.timeout.ms";
+    private static final String DEFAULT_TOPIC = "ATLAS_ASYNC_ENTITIES";
+    private static final long DEFAULT_SEND_TIMEOUT_MS = 10000;
+
+    private volatile KafkaProducer<String, String> producer;
+    private String topic;
+    private long sendTimeoutMs;
+
+    // Micrometer metrics
+    private Counter sendSuccessCounter;
+    private Counter sendFailureCounter;
+    private Timer sendLatencyTimer;
+
+    @PostConstruct
+    public void init() {
+        try {
+            Configuration appConfig = ApplicationProperties.get();
+            this.topic = appConfig.getString(CONFIG_TOPIC, DEFAULT_TOPIC);
+            this.sendTimeoutMs = appConfig.getLong(CONFIG_SEND_TIMEOUT, DEFAULT_SEND_TIMEOUT_MS);
+        } catch (Exception e) {
+            LOG.warn("Failed to read async ingestion config, using defaults", e);
+            this.topic = DEFAULT_TOPIC;
+            this.sendTimeoutMs = DEFAULT_SEND_TIMEOUT_MS;
+        }
+
+        try {
+            io.micrometer.core.instrument.MeterRegistry registry = MetricUtils.getMeterRegistry();
+            this.sendSuccessCounter = Counter.builder("async.ingestion.producer.send.success")
+                    .description("Successful async ingestion Kafka publishes")
+                    .register(registry);
+            this.sendFailureCounter = Counter.builder("async.ingestion.producer.send.failure")
+                    .description("Failed async ingestion Kafka publishes")
+                    .register(registry);
+            this.sendLatencyTimer = Timer.builder("async.ingestion.producer.send.latency")
+                    .description("Latency of async ingestion Kafka send")
+                    .register(registry);
+        } catch (Exception e) {
+            LOG.warn("Failed to register async ingestion metrics", e);
+        }
+
+        LOG.info("AsyncIngestionProducer initialized - topic: {}, sendTimeoutMs: {}", topic, sendTimeoutMs);
+    }
+
+    /**
+     * Generic publish method for all async ingestion events.
+     * Best-effort: logs errors but does not throw.
+     *
+     * @param eventType         e.g. "BULK_CREATE_OR_UPDATE", "DELETE_BY_GUIDS"
+     * @param operationMetadata query params / flags specific to the operation
+     * @param payload           the serializable request body (entities, guids, objectIds, etc.)
+     * @param requestMetadata   trace/user/method context
+     * @return eventId (UUID) on success, null on failure
+     */
+    public String publishEvent(String eventType,
+                               Map<String, Object> operationMetadata,
+                               Object payload,
+                               RequestMetadata requestMetadata) {
+        String eventId = UUID.randomUUID().toString();
+        try {
+            // Set the HTTP method based on event type
+            requestMetadata.setRequestMethod(resolveHttpMethod(eventType));
+
+            ObjectNode envelope = MAPPER.createObjectNode();
+            envelope.put("eventId", eventId);
+            envelope.put("eventType", eventType);
+            envelope.put("eventTime", System.currentTimeMillis());
+            envelope.set("requestMetadata", MAPPER.valueToTree(requestMetadata));
+            envelope.set("operationMetadata", MAPPER.valueToTree(operationMetadata));
+            envelope.set("payload", MAPPER.valueToTree(payload));
+
+            String json = MAPPER.writeValueAsString(envelope);
+
+            KafkaProducer<String, String> p = getOrCreateProducer();
+            if (p == null) {
+                LOG.error("AsyncIngestionProducer: Kafka producer unavailable, skipping event {}", eventType);
+                incrementFailure();
+                return null;
+            }
+
+            ProducerRecord<String, String> record = new ProducerRecord<>(topic, eventId, json);
+
+            Timer.Sample sample = sendLatencyTimer != null ? Timer.start() : null;
+
+            Future<RecordMetadata> future = p.send(record);
+            RecordMetadata metadata = future.get(sendTimeoutMs, TimeUnit.MILLISECONDS);
+
+            if (sample != null && sendLatencyTimer != null) {
+                sample.stop(sendLatencyTimer);
+            }
+            incrementSuccess();
+
+            LOG.debug("AsyncIngestionProducer: published {} event {} to {}@{}", eventType, eventId,
+                    metadata.topic(), metadata.partition());
+            return eventId;
+
+        } catch (Exception e) {
+            LOG.error("AsyncIngestionProducer: failed to publish {} event {} (non-fatal)", eventType, eventId, e);
+            incrementFailure();
+            return null;
+        }
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        if (producer != null) {
+            try {
+                producer.close();
+                LOG.info("AsyncIngestionProducer: Kafka producer closed");
+            } catch (Exception e) {
+                LOG.warn("AsyncIngestionProducer: error closing Kafka producer", e);
+            }
+        }
+    }
+
+    /**
+     * Resolve the HTTP method from the event type.
+     * This avoids passing the HTTP method from the REST layer into the service layer.
+     */
+    static String resolveHttpMethod(String eventType) {
+        if (eventType == null) {
+            return "POST";
+        }
+        switch (eventType) {
+            case "DELETE_BY_GUID":
+            case "DELETE_BY_GUIDS":
+            case "DELETE_BY_UNIQUE_ATTRIBUTE":
+            case "BULK_DELETE_BY_UNIQUE_ATTRIBUTES":
+                return "DELETE";
+            default:
+                return "POST"; // create, update, restore, setClassifications
+        }
+    }
+
+    private KafkaProducer<String, String> getOrCreateProducer() {
+        if (producer == null) {
+            synchronized (this) {
+                if (producer == null) {
+                    try {
+                        Configuration appConfig = ApplicationProperties.get();
+                        Configuration kafkaConf = ApplicationProperties.getSubsetConfiguration(appConfig, PROPERTY_PREFIX);
+
+                        Properties props = new Properties();
+                        // Copy kafka config properties
+                        kafkaConf.getKeys().forEachRemaining(key -> {
+                            props.put(key, kafkaConf.getProperty(key).toString());
+                        });
+
+                        // Override serializers
+                        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                                "org.apache.kafka.common.serialization.StringSerializer");
+                        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                                "org.apache.kafka.common.serialization.StringSerializer");
+
+                        // Ensure acks=all for durability
+                        props.putIfAbsent(ProducerConfig.ACKS_CONFIG, "all");
+
+                        producer = new KafkaProducer<>(props);
+                        LOG.info("AsyncIngestionProducer: Kafka producer created for topic {}", topic);
+                    } catch (Exception e) {
+                        LOG.error("AsyncIngestionProducer: failed to create Kafka producer", e);
+                        return null;
+                    }
+                }
+            }
+        }
+        return producer;
+    }
+
+    private void incrementSuccess() {
+        if (sendSuccessCounter != null) {
+            sendSuccessCounter.increment();
+        }
+    }
+
+    private void incrementFailure() {
+        if (sendFailureCounter != null) {
+            sendFailureCounter.increment();
+        }
+    }
+
+    // Visible for testing
+    String getTopic() {
+        return topic;
+    }
+}

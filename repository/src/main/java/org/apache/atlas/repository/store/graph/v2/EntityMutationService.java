@@ -41,9 +41,10 @@ public class EntityMutationService {
     private final AtlasInstanceConverter instanceConverter;
     private final EntityGraphRetriever entityGraphRetriever;
     private final AtlasRelationshipStore relationshipStore;
+    private final AsyncIngestionProducer asyncIngestionProducer;
 
     @Inject
-    public EntityMutationService(AtlasEntityStoreV2 entityStore, EntityMutationPostProcessor entityMutationPostProcessor, AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, EntityGraphMapper entityGraphMapper, IAtlasEntityChangeNotifier entityChangeNotifier, AtlasInstanceConverter instanceConverter, EntityGraphRetriever entityGraphRetriever, AtlasRelationshipStore relationshipStore) {
+    public EntityMutationService(AtlasEntityStoreV2 entityStore, EntityMutationPostProcessor entityMutationPostProcessor, AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, EntityGraphMapper entityGraphMapper, IAtlasEntityChangeNotifier entityChangeNotifier, AtlasInstanceConverter instanceConverter, EntityGraphRetriever entityGraphRetriever, AtlasRelationshipStore relationshipStore, AsyncIngestionProducer asyncIngestionProducer) {
         this.entityStore = entityStore;
         this.entityMutationPostProcessor = entityMutationPostProcessor;
         this.typeRegistry = typeRegistry;
@@ -53,6 +54,7 @@ public class EntityMutationService {
         this.instanceConverter = instanceConverter;
         this.entityGraphRetriever = entityGraphRetriever;
         this.relationshipStore = relationshipStore;
+        this.asyncIngestionProducer = asyncIngestionProducer;
     }
 
     public EntityMutationResponse createOrUpdate(EntityStream entityStream,
@@ -70,7 +72,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, "BULK_CREATE_OR_UPDATE",
+                    context.toOperationMetadata(), context.getOriginalEntities());
             AtlasPerfTracer.log(perf);
         }
     }
@@ -91,7 +95,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, "SET_CLASSIFICATIONS",
+                    Map.of("overrideClassifications", overrideClassifications), entityHeaders);
             AtlasPerfTracer.log(perf);
         }
     }
@@ -119,7 +125,10 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, "DELETE_BY_UNIQUE_ATTRIBUTE",
+                    Map.of("typeName", entityType.getTypeName()),
+                    Map.of("uniqueAttributes", uniqAttributes));
         }
     }
 
@@ -132,7 +141,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, "DELETE_BY_GUID",
+                    Map.of(), Map.of("guids", List.of(guid)));
         }
     }
 
@@ -197,7 +208,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, "DELETE_BY_GUIDS",
+                    Map.of(), Map.of("guids", guids));
         }
     }
 
@@ -210,7 +223,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, "RESTORE_BY_GUIDS",
+                    Map.of(), Map.of("guids", guids));
         }
     }
 
@@ -236,7 +251,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, "BULK_DELETE_BY_UNIQUE_ATTRIBUTES",
+                    Map.of(), Map.of("objectIds", objectIds));
         }
     }
 
@@ -372,6 +389,22 @@ public class EntityMutationService {
         entityMutationPostProcessor.rollbackCassandraTagOperations(cassandraTagOps);
 
         // Can add more rollbacks for id-graph operations if needed
+    }
+
+    /**
+     * Publish an async ingestion event to Kafka if the graph transaction succeeded
+     * and async ingestion is enabled. Best-effort: catches all exceptions.
+     */
+    private void publishAsyncIngestionEvent(boolean isGraphTransactionFailed, String eventType,
+                                            Map<String, Object> operationMetadata, Object payload) {
+        if (!isGraphTransactionFailed && DynamicConfigStore.isAsyncIngestionEnabled()) {
+            try {
+                asyncIngestionProducer.publishEvent(eventType, operationMetadata, payload,
+                        RequestMetadata.fromCurrentRequest());
+            } catch (Exception e) {
+                LOG.error("Async ingestion publish failed for {} (non-fatal)", eventType, e);
+            }
+        }
     }
 
 }
