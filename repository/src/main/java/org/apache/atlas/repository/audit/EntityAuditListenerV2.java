@@ -30,6 +30,7 @@ import org.apache.atlas.listener.EntityChangeListenerV2;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
+import org.apache.atlas.repository.util.AtlasEntityUtils;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
@@ -554,8 +555,14 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
 
     private String getAuditEventDetail(AtlasEntity entity, EntityAuditActionV2 action, long auditMaxSize) {
-        Map<String, Object> prunedAttributes  = pruneEntityAttributesForAudit(entity);
-        Map<String, Object> invalidAttributes = filterInvalidAttributesForAudit(entity);
+        Map<String, Object> prunedAttributes = pruneEntityAttributesForAudit(entity);
+
+        try {
+            AtlasEntityUtils.filterInvalidAttributes(entity, typeRegistry);
+        } catch (Exception e) {
+            LOG.error("filterInvalidAttributes failed for entity {}.{}: {}. Proceeding without filtering.",
+                      entity.getTypeName(), entity.getGuid(), e.getMessage(), e);
+        }
 
         String auditPrefix  = getV2AuditPrefix(action);
         String auditString  = auditPrefix + getAuditString(entity, action);
@@ -602,7 +609,6 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
 
         restoreEntityAttributes(entity, prunedAttributes);
-        restoreEntityAttributes(entity, invalidAttributes);
 
         return auditString;
     }
@@ -698,64 +704,6 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
 
         return ret;
-    }
-
-    /**
-     * Filters out attributes that are not defined in the entity's TypeDef or have mismatched value types.
-     * This prevents invalid/unknown attributes from being published to ES audits,
-     * avoiding mapping conflicts and field explosion issues (MS-529, MS-501).
-     *
-     * @param entity the entity whose attributes should be filtered
-     * @return map of removed attributes (for restoration after audit serialization)
-     */
-    private Map<String, Object> filterInvalidAttributesForAudit(AtlasEntity entity) {
-        Map<String, Object> removedAttributes  = null;
-        Map<String, Object> entityAttributes   = entity.getAttributes();
-
-        if (MapUtils.isEmpty(entityAttributes)) {
-            return null;
-        }
-
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
-
-        if (entityType == null) {
-            LOG.warn("filterInvalidAttributesForAudit(): unknown type {}. Skipping validation.", entity.getTypeName());
-            return null;
-        }
-
-        // Create a copy of attribute names to iterate (avoid ConcurrentModificationException)
-        Set<String> attrNames = new HashSet<>(entityAttributes.keySet());
-
-        for (String attrName : attrNames) {
-            AtlasAttribute attribute = entityType.getAttribute(attrName);
-            Object         attrValue = entityAttributes.get(attrName);
-
-            if (attribute == null) {
-                // Attribute not defined in TypeDef - remove it
-                if (removedAttributes == null) {
-                    removedAttributes = new HashMap<>();
-                }
-
-                entityAttributes.remove(attrName);
-                removedAttributes.put(attrName, attrValue);
-
-                LOG.warn("filterInvalidAttributesForAudit(): invalid attribute {}.{}. Removed from audit.",
-                         entity.getTypeName(), attrName);
-            } else if (attrValue != null && !attribute.getAttributeType().isValidValue(attrValue)) {
-                // Attribute exists but value type doesn't match TypeDef - remove it
-                if (removedAttributes == null) {
-                    removedAttributes = new HashMap<>();
-                }
-
-                entityAttributes.remove(attrName);
-                removedAttributes.put(attrName, attrValue);
-
-                LOG.warn("filterInvalidAttributesForAudit(): type mismatch for attribute {}.{}: expected={}, actual={}. Removed from audit.",
-                         entity.getTypeName(), attrName, attribute.getAttributeType().getTypeName(), attrValue.getClass().getSimpleName());
-            }
-        }
-
-        return removedAttributes;
     }
 
     public List<String> getAuditExcludeAttributes(String entityType) {
