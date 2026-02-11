@@ -19,6 +19,7 @@ on:
       - '!docs/**'
       - '!.cursor/**'
       - '!.claude/**'
+      - '!.github/**'
 
 concurrency:
   group: pr-label-release-${{ github.head_ref || github.ref }}
