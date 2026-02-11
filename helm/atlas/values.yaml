@@ -16,6 +16,7 @@ multiarch:
 global:
   Tier_Type: ""
   Deployment_Type: ""
+  Infra_Tier: ""
   cloud: ""
   tenantName: ""
   svcIsolation:
