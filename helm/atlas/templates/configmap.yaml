@@ -63,7 +63,7 @@ data:
     atlas.graph.storage.backend=cql
     atlas.graph.storage.hostname={{ .Chart.Name }}-cassandra
     atlas.graph.storage.cql.keyspace={{ .Chart.Name }}
-    {{- if eq .Values.global.Deployment_Type "Lite" }}
+    {{- if eq .Values.global.Infra_Tier "Lite" }}
     atlas.graph.storage.cql.replication-factor=1
     {{- else }}
     atlas.graph.storage.cql.replication-factor={{ .Values.cassandra.config.cluster_size }}
@@ -160,7 +160,7 @@ data:
     atlas.kafka.zookeeper.session.timeout.ms=60000
     atlas.kafka.zookeeper.connection.timeout.ms=30000
     atlas.kafka.zookeeper.sync.time.ms=20
-    {{- if eq .Values.global.Deployment_Type "Lite" }}
+    {{- if eq .Values.global.Infra_Tier "Lite" }}
     atlas.kafka.zookeeper.connect=zookeeper-0.zookeeper-headless.atlas.svc.cluster.local:2181
     {{- else }}
     atlas.kafka.zookeeper.connect=zookeeper-0.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-1.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-2.zookeeper-headless.atlas.svc.cluster.local:2181
@@ -275,7 +275,7 @@ data:
     atlas.server.ids=id1,id2
     atlas.server.address.id1=atlas-0.atlas-service-atlas.atlas.svc.cluster.local:21000
     atlas.server.address.id2=atlas-1.atlas-service-atlas.atlas.svc.cluster.local:21000
-    {{- if eq .Values.global.Deployment_Type "Lite" }}
+    {{- if eq .Values.global.Infra_Tier "Lite" }}
     atlas.server.ha.zookeeper.connect=zookeeper-0.zookeeper-headless.atlas.svc.cluster.local:2181
     {{- else }}
     atlas.server.ha.zookeeper.connect=zookeeper-0.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-1.zookeeper-headless.atlas.svc.cluster.local:2181,zookeeper-2.zookeeper-headless.atlas.svc.cluster.local:2181
@@ -327,7 +327,7 @@ data:
     atlas.graph.cache.redis-cache-size=100000
     atlas.graph.cache.redis-cache-server-mode=sentinel
     atlas.graph.cache.redis-cache-server-url=redis://{{ .Values.atlas.redis.host }}:{{ .Values.atlas.redis.port }}
-    {{- if eq .Values.global.Deployment_Type "Lite" }}
+    {{- if eq .Values.global.Infra_Tier "Lite" }}
     atlas.graph.cache.redis-cache-sentinel-urls={{ .Values.atlas.redis.sentinel_urls_lite }}
     {{- else }}
     atlas.graph.cache.redis-cache-sentinel-urls={{ .Values.atlas.redis.sentinel_urls }}
@@ -455,7 +455,7 @@ data:
     # org.apache.atlas.service.redis.NoRedisServiceImpl - default, dummy redis implementation.
     atlas.redis.service.impl = org.apache.atlas.service.redis.RedisServiceImpl
     atlas.redis.url = redis://{{ .Values.atlas.redis.host }}:{{ .Values.atlas.redis.port }}
-    {{- if eq .Values.global.Deployment_Type "Lite" }}
+    {{- if eq .Values.global.Infra_Tier "Lite" }}
     atlas.redis.sentinel.urls = {{ .Values.atlas.redis.sentinel_urls_lite }}
     {{- else }}
     atlas.redis.sentinel.urls = {{ .Values.atlas.redis.sentinel_urls }}
@@ -527,7 +527,7 @@ data:
     atlas.config.store.cassandra.table={{ .Values.atlas.configStore.cassandra.table }}
     atlas.config.store.app.name={{ .Values.atlas.configStore.cassandra.appName }}
     atlas.config.store.cassandra.replication.factor={{ .Values.atlas.configStore.cassandra.replicationFactor }}
-    {{- if eq .Values.global.Deployment_Type "Lite" }}
+    {{- if eq .Values.global.Infra_Tier "Lite" }}
     atlas.config.store.cassandra.consistency.level=LOCAL_ONE
     {{- else }}
     atlas.config.store.cassandra.consistency.level={{ .Values.atlas.configStore.cassandra.consistencyLevel }}

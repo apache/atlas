@@ -19,10 +19,6 @@ on:
       - idonlycanary
       - idonlycanarybeta
       - atlas_ci_cd_updates
-      - lite_master
-      - infra_97_master
-      - infra_97_staging
-      - infra_97_beta
     types:
       - completed
 

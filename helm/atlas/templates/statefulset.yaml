@@ -15,7 +15,7 @@ spec:
     matchLabels:
       app: {{ template "name" . }}
       release: {{ .Release.Name }}
-  {{- if eq .Values.global.Deployment_Type "Lite" }}
+  {{- if eq .Values.global.Infra_Tier "Lite" }}
   replicas: 1
   {{- else }}
   replicas: {{ .Values.atlas.replicaCount }}
@@ -35,7 +35,7 @@ spec:
       {{- end }}
       {{- if and .Values.atlas.affinity (ne .Values.global.Tier_Type "Basic") (ne .Values.global.Tier_Type "Standard") }}
       affinity:
-        {{- if eq .Values.Deployment_Type "Lite" }}
+        {{- if eq .Values.global.Infra_Tier "Lite" }}
         {{- toYaml .Values.atlas.affinity_lite | nindent 8 }}
         {{- else }}
         nodeAffinity:
@@ -112,7 +112,7 @@ spec:
             - containerPort: {{ .Values.atlas.service.targetPort }}
           env:
           {{- toYaml .Values.atlas.env | nindent 12 }}
-          {{- if eq .Values.global.Deployment_Type "Lite" }}
+          {{- if eq .Values.global.Infra_Tier "Lite" }}
             - name: SPRING_PROFILES_ACTIVE
               value: "local"
           {{- end }}
