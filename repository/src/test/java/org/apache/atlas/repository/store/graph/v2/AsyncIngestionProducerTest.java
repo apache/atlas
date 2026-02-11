@@ -78,6 +78,7 @@ class AsyncIngestionProducerTest {
         RequestMetadata rm = new RequestMetadata();
         rm.setTraceId("test-trace-123");
         rm.setUser("admin");
+        rm.setRequestUri("/api/atlas/v2/entity/bulk");
         return rm;
     }
 
@@ -183,8 +184,8 @@ class AsyncIngestionProducerTest {
         JsonNode reqMeta = json.get("requestMetadata");
         assertEquals("test-trace-123", reqMeta.get("traceId").asText());
         assertEquals("admin", reqMeta.get("user").asText());
-        assertFalse(reqMeta.has("requestUri"), "requestUri should not be present");
-        assertFalse(reqMeta.has("requestMethod"), "requestMethod should not be present");
+        assertEquals("/api/atlas/v2/entity/bulk", reqMeta.get("requestUri").asText());
+        assertEquals("POST", reqMeta.get("requestMethod").asText(), "BULK_CREATE_OR_UPDATE should resolve to POST");
 
         assertTrue(json.has("operationMetadata"));
         assertTrue(json.has("payload"));
@@ -266,5 +267,29 @@ class AsyncIngestionProducerTest {
         freshProducer.init();
         // No producer created — shutdown should not throw
         assertDoesNotThrow(freshProducer::shutdown);
+    }
+
+    // =================== Test 13: resolveHttpMethod for entity types ===================
+
+    @Test
+    void testResolveHttpMethod_entityTypes() {
+        assertEquals("DELETE", AsyncIngestionProducer.resolveHttpMethod("DELETE_BY_GUID"));
+        assertEquals("DELETE", AsyncIngestionProducer.resolveHttpMethod("DELETE_BY_GUIDS"));
+        assertEquals("DELETE", AsyncIngestionProducer.resolveHttpMethod("DELETE_BY_UNIQUE_ATTRIBUTE"));
+        assertEquals("DELETE", AsyncIngestionProducer.resolveHttpMethod("BULK_DELETE_BY_UNIQUE_ATTRIBUTES"));
+        assertEquals("POST", AsyncIngestionProducer.resolveHttpMethod("BULK_CREATE_OR_UPDATE"));
+        assertEquals("POST", AsyncIngestionProducer.resolveHttpMethod("SET_CLASSIFICATIONS"));
+        assertEquals("POST", AsyncIngestionProducer.resolveHttpMethod("RESTORE_BY_IDS"));
+        assertEquals("POST", AsyncIngestionProducer.resolveHttpMethod(null));
+    }
+
+    // =================== Test 14: resolveHttpMethod for typedef types ===================
+
+    @Test
+    void testResolveHttpMethod_typedefTypes() {
+        assertEquals("POST", AsyncIngestionProducer.resolveHttpMethod("TYPEDEF_CREATE"));
+        assertEquals("PUT", AsyncIngestionProducer.resolveHttpMethod("TYPEDEF_UPDATE"));
+        assertEquals("DELETE", AsyncIngestionProducer.resolveHttpMethod("TYPEDEF_DELETE"));
+        assertEquals("DELETE", AsyncIngestionProducer.resolveHttpMethod("TYPEDEF_DELETE_BY_NAME"));
     }
 }
