@@ -184,6 +184,8 @@ public class RequestContext {
         this.onlyBAUpdateEntities.clear();
         this.relationAttrsForSearch.clear();
         this.includeRelationshipAttributes = false;
+        this.lineageInputLabel = "";
+        this.lineageOutputLabel = "";
         this.queuedTasks.clear();
         this.newElementsCreatedMap.clear();
         this.removedElementsMap.clear();

@@ -85,8 +85,6 @@ public class EntityLineageService implements AtlasLineageService {
 
     private static final String PROCESS_INPUTS_EDGE = "__Process.inputs";
     private static final String PROCESS_OUTPUTS_EDGE = "__Process.outputs";
-    private static final String OUTPUT_PORT_EDGE = "__Asset.outputPortDataProducts";
-    private static final String INPUT_PORT_EDGE = "__Asset.inputPortDataProducts";
     private static final String COLUMNS = "columns";
     private static final boolean LINEAGE_USING_GREMLIN = AtlasConfiguration.LINEAGE_USING_GREMLIN.getBoolean();
     private static final Integer DEFAULT_LINEAGE_MAX_NODE_COUNT       = 9000;
@@ -102,9 +100,9 @@ public class EntityLineageService implements AtlasLineageService {
     private final VertexEdgeCache vertexEdgeCache;
 
     private static final List<String> FETCH_ENTITY_ATTRIBUTES = Arrays.asList(ATTRIBUTE_NAME_GUID, QUALIFIED_NAME, NAME);
-    public static final HashMap<String, String[]> LINEAGE_MAP = new HashMap<String, String[]>(){{
+    private static final Map<String, String[]> LINEAGE_MAP = new HashMap<String, String[]>(){{
         put(LINEAGE_TYPE_DATASET_PROCESS_LINEAGE, new String[]{PROCESS_INPUTS_EDGE, PROCESS_OUTPUTS_EDGE});
-        put(LINEAGE_TYPE_PRODUCT_ASSET_LINEAGE, new String[]{OUTPUT_PORT_EDGE, INPUT_PORT_EDGE});
+        put(LINEAGE_TYPE_PRODUCT_ASSET_LINEAGE, new String[]{OUTPUT_PORT_PRODUCT_EDGE_LABEL, INPUT_PORT_PRODUCT_EDGE_LABEL});
     }};
 
     private static String[] getLineageLabelsForType(String lineageType) throws AtlasBaseException {
@@ -233,7 +231,7 @@ public class EntityLineageService implements AtlasLineageService {
         return ret;
     }
 
-    public class EntityValidationResult {
+    public static class EntityValidationResult {
         public final boolean isProcess;
         public final boolean isDataSet;
         public final boolean isConnection;
@@ -254,7 +252,7 @@ public class EntityLineageService implements AtlasLineageService {
                 return !isDataProduct;
             }
 
-            if(isDataSet || isConnection){
+            if(isDataSet || isConnection || isDataProduct){
                 return false;
             }
             return true;
