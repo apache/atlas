@@ -172,6 +172,17 @@ jobs:
 
             if (prs.data.length > 0) {
               const pr = prs.data[0];
+              const baseBranch = pr.base.ref;
+
+              // Only run test analysis for PRs targeting master or staging
+              // This reduces costs (~$1/run) for feature branch PRs
+              const allowedBranches = ['master', 'staging'];
+              if (!allowedBranches.includes(baseBranch)) {
+                console.log(`Skipping test analysis: PR targets '${baseBranch}', not master/staging`);
+                core.setOutput('found', 'false');
+                return;
+              }
+
               core.setOutput('number', pr.number);
               core.setOutput('title', pr.title);
               core.setOutput('author', pr.user.login);
