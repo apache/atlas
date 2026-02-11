@@ -185,6 +185,11 @@ public final class Atlas {
     }
 
     private static OpenTelemetry initializeOpenTelemetry() {
+        // Check if OTel should be disabled (useful for local development without a collector)
+        String otelDisabled = System.getenv("OTEL_SDK_DISABLED");
+        if ("true".equalsIgnoreCase(otelDisabled)) {
+            return OpenTelemetry.noop();
+        }
 
         String otelResourceAttributes = System.getenv("OTEL_RESOURCE_ATTRIBUTES");
 
