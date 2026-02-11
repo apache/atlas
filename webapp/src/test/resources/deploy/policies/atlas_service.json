@@ -1,0 +1,54 @@
+{
+  "entities": [
+    {
+      "typeName": "AuthService",
+      "attributes":
+      {
+        "qualifiedName": "auth_service_atlas_tag",
+        "name": "atlas_tag",
+        "authServiceType": "tag",
+        "authServiceConfig": {
+          "ranger.plugin.audit.filters": "[{'accessResult':'DENIED','isAudited':true}]"
+        }
+      }
+    },
+    {
+      "typeName": "AuthService",
+      "attributes":
+      {
+        "qualifiedName": "auth_service_atlas_abac",
+        "name": "atlas_abac",
+        "authServiceType": "abac",
+        "authServiceConfig": {
+          "ranger.plugin.audit.filters": "[{'accessResult':'DENIED','isAudited':true}]"
+        }
+      }
+    },
+    {
+      "typeName": "AuthService",
+      "attributes":
+      {
+        "qualifiedName": "auth_service_atlas",
+        "name": "atlas",
+        "authServiceType": "atlas",
+        "tagService": "atlas_tag",
+        "abacService": "atlas_abac",
+        "authServiceConfig": {
+          "ranger.plugin.audit.filters": "[ {'accessResult': 'DENIED', 'isAudited': true}, {'users':['atlas'] ,'isAudited':false} ]"
+        }
+      }
+    },
+    {
+      "typeName": "AuthService",
+      "attributes":
+      {
+        "qualifiedName": "auth_service_heka",
+        "name": "heka",
+        "authServiceType": "heka",
+        "tagService": "atlas_tag",
+        "authServiceConfig": {}
+      }
+    }
+  ]
+}
+

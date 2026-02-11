@@ -1,0 +1,79 @@
+{
+  "entities": [
+    {
+      "typeName": "AuthPolicy",
+      "attributes": {
+        "name": "RUN_REPAIR_INDEX",
+        "qualifiedName": "RUN_REPAIR_INDEX",
+        "policyCategory": "bootstrap",
+        "policySubCategory": "default",
+        "policyServiceName": "atlas",
+        "policyType": "allow",
+        "policyPriority": 1,
+        "policyUsers": [
+          "service-account-atlan-argo",
+          "service-account-atlan-backend"
+        ],
+        "policyGroups": [],
+        "policyRoles": [],
+        "policyResourceCategory": "ADMIN",
+        "policyResources": [
+          "atlas-service:*"
+        ],
+        "policyActions": [
+          "admin-repair-index"
+        ]
+      }
+    },
+    {
+      "typeName": "AuthPolicy",
+      "attributes": {
+        "name": "ADMIN_ALLOW_TASK_CUD",
+        "qualifiedName": "ADMIN_ALLOW_TASK_CUD",
+        "policyCategory": "bootstrap",
+        "policySubCategory": "default",
+        "policyServiceName": "atlas",
+        "policyType": "allow",
+        "policyPriority": 1,
+        "policyUsers": [
+          "service-account-atlan-argo",
+          "service-account-atlan-backend"
+        ],
+        "policyGroups": [],
+        "policyRoles": [],
+        "policyResourceCategory": "ADMIN",
+        "policyResources": [
+          "atlas-service:*"
+        ],
+        "policyActions": [
+          "admin-task-cud"
+        ]
+      }
+    },
+    {
+      "typeName": "AuthPolicy",
+      "attributes": {
+        "name": "ADMIN_ALLOW_FEATURE_FLAG_CUD",
+        "qualifiedName": "ADMIN_ALLOW_FEATURE_FLAG_CUD",
+        "policyCategory": "bootstrap",
+        "policySubCategory": "default",
+        "policyServiceName": "atlas",
+        "policyType": "allow",
+        "policyPriority": 1,
+        "policyUsers": [
+          "service-account-atlan-argo",
+          "service-account-atlan-backend"
+        ],
+        "policyGroups": [],
+        "policyRoles": [],
+        "policyResourceCategory": "ADMIN",
+        "policyResources": [
+          "atlas-service:*"
+        ],
+        "policyActions": [
+          "admin-featureFlag-cud"
+        ]
+      }
+    }
+  ]
+}

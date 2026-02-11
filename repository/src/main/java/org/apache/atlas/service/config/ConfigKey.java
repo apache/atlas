@@ -35,7 +35,10 @@ public enum ConfigKey {
     ENABLE_PERSONA_HIERARCHY_FILTER("enable_persona_hierarchy_filter", "false"),
 
     // Temporary ES index usage flag
-    USE_TEMP_ES_INDEX("use_temp_es_index", "false");
+    USE_TEMP_ES_INDEX("use_temp_es_index", "false"),
+
+    // Delete batch operations flag
+    DELETE_BATCH_ENABLED("atlas.delete.batch.enabled", "false");
 
     private final String key;
     private final String defaultValue;

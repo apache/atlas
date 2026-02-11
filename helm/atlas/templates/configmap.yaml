@@ -539,3 +539,9 @@ data:
 
     ######### Atlas Entity Attribute Optimization #########
     atlas.entity.skip.optional.attributes={{ .Values.atlas.entity.skip_optional_attributes }}
+    
+    ######### Delete Optimization Configs #########
+    # Batch sizes for various delete operations
+    atlas.delete.batch.lookup.size={{ .Values.atlas.delete.batch_lookup_size }}
+    atlas.delete.uniqueattr.batch.size={{ .Values.atlas.delete.uniqueattr_batch_size }}
+    atlas.delete.owned.batch.size={{ .Values.atlas.delete.owned_batch_size }}

@@ -88,6 +88,12 @@ atlas:
     max_entities_allowed: 10000
   lineage:
     optimised_calculation: false
+  # Delete Optimization Settings
+  delete:
+    # Batch sizes for various delete operations
+    batch_lookup_size: 500
+    uniqueattr_batch_size: 200
+    owned_batch_size: 100
   authorizer:
     enable_delta_based_refresh: true
     enable_abac: false

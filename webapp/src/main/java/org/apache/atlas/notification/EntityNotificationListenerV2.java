@@ -315,11 +315,15 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
             if (MapUtils.isNotEmpty(allInternalAttributesMap)) {
                 ret.setInternalAttributes(allInternalAttributesMap);
                 // fill all classifications related attrs. They are no longer part of vertex attributes
-                if (CollectionUtils.isNotEmpty(context.getESDeferredOperations())) {
+                String docId = entity.getDocId();
+                if (docId == null) {
+                    LOG.warn("Skipping deferred ES merge for entity (guid={}, type={}) as docId is null",
+                            entity.getGuid(), entity.getTypeName());
+                } else if (CollectionUtils.isNotEmpty(context.getESDeferredOperations())) {
                     List<ESDeferredOperation> esDefferredOperations = context.getESDeferredOperations();
                     if (CollectionUtils.isNotEmpty(esDefferredOperations)) {
+                        Long vertexId = LongEncoding.decode(docId);
                         for (ESDeferredOperation esDeferredOperation : esDefferredOperations) {
-                            Long vertexId = LongEncoding.decode(entity.getDocId());
                             if (Long.parseLong(esDeferredOperation.getEntityId()) == vertexId) {
                                 Map<String, Object> classificationInternalAttributes = esDeferredOperation.getPayload().get(String.valueOf(vertexId));
                                 if (MapUtils.isNotEmpty(classificationInternalAttributes)) {

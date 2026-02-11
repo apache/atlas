@@ -1,0 +1,36 @@
+{
+  "entities":
+  [
+    {
+    "typeName": "AuthPolicy",
+    "attributes":
+    {
+      "name": "DENY_DATA_ACCESS_GUEST",
+      "qualifiedName": "DENY_DATA_ACCESS_GUEST",
+      "description": "deny data access for guest users",
+      "policyCategory": "bootstrap",
+      "policySubCategory": "default",
+      "policyServiceName": "heka",
+      "policyType": "deny",
+      "policyPriority": 1,
+      "isPolicyEnabled": false,
+      "policyUsers": [],
+      "policyGroups": [],
+      "policyRoles":
+      [
+        "$guest"
+      ],
+      "policyResourceCategory": "ENTITY",
+      "policyResources":
+      [
+        "entity:*",
+        "entity-type:*"
+      ],
+      "policyActions":
+      [
+        "select"
+      ]
+    }
+    }
+  ]
+}

@@ -8,7 +8,8 @@ public class CassandraTagConfig {
 
     public static final String CASSANDRA_TAG_TABLE_NAME = "atlas.graph.tag.table.name";
     public static final String CASSANDRA_PROPAGATED_TAG_TABLE_NAME = "atlas.graph.propagated.tag.table.name";
-    public static final int CASSANDRA_PORT = 9042;
+    public static final String CASSANDRA_PORT_PROPERTY = "atlas.graph.storage.cql.port";
+    public static final int CASSANDRA_PORT;
     public static final String CASSANDRA_HOSTNAME_PROPERTY = "atlas.graph.storage.hostname";
     public static final String CASSANDRA_REPLICATION_FACTOR_PROPERTY = "atlas.graph.storage.cql.replication-factor";
     public static int BUCKET_POWER = 5;
@@ -23,6 +24,7 @@ public class CassandraTagConfig {
 
     static {
         try {
+            CASSANDRA_PORT = ApplicationProperties.get().getInt(CASSANDRA_PORT_PROPERTY, 9042);
             KEYSPACE = ApplicationProperties.get().getString(CASSANDRA_NEW_KEYSPACE_PROPERTY, "tags");
             EFFECTIVE_TAGS_TABLE_NAME = ApplicationProperties.get().getString(CASSANDRA_TAG_TABLE_NAME, "tags_by_id");
             PROPAGATED_TAGS_TABLE_NAME = ApplicationProperties.get().getString(CASSANDRA_PROPAGATED_TAG_TABLE_NAME, "propagated_tags_by_source");

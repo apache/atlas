@@ -39,9 +39,11 @@ public class DynamicConfigStoreConfig {
     public static final String PROP_REPLICATION_FACTOR = "atlas.config.store.cassandra.replication.factor";
     public static final String PROP_DATACENTER = "atlas.config.store.cassandra.datacenter";
     public static final String PROP_CONSISTENCY_LEVEL = "atlas.config.store.cassandra.consistency.level";
+    public static final String PROP_PORT = "atlas.config.store.cassandra.port";
 
     // Fallback property key (reuse existing Cassandra hostname config)
     private static final String PROP_GRAPH_STORAGE_HOSTNAME = "atlas.graph.storage.hostname";
+    private static final String PROP_GRAPH_STORAGE_CQL_PORT = "atlas.graph.storage.cql.port";
 
     // Default values
     private static final boolean DEFAULT_ENABLED = false;
@@ -55,7 +57,7 @@ public class DynamicConfigStoreConfig {
     private static final String DEFAULT_DATACENTER = "datacenter1";
     // Consistency level: LOCAL_QUORUM for production (requires 2+ nodes), LOCAL_ONE for local dev (single node)
     private static final String DEFAULT_CONSISTENCY_LEVEL = "LOCAL_QUORUM";
-    public static final int CASSANDRA_PORT = 9042;
+    private static final int DEFAULT_CASSANDRA_PORT = 9042;
 
     private final boolean enabled;
     private final boolean activated;
@@ -64,6 +66,7 @@ public class DynamicConfigStoreConfig {
     private final String table;
     private final String appName;
     private final String hostname;
+    private final int cassandraPort;
     private final int replicationFactor;
     private final String datacenter;
     private final String consistencyLevel;
@@ -89,8 +92,16 @@ public class DynamicConfigStoreConfig {
             this.hostname = props.getString(PROP_GRAPH_STORAGE_HOSTNAME, DEFAULT_HOSTNAME);
         }
 
-        LOG.info("DynamicConfigStoreConfig initialized - enabled: {}, activated: {}, keyspace: {}, table: {}, hostname: {}, syncInterval: {}ms, consistencyLevel: {}",
-                enabled, activated, keyspace, table, hostname, syncIntervalMs, consistencyLevel);
+        // Port: use dedicated property or fall back to graph storage CQL port
+        int configuredPort = props.getInt(PROP_PORT, -1);
+        if (configuredPort > 0) {
+            this.cassandraPort = configuredPort;
+        } else {
+            this.cassandraPort = props.getInt(PROP_GRAPH_STORAGE_CQL_PORT, DEFAULT_CASSANDRA_PORT);
+        }
+
+        LOG.info("DynamicConfigStoreConfig initialized - enabled: {}, activated: {}, keyspace: {}, table: {}, hostname: {}, port: {}, syncInterval: {}ms, consistencyLevel: {}",
+                enabled, activated, keyspace, table, hostname, cassandraPort, syncIntervalMs, consistencyLevel);
     }
 
     public boolean isEnabled() {
@@ -130,7 +141,7 @@ public class DynamicConfigStoreConfig {
     }
 
     public int getCassandraPort() {
-        return CASSANDRA_PORT;
+        return cassandraPort;
     }
 
     public String getConsistencyLevel() {
