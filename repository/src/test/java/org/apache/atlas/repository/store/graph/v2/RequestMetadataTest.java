@@ -18,14 +18,11 @@ class RequestMetadataTest {
         RequestContext ctx = RequestContext.get();
         ctx.setTraceId("trace-abc-123");
         ctx.setUser("testuser", null);
-        ctx.setUri("/api/atlas/v2/entity/bulk");
 
         RequestMetadata rm = RequestMetadata.fromCurrentRequest();
 
         assertEquals("trace-abc-123", rm.getTraceId());
         assertEquals("testuser", rm.getUser());
-        assertEquals("/api/atlas/v2/entity/bulk", rm.getRequestUri());
-        assertNull(rm.getRequestMethod(), "requestMethod should be null (set later by producer)");
     }
 
     @Test
@@ -38,7 +35,5 @@ class RequestMetadataTest {
 
         assertNull(rm.getTraceId());
         // user may return null or a fallback, depending on RequestContext.getUser() impl
-        assertNull(rm.getRequestUri());
-        assertNull(rm.getRequestMethod());
     }
 }

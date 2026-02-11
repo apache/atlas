@@ -67,7 +67,6 @@ class EntityMutationServiceAsyncPublishTest {
         RequestContext ctx = RequestContext.get();
         ctx.setTraceId("test-trace");
         ctx.setUser("admin", null);
-        ctx.setUri("/api/atlas/v2/entity/bulk");
     }
 
     @AfterEach

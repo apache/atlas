@@ -78,7 +78,6 @@ class AsyncIngestionProducerTest {
         RequestMetadata rm = new RequestMetadata();
         rm.setTraceId("test-trace-123");
         rm.setUser("admin");
-        rm.setRequestUri("/api/atlas/v2/entity/bulk");
         return rm;
     }
 
@@ -184,8 +183,8 @@ class AsyncIngestionProducerTest {
         JsonNode reqMeta = json.get("requestMetadata");
         assertEquals("test-trace-123", reqMeta.get("traceId").asText());
         assertEquals("admin", reqMeta.get("user").asText());
-        assertEquals("/api/atlas/v2/entity/bulk", reqMeta.get("requestUri").asText());
-        assertEquals("POST", reqMeta.get("requestMethod").asText());
+        assertFalse(reqMeta.has("requestUri"), "requestUri should not be present");
+        assertFalse(reqMeta.has("requestMethod"), "requestMethod should not be present");
 
         assertTrue(json.has("operationMetadata"));
         assertTrue(json.has("payload"));
@@ -214,27 +213,7 @@ class AsyncIngestionProducerTest {
         assertEquals(eventId, json.get("eventId").asText(), "JSON eventId should match record key");
     }
 
-    // =================== Test 7: resolveHttpMethod delete types ===================
-
-    @Test
-    void testResolveHttpMethod_deleteTypes() {
-        assertEquals("DELETE", AsyncIngestionProducer.resolveHttpMethod("DELETE_BY_GUID"));
-        assertEquals("DELETE", AsyncIngestionProducer.resolveHttpMethod("DELETE_BY_GUIDS"));
-        assertEquals("DELETE", AsyncIngestionProducer.resolveHttpMethod("DELETE_BY_UNIQUE_ATTRIBUTE"));
-        assertEquals("DELETE", AsyncIngestionProducer.resolveHttpMethod("BULK_DELETE_BY_UNIQUE_ATTRIBUTES"));
-    }
-
-    // =================== Test 8: resolveHttpMethod non-delete types ===================
-
-    @Test
-    void testResolveHttpMethod_nonDeleteTypes() {
-        assertEquals("POST", AsyncIngestionProducer.resolveHttpMethod("BULK_CREATE_OR_UPDATE"));
-        assertEquals("POST", AsyncIngestionProducer.resolveHttpMethod("SET_CLASSIFICATIONS"));
-        assertEquals("POST", AsyncIngestionProducer.resolveHttpMethod("RESTORE_BY_GUIDS"));
-        assertEquals("POST", AsyncIngestionProducer.resolveHttpMethod(null));
-    }
-
-    // =================== Test 9: Success increments counter ===================
+    // =================== Test 7: Success increments counter ===================
 
     @Test
     void testMetrics_successIncrementsCounter() throws Exception {

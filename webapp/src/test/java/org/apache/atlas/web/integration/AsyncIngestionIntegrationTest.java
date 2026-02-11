@@ -188,7 +188,6 @@ public class AsyncIngestionIntegrationTest extends AtlasInProcessBaseIT {
             JsonNode reqMeta = event.get("requestMetadata");
             assertNotNull(reqMeta);
             assertEquals("admin", reqMeta.get("user").asText());
-            assertEquals("POST", reqMeta.get("requestMethod").asText());
         } finally {
             consumer.close();
         }
@@ -253,7 +252,6 @@ public class AsyncIngestionIntegrationTest extends AtlasInProcessBaseIT {
             assertFalse(events.isEmpty(), "Should have received DELETE_BY_GUID event");
             JsonNode event = events.get(0);
             assertEquals("DELETE_BY_GUID", event.get("eventType").asText());
-            assertEquals("DELETE", event.get("requestMetadata").get("requestMethod").asText());
 
             // Verify payload contains the GUID
             JsonNode payload = event.get("payload");
@@ -305,7 +303,6 @@ public class AsyncIngestionIntegrationTest extends AtlasInProcessBaseIT {
             assertFalse(events.isEmpty(), "Should have received RESTORE_BY_GUIDS event");
             JsonNode event = events.get(0);
             assertEquals("RESTORE_BY_GUIDS", event.get("eventType").asText());
-            assertEquals("POST", event.get("requestMetadata").get("requestMethod").asText());
         } finally {
             consumer.close();
         }
@@ -348,7 +345,6 @@ public class AsyncIngestionIntegrationTest extends AtlasInProcessBaseIT {
             assertFalse(events.isEmpty(), "Should have received DELETE_BY_GUIDS event");
             JsonNode event = events.get(0);
             assertEquals("DELETE_BY_GUIDS", event.get("eventType").asText());
-            assertEquals("DELETE", event.get("requestMetadata").get("requestMethod").asText());
 
             // Verify payload has guids
             JsonNode payload = event.get("payload");
@@ -403,7 +399,6 @@ public class AsyncIngestionIntegrationTest extends AtlasInProcessBaseIT {
             if (!events.isEmpty()) {
                 JsonNode event = events.get(0);
                 assertEquals("SET_CLASSIFICATIONS", event.get("eventType").asText());
-                assertEquals("POST", event.get("requestMetadata").get("requestMethod").asText());
             }
         } finally {
             consumer.close();
