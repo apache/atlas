@@ -293,7 +293,7 @@ public abstract class AtlasHook {
         Collection objList = (Collection) obj;
         List toRemove = new ArrayList();
 
-        for (Object entity: objList) {
+        for (Object entity : objList) {
             String qualifiedName = getQualifiedName(entity);
 
             if (isMatch(qualifiedName, entitiesToIgnore)) {
@@ -312,7 +312,7 @@ public abstract class AtlasHook {
         }
 
         List<String> keysToRemove = new ArrayList<>();
-        for (Map.Entry<String, Object> entry: relationshipAttributes.entrySet()) {
+        for (Map.Entry<String, Object> entry : relationshipAttributes.entrySet()) {
             Object obj = entry.getValue();
 
             if (obj instanceof Collection) {
@@ -332,7 +332,7 @@ public abstract class AtlasHook {
             }
         }
 
-        for (String key: keysToRemove) {
+        for (String key : keysToRemove) {
             relationshipAttributes.remove(key);
 
             LOG.info("Ignored entity {}", key);
@@ -355,7 +355,7 @@ public abstract class AtlasHook {
 
             entities.removeIf((AtlasEntity entity) -> isMatch(entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME).toString(), entitiesToIgnore));
 
-            for (AtlasEntity entity: entities) {
+            for (AtlasEntity entity : entities) {
                 Object inputs = entity.getAttribute(ATTRIBUTE_INPUTS);
                 Object outputs = entity.getAttribute(ATTRIBUTE_OUTPUTS);
 
@@ -371,7 +371,7 @@ public abstract class AtlasHook {
 
             referredEntitiesMap.entrySet().removeIf((Map.Entry<String, AtlasEntity> entry) -> isMatch(entry.getValue().getAttribute(ATTRIBUTE_QUALIFIED_NAME).toString(), entitiesToIgnore));
 
-            for (Map.Entry<String, AtlasEntity> entry: referredEntitiesMap.entrySet()) {
+            for (Map.Entry<String, AtlasEntity> entry : referredEntitiesMap.entrySet()) {
                 AtlasEntity entity = entry.getValue();
 
                 Object inputs = entity.getAttribute(ATTRIBUTE_INPUTS);
