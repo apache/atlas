@@ -4774,6 +4774,7 @@ public class EntityGraphMapper {
             LOG.error(AtlasErrorCode.CLASSIFICATION_NOT_FOUND.getFormattedErrorMessage(classificationName));
             // If a client is trying to delete this tag, it might be existing in ES but not in C*. Allow it to be cleaned in ES.
             addEsDeferredOperation(entityVertex, classificationName);
+            return;
         }
 
         // Get in progress task to see if there already is a propagation for this particular vertex
