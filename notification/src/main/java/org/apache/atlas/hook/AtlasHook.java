@@ -346,7 +346,7 @@ public abstract class AtlasHook {
             AtlasEntity.AtlasEntitiesWithExtInfo entitiesWithExtInfo = getAtlasEntitiesWithExtInfo(hookNotification);
 
             if (entitiesWithExtInfo == null) {
-                return;
+                continue;
             }
 
             List<AtlasEntity> entities = entitiesWithExtInfo.getEntities();
