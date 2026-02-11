@@ -89,6 +89,7 @@ import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPro
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask.*;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
+import static org.apache.atlas.AtlasConfiguration.DELETE_OWNED_BATCH_SIZE;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
@@ -138,7 +139,11 @@ public abstract class DeleteHandlerV1 {
      */
     public void deleteEntities(Collection<AtlasVertex> instanceVertices) throws AtlasBaseException
     {
-        LOG.info("deleteEntities invoked. Requested vertices size: {}", instanceVertices != null ? instanceVertices.size() : 0);
+        int requestedCount = instanceVertices != null ? instanceVertices.size() : 0;
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("deleteEntities invoked. Requested vertices size: {}", requestedCount);
+        }
 
         final RequestContext   requestContext            = RequestContext.get();
         final Set<AtlasVertex> deletionCandidateVertices = new HashSet<>();
@@ -150,10 +155,10 @@ public abstract class DeleteHandlerV1 {
         for (AtlasVertex instanceVertex : instanceVertices) {
             final String guid = AtlasGraphUtilsV2.getIdFromVertex(instanceVertex);
 
-            LOG.info("Evaluating vertex for deletion. guid={}, vertexId={}", guid, instanceVertex.getIdForDisplay());
-
             if (skipVertexForDelete(instanceVertex)) {
-                LOG.info("Skipping deletion of entity={} as it is already deleted", guid);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Skipping deletion of entity={} as it is already deleted", guid);
+                }
                 continue;
             }
 
@@ -167,18 +172,14 @@ public abstract class DeleteHandlerV1 {
 
                 requestContext.recordEntityDelete(entityHeader);
                 deletionCandidateVertices.add(vertexInfo.getVertex());
-
-                LOG.info("Marked vertexId={} (guid={}) as deletion candidate. Total candidates so far: {}",
-                         vertexInfo.getVertex().getIdForDisplay(), entityHeader.getGuid(),
-                         deletionCandidateVertices.size());
             }
         }
 
-        LOG.info("Total deletion candidate vertices to process: {}", deletionCandidateVertices.size());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Total deletion candidate vertices to process: {}", deletionCandidateVertices.size());
+        }
 
         for (AtlasVertex deletionCandidateVertex : deletionCandidateVertices) {
-            LOG.info("Processing deletion for candidate vertexId={}", deletionCandidateVertex.getIdForDisplay());
-
             RequestContext.get().getDeletedEdgesIds().clear();
 
             if (DynamicConfigStore.isTagV2Enabled()) {
@@ -196,16 +197,23 @@ public abstract class DeleteHandlerV1 {
                         if (edge != null) {
                             createAndQueueClassificationRefreshPropagationTask(edge);
                         } else {
-                            LOG.info(
-                                    "Could not find edge with id={} while scheduling classification refresh task",
-                                    deletedEdgeId);
+                            if (LOG.isDebugEnabled()) {
+                                LOG.debug(
+                                        "Could not find edge with id={} while scheduling classification refresh task",
+                                        deletedEdgeId);
+                            }
                         }
                     }
                 }
             }
-
         }
-        LOG.info("deleteEntities completed. Total vertices processed: {}", deletionCandidateVertices.size());
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("deleteEntities completed: requestId={}, requestedCount={}, candidatesCount={}",
+                    RequestContext.get().getTraceId(),
+                    requestedCount,
+                    deletionCandidateVertices.size());
+        }
     }
 
     /**
@@ -251,6 +259,22 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     public Collection<GraphHelper.VertexInfo> getOwnedVertices(AtlasVertex entityVertex) throws AtlasBaseException {
+        boolean useBatchLookup = DynamicConfigStore.isDeleteBatchEnabled();
+        return getOwnedVerticesInternal(entityVertex, useBatchLookup);
+    }
+
+    /**
+     * Internal implementation for discovering owned vertices.
+     * Traverses the containment graph from the root entity to find all owned/composite entities.
+     *
+     * @param entityVertex the root entity vertex
+     * @param useBatchLookup if true, collects soft-ref GUIDs and resolves them in batches;
+     *                       if false, resolves each soft-ref GUID individually
+     * @return collection of VertexInfo for all discovered composite entities
+     */
+    private Collection<GraphHelper.VertexInfo> getOwnedVerticesInternal(AtlasVertex entityVertex, boolean useBatchLookup) throws AtlasBaseException {
+        final int batchSize = DELETE_OWNED_BATCH_SIZE.getInt();
+
         final Map<String, GraphHelper.VertexInfo> vertexInfoMap    = new HashMap<>();
         final Stack<AtlasVertex>                  vertices         = new Stack<>();
         final boolean                             isPurgeRequested = RequestContext.get().isPurgeRequested();
@@ -258,10 +282,10 @@ public abstract class DeleteHandlerV1 {
         vertices.push(entityVertex);
 
         while (vertices.size() > 0) {
-            AtlasVertex        vertex = vertices.pop();
-            AtlasEntity.Status state  = getState(vertex);
+            AtlasVertex vertex = vertices.pop();
 
-            //If the vertex marked for deletion, if we are not purging, skip it
+            AtlasEntity.Status state = getState(vertex);
+
             if (!isPurgeRequested && DELETED.equals(state)) {
                 continue;
             }
@@ -272,22 +296,25 @@ public abstract class DeleteHandlerV1 {
                 continue;
             }
 
-            String typeName = GraphHelper.getTypeName(vertex);
-            AtlasEntityType   entityType = typeRegistry.getEntityTypeByName(typeName);
+            String          typeName   = GraphHelper.getTypeName(vertex);
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+            if (entityType == null) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), typeName);
+            }
 
             Set<String> attributes = entityType.getAllAttributes().values().stream()
                     .filter(x -> x.getAttributeDef().getIncludeInNotification())
                     .map(x -> x.getAttributeDef().getName()).collect(Collectors.toSet());
 
-            AtlasEntityHeader entity     = entityRetriever.toAtlasEntityHeader(vertex, attributes);
-
-            if (entityType == null) {
-                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), typeName);
-            }
+            AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(vertex, attributes);
             entity.setVertexId(vertex.getIdForDisplay());
             entity.setDocId(LongEncoding.encode(Long.parseLong(vertex.getIdForDisplay())));
             entity.setSuperTypeNames(entityType.getAllSuperTypes());
             vertexInfoMap.put(guid, new GraphHelper.VertexInfo(entity, vertex));
+
+            // For batch mode: collect soft-ref GUIDs to resolve after processing all attributes
+            LinkedHashSet<String> softRefGuidsToResolve = useBatchLookup ? new LinkedHashSet<>() : null;
 
             for (AtlasStructType.AtlasAttribute attributeInfo : entityType.getOwnedRefAttributes()) {
                 String       edgeLabel    = attributeInfo.getRelationshipEdgeLabel();
@@ -298,12 +325,18 @@ public abstract class DeleteHandlerV1 {
                     if (attributeInfo.getAttributeDef().isSoftReferenced()) {
                         String        softRefVal = vertex.getProperty(attributeInfo.getVertexPropertyName(), String.class);
                         AtlasObjectId refObjId   = AtlasEntityUtil.parseSoftRefValue(softRefVal);
-                        AtlasVertex   refVertex  = refObjId != null ? AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid()) : null;
-                        if (refObjId.getGuid() == null) {
-                            LOG.warn("OBJECT_ID_TYPE type category - null guid passed in findByGuid!");
-                        }
-                        if (refVertex != null) {
-                            vertices.push(refVertex);
+
+                        if (refObjId != null && refObjId.getGuid() != null) {
+                            if (useBatchLookup) {
+                                softRefGuidsToResolve.add(refObjId.getGuid());
+                            } else {
+                                AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid());
+                                if (refVertex != null) {
+                                    vertices.push(refVertex);
+                                }
+                            }
+                        } else if (refObjId != null && LOG.isDebugEnabled()) {
+                            LOG.debug("OBJECT_ID_TYPE - null guid in soft-ref");
                         }
                     } else {
                         AtlasEdge edge = graphHelper.getEdgeForLabel(vertex, edgeLabel);
@@ -315,52 +348,44 @@ public abstract class DeleteHandlerV1 {
                         vertices.push(edge.getInVertex());
                     }
                 } else if (typeCategory == ARRAY || typeCategory == MAP) {
-                    TypeCategory elementType = null;
-
-                    if (typeCategory == ARRAY) {
-                        elementType = ((AtlasArrayType) attrType).getElementType().getTypeCategory();
-                    } else if (typeCategory == MAP) {
-                        elementType = ((AtlasMapType) attrType).getValueType().getTypeCategory();
-                    }
+                    TypeCategory elementType = (typeCategory == ARRAY)
+                            ? ((AtlasArrayType) attrType).getElementType().getTypeCategory()
+                            : ((AtlasMapType) attrType).getValueType().getTypeCategory();
 
                     if (elementType != OBJECT_ID_TYPE) {
                         continue;
                     }
 
                     if (attributeInfo.getAttributeDef().isSoftReferenced()) {
+                        List<AtlasObjectId> refObjIds = null;
+
                         if (typeCategory == ARRAY) {
-                            List                softRefVal = vertex.getListProperty(attributeInfo.getVertexPropertyName(), List.class);
-                            List<AtlasObjectId> refObjIds  = AtlasEntityUtil.parseSoftRefValue(softRefVal);
-
-                            if (CollectionUtils.isNotEmpty(refObjIds)) {
-                                for (AtlasObjectId refObjId : refObjIds) {
-                                    AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid());
-                                    if (refObjId.getGuid() == null) {
-                                        LOG.warn("ARRAY type category - null guid passed in findByGuid!");
-                                    }
-                                    if (refVertex != null) {
-                                        vertices.push(refVertex);
-                                    }
-                                }
-                            }
-                        } else if (typeCategory == MAP) {
-                            Map                        softRefVal = vertex.getProperty(attributeInfo.getVertexPropertyName(), Map.class);
-                            Map<String, AtlasObjectId> refObjIds  = AtlasEntityUtil.parseSoftRefValue(softRefVal);
-
-                            if (MapUtils.isNotEmpty(refObjIds)) {
-                                for (AtlasObjectId refObjId : refObjIds.values()) {
-                                    AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid());
-                                    if (refObjId.getGuid() == null) {
-                                        LOG.warn("MAP type category - null guid passed in findByGuid!");
-                                    }
-
-                                    if (refVertex != null) {
-                                        vertices.push(refVertex);
-                                    }
-                                }
+                            List softRefVal = vertex.getListProperty(attributeInfo.getVertexPropertyName(), List.class);
+                            refObjIds = AtlasEntityUtil.parseSoftRefValue(softRefVal);
+                        } else {
+                            Map softRefVal = vertex.getProperty(attributeInfo.getVertexPropertyName(), Map.class);
+                            Map<String, AtlasObjectId> refObjIdMap = AtlasEntityUtil.parseSoftRefValue(softRefVal);
+                            if (MapUtils.isNotEmpty(refObjIdMap)) {
+                                refObjIds = new ArrayList<>(refObjIdMap.values());
                             }
                         }
 
+                        if (CollectionUtils.isNotEmpty(refObjIds)) {
+                            for (AtlasObjectId refObjId : refObjIds) {
+                                if (refObjId != null && refObjId.getGuid() != null) {
+                                    if (useBatchLookup) {
+                                        softRefGuidsToResolve.add(refObjId.getGuid());
+                                    } else {
+                                        AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid());
+                                        if (refVertex != null) {
+                                            vertices.push(refVertex);
+                                        }
+                                    }
+                                } else if (refObjId != null && LOG.isDebugEnabled()) {
+                                    LOG.debug("{} - null guid in soft-ref", typeCategory);
+                                }
+                            }
+                        }
                     } else {
                         List<AtlasEdge> edges = getCollectionElementsUsingRelationship(vertex, attributeInfo);
 
@@ -376,6 +401,33 @@ public abstract class DeleteHandlerV1 {
                     }
                 }
             }
+
+            // Batch resolve collected soft-ref GUIDs
+            if (useBatchLookup && !softRefGuidsToResolve.isEmpty()) {
+                List<String> guidList = new ArrayList<>(softRefGuidsToResolve);
+
+                for (int i = 0; i < guidList.size(); i += batchSize) {
+                    int          endIdx = Math.min(i + batchSize, guidList.size());
+                    List<String> batch  = guidList.subList(i, endIdx);
+
+                    Map<String, AtlasVertex> resolvedVertices = AtlasGraphUtilsV2.findByGuids(this.graphHelper.getGraph(), batch);
+
+                    for (String refGuid : batch) {
+                        AtlasVertex refVertex = resolvedVertices.get(refGuid);
+                        if (refVertex != null) {
+                            vertices.push(refVertex);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("getOwnedVertices completed: requestId={}, rootGuid={}, useBatchLookup={}, verticesFound={}",
+                    RequestContext.get().getTraceId(),
+                    GraphHelper.getGuid(entityVertex),
+                    useBatchLookup,
+                    vertexInfoMap.size());
         }
 
         return vertexInfoMap.values();
@@ -1752,11 +1804,13 @@ public abstract class DeleteHandlerV1 {
     }
 
     public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeHasLineageOnDelete");
-
-        long lineageCalcStart = System.currentTimeMillis();
+        long startTime = System.currentTimeMillis();
 
         if (RequestContext.get().skipHasLineageCalculation()) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("removeHasLineageOnDelete skipped (skipHasLineageCalculation=true): requestId={}",
+                        RequestContext.get().getTraceId());
+            }
             return;
         }
 
@@ -1770,9 +1824,9 @@ public abstract class DeleteHandlerV1 {
                 boolean isCatalog = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
 
                 if (isCatalog || isProcess) {
-
                     Iterator<AtlasEdge> edgeIterator = vertexToBeDeleted.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
 
+                    // Full edge iteration to collect active edges
                     Set<AtlasEdge> edgesToBeDeleted = new HashSet<>();
 
                     while (edgeIterator.hasNext()) {
@@ -1782,14 +1836,15 @@ public abstract class DeleteHandlerV1 {
                         }
                     }
 
-                    if (!distributedHasLineageCalculationEnabled){
+                    // Always call resetHasLineageOnInputOutputDelete to ensure hasLineage is properly reset
+                    if (!distributedHasLineageCalculationEnabled) {
                         resetHasLineageOnInputOutputDelete(edgesToBeDeleted, vertexToBeDeleted);
                     } else {
                         // Populate RemovedElementsMap for async hasLineage calculation
                         if (!edgesToBeDeleted.isEmpty()) {
                             String guid = getGuid(vertexToBeDeleted);
                             List<Object> removedElement = RequestContext.get().getRemovedElementsMap().get(guid);
-                            
+
                             if (removedElement == null) {
                                 removedElement = new ArrayList<>();
                                 removedElement.addAll(edgesToBeDeleted);
@@ -1802,20 +1857,22 @@ public abstract class DeleteHandlerV1 {
                 }
             }
         }
+
         // Record lineage calculation time
-        long lineageCalcTime = System.currentTimeMillis() - lineageCalcStart;
-        RequestContext.get().addLineageCalcTime(lineageCalcTime);
-        RequestContext.get().endMetricRecord(metricRecorder);
+        long latencyMs = System.currentTimeMillis() - startTime;
+        RequestContext.get().addLineageCalcTime(latencyMs);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("removeHasLineageOnDelete completed: requestId={}, vertexCount={}, latencyMs={}, distributedMode={}",
+                    RequestContext.get().getTraceId(),
+                    vertices.size(),
+                    latencyMs,
+                    distributedHasLineageCalculationEnabled);
+        }
     }
 
     public void resetHasLineageOnInputOutputDelete(Collection<AtlasEdge> removedEdges, AtlasVertex deletedVertex) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("resetHasLineageOnInputOutputDelete");
-
-        // Timing: Lineage calculation
-        long lineageCalcStart = System.currentTimeMillis();
-
         for (AtlasEdge atlasEdge : removedEdges) {
-
             boolean isOutputEdge = PROCESS_OUTPUTS.equals(atlasEdge.getLabel());
 
             AtlasVertex assetVertex = atlasEdge.getInVertex();
@@ -1842,7 +1899,7 @@ public abstract class DeleteHandlerV1 {
 
             RequestContext.get().addEdgeLabel(processEdgeLabel);
 
-                if (getStatus(processVertex) == ACTIVE && !processVertex.equals(deletedVertex)) {
+            if (getStatus(processVertex) == ACTIVE && !processVertex.equals(deletedVertex)) {
                 Iterator<AtlasEdge> edgeIterator = GraphHelper.getActiveEdges(processVertex, edgeLabel, AtlasEdgeDirection.BOTH);
 
                 boolean activeEdgeFound = false;
@@ -1889,10 +1946,6 @@ public abstract class DeleteHandlerV1 {
                 }
             }
         }
-        // Record lineage calculation time
-        long lineageCalcTime = System.currentTimeMillis() - lineageCalcStart;
-        RequestContext.get().addLineageCalcTime(lineageCalcTime);
-        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private boolean skipClassificationTaskCreationV2(String entityGuid, String tagTypeName) throws AtlasBaseException {

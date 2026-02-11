@@ -117,14 +117,14 @@ This starts:
 
 Wait for services to be healthy before starting Atlas.
 
-### Copy Logback Configuration (Optional but Recommended)
+### Copy Logback Configuration (Required)
 
-For better formatted logs during local development, copy the logback configuration:
+Copy the local logback configuration to disable OpenTelemetry (which requires a collector not available locally):
 ```bash
 cp local-dev/atlas-logback.xml deploy/conf/atlas-logback.xml
 ```
 
-This provides enhanced console output with request tracing and better readability.
+This disables the OpenTelemetry appender and provides enhanced console output with request tracing.
 
 ## Running Atlas
 
@@ -148,7 +148,15 @@ Create a Run Configuration:
 -Dembedded.solr.directory=deploy/data
 -Dzookeeper.snapshot.trust.empty=true
 -Dlogback.configurationFile=file:./deploy/conf/atlas-logback.xml
+-Dspring.profiles.active=local
 ```
+
+**Environment Variables:**
+```
+OTEL_SDK_DISABLED=true
+```
+
+> **Important:** The `-Dspring.profiles.active=local` flag is required to load the local Redis service implementation. Without it, you'll get a `NoSuchBeanDefinitionException` for `RedisService`.
 
 **IntelliJ Maven Settings:**
 - Go to **Settings → Build → Build Tools → Maven → Runner**
@@ -157,7 +165,7 @@ Create a Run Configuration:
 ### Option 2: Command Line
 
 ```bash
-JAVA_HOME=$(/usr/libexec/java_home -v 17) java \
+JAVA_HOME=$(/usr/libexec/java_home -v 17) OTEL_SDK_DISABLED=true java \
   --add-opens java.base/java.lang=ALL-UNNAMED \
   -Datlas.home=deploy/ \
   -Datlas.conf=deploy/conf \
@@ -166,6 +174,7 @@ JAVA_HOME=$(/usr/libexec/java_home -v 17) java \
   -Dembedded.solr.directory=deploy/data \
   -Dzookeeper.snapshot.trust.empty=true \
   -Dlogback.configurationFile=file:./deploy/conf/atlas-logback.xml \
+  -Dspring.profiles.active=local \
   -cp "webapp/target/atlas-webapp-3.0.0-SNAPSHOT/WEB-INF/classes:webapp/target/atlas-webapp-3.0.0-SNAPSHOT/WEB-INF/lib/*" \
   org.apache.atlas.Atlas
 ```
@@ -247,6 +256,12 @@ CREATE TABLE propagated_tags_by_source (
     PRIMARY KEY ((source_id, tag_type_name), propagated_asset_id)
 );
 ```
+
+### RedisService Bean Not Found
+
+If you see `NoSuchBeanDefinitionException: No qualifying bean of type 'org.apache.atlas.service.redis.RedisService'`:
+
+This means the Spring profile is not set. Add `-Dspring.profiles.active=local` to your VM options. The local Redis implementation (`RedisServiceLocalImpl`) is only loaded when the `local` profile is active.
 
 ### Docker Services Not Starting
 
