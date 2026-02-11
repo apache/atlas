@@ -9,6 +9,10 @@ on:
     types: [submitted]
   pull_request:
     types: [opened, synchronize, ready_for_review]
+  # Trigger after integration tests complete
+  workflow_run:
+    workflows: ["Integration Tests"]
+    types: [completed]
 
 jobs:
   # Job 1: Respond to @claude mentions in comments
@@ -123,3 +127,308 @@ jobs:
 
           claude_args: |
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
+
+  # Job 3: Analyze test results after integration tests complete
+  claude-test-analysis:
+    if: |
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion != 'skipped' &&
+      github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR number from workflow run
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get the PR associated with this workflow run
+            const run = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id
+            });
+
+            // For PRs, the head_branch contains the PR branch
+            const headBranch = run.data.head_branch;
+            const headSha = run.data.head_sha;
+
+            // Find the PR by head SHA
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.repo.owner}:${headBranch}`
+            });
+
+            if (prs.data.length > 0) {
+              const pr = prs.data[0];
+              core.setOutput('number', pr.number);
+              core.setOutput('title', pr.title);
+              core.setOutput('author', pr.user.login);
+              core.setOutput('found', 'true');
+            } else {
+              core.setOutput('found', 'false');
+            }
+
+      - name: Download test artifacts
+        if: steps.pr.outputs.found == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: integration-test-reports-${{ github.event.workflow_run.id }}
+          path: test-results
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+        continue-on-error: true
+
+      - name: Parse test results
+        if: steps.pr.outputs.found == 'true'
+        id: test-results
+        run: |
+          # Initialize counters
+          TOTAL=0
+          PASSED=0
+          FAILED=0
+          SKIPPED=0
+          FAILED_TESTS=""
+
+          if [ -d "test-results" ] && [ -f "test-results/TEST-"*.xml ] 2>/dev/null; then
+            # Parse JUnit XML files
+            for xml in test-results/TEST-*.xml; do
+              if [ -f "$xml" ]; then
+                # Extract test counts from XML
+                tests=$(grep -oP 'tests="\K[0-9]+' "$xml" | head -1 || echo "0")
+                failures=$(grep -oP 'failures="\K[0-9]+' "$xml" | head -1 || echo "0")
+                errors=$(grep -oP 'errors="\K[0-9]+' "$xml" | head -1 || echo "0")
+                skipped=$(grep -oP 'skipped="\K[0-9]+' "$xml" | head -1 || echo "0")
+
+                TOTAL=$((TOTAL + tests))
+                FAILED=$((FAILED + failures + errors))
+                SKIPPED=$((SKIPPED + skipped))
+
+                # Extract failed test names
+                if [ $((failures + errors)) -gt 0 ]; then
+                  failed_names=$(grep -oP '<testcase[^>]*name="\K[^"]+' "$xml" | while read name; do
+                    # Check if this test has a failure or error element
+                    if grep -q "testcase.*name=\"$name\"" "$xml" && grep -A5 "name=\"$name\"" "$xml" | grep -q "<failure\|<error"; then
+                      echo "$name"
+                    fi
+                  done)
+                  if [ -n "$failed_names" ]; then
+                    FAILED_TESTS="$FAILED_TESTS$failed_names"$'\n'
+                  fi
+                fi
+              fi
+            done
+
+            PASSED=$((TOTAL - FAILED - SKIPPED))
+
+            echo "total=$TOTAL" >> $GITHUB_OUTPUT
+            echo "passed=$PASSED" >> $GITHUB_OUTPUT
+            echo "failed=$FAILED" >> $GITHUB_OUTPUT
+            echo "skipped=$SKIPPED" >> $GITHUB_OUTPUT
+            echo "has_results=true" >> $GITHUB_OUTPUT
+
+            # Save failed tests to file for multiline output
+            echo "$FAILED_TESTS" > failed-tests.txt
+
+            # Set test status
+            if [ "$FAILED" -gt 0 ]; then
+              echo "status=failed" >> $GITHUB_OUTPUT
+            else
+              echo "status=passed" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "has_results=false" >> $GITHUB_OUTPUT
+            echo "status=unknown" >> $GITHUB_OUTPUT
+          fi
+
+          # Also capture workflow conclusion
+          echo "workflow_conclusion=${{ github.event.workflow_run.conclusion }}" >> $GITHUB_OUTPUT
+
+      - name: Generate test coverage context
+        if: steps.pr.outputs.found == 'true'
+        id: coverage
+        run: |
+          # Get changed files from PR
+          gh pr view ${{ steps.pr.outputs.number }} --json files -q '.files[].path' > changed-files.txt
+
+          # Map changed files to expected tests
+          echo "## Changed Files to Test Mapping" > coverage-analysis.md
+          echo "" >> coverage-analysis.md
+
+          declare -A TEST_MAP
+          TEST_MAP["glossary"]="GlossaryIntegrationTest,GlossaryExtendedIntegrationTest"
+          TEST_MAP["preprocessor/glossary"]="GlossaryIntegrationTest,GlossaryExtendedIntegrationTest"
+          TEST_MAP["preprocessor/datamesh"]="DataMeshIntegrationTest"
+          TEST_MAP["preprocessor/accesscontrol"]="PersonaPurposeIntegrationTest"
+          TEST_MAP["preprocessor/sql"]="SQLAssetHierarchyIntegrationTest"
+          TEST_MAP["EntityGraphMapper"]="EntityCrudIntegrationTest"
+          TEST_MAP["RelationshipStore"]="RelationshipIntegrationTest"
+          TEST_MAP["classification"]="ClassificationIntegrationTest"
+          TEST_MAP["tag"]="ClassificationIntegrationTest"
+          TEST_MAP["lineage"]="LineageIntegrationTest"
+          TEST_MAP["discovery"]="SearchIntegrationTest"
+          TEST_MAP["search"]="SearchIntegrationTest"
+          TEST_MAP["TypeDefGraphStore"]="TypeDefIntegrationTest"
+          TEST_MAP["businessmetadata"]="BusinessMetadataIntegrationTest"
+          TEST_MAP["label"]="LabelIntegrationTest"
+
+          EXPECTED_TESTS=""
+
+          while read -r file; do
+            for pattern in "${!TEST_MAP[@]}"; do
+              if [[ "$file" == *"$pattern"* ]]; then
+                EXPECTED_TESTS="$EXPECTED_TESTS,${TEST_MAP[$pattern]}"
+              fi
+            done
+          done < changed-files.txt
+
+          # Remove duplicates and leading comma
+          EXPECTED_TESTS=$(echo "$EXPECTED_TESTS" | tr ',' '\n' | sort -u | grep -v '^$' | tr '\n' ',' | sed 's/,$//')
+
+          echo "expected_tests=$EXPECTED_TESTS" >> $GITHUB_OUTPUT
+
+          # Save changed files for Claude
+          echo "Changed files:" >> coverage-analysis.md
+          cat changed-files.txt >> coverage-analysis.md
+          echo "" >> coverage-analysis.md
+          echo "Expected tests based on changes: $EXPECTED_TESTS" >> coverage-analysis.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Claude Test Analysis
+        if: steps.pr.outputs.found == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          track_progress: true
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ steps.pr.outputs.number }}
+            PR TITLE: ${{ steps.pr.outputs.title }}
+            PR AUTHOR: ${{ steps.pr.outputs.author }}
+
+            ## Integration Test Results
+
+            **Workflow Status:** ${{ github.event.workflow_run.conclusion }}
+            **Test Status:** ${{ steps.test-results.outputs.status }}
+            **Total Tests:** ${{ steps.test-results.outputs.total }}
+            **Passed:** ${{ steps.test-results.outputs.passed }}
+            **Failed:** ${{ steps.test-results.outputs.failed }}
+            **Skipped:** ${{ steps.test-results.outputs.skipped }}
+
+            **Expected Tests Based on Changed Files:** ${{ steps.coverage.outputs.expected_tests }}
+
+            ## Your Task
+
+            You are analyzing the integration test results for this PR. Your goal is to help the PR author understand:
+
+            1. **Test Result Analysis** (if tests failed)
+               - Which tests failed and why
+               - How the failures relate to the PR changes
+               - Concrete suggestions to fix the failures
+
+            2. **Test Coverage Assessment**
+               - Do the existing integration tests adequately cover the changes in this PR?
+               - Are there gaps where new tests should be added?
+               - Are the right tests being run for the changed code?
+
+            3. **Test Recommendations**
+               - If coverage gaps exist, suggest specific test methods to add
+               - Reference existing test patterns from the codebase
+               - Prioritize: Must-have vs Nice-to-have tests
+
+            ## Analysis Instructions
+
+            1. First, get the PR diff to understand what changed:
+               ```bash
+               gh pr diff ${{ steps.pr.outputs.number }}
+               ```
+
+            2. If tests failed, read the test output to understand failures:
+               - Check test-results/ directory for XML reports
+               - Look for stack traces and assertion failures
+
+            3. For each significant code change, determine:
+               - Is there an existing test that covers this?
+               - If not, which test class should it be added to?
+               - What test method signature would you suggest?
+
+            ## Test Class Reference
+
+            | Test Class | What It Tests |
+            |------------|---------------|
+            | EntityCrudIntegrationTest | Entity create/read/update/delete via REST API |
+            | GlossaryIntegrationTest | Glossary, Term, Category lifecycle |
+            | GlossaryExtendedIntegrationTest | Advanced glossary operations |
+            | SQLAssetHierarchyIntegrationTest | Table/Column/Schema/Database hierarchy |
+            | ClassificationIntegrationTest | Tag/Classification operations |
+            | LineageIntegrationTest | Process entities and lineage |
+            | SearchIntegrationTest | IndexSearch and discovery |
+            | RelationshipIntegrationTest | Entity relationships |
+            | BusinessMetadataIntegrationTest | Business metadata attributes |
+            | DataMeshIntegrationTest | DataDomain and DataProduct |
+            | PersonaPurposeIntegrationTest | Persona, Purpose, AuthPolicy |
+            | LabelIntegrationTest | Label operations |
+            | TypeDefIntegrationTest | TypeDef CRUD |
+
+            ## Output Format
+
+            Post a single comment on the PR with:
+
+            ### If Tests Failed:
+            ```markdown
+            ## Integration Test Analysis
+
+            ### Test Failures
+
+            | Test | Failure Reason | Related PR Change |
+            |------|----------------|-------------------|
+            | testName | Brief reason | file.java:lineNum |
+
+            ### Root Cause
+            [Analysis of why tests failed in context of PR changes]
+
+            ### Suggested Fixes
+            [Concrete suggestions with code snippets if applicable]
+            ```
+
+            ### If Tests Passed:
+            ```markdown
+            ## Integration Test Analysis
+
+            ### Test Results: All Passed
+
+            **Coverage Assessment:**
+            - [x] Changes in X are covered by TestA
+            - [x] Changes in Y are covered by TestB
+            - [ ] Gap: Changes in Z need additional test coverage
+
+            ### Recommended Additional Tests (if any)
+
+            **Priority: Must Have**
+            - Add `testMethodName` to `TestClass` to cover [scenario]
+
+            **Priority: Nice to Have**
+            - [Optional improvements]
+            ```
+
+            ## Important Rules
+            - Be concise and actionable
+            - Only comment if there's something useful to say
+            - If tests passed and coverage is adequate, keep the comment brief
+            - Don't repeat information already visible in the test report
+            - Focus on the relationship between PR changes and test coverage
+
+          claude_args: |
+            --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(cat:*),Bash(ls:*),Read,Grep,Glob"
