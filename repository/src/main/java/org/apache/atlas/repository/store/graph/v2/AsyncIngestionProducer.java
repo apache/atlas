@@ -101,9 +101,6 @@ public class AsyncIngestionProducer {
                                RequestMetadata requestMetadata) {
         String eventId = UUID.randomUUID().toString();
         try {
-            // Resolve and set the HTTP method based on the event type
-            requestMetadata.setRequestMethod(resolveHttpMethod(eventType));
-
             ObjectNode envelope = MAPPER.createObjectNode();
             envelope.put("eventId", eventId);
             envelope.put("eventType", eventType);
@@ -153,29 +150,6 @@ public class AsyncIngestionProducer {
             } catch (Exception e) {
                 LOG.warn("AsyncIngestionProducer: error closing Kafka producer", e);
             }
-        }
-    }
-
-    /**
-     * Resolve the HTTP method for a given event type.
-     * Visible for testing.
-     */
-    static String resolveHttpMethod(String eventType) {
-        if (eventType == null) {
-            return "POST";
-        }
-        switch (eventType) {
-            case "DELETE_BY_GUID":
-            case "DELETE_BY_GUIDS":
-            case "DELETE_BY_UNIQUE_ATTRIBUTE":
-            case "BULK_DELETE_BY_UNIQUE_ATTRIBUTES":
-            case "TYPEDEF_DELETE":
-            case "TYPEDEF_DELETE_BY_NAME":
-                return "DELETE";
-            case "TYPEDEF_UPDATE":
-                return "PUT";
-            default:
-                return "POST";
         }
     }
 

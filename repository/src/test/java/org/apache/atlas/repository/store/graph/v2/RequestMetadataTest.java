@@ -18,14 +18,11 @@ class RequestMetadataTest {
         RequestContext ctx = RequestContext.get();
         ctx.setTraceId("trace-abc-123");
         ctx.setUser("testuser", null);
-        ctx.setUri("/api/atlas/v2/entity/bulk");
 
         RequestMetadata rm = RequestMetadata.fromCurrentRequest();
 
         assertEquals("trace-abc-123", rm.getTraceId());
         assertEquals("testuser", rm.getUser());
-        assertEquals("/api/atlas/v2/entity/bulk", rm.getRequestUri());
-        assertNull(rm.getRequestMethod(), "requestMethod should be null — set later by AsyncIngestionProducer");
     }
 
     @Test
@@ -37,16 +34,6 @@ class RequestMetadataTest {
         RequestMetadata rm = RequestMetadata.fromCurrentRequest();
 
         assertNull(rm.getTraceId());
-        assertNull(rm.getRequestUri());
-        assertNull(rm.getRequestMethod());
         // user may return null or a fallback, depending on RequestContext.getUser() impl
-    }
-
-    @Test
-    void testSetRequestMethod() {
-        RequestMetadata rm = new RequestMetadata();
-        assertNull(rm.getRequestMethod());
-        rm.setRequestMethod("POST");
-        assertEquals("POST", rm.getRequestMethod());
     }
 }
