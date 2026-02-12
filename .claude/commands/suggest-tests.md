@@ -1,139 +1,92 @@
 ---
-description: Analyze code changes and suggest integration tests, informed by Linear ticket context
-allowed-tools: [Bash, Read, Grep, Glob, Task]
-argument-hint: "[branch-name | PR-number | file-or-directory-path]"
+description: Analyze code changes and suggest integration tests
+allowed-tools: [Bash, Read, Grep, Glob]
 ---
 
 # Suggest Integration Tests for Code Changes
 
-Analyze code changes, pull context from Linear tickets when available, and recommend which integration tests should cover these changes. Identify coverage gaps and suggest specific test cases to add.
+Analyze the current git diff and recommend which integration tests should cover these changes, identify coverage gaps, and suggest specific test cases to add.
 
-## Input Resolution
+## Phase 1: Get Changed Files
 
-Determine what to analyze based on `$ARGUMENTS`:
-
-1. **PR number** (e.g., `#123` or `123`): Get changed files from PR
-   ```bash
-   gh pr diff <number> --repo atlanhq/atlas-metastore --name-only
-   ```
-2. **Branch name** (e.g., `feature/my-branch`): Get changed files on that branch
-   ```bash
-   git fetch origin <branch> 2>/dev/null
-   git diff --name-only $(git merge-base master origin/<branch>)..origin/<branch>
-   ```
-3. **File or directory path**: Scope to those specific files
-4. **No argument**: Use current branch diff against master
-   ```bash
-   git diff --name-only $(git merge-base HEAD master)..HEAD
-   ```
-
-**How to detect the argument type:**
-- Starts with `#` or is purely numeric → PR number
-- Contains `/` but doesn't exist as a file path on disk → branch name
-- Exists as a file or directory on disk → file path
-- Matches a known git branch (`git branch -a | grep <arg>`) → branch name
-
-If no changes are found, inform the user and stop.
-
-## Phase 0: Extract Linear Ticket Context
-
-Linear tickets often contain acceptance criteria, bug repro steps, and expected behaviors that should drive test scenarios.
-
-### 0a: Find ticket IDs
-Search for Linear ticket IDs (pattern: `MS-\d+`, `METASTORE-\d+`) in:
 ```bash
-# From PR title and description
-gh pr view <number> --repo atlanhq/atlas-metastore --json title,body,headRefName 2>/dev/null
-
-# From branch name
-git branch --show-current | grep -oiE '(ms|metastore)-[0-9]+'
-
-# From commit messages
-git log --oneline $(git merge-base HEAD master)..HEAD | grep -oiE '(ms|metastore)-[0-9]+'
+git diff --name-only $(git merge-base HEAD master)..HEAD
 ```
-
-### 0b: Fetch ticket details
-If found, fetch from Linear:
-```bash
-linear issue view <TICKET_ID> 2>/dev/null
-
-# Or via API
-curl -s -X POST "https://api.linear.app/graphql" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: <LINEAR_API_KEY>" \
-  -d '{"query": "{ issueSearch(filter: { identifier: { eq: \"<TICKET_ID>\" } }) { nodes { title description state { name } priority labels { nodes { name } } } } }"}'
-```
-
-### 0c: Extract test-relevant context
-From the ticket, extract:
-- **Acceptance criteria** → each AC should have at least one test
-- **Bug repro steps** → convert into a regression test scenario
-- **Expected behavior** → assertion targets for tests
-- **Edge cases mentioned** → additional test scenarios beyond the happy path
-
-## Phase 1: Parallel Research
-
-Launch **multiple Explore agents in parallel** using the Task tool:
-
-```
-Launch these agents IN PARALLEL (single message, multiple Task calls):
-```
-
-**Agent 1 — Diff Analysis & Endpoint Mapping:**
-Read all diffs. For each changed file, map to affected REST API endpoints using the file-to-endpoint mapping. Identify which entity types are affected. Read `.claude/test-coverage-map.json` for official mappings.
-
-**Agent 2 — Existing Test Coverage Scan:**
-For each mapped integration test class, read the test file and list all existing test methods. Identify what scenarios are already covered (CRUD, error cases, edge cases, etc.) and what gaps exist for the specific code changes.
-
-**Agent 3 — Convention & Pattern Discovery:**
-Read 2-3 existing integration test classes to understand the test writing patterns (setup, assertion style, ordering, shared state). Find the base test class and understand the test infrastructure (client setup, cleanup).
-
-**Agent 4 — Linear Ticket Test Scenarios** (only if ticket ID found):
-Analyze the Linear ticket description, acceptance criteria, and comments. Generate specific test scenarios that validate each acceptance criterion. Cross-reference with the code changes to ensure coverage.
-
-Wait for all agents to complete before proceeding.
 
 ## Phase 2: Map Changes to Test Classes
 
+Use this mapping to identify relevant tests:
+
 ### Code Path to Test Mapping
 
-| Changed Path Pattern | Required Integration Tests |
-|---------------------|---------------------------|
-| `**/glossary/**` | GlossaryIntegrationTest, GlossaryExtendedIntegrationTest |
-| `**/preprocessor/glossary/**` | GlossaryIntegrationTest, GlossaryExtendedIntegrationTest |
-| `**/preprocessor/datamesh/**` | DataMeshIntegrationTest |
-| `**/preprocessor/accesscontrol/**` | PersonaPurposeIntegrationTest |
-| `**/preprocessor/sql/**` | SQLAssetHierarchyIntegrationTest |
-| `**/EntityGraphMapper.java` | EntityCrudIntegrationTest |
-| `**/AtlasRelationshipStoreV2.java` | RelationshipIntegrationTest |
-| `**/classification/**` or `**/tag/**` | ClassificationIntegrationTest |
-| `**/lineage/**` | LineageIntegrationTest |
-| `**/discovery/**` or `**/search/**` | SearchIntegrationTest |
-| `**/AtlasTypeDefGraphStoreV2.java` | TypeDefIntegrationTest |
-| `**/businessmetadata/**` | BusinessMetadataIntegrationTest |
-| `**/label/**` | LabelIntegrationTest |
+| Changed Path Pattern | Required Integration Tests | Test Class Location |
+|---------------------|---------------------------|---------------------|
+| `**/glossary/**` | GlossaryIntegrationTest, GlossaryExtendedIntegrationTest | `webapp/src/test/java/.../integration/` |
+| `**/preprocessor/glossary/**` | GlossaryIntegrationTest, GlossaryExtendedIntegrationTest | |
+| `**/preprocessor/datamesh/**` | DataMeshIntegrationTest | |
+| `**/preprocessor/accesscontrol/**` | PersonaPurposeIntegrationTest | |
+| `**/preprocessor/sql/**` | SQLAssetHierarchyIntegrationTest | |
+| `**/EntityGraphMapper.java` | EntityCrudIntegrationTest | |
+| `**/AtlasRelationshipStoreV2.java` | RelationshipIntegrationTest | |
+| `**/classification/**` or `**/tag/**` | ClassificationIntegrationTest | |
+| `**/lineage/**` | LineageIntegrationTest | |
+| `**/discovery/**` or `**/search/**` | SearchIntegrationTest | |
+| `**/AtlasTypeDefGraphStoreV2.java` | TypeDefIntegrationTest | |
+| `**/businessmetadata/**` | BusinessMetadataIntegrationTest | |
+| `**/label/**` | LabelIntegrationTest | |
+| `intg/src/main/java/**/model/**` | EntityCrudIntegrationTest (for model changes) | |
+| `webapp/src/main/java/**/rest/**` | Depends on endpoint - check REST resource name | |
+
+### Entity Type to Test Mapping
+
+| Entity Type | Primary Test | Secondary Tests |
+|-------------|--------------|-----------------|
+| AtlasGlossary, AtlasGlossaryTerm, AtlasGlossaryCategory | GlossaryIntegrationTest | GlossaryExtendedIntegrationTest |
+| Table, Column, Schema, Database | EntityCrudIntegrationTest | SQLAssetHierarchyIntegrationTest |
+| DataDomain, DataProduct | DataMeshIntegrationTest | |
+| Persona, Purpose, AuthPolicy | PersonaPurposeIntegrationTest | |
+| Process (lineage) | LineageIntegrationTest | |
+| Any entity with classifications | ClassificationIntegrationTest | |
+| Any entity with labels | LabelIntegrationTest | |
+| Any entity with business metadata | BusinessMetadataIntegrationTest | |
+| Relationships | RelationshipIntegrationTest | |
 
 ## Phase 3: Analyze Each Changed File
 
 For each changed file:
-1. Read the diff to understand what changed
-2. Identify the functionality affected (new methods, modified logic, error handling)
-3. Check if existing tests cover the change
 
-## Phase 4: Generate Recommendations
+1. **Read the diff** to understand what changed:
+   ```bash
+   git diff $(git merge-base HEAD master)..HEAD -- <file_path>
+   ```
+
+2. **Identify the functionality affected**:
+   - New methods added?
+   - Existing logic modified?
+   - Error handling changed?
+   - New entity types or attributes?
+
+3. **Check if existing tests cover the change**:
+   ```bash
+   # Search for test methods that might cover this functionality
+   grep -r "test.*<MethodName>" webapp/src/test/java/org/apache/atlas/web/integration/
+   ```
+
+## Phase 4: Check Existing Test Coverage
+
+For each identified test class, read the test to understand current coverage:
+
+```bash
+# List all test methods in a test class
+grep -E "@Test|void test" webapp/src/test/java/org/apache/atlas/web/integration/<TestClass>.java
+```
+
+## Phase 5: Generate Recommendations
 
 Output a structured report:
 
 ```markdown
 ## Integration Test Recommendations
-
-### Ticket Context (if found)
-- **Ticket:** MS-XXX — <title>
-- **Acceptance Criteria → Test Mapping:**
-  | AC | Test Scenario | Existing Coverage | Status |
-  |----|--------------|-------------------|--------|
-  | AC1: [description] | testXxx | GlossaryIntegrationTest.testCreate | Covered |
-  | AC2: [description] | testYyy | None | NEEDS TEST |
 
 ### Changed Files Analysis
 
@@ -152,7 +105,6 @@ Output a structured report:
 #### 1. [Test Class Name]
 
 **New test method:** `testDescriptiveName`
-**Source:** Ticket AC / Code change / Edge case
 
 **Purpose:** [What this test verifies]
 
@@ -175,14 +127,20 @@ void testDescriptiveName() throws AtlasServiceException {
 
 ### Priority
 
-1. **Must have:** [Critical tests — from ticket ACs and regression risks]
+1. **Must have:** [Critical tests for the PR]
 2. **Should have:** [Important but not blocking]
 3. **Nice to have:** [Future improvements]
 ```
 
+## Phase 6: Provide Actionable Next Steps
+
+1. If tests need to be added, provide the exact file to modify
+2. Include code snippets that can be directly added
+3. Reference similar existing tests as patterns to follow
+
 ## Test Writing Guidelines
 
-Follow existing patterns:
+When suggesting new tests, follow these patterns from the existing codebase:
 
 ### Entity CRUD Test Pattern
 ```java
@@ -192,9 +150,26 @@ void testCreateEntity() throws AtlasServiceException {
     AtlasEntity entity = new AtlasEntity("Table");
     entity.setAttribute("qualifiedName", "test://integration/table/" + System.currentTimeMillis());
     entity.setAttribute("name", "test-table");
+
     EntityMutationResponse response = atlasClient.createEntity(new AtlasEntityWithExtInfo(entity));
+
     assertNotNull(response.getFirstEntityCreated());
-    createdGuid = response.getFirstEntityCreated().getGuid();
+    createdGuid = response.getFirstEntityCreated().getGuid(); // Store for later tests
+}
+```
+
+### Glossary Test Pattern
+```java
+@Test
+@Order(1)
+void testCreateGlossary() throws AtlasServiceException {
+    AtlasGlossary glossary = new AtlasGlossary();
+    glossary.setName("Test Glossary " + System.currentTimeMillis());
+    glossary.setShortDescription("Integration test glossary");
+
+    createdGlossary = atlasClient.createGlossary(glossary);
+
+    assertNotNull(createdGlossary.getGuid());
 }
 ```
 
@@ -205,6 +180,8 @@ void testCreateEntity() throws AtlasServiceException {
 void testCreateEntityMissingRequired() {
     AtlasEntity entity = new AtlasEntity("Table");
     entity.setAttribute("name", "missing-qn-table");
+    // Deliberately missing qualifiedName
+
     assertThrows(AtlasServiceException.class, () -> {
         atlasClient.createEntity(new AtlasEntityWithExtInfo(entity));
     });
@@ -213,7 +190,16 @@ void testCreateEntityMissingRequired() {
 
 ## Running Suggested Tests Locally
 
+After identifying tests, run them locally:
+
 ```bash
+# Single test class
+JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home \
+  /opt/homebrew/bin/mvn test -pl webapp \
+  -Dtest=<TestClassName> \
+  -Drat.skip=true -Dsurefire.failIfNoSpecifiedTests=false
+
+# Multiple test classes
 JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home \
   /opt/homebrew/bin/mvn test -pl webapp \
   -Dtest="TestClass1,TestClass2" \
