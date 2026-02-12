@@ -9,6 +9,11 @@ multiarch:
 global:
   Tier_Type: ""
   Deployment_Type: ""
+  leangraph:
+    enabled: false
+    dedicated:
+      enabled: false  # Creates dedicated Cassandra and Elasticsearch StatefulSets
+      active: false   # Uses dedicated resources in configmap
 image:
   repo: ghcr.io/atlanhq/cassandra
   tag: 3.11.12
@@ -87,6 +92,10 @@ service:
 max_heap_size: 2048M
 heap_new_size: 512M
 
+# Development tenant heap configuration (smaller for 4Gi memory limit)
+max_heap_size_development: 1536M
+heap_new_size_development: 384M
+
 config:
   cluster_domain: cluster.local
   cluster_name: cassandra
@@ -162,10 +171,27 @@ updateStrategy:
 resources:
   requests:
     memory: 4Gi
-    cpu: 3000m
+    cpu: 1300m
   limits:
     memory: 5Gi
-    cpu: 3000m
+    cpu: 1300m
+
+# Development tenant resources (when global.Deployment_Type=Development)
+resources_development:
+  requests:
+    memory: 4Gi
+    cpu: 300m
+  limits:
+    memory: 4Gi
+    cpu: 300m
+
+resources_lite:
+  requests:
+    memory: 4Gi
+    cpu: 300m
+  limits:
+    memory: 5Gi
+    cpu: 2000m
 
 # Persistence changes for cassandra
 persistence:
@@ -196,6 +222,27 @@ custom_deployment:
 
 ## Affinity for pod assignment
 ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+
+affinity_lite:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: eks.amazonaws.com/capacityType
+          operator: In
+          values:
+            - ON_DEMAND
+      - matchExpressions:
+        - key: lifecycle
+          operator: In
+          values:
+            - ondemand
+      - matchExpressions:
+        - key: cloud.google.com/gke-provisioning
+          operator: In
+          values:
+            - standard
+
 affinity:
   nodeAffinity:
     preferredDuringSchedulingIgnoredDuringExecution:
@@ -328,6 +375,13 @@ icarus:
     requests:
       cpu: 0.5
       memory: 2Gi
+  resources_lite:
+    limits:
+      cpu: 1
+      memory: 8Gi
+    requests:
+      cpu: 0.1
+      memory: 1Gi
 
 extraVolumes:
   - name: varlog
@@ -420,7 +474,7 @@ reaper:
       ADAPTIVE_REPAIR: "true"
   initContainer:
     image:
-      repository: ghcr.io/atlanhq/mt-utils-atlan-v2
-      tag: 1.8.58-multiarch
+      repository: ghcr.io/atlanhq/cassandra-keyspace-init-atlan-v2
+      tag: 1.0.1-multiarch
       pullPolicy: IfNotPresent
   

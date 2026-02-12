@@ -181,6 +181,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
             "/api/atlas/admin/metrics/prometheus",
             "/api/atlas/admin/health",
             "/api/atlas/admin/types/refresh",
+            "/api/atlas/admin/config/refresh",
             "/api/atlas/admin/isactive",
             "/api/atlas/admin/killtheleader",
             "/api/atlas/admin/pushMetricsToStatsd",

@@ -6,8 +6,9 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
-import org.apache.atlas.service.FeatureFlag;
 import org.apache.atlas.service.FeatureFlagStore;
+import org.apache.atlas.service.config.ConfigKey;
+import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,11 +26,11 @@ import java.util.Iterator;
  * latest tag propagation version by default.
  */
 @Component
-@DependsOn("featureFlagStore")
+@DependsOn({"featureFlagStore", "dynamicConfigStore"})
 public class TagsV2AutoEnabler {
     private static final Logger LOG = LoggerFactory.getLogger(TagsV2AutoEnabler.class);
 
-    private static final String ENABLE_JANUS_OPTIMISATION_KEY = FeatureFlag.ENABLE_JANUS_OPTIMISATION.getKey();
+    private static final String ENABLE_JANUS_OPTIMISATION_KEY = ConfigKey.ENABLE_JANUS_OPTIMISATION.getKey();
     
     // Property keys for type system vertices
     private static final String VERTEX_TYPE_PROPERTY_KEY = Constants.VERTEX_TYPE_PROPERTY_KEY;
@@ -48,7 +49,7 @@ public class TagsV2AutoEnabler {
         try {
             LOG.info("Starting auto-enable check for Janus optimization...");
 
-            boolean isTagV2Enabled = FeatureFlagStore.isTagV2Enabled();
+            boolean isTagV2Enabled = DynamicConfigStore.isTagV2Enabled();
             if (isTagV2Enabled) {
                 LOG.info("Tags v2 optimization is already enabled, skipping auto-enable check");
                 return;
@@ -59,7 +60,11 @@ public class TagsV2AutoEnabler {
 
             if (!hasClassificationTypes) {
                 LOG.info("No classification types found - enabling Tags V2 for new tenant");
+                // Write to both Redis (for backward compatibility) and Cassandra (if enabled)
                 FeatureFlagStore.setFlag(ENABLE_JANUS_OPTIMISATION_KEY, "true");
+                if (DynamicConfigStore.isEnabled()) {
+                    DynamicConfigStore.setConfig(ENABLE_JANUS_OPTIMISATION_KEY, "true", "system");
+                }
                 LOG.info("Successfully enabled Tags V2 feature flag");
             } else {
                 LOG.info("Classification types found - keeping existing configuration (Tags v2 disabled)");

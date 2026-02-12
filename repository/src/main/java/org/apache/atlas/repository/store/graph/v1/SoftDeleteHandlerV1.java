@@ -92,7 +92,7 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
             try {
                 if (DEFERRED_ACTION_ENABLED && RequestContext.get().getCurrentTask() == null) {
-                    Collection propagatableTags = org.apache.atlas.service.FeatureFlagStore.isTagV2Enabled()
+                    Collection propagatableTags = org.apache.atlas.service.config.DynamicConfigStore.isTagV2Enabled()
                             ? getPropagatableClassificationsV2(edge)
                             : getPropagatableClassifications(edge);
                     if (CollectionUtils.isNotEmpty(propagatableTags)) {
@@ -118,6 +118,9 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
             }
             if (isRelationshipEdge)
                 AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_SOFT_DELETE, edge, entityRetriever);
+        } catch (AtlasBaseException e) {
+            // to preserve the original error code (e.g., 403)
+            throw e;
         } catch (Exception e) {
             LOG.error("Error while deleting edge {}", GraphHelper.string(edge), e);
             throw new AtlasBaseException(e);

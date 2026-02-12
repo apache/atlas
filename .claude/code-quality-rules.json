@@ -1,0 +1,251 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Code quality rules, architecture patterns, and anti-patterns for Atlas Metastore skills",
+  "version": "1.0.0",
+
+  "layers": {
+    "rest": {
+      "pathPatterns": ["**/web/rest/**"],
+      "requiredPatterns": {
+        "@Timed": "All REST endpoint methods must have @Timed annotation",
+        "AtlasPerfTracer": "All REST methods must use AtlasPerfTracer in try-finally",
+        "validateQueryParamLength": "All path/query parameters must be validated",
+        "verifyAccess": "All entity operations must check authorization"
+      },
+      "forbiddenPatterns": {
+        "graph.traversal": "REST layer must not access graph directly",
+        "AtlasVertex": "REST layer must not manipulate graph vertices",
+        "AtlasEdge": "REST layer must not manipulate graph edges"
+      }
+    },
+    "service": {
+      "pathPatterns": ["**/glossary/*Service*", "**/discovery/*Service*", "**/tasks/*Service*"],
+      "requiredPatterns": {
+        "@GraphTransaction": "Service mutation methods should manage transactions"
+      },
+      "forbiddenPatterns": {
+        "AtlasVertex": "Service layer should delegate graph ops to stores"
+      }
+    },
+    "store": {
+      "pathPatterns": ["**/store/graph/v2/**"],
+      "requiredPatterns": {
+        "@GraphTransaction": "Store mutation methods must have @GraphTransaction"
+      },
+      "forbiddenPatterns": {
+        "HttpServletRequest": "Store layer must not access HTTP concerns",
+        "Servlets.": "Store layer must not use REST utilities"
+      }
+    },
+    "preprocessor": {
+      "pathPatterns": ["**/preprocessor/**"],
+      "requiredPatterns": {
+        "implements PreProcessor": "Preprocessors must implement PreProcessor interface",
+        "processAttributes": "Must override processAttributes method",
+        "EntityOperation.CREATE": "Must handle CREATE operation",
+        "EntityOperation.UPDATE": "Must handle UPDATE operation"
+      },
+      "forbiddenPatterns": {
+        "@GraphTransaction": "Preprocessors run within store transactions, must not declare own",
+        "HttpServletRequest": "Preprocessors must not access HTTP concerns",
+        "Kafka": "Preprocessors must not send notifications directly"
+      }
+    }
+  },
+
+  "preprocessorMappings": {
+    "AtlasGlossary": {
+      "preprocessor": "GlossaryPreProcessor",
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/preprocessor/glossary/GlossaryPreProcessor.java",
+      "qnPattern": "{nanoId}"
+    },
+    "AtlasGlossaryTerm": {
+      "preprocessor": "TermPreProcessor",
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/preprocessor/glossary/TermPreProcessor.java",
+      "qnPattern": "{nanoId}@{glossaryQN}"
+    },
+    "AtlasGlossaryCategory": {
+      "preprocessor": "CategoryPreProcessor",
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/preprocessor/glossary/CategoryPreProcessor.java",
+      "qnPattern": "{parentPath}.{nanoId}@{glossaryQN}"
+    },
+    "DataDomain": {
+      "preprocessor": "DataDomainPreProcessor",
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/preprocessor/datamesh/DataDomainPreProcessor.java",
+      "qnPattern": "default/domain/{nanoId}/super"
+    },
+    "DataProduct": {
+      "preprocessor": "DataProductPreProcessor",
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/preprocessor/datamesh/DataProductPreProcessor.java",
+      "qnPattern": "{domainQN}/product/{nanoId}"
+    },
+    "Persona": {
+      "preprocessor": "PersonaPreProcessor",
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/preprocessor/accesscontrol/PersonaPreProcessor.java",
+      "qnPattern": "{tenantId}/{nanoId}"
+    },
+    "Purpose": {
+      "preprocessor": "PurposePreProcessor",
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/preprocessor/accesscontrol/PurposePreProcessor.java",
+      "qnPattern": "{tenantId}/{nanoId}"
+    },
+    "AuthPolicy": {
+      "preprocessor": "AuthPolicyPreProcessor",
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/preprocessor/AuthPolicyPreProcessor.java",
+      "qnPattern": "{parentEntityQN}/{nanoId}"
+    },
+    "Query": {
+      "preprocessor": "QueryPreProcessor",
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/preprocessor/sql/QueryPreProcessor.java",
+      "qnPattern": "{collectionQN}/{userName}/{nanoId}"
+    },
+    "Collection": {
+      "preprocessor": "QueryCollectionPreProcessor",
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/preprocessor/sql/QueryCollectionPreProcessor.java",
+      "qnPattern": "{userName}/{nanoId}"
+    },
+    "Folder": {
+      "preprocessor": "QueryFolderPreProcessor",
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/preprocessor/sql/QueryFolderPreProcessor.java"
+    },
+    "Stakeholder": {
+      "preprocessor": "StakeholderPreProcessor",
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/preprocessor/datamesh/StakeholderPreProcessor.java"
+    },
+    "StakeholderTitle": {
+      "preprocessor": "StakeholderTitlePreProcessor",
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/preprocessor/datamesh/StakeholderTitlePreProcessor.java"
+    },
+    "Asset": {
+      "preprocessor": "AssetPreProcessor",
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/preprocessor/AssetPreProcessor.java"
+    }
+  },
+
+  "highImpactFiles": [
+    {
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java",
+      "impact": "ALL entity create/update operations",
+      "riskLevel": "CRITICAL"
+    },
+    {
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/preprocessor/PreProcessorUtils.java",
+      "impact": "ALL preprocessors",
+      "riskLevel": "CRITICAL"
+    },
+    {
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEntityStoreV2.java",
+      "impact": "ALL entity store operations",
+      "riskLevel": "CRITICAL"
+    },
+    {
+      "path": "repository/src/main/java/org/apache/atlas/type/AtlasTypeRegistry.java",
+      "impact": "ALL type resolution",
+      "riskLevel": "CRITICAL"
+    },
+    {
+      "path": "repository/src/main/java/org/apache/atlas/RequestContext.java",
+      "impact": "ALL request processing (thread-local)",
+      "riskLevel": "CRITICAL"
+    },
+    {
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasRelationshipStoreV2.java",
+      "impact": "ALL relationship operations",
+      "riskLevel": "HIGH"
+    },
+    {
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphRetriever.java",
+      "impact": "ALL entity reads",
+      "riskLevel": "HIGH"
+    },
+    {
+      "path": "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasTypeDefGraphStoreV2.java",
+      "impact": "ALL typedef operations",
+      "riskLevel": "HIGH"
+    }
+  ],
+
+  "antiPatterns": [
+    {
+      "id": "generic-catch",
+      "pattern": "catch\\s*\\(\\s*Exception\\s",
+      "severity": "WARNING",
+      "message": "Catching generic Exception — use specific exception types (AtlasBaseException)",
+      "layers": ["all"]
+    },
+    {
+      "id": "empty-catch",
+      "pattern": "catch\\s*\\([^)]+\\)\\s*\\{\\s*\\}",
+      "severity": "CRITICAL",
+      "message": "Empty catch block — exceptions are silently swallowed",
+      "layers": ["all"]
+    },
+    {
+      "id": "system-out",
+      "pattern": "System\\.(out|err)\\.",
+      "severity": "WARNING",
+      "message": "Use SLF4J Logger instead of System.out/err",
+      "layers": ["all"]
+    },
+    {
+      "id": "thread-sleep",
+      "pattern": "Thread\\.sleep",
+      "severity": "WARNING",
+      "message": "Thread.sleep in production code — use event-driven patterns",
+      "layers": ["rest", "service", "store", "preprocessor"]
+    },
+    {
+      "id": "size-equals-zero",
+      "pattern": "\\.size\\(\\)\\s*==\\s*0",
+      "severity": "INFO",
+      "message": "Use CollectionUtils.isEmpty() instead of .size() == 0",
+      "layers": ["all"]
+    },
+    {
+      "id": "string-concat-log",
+      "pattern": "LOG\\.(info|warn|error|debug)\\([^)]*\\+[^)]*\\)",
+      "severity": "WARNING",
+      "message": "Use parameterized logging (LOG.info(\"msg: {}\", val)) instead of string concatenation",
+      "layers": ["all"]
+    },
+    {
+      "id": "mutable-static",
+      "pattern": "static\\s+(?!final)\\s*(Map|List|Set|Collection|HashMap|ArrayList)",
+      "severity": "WARNING",
+      "message": "Mutable static field — thread safety risk in multi-threaded server",
+      "layers": ["all"]
+    }
+  ],
+
+  "securityPatterns": {
+    "inputValidation": {
+      "required": ["Servlets.validateQueryParamLength"],
+      "description": "REST path/query parameters must be validated"
+    },
+    "ssiInjection": {
+      "pattern": "<!--#\\\\s*\\\\w+.*-->",
+      "description": "Server-Side Include tags must be detected and rejected in user input"
+    },
+    "authorization": {
+      "required": ["AtlasAuthorizationUtils.verifyAccess"],
+      "description": "Entity operations must verify authorization"
+    },
+    "logSanitization": {
+      "check": "User-controlled strings in log statements must sanitize newlines",
+      "fix": "replaceAll(\"[\\r\\n]\", \"_\")"
+    }
+  },
+
+  "testConventions": {
+    "framework": "TestNG",
+    "mockFramework": "Mockito",
+    "setupAnnotation": "@BeforeMethod",
+    "teardownAnnotation": "@AfterMethod",
+    "testAnnotation": "@Test",
+    "assertionPackage": "org.testng.Assert",
+    "requiredTeardown": ["RequestContext.clear()", "closeable.close()"],
+    "requiredSetup": ["MockitoAnnotations.openMocks(this)", "RequestContext.clear()"],
+    "testLocation": "repository/src/test/java/",
+    "integrationTestLocation": "webapp/src/test/java/org/apache/atlas/web/integration/"
+  }
+}

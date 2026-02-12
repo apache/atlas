@@ -220,6 +220,7 @@ public final class Constants {
      */
     public static final String PROCESS_OUTPUTS = "__Process.outputs";
     public static final String PROCESS_INPUTS = "__Process.inputs";
+    public static final String CSA_ADOPTION_EXPORT = "csa-adoption-export";
 
     public static String[] PROCESS_EDGE_LABELS = {PROCESS_OUTPUTS, PROCESS_INPUTS};
 

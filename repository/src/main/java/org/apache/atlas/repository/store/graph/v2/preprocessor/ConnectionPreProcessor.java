@@ -230,8 +230,8 @@ public class ConnectionPreProcessor implements PreProcessor {
     @Override
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
         // Process Delete connection role and policies in case of hard delete or purge
-        if (isDeleteTypeSoft()) {
-            LOG.info("Skipping processDelete for connection as delete type is {}", RequestContext.get().getDeleteType());
+        if (isDeleteTypeSoft(deleteDelegate)) {
+            LOG.info("Skipping policies and roles delete for connection as delete type is {}", RequestContext.get().getDeleteType());
             return;
         }
 
@@ -249,14 +249,14 @@ public class ConnectionPreProcessor implements PreProcessor {
 
             //delete connection policies
             List<AtlasEntityHeader> policies = getConnectionPolicies(connection.getGuid(), roleName);
-            entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
+            if(CollectionUtils.isNotEmpty(policies)){
+                entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
+            } else {
+                LOG.warn("No Connection policy found for connection {}", connection.getGuid());
+            }
 
             keycloakStore.removeRoleByName(roleName);
         }
-    }
-
-    private boolean isDeleteTypeSoft() {
-        return deleteDelegate.getHandler().getClass().equals(SoftDeleteHandlerV1.class);
     }
 
     private List<AtlasEntityHeader> getConnectionPolicies(String guid, String roleName) throws AtlasBaseException {
@@ -267,7 +267,7 @@ public class ConnectionPreProcessor implements PreProcessor {
 
         List mustClauseList = new ArrayList();
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", POLICY_ENTITY_TYPE)));
-        mustClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, guid + "/*")));
+        mustClauseList.add(mapOf("prefix", mapOf(QUALIFIED_NAME, guid + "/")));
         mustClauseList.add(mapOf("term", mapOf("policyRoles", roleName)));
 
         dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
@@ -276,7 +276,7 @@ public class ConnectionPreProcessor implements PreProcessor {
         indexSearchParams.setSuppressLogs(true);
 
         AtlasSearchResult result = discovery.directIndexSearch(indexSearchParams);
-        if (result != null) {
+        if (result != null && result.getEntities() != null) {
             ret = result.getEntities();
         }
 

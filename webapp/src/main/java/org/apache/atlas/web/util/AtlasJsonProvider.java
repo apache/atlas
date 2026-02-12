@@ -23,11 +23,15 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
+import org.apache.atlas.web.errors.ExceptionMapperUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -47,6 +51,9 @@ public class AtlasJsonProvider extends JacksonJaxbJsonProvider {
     private static final ObjectMapper mapper = new ObjectMapper()
                                                     .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
 
+    @Context
+    private HttpServletRequest httpServletRequest;
+
     public AtlasJsonProvider() {
         super(mapper, JacksonJaxbJsonProvider.DEFAULT_ANNOTATIONS);
 
@@ -60,9 +67,11 @@ public class AtlasJsonProvider extends JacksonJaxbJsonProvider {
             return super.readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);
         } catch (JsonParseException jpe) {
             LOG.error("Malformed json passed to server", jpe);
+            ExceptionMapperUtil.logRequestBodyOnError(httpServletRequest);
             throw new WebApplicationException(Servlets.getErrorResponse(jpe.getMessage(), Response.Status.BAD_REQUEST));
         } catch (JsonMappingException jme) {
             LOG.error("Malformed json passed to server, incorrect data type used", jme);
+            ExceptionMapperUtil.logRequestBodyOnError(httpServletRequest);
             throw new WebApplicationException(Servlets.getErrorResponse(jme.getMessage(), Response.Status.BAD_REQUEST));
         }
     }

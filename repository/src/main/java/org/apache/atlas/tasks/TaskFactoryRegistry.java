@@ -17,7 +17,9 @@
  */
 package org.apache.atlas.tasks;
 
+import io.micrometer.core.instrument.Timer;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.service.metrics.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -44,6 +46,7 @@ public class TaskFactoryRegistry {
 
     @PostConstruct
     public void startTaskManagement() throws AtlasException {
+        Timer.Sample sample = Timer.start(MetricUtils.getMeterRegistry());
         try {
             if (taskManagement.isWatcherActive()) {
                 LOG.info("TaskFactoryRegistry: TaskManagement already started!");
@@ -55,6 +58,10 @@ public class TaskFactoryRegistry {
         } catch (AtlasException e) {
             LOG.error("Error starting TaskManagement!", e);
             throw e;
+        } finally {
+            sample.stop(Timer.builder("atlas.startup.taskmanager.start.duration")
+                    .description("Time taken to start task management during Atlas startup")
+                    .register(MetricUtils.getMeterRegistry()));
         }
     }
 }

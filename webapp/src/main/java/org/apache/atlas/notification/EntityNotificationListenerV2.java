@@ -33,6 +33,7 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType;
+import org.apache.atlas.repository.util.AtlasEntityUtils;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -271,6 +272,13 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     }
 
     private AtlasEntityHeaderWithRelations toNotificationHeader(AtlasEntity entity) {
+        try {
+            AtlasEntityUtils.filterInvalidAttributes(entity, typeRegistry);
+        } catch (Exception e) {
+            LOG.error("filterInvalidAttributes failed for entity {}.{}: {}. Proceeding without filtering.",
+                      entity.getTypeName(), entity.getGuid(), e.getMessage(), e);
+        }
+
         AtlasEntityHeaderWithRelations ret = new AtlasEntityHeaderWithRelations(entity.getTypeName(), entity.getGuid(), new HashMap<>());
         Object            name        = entity.getAttribute(NAME);
         Object            displayText = name != null ? name : entity.getAttribute(QUALIFIED_NAME);
@@ -315,11 +323,15 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
             if (MapUtils.isNotEmpty(allInternalAttributesMap)) {
                 ret.setInternalAttributes(allInternalAttributesMap);
                 // fill all classifications related attrs. They are no longer part of vertex attributes
-                if (CollectionUtils.isNotEmpty(context.getESDeferredOperations())) {
+                String docId = entity.getDocId();
+                if (docId == null) {
+                    LOG.warn("Skipping deferred ES merge for entity (guid={}, type={}) as docId is null",
+                            entity.getGuid(), entity.getTypeName());
+                } else if (CollectionUtils.isNotEmpty(context.getESDeferredOperations())) {
                     List<ESDeferredOperation> esDefferredOperations = context.getESDeferredOperations();
                     if (CollectionUtils.isNotEmpty(esDefferredOperations)) {
+                        Long vertexId = LongEncoding.decode(docId);
                         for (ESDeferredOperation esDeferredOperation : esDefferredOperations) {
-                            Long vertexId = LongEncoding.decode(entity.getDocId());
                             if (Long.parseLong(esDeferredOperation.getEntityId()) == vertexId) {
                                 Map<String, Object> classificationInternalAttributes = esDeferredOperation.getPayload().get(String.valueOf(vertexId));
                                 if (MapUtils.isNotEmpty(classificationInternalAttributes)) {

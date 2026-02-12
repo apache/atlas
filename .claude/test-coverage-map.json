@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Maps code paths to integration tests for coverage analysis",
+  "version": "1.0.0",
+  "pathMappings": {
+    "glossary": {
+      "patterns": [
+        "**/glossary/**",
+        "**/preprocessor/glossary/**",
+        "**/GlossaryService.java",
+        "**/GlossaryREST.java"
+      ],
+      "tests": ["GlossaryIntegrationTest", "GlossaryExtendedIntegrationTest"],
+      "description": "Glossary, Term, Category operations"
+    },
+    "entityCrud": {
+      "patterns": [
+        "**/EntityGraphMapper.java",
+        "**/AtlasEntityStoreV2.java",
+        "**/EntityREST.java",
+        "**/store/graph/v2/AtlasEntityStoreV2.java"
+      ],
+      "tests": ["EntityCrudIntegrationTest"],
+      "description": "Entity create/read/update/delete operations"
+    },
+    "dataMesh": {
+      "patterns": [
+        "**/preprocessor/datamesh/**",
+        "**/DataDomain*.java",
+        "**/DataProduct*.java"
+      ],
+      "tests": ["DataMeshIntegrationTest"],
+      "description": "Data domains and data products"
+    },
+    "accessControl": {
+      "patterns": [
+        "**/preprocessor/accesscontrol/**",
+        "**/PersonaPreProcessor.java",
+        "**/PurposePreProcessor.java",
+        "**/AuthPolicy*.java"
+      ],
+      "tests": ["PersonaPurposeIntegrationTest"],
+      "description": "Persona, Purpose, and AuthPolicy operations"
+    },
+    "sqlAssets": {
+      "patterns": [
+        "**/preprocessor/sql/**",
+        "**/ConnectionPreProcessor.java",
+        "**/TablePreProcessor.java",
+        "**/ColumnPreProcessor.java"
+      ],
+      "tests": ["SQLAssetHierarchyIntegrationTest"],
+      "description": "Table, Column, Schema, Database hierarchy"
+    },
+    "classification": {
+      "patterns": [
+        "**/classification/**",
+        "**/tag/**",
+        "**/ClassificationPreProcessor.java",
+        "**/EntityGraphMapper.java"
+      ],
+      "tests": ["ClassificationIntegrationTest"],
+      "description": "Tag and classification operations"
+    },
+    "lineage": {
+      "patterns": [
+        "**/lineage/**",
+        "**/LineageREST.java",
+        "**/AtlasLineageService.java",
+        "**/Process*.java"
+      ],
+      "tests": ["LineageIntegrationTest"],
+      "description": "Process entities and lineage relationships"
+    },
+    "search": {
+      "patterns": [
+        "**/discovery/**",
+        "**/search/**",
+        "**/DiscoveryREST.java",
+        "**/EntityDiscoveryService.java",
+        "**/IndexSearch*.java"
+      ],
+      "tests": ["SearchIntegrationTest"],
+      "description": "IndexSearch and entity discovery"
+    },
+    "relationship": {
+      "patterns": [
+        "**/AtlasRelationshipStoreV2.java",
+        "**/RelationshipREST.java",
+        "**/relationship/**"
+      ],
+      "tests": ["RelationshipIntegrationTest"],
+      "description": "Entity relationship operations"
+    },
+    "businessMetadata": {
+      "patterns": [
+        "**/businessmetadata/**",
+        "**/BusinessMetadataREST.java",
+        "**/BusinessMetadataService.java"
+      ],
+      "tests": ["BusinessMetadataIntegrationTest"],
+      "description": "Business metadata attributes"
+    },
+    "label": {
+      "patterns": [
+        "**/label/**",
+        "**/LabelREST.java"
+      ],
+      "tests": ["LabelIntegrationTest"],
+      "description": "Label operations on entities"
+    },
+    "typeDef": {
+      "patterns": [
+        "**/AtlasTypeDefGraphStoreV2.java",
+        "**/TypeDefREST.java",
+        "**/typedef/**"
+      ],
+      "tests": ["TypeDefIntegrationTest"],
+      "description": "TypeDef CRUD operations"
+    }
+  },
+  "entityTypeMappings": {
+    "AtlasGlossary": ["GlossaryIntegrationTest"],
+    "AtlasGlossaryTerm": ["GlossaryIntegrationTest", "GlossaryExtendedIntegrationTest"],
+    "AtlasGlossaryCategory": ["GlossaryIntegrationTest", "GlossaryExtendedIntegrationTest"],
+    "Table": ["EntityCrudIntegrationTest", "SQLAssetHierarchyIntegrationTest"],
+    "Column": ["SQLAssetHierarchyIntegrationTest"],
+    "Schema": ["SQLAssetHierarchyIntegrationTest"],
+    "Database": ["SQLAssetHierarchyIntegrationTest"],
+    "Connection": ["SQLAssetHierarchyIntegrationTest"],
+    "DataDomain": ["DataMeshIntegrationTest"],
+    "DataProduct": ["DataMeshIntegrationTest"],
+    "Persona": ["PersonaPurposeIntegrationTest"],
+    "Purpose": ["PersonaPurposeIntegrationTest"],
+    "AuthPolicy": ["PersonaPurposeIntegrationTest"],
+    "Process": ["LineageIntegrationTest"]
+  },
+  "testClasses": {
+    "EntityCrudIntegrationTest": {
+      "path": "webapp/src/test/java/org/apache/atlas/web/integration/EntityCrudIntegrationTest.java",
+      "description": "Entity create/read/update/delete via REST API",
+      "testCount": 12,
+      "capabilities": ["create", "read", "update", "delete", "bulk operations", "error handling"]
+    },
+    "GlossaryIntegrationTest": {
+      "path": "webapp/src/test/java/org/apache/atlas/web/integration/GlossaryIntegrationTest.java",
+      "description": "Glossary, Term, Category lifecycle",
+      "testCount": 11,
+      "capabilities": ["glossary CRUD", "term CRUD", "category CRUD", "anchoring"]
+    },
+    "GlossaryExtendedIntegrationTest": {
+      "path": "webapp/src/test/java/org/apache/atlas/web/integration/GlossaryExtendedIntegrationTest.java",
+      "description": "Advanced glossary operations",
+      "capabilities": ["term relationships", "category hierarchy", "bulk operations"]
+    },
+    "SQLAssetHierarchyIntegrationTest": {
+      "path": "webapp/src/test/java/org/apache/atlas/web/integration/SQLAssetHierarchyIntegrationTest.java",
+      "description": "Table/Column/Schema/Database hierarchy",
+      "capabilities": ["hierarchy creation", "relationship validation", "cascade operations"]
+    },
+    "ClassificationIntegrationTest": {
+      "path": "webapp/src/test/java/org/apache/atlas/web/integration/ClassificationIntegrationTest.java",
+      "description": "Tag/Classification operations",
+      "capabilities": ["tag assignment", "tag removal", "propagation"]
+    },
+    "LineageIntegrationTest": {
+      "path": "webapp/src/test/java/org/apache/atlas/web/integration/LineageIntegrationTest.java",
+      "description": "Process entities and lineage",
+      "capabilities": ["process creation", "lineage traversal", "impact analysis"]
+    },
+    "SearchIntegrationTest": {
+      "path": "webapp/src/test/java/org/apache/atlas/web/integration/SearchIntegrationTest.java",
+      "description": "IndexSearch and discovery",
+      "capabilities": ["basic search", "DSL search", "faceted search", "sorting"]
+    },
+    "RelationshipIntegrationTest": {
+      "path": "webapp/src/test/java/org/apache/atlas/web/integration/RelationshipIntegrationTest.java",
+      "description": "Entity relationships",
+      "capabilities": ["relationship creation", "relationship update", "cascade delete"]
+    },
+    "BusinessMetadataIntegrationTest": {
+      "path": "webapp/src/test/java/org/apache/atlas/web/integration/BusinessMetadataIntegrationTest.java",
+      "description": "Business metadata attributes",
+      "capabilities": ["BM assignment", "BM update", "BM removal"]
+    },
+    "DataMeshIntegrationTest": {
+      "path": "webapp/src/test/java/org/apache/atlas/web/integration/DataMeshIntegrationTest.java",
+      "description": "DataDomain and DataProduct",
+      "capabilities": ["domain CRUD", "product CRUD", "domain hierarchy"]
+    },
+    "PersonaPurposeIntegrationTest": {
+      "path": "webapp/src/test/java/org/apache/atlas/web/integration/PersonaPurposeIntegrationTest.java",
+      "description": "Persona, Purpose, AuthPolicy",
+      "capabilities": ["persona CRUD", "purpose CRUD", "policy attachment"]
+    },
+    "LabelIntegrationTest": {
+      "path": "webapp/src/test/java/org/apache/atlas/web/integration/LabelIntegrationTest.java",
+      "description": "Label operations",
+      "capabilities": ["label assignment", "label removal", "label search"]
+    },
+    "TypeDefIntegrationTest": {
+      "path": "webapp/src/test/java/org/apache/atlas/web/integration/TypeDefIntegrationTest.java",
+      "description": "TypeDef CRUD",
+      "capabilities": ["typedef creation", "typedef update", "typedef deletion"]
+    }
+  }
+}

@@ -26,7 +26,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.util.AtlasEntityUtils;
-import org.apache.atlas.service.FeatureFlagStore;
+import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.type.AtlasBusinessMetadataType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -168,7 +168,7 @@ public class AtlasEntityComparator {
             if (storedEntity != null) {
                 currVal = storedEntity.getClassifications();
             } else {
-                if (FeatureFlagStore.isTagV2Enabled()) {
+                if (DynamicConfigStore.isTagV2Enabled()) {
                     currVal = entityRetriever.getDirectClassifications(storedVertex);
                 } else {
                     currVal = entityRetriever.getAllClassifications_V1(storedVertex);

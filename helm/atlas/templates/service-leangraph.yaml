@@ -1,0 +1,48 @@
+{{- if .Values.global.leangraph.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-service-leangraph
+  namespace: {{ .Values.Namespace  }}
+  annotations:
+    {{- if eq .Values.global.cloud "gcp" }}
+    cloud.google.com/neg: '{"exposed_ports": {"80":{"name": "{{ .Values.global.tenantName }}-atlas-80-neg-http"}}}'
+    konghq.com/path: /api/atlas/v2/
+    konghq.com/plugins: svc-rate-limit
+    {{- else if eq .Values.global.cloud "azure" }}
+    konghq.com/path: /api/atlas/v2/
+    konghq.com/plugins: svc-rate-limit
+    {{- else if eq .Values.albTenant false }}
+    konghq.com/path: /api/atlas/v2/
+    konghq.com/plugins: svc-rate-limit
+    {{- end }}
+  labels:
+    app: {{ template "name" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  {{- if eq .Values.albTenant true }}
+  type: {{ .Values.atlas.service.type }}
+  {{- else if eq .Values.global.cloud "gcp" }}
+  type: ClusterIP
+  {{- else if eq .Values.global.cloud "azure" }}
+  type: ClusterIP
+  {{- else }}
+  type: ClusterIP
+  {{- end }}
+  ports:
+    {{- if and .Values.nginx.enabled .Values.nginx.ratelimit.default_atlas_service }}
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+      name: http
+    {{- else }}
+    - port: {{ .Values.atlas.leangraph.service.port }}
+      targetPort: {{ .Values.atlas.leangraph.service.targetPort }}
+      protocol: TCP
+      name: {{ .Values.atlas.leangraph.service.portName }}
+    {{- end }}
+  selector:
+    app: {{ template "name" . }}-leangraph
+    release: {{ .Release.Name }}
+{{- end }}

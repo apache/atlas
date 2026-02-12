@@ -131,10 +131,13 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
 
                             if (CollectionUtils.isNotEmpty(typeResources)) {
                                 typeResources.forEach(x -> finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY_TYPE, x)));
+                            } else if (POLICY_SUB_CATEGORY_DATA.equals(subCategory)) {
+                                // Data policies (heka) need wildcard to cover all entity types for select action
+                                finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY_TYPE, "*"));
                             } else {
                                 boolean isConnection = false;
 
-                                if (POLICY_SUB_CATEGORY_METADATA.equals(subCategory) || POLICY_SUB_CATEGORY_DATA.equals(subCategory)) {
+                                if (POLICY_SUB_CATEGORY_METADATA.equals(subCategory)) {
                                     isConnection = isConnectionPolicy(entityResources, atlasPolicy);
                                 }
 

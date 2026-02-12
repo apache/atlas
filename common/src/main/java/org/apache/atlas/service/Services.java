@@ -17,8 +17,9 @@
  */
 package org.apache.atlas.service;
 
+import io.micrometer.core.instrument.Timer;
 import org.apache.atlas.annotation.AtlasService;
-import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 import static org.apache.atlas.AtlasConstants.ATLAS_SERVICES_ENABLED;
@@ -61,18 +63,33 @@ public class Services {
 
     @PostConstruct
     public void start() {
+        long totalStartTime = System.currentTimeMillis();
         try {
             for (Service svc : services) {
                 if (!isServiceUsed(svc)) {
                     continue;
                 }
 
-
+                String serviceName = svc.getClass().getSimpleName();
                 LOG.info("Starting service {}", svc.getClass().getName());
-                svc.start();
+                Timer.Sample sample = Timer.start(MetricUtils.getMeterRegistry());
+                try {
+                    svc.start();
+                } finally {
+                    sample.stop(Timer.builder("atlas.startup.service.duration")
+                            .description("Time taken to start individual services during Atlas startup")
+                            .tag("service", serviceName)
+                            .register(MetricUtils.getMeterRegistry()));
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
+        } finally {
+            long totalDuration = System.currentTimeMillis() - totalStartTime;
+            Timer.builder("atlas.startup.services.total.duration")
+                    .description("Total time taken to start all services during Atlas startup")
+                    .register(MetricUtils.getMeterRegistry())
+                    .record(totalDuration, TimeUnit.MILLISECONDS);
         }
     }
 

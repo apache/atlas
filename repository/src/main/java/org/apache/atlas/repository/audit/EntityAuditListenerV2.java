@@ -30,6 +30,7 @@ import org.apache.atlas.listener.EntityChangeListenerV2;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
+import org.apache.atlas.repository.util.AtlasEntityUtils;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
@@ -555,6 +556,13 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
     private String getAuditEventDetail(AtlasEntity entity, EntityAuditActionV2 action, long auditMaxSize) {
         Map<String, Object> prunedAttributes = pruneEntityAttributesForAudit(entity);
+
+        try {
+            AtlasEntityUtils.filterInvalidAttributes(entity, typeRegistry);
+        } catch (Exception e) {
+            LOG.error("filterInvalidAttributes failed for entity {}.{}: {}. Proceeding without filtering.",
+                      entity.getTypeName(), entity.getGuid(), e.getMessage(), e);
+        }
 
         String auditPrefix  = getV2AuditPrefix(action);
         String auditString  = auditPrefix + getAuditString(entity, action);

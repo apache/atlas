@@ -34,7 +34,7 @@
         "ignore_random_id_objects": {
           "path_match":    "detail.attributes.*",
           "match_pattern": "regex",
-          "match":         "^[a-zA-Z](?=.*\\\\d)[a-zA-Z0-9]{21}$",
+          "match":         "^[a-zA-Z](?=.*\\d)[a-zA-Z0-9]{21}$",
           "mapping":       { "enabled": false }
         }
       },
@@ -48,14 +48,14 @@
         "suppress_attribute_hashes": {
           "path_match": "detail.classifications.*",
           "match_pattern": "regex",
-          "match":         "^[a-zA-Z](?=.*\\\\d)[a-zA-Z0-9]{21}$",
+          "match":         "^[a-zA-Z](?=.*\\d)[a-zA-Z0-9]{21}$",
           "mapping":    { "enabled": false }
         }
       },
       {
         "bm_ids_in_businessAttributes_lvl1_obj": {
           "path_match": "detail.businessAttributes.*",
-          "match": "^[A-Za-z](?=.*\\d)[A-Za-z0-9]{21}$",
+          "match": "^[a-zA-Z](?=.*\\d)[a-zA-Z0-9]{21}$",
           "match_pattern": "regex",
           "mapping": {
             "enabled": false
@@ -65,7 +65,7 @@
       {
         "bm_ids_in_businessAttributes_lvl2_obj": {
           "path_match": "detail.businessAttributes.*.*",
-          "match": "^[A-Za-z](?=.*\\d)[A-Za-z0-9]{21}$",
+          "match": "^[a-zA-Z](?=.*\\d)[a-zA-Z0-9]{21}$",
           "match_pattern": "regex",
           "mapping": {
             "enabled": false

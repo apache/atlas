@@ -262,7 +262,17 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                                   Map<String, Map<String, Object>> assetMinAttrsMap, AtlasClassification tag) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("putPropagatedTags");
         try {
+            // Filter out self-propagation: an asset should not propagate a tag to itself
             List<String> vertexIds = new ArrayList<>(propagatedAssetVertexIds);
+            if (vertexIds.remove(sourceAssetId)) {
+                LOG.warn("Skipping self-propagation for sourceAssetId={}, tagTypeName={}", sourceAssetId, tagTypeName);
+            }
+
+            if (vertexIds.isEmpty()) {
+                LOG.info("No vertices to propagate tags to after filtering for sourceAssetId={}, tagTypeName={}", sourceAssetId, tagTypeName);
+                return;
+            }
+
             Instant now = Instant.ofEpochMilli(RequestContext.get().getRequestTime());
             String tagJson = AtlasType.toJson(tag);
 
@@ -628,14 +638,61 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             BoundStatement bound = findAllTagDetailsForAssetStmt.bind(bucket, vertexId);
             ResultSet rs = executeWithRetry(bound);
 
-            List<Tag> tags = resultSetToTags(vertexId, rs);
-            if (tags.isEmpty()) {
-                LOG.warn("No active tags found for vertexId={}, bucket={}", vertexId, bucket);
-            }
-            return tags;
+            return resultSetToTags(vertexId, rs);
         } catch (Exception e) {
             LOG.error("Error in getAllTagsByVertexId for vertexId={}", vertexId, e);
             throw new AtlasBaseException("Error getting all tags by vertexId", e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    public PaginatedVertexIdResult getVertexIdFromTagsByIdTableWithPagination(String pagingStateStr, int pageSize) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getVertexIdFromTagsByIdTableWithPagination");
+        try {
+            String queryStr = String.format("SELECT id FROM %s.%s", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME);
+
+            SimpleStatement statement = SimpleStatement.builder(queryStr)
+                    .setPageSize(pageSize)
+                    .build();
+
+            if (pagingStateStr != null && !pagingStateStr.isEmpty()) {
+                statement = statement.setPagingState(ByteBuffer.wrap(Base64.getDecoder().decode(pagingStateStr)));
+            }
+
+            ResultSet rs = executeWithRetry(statement);
+            Set<Long> vertexIds = new LinkedHashSet<>();
+
+            Iterator<Row> iterator = rs.iterator();
+            int count = 0;
+
+            while (count < pageSize && iterator.hasNext()) {
+                Row row = iterator.next();
+                vertexIds.add(Long.parseLong(row.getString("id")));
+                count++;
+            }
+
+            LOG.debug("Fetched {} unique vertex ids in this page", vertexIds.size());
+
+            ByteBuffer pagingStateBuffer = rs.getExecutionInfo().getPagingState();
+            String nextPagingState = null;
+
+            if (pagingStateBuffer != null) {
+                byte[] bytes = new byte[pagingStateBuffer.remaining()];
+                pagingStateBuffer.get(bytes);
+                if (bytes.length > 0) {
+                    nextPagingState = Base64.getEncoder().encodeToString(bytes);
+                }
+            }
+
+            boolean done = (nextPagingState == null || nextPagingState.isEmpty());
+            LOG.debug("Next paging state. Has more pages: {}", !done);
+
+            return new PaginatedVertexIdResult(vertexIds, nextPagingState, done);
+
+        } catch (Exception e) {
+            LOG.error("Error fetching GUIDs from tags_by_id table", e);
+            throw new AtlasBaseException("Error fetching GUIDs from tags_by_id table", e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }

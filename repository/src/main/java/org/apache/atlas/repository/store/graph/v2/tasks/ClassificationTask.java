@@ -90,8 +90,11 @@ public abstract class ClassificationTask extends AbstractTask {
         TaskContext context = new TaskContext();
         long startTime = System.currentTimeMillis();
         String taskType = getTaskType();
-        String version = org.apache.atlas.service.FeatureFlagStore.isTagV2Enabled() ? "v2" : "v1";
+        String version = org.apache.atlas.service.config.DynamicConfigStore.isTagV2Enabled() ? "v2" : "v1";
         String tenant = System.getenv("DOMAIN_NAME");
+        if (tenant == null) {
+            tenant = "default";
+        }
 
         if (MapUtils.isEmpty(params)) {
             LOG.warn("Task: {}: Unable to process task: Parameters is not readable!", getTaskGuid());
