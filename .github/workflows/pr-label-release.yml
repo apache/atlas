@@ -46,30 +46,155 @@ jobs:
       ((github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
        (github.event_name == 'pull_request' && startsWith(github.head_ref, 'ring-')) ||
        github.event_name == 'push')
-    uses: atlanhq/atlan-releases/.github/workflows/get-pr-no.yml@main
-    with:
-      state: open
-    secrets:
-      RING_PAT_GITHUB: ${{ secrets.ORG_PAT_GITHUB }}
+    runs-on: ubuntu-latest
+    outputs:
+      pr_number: ${{ steps.get-pr.outputs.pr_number }}
+    steps:
+      - name: Get PR Number
+        id: get-pr
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ORG_PAT_GITHUB }}
+          script: |
+            let prNumber;
+
+            if (context.eventName === 'pull_request') {
+              prNumber = context.issue.number;
+            } else {
+              const branchName = context.ref.replace('refs/heads/', '');
+              console.log(`Looking for PR associated with branch: ${branchName}`);
+
+              const { data: pulls } = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                head: `${context.repo.owner}:${branchName}`,
+                state: 'open'
+              });
+
+              if (pulls.length === 0) {
+                console.log(`No open PR found for branch: ${branchName}`);
+                core.setOutput('pr_number', '');
+                return;
+              }
+
+              prNumber = pulls[0].number;
+              console.log(`Found PR #${prNumber} for branch: ${branchName}`);
+            }
+
+            console.log(`PR Number: ${prNumber}`);
+            core.setOutput('pr_number', prNumber);
 
   check-prerequisites:
     needs: get-pr-number
     if: needs.get-pr-number.outputs.pr_number != ''
-    uses: atlanhq/atlan-releases/.github/workflows/check-ring-release-conditions.yml@main
-    with:
-      pr_number: ${{ needs.get-pr-number.outputs.pr_number }}
-      build_workflow_id: 'maven.yml'
-    secrets:
-      RING_PAT_GITHUB: ${{ secrets.ORG_PAT_GITHUB }}
+    runs-on: ubuntu-latest
+    outputs:
+      should_proceed: ${{ steps.check.outputs.should_proceed }}
+    steps:
+      - name: Check prerequisites
+        id: check
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ORG_PAT_GITHUB }}
+          script: |
+            const prNumber = parseInt('${{ needs.get-pr-number.outputs.pr_number }}');
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+
+            const headRef = pr.head.ref;
+            console.log(`Head ref: ${headRef}`);
+
+            if (!headRef.startsWith('ring-')) {
+              console.log(`Branch ${headRef} is not a ring branch`);
+              core.setOutput('should_proceed', 'false');
+              return;
+            }
+
+            const hasCohortLabel = pr.labels.some(label => label.name.startsWith('cohort:'));
+            console.log(`Has cohort label: ${hasCohortLabel}`);
+
+            if (!hasCohortLabel) {
+              console.log('No cohort labels found on PR');
+              core.setOutput('should_proceed', 'false');
+              return;
+            }
+
+            // Check if build workflow has completed successfully
+            const buildWorkflowId = 'maven.yml';
+            console.log(`Checking build workflow: ${buildWorkflowId}`);
+            const { data: workflows } = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: buildWorkflowId,
+              branch: headRef,
+              status: 'completed',
+              per_page: 1
+            });
+
+            if (workflows.workflow_runs.length > 0) {
+              console.log(`Build workflow run found: ${workflows.workflow_runs[0].html_url}`);
+            }
+
+            const hasSuccessfulBuild = workflows.workflow_runs.length > 0 &&
+                                      workflows.workflow_runs[0].conclusion === 'success';
+
+            if (!hasSuccessfulBuild) {
+              console.log(`Build workflow (${buildWorkflowId}) not completed successfully`);
+              core.setOutput('should_proceed', 'false');
+              return;
+            }
+
+            console.log('All prerequisites met for release');
+            core.setOutput('should_proceed', 'true');
 
   parse-labels:
     needs: [check-prerequisites, get-pr-number]
     if: needs.get-pr-number.outputs.pr_number != '' && needs.check-prerequisites.outputs.should_proceed == 'true'
-    uses: atlanhq/atlan-releases/.github/workflows/parse-cohort-labels.yml@main
-    with:
-      pr_number: ${{ needs.get-pr-number.outputs.pr_number }}
-    secrets:
-      RING_PAT_GITHUB: ${{ secrets.ORG_PAT_GITHUB }}
+    runs-on: ubuntu-latest
+    outputs:
+      cohort_labels: ${{ steps.parse.outputs.cohort_labels }}
+    steps:
+      - name: Get PR labels
+        id: get_labels
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ORG_PAT_GITHUB }}
+          script: |
+            const prNumber = parseInt('${{ needs.get-pr-number.outputs.pr_number }}');
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+
+            const labels = pr.labels.map(label => label.name);
+            core.setOutput('labels', JSON.stringify(labels));
+            console.log(`PR labels: ${JSON.stringify(labels)}`);
+
+      - name: Parse labels
+        id: parse
+        run: |
+          COHORTS=$(echo '${{ steps.get_labels.outputs.labels }}' | jq -c '
+            map(
+              split(":") |
+              select(length == 4 and .[0] == "cohort") |
+              {source: .[1], key: .[2], value: .[3]}
+            )
+          ')
+
+          if [ -z "$COHORTS" ] || [ "$COHORTS" = "null" ]; then
+            COHORTS="[]"
+          fi
+
+          echo "cohort_labels<<EOF" >> $GITHUB_OUTPUT
+          echo "$COHORTS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "Cohort labels: ${COHORTS}"
 
   trigger-release:
     needs: [check-prerequisites, parse-labels, get-pr-number]
@@ -78,17 +203,106 @@ jobs:
       matrix:
         cohort: ${{ fromJson(needs.parse-labels.outputs.cohort_labels) }}
       fail-fast: false
-    uses: atlanhq/atlan-releases/.github/workflows/trigger-temporal-release.yml@main
-    with:
-      pr_number: ${{ needs.get-pr-number.outputs.pr_number }}
-      source: ${{ matrix.cohort.source }}
-      type: ${{ matrix.cohort.key == 'type' && matrix.cohort.value || '' }}
-      channel: ${{ matrix.cohort.key == 'channel' && matrix.cohort.value || '' }}
-      cloud: ${{ matrix.cohort.key == 'cloud' && matrix.cohort.value || '' }}
-      path: ${{ matrix.cohort.key == 'path' && matrix.cohort.value || '' }}
-      service_name: 'atlas'
-      temporal_namespace: 'default'
-    secrets:
-      RING_PAT_GITHUB: ${{ secrets.ORG_PAT_GITHUB }}
-      GLOBALPROTECT_USERNAME: ${{ secrets.GLOBALPROTECT_USERNAME }}
-      GLOBALPROTECT_PASSWORD: ${{ secrets.GLOBALPROTECT_PASSWORD }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Image Tag details
+        id: get_image_tag
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ORG_PAT_GITHUB }}
+          script: |
+            const prNumber = parseInt('${{ needs.get-pr-number.outputs.pr_number }}');
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+
+            const repoName = context.repo.repo;
+            const serviceName = 'atlas';
+            const ringName = pr.head.ref;
+            const imageRepo = `ghcr.io/atlanhq/${repoName}-${ringName}`;
+
+            let imageTag = '';
+            if (pr.state === 'closed') {
+              console.log('PR is closed, setting image_tag to empty string');
+            } else {
+              const commitHash = pr.head.sha.substring(0, 7);
+              imageTag = `${commitHash}abcd`;
+            }
+
+            core.setOutput('service_name', serviceName);
+            core.setOutput('image_tag', imageTag);
+            core.setOutput('image_repo', imageRepo);
+            core.setOutput('ring_name', ringName);
+            core.setOutput('pull_request_url', pr.html_url);
+
+            console.log(`Repo: ${repoName}, Service: ${serviceName}, Tag: ${imageTag}, Image: ${imageRepo}, Ring: ${ringName}`);
+
+      - name: Setup Temporal CLI
+        run: |
+          curl -sSf https://temporal.download/cli.sh | sh
+          export PATH="$PATH:/home/runner/.temporalio/bin"
+          temporal --version
+
+      - name: Connect to VPN
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y openconnect
+          echo "${{ secrets.GLOBALPROTECT_PASSWORD }}" | sudo openconnect \
+            --protocol=gp \
+            --user="${{ secrets.GLOBALPROTECT_USERNAME }}" \
+            --passwd-on-stdin \
+            --background \
+            "vpnsec.atlan.app"
+          sleep 5
+
+      - name: Trigger Temporal workflow
+        run: |
+          export PATH="$PATH:/home/runner/.temporalio/bin"
+          WORKFLOW_ID="service-release-parent-${{ steps.get_image_tag.outputs.service_name }}-$(date +%s)"
+
+          ARGS=$(jq -n \
+            --arg ring_name "${{ steps.get_image_tag.outputs.ring_name }}" \
+            --arg service_name "${{ steps.get_image_tag.outputs.service_name }}" \
+            --arg image_tag "${{ steps.get_image_tag.outputs.image_tag }}" \
+            --arg image_repo "${{ steps.get_image_tag.outputs.image_repo }}" \
+            --arg source "${{ matrix.cohort.source }}" \
+            --arg type "${{ matrix.cohort.key == 'type' && matrix.cohort.value || '' }}" \
+            --arg channel "${{ matrix.cohort.key == 'channel' && matrix.cohort.value || '' }}" \
+            --arg cloud "${{ matrix.cohort.key == 'cloud' && matrix.cohort.value || '' }}" \
+            --arg tenant_names "" \
+            --arg pull_request_url "${{ steps.get_image_tag.outputs.pull_request_url }}" \
+            --arg path "${{ matrix.cohort.key == 'path' && matrix.cohort.value || '' }}" \
+            '{
+              ringName: $ring_name,
+              serviceName: $service_name,
+              imageTag: $image_tag,
+              imageRepo: $image_repo,
+              cohortSource: $source,
+              workspaceType: $type,
+              channel: $channel,
+              cloud: $cloud,
+              tenantNames: ($tenant_names
+                | split(",")
+                | map(. | gsub("^ +| +$";""))
+                | map(select(. != ""))),
+              pullRequestUrl: $pull_request_url,
+              path: $path
+            }')
+
+          echo "Triggering workflow: $WORKFLOW_ID"
+          echo "Arguments: $ARGS"
+
+          OUTPUT=$(temporal workflow start --tls \
+            --address "temporal-server.atlan.com" \
+            --namespace "default" \
+            --task-queue "control-plane-worker" \
+            --type "ServiceReleaseWorkflow" \
+            --workflow-id "$WORKFLOW_ID" \
+            --input "$ARGS")
+
+          echo "$OUTPUT"
+          RUN_ID=$(echo "$OUTPUT" | grep -i "RunId" | awk '{print $2}')
+          echo "Workflow triggered: https://temporal.atlan.com/namespaces/default/workflows/${WORKFLOW_ID}/${RUN_ID}/history"
