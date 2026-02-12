@@ -173,7 +173,7 @@ public class GenericEntityPreprocessorTest {
     @Test
     public void testPreprocess_ShouldIgnore_WhenEntityMatches() {
         when(entity.getTypeName()).thenReturn("dbType123");
-        when(entity.getAttribute("qualifiedName")).thenReturn("my_ignore_table");
+        when(entity.getAttributes()).thenReturn(Collections.singletonMap("qualifiedName", "my_ignore_table"));
 
         preprocessor.preprocess(entity, context);
 
@@ -218,12 +218,13 @@ public class GenericEntityPreprocessorTest {
                 new GenericEntityPreprocessor(Collections.singletonList(Pattern.compile("dbType.*")), Collections.emptyList());
 
         when(entity.getTypeName()).thenReturn("dbTypeXYZ");
-        when(entity.getAttribute("qualifiedName")).thenReturn("someTable");
+        when(entity.getAttributes()).thenReturn(Collections.singletonMap("qualifiedName", "someTable"));
 
-        Method method = GenericEntityPreprocessor.class.getDeclaredMethod("isToBeIgnored", AtlasEntity.class);
+        Method method = GenericEntityPreprocessor.class.getDeclaredMethod("isToBeIgnored", Object.class);
         method.setAccessible(true);
 
         boolean result = (boolean) method.invoke(typeOnlyPreprocessor, entity);
+        System.out.println(result);
         assertTrue(result);
     }
 
@@ -233,9 +234,9 @@ public class GenericEntityPreprocessorTest {
                 new GenericEntityPreprocessor(Collections.emptyList(), Collections.singletonList(Pattern.compile(".*ignore.*")));
 
         when(entity.getTypeName()).thenReturn("anyType");
-        when(entity.getAttribute("qualifiedName")).thenReturn("my_ignore_table");
+        when(entity.getAttributes()).thenReturn(Collections.singletonMap("qualifiedName", "my_ignore_table"));
 
-        Method method = GenericEntityPreprocessor.class.getDeclaredMethod("isToBeIgnored", AtlasEntity.class);
+        Method method = GenericEntityPreprocessor.class.getDeclaredMethod("isToBeIgnored", Object.class);
         method.setAccessible(true);
 
         boolean result = (boolean) method.invoke(qnameOnlyPreprocessor, entity);
@@ -245,9 +246,9 @@ public class GenericEntityPreprocessorTest {
     @Test
     public void testIsToBeIgnored_BothConditions() throws Exception {
         when(entity.getTypeName()).thenReturn("dbType123");
-        when(entity.getAttribute("qualifiedName")).thenReturn("some_ignore_table");
+        when(entity.getAttributes()).thenReturn(Collections.singletonMap("qualifiedName", "some_ignore_table"));
 
-        Method method = GenericEntityPreprocessor.class.getDeclaredMethod("isToBeIgnored", AtlasEntity.class);
+        Method method = GenericEntityPreprocessor.class.getDeclaredMethod("isToBeIgnored", Object.class);
         method.setAccessible(true);
 
         boolean result = (boolean) method.invoke(preprocessor, entity);
@@ -257,9 +258,9 @@ public class GenericEntityPreprocessorTest {
     @Test
     public void testIsToBeIgnored_NoMatch() throws Exception {
         when(entity.getTypeName()).thenReturn("normalType");
-        when(entity.getAttribute("qualifiedName")).thenReturn("safe_table");
+        when(entity.getAttributes()).thenReturn(Collections.singletonMap("qualifiedName", "safe_table"));
 
-        Method method = GenericEntityPreprocessor.class.getDeclaredMethod("isToBeIgnored", AtlasEntity.class);
+        Method method = GenericEntityPreprocessor.class.getDeclaredMethod("isToBeIgnored", Object.class);
         method.setAccessible(true);
 
         boolean result = (boolean) method.invoke(preprocessor, entity);
