@@ -128,7 +128,83 @@ jobs:
           claude_args: |
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
 
-  # Job 3: Analyze test results after integration tests complete
+  # Job 3: Full QA Pipeline — triggered by /claude-qa-pipeline comment on a PR
+  claude-qa-pipeline:
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/claude-qa-pipeline')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR metadata
+        id: pr
+        run: |
+          PR_NUMBER=${{ github.event.issue.number }}
+          PR_DATA=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json title,headRefName,body,state)
+          PR_TITLE=$(echo "$PR_DATA" | jq -r .title)
+          PR_BRANCH=$(echo "$PR_DATA" | jq -r .headRefName)
+          echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "title=$PR_TITLE" >> $GITHUB_OUTPUT
+          echo "branch=$PR_BRANCH" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: React to comment
+        run: |
+          gh api repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
+            -X POST -f content='rocket'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run QA Pipeline
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          trigger_phrase: "/claude-qa-pipeline"
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ steps.pr.outputs.number }}
+            PR TITLE: ${{ steps.pr.outputs.title }}
+            PR BRANCH: ${{ steps.pr.outputs.branch }}
+
+            Run the full AI-driven QA pipeline on this PR. Execute `/qa-pipeline ${{ steps.pr.outputs.number }}`.
+
+            This runs 6 skills in parallel and sequential phases:
+            1. **Parallel Reviews:** /review-code, /review-security, /review-architecture, /qa-review
+            2. **Unit Test Generation:** /generate-unit-tests
+            3. **Regression Testing:** /run-regression (skip if environment doesn't support it)
+
+            Read the full pipeline instructions from `.claude/commands/qa-pipeline.md` and follow them exactly.
+
+            After completing the pipeline, post a SINGLE comprehensive PR comment with the unified QA report using:
+            ```bash
+            gh pr comment ${{ steps.pr.outputs.number }} --body "<report>"
+            ```
+
+            The comment should include:
+            - Findings summary table (Critical/Warning/Info per skill)
+            - Critical findings that must be fixed
+            - Warnings that should be addressed
+            - Unit test generation status
+            - Regression test results (or SKIPPED reason)
+            - QA risk assessment
+            - Final merge recommendation: APPROVE / APPROVE WITH CONDITIONS / REQUEST CHANGES
+
+          claude_args: |
+            --allowedTools "Read,Grep,Glob,Task,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*),Bash(git branch:*),Bash(git fetch:*),Bash(git merge-base:*),Bash(git rev-parse:*)"
+
+  # Job 4: Analyze test results after integration tests complete
   claude-test-analysis:
     if: |
       github.event_name == 'workflow_run' &&
