@@ -1,0 +1,94 @@
+name: PR Label Release
+
+on:
+  pull_request:
+    types: [labeled]
+    branches:
+      - master
+  workflow_run:
+    workflows: ["Java CI with Maven"]
+    types: [completed]
+    branches:
+      - ring-*
+  push:
+    branches:
+      - ring-*
+    paths:
+      - '**'
+      - '!**.md'
+      - '!docs/**'
+      - '!.cursor/**'
+      - '!.claude/**'
+      - '!.github/**'
+
+concurrency:
+  group: pr-label-release-${{ github.head_ref || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  wait-for-docker-build:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Java CI with Maven build job
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: 'build'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+
+  get-pr-number:
+    needs: [wait-for-docker-build]
+    if: |
+      always() &&
+      (needs.wait-for-docker-build.result == 'success' || needs.wait-for-docker-build.result == 'skipped') &&
+      ((github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+       (github.event_name == 'pull_request' && startsWith(github.head_ref, 'ring-')) ||
+       github.event_name == 'push')
+    uses: atlanhq/atlan-releases/.github/workflows/get-pr-no.yml@main
+    with:
+      state: open
+    secrets:
+      RING_PAT_GITHUB: ${{ secrets.ORG_PAT_GITHUB }}
+
+  check-prerequisites:
+    needs: get-pr-number
+    if: needs.get-pr-number.outputs.pr_number != ''
+    uses: atlanhq/atlan-releases/.github/workflows/check-ring-release-conditions.yml@main
+    with:
+      pr_number: ${{ needs.get-pr-number.outputs.pr_number }}
+      build_workflow_id: 'maven.yml'
+    secrets:
+      RING_PAT_GITHUB: ${{ secrets.ORG_PAT_GITHUB }}
+
+  parse-labels:
+    needs: [check-prerequisites, get-pr-number]
+    if: needs.get-pr-number.outputs.pr_number != '' && needs.check-prerequisites.outputs.should_proceed == 'true'
+    uses: atlanhq/atlan-releases/.github/workflows/parse-cohort-labels.yml@main
+    with:
+      pr_number: ${{ needs.get-pr-number.outputs.pr_number }}
+    secrets:
+      RING_PAT_GITHUB: ${{ secrets.ORG_PAT_GITHUB }}
+
+  trigger-release:
+    needs: [check-prerequisites, parse-labels, get-pr-number]
+    if: needs.get-pr-number.outputs.pr_number != '' && needs.parse-labels.outputs.cohort_labels != '[]'
+    strategy:
+      matrix:
+        cohort: ${{ fromJson(needs.parse-labels.outputs.cohort_labels) }}
+      fail-fast: false
+    uses: atlanhq/atlan-releases/.github/workflows/trigger-temporal-release.yml@main
+    with:
+      pr_number: ${{ needs.get-pr-number.outputs.pr_number }}
+      source: ${{ matrix.cohort.source }}
+      type: ${{ matrix.cohort.key == 'type' && matrix.cohort.value || '' }}
+      channel: ${{ matrix.cohort.key == 'channel' && matrix.cohort.value || '' }}
+      cloud: ${{ matrix.cohort.key == 'cloud' && matrix.cohort.value || '' }}
+      path: ${{ matrix.cohort.key == 'path' && matrix.cohort.value || '' }}
+      service_name: 'atlas'
+      temporal_namespace: 'default'
+    secrets:
+      RING_PAT_GITHUB: ${{ secrets.ORG_PAT_GITHUB }}
+      GLOBALPROTECT_USERNAME: ${{ secrets.GLOBALPROTECT_USERNAME }}
+      GLOBALPROTECT_PASSWORD: ${{ secrets.GLOBALPROTECT_PASSWORD }}

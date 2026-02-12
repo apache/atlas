@@ -1,0 +1,81 @@
+name: Manual Cohort Cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number of the ring to cleanup'
+        required: true
+        type: string
+      source:
+        description: 'Source (horizon, sigma) - optional if using default cohort detection'
+        required: false
+        type: string
+        default: ''
+      type:
+        description: 'Type - optional'
+        required: false
+        type: string
+        default: ''
+      channel:
+        description: 'Channel - optional'
+        required: false
+        type: string
+        default: ''
+      cloud:
+        description: 'Cloud - optional'
+        required: false
+        type: string
+        default: ''
+      path:
+        description: 'Path for cohort github file - optional'
+        required: false
+        type: string
+        default: ''
+      tenant_names:
+        description: 'Comma-separated list of tenant names - optional'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  trigger-cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify PR is closed
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ORG_PAT_GITHUB }}
+          script: |
+            const prNumber = parseInt('${{ inputs.pr_number }}');
+            
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            
+            if (pr.state !== 'closed') {
+              core.setFailed(`PR #${prNumber} is not closed. Current state: ${pr.state}. Only closed PRs can be cleaned up manually.`);
+            } else {
+              console.log(`PR #${prNumber} is closed. Proceeding with cleanup...`);
+              console.log(`Ring name: ${pr.head.ref}`);
+            }
+
+  call-cleanup:
+    needs: trigger-cleanup
+    uses: atlanhq/atlan-releases/.github/workflows/trigger-temporal-release.yml@main
+    with:
+      pr_number: ${{ inputs.pr_number }}
+      source: ${{ inputs.source }}
+      type: ${{ inputs.type }}
+      channel: ${{ inputs.channel }}
+      cloud: ${{ inputs.cloud }}
+      path: ${{ inputs.path }}
+      tenant_names: ${{ inputs.tenant_names }}
+      service_name: 'atlas'
+      temporal_namespace: 'default'
+    secrets:
+      RING_PAT_GITHUB: ${{ secrets.ORG_PAT_GITHUB }}
+      GLOBALPROTECT_USERNAME: ${{ secrets.GLOBALPROTECT_USERNAME }}
+      GLOBALPROTECT_PASSWORD: ${{ secrets.GLOBALPROTECT_PASSWORD }}

@@ -1,0 +1,34 @@
+name: PR Close Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+
+jobs:
+  get-pr-number:
+    # Only auto-cleanup when PR is closed WITHOUT merging (abandoned ring).
+    # On merge, overrides stay until the developer runs manual-cohort-cleanup
+    # after confirming the GA chart has rolled out to all tenants.
+    # This avoids the rollback race condition where cohort tenants revert to
+    # the old master image during the ~30+ min gap before the GA build completes.
+    if: startsWith(github.head_ref, 'ring-') && github.event.pull_request.merged == false
+    uses: atlanhq/atlan-releases/.github/workflows/get-pr-no.yml@main
+    with:
+      state: closed
+    secrets:
+      RING_PAT_GITHUB: ${{ secrets.ORG_PAT_GITHUB }}
+
+  trigger-release:
+    needs: get-pr-number
+    if: needs.get-pr-number.outputs.pr_number != '' && startsWith(github.head_ref, 'ring-') && github.event.pull_request.merged == false
+    uses: atlanhq/atlan-releases/.github/workflows/trigger-temporal-release.yml@main
+    with:
+      pr_number: ${{ needs.get-pr-number.outputs.pr_number }}
+      service_name: 'atlas'
+      temporal_namespace: 'default'
+    secrets:
+      RING_PAT_GITHUB: ${{ secrets.ORG_PAT_GITHUB }}
+      GLOBALPROTECT_USERNAME: ${{ secrets.GLOBALPROTECT_USERNAME }}
+      GLOBALPROTECT_PASSWORD: ${{ secrets.GLOBALPROTECT_PASSWORD }}
