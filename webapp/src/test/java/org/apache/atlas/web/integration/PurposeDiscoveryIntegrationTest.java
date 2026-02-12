@@ -41,7 +41,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Integration tests for the Purpose Discovery API (POST /api/meta/purposes/user).
+ * Integration tests for the Purpose Discovery API (POST /api/atlas/v2/purposes/user).
  *
  * Tests the ability to discover Purpose entities accessible to a user based on
  * their username and group memberships via AuthPolicy entities.
@@ -66,7 +66,7 @@ public class PurposeDiscoveryIntegrationTest extends AtlasInProcessBaseIT {
     }
 
     private String getPurposeApiUrl() {
-        return "http://localhost:" + getAtlasPort() + "/api/meta/purposes/user";
+        return getAtlasBaseUrl() + "/api/atlas/v2/purposes/user";
     }
 
     @Test
