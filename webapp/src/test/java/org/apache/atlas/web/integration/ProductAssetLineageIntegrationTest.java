@@ -93,24 +93,19 @@ public class ProductAssetLineageIntegrationTest extends AtlasInProcessBaseIT {
         domain.setAttribute("name", "lineage-test-domain-" + testId);
         domain.setAttribute("qualifiedName", "default/domain/lineage-test-" + testId + "/super");
 
-        try {
-            EntityMutationResponse response = atlasClient.createEntity(new AtlasEntityWithExtInfo(domain));
-            AtlasEntityHeader created = response.getFirstEntityCreated();
+        EntityMutationResponse response = atlasClient.createEntity(new AtlasEntityWithExtInfo(domain));
+        AtlasEntityHeader created = response.getFirstEntityCreated();
 
-            assertNotNull(created, "DataDomain should be created");
-            assertEquals("DataDomain", created.getTypeName());
-            domainGuid = created.getGuid();
+        assertNotNull(created, "DataDomain should be created");
+        assertEquals("DataDomain", created.getTypeName());
+        domainGuid = created.getGuid();
 
-            // Fetch to get the actual qualifiedName
-            AtlasEntityWithExtInfo result = atlasClient.getEntityByGuid(domainGuid);
-            domainQN = (String) result.getEntity().getAttribute("qualifiedName");
-            assertNotNull(domainQN, "Domain qualifiedName should exist");
+        // Fetch to get the actual qualifiedName (preprocessor generates it)
+        AtlasEntityWithExtInfo result = atlasClient.getEntityByGuid(domainGuid);
+        domainQN = (String) result.getEntity().getAttribute("qualifiedName");
+        assertNotNull(domainQN, "Domain qualifiedName should exist");
 
-            LOG.info("Created DataDomain: guid={}, qn={}", domainGuid, domainQN);
-        } catch (AtlasServiceException e) {
-            LOG.warn("DataDomain creation failed (preprocessor may need Keycloak): {}", e.getMessage());
-            domainGuid = null;
-        }
+        LOG.info("Created DataDomain: guid={}, qn={}", domainGuid, domainQN);
     }
 
     @Test
@@ -118,11 +113,16 @@ public class ProductAssetLineageIntegrationTest extends AtlasInProcessBaseIT {
     void testCreateDataProducts() throws AtlasServiceException {
         Assumptions.assumeTrue(domainGuid != null, "DataDomain not created - skipping");
 
+        // Empty DSL - required attribute for DataProduct
+        String emptyAssetsDSL = "{\"query\":{\"bool\":{\"must\":[]}}}";
+
         // Create Product 1
         AtlasEntity product1 = new AtlasEntity("DataProduct");
         product1.setAttribute("name", "lineage-product-1-" + testId);
         product1.setAttribute("qualifiedName", domainQN + "/product/lineage-1-" + testId);
-        product1.setAttribute("domainQualifiedName", domainQN);
+        product1.setAttribute("dataProductAssetsDSL", emptyAssetsDSL);
+        // Set the relationship to parent domain (required)
+        product1.setRelationshipAttribute("dataDomain", new AtlasObjectId(domainGuid, "DataDomain"));
 
         EntityMutationResponse resp1 = atlasClient.createEntity(new AtlasEntityWithExtInfo(product1));
         AtlasEntityHeader created1 = resp1.getFirstEntityCreated();
@@ -134,7 +134,9 @@ public class ProductAssetLineageIntegrationTest extends AtlasInProcessBaseIT {
         AtlasEntity product2 = new AtlasEntity("DataProduct");
         product2.setAttribute("name", "lineage-product-2-" + testId);
         product2.setAttribute("qualifiedName", domainQN + "/product/lineage-2-" + testId);
-        product2.setAttribute("domainQualifiedName", domainQN);
+        product2.setAttribute("dataProductAssetsDSL", emptyAssetsDSL);
+        // Set the relationship to parent domain (required)
+        product2.setRelationshipAttribute("dataDomain", new AtlasObjectId(domainGuid, "DataDomain"));
 
         EntityMutationResponse resp2 = atlasClient.createEntity(new AtlasEntityWithExtInfo(product2));
         AtlasEntityHeader created2 = resp2.getFirstEntityCreated();
