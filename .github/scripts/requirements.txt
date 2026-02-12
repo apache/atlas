@@ -1,0 +1,4 @@
+# Requirements for Claude PR Review Scripts
+# Install with: pip install -r .github/scripts/requirements.txt
+
+requests>=2.31.0
