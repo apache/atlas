@@ -27,6 +27,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.repository.Constants;
@@ -68,6 +69,7 @@ import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.UNIQUE_QUALIFIED_NAME;
+import static org.apache.atlas.AtlasConfiguration.DELETE_UNIQUEATTR_BATCH_SIZE;
 import static org.apache.atlas.repository.graph.AtlasGraphProvider.getGraphInstance;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
@@ -424,6 +426,275 @@ public class AtlasGraphUtilsV2 {
 
         RequestContext.get().endMetricRecord(metric);
         return ret;
+    }
+
+    /**
+     * Batch lookup of vertices by GUIDs.
+     *
+     * @param graph the graph instance
+     * @param guids collection of GUIDs to look up (null/empty safe, duplicates handled)
+     * @return Map of GUID to AtlasVertex; missing GUIDs are absent from the map
+     */
+    public static Map<String, AtlasVertex> findByGuids(AtlasGraph graph, Collection<String> guids) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("findByGuids");
+
+        Map<String, AtlasVertex> ret = new HashMap<>();
+
+        if (CollectionUtils.isEmpty(guids)) {
+            RequestContext.get().endMetricRecord(metric);
+            return ret;
+        }
+
+        // Deduplicate and filter nulls
+        Set<String> uniqueGuids = new LinkedHashSet<>();
+        for (String guid : guids) {
+            if (guid != null) {
+                uniqueGuids.add(guid);
+            }
+        }
+
+        if (uniqueGuids.isEmpty()) {
+            RequestContext.get().endMetricRecord(metric);
+            return ret;
+        }
+
+        // Check cache first
+        Set<String> uncachedGuids = new LinkedHashSet<>();
+        for (String guid : uniqueGuids) {
+            AtlasVertex cachedVertex = GraphTransactionInterceptor.getVertexFromCache(guid);
+            if (cachedVertex != null) {
+                ret.put(guid, cachedVertex);
+            } else {
+                uncachedGuids.add(guid);
+            }
+        }
+
+        // Query for uncached GUIDs
+        if (!uncachedGuids.isEmpty()) {
+            try {
+                AtlasGraphQuery query = graph.query().in(Constants.GUID_PROPERTY_KEY, uncachedGuids);
+                Iterable<AtlasVertex> vertices = query.vertices();
+
+                for (AtlasVertex vertex : vertices) {
+                    if (vertex != null) {
+                        String guid = vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+                        if (guid != null) {
+                            ret.put(guid, vertex);
+                            GraphTransactionInterceptor.addToVertexCache(guid, vertex);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                LOG.error("findByGuids: batch query failed for {} guids", uncachedGuids.size(), e);
+                throw e; // Let caller handle fallback
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("findByGuids: requested={}, cached={}, queried={}, found={}",
+                    guids.size(), ret.size() - (uniqueGuids.size() - uncachedGuids.size()),
+                    uncachedGuids.size(), ret.size());
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+        return ret;
+    }
+
+    /**
+     * Batch lookup of vertices by unique attributes using OR queries.
+     * Groups input by (typeName, attr keys) and executes one OR query per group.
+     *
+     * @param graph the graph instance
+     * @param typeRegistry the type registry for attribute resolution
+     * @param objectIds list of (typeName, uniqueAttributes) pairs
+     * @return Map of objectId index to AtlasVertex (missing entries for not-found)
+     */
+    public static Map<Integer, AtlasVertex> findByUniqueAttributesBatch(AtlasGraph graph,
+                                                                        AtlasTypeRegistry typeRegistry,
+                                                                        List<AtlasObjectId> objectIds) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("findByUniqueAttributesBatch");
+
+        Map<Integer, AtlasVertex> ret = new HashMap<>();
+
+        if (CollectionUtils.isEmpty(objectIds)) {
+            RequestContext.get().endMetricRecord(metric);
+            return ret;
+        }
+
+        // Group objectIds by (typeName, sorted attr keys) - same query structure
+        Map<String, List<Integer>> groupToIndices = new LinkedHashMap<>();
+        Map<Integer, UniqueAttrLookupKey> indexToLookupKey = new HashMap<>();
+
+        for (int i = 0; i < objectIds.size(); i++) {
+            AtlasObjectId objectId = objectIds.get(i);
+            if (objectId == null || StringUtils.isEmpty(objectId.getTypeName()) ||
+                    MapUtils.isEmpty(objectId.getUniqueAttributes())) {
+                continue;
+            }
+
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(objectId.getTypeName());
+            if (entityType == null) {
+                continue;
+            }
+
+            // Get processed attribute names (vertex property names)
+            Map<String, AtlasStructType.AtlasAttribute> uniqueAttributes = entityType.getUniqAttributes();
+            if (MapUtils.isEmpty(uniqueAttributes)) {
+                continue;
+            }
+
+            Map<String, Object> processedAttrs = new LinkedHashMap<>();
+            for (AtlasStructType.AtlasAttribute attribute : uniqueAttributes.values()) {
+                String attrName = attribute.getVertexUniquePropertyName();
+                Object attrValue = objectId.getUniqueAttributes().get(attribute.getName());
+
+                if (attrName != null && attrValue != null) {
+                    processedAttrs.put(attrName, attrValue);
+                }
+            }
+
+            if (processedAttrs.isEmpty()) {
+                continue;
+            }
+
+            // Create group key: typeName|sortedAttrKeys
+            List<String> sortedKeys = new ArrayList<>(processedAttrs.keySet());
+            Collections.sort(sortedKeys);
+            String groupKey = objectId.getTypeName() + "|" + String.join(",", sortedKeys);
+
+            groupToIndices.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(i);
+
+            // Create lookup key for result matching
+            StringBuilder lookupKeyBuilder = new StringBuilder(objectId.getTypeName());
+            for (String key : sortedKeys) {
+                lookupKeyBuilder.append("|").append(processedAttrs.get(key));
+            }
+            indexToLookupKey.put(i, new UniqueAttrLookupKey(objectId.getTypeName(), sortedKeys, processedAttrs, lookupKeyBuilder.toString()));
+        }
+
+        // Process each group with OR query (in batches to avoid massive OR clauses)
+        final int orClauseLimit = DELETE_UNIQUEATTR_BATCH_SIZE.getInt();
+
+        for (Map.Entry<String, List<Integer>> groupEntry : groupToIndices.entrySet()) {
+            List<Integer> indices = groupEntry.getValue();
+
+            if (indices.size() == 1) {
+                // Single item — resolve individually (no benefit from OR query)
+                int idx = indices.get(0);
+                UniqueAttrLookupKey lookupKey = indexToLookupKey.get(idx);
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(lookupKey.typeName);
+
+                if (entityType != null) {
+                    AtlasVertex vertex = findByUniqueAttributes(graph, entityType,
+                            objectIds.get(idx).getUniqueAttributes());
+                    if (vertex != null) {
+                        ret.put(idx, vertex);
+                        String guid = vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+                        if (guid != null) {
+                            GraphTransactionInterceptor.addToVertexCache(guid, vertex);
+                        }
+                    }
+                }
+                continue;
+            }
+
+            // Get type info from first index (all items in group have same type/attrs)
+            String typeName = indexToLookupKey.get(indices.get(0)).typeName;
+            List<String> attrKeys = indexToLookupKey.get(indices.get(0)).attrKeys;
+
+            // Process in batches to avoid massive OR queries
+            for (int batchStart = 0; batchStart < indices.size(); batchStart += orClauseLimit) {
+                int batchEnd = Math.min(batchStart + orClauseLimit, indices.size());
+                List<Integer> batchIndices = indices.subList(batchStart, batchEnd);
+
+                try {
+                    // Build OR query for this batch
+                    AtlasGraphQuery mainQuery = graph.query();
+                    List<AtlasGraphQuery> childQueries = new ArrayList<>();
+
+                    for (int idx : batchIndices) {
+                        UniqueAttrLookupKey lookupKey = indexToLookupKey.get(idx);
+                        AtlasGraphQuery childQuery = mainQuery.createChildQuery()
+                                .has(ENTITY_TYPE_PROPERTY_KEY, typeName);
+
+                        for (String attrKey : attrKeys) {
+                            childQuery.has(attrKey, lookupKey.processedAttrs.get(attrKey));
+                        }
+                        childQueries.add(childQuery);
+                    }
+
+                    mainQuery.or(childQueries);
+                    Iterable<AtlasVertex> results = mainQuery.vertices();
+
+                    // Match results back to indices
+                    Map<String, AtlasVertex> lookupKeyToVertex = new HashMap<>();
+                    for (AtlasVertex vertex : results) {
+                        if (vertex == null) continue;
+
+                        String vertexTypeName = vertex.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class);
+                        if (vertexTypeName == null) continue;
+
+                        StringBuilder vertexLookupKey = new StringBuilder(vertexTypeName);
+                        for (String attrKey : attrKeys) {
+                            Object attrVal = vertex.getProperty(attrKey, Object.class);
+                            vertexLookupKey.append("|").append(attrVal);
+                        }
+                        lookupKeyToVertex.put(vertexLookupKey.toString(), vertex);
+                    }
+
+                    // Map results to indices
+                    for (int idx : batchIndices) {
+                        UniqueAttrLookupKey lookupKey = indexToLookupKey.get(idx);
+                        AtlasVertex vertex = lookupKeyToVertex.get(lookupKey.lookupKeyString);
+                        if (vertex != null) {
+                            ret.put(idx, vertex);
+                            // Add to cache
+                            String guid = vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+                            if (guid != null) {
+                                GraphTransactionInterceptor.addToVertexCache(guid, vertex);
+                            }
+                        }
+                    }
+
+                    // Mark successfully processed indices
+                    for (int idx : batchIndices) {
+                        UniqueAttrLookupKey lookupKey = indexToLookupKey.get(idx);
+                        if (lookupKey != null && (ret.containsKey(idx) || lookupKeyToVertex.containsKey(lookupKey.lookupKeyString))) {
+                            indexToLookupKey.remove(idx); // Processed
+                        }
+                    }
+
+                } catch (Exception e) {
+                    LOG.warn("findByUniqueAttributesBatch: OR query failed for group {} batch [{}-{}], will use fallback",
+                            groupEntry.getKey(), batchStart, batchEnd, e);
+                }
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("findByUniqueAttributesBatch: total={}, groups={}, resolved={}",
+                    objectIds.size(), groupToIndices.size(), ret.size());
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+        return ret;
+    }
+
+    /**
+     * Helper class for unique attribute lookup key matching.
+     */
+    private static class UniqueAttrLookupKey {
+        final String typeName;
+        final List<String> attrKeys;
+        final Map<String, Object> processedAttrs;
+        final String lookupKeyString;
+
+        UniqueAttrLookupKey(String typeName, List<String> attrKeys, Map<String, Object> processedAttrs, String lookupKeyString) {
+            this.typeName = typeName;
+            this.attrKeys = attrKeys;
+            this.processedAttrs = processedAttrs;
+            this.lookupKeyString = lookupKeyString;
+        }
     }
 
     public static AtlasVertex findDeletedByGuid(AtlasGraph graph, String guid) {

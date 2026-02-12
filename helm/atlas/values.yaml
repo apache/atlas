@@ -16,6 +16,7 @@ multiarch:
 global:
   Tier_Type: ""
   Deployment_Type: ""
+  Infra_Tier: ""
   cloud: ""
   tenantName: ""
   svcIsolation:
@@ -109,6 +110,12 @@ atlas:
     max_entities_allowed: 10000
   lineage:
     optimised_calculation: false
+  # Delete Optimization Settings
+  delete:
+    # Batch sizes for various delete operations
+    batch_lookup_size: 500
+    uniqueattr_batch_size: 200
+    owned_batch_size: 100
   authorizer:
     enable_delta_based_refresh: true
     enable_abac: true
@@ -649,3 +656,4 @@ nginx:
 # client_body_timeout: - Time taken by the client to send the request body.
 # client_header_timeout: - Time taken by the client to send the request header.
 # keepalive_timeout: - This timeout applies to an idle client connection after Nginx has finished sending a response and is waiting for the next request on the same TCP connection.
+

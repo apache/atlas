@@ -522,4 +522,10 @@ data:
     atlas.config.store.app.name={{ .Values.atlas.configStore.cassandra.appName }}
     atlas.config.store.cassandra.replication.factor={{ .Values.atlas.configStore.cassandra.replicationFactor }}
     atlas.config.store.cassandra.consistency.level={{ .Values.atlas.configStore.cassandra.consistencyLevel }}
+
+    ######### Delete Optimization Configs #########
+    # Batch sizes for various delete operations
+    atlas.delete.batch.lookup.size={{ .Values.atlas.delete.batch_lookup_size }}
+    atlas.delete.uniqueattr.batch.size={{ .Values.atlas.delete.uniqueattr_batch_size }}
+    atlas.delete.owned.batch.size={{ .Values.atlas.delete.owned_batch_size }}
 {{- end }}

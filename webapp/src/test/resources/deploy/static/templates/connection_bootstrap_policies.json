@@ -1,0 +1,243 @@
+[
+    {
+        "typeName": "AuthPolicy",
+        "guid": -1,
+        "attributes": {
+            "qualifiedName": "{guid}/connection-link-assets",
+            "name": "{name}-connection-link-assets",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "connection",
+            "policyType": "allow",
+            "policyServiceName": "atlas",
+            "policyRoles": [
+                "connection_admins_{guid}"
+            ],
+            "policyActions": [
+                "add-relationship",
+                "remove-relationship"
+            ],
+            "policyResourceCategory": "RELATIONSHIP",
+            "policyResources": [
+                "end-one-entity-classification:*",
+                "end-one-entity:{entity}",
+                "end-one-entity:{entity}/*",
+                "end-one-entity-type:*",
+
+                "end-two-entity-classification:*",
+                "end-two-entity:*",
+                "end-two-entity-type:Catalog",
+                "end-two-entity-type:Flow",
+                "end-two-entity-type:Connection",
+                "end-two-entity-type:Process",
+                "end-two-entity-type:ProcessExecution",
+                "end-two-entity-type:Namespace",
+
+                "relationship-type:*"
+            ]
+
+        }
+    },
+    {
+        "typeName": "AuthPolicy",
+        "guid": -8,
+        "attributes": {
+            "qualifiedName": "{guid}/connection-link-assets-inverse",
+            "name": "{name}-connection-link-assets-inverse",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "connection",
+            "policyType": "allow",
+            "policyServiceName": "atlas",
+            "policyRoles": [
+                "connection_admins_{guid}"
+            ],
+            "policyActions": [
+                "add-relationship",
+                "remove-relationship"
+            ],
+            "policyResourceCategory": "RELATIONSHIP",
+            "policyResources": [
+                "end-one-entity-classification:*",
+                "end-one-entity:*",
+                "end-one-entity-type:Catalog",
+                "end-one-entity-type:Flow",
+                "end-one-entity-type:Connection",
+                "end-one-entity-type:Process",
+                "end-one-entity-type:ProcessExecution",
+                "end-one-entity-type:Namespace",
+
+                "end-two-entity-classification:*",
+                "end-two-entity:{entity}",
+                "end-two-entity:{entity}/*",
+                "end-two-entity-type:*",
+
+                "relationship-type:*"
+            ]
+        }
+    },
+    {
+        "typeName": "AuthPolicy",
+        "guid": -2,
+        "attributes": {
+            "qualifiedName": "{guid}/connection-add-terms",
+            "name": "{name}-connection-add-terms",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "connection",
+            "policyType": "allow",
+            "policyServiceName": "atlas",
+            "policyRoles": [
+                "connection_admins_{guid}"
+            ],
+            "policyActions": [
+                "add-relationship",
+                "remove-relationship"
+            ],
+            "policyResourceCategory": "RELATIONSHIP",
+            "policyResources": [
+                "end-one-entity-classification:*",
+                "end-one-entity:*",
+                "end-one-entity-type:AtlasGlossaryTerm",
+
+                "end-two-entity-classification:*",
+                "end-two-entity:{entity}",
+                "end-two-entity:{entity}/*",
+                "end-two-entity-type:*",
+
+                "relationship-type:*"
+            ]
+        }
+    },
+    {
+        "typeName": "AuthPolicy",
+        "guid": -3,
+        "attributes": {
+            "qualifiedName": "{guid}/connection-CRUD",
+            "name": "{name}-connection-CRUD",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "connection",
+            "policyType": "allow",
+            "policyServiceName": "atlas",
+            "policyRoles": [
+                "connection_admins_{guid}"
+            ],
+            "policyActions": [
+                "entity-read",
+                "entity-create",
+                "entity-update",
+                "entity-delete"
+            ],
+            "policyResourceCategory": "ENTITY",
+            "policyResources": [
+                "entity:{entity}",
+                "entity:{entity}/*",
+                "entity-type:*",
+                "entity-classification:*"
+            ]
+        }
+    },
+
+    {
+        "typeName": "AuthPolicy",
+        "guid": -4,
+        "attributes": {
+            "qualifiedName": "{guid}/connection-entity-business-metadata",
+            "name": "{name}-connection-entity-business-metadata",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "connection",
+            "policyType": "allow",
+            "policyServiceName": "atlas",
+            "policyRoles": [
+                "connection_admins_{guid}"
+            ],
+            "policyActions": [
+                "entity-update-business-metadata"
+            ],
+            "policyResourceCategory": "RELATIONSHIP",
+            "policyResources": [
+                "entity:{entity}",
+                "entity:{entity}/*",
+                "entity-type:*",
+                "entity-classification:*",
+                "entity-business-metadata:*"
+            ]
+        }
+    },
+    {
+        "typeName": "AuthPolicy",
+        "guid": -5,
+        "attributes": {
+            "qualifiedName": "{guid}/connection-classification",
+            "name": "{name}-connection-classification",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "connection",
+            "policyType": "allow",
+            "policyServiceName": "atlas",
+            "policyRoles": [
+                "connection_admins_{guid}"
+            ],
+            "policyActions": [
+                "entity-add-classification",
+                "entity-remove-classification",
+                "entity-update-classification"
+            ],
+            "policyResourceCategory": "ENTITY",
+            "policyResources": [
+                "entity:{entity}",
+                "entity:{entity}/*",
+                "entity-type:*",
+                "entity-classification:*",
+                "classification:*"
+            ]
+        }
+    },
+    {
+        "typeName": "AuthPolicy",
+        "guid": -6,
+        "attributes": {
+            "qualifiedName": "{guid}/connection-entity-label",
+            "name": "{name}-connection-entity-label",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "connection",
+            "policyType": "allow",
+            "policyServiceName": "atlas",
+            "policyRoles": [
+                "connection_admins_{guid}"
+            ],
+            "policyActions": [
+                "entity-add-label",
+                "entity-remove-label"
+            ],
+            "policyResourceCategory": "ENTITY",
+            "policyResources": [
+                "entity:{entity}",
+                "entity:{entity}/*",
+                "entity-type:*",
+                "entity-classification:*",
+                "entity-label:*"
+            ]
+        }
+    },
+    {
+        "typeName": "AuthPolicy",
+        "guid": -7,
+        "attributes": {
+            "qualifiedName": "{guid}/dataPolicy-connection",
+            "name": "{name}-dataPolicy-connection",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "connection",
+            "policyType": "allow",
+            "policyServiceName": "heka",
+            "policyRoles": [
+                "connection_admins_{guid}"
+            ],
+            "policyActions": [
+                "select"
+            ],
+            "policyResourceCategory": "ENTITY",
+            "policyResources": [
+                "entity:{entity}",
+                "entity:{entity}/*",
+                "entity-type:*"
+            ]
+        }
+    }
+]

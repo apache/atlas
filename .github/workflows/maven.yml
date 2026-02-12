@@ -26,10 +26,11 @@ on:
       - staging
       - lite_master
       - alcon-v2-418
+      - ms-428-delete-optimisation-phase3
+
     paths-ignore:
       - '.claude/**'
       - '.cursor/**'
-      - '.github/**'
       - 'docs/**'
       - 'local-dev/**'
       - 'README.txt'
@@ -338,49 +339,6 @@ jobs:
           else
             echo "✅ Sufficient disk space available (${AVAILABLE_GB}GB)"
           fi
-
-      - name: Upload container logs as artifact
-        if: always() && steps.integration_tests.outcome != 'skipped'
-        uses: actions/upload-artifact@v4
-        with:
-          name: container-logs-${{ github.run_id }}
-          path: target/test-logs/
-          retention-days: 5
-
-      - name: Fail the workflow if tests failed
-        if: steps.integration_tests.outcome == 'failure'
-        run: exit 1
-
-      - name: Clean up after integration tests
-        if: always() && steps.integration_tests.outcome != 'skipped'
-        run: |
-          echo "=========================================="
-          echo "POST-TEST CLEANUP"
-          echo "=========================================="
-          
-          # Stop and remove all containers
-          echo "Stopping and removing containers..."
-          docker ps -a -q | xargs -r docker rm -f 2>/dev/null || true
-          
-          # Remove all Docker data aggressively
-          echo "Cleaning Docker system..."
-          docker system prune -af --volumes 2>/dev/null || true
-          
-          # Don't remove Maven cache - it's cached separately and speeds up builds
-          
-          # Clean test artifacts
-          echo "Cleaning test artifacts..."
-          rm -rf webapp/target/surefire-reports/ || true
-          rm -rf test-debug-logs/ || true
-          # Keep target/test-logs for artifact upload
-          
-          # Clean temp files
-          echo "Cleaning temp files..."
-          sudo rm -rf /tmp/* 2>/dev/null || true
-          
-          echo ""
-          echo "Disk space after cleanup:"
-          df -h / | tail -1
 
       - name: Pre-Docker build cleanup
         run: |
