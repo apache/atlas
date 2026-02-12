@@ -518,39 +518,30 @@ public class ProductAssetLineageIntegrationTest extends AtlasInProcessBaseIT {
      * Makes an authenticated POST request to the Atlas server.
      */
     private String makePostRequest(String path, String body) throws Exception {
-        URL url = new URL(getAtlasBaseUrl() + path);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        HttpURLConnection conn = (HttpURLConnection) new URL(getAtlasBaseUrl() + path).openConnection();
 
-        try {
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Accept", "application/json");
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Accept", "application/json");
+        conn.setRequestProperty("Authorization", "Basic " +
+                Base64.getEncoder().encodeToString("admin:admin".getBytes(StandardCharsets.UTF_8)));
+        conn.setDoOutput(true);
 
-            // Basic auth header
-            String auth = Base64.getEncoder().encodeToString("admin:admin".getBytes(StandardCharsets.UTF_8));
-            conn.setRequestProperty("Authorization", "Basic " + auth);
+        conn.getOutputStream().write(body.getBytes(StandardCharsets.UTF_8));
 
-            conn.setDoOutput(true);
+        int responseCode = conn.getResponseCode();
+        InputStream inputStream = (responseCode >= 200 && responseCode < 300)
+                ? conn.getInputStream()
+                : conn.getErrorStream();
 
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(body.getBytes(StandardCharsets.UTF_8));
-            }
+        String response = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        conn.disconnect();
 
-            int responseCode = conn.getResponseCode();
-            InputStream inputStream = (responseCode >= 200 && responseCode < 300)
-                    ? conn.getInputStream()
-                    : conn.getErrorStream();
-
-            String response = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-
-            if (responseCode >= 200 && responseCode < 300) {
-                return response;
-            } else {
-                LOG.error("HTTP {} error: {}", responseCode, response);
-                throw new RuntimeException("HTTP " + responseCode + ": " + response);
-            }
-        } finally {
-            conn.disconnect();
+        if (responseCode < 200 || responseCode >= 300) {
+            LOG.error("HTTP {} error: {}", responseCode, response);
+            throw new RuntimeException("HTTP " + responseCode + ": " + response);
         }
+
+        return response;
     }
 }
