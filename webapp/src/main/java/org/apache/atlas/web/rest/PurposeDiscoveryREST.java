@@ -32,8 +32,10 @@ import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Service;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
+import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -48,14 +50,15 @@ import javax.ws.rs.core.MediaType;
  * the need for frontend aggregation of AuthPolicy entities.
  * </p>
  * <p>
- * Note: This class is NOT Spring-managed to avoid initialization order issues.
- * It looks up AtlasDiscoveryService from Spring context on first use.
- * Jersey discovers this class via @Path annotation.
+ * Note: This class uses lazy initialization for PurposeDiscoveryService to avoid
+ * initialization order issues with AtlasDiscoveryService during Spring context startup.
  * </p>
  *
  * @see PurposeDiscoveryService
  */
 @Path("purposes")
+@Singleton
+@Service
 @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 @Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class PurposeDiscoveryREST {
