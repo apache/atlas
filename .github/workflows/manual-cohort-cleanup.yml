@@ -43,39 +43,99 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Verify PR is closed
+        id: verify
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.ORG_PAT_GITHUB }}
           script: |
             const prNumber = parseInt('${{ inputs.pr_number }}');
-            
+
             const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber
             });
-            
+
             if (pr.state !== 'closed') {
               core.setFailed(`PR #${prNumber} is not closed. Current state: ${pr.state}. Only closed PRs can be cleaned up manually.`);
-            } else {
-              console.log(`PR #${prNumber} is closed. Proceeding with cleanup...`);
-              console.log(`Ring name: ${pr.head.ref}`);
+              return;
             }
 
-  call-cleanup:
-    needs: trigger-cleanup
-    uses: atlanhq/atlan-releases/.github/workflows/trigger-temporal-release.yml@main
-    with:
-      pr_number: ${{ inputs.pr_number }}
-      source: ${{ inputs.source }}
-      type: ${{ inputs.type }}
-      channel: ${{ inputs.channel }}
-      cloud: ${{ inputs.cloud }}
-      path: ${{ inputs.path }}
-      tenant_names: ${{ inputs.tenant_names }}
-      service_name: 'atlas'
-      temporal_namespace: 'default'
-    secrets:
-      RING_PAT_GITHUB: ${{ secrets.ORG_PAT_GITHUB }}
-      GLOBALPROTECT_USERNAME: ${{ secrets.GLOBALPROTECT_USERNAME }}
-      GLOBALPROTECT_PASSWORD: ${{ secrets.GLOBALPROTECT_PASSWORD }}
+            const repoName = context.repo.repo;
+            const serviceName = 'atlas';
+            const ringName = pr.head.ref;
+            const imageRepo = `ghcr.io/atlanhq/${repoName}-${ringName}`;
+
+            core.setOutput('service_name', serviceName);
+            core.setOutput('image_repo', imageRepo);
+            core.setOutput('ring_name', ringName);
+            core.setOutput('pull_request_url', pr.html_url);
+
+            console.log(`PR #${prNumber} is closed. Ring: ${ringName}, Service: ${serviceName}`);
+
+      - name: Setup Temporal CLI
+        run: |
+          curl -sSf https://temporal.download/cli.sh | sh
+          export PATH="$PATH:/home/runner/.temporalio/bin"
+          temporal --version
+
+      - name: Connect to VPN
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y openconnect
+          echo "${{ secrets.GLOBALPROTECT_PASSWORD }}" | sudo openconnect \
+            --protocol=gp \
+            --user="${{ secrets.GLOBALPROTECT_USERNAME }}" \
+            --passwd-on-stdin \
+            --background \
+            "vpnsec.atlan.app"
+          sleep 5
+
+      - name: Trigger Temporal cleanup workflow
+        run: |
+          export PATH="$PATH:/home/runner/.temporalio/bin"
+          WORKFLOW_ID="service-release-parent-${{ steps.verify.outputs.service_name }}-$(date +%s)"
+
+          ARGS=$(jq -n \
+            --arg ring_name "${{ steps.verify.outputs.ring_name }}" \
+            --arg service_name "${{ steps.verify.outputs.service_name }}" \
+            --arg image_tag "" \
+            --arg image_repo "${{ steps.verify.outputs.image_repo }}" \
+            --arg source "${{ inputs.source }}" \
+            --arg type "${{ inputs.type }}" \
+            --arg channel "${{ inputs.channel }}" \
+            --arg cloud "${{ inputs.cloud }}" \
+            --arg tenant_names "${{ inputs.tenant_names }}" \
+            --arg pull_request_url "${{ steps.verify.outputs.pull_request_url }}" \
+            --arg path "${{ inputs.path }}" \
+            '{
+              ringName: $ring_name,
+              serviceName: $service_name,
+              imageTag: $image_tag,
+              imageRepo: $image_repo,
+              cohortSource: $source,
+              workspaceType: $type,
+              channel: $channel,
+              cloud: $cloud,
+              tenantNames: ($tenant_names
+                | split(",")
+                | map(. | gsub("^ +| +$";""))
+                | map(select(. != ""))),
+              pullRequestUrl: $pull_request_url,
+              path: $path
+            }')
+
+          echo "Triggering cleanup workflow: $WORKFLOW_ID"
+          echo "Arguments: $ARGS"
+
+          OUTPUT=$(temporal workflow start --tls \
+            --address "temporal-server.atlan.com" \
+            --namespace "default" \
+            --task-queue "control-plane-worker" \
+            --type "ServiceReleaseWorkflow" \
+            --workflow-id "$WORKFLOW_ID" \
+            --input "$ARGS")
+
+          echo "$OUTPUT"
+          RUN_ID=$(echo "$OUTPUT" | grep -i "RunId" | awk '{print $2}')
+          echo "Cleanup workflow triggered: https://temporal.atlan.com/namespaces/default/workflows/${WORKFLOW_ID}/${RUN_ID}/history"

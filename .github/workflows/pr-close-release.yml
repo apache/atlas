@@ -7,28 +7,87 @@ on:
       - master
 
 jobs:
-  get-pr-number:
+  trigger-cleanup:
     # Only auto-cleanup when PR is closed WITHOUT merging (abandoned ring).
     # On merge, overrides stay until the developer runs manual-cohort-cleanup
     # after confirming the GA chart has rolled out to all tenants.
     # This avoids the rollback race condition where cohort tenants revert to
     # the old master image during the ~30+ min gap before the GA build completes.
     if: startsWith(github.head_ref, 'ring-') && github.event.pull_request.merged == false
-    uses: atlanhq/atlan-releases/.github/workflows/get-pr-no.yml@main
-    with:
-      state: closed
-    secrets:
-      RING_PAT_GITHUB: ${{ secrets.ORG_PAT_GITHUB }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get PR details and image info
+        id: get_image_tag
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ORG_PAT_GITHUB }}
+          script: |
+            const pr = context.payload.pull_request;
+            const repoName = context.repo.repo;
+            const serviceName = 'atlas';
+            const ringName = pr.head.ref;
+            const imageRepo = `ghcr.io/atlanhq/${repoName}-${ringName}`;
 
-  trigger-release:
-    needs: get-pr-number
-    if: needs.get-pr-number.outputs.pr_number != '' && startsWith(github.head_ref, 'ring-') && github.event.pull_request.merged == false
-    uses: atlanhq/atlan-releases/.github/workflows/trigger-temporal-release.yml@main
-    with:
-      pr_number: ${{ needs.get-pr-number.outputs.pr_number }}
-      service_name: 'atlas'
-      temporal_namespace: 'default'
-    secrets:
-      RING_PAT_GITHUB: ${{ secrets.ORG_PAT_GITHUB }}
-      GLOBALPROTECT_USERNAME: ${{ secrets.GLOBALPROTECT_USERNAME }}
-      GLOBALPROTECT_PASSWORD: ${{ secrets.GLOBALPROTECT_PASSWORD }}
+            // PR is closed, empty image tag signals cleanup
+            core.setOutput('service_name', serviceName);
+            core.setOutput('image_tag', '');
+            core.setOutput('image_repo', imageRepo);
+            core.setOutput('ring_name', ringName);
+            core.setOutput('pull_request_url', pr.html_url);
+            core.setOutput('pr_number', pr.number);
+
+            console.log(`Cleanup for ring: ${ringName}, service: ${serviceName}`);
+
+      - name: Setup Temporal CLI
+        run: |
+          curl -sSf https://temporal.download/cli.sh | sh
+          export PATH="$PATH:/home/runner/.temporalio/bin"
+          temporal --version
+
+      - name: Connect to VPN
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y openconnect
+          echo "${{ secrets.GLOBALPROTECT_PASSWORD }}" | sudo openconnect \
+            --protocol=gp \
+            --user="${{ secrets.GLOBALPROTECT_USERNAME }}" \
+            --passwd-on-stdin \
+            --background \
+            "vpnsec.atlan.app"
+          sleep 5
+
+      - name: Trigger Temporal cleanup workflow
+        run: |
+          export PATH="$PATH:/home/runner/.temporalio/bin"
+          WORKFLOW_ID="service-release-parent-${{ steps.get_image_tag.outputs.service_name }}-$(date +%s)"
+
+          ARGS=$(jq -n \
+            --arg ring_name "${{ steps.get_image_tag.outputs.ring_name }}" \
+            --arg service_name "${{ steps.get_image_tag.outputs.service_name }}" \
+            --arg image_tag "" \
+            --arg image_repo "${{ steps.get_image_tag.outputs.image_repo }}" \
+            --arg pull_request_url "${{ steps.get_image_tag.outputs.pull_request_url }}" \
+            '{
+              ringName: $ring_name,
+              serviceName: $service_name,
+              imageTag: $image_tag,
+              imageRepo: $image_repo,
+              cohortSource: "",
+              tenantNames: [],
+              pullRequestUrl: $pull_request_url
+            }')
+
+          echo "Triggering cleanup workflow: $WORKFLOW_ID"
+          echo "Arguments: $ARGS"
+
+          OUTPUT=$(temporal workflow start --tls \
+            --address "temporal-server.atlan.com" \
+            --namespace "default" \
+            --task-queue "control-plane-worker" \
+            --type "ServiceReleaseWorkflow" \
+            --workflow-id "$WORKFLOW_ID" \
+            --input "$ARGS")
+
+          echo "$OUTPUT"
+          RUN_ID=$(echo "$OUTPUT" | grep -i "RunId" | awk '{print $2}')
+          echo "Cleanup workflow triggered: https://temporal.atlan.com/namespaces/default/workflows/${WORKFLOW_ID}/${RUN_ID}/history"
