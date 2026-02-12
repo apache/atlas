@@ -63,6 +63,7 @@ public class PurposeDiscoveryREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.PurposeDiscoveryREST");
 
     private volatile PurposeDiscoveryService purposeDiscoveryService;
+    private volatile RuntimeException initializationException;
 
     @Context
     private HttpServletRequest httpServletRequest;
@@ -70,14 +71,33 @@ public class PurposeDiscoveryREST {
     @Context
     private ServletContext servletContext;
 
-    private PurposeDiscoveryService getPurposeDiscoveryService() {
+    private PurposeDiscoveryService getPurposeDiscoveryService() throws AtlasBaseException {
+        // Fast path: check if already initialized or failed
+        if (initializationException != null) {
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR,
+                    "PurposeDiscoveryService initialization failed: " + initializationException.getMessage());
+        }
+
         if (purposeDiscoveryService == null) {
             synchronized (this) {
+                // Double-check after acquiring lock
+                if (initializationException != null) {
+                    throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR,
+                            "PurposeDiscoveryService initialization failed: " + initializationException.getMessage());
+                }
+
                 if (purposeDiscoveryService == null) {
-                    // Look up AtlasDiscoveryService from Spring context on first use
-                    ApplicationContext ctx = WebApplicationContextUtils.getWebApplicationContext(servletContext);
-                    AtlasDiscoveryService atlasDiscoveryService = ctx.getBean(AtlasDiscoveryService.class);
-                    purposeDiscoveryService = new PurposeDiscoveryServiceImpl(atlasDiscoveryService);
+                    try {
+                        // Look up AtlasDiscoveryService from Spring context on first use
+                        ApplicationContext ctx = WebApplicationContextUtils.getWebApplicationContext(servletContext);
+                        AtlasDiscoveryService atlasDiscoveryService = ctx.getBean(AtlasDiscoveryService.class);
+                        purposeDiscoveryService = new PurposeDiscoveryServiceImpl(atlasDiscoveryService);
+                    } catch (RuntimeException e) {
+                        initializationException = e;
+                        LOG.error("Failed to initialize PurposeDiscoveryService", e);
+                        throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR,
+                                "PurposeDiscoveryService initialization failed: " + e.getMessage());
+                    }
                 }
             }
         }

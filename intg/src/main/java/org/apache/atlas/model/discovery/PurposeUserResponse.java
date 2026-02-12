@@ -44,15 +44,21 @@ public class PurposeUserResponse implements Serializable {
     private int count;
     private long totalCount;
     private boolean hasMore;
+    private boolean approximateCount;
 
     public PurposeUserResponse() {
     }
 
     public PurposeUserResponse(List<AtlasEntityHeader> purposes, long totalCount, int limit, int offset) {
+        this(purposes, totalCount, limit, offset, false);
+    }
+
+    public PurposeUserResponse(List<AtlasEntityHeader> purposes, long totalCount, int limit, int offset, boolean approximateCount) {
         this.purposes = purposes != null ? purposes : Collections.emptyList();
         this.count = this.purposes.size();
         this.totalCount = totalCount;
         this.hasMore = (offset + this.count) < totalCount;
+        this.approximateCount = approximateCount;
     }
 
     /**
@@ -95,6 +101,18 @@ public class PurposeUserResponse implements Serializable {
         this.hasMore = hasMore;
     }
 
+    /**
+     * Returns true if the totalCount is approximate due to hitting internal query limits.
+     * When true, there may be more purposes accessible to the user than indicated by totalCount.
+     */
+    public boolean isApproximateCount() {
+        return approximateCount;
+    }
+
+    public void setApproximateCount(boolean approximateCount) {
+        this.approximateCount = approximateCount;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -103,12 +121,13 @@ public class PurposeUserResponse implements Serializable {
         return count == that.count &&
                 totalCount == that.totalCount &&
                 hasMore == that.hasMore &&
+                approximateCount == that.approximateCount &&
                 Objects.equals(purposes, that.purposes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(purposes, count, totalCount, hasMore);
+        return Objects.hash(purposes, count, totalCount, hasMore, approximateCount);
     }
 
     @Override
@@ -117,6 +136,7 @@ public class PurposeUserResponse implements Serializable {
                 "count=" + count +
                 ", totalCount=" + totalCount +
                 ", hasMore=" + hasMore +
+                ", approximateCount=" + approximateCount +
                 ", purposes=" + purposes +
                 '}';
     }
