@@ -62,7 +62,7 @@ public class PurposeDiscoveryIntegrationTest extends AtlasInProcessBaseIT {
     private String purposeQualifiedName;
 
     private String getApiBaseUrl() {
-        return getBaseUrl() + "/api/atlas/v2";
+        return getAtlasBaseUrl() + "/api/atlas/v2";
     }
 
     private String getPurposeApiUrl() {
