@@ -914,6 +914,10 @@ public class EntityGraphRetriever {
                 List<CompletableFuture<Set<String>>> futures = verticesAtCurrentLevel.stream()
                         .map(t -> {
                             AtlasVertex entityVertex = graph.getVertex(t);
+                            if (entityVertex == null) {
+                                LOG.warn("traverseImpactedVerticesByLevel: vertex not found for id {}, skipping", t);
+                                return CompletableFuture.completedFuture((Set<String>) null);
+                            }
                             visitedVerticesIds.add(entityVertex.getIdForDisplay());
                             // If we want to store vertices without classification attached
                             // Check if vertices has classification attached or not using function isClassificationAttached
@@ -927,8 +931,10 @@ public class EntityGraphRetriever {
                         }).collect(Collectors.toList());
 
                 futures.stream().map(CompletableFuture::join).forEach(x -> {
-                    verticesToVisitNextLevel.addAll(x);
-                    traversedVerticesIds.addAll(x);
+                    if (x != null) {
+                        verticesToVisitNextLevel.addAll(x);
+                        traversedVerticesIds.addAll(x);
+                    }
                 });
 
                 verticesAtCurrentLevel.clear();
@@ -983,6 +989,10 @@ public class EntityGraphRetriever {
                 List<CompletableFuture<Set<String>>> futures = verticesAtCurrentLevel.stream()
                         .map(t -> {
                             AtlasVertex entityVertex = graph.getVertex(t);
+                            if (entityVertex == null) {
+                                LOG.warn("traverseImpactedVerticesByLevelV2: vertex not found for id {}, skipping", t);
+                                return CompletableFuture.completedFuture((Set<String>) null);
+                            }
                             visitedVerticesIds.add(entityVertex.getIdForDisplay());
                             // If we want to store vertices without classification attached
                             // Check if vertices has classification attached or not using function isClassificationAttached
@@ -996,8 +1006,10 @@ public class EntityGraphRetriever {
                         }).collect(Collectors.toList());
 
                 futures.stream().map(CompletableFuture::join).forEach(x -> {
-                    verticesToVisitNextLevel.addAll(x);
-                    traversedVerticesIds.addAll(x);
+                    if (x != null) {
+                        verticesToVisitNextLevel.addAll(x);
+                        traversedVerticesIds.addAll(x);
+                    }
                 });
 
                 verticesAtCurrentLevel.clear();
@@ -1024,7 +1036,7 @@ public class EntityGraphRetriever {
         RequestContext          requestContext      = RequestContext.get();
 
         if (tagPropagationEdges == null) {
-            return null;
+            return Collections.emptySet();
         }
 
         if (edgeLabelsToCheck != null && !edgeLabelsToCheck.isEmpty()) {
