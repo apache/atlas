@@ -128,12 +128,12 @@ jobs:
           claude_args: |
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
 
-  # Job 3: Full QA Pipeline — triggered by /qa-pipeline comment on a PR
+  # Job 3: Full QA Pipeline — triggered by /claude-qa-pipeline comment on a PR
   claude-qa-pipeline:
     if: |
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request &&
-      contains(github.event.comment.body, '/qa-pipeline')
+      contains(github.event.comment.body, '/claude-qa-pipeline')
     runs-on: ubuntu-latest
     permissions:
       contents: read
