@@ -229,7 +229,6 @@ public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
     private void splitEventsToKeepAndAgeoutByAuditCount(List<DbEntityAudit> dbEvents, boolean allowAgeoutByAuditCount, int allowedAuditCount,
             List<DbEntityAudit> eventsToKeep, List<DbEntityAudit> eventsEligibleForAgeout) {
-
         if (CollectionUtils.isEmpty(dbEvents)) {
             return;
         }
