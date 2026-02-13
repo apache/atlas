@@ -25,6 +25,7 @@ import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.notification.NotificationException;
@@ -41,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +74,9 @@ public abstract class AtlasHook {
     public static final String CONF_ATLAS_HOOK_MESSAGES_SORT_ENABLED              = "atlas.hook.messages.sort.enabled";
     public static final String ATLAS_HOOK_ENTITY_IGNORE_PATTERN                   = "atlas.hook.entity.ignore.pattern";
     public static final String ATTRIBUTE_QUALIFIED_NAME                           = "qualifiedName";
+
+    public static final String ATTRIBUTE_INPUTS                                   = "inputs";
+    public static final String ATTRIBUTE_OUTPUTS                                  = "outputs";
 
     public static final boolean isRESTNotificationEnabled;
     public static final boolean isHookMsgsSortEnabled;
@@ -262,6 +267,88 @@ public abstract class AtlasHook {
         return entitiesWithExtInfo;
     }
 
+    public static String getQualifiedName(Object obj) {
+        Map<String, Object> attributes = null;
+
+        if (obj instanceof AtlasObjectId) {
+            attributes = ((AtlasObjectId) obj).getUniqueAttributes();
+        } else if (obj instanceof Map) {
+            attributes = (Map) ((Map) obj).get(AtlasObjectId.KEY_UNIQUE_ATTRIBUTES);
+        } else if (obj instanceof AtlasEntity) {
+            attributes = ((AtlasEntity) obj).getAttributes();
+        } else if (obj instanceof AtlasEntity.AtlasEntityWithExtInfo) {
+            attributes = ((AtlasEntity.AtlasEntityWithExtInfo) obj).getEntity().getAttributes();
+        }
+
+        Object ret = attributes != null ? attributes.get(ATTRIBUTE_QUALIFIED_NAME) : null;
+
+        return ret != null ? ret.toString() : null;
+    }
+
+    private static void filterProcessRelatedEntities(Object obj) {
+        if (obj == null || !(obj instanceof Collection)) {
+            return;
+        }
+
+        Collection objList = (Collection) obj;
+        List toRemove = new ArrayList();
+
+        for (Object entity : objList) {
+            String qualifiedName = getQualifiedName(entity);
+
+            if (isMatch(qualifiedName, entitiesToIgnore)) {
+                toRemove.add(entity);
+
+                LOG.info("Ignored entity {}", qualifiedName);
+            }
+        }
+
+        objList.removeAll(toRemove);
+    }
+
+    private static void filterRelationshipAttributes(Map<String, Object> relationshipAttributes) {
+        if (relationshipAttributes == null) {
+            return;
+        }
+
+        List<String> keysToRemove = new ArrayList<>();
+        for (Map.Entry<String, Object> entry : relationshipAttributes.entrySet()) {
+            Object obj = entry.getValue();
+
+            if (obj instanceof Collection) {
+                Collection entities = (Collection) obj;
+
+                entities.removeIf((Object entity) -> {
+                    String qualifiedName = getQualifiedName(entity);
+
+                    return qualifiedName != null && isMatch(qualifiedName, entitiesToIgnore);
+                });
+            } else {
+                String qualifiedName = getQualifiedName(obj);
+
+                if (qualifiedName != null && isMatch(qualifiedName, entitiesToIgnore)) {
+                    keysToRemove.add(entry.getKey());
+                }
+            }
+        }
+
+        for (String key : keysToRemove) {
+            relationshipAttributes.remove(key);
+
+            LOG.info("Ignored entity {}", key);
+        }
+    }
+
+    private static void filterEntityAttributes(AtlasEntity entity) {
+        Object inputs = entity.getAttribute(ATTRIBUTE_INPUTS);
+        Object outputs = entity.getAttribute(ATTRIBUTE_OUTPUTS);
+
+        filterProcessRelatedEntities(inputs);
+        filterProcessRelatedEntities(outputs);
+
+        filterRelationshipAttributes(entity.getRelationshipAttributes());
+    }
+
     private static void preprocessEntities(List<HookNotification> hookNotifications) {
         for (int i = 0; i < hookNotifications.size(); i++) {
             HookNotification hookNotification = hookNotifications.get(i);
@@ -269,7 +356,7 @@ public abstract class AtlasHook {
             AtlasEntity.AtlasEntitiesWithExtInfo entitiesWithExtInfo = getAtlasEntitiesWithExtInfo(hookNotification);
 
             if (entitiesWithExtInfo == null) {
-                return;
+                continue;
             }
 
             List<AtlasEntity> entities = entitiesWithExtInfo.getEntities();
@@ -278,11 +365,19 @@ public abstract class AtlasHook {
 
             entities.removeIf((AtlasEntity entity) -> isMatch(entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME).toString(), entitiesToIgnore));
 
+            for (AtlasEntity entity : entities) {
+                filterEntityAttributes(entity);
+            }
+
             Map<String, AtlasEntity> referredEntitiesMap = entitiesWithExtInfo.getReferredEntities();
 
             referredEntitiesMap = ((referredEntitiesMap != null) ? referredEntitiesMap : Collections.emptyMap());
 
             referredEntitiesMap.entrySet().removeIf((Map.Entry<String, AtlasEntity> entry) -> isMatch(entry.getValue().getAttribute(ATTRIBUTE_QUALIFIED_NAME).toString(), entitiesToIgnore));
+
+            for (Map.Entry<String, AtlasEntity> entry : referredEntitiesMap.entrySet()) {
+                filterEntityAttributes(entry.getValue());
+            }
 
             if (CollectionUtils.isEmpty(entities) && CollectionUtils.isEmpty(referredEntitiesMap.values())) {
                 hookNotifications.remove(i--);
