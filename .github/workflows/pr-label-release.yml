@@ -97,27 +97,28 @@ jobs:
               return;
             }
 
-            // Check if build workflow has completed successfully
+            // Check if build workflow has completed successfully for the current HEAD SHA
             const buildWorkflowId = 'maven.yml';
-            console.log(`Checking build workflow: ${buildWorkflowId}`);
+            const headSha = pr.head.sha;
+            console.log(`Checking build workflow: ${buildWorkflowId} for SHA: ${headSha}`);
             const { data: workflows } = await github.rest.actions.listWorkflowRuns({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: buildWorkflowId,
-              branch: headRef,
+              head_sha: headSha,
               status: 'completed',
               per_page: 1
             });
 
             if (workflows.workflow_runs.length > 0) {
-              console.log(`Build workflow run found: ${workflows.workflow_runs[0].html_url}`);
+              console.log(`Build workflow run found for current SHA: ${workflows.workflow_runs[0].html_url}`);
             }
 
             const hasSuccessfulBuild = workflows.workflow_runs.length > 0 &&
                                       workflows.workflow_runs[0].conclusion === 'success';
 
             if (!hasSuccessfulBuild) {
-              console.log(`Build workflow (${buildWorkflowId}) not completed successfully`);
+              console.log(`Build workflow (${buildWorkflowId}) not completed successfully for SHA ${headSha}`);
               core.setOutput('should_proceed', 'false');
               return;
             }
