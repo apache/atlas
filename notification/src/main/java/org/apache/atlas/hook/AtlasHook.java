@@ -75,8 +75,8 @@ public abstract class AtlasHook {
     public static final String ATLAS_HOOK_ENTITY_IGNORE_PATTERN                   = "atlas.hook.entity.ignore.pattern";
     public static final String ATTRIBUTE_QUALIFIED_NAME                           = "qualifiedName";
 
-    public static final String ATTRIBUTE_INPUTS = "inputs";
-    public static final String ATTRIBUTE_OUTPUTS = "outputs";
+    public static final String ATTRIBUTE_INPUTS                                   = "inputs";
+    public static final String ATTRIBUTE_OUTPUTS                                  = "outputs";
 
     public static final boolean isRESTNotificationEnabled;
     public static final boolean isHookMsgsSortEnabled;
@@ -339,6 +339,16 @@ public abstract class AtlasHook {
         }
     }
 
+    private static void filterEntityAttributes(AtlasEntity entity) {
+        Object inputs = entity.getAttribute(ATTRIBUTE_INPUTS);
+        Object outputs = entity.getAttribute(ATTRIBUTE_OUTPUTS);
+
+        filterProcessRelatedEntities(inputs);
+        filterProcessRelatedEntities(outputs);
+
+        filterRelationshipAttributes(entity.getRelationshipAttributes());
+    }
+
     private static void preprocessEntities(List<HookNotification> hookNotifications) {
         for (int i = 0; i < hookNotifications.size(); i++) {
             HookNotification hookNotification = hookNotifications.get(i);
@@ -356,13 +366,7 @@ public abstract class AtlasHook {
             entities.removeIf((AtlasEntity entity) -> isMatch(entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME).toString(), entitiesToIgnore));
 
             for (AtlasEntity entity : entities) {
-                Object inputs = entity.getAttribute(ATTRIBUTE_INPUTS);
-                Object outputs = entity.getAttribute(ATTRIBUTE_OUTPUTS);
-
-                filterProcessRelatedEntities(inputs);
-                filterProcessRelatedEntities(outputs);
-
-                filterProcessRelatedEntities(entity.getRelationshipAttributes());
+                filterEntityAttributes(entity);
             }
 
             Map<String, AtlasEntity> referredEntitiesMap = entitiesWithExtInfo.getReferredEntities();
@@ -372,15 +376,7 @@ public abstract class AtlasHook {
             referredEntitiesMap.entrySet().removeIf((Map.Entry<String, AtlasEntity> entry) -> isMatch(entry.getValue().getAttribute(ATTRIBUTE_QUALIFIED_NAME).toString(), entitiesToIgnore));
 
             for (Map.Entry<String, AtlasEntity> entry : referredEntitiesMap.entrySet()) {
-                AtlasEntity entity = entry.getValue();
-
-                Object inputs = entity.getAttribute(ATTRIBUTE_INPUTS);
-                Object outputs = entity.getAttribute(ATTRIBUTE_OUTPUTS);
-
-                filterProcessRelatedEntities(inputs);
-                filterProcessRelatedEntities(outputs);
-
-                filterRelationshipAttributes(entity.getRelationshipAttributes());
+                filterEntityAttributes(entry.getValue());
             }
 
             if (CollectionUtils.isEmpty(entities) && CollectionUtils.isEmpty(referredEntitiesMap.values())) {

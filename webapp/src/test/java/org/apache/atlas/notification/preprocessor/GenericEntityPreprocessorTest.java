@@ -224,7 +224,6 @@ public class GenericEntityPreprocessorTest {
         method.setAccessible(true);
 
         boolean result = (boolean) method.invoke(typeOnlyPreprocessor, entity);
-        System.out.println(result);
         assertTrue(result);
     }
 
