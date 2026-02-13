@@ -467,3 +467,155 @@ If someone removes a cohort label (e.g., `cohort:github:path:internal-level-1`) 
 **Mitigation:** If a label is accidentally removed, re-add it. If overrides need to be removed from the "orphaned" cohort, use the `manual-cohort-cleanup.yml` workflow.
 
 ---
+
+## Developer Guide: How to Use Cohort Releases
+
+### When to Use
+
+Use a cohort release when:
+- Your change is large or high-risk and preprod alone isn't enough confidence
+- You want to validate on real production tenants before going GA
+- The change touches critical paths (entity processing, search, auth, etc.)
+
+You do **not** need a cohort release for every change. Small, well-tested changes can go directly to `master` through the normal flow.
+
+### Important: Don't Develop on Ring Branches
+
+Every push to a `ring-*` branch triggers a full Maven build (~30 min) and, if cohort labels are present, a release to all labeled cohorts. Do not use ring branches for active development.
+
+```
+✅ Correct flow:
+  feature branch → test on beta/staging → merge to ring → one release
+
+❌ Wrong flow:
+  ring branch → push, push, push (each triggers 30 min build + release)
+```
+
+### Step-by-Step Process
+
+#### 1. Develop and Test Your Feature
+
+```bash
+# Work on your feature branch as usual
+git checkout -b feat/my-feature
+# ... develop, test locally, push ...
+# Get it tested on beta/staging through the normal flow
+```
+
+#### 2. Create a Ring Branch
+
+Once your feature is tested and ready for cohort release:
+
+```bash
+git checkout master && git pull
+git checkout -b ring-my-feature
+git merge feat/my-feature
+git push origin ring-my-feature
+```
+
+This triggers the Maven build. Wait ~30 min for the Docker image to be built and pushed.
+
+#### 3. Open a PR to Master
+
+Open a PR: `ring-my-feature → master`
+
+This PR is your **control surface** — labels on it control where the image is deployed, and results are posted as PR comments.
+
+#### 4. Add a Cohort Label
+
+Add a label to the PR to specify which tenants to release to:
+
+```
+cohort:github:path:internal-level-1
+```
+
+Label format: `cohort:<source>:<key>:<value>`
+
+Available cohorts (defined in `atlan-releases/cohorts/`):
+- `internal-level-1` — Internal low-risk tenants
+- `internal-level-2` — Internal broader set
+- `partner-level-1` — Partner tenants
+- `enterprise-level-1` — Enterprise tenants (use with caution)
+
+You can add the label before or after the build completes. The release only proceeds once the build succeeds.
+
+#### 5. Monitor the Release
+
+- **GitHub Actions tab:** Watch `PR Label Release` workflow progress
+- **Temporal UI:** Check `ServiceReleaseWorkflow` at https://temporal.atlan.com/namespaces/default/workflows
+- **PR comment:** `atlan-ci` posts a summary with status, tenant results, and workflow link
+- **Slack:** Results posted to `#testing_notifications`
+
+#### 6. Verify on Tenants
+
+The cohort tenants are now running your ring image. Verify your feature works as expected on real production data.
+
+#### 7. Expand to More Cohorts (Optional)
+
+If the initial cohort looks good, add more labels:
+
+```
+cohort:github:path:partner-level-1
+```
+
+Each new label triggers a release to that cohort. Existing cohort overrides remain untouched.
+
+#### 8. Fix Issues (If Needed)
+
+If you find a bug during cohort testing:
+
+```bash
+# Fix on your feature branch first
+git checkout feat/my-feature
+# ... fix the bug ...
+git push origin feat/my-feature
+
+# Then merge the fix into the ring branch
+git checkout ring-my-feature
+git merge feat/my-feature
+git push origin ring-my-feature
+```
+
+The push triggers a new build. Once complete, the updated image is automatically released to all labeled cohorts.
+
+#### 9. Go GA
+
+When you're confident the feature is ready:
+
+1. **Merge the ring PR to `master`** — this starts the normal GA flow (master build → chart update → ArgoCD sync to all tenants)
+2. **Wait for the GA chart to roll out** — check the `atlan` repo for the chart update PR, ensure it's merged and ArgoCD has synced
+3. **Clean up overrides** — go to the atlas-metastore repo Actions tab, run `Manual Cohort Cleanup` workflow with the PR number
+
+> **Why manual cleanup?** If overrides were auto-removed on merge, cohort tenants would briefly revert to the old master image during the ~30 min gap before the new GA build completes. Manual cleanup avoids this rollback.
+
+#### 10. Abandon a Ring (If Needed)
+
+If you decide not to proceed with the feature:
+
+1. **Close the PR without merging**
+2. Overrides are automatically removed from all cohort tenants
+3. Tenants revert to the current master image
+4. Delete the ring branch
+
+### Quick Reference
+
+| Action | What Happens |
+|--------|-------------|
+| Push to `ring-*` | Maven build triggers (~30 min) |
+| Add cohort label to PR | Release triggers (after build completes) |
+| Push new commit to ring | Rebuild + re-release to all labeled cohorts |
+| Add another cohort label | Release to new cohort (existing ones untouched) |
+| Merge ring PR | GA flow starts, overrides stay until manual cleanup |
+| Close ring PR without merge | Auto-cleanup, tenants revert to master |
+| Run Manual Cohort Cleanup | Removes overrides from specified ring's tenants |
+
+### Things to Know
+
+- **Build time is ~30 min.** Plan accordingly. Don't expect instant releases.
+- **Only the Docker image is overridden.** Helm template changes, config changes, new env vars in your ring branch won't reach cohort tenants. Design features to be backward-compatible with master chart templates.
+- **One ring per cohort.** If another ring is already deployed to a cohort, your release to that cohort will fail. Use a different cohort or coordinate with the other developer.
+- **Ring branches auto-sync with master.** The `RingBranchSyncWorkflow` periodically merges master into ring branches (using `-X ours` strategy — your ring changes win on conflicts).
+- **Max 20 tenants per cohort.** The Temporal workflow caps cohort size to keep releases manageable.
+- **`atlas-read` is not overridden.** Currently only the `atlas` chart image is patched. If your feature affects the read path, be aware that `atlas-read` will still run the master image.
+
+---

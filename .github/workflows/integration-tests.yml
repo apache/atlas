@@ -26,6 +26,7 @@ on:
     paths-ignore:
       - '.claude/**'
       - '.cursor/**'
+      - '.github/**'
       - 'docs/**'
       - 'helm/**'
       - 'local-dev/**'
