@@ -35,7 +35,12 @@ jobs:
             if (context.eventName === 'pull_request') {
               prNumber = context.issue.number;
             } else {
-              const branchName = context.ref.replace('refs/heads/', '');
+              // For workflow_run events, context.ref is the default branch (master),
+              // not the branch that triggered the build. Use head_branch from the
+              // triggering workflow instead.
+              const branchName = context.eventName === 'workflow_run'
+                ? context.payload.workflow_run.head_branch
+                : context.ref.replace('refs/heads/', '');
               console.log(`Looking for PR associated with branch: ${branchName}`);
 
               const { data: pulls } = await github.rest.pulls.list({
