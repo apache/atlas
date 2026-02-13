@@ -22,7 +22,10 @@ import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.notification.hook.HookMessageDeserializer;
+import org.junit.Before;
+import org.junit.Test;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -34,14 +37,23 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.getQualifiedName;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 
 public class GenericEntityPreprocessorTest {
     private final HookMessageDeserializer deserializer = new HookMessageDeserializer();
+    private GenericEntityPreprocessor preprocessor;
+    private PreprocessorContext context;
+    private AtlasEntity entity;
 
     public void testEntityTypesToIgnore(String msgJson, List<Pattern> entityTypesToIgnore) {
-        PreprocessorContext context  = getPreprocessorContext(msgJson);
-        List<AtlasEntity>   entities = context.getEntities();
+        PreprocessorContext context = getPreprocessorContext(msgJson);
+        List<AtlasEntity> entities = context.getEntities();
 
         Set<String> filteredEntitiesActual = filterEntity(entities, (AtlasEntity entity) -> isMatch(entityTypesToIgnore, entity.getTypeName()));
 
@@ -147,5 +159,110 @@ public class GenericEntityPreprocessorTest {
         }
 
         return filteredEntitiesActual;
+    }
+
+    @Before
+    public void setup() {
+        preprocessor = new GenericEntityPreprocessor(
+                Collections.singletonList(Pattern.compile("dbType.*")), // entityTypesToIgnore
+                Collections.singletonList(Pattern.compile(".*ignore.*"))); // entitiesToIgnore
+        context = mock(PreprocessorContext.class);
+        entity = mock(AtlasEntity.class);
+    }
+
+    @Test
+    public void testPreprocess_ShouldIgnore_WhenEntityMatches() {
+        when(entity.getTypeName()).thenReturn("dbType123");
+        when(entity.getAttributes()).thenReturn(Collections.singletonMap("qualifiedName", "my_ignore_table"));
+
+        preprocessor.preprocess(entity, context);
+
+        verify(context).addToIgnoredEntities(entity);
+    }
+
+    @Test
+    public void testPreprocess_ShouldNotIgnore_WhenEntityDoesNotMatch() {
+        when(entity.getTypeName()).thenReturn("normalType");
+        when(entity.getAttribute("qualifiedName")).thenReturn("safe_table");
+
+        preprocessor.preprocess(entity, context);
+
+        verify(context, never()).addToIgnoredEntities(entity);
+    }
+
+    @Test
+    public void testIsMatch_PrivateMethod_Positive() throws Exception {
+        Method method = GenericEntityPreprocessor.class.getDeclaredMethod("isMatch", String.class, List.class);
+        method.setAccessible(true);
+
+        boolean result = (boolean) method.invoke(preprocessor, "dbType123",
+                Collections.singletonList(Pattern.compile("dbType.*")));
+
+        assertTrue(result);
+    }
+
+    @Test
+    public void testIsMatch_PrivateMethod_Negative() throws Exception {
+        Method method = GenericEntityPreprocessor.class.getDeclaredMethod("isMatch", String.class, List.class);
+        method.setAccessible(true);
+
+        boolean result = (boolean) method.invoke(preprocessor, "unknownType",
+                Collections.singletonList(Pattern.compile("dbType.*")));
+
+        assertFalse(result);
+    }
+
+    @Test
+    public void testIsToBeIgnored_ByTypeOnly() throws Exception {
+        GenericEntityPreprocessor typeOnlyPreprocessor =
+                new GenericEntityPreprocessor(Collections.singletonList(Pattern.compile("dbType.*")), Collections.emptyList());
+
+        when(entity.getTypeName()).thenReturn("dbTypeXYZ");
+        when(entity.getAttributes()).thenReturn(Collections.singletonMap("qualifiedName", "someTable"));
+
+        Method method = GenericEntityPreprocessor.class.getDeclaredMethod("isToBeIgnored", Object.class);
+        method.setAccessible(true);
+
+        boolean result = (boolean) method.invoke(typeOnlyPreprocessor, entity);
+        assertTrue(result);
+    }
+
+    @Test
+    public void testIsToBeIgnored_ByQualifiedNameOnly() throws Exception {
+        GenericEntityPreprocessor qnameOnlyPreprocessor =
+                new GenericEntityPreprocessor(Collections.emptyList(), Collections.singletonList(Pattern.compile(".*ignore.*")));
+
+        when(entity.getTypeName()).thenReturn("anyType");
+        when(entity.getAttributes()).thenReturn(Collections.singletonMap("qualifiedName", "my_ignore_table"));
+
+        Method method = GenericEntityPreprocessor.class.getDeclaredMethod("isToBeIgnored", Object.class);
+        method.setAccessible(true);
+
+        boolean result = (boolean) method.invoke(qnameOnlyPreprocessor, entity);
+        assertTrue(result);
+    }
+
+    @Test
+    public void testIsToBeIgnored_BothConditions() throws Exception {
+        when(entity.getTypeName()).thenReturn("dbType123");
+        when(entity.getAttributes()).thenReturn(Collections.singletonMap("qualifiedName", "some_ignore_table"));
+
+        Method method = GenericEntityPreprocessor.class.getDeclaredMethod("isToBeIgnored", Object.class);
+        method.setAccessible(true);
+
+        boolean result = (boolean) method.invoke(preprocessor, entity);
+        assertTrue(result);
+    }
+
+    @Test
+    public void testIsToBeIgnored_NoMatch() throws Exception {
+        when(entity.getTypeName()).thenReturn("normalType");
+        when(entity.getAttributes()).thenReturn(Collections.singletonMap("qualifiedName", "safe_table"));
+
+        Method method = GenericEntityPreprocessor.class.getDeclaredMethod("isToBeIgnored", Object.class);
+        method.setAccessible(true);
+
+        boolean result = (boolean) method.invoke(preprocessor, entity);
+        assertFalse(result);
     }
 }
