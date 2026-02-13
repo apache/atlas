@@ -188,7 +188,9 @@ public class AuditRepositoryTestBase {
     public void testDeleteEventsV2() throws Exception {
         String      id1       = "id1" + rand();
         int         ttlInDays = 1;
-        long        ts        = System.currentTimeMillis() - (ttlInDays * DateUtils.MILLIS_PER_DAY);
+        long        now       = System.currentTimeMillis();
+        long        bufferMs  = 5 * DateUtils.MILLIS_PER_MINUTE; // buffer to avoid failure in TTL based delete in env with faster/lightly-loaded env
+        long        ts        = now - (ttlInDays * DateUtils.MILLIS_PER_DAY) - bufferMs;
         AtlasEntity entity    = new AtlasEntity(rand());
 
         int                      j              = 0;
@@ -231,7 +233,7 @@ public class AuditRepositoryTestBase {
         assertNotEquals(remainingEvents.get(3), events.get(0));
         assertFalse(remainingEvents.contains(events.get(0)));
 
-        EntityAuditEventV2 latestEvent = new EntityAuditEventV2(id1, System.currentTimeMillis(), "User-b", EntityAuditEventV2.EntityAuditActionV2.ENTITY_DELETE, "details" + j++, entity);
+        EntityAuditEventV2 latestEvent = new EntityAuditEventV2(id1, now, "User-b", EntityAuditEventV2.EntityAuditActionV2.ENTITY_DELETE, "details" + j++, entity);
         eventRepository.putEventsV2(latestEvent);
         List<EntityAuditEventV2> allEvents = eventRepository.listEventsV2(id1, null, "timestamp", false, 0, (short) -1);
 
