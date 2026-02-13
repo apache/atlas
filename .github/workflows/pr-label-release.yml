@@ -10,42 +10,16 @@ on:
     types: [completed]
     branches:
       - ring-*
-  push:
-    branches:
-      - ring-*
-    paths:
-      - '**'
-      - '!**.md'
-      - '!docs/**'
-      - '!.cursor/**'
-      - '!.claude/**'
-      - '!.github/**'
 
 concurrency:
   group: pr-label-release-${{ github.head_ref || github.ref }}
   cancel-in-progress: false
 
 jobs:
-  wait-for-docker-build:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for Java CI with Maven build job
-        uses: lewagon/wait-on-check-action@v1.3.4
-        with:
-          ref: ${{ github.sha }}
-          check-name: 'build'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 30
-
   get-pr-number:
-    needs: [wait-for-docker-build]
     if: |
-      always() &&
-      (needs.wait-for-docker-build.result == 'success' || needs.wait-for-docker-build.result == 'skipped') &&
-      ((github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
-       (github.event_name == 'pull_request' && startsWith(github.head_ref, 'ring-')) ||
-       github.event_name == 'push')
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'pull_request' && startsWith(github.head_ref, 'ring-'))
     runs-on: ubuntu-latest
     outputs:
       pr_number: ${{ steps.get-pr.outputs.pr_number }}
