@@ -703,7 +703,7 @@
         <elasticsearch.version>7.16.2</elasticsearch.version>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
         <enunciate-maven-plugin.version>2.17.0</enunciate-maven-plugin.version>
-        <failsafe.version>2.18.1</failsafe.version>
+        <failsafe.version>3.5.4</failsafe.version>
         <falcon.version>0.8</falcon.version>
         <fastutil.version>6.5.16</fastutil.version>
         <graph.index.backend>solr</graph.index.backend>
@@ -1847,6 +1847,7 @@
                         <atlas.log.file>application.log</atlas.log.file>
                         <logback.configurationFile>atlas-logback.xml</logback.configurationFile>
                         <embedded.solr.directory>${project.basedir}/target</embedded.solr.directory>
+                        <api.version>1.44</api.version>
                     </systemPropertyVariables>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}

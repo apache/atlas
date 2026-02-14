@@ -73,13 +73,16 @@ public abstract class AtlasInProcessBaseIT {
     private static volatile boolean containersStarted = false;
 
     static {
+        // Must be set before any testcontainers Docker client initialization (Docker 29+ requires API >= 1.44)
+        System.setProperty("api.version", "1.44");
+
         cassandra = new CassandraContainer<>(DockerImageName.parse("cassandra:2.1"))
                 .withStartupTimeout(Duration.ofMinutes(3))
                 .withEnv("CASSANDRA_CLUSTER_NAME", "atlas-test-cluster")
                 .withEnv("CASSANDRA_DC", "datacenter1");
 
         elasticsearch = new ElasticsearchContainer(
-                DockerImageName.parse("elasticsearch:7.16.2"))
+                DockerImageName.parse("elasticsearch:7.17.27"))
                 .withEnv("discovery.type", "single-node")
                 .withEnv("xpack.security.enabled", "false")
                 .withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m");
