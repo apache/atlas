@@ -1847,6 +1847,7 @@
                         <atlas.log.file>application.log</atlas.log.file>
                         <logback.configurationFile>atlas-logback.xml</logback.configurationFile>
                         <embedded.solr.directory>${project.basedir}/target</embedded.solr.directory>
+                        <api.version>1.44</api.version>
                     </systemPropertyVariables>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
