@@ -106,7 +106,7 @@ public class DynamicConfigStoreIntegrationTest {
 
     @Container
     static ElasticsearchContainer elasticsearch = new ElasticsearchContainer(
-            DockerImageName.parse("elasticsearch:7.16.2"))
+            DockerImageName.parse("elasticsearch:7.17.27"))
             .withNetwork(network)
             .withNetworkAliases("elasticsearch")
             .withEnv("discovery.type", "single-node")
