@@ -106,6 +106,7 @@ public abstract class AtlasInProcessBaseIT {
 
     @BeforeAll
     void startAtlas() throws Exception {
+        System.setProperty("api.version", "1.44");
         startContainers();
         startServerOnce();
     }
