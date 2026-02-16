@@ -37,6 +37,7 @@ on:
       - 'README.txt'
       - 'README.md'
 
+
 jobs:
   # Detect what changed to optimize workflow execution
   # This dramatically speeds up helm-only changes by skipping the 20+ minute build job
