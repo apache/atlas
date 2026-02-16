@@ -19,7 +19,7 @@
 package org.apache.atlas.web.service;
 
 import org.apache.atlas.web.model.DebugMetrics;
-import org.apache.hadoop.hbase.shaded.org.apache.commons.configuration.SubsetConfiguration;
+import org.apache.hadoop.hbase.shaded.org.apache.commons.configuration2.SubsetConfiguration;
 import org.apache.hadoop.metrics2.AbstractMetric;
 import org.apache.hadoop.metrics2.MetricsRecord;
 import org.mockito.Mock;
