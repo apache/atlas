@@ -361,6 +361,10 @@ spec:
                 name: azurestorage
                 key: azure.client.default.account
           {{- end}}
+          {{- if .Values.icarus.jvmOpts }}
+          - name: JAVA_TOOL_OPTIONS
+            value: {{ .Values.icarus.jvmOpts | quote }}
+          {{- end }}
         ports:
           - containerPort: {{ .Values.icarus.port }}
             name: http
