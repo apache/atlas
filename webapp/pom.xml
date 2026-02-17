@@ -304,6 +304,7 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-minikdc</artifactId>
         </dependency>
+
         <!-- supports simple auth handler -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -501,6 +502,46 @@
     <build>
         <plugins>
             <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpack-hbase-shaded-client</id>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.apache.hbase</groupId>
+                                    <artifactId>hbase-shaded-client</artifactId>
+                                    <version>${hbase.version}-hadoop3</version>
+                                    <outputDirectory>${project.build.directory}/hbase-shaded-client-fixed</outputDirectory>
+                                    <excludes>META-INF/services/javax.ws.rs.ext.MessageBodyWriter,META-INF/services/javax.ws.rs.ext.MessageBodyReader</excludes>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven-jar-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>repack-hbase-shaded-client</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <classesDirectory>${project.build.directory}/hbase-shaded-client-fixed</classesDirectory>
+                            <finalName>hbase-shaded-client-${hbase.version}-hadoop3-fixed</finalName>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
                 <configuration>
@@ -524,6 +565,13 @@
                         <resource>
                             <directory>${project.build.directory}/api/v2/apidocs/ui</directory>
                             <targetPath>apidocs</targetPath>
+                        </resource>
+                        <resource>
+                            <directory>${project.build.directory}</directory>
+                            <includes>
+                                <include>hbase-shaded-client-${hbase.version}-hadoop3-fixed.jar</include>
+                            </includes>
+                            <targetPath>WEB-INF/lib</targetPath>
                         </resource>
                     </webResources>
 
@@ -821,7 +869,7 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <packages.to.exclude>${distro.exclude.packages}</packages.to.exclude>
+                <packages.to.exclude>WEB-INF/lib/hbase-shaded-client-${hbase.version}-hadoop3.jar,${distro.exclude.packages}</packages.to.exclude>
             </properties>
         </profile>
 
@@ -831,7 +879,7 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <packages.to.exclude>WEB-INF/lib/je-*.jar,WEB-INF/lib/dom4j-*.jar</packages.to.exclude>
+                <packages.to.exclude>WEB-INF/lib/hbase-shaded-client-${hbase.version}-hadoop3.jar,WEB-INF/lib/je-*.jar,WEB-INF/lib/dom4j-*.jar</packages.to.exclude>
             </properties>
         </profile>
 
@@ -841,7 +889,7 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <packages.to.exclude>WEB-INF/lib/dom4j-*.jar</packages.to.exclude>
+                <packages.to.exclude>WEB-INF/lib/hbase-shaded-client-${hbase.version}-hadoop3.jar,WEB-INF/lib/dom4j-*.jar</packages.to.exclude>
             </properties>
         </profile>
 
@@ -851,7 +899,7 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <packages.to.exclude>WEB-INF/lib/dom4j-*.jar</packages.to.exclude>
+                <packages.to.exclude>WEB-INF/lib/hbase-shaded-client-${hbase.version}-hadoop3.jar,WEB-INF/lib/dom4j-*.jar</packages.to.exclude>
             </properties>
         </profile>
 
