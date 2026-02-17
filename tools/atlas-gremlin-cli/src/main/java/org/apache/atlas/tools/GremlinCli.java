@@ -40,16 +40,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-/**
- * Small embedded Gremlin CLI for Atlas' JanusGraph backend.
- *
- * Requires Atlas configuration directory to be provided via system property:
- *   -Datlas.conf=/path/to/atlas/conf
- *
- * Examples:
- *   -q "g.V().limit(5).valueMap(true).toList()"
- *   -f /tmp/query.groovy
- */
 public class GremlinCli {
     private static final Logger LOG = LoggerFactory.getLogger(GremlinCli.class);
 
@@ -64,16 +54,12 @@ public class GremlinCli {
         final String query = getQuery(cmd);
         final boolean commit = cmd.hasOption("commit");
 
-        // Ensure AtlasJanusGraphDatabase constructor runs (it registers GraphSON/Janus registries)
-        // even though we primarily use getGraphInstance().
         new AtlasJanusGraphDatabase();
 
         JanusGraph graph = AtlasJanusGraphDatabase.getGraphInstance();
 
         try {
             GraphTraversalSource g = graph.traversal();
-            // DefaultImportCustomizer isn't available in some Gremlin distributions used by this project.
-            // Use the no-arg constructor and bind helpful symbols directly.
             GremlinGroovyScriptEngine engine = new GremlinGroovyScriptEngine();
 
             Bindings bindings = engine.createBindings();
@@ -84,7 +70,6 @@ public class GremlinCli {
 
             Object result = eval(engine, bindings, query);
 
-            // If user returns a Traversal (e.g. g.V()), materialize it for convenience.
             if (result instanceof Traversal) {
                 result = ((Traversal<?, ?>) result).toList();
             }
@@ -113,7 +98,6 @@ public class GremlinCli {
     }
 
     private static void finishTx(JanusGraph graph, boolean commit) {
-        // Default behavior is rollback to protect against accidental writes.
         if (!graph.tx().isOpen()) {
             return;
         }
@@ -134,7 +118,6 @@ public class GremlinCli {
         }
     }
 
-    // Build Options in a single place so parsing and help use the same definitions.
     private static Options buildOptions() {
         Options options = new Options();
 

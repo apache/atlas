@@ -22,16 +22,19 @@ Introduction
   It uses Atlas' normal configuration loading, so it requires:
     -Datlas.conf=/path/to/atlas/conf
 
-Build
-  mvn -pl tools/atlas-gremlin-cli -am package
+Setup
+  - Extract the tarball from distro/target/apache-atlas-<version>-atlas-gremlin-cli.tar.gz
+  - Set the ATLAS_CONF environment variable to the path to the Atlas configuration directory.
+  - Set the ATLAS_CLASSPATH environment variable to the path to the dependency jars.
+  - Run the atlas-gremlin-cli.sh script.
 
 Run
   export ATLAS_CONF=/etc/atlas/conf
   export ATLAS_CLASSPATH="/path/to/dependency/jars/*"
   ./atlas-gremlin-cli.sh -q "g.V().limit(5).valueMap(true).toList()"
+  or
+  ./atlas-gremlin-cli.sh -f /path/to/query.groovy
 
 Notes
   - Default behavior is to rollback the transaction (safe for read-only). Use --commit to persist mutations.
   - For best output, end queries with .toList() or .next() or similar materialization.
-
-
