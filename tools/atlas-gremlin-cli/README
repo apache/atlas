@@ -1,0 +1,37 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+Introduction
+  atlas-gremlin-cli is a small command-line utility to run Gremlin queries against Atlas' embedded JanusGraph backend.
+
+  It uses Atlas' normal configuration loading, so it requires:
+    -Datlas.conf=/path/to/atlas/conf
+
+Build
+  mvn -pl tools/atlas-gremlin-cli -am package
+
+Run
+  export ATLAS_CONF=/etc/atlas/conf
+  export ATLAS_CLASSPATH="/path/to/dependency/jars/*"
+  ./atlas-gremlin-cli.sh -q "g.V().limit(5).valueMap(true).toList()"
+
+Notes
+  - Default behavior is to rollback the transaction (safe for read-only). Use --commit to persist mutations.
+  - For best output, end queries with .toList() or .next() or similar materialization.
+
+
