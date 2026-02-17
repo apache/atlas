@@ -420,6 +420,11 @@ JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home /opt/homeb
 
 This project uses standard GitHub flow with PR-based merges to `master` branch.
 
+**CRITICAL — PR target repo:** This repo (`atlanhq/atlas-metastore`) is a fork of `apache/atlas`. The `gh` CLI defaults to the upstream parent. **ALWAYS** use `--repo atlanhq/atlas-metastore` when running `gh pr create`, `gh pr view`, `gh pr edit`, or any other `gh` command. Example:
+```bash
+gh pr create --repo atlanhq/atlas-metastore --title "..." --body "..."
+```
+
 
 
 **Branch naming**: Feature branches typically use descriptive names (e.g., `ms-366-staging-smarter`, `fix-record-entity-update`)
