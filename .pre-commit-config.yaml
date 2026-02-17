@@ -1,0 +1,16 @@
+repos:
+  - repo: local
+    hooks:
+      - id: gitleaks
+        name: gitleaks
+        entry: gitleaks protect --verbose --redact --staged
+        language: system
+        pass_filenames: false
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-merge-conflict
+      - id: fix-byte-order-marker
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: check-case-conflict
