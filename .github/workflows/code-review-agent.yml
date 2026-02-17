@@ -1,0 +1,158 @@
+# =============================================================================
+# Mothership PR Code Review Workflow for atlas-metastore
+# =============================================================================
+#
+# This workflow triggers the pr_code_reviewer agent when a PR is created or updated.
+# It connects to the internal mothership API via VPN to run an AI-powered code review.
+#
+# Required Secrets:
+# - GLOBALPROTECT_USERNAME: VPN username
+# - GLOBALPROTECT_PASSWORD: VPN password
+#
+# Required Variables:
+# - GLOBALPROTECT_PORTAL_URL: VPN portal URL
+# =============================================================================
+
+name: Mothership PR Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [master, staging]
+    paths:
+      - '**.java'
+      - '**.xml'
+      - 'pom.xml'
+      - '**/pom.xml'
+
+# Prevent multiple runs for the same PR
+concurrency:
+  group: mothership-pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  code-review:
+    name: Mothership Code Review
+    runs-on: ubuntu-latest
+
+    # Skip bot PRs
+    if: github.actor != 'dependabot[bot]'
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Step 2: Add "mothership-review" label to PR
+      - name: Add review label
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels: ['mothership-review']
+            });
+            console.log('Added mothership-review label to PR #' + context.payload.pull_request.number);
+
+      # Step 3: Connect to VPN (required to access internal mothership API)
+      - name: Connect to VPN
+        id: vpn
+        uses: atlanhq/github-actions/globalprotect-connect-action@main
+        with:
+          portal-url: ${{ vars.GLOBALPROTECT_PORTAL_URL }}
+          username: ${{ secrets.GLOBALPROTECT_USERNAME }}
+          password: ${{ secrets.GLOBALPROTECT_PASSWORD }}
+
+      # Step 4: Verify VPN connection
+      - name: Verify VPN connection
+        run: |
+          echo "Verifying VPN connection..."
+
+          # Test DNS resolution
+          echo "DNS resolution test:"
+          nslookup mothership-beta.atlan.dev || echo "DNS lookup failed"
+
+          # Test API endpoint
+          echo "Testing API endpoint:"
+          curl -X GET -s -o /dev/null -w "HTTP Status: %{http_code}\n" https://mothership-beta.atlan.dev/docs || echo "API test failed"
+
+          echo "VPN verification complete"
+
+      # Step 5: Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Step 6: Install dependencies
+      - name: Install dependencies
+        run: |
+          pip install aiohttp
+
+      # Step 7: Run PR Code Reviewer
+      - name: Run PR Code Reviewer
+        env:
+          # PR metadata (from GitHub event)
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_DESCRIPTION: ${{ github.event.pull_request.body }}
+          REPO_URL: ${{ github.event.repository.html_url }}
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+          TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
+        run: |
+          python .github/scripts/code-review-api.py
+
+      # Step 8: Update label on success
+      - name: Update label on success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Remove in-progress label
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              name: 'mothership-review'
+            }).catch(() => {});
+
+            // Add success label
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels: ['mothership-reviewed']
+            });
+
+      # Step 9: Update label on failure
+      - name: Update label on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Remove in-progress label
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              name: 'mothership-review'
+            }).catch(() => {});
+
+            // Add failure label
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels: ['mothership-review-failed']
+            });
