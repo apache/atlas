@@ -45,6 +45,7 @@ public class AtlasLineageContext {
 
     private boolean isDataset;
     private boolean isProcess;
+    private boolean isProduct;
 
     private Set<String> attributes;
     private Set<String> ignoredProcesses;
@@ -109,6 +110,14 @@ public class AtlasLineageContext {
 
     public void setProcess(boolean process) {
         isProcess = process;
+    }
+
+    public boolean isProduct() {
+        return isProduct;
+    }
+
+    public void setProduct(boolean product) {
+        isProduct = product;
     }
 
     public AtlasLineageInfo.LineageDirection getDirection() {
