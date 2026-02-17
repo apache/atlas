@@ -6,7 +6,7 @@ import org.apache.atlas.authorize.AtlasAccessResult;
 import org.apache.atlas.authorizer.store.PoliciesStore;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasStruct;
+
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
@@ -246,6 +246,7 @@ public class EntityAuthorizer {
         return entityAttributeValues;
     }
 
+    @SuppressWarnings("unchecked")
     private static List<String> extractTagAttachmentValues(AtlasClassification tag) {
         String tagTypeName = tag.getTypeName();
         List<String> tagAttachmentValues = new ArrayList<>();
@@ -256,29 +257,39 @@ public class EntityAuthorizer {
         }
 
         for (String attrName : tag.getAttributes().keySet()) {
-            try {
-                Collection<AtlasStruct> attrValues = (Collection<AtlasStruct>) tag.getAttribute(attrName);
-                for (AtlasStruct attrValue : attrValues) {
-                    Map<String, Object> attrValueAttributes = attrValue.getAttributes();
-                    if (attrValueAttributes == null || attrValueAttributes.isEmpty()) {
-                        LOG.warn("ABAC_AUTH: Tag attribute value is null, tag={}, attribute={}", tagTypeName, attrName);
-                        continue;
-                    }
-                    
-                    List<AtlasStruct> sourceTagValue = (List<AtlasStruct>) attrValueAttributes.get("sourceTagValue");
-                    if (sourceTagValue == null || sourceTagValue.isEmpty()) {
-                        LOG.warn("ABAC_AUTH: Tag attribute's sourceTagValue attribute is empty, tag={}, attribute={}.sourceTagValue", tagTypeName, attrName);
-                        continue;
-                    }
+            Object attrRawValue = tag.getAttribute(attrName);
 
-                    for (AtlasStruct item : sourceTagValue) {
-                        String key = item.getAttribute("tagAttachmentKey") == null ? "" : item.getAttribute("tagAttachmentKey").toString();
-                        String value = item.getAttribute("tagAttachmentValue") == null ? "" : item.getAttribute("tagAttachmentValue").toString();
-                        tagAttachmentValues.add(AuthorizerCommonUtil.tagKeyValueRepr(tagTypeName, key, value));
-                    }
+            // Skip non-collection attributes (e.g., primitive string attributes on the tag)
+            if (!(attrRawValue instanceof Collection<?>)) {
+                continue;
+            }
+
+            Collection<?> attrValues = (Collection<?>) attrRawValue;
+            for (Object element : attrValues) {
+                // Tag struct attributes arrive as Map (LinkedHashMap from Jackson / HashMap from TagAttributeMapper)
+                // with "typeName" and "attributes" keys, not as AtlasStruct instances
+                Map<String, Object> attrValueAttributes = getStructAttributes(element);
+                if (attrValueAttributes == null || attrValueAttributes.isEmpty()) {
+                    LOG.warn("ABAC_AUTH: Tag attribute value is null, tag={}, attribute={}", tagTypeName, attrName);
+                    continue;
                 }
-            } catch (ClassCastException | NullPointerException e) {
-                LOG.warn("ABAC_AUTH: Unexpected exception in tag attribute processing, tag={}, attribute={}, error={}", tagTypeName, attrName, e.getMessage());
+
+                Object sourceTagValueRaw = attrValueAttributes.get("sourceTagValue");
+                if (!(sourceTagValueRaw instanceof List<?>)) {
+                    LOG.warn("ABAC_AUTH: Tag attribute's sourceTagValue attribute is empty, tag={}, attribute={}.sourceTagValue", tagTypeName, attrName);
+                    continue;
+                }
+
+                List<?> sourceTagValues = (List<?>) sourceTagValueRaw;
+                for (Object item : sourceTagValues) {
+                    Map<String, Object> itemAttrs = getStructAttributes(item);
+                    if (itemAttrs == null) {
+                        continue;
+                    }
+                    String key = itemAttrs.get("tagAttachmentKey") == null ? "" : itemAttrs.get("tagAttachmentKey").toString();
+                    String value = itemAttrs.get("tagAttachmentValue") == null ? "" : itemAttrs.get("tagAttachmentValue").toString();
+                    tagAttachmentValues.add(AuthorizerCommonUtil.tagKeyValueRepr(tagTypeName, key, value));
+                }
             }
         }
 
@@ -288,6 +299,23 @@ public class EntityAuthorizer {
         LOG.info("ABAC_AUTH: Tag attachment values for tag={} value={}", tagTypeName, tagAttachmentValues);
 
         return tagAttachmentValues;
+    }
+
+    /**
+     * Extracts attributes from a struct-like object, handling both Map representations
+     * (from Jackson deserialization / TagAttributeMapper) and AtlasStruct instances.
+     */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> getStructAttributes(Object obj) {
+        if (obj instanceof Map<?, ?> map) {
+            Object attributes = map.get("attributes");
+            if (attributes instanceof Map<?, ?>) {
+                return (Map<String, Object>) attributes;
+            }
+            // If no "attributes" wrapper, treat the map itself as attributes
+            return (Map<String, Object>) map;
+        }
+        return null;
     }
 
     private static List<String> getAttributeValue(AtlasEntityHeader entity, String attributeName, AtlasVertex vertex) {
