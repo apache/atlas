@@ -59,6 +59,8 @@ public class AtlasLdapAuthenticationProvider extends AtlasAbstractAuthentication
     private String  ldapReferral;
     private String  ldapBase;
     private boolean groupsFromUGI;
+    private boolean ldapGroupRoleToUpper;
+    private boolean ldapGroupRolePrefix;
 
     @PostConstruct
     public void setup() {
@@ -218,6 +220,8 @@ public class AtlasLdapAuthenticationProvider extends AtlasAbstractAuthentication
             ldapGroupSearchBase    = properties.getProperty("groupSearchBase");
             ldapGroupSearchFilter  = properties.getProperty("groupSearchFilter");
             ldapGroupRoleAttribute = properties.getProperty("groupRoleAttribute");
+            ldapGroupRoleToUpper   = configuration.getBoolean("atlas.authentication.method.ldap.groupRoleToUpper", true);
+            ldapGroupRolePrefix    = configuration.getBoolean("atlas.authentication.method.ldap.groupRolePrefix", true);
             ldapBindDN             = properties.getProperty("bind.dn");
             ldapBindPassword       = properties.getProperty("bind.password");
             ldapDefaultRole        = properties.getProperty("default.role");
@@ -255,6 +259,12 @@ public class AtlasLdapAuthenticationProvider extends AtlasAbstractAuthentication
         defaultLdapAuthoritiesPopulator.setGroupRoleAttribute(ldapGroupRoleAttribute);
         defaultLdapAuthoritiesPopulator.setGroupSearchFilter(ldapGroupSearchFilter);
         defaultLdapAuthoritiesPopulator.setIgnorePartialResultException(true);
+        if (!ldapGroupRolePrefix) {
+            defaultLdapAuthoritiesPopulator.setRolePrefix("");
+        }
+        if (!ldapGroupRoleToUpper) {
+            defaultLdapAuthoritiesPopulator.setConvertToUpperCase(false);
+        }
 
         return defaultLdapAuthoritiesPopulator;
     }
