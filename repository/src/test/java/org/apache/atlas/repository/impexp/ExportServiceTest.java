@@ -23,6 +23,7 @@ import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
+import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
@@ -37,9 +38,11 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.ITestContext;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeTest;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
@@ -48,6 +51,7 @@ import javax.inject.Inject;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -75,6 +79,25 @@ public class ExportServiceTest extends AtlasTestBase {
 
     @Inject
     private AtlasEntityStoreV2 entityStore;
+
+    @Inject
+    private ImportService importService;
+
+    private static final String HIVE_TABLE_TYPE_NAME = "hive_table";
+
+    private static final String TABLE_1_GUID = "9f9e5088-3ace-4dd7-ae3e-41a93875e264";
+    private static final String TABLE_2_GUID = "49dc552e-835a-4b88-b752-220e03c6df36";
+    private static final String TABLE_3_GUID = "8b2f7e53-ac4b-4c6b-8159-8b6b62805d1a";
+    private static final String TABLE_4_GUID = "e5c2edd4-df48-4646-8f22-0fbdce235496";
+    private static final String TABLE_5_GUID = "1f6cb442-e7c4-4521-827a-49d567240e74";
+    private static final String TABLE_6_GUID = "edc9facc-2e76-4dbd-830d-ad7644541451";
+
+    private static final String TABLE_1_QUALIFIED_NAME = "hivedb01.hivetable01@primary";
+    private static final String TABLE_2_QUALIFIED_NAME = "hivedb01.hivetable02@primary";
+    private static final String TABLE_3_QUALIFIED_NAME = "hivedb01.hivetable03@primary";
+    private static final String TABLE_4_QUALIFIED_NAME = "hivedb01.hivetable04@primary";
+    private static final String TABLE_5_QUALIFIED_NAME = "hivedb01.hivetable05@primary";
+    private static final String TABLE_6_QUALIFIED_NAME = "hivedb01.hivetable06@primary";
 
     @BeforeTest
     public void setupTest() throws IOException, AtlasBaseException {
@@ -232,6 +255,60 @@ public class ExportServiceTest extends AtlasTestBase {
     public void verifyTypeFull() throws AtlasBaseException, IOException {
         ZipSource zipSource = runExportWithParameters(getRequestForTypeFull("Department,Employee,Manager"));
         verifyExportForFullEmployeeData(zipSource);
+    }
+
+    @DataProvider(name = "ctashivetables")
+    public static Object[][] importCtasData(ITestContext context) throws IOException, AtlasBaseException {
+        return ZipFileResourceTestUtils.getZipSource("ctas_hive_tables.zip");
+    }
+
+    @Test(dataProvider = "ctashivetables")
+    public void testExportConnectedHiveTables(InputStream inputStream) throws AtlasBaseException, IOException {
+        AtlasImportResult result = ZipFileResourceTestUtils.runImportWithNoParameters(importService, inputStream);
+        assertEquals(result.getOperationStatus(), AtlasImportResult.OperationStatus.SUCCESS);
+
+        AtlasExportRequest request = getRequestForConnected(HIVE_TABLE_TYPE_NAME, TABLE_1_QUALIFIED_NAME, TABLE_2_QUALIFIED_NAME);
+        ZipSource zipSource = runExportWithParameters(request);
+        List<String> guidList = zipSource.getCreationOrder();
+
+        assertTrue(guidList.contains(TABLE_1_GUID));
+        assertTrue(guidList.contains(TABLE_2_GUID));
+        assertTrue(guidList.contains(TABLE_3_GUID));
+        assertFalse(guidList.contains(TABLE_4_GUID));
+        assertFalse(guidList.contains(TABLE_5_GUID));
+        assertFalse(guidList.contains(TABLE_6_GUID));
+
+        request = getRequestForConnected(HIVE_TABLE_TYPE_NAME, TABLE_1_QUALIFIED_NAME, TABLE_6_QUALIFIED_NAME);
+        zipSource = runExportWithParameters(request);
+        guidList = zipSource.getCreationOrder();
+
+        assertTrue(guidList.contains(TABLE_1_GUID));
+        assertTrue(guidList.contains(TABLE_2_GUID));
+        assertFalse(guidList.contains(TABLE_3_GUID));
+        assertFalse(guidList.contains(TABLE_4_GUID));
+        assertTrue(guidList.contains(TABLE_5_GUID));
+        assertTrue(guidList.contains(TABLE_6_GUID));
+
+        request = getRequestForConnected(HIVE_TABLE_TYPE_NAME, TABLE_1_QUALIFIED_NAME, TABLE_4_QUALIFIED_NAME);
+        zipSource = runExportWithParameters(request);
+        guidList = zipSource.getCreationOrder();
+
+        assertTrue(guidList.contains(TABLE_1_GUID));
+        assertTrue(guidList.contains(TABLE_2_GUID));
+        assertTrue(guidList.contains(TABLE_3_GUID));
+        assertTrue(guidList.contains(TABLE_4_GUID));
+        assertTrue(guidList.contains(TABLE_5_GUID));
+        assertFalse(guidList.contains(TABLE_6_GUID));
+    }
+
+    private AtlasExportRequest getRequestForConnected(String typeName, String qualifiedName1, String qualifiedName2) {
+        AtlasExportRequest request = new AtlasExportRequest();
+        List<AtlasObjectId> itemsToExport = new ArrayList<>();
+        itemsToExport.add(new AtlasObjectId(typeName, "qualifiedName", qualifiedName1));
+        itemsToExport.add(new AtlasObjectId(typeName, "qualifiedName", qualifiedName2));
+        request.setItemsToExport(itemsToExport);
+        setOptionsMap(request, true, AtlasExportRequest.FETCH_TYPE_CONNECTED, false, "");
+        return request;
     }
 
     private AtlasExportRequest getRequestForFullFetch() {
