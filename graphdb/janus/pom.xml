@@ -53,9 +53,8 @@
         </dependency>
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>hbase-shaded-client</artifactId>
+            <artifactId>hbase-shaded-client-fixed</artifactId>
             <version>${project.version}</version>
-            <classifier>fixed</classifier>
         </dependency>
         <dependency>
             <groupId>org.apache.atlas</groupId>
