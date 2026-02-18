@@ -6,7 +6,7 @@ import org.apache.atlas.authorize.AtlasAccessResult;
 import org.apache.atlas.authorizer.store.PoliciesStore;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-
+import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
@@ -307,6 +307,9 @@ public class EntityAuthorizer {
      */
     @SuppressWarnings("unchecked")
     private static Map<String, Object> getStructAttributes(Object obj) {
+        if (obj instanceof AtlasStruct struct) {
+            return struct.getAttributes();
+        }
         if (obj instanceof Map<?, ?> map) {
             Object attributes = map.get("attributes");
             if (attributes instanceof Map<?, ?>) {
