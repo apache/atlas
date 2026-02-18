@@ -27,6 +27,7 @@ on:
       - lite_master
       - alcon-v2-418
       - ms-428-delete-optimisation-phase3
+      - lg-async-producer
 
     paths-ignore:
       - '.claude/**'
