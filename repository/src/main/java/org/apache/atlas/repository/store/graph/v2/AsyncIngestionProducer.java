@@ -7,6 +7,7 @@ import io.micrometer.core.instrument.Timer;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -161,11 +162,7 @@ public class AsyncIngestionProducer {
                         Configuration appConfig = ApplicationProperties.get();
                         Configuration kafkaConf = ApplicationProperties.getSubsetConfiguration(appConfig, PROPERTY_PREFIX);
 
-                        Properties props = new Properties();
-                        // Copy kafka config properties
-                        kafkaConf.getKeys().forEachRemaining(key -> {
-                            props.put(key, kafkaConf.getProperty(key).toString());
-                        });
+                        Properties props = ConfigurationConverter.getProperties(kafkaConf);
 
                         // Override serializers
                         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
