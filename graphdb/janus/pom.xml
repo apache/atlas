@@ -53,6 +53,12 @@
         </dependency>
         <dependency>
             <groupId>org.apache.atlas</groupId>
+            <artifactId>hbase-shaded-client</artifactId>
+            <version>${project.version}</version>
+            <classifier>fixed</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
             <artifactId>janusgraph-rdbms</artifactId>
             <version>${project.version}</version>
             <exclusions>
@@ -83,11 +89,6 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-distcp</artifactId>
             <version>${hadoop.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-shaded-client</artifactId>
-            <version>${hbase.version}-hadoop3</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>

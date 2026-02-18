@@ -304,7 +304,6 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-minikdc</artifactId>
         </dependency>
-
         <!-- supports simple auth handler -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -502,68 +501,6 @@
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>unpack-hbase-shaded-client</id>
-                        <goals>
-                            <goal>unpack</goal>
-                        </goals>
-                        <phase>process-resources</phase>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.apache.hbase</groupId>
-                                    <artifactId>hbase-shaded-client</artifactId>
-                                    <version>${hbase.version}-hadoop3</version>
-                                    <outputDirectory>${project.build.directory}/hbase-shaded-client-fixed</outputDirectory>
-                                    <excludes>META-INF/services/javax.ws.rs.ext.MessageBodyWriter,META-INF/services/javax.ws.rs.ext.MessageBodyReader</excludes>
-                                </artifactItem>
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>${maven-jar-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>repack-hbase-shaded-client</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <phase>process-classes</phase>
-                        <configuration>
-                            <classesDirectory>${project.build.directory}/hbase-shaded-client-fixed</classesDirectory>
-                            <finalName>hbase-shaded-client-${hbase.version}-hadoop3</finalName>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-install-plugin</artifactId>
-                <version>3.1.4</version>
-                <executions>
-                    <execution>
-                        <id>install-fixed-hbase-shaded-client</id>
-                        <goals>
-                            <goal>install-file</goal>
-                        </goals>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <file>${project.build.directory}/hbase-shaded-client-${hbase.version}-hadoop3.jar</file>
-                            <groupId>org.apache.hbase</groupId>
-                            <artifactId>hbase-shaded-client</artifactId>
-                            <version>${hbase.version}-hadoop3</version>
-                            <packaging>jar</packaging>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
                 <configuration>
@@ -595,9 +532,10 @@
                             <addClasspath>true</addClasspath>
                         </manifest>
                     </archive>
-                    <packagingExcludes>WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/jsp-api*.jar,${packages.to.exclude}</packagingExcludes>
+                    <packagingExcludes>WEB-INF/lib/hbase-shaded-client-${hbase.version}-hadoop3.jar,WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/jsp-api*.jar,${packages.to.exclude}</packagingExcludes>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>keytool-maven-plugin</artifactId>
