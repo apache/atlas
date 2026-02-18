@@ -539,14 +539,20 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @Override
     @GraphTransaction
     public void deleteTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
+        deleteTypesDef(typesDef, false);
+    }
+
+    @GraphTransaction
+    public void deleteTypesDef(AtlasTypesDef typesDef, boolean forceDelete) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasTypeDefGraphStore.deleteTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships={}, businessMetadataDefs={})",
+            LOG.debug("==> AtlasTypeDefGraphStore.deleteTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships={}, businessMetadataDefs={}, forceDelete={})",
                     CollectionUtils.size(typesDef.getEnumDefs()),
                     CollectionUtils.size(typesDef.getStructDefs()),
                     CollectionUtils.size(typesDef.getClassificationDefs()),
                     CollectionUtils.size(typesDef.getEntityDefs()),
                     CollectionUtils.size(typesDef.getRelationshipDefs()),
-                    CollectionUtils.size(typesDef.getBusinessMetadataDefs()));
+                    CollectionUtils.size(typesDef.getBusinessMetadataDefs()),
+                    forceDelete);
         }
 
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
@@ -678,9 +684,9 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         if (CollectionUtils.isNotEmpty(typesDef.getBusinessMetadataDefs())) {
             for (AtlasBusinessMetadataDef businessMetadataDef : typesDef.getBusinessMetadataDefs()) {
                 if (StringUtils.isNotBlank(businessMetadataDef.getGuid())) {
-                    businessMetadataDefStore.deleteByGuid(businessMetadataDef.getGuid(), null);
+                    businessMetadataDefStore.deleteByGuid(businessMetadataDef.getGuid(), null, forceDelete);
                 } else {
-                    businessMetadataDefStore.deleteByName(businessMetadataDef.getName(), null);
+                    businessMetadataDefStore.deleteByName(businessMetadataDef.getName(), null, forceDelete);
                 }
             }
         }
@@ -777,7 +783,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
     @Override
     @GraphTransaction
-    public void deleteTypeByName(String typeName) throws AtlasBaseException {
+    public void deleteTypeByName(String typeName, boolean forceDelete) throws AtlasBaseException {
         AtlasType atlasType = typeRegistry.getType(typeName);
 
         if (atlasType == null) {
@@ -801,7 +807,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             typesDef.setStructDefs(Collections.singletonList((AtlasStructDef) baseTypeDef));
         }
 
-        deleteTypesDef(typesDef);
+        deleteTypesDef(typesDef, forceDelete);
     }
 
     @Override

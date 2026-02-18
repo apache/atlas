@@ -177,7 +177,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
 
     @Override
     protected AtlasDefStore<AtlasBusinessMetadataDef> getBusinessMetadataDefStore(AtlasTypeRegistry typeRegistry) {
-        return new AtlasBusinessMetadataDefStoreV2(this, typeRegistry, this.entityDiscoveryService);
+        return new AtlasBusinessMetadataDefStoreV2(this, typeRegistry, this.entityDiscoveryService, this.atlasGraph);
     }
 
     @Override

@@ -45,9 +45,25 @@ public interface AtlasDefStore<T extends AtlasBaseTypeDef> {
 
     AtlasVertex preDeleteByName(String name) throws AtlasBaseException;
 
-    void deleteByName(String name, AtlasVertex preDeleteResult) throws AtlasBaseException;
-
     AtlasVertex preDeleteByGuid(String guid) throws AtlasBaseException;
 
+    void deleteByName(String name, AtlasVertex preDeleteResult) throws AtlasBaseException;
+
     void deleteByGuid(String guid, AtlasVertex preDeleteResult) throws AtlasBaseException;
+
+    default AtlasVertex preDeleteByName(String name, boolean forceDelete) throws AtlasBaseException {
+        return preDeleteByName(name);
+    }
+
+    default void deleteByName(String name, AtlasVertex preDeleteResult, boolean forceDelete) throws AtlasBaseException {
+        deleteByName(name, preDeleteResult);
+    }
+
+    default AtlasVertex preDeleteByGuid(String guid, boolean forceDelete) throws AtlasBaseException {
+        return preDeleteByGuid(guid);
+    }
+
+    default void deleteByGuid(String guid, AtlasVertex preDeleteResult, boolean forceDelete) throws AtlasBaseException {
+        deleteByGuid(guid, preDeleteResult);
+    }
 }

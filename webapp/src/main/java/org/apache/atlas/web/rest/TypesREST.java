@@ -49,6 +49,8 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
@@ -426,22 +428,30 @@ public class TypesREST {
     /**
      * Delete API for type identified by its name.
      * @param typeName Name of the type to be deleted.
+     * @param forceDelete If true, bypasses pre-delete validation checks and forcefully removes the type definition.
+     *                    For BusinessMetadata types:
+     *                    - If isIndexable=true and force=false: performs normal graph scan validation
+     *                    - If isIndexable=false and force=false: blocks deletion (requires force=true)
+     *                    - If force=true: skips all validation and deletes the type
+     *                    Defaults to false for backward compatibility.
      * @throws AtlasBaseException
      * @HTTP 204 On successful deletion of the requested type definitions
-     * @HTTP 400 On validation failure for any type definitions
+     * @HTTP 400 On validation failure for any type definitions or when attempting to delete
+     *           non-indexable BusinessMetadata without force-delete parameter
      */
     @DELETE
     @Path("/typedef/name/{typeName}")
     @Timed
-    public void deleteAtlasTypeByName(@PathParam("typeName") final String typeName) throws AtlasBaseException {
+    public void deleteAtlasTypeByName(@PathParam("typeName") final String typeName,
+                                      @QueryParam("force") @DefaultValue("false") final boolean forceDelete) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeByName(" + typeName + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeByName(" + typeName + ", force=" + forceDelete + ")");
             }
 
-            typeDefStore.deleteTypeByName(typeName);
+            typeDefStore.deleteTypeByName(typeName, forceDelete);
         } finally {
             AtlasPerfTracer.log(perf);
         }
