@@ -1,0 +1,57 @@
+# Gitleaks configuration for atlas-metastore
+
+title = "Gitleaks config for Atlas Metastore"
+
+[extend]
+useDefault = true
+
+# Path-level ignores are managed in .gitleaksignore (fingerprint-based).
+# Only keep regex allowlists here for patterns that are safe across all files.
+
+[allowlist]
+description = "Allowlist for known safe patterns"
+regexes = [
+    '''example\.com''',
+    '''your-key-here''',
+    '''localhost''',
+    '''admin/admin''',
+    '''test[_-]?password''',
+    '''dummy[_-]?key''',
+]
+
+# Custom rules for secrets commonly found in Java projects
+[[rules]]
+id = "aws-access-key"
+description = "AWS Access Key ID"
+regex = '''AKIA[0-9A-Z]{16}'''
+tags = ["aws", "key"]
+
+[[rules]]
+id = "aws-secret-key"
+description = "AWS Secret Key"
+regex = '''(?i)(aws_secret_access_key|aws_secret)\s*[:=]\s*['"]?[A-Za-z0-9/+=]{40}['"]?'''
+tags = ["aws", "secret"]
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)(api[_-]?key|apikey|access[_-]?token|secret[_-]?key)\s*[:=]\s*['"][a-zA-Z0-9_\-]{20,}['"]'''
+tags = ["api", "key"]
+
+[[rules]]
+id = "jwt-token"
+description = "JWT Token"
+regex = '''eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.?[A-Za-z0-9_-]*'''
+tags = ["jwt", "token"]
+
+[[rules]]
+id = "private-key"
+description = "Private Key file content"
+regex = '''-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----'''
+tags = ["key", "private"]
+
+[[rules]]
+id = "connection-string"
+description = "Database Connection String with credentials"
+regex = '''(?i)(jdbc|mongodb|postgresql|mysql|redis):\/\/[^:]+:[^@]+@'''
+tags = ["database", "credentials"]

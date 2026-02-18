@@ -3411,6 +3411,40 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
+                "name": "READ_AI_MODEL_VERSION_ENTITIES",
+                "qualifiedName": "READ_AI_MODEL_VERSION_ENTITIES",
+                "description": "Allows user to perform read operation on AI model version assets",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$member",
+                    "$guest"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources":
+                [
+                    "entity-type:AIModelVersion",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions":
+                [
+                    "entity-read"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
                 "name": "CRUD_AI_MODEL_ENTITY",
                 "qualifiedName": "CRUD_AI_MODEL_ENTITY",
                 "description": "Allows user to perform crud operation on AIModel assets.",
@@ -3433,6 +3467,44 @@
                 "policyResources":
                 [
                     "entity-type:AIModel",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions":
+                [
+                    "entity-create",
+                    "entity-update",
+                    "entity-delete",
+                    "entity-read"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "CRUD_AI_MODEL_VERSION_ENTITY",
+                "qualifiedName": "CRUD_AI_MODEL_VERSION_ENTITY",
+                "description": "Allows user to perform crud operation on AIModelVersion assets.",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "isPolicyEnabled": true,
+                "policyResources":
+                [
+                    "entity-type:AIModelVersion",
                     "entity-classification:*",
                     "entity:*"
                 ],
@@ -3510,6 +3582,7 @@
                 [
                     "entity-type:AIApplication",
                     "entity-type:AIModel",
+                    "entity-type:AIModelVersion",
                     "entity-classification:*",
                     "entity:*",
                     "entity-business-metadata:*"

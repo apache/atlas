@@ -1,0 +1,19 @@
+#!/bin/bash
+# Auto-install pre-commit hooks after git clone/checkout
+
+# Only run on initial clone (when .git/hooks/pre-commit doesn't exist yet)
+if [ ! -f .git/hooks/pre-commit ] || [ ! -s .git/hooks/pre-commit ]; then
+    echo ""
+    echo "Setting up pre-commit hooks for secret scanning..."
+    echo ""
+
+    # Check if pre-commit is installed
+    if command -v pre-commit &> /dev/null; then
+        pre-commit install
+        echo "Pre-commit hooks installed!"
+        echo "Secrets will now be blocked before commits."
+    else
+        echo "WARNING: pre-commit not found. Please run: ./bootstrap.sh"
+    fi
+    echo ""
+fi

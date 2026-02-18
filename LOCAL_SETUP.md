@@ -81,6 +81,42 @@ brew install colima docker docker-compose
 colima start --disk 10 --memory 4
 ```
 
+### 5. Secret Scanning Setup (Recommended)
+
+The repo uses [gitleaks](https://github.com/gitleaks/gitleaks) via [pre-commit](https://pre-commit.com/) to prevent accidental commits of secrets (API keys, tokens, credentials).
+
+**One-time setup:**
+```bash
+./bootstrap.sh
+```
+
+This will:
+- Install `pre-commit` (via brew or pip3)
+- Install `gitleaks` (via brew on macOS, binary download on Linux)
+- Activate the pre-commit hook so gitleaks runs on every `git commit`
+
+**What gets blocked:**
+- AWS access keys and secret keys
+- Generic API keys and tokens
+- JWT tokens
+- Private keys (`-----BEGIN PRIVATE KEY-----`)
+- Database connection strings with embedded credentials
+
+**Managing false positives:**
+If gitleaks flags a legitimate value (e.g., a test fixture), add its fingerprint to `.gitleaksignore`:
+```bash
+# Run gitleaks to see the fingerprint
+gitleaks protect --verbose --staged
+
+# Add the fingerprint to .gitleaksignore
+echo "path/to/file.java:rule-id:line-number" >> .gitleaksignore
+```
+
+**Skipping a single commit** (use sparingly):
+```bash
+SKIP=gitleaks git commit -m "message"
+```
+
 ## Building Atlas
 
 ### Clone and Build
