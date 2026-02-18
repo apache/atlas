@@ -65,6 +65,7 @@
         <module>docs</module>
         <module>graphdb</module>
 
+        <module>hbase-shaded-client-fixed</module>
         <module>intg</module>
         <module>notification</module>
         <module>plugin-classloader</module>

@@ -125,6 +125,11 @@
         </dependency>
         <dependency>
             <groupId>org.apache.atlas</groupId>
+            <artifactId>hbase-shaded-client-fixed</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
             <artifactId>janusgraph-rdbms</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -148,12 +153,6 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-shaded-client</artifactId>
-            <version>${hbase.version}</version>
         </dependency>
 
         <dependency>
