@@ -184,6 +184,9 @@ jobs:
         cohort: ${{ fromJson(needs.parse-labels.outputs.cohort_labels) }}
       fail-fast: false
     runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      VCLUSTER_PROJECT: ${{ vars.VCLUSTER_PROJECT }}
     steps:
       - name: Get Image Tag details
         id: get_image_tag
@@ -220,11 +223,61 @@ jobs:
 
             console.log(`Repo: ${repoName}, Service: ${serviceName}, Tag: ${imageTag}, Image: ${imageRepo}, Ring: ${ringName}`);
 
-      - name: Setup Temporal CLI
+      # Resolve the tenant list now so the health check step has it after Temporal finishes.
+      # Only 'github' cohort source is supported (reads cohorts/<value>.json from atlan-releases).
+      - name: Get tenant list from cohort file
+        id: get_tenants
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ORG_PAT_GITHUB }}
+          script: |
+            const source = '${{ matrix.cohort.source }}';
+            const key    = '${{ matrix.cohort.key }}';
+            const value  = '${{ matrix.cohort.value }}';
+
+            if (source !== 'github' || key !== 'path') {
+              console.log(`Cohort source '${source}/${key}' does not support automatic health checks. Skipping.`);
+              core.setOutput('tenant_names', '');
+              return;
+            }
+
+            const filePath = `cohorts/${value}.json`;
+            console.log(`Fetching cohort file: ${filePath}`);
+
+            const { data: file } = await github.rest.repos.getContent({
+              owner: 'atlanhq',
+              repo: 'atlan-releases',
+              path: filePath,
+              ref: 'main'
+            });
+
+            const content = Buffer.from(file.content, 'base64').toString('utf-8');
+            const cohortFile = JSON.parse(content);
+            const tenantNames = cohortFile.tenants.map(t => t.name).join(',');
+
+            console.log(`Tenants in cohort: ${tenantNames}`);
+            core.setOutput('tenant_names', tenantNames);
+
+      - name: Setup tools
         run: |
+          # Temporal CLI
           curl -sSf https://temporal.download/cli.sh | sh
-          export PATH="$PATH:/home/runner/.temporalio/bin"
+          echo "$HOME/.temporalio/bin" >> $GITHUB_PATH
+
+          # kubectl
+          curl -sLO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl && sudo mv kubectl /usr/local/bin/kubectl
+
+          # vCluster CLI
+          curl -sL -o vcluster "https://github.com/loft-sh/vcluster/releases/latest/download/vcluster-linux-amd64"
+          chmod +x vcluster && sudo mv vcluster /usr/local/bin/vcluster
+
+          # jq (pre-installed on ubuntu-latest but ensure it)
+          sudo apt-get install -y jq
+
           temporal --version
+          kubectl version --client
+          vcluster --version
 
       - name: Connect to VPN
         run: |
@@ -235,12 +288,24 @@ jobs:
             --user="${{ secrets.GLOBALPROTECT_USERNAME }}" \
             --passwd-on-stdin \
             --background \
-            "vpnsec.atlan.app"
-          sleep 5
+            "${{ vars.GLOBALPROTECT_PORTAL_URL }}"
+          sleep 10
+
+          if ! pgrep -x openconnect > /dev/null; then
+            echo "ERROR: VPN process exited unexpectedly"
+            exit 1
+          fi
+          echo "VPN connected (PID: $(pgrep -x openconnect))"
+
+      - name: Login to vCluster Platform
+        run: |
+          vcluster platform login ${{ secrets.VCLUSTER_PLATFORM_URL }} \
+            --access-key ${{ secrets.VCLUSTER_ACCESS_KEY }}
+          echo "vCluster platform login successful"
 
       - name: Trigger Temporal workflow
+        id: trigger_temporal
         run: |
-          export PATH="$PATH:/home/runner/.temporalio/bin"
           WORKFLOW_ID="service-release-parent-${{ steps.get_image_tag.outputs.service_name }}-$(date +%s)"
 
           ARGS=$(jq -n \
@@ -286,3 +351,269 @@ jobs:
           echo "$OUTPUT"
           RUN_ID=$(echo "$OUTPUT" | grep -i "RunId" | awk '{print $2}')
           echo "Workflow triggered: https://temporal.atlan.com/namespaces/default/workflows/${WORKFLOW_ID}/${RUN_ID}/history"
+
+          echo "workflow_id=$WORKFLOW_ID" >> $GITHUB_OUTPUT
+
+      - name: Wait for Temporal workflow to complete
+        run: |
+          WORKFLOW_ID="${{ steps.trigger_temporal.outputs.workflow_id }}"
+          MAX_WAIT=3600  # 60 minutes
+          ELAPSED=0
+          POLL_INTERVAL=30
+
+          echo "Polling Temporal workflow: $WORKFLOW_ID"
+
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            DESCRIBE=$(temporal workflow describe --tls \
+              --address "temporal-server.atlan.com" \
+              --namespace "default" \
+              --workflow-id "$WORKFLOW_ID" 2>&1)
+
+            STATUS_LINE=$(echo "$DESCRIBE" | grep -E "^\s*Status" | head -1)
+            echo "[$ELAPSED s] $STATUS_LINE"
+
+            if echo "$STATUS_LINE" | grep -qi "Completed"; then
+              echo "Temporal workflow completed successfully"
+              exit 0
+            fi
+
+            if echo "$STATUS_LINE" | grep -qiE "FAILED|TERMINATED|TIMED_OUT|CANCELED"; then
+              echo "Temporal workflow ended with non-success status"
+              echo "$DESCRIBE"
+              exit 1
+            fi
+
+            sleep $POLL_INTERVAL
+            ELAPSED=$((ELAPSED + POLL_INTERVAL))
+          done
+
+          echo "Timed out waiting for Temporal workflow after ${MAX_WAIT}s"
+          exit 1
+
+      - name: Run cohort health checks
+        id: health_check
+        if: steps.get_tenants.outputs.tenant_names != ''
+        run: |
+          TENANTS="${{ steps.get_tenants.outputs.tenant_names }}"
+          EXPECTED_IMAGE="${{ steps.get_image_tag.outputs.image_repo }}:${{ steps.get_image_tag.outputs.image_tag }}"
+
+          echo "Expected image: $EXPECTED_IMAGE"
+          echo "Tenants to check: $TENANTS"
+          echo ""
+
+          IFS=',' read -ra TENANT_LIST <<< "$TENANTS"
+          PASSED=0
+          FAILED=0
+          PORT=21100
+
+          # Results file avoids multi-line output escaping issues
+          RESULTS_FILE="/tmp/cohort-health-results.md"
+          echo "" > "$RESULTS_FILE"
+
+          for TENANT in "${TENANT_LIST[@]}"; do
+            TENANT=$(echo "$TENANT" | xargs)
+            PORT=$((PORT + 1))
+
+            echo "============================================="
+            echo "Checking tenant: $TENANT"
+            echo "============================================="
+
+            # --- Connect to tenant vCluster ---
+            KUBECONFIG="kubeconfig-${TENANT}.yaml"
+            if ! KUBECONFIG=$KUBECONFIG vcluster platform connect vcluster "$TENANT" \
+                --project "$VCLUSTER_PROJECT" 2>&1; then
+              echo "FAIL: vCluster connection failed for $TENANT"
+              FAILED=$((FAILED + 1))
+              echo "- ❌ **${TENANT}**: vCluster connection failed" >> "$RESULTS_FILE"
+              continue
+            fi
+
+            # --- Pod readiness: all pods must exist and have all containers ready ---
+            PODS_JSON=$(KUBECONFIG=$KUBECONFIG kubectl get pods -n atlas -l app=atlas -o json 2>/dev/null)
+            if [ $? -ne 0 ]; then
+              echo "FAIL: kubectl get pods failed for $TENANT"
+              FAILED=$((FAILED + 1))
+              echo "- ❌ **${TENANT}**: kubectl get pods failed" >> "$RESULTS_FILE"
+              continue
+            fi
+
+            TOTAL_PODS=$(echo "$PODS_JSON" | jq '.items | length')
+            NOT_READY=$(echo "$PODS_JSON" | jq '[.items[].status.containerStatuses[]? | select(.ready == false)] | length')
+            READY=$(echo "$PODS_JSON"     | jq '[.items[].status.containerStatuses[]? | select(.ready == true)]  | length')
+            TOTAL_CONTAINERS=$(echo "$PODS_JSON" | jq '[.items[].status.containerStatuses[]?] | length')
+
+            echo "Pods: $TOTAL_PODS | Containers ready: $READY/$TOTAL_CONTAINERS"
+
+            if [ "$TOTAL_PODS" == "0" ]; then
+              echo "FAIL: No atlas pods found for $TENANT"
+              FAILED=$((FAILED + 1))
+              echo "- ❌ **${TENANT}**: No atlas pods found" >> "$RESULTS_FILE"
+              continue
+            fi
+
+            if [ "$NOT_READY" != "0" ]; then
+              echo "FAIL: Pod readiness check failed ($NOT_READY containers not ready)"
+              FAILED=$((FAILED + 1))
+              echo "- ❌ **${TENANT}**: Pods not ready (${TOTAL_PODS} pods, ${READY}/${TOTAL_CONTAINERS} containers ready)" >> "$RESULTS_FILE"
+              continue
+            fi
+
+            echo "OK: $TOTAL_PODS pods, all containers ready ($READY/$TOTAL_CONTAINERS)"
+
+            # --- Image verification: atlas-main container must have correct repo-ring and tag ---
+            # Image format: ghcr.io/atlanhq/{repo}-{ring_name}:{commit_hash}abcd
+            # ECR cached:   ...ecr.../ghcr-cache/ghcr.io/atlanhq/{repo}-{ring_name}:{commit_hash}abcd
+            #
+            # We verify:
+            # 1. Image path contains "{repo}-{ring_name}" (e.g., atlas-metastore-ring-test)
+            # 2. Image tag matches expected tag (e.g., e80de26abcd)
+            REPO_NAME="${{ github.event.repository.name }}"
+            RING_NAME="${{ steps.get_image_tag.outputs.ring_name }}"
+            EXPECTED_TAG="${{ steps.get_image_tag.outputs.image_tag }}"
+            EXPECTED_IMAGE_PATTERN="${REPO_NAME}-${RING_NAME}"
+
+            echo "Verifying image: pattern='$EXPECTED_IMAGE_PATTERN', tag='$EXPECTED_TAG'"
+
+            ACTUAL_IMAGES=$(echo "$PODS_JSON" | jq -r \
+              '.items[].status.containerStatuses[]? | select(.name == "atlas-main") | .image')
+
+            MISMATCH_COUNT=0
+            for IMG in $ACTUAL_IMAGES; do
+              ACTUAL_TAG="${IMG##*:}"
+              
+              # Check if image path contains the expected pattern (repo-ring)
+              if [[ "$IMG" != *"$EXPECTED_IMAGE_PATTERN"* ]]; then
+                echo "  Image '$IMG' does not contain pattern '$EXPECTED_IMAGE_PATTERN'"
+                MISMATCH_COUNT=$((MISMATCH_COUNT + 1))
+                continue
+              fi
+
+              # Check if tag matches
+              if [ "$ACTUAL_TAG" != "$EXPECTED_TAG" ]; then
+                echo "  Image '$IMG' has wrong tag: expected '$EXPECTED_TAG', got '$ACTUAL_TAG'"
+                MISMATCH_COUNT=$((MISMATCH_COUNT + 1))
+                continue
+              fi
+            done
+
+            if [ "$MISMATCH_COUNT" != "0" ]; then
+              ACTUAL_UNIQUE=$(echo "$ACTUAL_IMAGES" | sort -u | tr '\n' ' ')
+              echo "FAIL: Image mismatch. Expected pattern: $EXPECTED_IMAGE_PATTERN:$EXPECTED_TAG"
+              echo "      Actual images: $ACTUAL_UNIQUE"
+              FAILED=$((FAILED + 1))
+              echo "- ❌ **${TENANT}**: Image mismatch (expected: \`$EXPECTED_IMAGE_PATTERN:$EXPECTED_TAG\`)" >> "$RESULTS_FILE"
+              continue
+            fi
+
+            echo "OK: All $TOTAL_PODS pods running correct ring image ($EXPECTED_IMAGE_PATTERN:$EXPECTED_TAG)"
+
+            # --- App health check: port-forward + /api/atlas/admin/status ---
+            KUBECONFIG=$KUBECONFIG kubectl port-forward \
+              -n atlas svc/atlas-service-atlas $PORT:80 > /dev/null 2>&1 &
+            PF_PID=$!
+
+            PF_READY=false
+            for i in $(seq 1 30); do
+              if lsof -i :$PORT &>/dev/null; then
+                PF_READY=true
+                break
+              fi
+              sleep 1
+            done
+
+            if [ "$PF_READY" != "true" ]; then
+              echo "FAIL: Port-forward did not become ready for $TENANT"
+              kill $PF_PID 2>/dev/null || true
+              FAILED=$((FAILED + 1))
+              echo "- ❌ **${TENANT}**: Port-forward failed" >> "$RESULTS_FILE"
+              continue
+            fi
+
+            APP_STATUS=""
+            for attempt in $(seq 1 6); do
+              RESP=$(curl -sf "http://localhost:$PORT/api/atlas/admin/status" 2>/dev/null)
+              if [ $? -eq 0 ]; then
+                APP_STATUS=$(echo "$RESP" | jq -r '.Status' 2>/dev/null)
+                if [ "$APP_STATUS" = "ACTIVE" ]; then
+                  break
+                fi
+                echo "  Attempt $attempt/6 — Status: ${APP_STATUS:-empty}"
+              else
+                echo "  Attempt $attempt/6 — curl failed"
+              fi
+              sleep 10
+            done
+
+            kill $PF_PID 2>/dev/null || true
+
+            if [ "$APP_STATUS" = "ACTIVE" ]; then
+              echo "OK: App status ACTIVE"
+              PASSED=$((PASSED + 1))
+              echo "- ✅ **${TENANT}**: Healthy (${TOTAL_PODS} pods ready, \`$EXPECTED_IMAGE_PATTERN:$EXPECTED_TAG\`, Status=ACTIVE)" >> "$RESULTS_FILE"
+            else
+              echo "FAIL: App status '${APP_STATUS:-unreachable}'"
+              FAILED=$((FAILED + 1))
+              echo "- ❌ **${TENANT}**: App not healthy (Status=${APP_STATUS:-unreachable})" >> "$RESULTS_FILE"
+            fi
+
+            echo ""
+          done
+
+          echo ""
+          echo "=============================="
+          echo "TOTAL: $((PASSED + FAILED)) | PASSED: $PASSED | FAILED: $FAILED"
+          echo "=============================="
+
+          {
+            echo "total=$((PASSED + FAILED))"
+            echo "passed=$PASSED"
+            echo "failed=$FAILED"
+          } >> $GITHUB_OUTPUT
+
+          if [ $FAILED -gt 0 ]; then
+            exit 1
+          fi
+
+      - name: Post health check results to PR
+        if: always() && steps.get_tenants.outputs.tenant_names != ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ORG_PAT_GITHUB }}
+          script: |
+            const prNumber = parseInt('${{ needs.get-pr-number.outputs.pr_number }}');
+            const total    = '${{ steps.health_check.outputs.total }}' || '0';
+            const passed   = '${{ steps.health_check.outputs.passed }}' || '0';
+            const failed   = '${{ steps.health_check.outputs.failed }}' || '0';
+            const ring     = '${{ steps.get_image_tag.outputs.ring_name }}';
+            const imageTag = '${{ steps.get_image_tag.outputs.image_tag }}';
+
+            const fs = require('fs');
+            let details = '';
+            try {
+              details = fs.readFileSync('/tmp/cohort-health-results.md', 'utf8').trim();
+            } catch (e) {
+              details = '_Health check did not produce results._';
+            }
+
+            const statusEmoji = failed === '0' ? '✅' : '❌';
+            const statusText  = failed === '0'
+              ? `All ${total} tenant(s) healthy`
+              : `${failed}/${total} tenant(s) failed`;
+
+            const body = [
+              `## 🏥 Cohort Health Check`,
+              ``,
+              `**Status:** ${statusEmoji} ${statusText}`,
+              `**Ring:** \`${ring}\`  **Image Tag:** \`${imageTag}\``,
+              ``,
+              details,
+              ``,
+              `[View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})`
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              issue_number: prNumber,
+              body
+            });
