@@ -664,11 +664,7 @@ const sender = socket => (type, payload) => {
 class Socket {
   constructor(server, host, port) {
     if (server) {
-      this.client = new WS.Server({
-        server,
-        host,
-        port
-      });
+      this.client = new WS.Server({ server });
     }
   }
 

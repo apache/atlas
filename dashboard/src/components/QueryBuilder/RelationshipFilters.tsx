@@ -125,7 +125,7 @@ const RelationshipFilters = ({
                   props.operator === "is_null" ||
                   props.operator === "not_null"
                 ) {
-                  return;
+                  return null;
                 }
                 return <ValueEditor {...props} />;
               }

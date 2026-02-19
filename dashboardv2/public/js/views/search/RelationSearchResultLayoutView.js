@@ -542,7 +542,7 @@ define(['require',
                         resizeable: true,
                         orderable: true,
                         sortable: true,
-                        renderable: (columnToShow ? _.contains(columnToShow, 'typeName') : true),
+                        renderable: (columnToShow ? _.includes(columnToShow, 'typeName') : true),
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
@@ -559,7 +559,7 @@ define(['require',
                         resizeable: true,
                         orderable: true,
                         sortable: false,
-                        renderable: (columnToShow ? _.contains(columnToShow, 'end1') : true),
+                        renderable: (columnToShow ? _.includes(columnToShow, 'end1') : true),
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
@@ -581,7 +581,7 @@ define(['require',
                         resizeable: true,
                         orderable: true,
                         sortable: false,
-                        renderable: (columnToShow ? _.contains(columnToShow, 'end2') : true),
+                        renderable: (columnToShow ? _.includes(columnToShow, 'end2') : true),
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
@@ -603,7 +603,7 @@ define(['require',
                         resizeable: true,
                         orderable: true,
                         sortable: true,
-                        renderable: (columnToShow ? _.contains(columnToShow, 'end2') : true),
+                        renderable: (columnToShow ? _.includes(columnToShow, 'end2') : true),
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
@@ -620,7 +620,7 @@ define(['require',
                             var attrObj = def ? Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.relationshipDefCollection, attrMerge: true }) : [];
                             _.each(attrObj, function(obj) {
                                 var key = _.escape(obj.name),
-                                    isRenderable = _.contains(columnToShow, key),
+                                    isRenderable = _.includes(columnToShow, key),
                                     // isSortable = obj.typeName.search(/(array|map)/i) == -1;
                                     isSortable = obj.typeName.search(/(string|date|boolean|int|number|byte|float|long|double|short)/i) == 0; // commented : as sorting is required for all the columns except non-primitive types
 

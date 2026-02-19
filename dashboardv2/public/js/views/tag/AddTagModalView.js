@@ -189,7 +189,7 @@ define(['require',
                         if (Enums.entityStateReadOnly[entity.model.status]) {
                             obj.deletedEntity.push(name);
                         } else {
-                            if (_.indexOf((entity.model.classificationNames || _.pluck(entity.model.classifications, 'typeName')), tagName) === -1) {
+                            if (_.indexOf((entity.model.classificationNames || _.map(entity.model.classifications, 'typeName')), tagName) === -1) {
                                 obj.guid.push(entity.model.guid)
                             } else {
                                 obj.skipEntity.push(name);

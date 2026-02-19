@@ -74,6 +74,10 @@ const CustomValueEditor: React.FC<ValueEditorProps> = (props) => {
     }
   };
 
+  if (operator === "is_null" || operator === "not_null") {
+    return null;
+  }
+
   if (
     (field === "startTime" || field == "endTime") &&
     operator === "TIME_RANGE"
@@ -152,9 +156,6 @@ const CustomValueEditor: React.FC<ValueEditorProps> = (props) => {
         showTimeInput
       />
     );
-  }
-  if (operator === "is_null" || operator === "not_null") {
-    return;
   }
   return <ValueEditor {...props} />;
 };

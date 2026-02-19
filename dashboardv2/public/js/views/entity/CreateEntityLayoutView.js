@@ -239,7 +239,7 @@ define(['require',
                             if (_.isEmptyArray(Globals.entityTypeConfList)) {
                                 str += '<option>' + name + '</option>';
                             } else {
-                                if (_.contains(Globals.entityTypeConfList, val.get("name"))) {
+                                if (_.includes(Globals.entityTypeConfList, val.get("name"))) {
                                     str += '<option>' + name + '</option>';
                                 }
                             }
