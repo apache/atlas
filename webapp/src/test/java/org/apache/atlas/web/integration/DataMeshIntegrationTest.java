@@ -134,9 +134,9 @@ public class DataMeshIntegrationTest extends AtlasInProcessBaseIT {
         AtlasEntityWithExtInfo result = atlasClient.getEntityByGuid(domainGuid, false, false);
         AtlasEntity parent = result.getEntity();
 
-        // Parent domain should have childrenDomains relationship
-        Object children = parent.getRelationshipAttribute("childrenDomains");
-        assertNotNull(children, "Parent domain should have childrenDomains relationship");
+        // Parent domain should have subDomains relationship
+        Object children = parent.getRelationshipAttribute("subDomains");
+        assertNotNull(children, "Parent domain should have subDomains relationship");
         assertTrue(children instanceof List);
         @SuppressWarnings("unchecked")
         List<Object> childList = (List<Object>) children;
@@ -154,6 +154,7 @@ public class DataMeshIntegrationTest extends AtlasInProcessBaseIT {
         product.setAttribute("name", "test-product-" + testId);
         product.setAttribute("qualifiedName", domainQN + "/product/test-" + testId);
         product.setAttribute("domainQualifiedName", domainQN);
+        product.setAttribute("dataProductAssetsDSL", "{\"query\":{\"match_all\":{}}}");
 
         EntityMutationResponse response = atlasClient.createEntity(new AtlasEntityWithExtInfo(product));
         AtlasEntityHeader created = response.getFirstEntityCreated();
@@ -188,6 +189,8 @@ public class DataMeshIntegrationTest extends AtlasInProcessBaseIT {
         AtlasEntityWithExtInfo current = atlasClient.getEntityByGuid(domainGuid);
         AtlasEntity entity = current.getEntity();
         entity.setAttribute("description", "Updated domain description");
+        // Clear relationship attributes to avoid "Cannot update Domain's subDomains or dataProducts relations"
+        entity.setRelationshipAttributes(null);
 
         EntityMutationResponse response = atlasClient.updateEntity(new AtlasEntityWithExtInfo(entity));
         assertNotNull(response);
