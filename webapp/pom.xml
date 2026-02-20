@@ -775,6 +775,10 @@
                     <forkCount>1</forkCount> <!--Default-->
                     <reuseForks>true</reuseForks> <!--Default-->
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <environmentVariables>
+                        <DOCKER_HOST>unix:///var/run/docker.sock</DOCKER_HOST>
+                        <TESTCONTAINERS_RYUK_DISABLED>true</TESTCONTAINERS_RYUK_DISABLED>
+                    </environmentVariables>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir=${project.build.directory}/tmp-hadoop-${user.name}
                         -Xmx1024m

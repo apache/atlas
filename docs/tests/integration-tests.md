@@ -287,3 +287,95 @@ The `partialUpdateEntityByGuid` API sends the value as a raw JSON body. String v
 
 ### "Duplicate Lexorank" on glossary update
 Remove `lexicographicalSortOrder` from the glossary object's attribute maps before updating.
+
+## CI/CD Integration
+
+### GitHub Actions Workflow
+
+Integration tests run automatically on every PR to `master`, `beta`, or `staging` branches via `.github/workflows/integration-tests.yml`.
+
+**What happens on each PR:**
+1. Tests run in parallel with code review
+2. Results are published as GitHub Check annotations
+3. Test summary appears in the PR's "Checks" tab
+4. Artifacts (XML reports, logs) are uploaded for debugging
+
+**Workflow triggers:**
+```yaml
+on:
+  pull_request:
+    branches: [master, beta, staging]
+    paths-ignore:
+      - '.claude/**'
+      - 'docs/**'
+      - 'helm/**'
+```
+
+### Claude Code Integration
+
+After integration tests complete, Claude Code automatically analyzes the results and posts a comment on the PR with:
+
+1. **Test Failure Analysis** — If tests fail, Claude identifies which tests failed, correlates failures with PR changes, and suggests fixes.
+
+2. **Test Coverage Assessment** — Claude maps changed files to expected tests using `.claude/test-coverage-map.json` and identifies coverage gaps.
+
+3. **Test Recommendations** — For uncovered code paths, Claude suggests specific test methods to add, following existing patterns.
+
+**How it works:**
+```
+┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐
+│  PR Opened/Updated  │────▶│  Integration Tests  │────▶│  Claude Analysis    │
+│                     │     │  (parallel)         │     │  (after tests)      │
+└─────────────────────┘     └─────────────────────┘     └─────────────────────┘
+                                     │                           │
+                                     ▼                           ▼
+                            Test Results XML            PR Comment with:
+                            + Artifacts                 - Coverage assessment
+                                                        - Gap identification
+                                                        - Suggested tests
+```
+
+### Using the suggest-tests Skill
+
+You can manually request test suggestions using Claude Code:
+
+```bash
+# In the repo directory
+claude /suggest-tests
+```
+
+This analyzes your current git diff and recommends:
+- Which existing tests should cover your changes
+- Coverage gaps that need new tests
+- Specific test method implementations
+
+### Code-to-Test Mapping
+
+The mapping between code paths and tests is defined in `.claude/test-coverage-map.json`:
+
+| Code Path Pattern | Required Tests |
+|-------------------|----------------|
+| `**/glossary/**` | GlossaryIntegrationTest |
+| `**/preprocessor/datamesh/**` | DataMeshIntegrationTest |
+| `**/EntityGraphMapper.java` | EntityCrudIntegrationTest |
+| `**/classification/**` | ClassificationIntegrationTest |
+| `**/lineage/**` | LineageIntegrationTest |
+| `**/search/**` | SearchIntegrationTest |
+
+See the full mapping in `.claude/test-coverage-map.json`.
+
+## Adding Tests for New Features
+
+When adding a new feature, follow this checklist:
+
+1. **Identify the right test class** using the code-to-test mapping above
+2. **Check existing test coverage** — read the test class to see what's already covered
+3. **Add test methods** following the `@Order` convention
+4. **Run locally** before pushing:
+   ```bash
+   JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home \
+     /opt/homebrew/bin/mvn test -pl webapp \
+     -Dtest=YourTestClass \
+     -Drat.skip=true
+   ```
+5. **Update the coverage map** if you're adding a new test class (`.claude/test-coverage-map.json`)

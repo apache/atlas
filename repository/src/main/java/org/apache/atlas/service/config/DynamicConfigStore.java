@@ -479,14 +479,6 @@ public class DynamicConfigStore implements ApplicationContextAware {
             return entry.getValue();
         }
 
-        // Cache miss on an activated store is abnormal — it means Cassandra had no row
-        // for this key, likely because Phase 1 sync was missed or the key was never written.
-        if (config.isActivated()) {
-            LOG.warn("CONFIG STORE FALLBACK: Cache miss for key '{}' on activated store. " +
-                    "Returning default value. This may indicate Phase 1 sync was missed.", key);
-            recordDefaultFallbackMetric(key);
-        }
-
         // Return default value if not in cache
         return getDefaultValue(key);
     }

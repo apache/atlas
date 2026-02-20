@@ -8,6 +8,8 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.Predicate;
 import java.util.Set;
 
+import static org.apache.atlas.model.lineage.LineageListRequest.LINEAGE_TYPE_DATASET_PROCESS_LINEAGE;
+
 public final class AtlasLineageListContext {
     private String                              guid;
     private int                                 size;
@@ -23,6 +25,7 @@ public final class AtlasLineageListContext {
     private int                                 currentEntityCounter;
     private boolean                             depthLimitReached;
     private boolean                             hasMoreUpdated;
+    private String                              lineageType = LINEAGE_TYPE_DATASET_PROCESS_LINEAGE;
     private Boolean                             immediateNeighbours;
 
     public AtlasLineageListContext(LineageListRequest lineageListRequest, AtlasTypeRegistry typeRegistry) {
@@ -36,6 +39,7 @@ public final class AtlasLineageListContext {
         this.edgeTraversalPredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getRelationshipTraversalFilters());
         this.attributes = lineageListRequest.getAttributes();
         this.relationAttributes = lineageListRequest.getRelationAttributes();
+        this.lineageType = lineageListRequest.getLineageType();
         this.immediateNeighbours = lineageListRequest.getImmediateNeighbours();
     }
 
@@ -129,6 +133,14 @@ public final class AtlasLineageListContext {
 
     public void setCurrentFromCounter(int currentFromCounter) {
         this.currentFromCounter = currentFromCounter;
+    }
+
+    public String getLineageType() {
+        return lineageType;
+    }
+
+    public void setLineageType(String lineageType) {
+        this.lineageType = lineageType;
     }
 
     public int getCurrentEntityCounter() {

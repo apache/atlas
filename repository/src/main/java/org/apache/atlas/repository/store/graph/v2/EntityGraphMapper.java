@@ -1162,8 +1162,13 @@ public class EntityGraphMapper {
         if (!AtlasConfiguration.SKIP_OPTIONAL_ATTRIBUTES.getBoolean()) {
             return false;
         }
+
+        boolean isPresentInPayload = struct.hasAttribute(attribute.getName());
+
+        if (struct instanceof AtlasEntity) {
+            isPresentInPayload = isPresentInPayload || ((AtlasEntity) struct).hasRelationshipAttribute(attribute.getName());
+        }
         
-        boolean isPresentInPayload = struct.hasAttribute(attribute.getName()) || ((AtlasEntity) struct).hasRelationshipAttribute(attribute.getName());
         AtlasAttributeDef attributeDef = attribute.getAttributeDef();
 
         return !isPresentInPayload && attributeDef.getIsOptional() && attributeDef.getDefaultValue() == null
@@ -4774,6 +4779,7 @@ public class EntityGraphMapper {
             LOG.error(AtlasErrorCode.CLASSIFICATION_NOT_FOUND.getFormattedErrorMessage(classificationName));
             // If a client is trying to delete this tag, it might be existing in ES but not in C*. Allow it to be cleaned in ES.
             addEsDeferredOperation(entityVertex, classificationName);
+            return;
         }
 
         // Get in progress task to see if there already is a propagation for this particular vertex

@@ -1,0 +1,13 @@
+# Gitleaks ignore file for atlas-metastore
+# Add fingerprints of known false positives here.
+# Run `gitleaks protect --verbose --staged` to see fingerprints.
+#
+# Format: one fingerprint per line
+# Example: path/to/file.java:rule-id:line-number
+
+# bootstrap.sh contains an example AWS key for testing instructions
+bootstrap.sh:aws-access-key:60
+bootstrap.sh:aws-access-token:60
+
+# LOCAL_SETUP.md documents private key pattern as an example of what gets blocked
+LOCAL_SETUP.md:private-key:102

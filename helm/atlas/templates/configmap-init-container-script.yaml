@@ -89,7 +89,7 @@ data:
     echo "[+] Checking for Zookeeper"
     while true
     do
-{{- if eq .Values.global.Deployment_Type "Lite" }}
+{{- if eq .Values.global.Infra_Tier "Lite" }}
       stat_output=$(echo stat | nc -w 3 zookeeper 2181 2>/dev/null)
       if [ -z "$stat_output" ]; then
         echo "[-] No response from Zookeeper or connection failed. Retrying..."

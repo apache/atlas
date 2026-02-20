@@ -26,6 +26,7 @@ on:
     paths-ignore:
       - '.claude/**'
       - '.cursor/**'
+      - '.github/**'
       - 'docs/**'
       - 'helm/**'
       - 'local-dev/**'
@@ -98,7 +99,7 @@ jobs:
           DOCKER_HOST: unix:///var/run/docker.sock
         run: |
           mvn test -pl webapp \
-            -Dtest="EntityCrudIntegrationTest,GlossaryIntegrationTest,GlossaryExtendedIntegrationTest,SQLAssetHierarchyIntegrationTest,ClassificationIntegrationTest,LineageIntegrationTest,SearchIntegrationTest,RelationshipIntegrationTest,BusinessMetadataIntegrationTest,DataMeshIntegrationTest,PersonaPurposeIntegrationTest,LabelIntegrationTest,TypeDefIntegrationTest,AsyncIngestionIntegrationTest" \
+            -Dtest="EntityCrudIntegrationTest,GlossaryIntegrationTest,GlossaryExtendedIntegrationTest,SQLAssetHierarchyIntegrationTest,ClassificationIntegrationTest,LineageIntegrationTest,SearchIntegrationTest,RelationshipIntegrationTest,BusinessMetadataIntegrationTest,DataMeshIntegrationTest,PersonaPurposeIntegrationTest,PurposeDiscoveryIntegrationTest,LabelIntegrationTest,TypeDefIntegrationTest,AsyncIngestionIntegrationTest" \
             -Drat.skip=true \
             -Dsurefire.failIfNoSpecifiedTests=false \
             2>&1 | tee test-output.log

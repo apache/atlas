@@ -28,15 +28,16 @@ on:
       - alcon-v2-418
       - ms-428-delete-optimisation-phase3
       - lg-async-producer
+      - ring-*
 
     paths-ignore:
       - '.claude/**'
       - '.cursor/**'
-      - '.github/**'
       - 'docs/**'
       - 'local-dev/**'
       - 'README.txt'
       - 'README.md'
+
 
 jobs:
   # Detect what changed to optimize workflow execution
@@ -318,29 +319,6 @@ jobs:
           echo ""
           echo "Disk space after post-build cleanup:"
           df -h / | tail -1
-
-      - name: Verify disk space for tests
-        if: github.ref_name == 'beta' || github.ref_name == 'staging' || github.ref_name == 'master'
-        run: |
-          echo "=========================================="
-          echo "DISK SPACE CHECK BEFORE TESTS"
-          echo "=========================================="
-          
-          DISK_USAGE=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
-          AVAILABLE_GB=$(df -BG / | tail -1 | awk '{print $4}' | sed 's/G//')
-          
-          echo "Current disk usage: ${DISK_USAGE}%"
-          echo "Available space: ${AVAILABLE_GB}GB"
-          
-          # Fail if less than 10GB available (ES needs space for indices)
-          if [ "$AVAILABLE_GB" -lt 10 ]; then
-            echo "❌ ERROR: Insufficient disk space (${AVAILABLE_GB}GB available)"
-            echo "Tests require at least 10GB free space"
-            echo "Elasticsearch will fail with high disk watermark errors"
-            exit 1
-          else
-            echo "✅ Sufficient disk space available (${AVAILABLE_GB}GB)"
-          fi
 
       - name: Pre-Docker build cleanup
         run: |
@@ -700,8 +678,10 @@ jobs:
     # 1. Helm-lint passed (quality gate)
     # 2. Build succeeded AND smoke-test passed/skipped: publish (code/workflow changes)
     # 3. Build skipped AND helm changed: publish (helm-only changes)
+    # 4. NOT a ring-* branch (cohort releases patch ArgoCD directly, no chart publish needed)
     if: |
-      always() && 
+      always() &&
+      !startsWith(github.ref_name, 'ring-') &&
       needs.helm-lint.result == 'success' && (
         (needs.build.result == 'success' && (needs.smoke-test.result == 'success' || needs.smoke-test.result == 'skipped')) ||
         (needs.build.result == 'skipped' && needs.changes.outputs.helm == 'true')

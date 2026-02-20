@@ -87,6 +87,8 @@ public class TaskQueueWatcher implements Runnable {
     @Override
     public void run() {
         if (isMaintenanceModeEnabled()) {
+            // if MM was already set and we're here, it means the lock-holding pod is down and we're now the processing pod - set activation so other pods know MM is active
+            setMaintenanceModeActivated();
             LOG.info("TaskQueueWatcher: Maintenance mode is enabled, new tasks will not be loaded into the queue until next restart");
             return;
         }

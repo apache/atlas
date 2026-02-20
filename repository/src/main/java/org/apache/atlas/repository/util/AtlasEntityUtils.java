@@ -23,8 +23,12 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,9 +36,11 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.NAME;
@@ -220,5 +226,62 @@ public final class AtlasEntityUtils {
         });
 
         return tagsWithKey;
+    }
+
+    /**
+     * Filters out attributes that are not defined in the entity's TypeDef or have mismatched value types.
+     * This prevents invalid/unknown attributes from being published to ES audits and Kafka notifications,
+     * avoiding mapping conflicts and field explosion issues (MS-529, MS-501).
+     *
+     * @param entity       the entity whose attributes should be filtered
+     * @param typeRegistry the type registry to look up entity types
+     * @return map of removed attributes (for restoration after serialization), or null if nothing was removed
+     */
+    public static Map<String, Object> filterInvalidAttributes(AtlasEntity entity, AtlasTypeRegistry typeRegistry) {
+        Map<String, Object> removedAttributes = null;
+        Map<String, Object> entityAttributes  = entity.getAttributes();
+
+        if (MapUtils.isEmpty(entityAttributes)) {
+            return null;
+        }
+
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+        if (entityType == null) {
+            LOG.warn("filterInvalidAttributes(): unknown type {}. Skipping validation.", entity.getTypeName());
+            return null;
+        }
+
+        Set<String> attrNames = new HashSet<>(entityAttributes.keySet());
+
+        for (String attrName : attrNames) {
+            AtlasAttribute attribute = entityType.getAttribute(attrName);
+            Object         attrValue = entityAttributes.get(attrName);
+
+            if (attribute == null) {
+                if (removedAttributes == null) {
+                    removedAttributes = new HashMap<>();
+                }
+
+                entityAttributes.remove(attrName);
+                removedAttributes.put(attrName, attrValue);
+
+                LOG.warn("filterInvalidAttributes(): invalid attribute {}.{}. Removed.",
+                         entity.getTypeName(), attrName);
+            } else if (attrValue != null && !attribute.getAttributeType().isValidValue(attrValue)) {
+                if (removedAttributes == null) {
+                    removedAttributes = new HashMap<>();
+                }
+
+                entityAttributes.remove(attrName);
+                removedAttributes.put(attrName, attrValue);
+
+                LOG.warn("filterInvalidAttributes(): type mismatch for attribute {}.{}: expected={}, actual={}. Removed.",
+                         entity.getTypeName(), attrName, attribute.getAttributeType().getTypeName(),
+                         attrValue.getClass().getSimpleName());
+            }
+        }
+
+        return removedAttributes;
     }
 }
