@@ -432,7 +432,8 @@ jobs:
           echo "" > "$RESULTS_FILE"
 
           # Rollout timeout: wait for pods to be ready with correct image
-          ROLLOUT_TIMEOUT=300  # 5 minutes
+          # ArgoCD syncs a large umbrella chart, atlas StatefulSet may take time to reach
+          ROLLOUT_TIMEOUT=900  # 15 minutes
           ROLLOUT_INTERVAL=30  # poll every 30 seconds
 
           for TENANT in "${TENANT_LIST[@]}"; do
