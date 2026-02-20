@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.repository.store.graph.v2.AsyncIngestionEventType;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -174,14 +175,14 @@ public class AsyncIngestionIntegrationTest extends AtlasInProcessBaseIT {
 
             // Wait and poll for Kafka event
             Thread.sleep(2000);
-            List<JsonNode> events = collectAsyncEvents(consumer, "BULK_CREATE_OR_UPDATE", startTime, 1, POLL_TIMEOUT_MS);
+            List<JsonNode> events = collectAsyncEvents(consumer, AsyncIngestionEventType.BULK_CREATE_OR_UPDATE, startTime, 1, POLL_TIMEOUT_MS);
 
             assertFalse(events.isEmpty(), "Should have received at least one BULK_CREATE_OR_UPDATE event");
             JsonNode event = events.get(0);
 
             // Verify envelope
             assertTrue(event.has("eventId"));
-            assertEquals("BULK_CREATE_OR_UPDATE", event.get("eventType").asText());
+            assertEquals(AsyncIngestionEventType.BULK_CREATE_OR_UPDATE, event.get("eventType").asText());
             assertTrue(event.get("eventTime").asLong() >= startTime);
 
             // Verify request metadata
@@ -215,7 +216,7 @@ public class AsyncIngestionIntegrationTest extends AtlasInProcessBaseIT {
 
             // Poll briefly — should NOT get any events
             Thread.sleep(3000);
-            List<JsonNode> events = collectAsyncEvents(consumer, "BULK_CREATE_OR_UPDATE", startTime, 1, 5000);
+            List<JsonNode> events = collectAsyncEvents(consumer, AsyncIngestionEventType.BULK_CREATE_OR_UPDATE, startTime, 1, 5000);
 
             assertTrue(events.isEmpty(), "Should NOT receive Kafka events when async ingestion is disabled");
         } finally {
@@ -247,11 +248,11 @@ public class AsyncIngestionIntegrationTest extends AtlasInProcessBaseIT {
 
             // Poll for Kafka event
             Thread.sleep(2000);
-            List<JsonNode> events = collectAsyncEvents(consumer, "DELETE_BY_GUID", startTime, 1, POLL_TIMEOUT_MS);
+            List<JsonNode> events = collectAsyncEvents(consumer, AsyncIngestionEventType.DELETE_BY_GUID, startTime, 1, POLL_TIMEOUT_MS);
 
             assertFalse(events.isEmpty(), "Should have received DELETE_BY_GUID event");
             JsonNode event = events.get(0);
-            assertEquals("DELETE_BY_GUID", event.get("eventType").asText());
+            assertEquals(AsyncIngestionEventType.DELETE_BY_GUID, event.get("eventType").asText());
 
             // Verify payload contains the GUID
             JsonNode payload = event.get("payload");
@@ -298,11 +299,11 @@ public class AsyncIngestionIntegrationTest extends AtlasInProcessBaseIT {
 
             // Poll for Kafka event
             Thread.sleep(2000);
-            List<JsonNode> events = collectAsyncEvents(consumer, "RESTORE_BY_GUIDS", startTime, 1, POLL_TIMEOUT_MS);
+            List<JsonNode> events = collectAsyncEvents(consumer, AsyncIngestionEventType.RESTORE_BY_GUIDS, startTime, 1, POLL_TIMEOUT_MS);
 
             assertFalse(events.isEmpty(), "Should have received RESTORE_BY_GUIDS event");
             JsonNode event = events.get(0);
-            assertEquals("RESTORE_BY_GUIDS", event.get("eventType").asText());
+            assertEquals(AsyncIngestionEventType.RESTORE_BY_GUIDS, event.get("eventType").asText());
         } finally {
             consumer.close();
         }
@@ -340,11 +341,11 @@ public class AsyncIngestionIntegrationTest extends AtlasInProcessBaseIT {
 
             // Poll for Kafka event
             Thread.sleep(2000);
-            List<JsonNode> events = collectAsyncEvents(consumer, "DELETE_BY_GUIDS", startTime, 1, POLL_TIMEOUT_MS);
+            List<JsonNode> events = collectAsyncEvents(consumer, AsyncIngestionEventType.DELETE_BY_GUIDS, startTime, 1, POLL_TIMEOUT_MS);
 
             assertFalse(events.isEmpty(), "Should have received DELETE_BY_GUIDS event");
             JsonNode event = events.get(0);
-            assertEquals("DELETE_BY_GUIDS", event.get("eventType").asText());
+            assertEquals(AsyncIngestionEventType.DELETE_BY_GUIDS, event.get("eventType").asText());
 
             // Verify payload has guids
             JsonNode payload = event.get("payload");
@@ -390,7 +391,7 @@ public class AsyncIngestionIntegrationTest extends AtlasInProcessBaseIT {
 
             // Poll for Kafka event
             Thread.sleep(2000);
-            List<JsonNode> events = collectAsyncEvents(consumer, "SET_CLASSIFICATIONS", startTime, 1, POLL_TIMEOUT_MS);
+            List<JsonNode> events = collectAsyncEvents(consumer, AsyncIngestionEventType.SET_CLASSIFICATIONS, startTime, 1, POLL_TIMEOUT_MS);
 
             // Note: setClassifications may fail with empty payload, in which case
             // no event is published (graph transaction failed). This test validates
@@ -398,7 +399,7 @@ public class AsyncIngestionIntegrationTest extends AtlasInProcessBaseIT {
             // entity GUIDs with classification types, which is covered by the unit tests.
             if (!events.isEmpty()) {
                 JsonNode event = events.get(0);
-                assertEquals("SET_CLASSIFICATIONS", event.get("eventType").asText());
+                assertEquals(AsyncIngestionEventType.SET_CLASSIFICATIONS, event.get("eventType").asText());
             }
         } finally {
             consumer.close();

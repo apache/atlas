@@ -73,7 +73,7 @@ public class EntityMutationService {
             throw e;
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);
-            publishAsyncIngestionEvent(isGraphTransactionFailed, "BULK_CREATE_OR_UPDATE",
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.BULK_CREATE_OR_UPDATE,
                     context.toOperationMetadata(), context.getOriginalEntities());
             AtlasPerfTracer.log(perf);
         }
@@ -96,7 +96,7 @@ public class EntityMutationService {
             throw e;
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);
-            publishAsyncIngestionEvent(isGraphTransactionFailed, "SET_CLASSIFICATIONS",
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.SET_CLASSIFICATIONS,
                     Map.of("overrideClassifications", overrideClassifications), entityHeaders);
             AtlasPerfTracer.log(perf);
         }
@@ -113,7 +113,7 @@ public class EntityMutationService {
             throw e;
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);
-            publishAsyncIngestionEvent(isGraphTransactionFailed, "UPDATE_BY_UNIQUE_ATTRIBUTE",
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.UPDATE_BY_UNIQUE_ATTRIBUTE,
                     Map.of("typeName", entityType.getTypeName()),
                     Map.of("uniqueAttributes", uniqAttributes, "entity", updatedEntityInfo));
         }
@@ -129,7 +129,7 @@ public class EntityMutationService {
             throw e;
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);
-            publishAsyncIngestionEvent(isGraphTransactionFailed, "DELETE_BY_UNIQUE_ATTRIBUTE",
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.DELETE_BY_UNIQUE_ATTRIBUTE,
                     Map.of("typeName", entityType.getTypeName()),
                     Map.of("uniqueAttributes", uniqAttributes));
         }
@@ -145,7 +145,7 @@ public class EntityMutationService {
             throw e;
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);
-            publishAsyncIngestionEvent(isGraphTransactionFailed, "DELETE_BY_GUID",
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.DELETE_BY_GUID,
                     Map.of(), Map.of("guids", List.of(guid)));
         }
     }
@@ -160,7 +160,7 @@ public class EntityMutationService {
             throw e;
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);
-            publishAsyncIngestionEvent(isGraphTransactionFailed, "ADD_CLASSIFICATIONS",
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.ADD_CLASSIFICATIONS,
                     Map.of(), Map.of("guid", guid, "classifications", classifications));
         }
     }
@@ -175,7 +175,7 @@ public class EntityMutationService {
             throw e;
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);
-            publishAsyncIngestionEvent(isGraphTransactionFailed, "UPDATE_CLASSIFICATIONS",
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.UPDATE_CLASSIFICATIONS,
                     Map.of(), Map.of("guid", guid, "classifications", classifications));
         }
     }
@@ -190,7 +190,7 @@ public class EntityMutationService {
             throw e;
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);
-            publishAsyncIngestionEvent(isGraphTransactionFailed, "DELETE_CLASSIFICATION",
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.DELETE_CLASSIFICATION,
                     Map.of(), Map.of("guid", guid, "classificationName", classificationName));
         }
     }
@@ -205,7 +205,7 @@ public class EntityMutationService {
             throw e;
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);
-            publishAsyncIngestionEvent(isGraphTransactionFailed, "DELETE_CLASSIFICATION",
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.DELETE_CLASSIFICATION,
                     Map.of(), Map.of("guid", guid, "classificationName", classificationName,
                                      "associatedEntityGuid", associatedEntityGuid));
         }
@@ -221,7 +221,7 @@ public class EntityMutationService {
             throw e;
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);
-            publishAsyncIngestionEvent(isGraphTransactionFailed, "DELETE_BY_GUIDS",
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.DELETE_BY_GUIDS,
                     Map.of(), Map.of("guids", guids));
         }
     }
@@ -236,7 +236,7 @@ public class EntityMutationService {
             throw e;
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);
-            publishAsyncIngestionEvent(isGraphTransactionFailed, "RESTORE_BY_GUIDS",
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.RESTORE_BY_GUIDS,
                     Map.of(), Map.of("guids", guids));
         }
     }
@@ -251,7 +251,7 @@ public class EntityMutationService {
             throw e;
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);
-            publishAsyncIngestionEvent(isGraphTransactionFailed, "ADD_CLASSIFICATION_BULK",
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.ADD_CLASSIFICATION_BULK,
                     Map.of(), Map.of("guids", guids, "classification", classification));
         }
     }
@@ -266,7 +266,7 @@ public class EntityMutationService {
             throw e;
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);
-            publishAsyncIngestionEvent(isGraphTransactionFailed, "BULK_DELETE_BY_UNIQUE_ATTRIBUTES",
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.BULK_DELETE_BY_UNIQUE_ATTRIBUTES,
                     Map.of(), Map.of("objectIds", objectIds));
         }
     }
@@ -369,7 +369,7 @@ public class EntityMutationService {
             throw e;
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);
-            publishAsyncIngestionEvent(isGraphTransactionFailed, "DELETE_RELATIONSHIP_BY_GUID",
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.DELETE_RELATIONSHIP_BY_GUID,
                     Map.of(), Map.of("guid", guid));
         }
     }
@@ -384,7 +384,7 @@ public class EntityMutationService {
             throw e;
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);
-            publishAsyncIngestionEvent(isGraphTransactionFailed, "DELETE_RELATIONSHIPS_BY_GUIDS",
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.DELETE_RELATIONSHIPS_BY_GUIDS,
                     Map.of(), Map.of("guids", guids));
         }
     }

@@ -26,6 +26,7 @@ import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.repository.graph.TypeCacheRefresher;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
+import org.apache.atlas.repository.store.graph.v2.AsyncIngestionEventType;
 import org.apache.atlas.repository.store.graph.v2.AsyncIngestionProducer;
 import org.apache.atlas.repository.store.graph.v2.RequestMetadata;
 import org.apache.atlas.repository.util.FilterUtil;
@@ -461,7 +462,7 @@ public class TypesREST {
             String latestVersionStr = String.valueOf(latestVersion);
             redisService.putValue(TYPEDEF_LATEST_VERSION, latestVersionStr);
             AtlasTypeDefStoreInitializer.setCurrentTypedefInternalVersion(latestVersion);
-            publishTypeDefAsyncEvent("TYPEDEF_CREATE",
+            publishTypeDefAsyncEvent(AsyncIngestionEventType.TYPEDEF_CREATE,
                     Map.of("allowDuplicateDisplayName", allowDuplicateDisplayName),
                     typesDef);
             return atlasTypesDef;
@@ -534,7 +535,7 @@ public class TypesREST {
             redisService.putValue(TYPEDEF_LATEST_VERSION, latestVersionStr);
             AtlasTypeDefStoreInitializer.setCurrentTypedefInternalVersion(latestVersion);
             LOG.info("TypesRest.updateAtlasTypeDefs:: Done");
-            publishTypeDefAsyncEvent("TYPEDEF_UPDATE",
+            publishTypeDefAsyncEvent(AsyncIngestionEventType.TYPEDEF_UPDATE,
                     Map.of("allowDuplicateDisplayName", allowDuplicateDisplayName, "patch", patch),
                     typesDef);
             return atlasTypesDef;
@@ -581,7 +582,7 @@ public class TypesREST {
             String latestVersionStr = String.valueOf(latestVersion);
             redisService.putValue(TYPEDEF_LATEST_VERSION, latestVersionStr);
             AtlasTypeDefStoreInitializer.setCurrentTypedefInternalVersion(latestVersion);
-            publishTypeDefAsyncEvent("TYPEDEF_DELETE", Collections.emptyMap(), typesDef);
+            publishTypeDefAsyncEvent(AsyncIngestionEventType.TYPEDEF_DELETE, Collections.emptyMap(), typesDef);
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.deleteAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
             throw atlasBaseException;
@@ -620,7 +621,7 @@ public class TypesREST {
             String latestVersionStr = String.valueOf(latestVersion);
             redisService.putValue(TYPEDEF_LATEST_VERSION, latestVersionStr);
             AtlasTypeDefStoreInitializer.setCurrentTypedefInternalVersion(latestVersion);
-            publishTypeDefAsyncEvent("TYPEDEF_DELETE_BY_NAME",
+            publishTypeDefAsyncEvent(AsyncIngestionEventType.TYPEDEF_DELETE_BY_NAME,
                     Collections.emptyMap(),
                     Map.of("typeName", typeName));
         } catch (AtlasBaseException atlasBaseException) {

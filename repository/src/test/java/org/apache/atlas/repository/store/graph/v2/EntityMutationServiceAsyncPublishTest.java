@@ -98,7 +98,7 @@ class EntityMutationServiceAsyncPublishTest {
 
         assertSame(mockResponse, result);
         verify(asyncIngestionProducer).publishEvent(
-                eq("BULK_CREATE_OR_UPDATE"),
+                eq(AsyncIngestionEventType.BULK_CREATE_OR_UPDATE),
                 anyMap(),
                 eq(entities),
                 any(RequestMetadata.class));
@@ -148,7 +148,7 @@ class EntityMutationServiceAsyncPublishTest {
         entityMutationService.deleteById("guid-123");
 
         verify(asyncIngestionProducer).publishEvent(
-                eq("DELETE_BY_GUID"),
+                eq(AsyncIngestionEventType.DELETE_BY_GUID),
                 eq(Map.of()),
                 argThat(payload -> {
                     @SuppressWarnings("unchecked")
@@ -172,7 +172,7 @@ class EntityMutationServiceAsyncPublishTest {
         entityMutationService.deleteByIds(guids);
 
         verify(asyncIngestionProducer).publishEvent(
-                eq("DELETE_BY_GUIDS"),
+                eq(AsyncIngestionEventType.DELETE_BY_GUIDS),
                 eq(Map.of()),
                 eq(Map.of("guids", guids)),
                 any(RequestMetadata.class));
@@ -217,7 +217,7 @@ class EntityMutationServiceAsyncPublishTest {
         entityMutationService.deleteByUniqueAttributes(entityType, uniqAttrs);
 
         verify(asyncIngestionProducer).publishEvent(
-                eq("DELETE_BY_UNIQUE_ATTRIBUTE"),
+                eq(AsyncIngestionEventType.DELETE_BY_UNIQUE_ATTRIBUTE),
                 eq(Map.of("typeName", "Table")),
                 eq(Map.of("uniqueAttributes", uniqAttrs)),
                 any(RequestMetadata.class));
@@ -238,7 +238,7 @@ class EntityMutationServiceAsyncPublishTest {
         entityMutationService.deleteByUniqueAttributes(objectIds);
 
         verify(asyncIngestionProducer).publishEvent(
-                eq("BULK_DELETE_BY_UNIQUE_ATTRIBUTES"),
+                eq(AsyncIngestionEventType.BULK_DELETE_BY_UNIQUE_ATTRIBUTES),
                 eq(Map.of()),
                 eq(Map.of("objectIds", objectIds)),
                 any(RequestMetadata.class));
@@ -256,7 +256,7 @@ class EntityMutationServiceAsyncPublishTest {
         entityMutationService.restoreByIds(guids);
 
         verify(asyncIngestionProducer).publishEvent(
-                eq("RESTORE_BY_GUIDS"),
+                eq(AsyncIngestionEventType.RESTORE_BY_GUIDS),
                 eq(Map.of()),
                 eq(Map.of("guids", guids)),
                 any(RequestMetadata.class));
@@ -324,7 +324,7 @@ class EntityMutationServiceAsyncPublishTest {
         entityMutationService.updateByUniqueAttributes(entityType, uniqAttrs, updatedEntityInfo);
 
         verify(asyncIngestionProducer).publishEvent(
-                eq("UPDATE_BY_UNIQUE_ATTRIBUTE"),
+                eq(AsyncIngestionEventType.UPDATE_BY_UNIQUE_ATTRIBUTE),
                 eq(Map.of("typeName", "Table")),
                 argThat(payload -> {
                     @SuppressWarnings("unchecked")
@@ -346,7 +346,7 @@ class EntityMutationServiceAsyncPublishTest {
         entityMutationService.addClassifications(guid, classifications);
 
         verify(asyncIngestionProducer).publishEvent(
-                eq("ADD_CLASSIFICATIONS"),
+                eq(AsyncIngestionEventType.ADD_CLASSIFICATIONS),
                 eq(Map.of()),
                 argThat(payload -> {
                     @SuppressWarnings("unchecked")
@@ -368,7 +368,7 @@ class EntityMutationServiceAsyncPublishTest {
         entityMutationService.updateClassifications(guid, classifications);
 
         verify(asyncIngestionProducer).publishEvent(
-                eq("UPDATE_CLASSIFICATIONS"),
+                eq(AsyncIngestionEventType.UPDATE_CLASSIFICATIONS),
                 eq(Map.of()),
                 argThat(payload -> {
                     @SuppressWarnings("unchecked")
@@ -390,7 +390,7 @@ class EntityMutationServiceAsyncPublishTest {
         entityMutationService.deleteClassification(guid, classificationName);
 
         verify(asyncIngestionProducer).publishEvent(
-                eq("DELETE_CLASSIFICATION"),
+                eq(AsyncIngestionEventType.DELETE_CLASSIFICATION),
                 eq(Map.of()),
                 eq(Map.of("guid", guid, "classificationName", classificationName)),
                 any(RequestMetadata.class));
@@ -409,7 +409,7 @@ class EntityMutationServiceAsyncPublishTest {
         entityMutationService.deleteClassification(guid, classificationName, associatedEntityGuid);
 
         verify(asyncIngestionProducer).publishEvent(
-                eq("DELETE_CLASSIFICATION"),
+                eq(AsyncIngestionEventType.DELETE_CLASSIFICATION),
                 eq(Map.of()),
                 eq(Map.of("guid", guid, "classificationName", classificationName,
                            "associatedEntityGuid", associatedEntityGuid)),
@@ -428,7 +428,7 @@ class EntityMutationServiceAsyncPublishTest {
         entityMutationService.addClassification(guids, classification);
 
         verify(asyncIngestionProducer).publishEvent(
-                eq("ADD_CLASSIFICATION_BULK"),
+                eq(AsyncIngestionEventType.ADD_CLASSIFICATION_BULK),
                 eq(Map.of()),
                 argThat(payload -> {
                     @SuppressWarnings("unchecked")
@@ -449,7 +449,7 @@ class EntityMutationServiceAsyncPublishTest {
         entityMutationService.deleteRelationshipById(guid);
 
         verify(asyncIngestionProducer).publishEvent(
-                eq("DELETE_RELATIONSHIP_BY_GUID"),
+                eq(AsyncIngestionEventType.DELETE_RELATIONSHIP_BY_GUID),
                 eq(Map.of()),
                 eq(Map.of("guid", guid)),
                 any(RequestMetadata.class));
@@ -466,7 +466,7 @@ class EntityMutationServiceAsyncPublishTest {
         entityMutationService.deleteRelationshipsByIds(guids);
 
         verify(asyncIngestionProducer).publishEvent(
-                eq("DELETE_RELATIONSHIPS_BY_GUIDS"),
+                eq(AsyncIngestionEventType.DELETE_RELATIONSHIPS_BY_GUIDS),
                 eq(Map.of()),
                 eq(Map.of("guids", guids)),
                 any(RequestMetadata.class));

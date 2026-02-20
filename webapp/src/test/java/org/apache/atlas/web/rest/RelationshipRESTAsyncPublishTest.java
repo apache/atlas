@@ -4,6 +4,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
+import org.apache.atlas.repository.store.graph.v2.AsyncIngestionEventType;
 import org.apache.atlas.repository.store.graph.v2.AsyncIngestionProducer;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationService;
 import org.apache.atlas.repository.store.graph.v2.RequestMetadata;
@@ -64,7 +65,7 @@ class RelationshipRESTAsyncPublishTest {
 
         assertSame(created, result);
         verify(asyncIngestionProducer).publishEvent(
-                eq("RELATIONSHIP_CREATE"),
+                eq(AsyncIngestionEventType.RELATIONSHIP_CREATE),
                 eq(Map.of()),
                 eq(created),
                 any(RequestMetadata.class));

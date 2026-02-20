@@ -1279,7 +1279,7 @@ public class EntityREST {
             }
 
             entitiesStore.addOrUpdateBusinessAttributes(guid, businessAttributes, isOverwrite);
-            publishEntityAsyncEvent("ADD_OR_UPDATE_BUSINESS_ATTRIBUTES",
+            publishEntityAsyncEvent(AsyncIngestionEventType.ADD_OR_UPDATE_BUSINESS_ATTRIBUTES,
                     Map.of("guid", guid, "isOverwrite", isOverwrite), businessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -1300,7 +1300,7 @@ public class EntityREST {
             }
 
             entitiesStore.addOrUpdateBusinessAttributesByDisplayName(guid, businessAttributes, isOverwrite);
-            publishEntityAsyncEvent("ADD_OR_UPDATE_BUSINESS_ATTRIBUTES_BY_DISPLAY_NAME",
+            publishEntityAsyncEvent(AsyncIngestionEventType.ADD_OR_UPDATE_BUSINESS_ATTRIBUTES_BY_DISPLAY_NAME,
                     Map.of("guid", guid, "isOverwrite", isOverwrite), businessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -1321,7 +1321,7 @@ public class EntityREST {
             }
 
             entitiesStore.removeBusinessAttributes(guid, businessAttributes);
-            publishEntityAsyncEvent("REMOVE_BUSINESS_ATTRIBUTES",
+            publishEntityAsyncEvent(AsyncIngestionEventType.REMOVE_BUSINESS_ATTRIBUTES,
                     Map.of("guid", guid), businessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -1342,7 +1342,7 @@ public class EntityREST {
             }
 
             entitiesStore.addOrUpdateBusinessAttributes(guid, Collections.singletonMap(bmName, businessAttributes), false);
-            publishEntityAsyncEvent("ADD_OR_UPDATE_BUSINESS_ATTRIBUTES",
+            publishEntityAsyncEvent(AsyncIngestionEventType.ADD_OR_UPDATE_BUSINESS_ATTRIBUTES,
                     Map.of("guid", guid, "isOverwrite", false, "bmName", bmName), businessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -1363,7 +1363,7 @@ public class EntityREST {
             }
 
             entitiesStore.removeBusinessAttributes(guid, Collections.singletonMap(bmName, businessAttributes));
-            publishEntityAsyncEvent("REMOVE_BUSINESS_ATTRIBUTES",
+            publishEntityAsyncEvent(AsyncIngestionEventType.REMOVE_BUSINESS_ATTRIBUTES,
                     Map.of("guid", guid, "bmName", bmName), businessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);

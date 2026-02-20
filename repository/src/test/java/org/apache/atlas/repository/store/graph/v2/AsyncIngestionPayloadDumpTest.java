@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.repository.store.graph.v2.AsyncIngestionEventType;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.*;
@@ -97,7 +98,7 @@ class AsyncIngestionPayloadDumpTest {
         opMeta.put("overwriteBusinessAttributes", false);
         opMeta.put("skipProcessEdgeRestoration", false);
 
-        store(buildEnvelope("BULK_CREATE_OR_UPDATE", opMeta, payload));
+        store(buildEnvelope(AsyncIngestionEventType.BULK_CREATE_OR_UPDATE, opMeta, payload));
     }
 
     @Test @Order(2)
@@ -109,7 +110,7 @@ class AsyncIngestionPayloadDumpTest {
         AtlasClassification c2 = new AtlasClassification("Confidential");
         c2.setEntityGuid("guid-col-001");
 
-        store(buildEnvelope("SET_CLASSIFICATIONS", Collections.emptyMap(), List.of(c1, c2)));
+        store(buildEnvelope(AsyncIngestionEventType.SET_CLASSIFICATIONS, Collections.emptyMap(), List.of(c1, c2)));
     }
 
     @Test @Order(3)
@@ -120,7 +121,7 @@ class AsyncIngestionPayloadDumpTest {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("guid", "guid-table-001");
 
-        store(buildEnvelope("DELETE_BY_GUID", opMeta, payload));
+        store(buildEnvelope(AsyncIngestionEventType.DELETE_BY_GUID, opMeta, payload));
     }
 
     @Test @Order(4)
@@ -131,7 +132,7 @@ class AsyncIngestionPayloadDumpTest {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("guids", List.of("guid-table-001", "guid-col-001", "guid-col-002"));
 
-        store(buildEnvelope("DELETE_BY_GUIDS", opMeta, payload));
+        store(buildEnvelope(AsyncIngestionEventType.DELETE_BY_GUIDS, opMeta, payload));
     }
 
     @Test @Order(5)
@@ -143,7 +144,7 @@ class AsyncIngestionPayloadDumpTest {
         opMeta.put("deleteType", "SOFT");
         opMeta.put("typeName", "Table");
 
-        store(buildEnvelope("DELETE_BY_UNIQUE_ATTRIBUTE", opMeta, objId));
+        store(buildEnvelope(AsyncIngestionEventType.DELETE_BY_UNIQUE_ATTRIBUTE, opMeta, objId));
     }
 
     @Test @Order(6)
@@ -156,7 +157,7 @@ class AsyncIngestionPayloadDumpTest {
         Map<String, Object> opMeta = new LinkedHashMap<>();
         opMeta.put("deleteType", "SOFT");
 
-        store(buildEnvelope("BULK_DELETE_BY_UNIQUE_ATTRIBUTES", opMeta, List.of(obj1, obj2)));
+        store(buildEnvelope(AsyncIngestionEventType.BULK_DELETE_BY_UNIQUE_ATTRIBUTES, opMeta, List.of(obj1, obj2)));
     }
 
     @Test @Order(7)
@@ -164,7 +165,7 @@ class AsyncIngestionPayloadDumpTest {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("guids", List.of("guid-table-001", "guid-col-001"));
 
-        store(buildEnvelope("RESTORE_BY_GUIDS", Collections.emptyMap(), payload));
+        store(buildEnvelope(AsyncIngestionEventType.RESTORE_BY_GUIDS, Collections.emptyMap(), payload));
     }
 
     // ============================= TypeDef Events =============================
@@ -188,7 +189,7 @@ class AsyncIngestionPayloadDumpTest {
         Map<String, Object> opMeta = new LinkedHashMap<>();
         opMeta.put("allowDuplicateDisplayName", false);
 
-        store(buildEnvelope("TYPEDEF_CREATE", opMeta, typesDef));
+        store(buildEnvelope(AsyncIngestionEventType.TYPEDEF_CREATE, opMeta, typesDef));
     }
 
     @Test @Order(9)
@@ -208,7 +209,7 @@ class AsyncIngestionPayloadDumpTest {
         opMeta.put("allowDuplicateDisplayName", false);
         opMeta.put("patch", true);
 
-        store(buildEnvelope("TYPEDEF_UPDATE", opMeta, typesDef));
+        store(buildEnvelope(AsyncIngestionEventType.TYPEDEF_UPDATE, opMeta, typesDef));
     }
 
     @Test @Order(10)
@@ -220,7 +221,7 @@ class AsyncIngestionPayloadDumpTest {
         typesDef.setEntityDefs(List.of(entityDef));
         typesDef.setClassificationDefs(List.of(classifDef));
 
-        store(buildEnvelope("TYPEDEF_DELETE", Collections.emptyMap(), typesDef));
+        store(buildEnvelope(AsyncIngestionEventType.TYPEDEF_DELETE, Collections.emptyMap(), typesDef));
     }
 
     @Test @Order(11)
@@ -228,6 +229,6 @@ class AsyncIngestionPayloadDumpTest {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("typeName", "CustomTable");
 
-        store(buildEnvelope("TYPEDEF_DELETE_BY_NAME", Collections.emptyMap(), payload));
+        store(buildEnvelope(AsyncIngestionEventType.TYPEDEF_DELETE_BY_NAME, Collections.emptyMap(), payload));
     }
 }

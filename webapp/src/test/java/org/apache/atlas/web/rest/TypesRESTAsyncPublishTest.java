@@ -4,6 +4,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.TypeCacheRefresher;
+import org.apache.atlas.repository.store.graph.v2.AsyncIngestionEventType;
 import org.apache.atlas.repository.store.graph.v2.AsyncIngestionProducer;
 import org.apache.atlas.repository.store.graph.v2.RequestMetadata;
 import org.apache.atlas.service.config.DynamicConfigStore;
@@ -86,7 +87,7 @@ class TypesRESTAsyncPublishTest {
         typesREST.createAtlasTypeDefs(input, false);
 
         verify(asyncIngestionProducer).publishEvent(
-                eq("TYPEDEF_CREATE"),
+                eq(AsyncIngestionEventType.TYPEDEF_CREATE),
                 anyMap(),
                 eq(input),
                 any(RequestMetadata.class));
@@ -132,7 +133,7 @@ class TypesRESTAsyncPublishTest {
         typesREST.updateAtlasTypeDefs(input, false, false);
 
         verify(asyncIngestionProducer).publishEvent(
-                eq("TYPEDEF_UPDATE"),
+                eq(AsyncIngestionEventType.TYPEDEF_UPDATE),
                 anyMap(),
                 eq(input),
                 any(RequestMetadata.class));
@@ -148,7 +149,7 @@ class TypesRESTAsyncPublishTest {
         typesREST.deleteAtlasTypeDefs(input);
 
         verify(asyncIngestionProducer).publishEvent(
-                eq("TYPEDEF_DELETE"),
+                eq(AsyncIngestionEventType.TYPEDEF_DELETE),
                 anyMap(),
                 eq(input),
                 any(RequestMetadata.class));
@@ -165,7 +166,7 @@ class TypesRESTAsyncPublishTest {
 
         ArgumentCaptor<Map<String, Object>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
         verify(asyncIngestionProducer).publishEvent(
-                eq("TYPEDEF_DELETE_BY_NAME"),
+                eq(AsyncIngestionEventType.TYPEDEF_DELETE_BY_NAME),
                 anyMap(),
                 payloadCaptor.capture(),
                 any(RequestMetadata.class));
@@ -204,7 +205,7 @@ class TypesRESTAsyncPublishTest {
 
         ArgumentCaptor<Map<String, Object>> opMetaCaptor = ArgumentCaptor.forClass(Map.class);
         verify(asyncIngestionProducer).publishEvent(
-                eq("TYPEDEF_CREATE"),
+                eq(AsyncIngestionEventType.TYPEDEF_CREATE),
                 opMetaCaptor.capture(),
                 eq(input),
                 any(RequestMetadata.class));
@@ -227,7 +228,7 @@ class TypesRESTAsyncPublishTest {
 
         ArgumentCaptor<Map<String, Object>> opMetaCaptor = ArgumentCaptor.forClass(Map.class);
         verify(asyncIngestionProducer).publishEvent(
-                eq("TYPEDEF_UPDATE"),
+                eq(AsyncIngestionEventType.TYPEDEF_UPDATE),
                 opMetaCaptor.capture(),
                 eq(input),
                 any(RequestMetadata.class));

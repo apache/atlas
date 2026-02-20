@@ -6,6 +6,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.repository.store.graph.v2.AsyncIngestionEventType;
 import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -91,7 +92,7 @@ class AsyncIngestionProducerTest {
         when(mockKafkaProducer.send(any(ProducerRecord.class))).thenReturn(future);
 
         String eventId = asyncIngestionProducer.publishEvent(
-                "BULK_CREATE_OR_UPDATE",
+                AsyncIngestionEventType.BULK_CREATE_OR_UPDATE,
                 Map.of("replaceTags", false),
                 Map.of("entities", "test"),
                 createTestRequestMetadata());
@@ -109,7 +110,7 @@ class AsyncIngestionProducerTest {
         when(mockKafkaProducer.send(any(ProducerRecord.class))).thenReturn(failedFuture);
 
         String eventId = asyncIngestionProducer.publishEvent(
-                "BULK_CREATE_OR_UPDATE",
+                AsyncIngestionEventType.BULK_CREATE_OR_UPDATE,
                 Map.of(),
                 Map.of("entities", "test"),
                 createTestRequestMetadata());
@@ -127,7 +128,7 @@ class AsyncIngestionProducerTest {
         when(mockKafkaProducer.send(any(ProducerRecord.class))).thenReturn(slowFuture);
 
         String eventId = asyncIngestionProducer.publishEvent(
-                "DELETE_BY_GUID",
+                AsyncIngestionEventType.DELETE_BY_GUID,
                 Map.of(),
                 Map.of("guids", "g1"),
                 createTestRequestMetadata());
@@ -147,7 +148,7 @@ class AsyncIngestionProducerTest {
         assertNull(producerField, "Producer should be null before first publish");
 
         // Trying to publish will attempt lazy init (will fail since no real Kafka, but that's OK)
-        freshProducer.publishEvent("BULK_CREATE_OR_UPDATE", Map.of(), Map.of(), createTestRequestMetadata());
+        freshProducer.publishEvent(AsyncIngestionEventType.BULK_CREATE_OR_UPDATE, Map.of(), Map.of(), createTestRequestMetadata());
 
         // The producer creation will have been attempted (may still be null if Kafka is not available,
         // but the code path was exercised)
@@ -167,7 +168,7 @@ class AsyncIngestionProducerTest {
         Map<String, Object> opMeta = Map.of("replaceClassifications", false, "replaceTags", true);
         Map<String, Object> payload = Map.of("entities", "test-data");
 
-        asyncIngestionProducer.publishEvent("BULK_CREATE_OR_UPDATE", opMeta, payload, rm);
+        asyncIngestionProducer.publishEvent(AsyncIngestionEventType.BULK_CREATE_OR_UPDATE, opMeta, payload, rm);
 
         ArgumentCaptor<ProducerRecord<String, String>> captor = ArgumentCaptor.forClass(ProducerRecord.class);
         verify(mockKafkaProducer).send(captor.capture());
@@ -176,7 +177,7 @@ class AsyncIngestionProducerTest {
         JsonNode json = MAPPER.readTree(record.value());
 
         assertTrue(json.has("eventId"));
-        assertEquals("BULK_CREATE_OR_UPDATE", json.get("eventType").asText());
+        assertEquals(AsyncIngestionEventType.BULK_CREATE_OR_UPDATE, json.get("eventType").asText());
         assertTrue(json.has("eventTime"));
         assertTrue(json.get("eventTime").asLong() > 0);
 
@@ -201,7 +202,7 @@ class AsyncIngestionProducerTest {
         when(mockKafkaProducer.send(any(ProducerRecord.class))).thenReturn(future);
 
         String eventId = asyncIngestionProducer.publishEvent(
-                "BULK_CREATE_OR_UPDATE", Map.of(), Map.of(), createTestRequestMetadata());
+                AsyncIngestionEventType.BULK_CREATE_OR_UPDATE, Map.of(), Map.of(), createTestRequestMetadata());
 
         ArgumentCaptor<ProducerRecord<String, String>> captor = ArgumentCaptor.forClass(ProducerRecord.class);
         verify(mockKafkaProducer).send(captor.capture());
@@ -225,7 +226,7 @@ class AsyncIngestionProducerTest {
         Counter successCounter = meterRegistry.find("async.ingestion.producer.send.success").counter();
         double before = successCounter != null ? successCounter.count() : 0;
 
-        asyncIngestionProducer.publishEvent("BULK_CREATE_OR_UPDATE", Map.of(), Map.of(), createTestRequestMetadata());
+        asyncIngestionProducer.publishEvent(AsyncIngestionEventType.BULK_CREATE_OR_UPDATE, Map.of(), Map.of(), createTestRequestMetadata());
 
         Counter afterCounter = meterRegistry.find("async.ingestion.producer.send.success").counter();
         assertNotNull(afterCounter);
@@ -243,7 +244,7 @@ class AsyncIngestionProducerTest {
         Counter failCounter = meterRegistry.find("async.ingestion.producer.send.failure").counter();
         double before = failCounter != null ? failCounter.count() : 0;
 
-        asyncIngestionProducer.publishEvent("BULK_CREATE_OR_UPDATE", Map.of(), Map.of(), createTestRequestMetadata());
+        asyncIngestionProducer.publishEvent(AsyncIngestionEventType.BULK_CREATE_OR_UPDATE, Map.of(), Map.of(), createTestRequestMetadata());
 
         Counter afterCounter = meterRegistry.find("async.ingestion.producer.send.failure").counter();
         assertNotNull(afterCounter);

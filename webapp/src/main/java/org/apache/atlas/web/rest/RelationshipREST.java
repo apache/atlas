@@ -24,6 +24,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
+import org.apache.atlas.repository.store.graph.v2.AsyncIngestionEventType;
 import org.apache.atlas.repository.store.graph.v2.AsyncIngestionProducer;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationService;
 import org.apache.atlas.repository.store.graph.v2.RequestMetadata;
@@ -79,7 +80,7 @@ public class RelationshipREST {
             }
 
             AtlasRelationship result = relationshipStore.create(relationship);
-            publishRelationshipAsyncEvent("RELATIONSHIP_CREATE", Map.of(), result);
+            publishRelationshipAsyncEvent(AsyncIngestionEventType.RELATIONSHIP_CREATE, Map.of(), result);
             return result;
         } finally {
             AtlasPerfTracer.log(perf);

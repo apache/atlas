@@ -3,6 +3,7 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.v2.AsyncIngestionEventType;
 import org.apache.atlas.repository.store.graph.v2.AsyncIngestionProducer;
 import org.apache.atlas.repository.store.graph.v2.RequestMetadata;
 import org.apache.atlas.service.config.DynamicConfigStore;
@@ -65,7 +66,7 @@ class EntityRESTAsyncPublishTest {
 
         verify(entitiesStore).addOrUpdateBusinessAttributes(guid, businessAttributes, false);
         verify(asyncIngestionProducer).publishEvent(
-                eq("ADD_OR_UPDATE_BUSINESS_ATTRIBUTES"),
+                eq(AsyncIngestionEventType.ADD_OR_UPDATE_BUSINESS_ATTRIBUTES),
                 argThat(meta -> guid.equals(meta.get("guid")) && Boolean.FALSE.equals(meta.get("isOverwrite"))),
                 eq(businessAttributes),
                 any(RequestMetadata.class));
@@ -82,7 +83,7 @@ class EntityRESTAsyncPublishTest {
 
         verify(entitiesStore).addOrUpdateBusinessAttributesByDisplayName(guid, businessAttributes, true);
         verify(asyncIngestionProducer).publishEvent(
-                eq("ADD_OR_UPDATE_BUSINESS_ATTRIBUTES_BY_DISPLAY_NAME"),
+                eq(AsyncIngestionEventType.ADD_OR_UPDATE_BUSINESS_ATTRIBUTES_BY_DISPLAY_NAME),
                 argThat(meta -> guid.equals(meta.get("guid")) && Boolean.TRUE.equals(meta.get("isOverwrite"))),
                 eq(businessAttributes),
                 any(RequestMetadata.class));
@@ -99,7 +100,7 @@ class EntityRESTAsyncPublishTest {
 
         verify(entitiesStore).removeBusinessAttributes(guid, businessAttributes);
         verify(asyncIngestionProducer).publishEvent(
-                eq("REMOVE_BUSINESS_ATTRIBUTES"),
+                eq(AsyncIngestionEventType.REMOVE_BUSINESS_ATTRIBUTES),
                 eq(Map.of("guid", guid)),
                 eq(businessAttributes),
                 any(RequestMetadata.class));
@@ -117,7 +118,7 @@ class EntityRESTAsyncPublishTest {
 
         verify(entitiesStore).addOrUpdateBusinessAttributes(guid, Collections.singletonMap(bmName, businessAttributes), false);
         verify(asyncIngestionProducer).publishEvent(
-                eq("ADD_OR_UPDATE_BUSINESS_ATTRIBUTES"),
+                eq(AsyncIngestionEventType.ADD_OR_UPDATE_BUSINESS_ATTRIBUTES),
                 argThat(meta -> guid.equals(meta.get("guid"))
                         && Boolean.FALSE.equals(meta.get("isOverwrite"))
                         && bmName.equals(meta.get("bmName"))),
@@ -137,7 +138,7 @@ class EntityRESTAsyncPublishTest {
 
         verify(entitiesStore).removeBusinessAttributes(guid, Collections.singletonMap(bmName, businessAttributes));
         verify(asyncIngestionProducer).publishEvent(
-                eq("REMOVE_BUSINESS_ATTRIBUTES"),
+                eq(AsyncIngestionEventType.REMOVE_BUSINESS_ATTRIBUTES),
                 argThat(meta -> guid.equals(meta.get("guid")) && bmName.equals(meta.get("bmName"))),
                 eq(businessAttributes),
                 any(RequestMetadata.class));
