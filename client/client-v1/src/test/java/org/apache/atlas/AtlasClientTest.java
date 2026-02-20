@@ -26,7 +26,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
@@ -42,7 +42,7 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -103,7 +103,7 @@ public class AtlasClientTest {
 
         String entityJson = AtlasType.toV1Json(new Referenceable("type"));
 
-        when(builder.method(anyString(), Matchers.<Class>any(), anyString())).thenReturn(response);
+        when(builder.method(anyString(), ArgumentMatchers.<Class>any(), anyString())).thenReturn(response);
 
         List<String> ids = atlasClient.createEntity(entityJson);
 
