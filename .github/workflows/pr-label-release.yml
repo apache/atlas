@@ -281,6 +281,8 @@ jobs:
           vcluster --version
 
       - name: Connect to VPN
+        env:
+          VCLUSTER_PLATFORM_URL: ${{ secrets.VCLUSTER_PLATFORM_URL }}
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y openconnect
@@ -290,13 +292,31 @@ jobs:
             --passwd-on-stdin \
             --background \
             "${{ vars.GLOBALPROTECT_PORTAL_URL }}"
-          sleep 10
+
+          echo "Waiting for VPN connection to stabilize..."
+          sleep 20
 
           if ! pgrep -x openconnect > /dev/null; then
             echo "ERROR: VPN process exited unexpectedly"
             exit 1
           fi
           echo "VPN connected (PID: $(pgrep -x openconnect))"
+
+          # Configure routing for vCluster Platform (172.17.0.0/16)
+          # Docker uses this range by default, must route to VPN instead
+          VPN_INTERFACE=$(ip addr show | grep -E '^[0-9]+: tun' | head -1 | cut -d: -f2 | tr -d ' ' || echo "tun0")
+          echo "Using VPN interface: $VPN_INTERFACE"
+
+          sudo ip route del 172.17.0.0/16 dev docker0 2>/dev/null || true
+          sudo ip route add 172.17.0.0/16 dev $VPN_INTERFACE
+
+          # Verify connectivity to vCluster Platform
+          if curl -k -sS $VCLUSTER_PLATFORM_URL -o /dev/null --max-time 30; then
+            echo "✓ VPN connected and vCluster Platform reachable"
+          else
+            echo "ERROR: Cannot reach vCluster Platform"
+            exit 1
+          fi
 
       - name: Login to vCluster Platform
         run: |
