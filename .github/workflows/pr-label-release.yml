@@ -275,7 +275,8 @@ jobs:
           # jq (pre-installed on ubuntu-latest but ensure it)
           sudo apt-get install -y jq
 
-          temporal --version
+          # Verify installations (use full path for temporal since GITHUB_PATH applies to next step)
+          $HOME/.temporalio/bin/temporal --version
           kubectl version --client
           vcluster --version
 
