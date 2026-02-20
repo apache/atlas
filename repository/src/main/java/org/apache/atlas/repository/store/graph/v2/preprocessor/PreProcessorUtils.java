@@ -326,8 +326,13 @@ public class PreProcessorUtils {
                 searchParams.setDsl(dslQuery);
                 categories = discovery.directIndexSearch(searchParams).getEntities();
             } catch (AtlasBaseException e) {
-                e.printStackTrace();
-                throw new AtlasBaseException("Something went wrong in assigning lexicographicalSortOrder");
+                if (AtlasErrorCode.INDEX_NOT_FOUND == e.getAtlasErrorCode()) {
+                    LOG.info("ES index not found during lexicographicalSortOrder assignment, using default offset");
+                    categories = null;
+                } else {
+                    LOG.error("Error in assigning lexicographicalSortOrder", e);
+                    throw new AtlasBaseException("Something went wrong in assigning lexicographicalSortOrder");
+                }
             }
 
             if (CollectionUtils.isNotEmpty(categories)) {
