@@ -24,6 +24,7 @@ import java.util.*;
  *
  * Output: repository/target/async-ingestion-payloads.json
  */
+@Disabled("Utility test for generating sample payloads to a file — run manually when needed")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class AsyncIngestionPayloadDumpTest {
