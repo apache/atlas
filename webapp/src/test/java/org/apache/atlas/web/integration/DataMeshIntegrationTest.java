@@ -21,6 +21,7 @@ import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.MethodOrderer;
@@ -112,6 +113,7 @@ public class DataMeshIntegrationTest extends AtlasInProcessBaseIT {
         subDomain.setAttribute("qualifiedName", domainQN + "/domain/sub-" + testId);
         subDomain.setAttribute("parentDomainQualifiedName", domainQN);
         subDomain.setAttribute("superDomainQualifiedName", domainQN);
+        subDomain.setRelationshipAttribute("parentDomain", new AtlasObjectId(domainGuid, "DataDomain"));
 
         EntityMutationResponse response = atlasClient.createEntity(new AtlasEntityWithExtInfo(subDomain));
         AtlasEntityHeader created = response.getFirstEntityCreated();
@@ -155,6 +157,7 @@ public class DataMeshIntegrationTest extends AtlasInProcessBaseIT {
         product.setAttribute("qualifiedName", domainQN + "/product/test-" + testId);
         product.setAttribute("domainQualifiedName", domainQN);
         product.setAttribute("dataProductAssetsDSL", "{\"query\":{\"match_all\":{}}}");
+        product.setRelationshipAttribute("dataDomain", new AtlasObjectId(domainGuid, "DataDomain"));
 
         EntityMutationResponse response = atlasClient.createEntity(new AtlasEntityWithExtInfo(product));
         AtlasEntityHeader created = response.getFirstEntityCreated();
