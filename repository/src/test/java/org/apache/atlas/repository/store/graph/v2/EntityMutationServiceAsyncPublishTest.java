@@ -2,7 +2,10 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
@@ -301,5 +304,171 @@ class EntityMutationServiceAsyncPublishTest {
 
         assertEquals("JanusGraph error", thrown.getMessage());
         verify(asyncIngestionProducer, never()).publishEvent(anyString(), anyMap(), any(), any(RequestMetadata.class));
+    }
+
+    // =================== Test 12: updateByUniqueAttributes success ===================
+
+    @Test
+    void testUpdateByUniqueAttributes_graphSuccess_asyncEnabled_publishesEvent() throws AtlasBaseException {
+        mockedDynamicConfig.when(DynamicConfigStore::isAsyncIngestionEnabled).thenReturn(true);
+
+        AtlasEntityType entityType = mock(AtlasEntityType.class);
+        when(entityType.getTypeName()).thenReturn("Table");
+
+        Map<String, Object> uniqAttrs = Map.of("qualifiedName", "db.schema.table1");
+        AtlasEntityWithExtInfo updatedEntityInfo = new AtlasEntityWithExtInfo(new AtlasEntity("Table"));
+
+        when(entityStore.updateByUniqueAttributes(entityType, uniqAttrs, updatedEntityInfo))
+                .thenReturn(new EntityMutationResponse());
+
+        entityMutationService.updateByUniqueAttributes(entityType, uniqAttrs, updatedEntityInfo);
+
+        verify(asyncIngestionProducer).publishEvent(
+                eq("UPDATE_BY_UNIQUE_ATTRIBUTE"),
+                eq(Map.of("typeName", "Table")),
+                argThat(payload -> {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> map = (Map<String, Object>) payload;
+                    return map.containsKey("uniqueAttributes") && map.containsKey("entity");
+                }),
+                any(RequestMetadata.class));
+    }
+
+    // =================== Test 13: addClassifications success ===================
+
+    @Test
+    void testAddClassifications_graphSuccess_asyncEnabled_publishesEvent() throws AtlasBaseException {
+        mockedDynamicConfig.when(DynamicConfigStore::isAsyncIngestionEnabled).thenReturn(true);
+
+        String guid = "guid-123";
+        List<AtlasClassification> classifications = List.of(new AtlasClassification("PII"));
+
+        entityMutationService.addClassifications(guid, classifications);
+
+        verify(asyncIngestionProducer).publishEvent(
+                eq("ADD_CLASSIFICATIONS"),
+                eq(Map.of()),
+                argThat(payload -> {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> map = (Map<String, Object>) payload;
+                    return guid.equals(map.get("guid")) && map.containsKey("classifications");
+                }),
+                any(RequestMetadata.class));
+    }
+
+    // =================== Test 14: updateClassifications success ===================
+
+    @Test
+    void testUpdateClassifications_graphSuccess_asyncEnabled_publishesEvent() throws AtlasBaseException {
+        mockedDynamicConfig.when(DynamicConfigStore::isAsyncIngestionEnabled).thenReturn(true);
+
+        String guid = "guid-456";
+        List<AtlasClassification> classifications = List.of(new AtlasClassification("Confidential"));
+
+        entityMutationService.updateClassifications(guid, classifications);
+
+        verify(asyncIngestionProducer).publishEvent(
+                eq("UPDATE_CLASSIFICATIONS"),
+                eq(Map.of()),
+                argThat(payload -> {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> map = (Map<String, Object>) payload;
+                    return guid.equals(map.get("guid")) && map.containsKey("classifications");
+                }),
+                any(RequestMetadata.class));
+    }
+
+    // =================== Test 15: deleteClassification (single) success ===================
+
+    @Test
+    void testDeleteClassification_graphSuccess_asyncEnabled_publishesEvent() throws AtlasBaseException {
+        mockedDynamicConfig.when(DynamicConfigStore::isAsyncIngestionEnabled).thenReturn(true);
+
+        String guid = "guid-789";
+        String classificationName = "PII";
+
+        entityMutationService.deleteClassification(guid, classificationName);
+
+        verify(asyncIngestionProducer).publishEvent(
+                eq("DELETE_CLASSIFICATION"),
+                eq(Map.of()),
+                eq(Map.of("guid", guid, "classificationName", classificationName)),
+                any(RequestMetadata.class));
+    }
+
+    // =================== Test 16: deleteClassification (with associatedEntityGuid) success ===================
+
+    @Test
+    void testDeleteClassificationWithAssociated_graphSuccess_asyncEnabled_publishesEvent() throws AtlasBaseException {
+        mockedDynamicConfig.when(DynamicConfigStore::isAsyncIngestionEnabled).thenReturn(true);
+
+        String guid = "guid-789";
+        String classificationName = "PII";
+        String associatedEntityGuid = "assoc-guid-111";
+
+        entityMutationService.deleteClassification(guid, classificationName, associatedEntityGuid);
+
+        verify(asyncIngestionProducer).publishEvent(
+                eq("DELETE_CLASSIFICATION"),
+                eq(Map.of()),
+                eq(Map.of("guid", guid, "classificationName", classificationName,
+                           "associatedEntityGuid", associatedEntityGuid)),
+                any(RequestMetadata.class));
+    }
+
+    // =================== Test 17: addClassification bulk success ===================
+
+    @Test
+    void testAddClassificationBulk_graphSuccess_asyncEnabled_publishesEvent() throws AtlasBaseException {
+        mockedDynamicConfig.when(DynamicConfigStore::isAsyncIngestionEnabled).thenReturn(true);
+
+        List<String> guids = List.of("guid-1", "guid-2");
+        AtlasClassification classification = new AtlasClassification("Sensitive");
+
+        entityMutationService.addClassification(guids, classification);
+
+        verify(asyncIngestionProducer).publishEvent(
+                eq("ADD_CLASSIFICATION_BULK"),
+                eq(Map.of()),
+                argThat(payload -> {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> map = (Map<String, Object>) payload;
+                    return map.containsKey("guids") && map.containsKey("classification");
+                }),
+                any(RequestMetadata.class));
+    }
+
+    // =================== Test 18: deleteRelationshipById success ===================
+
+    @Test
+    void testDeleteRelationshipById_graphSuccess_asyncEnabled_publishesEvent() throws AtlasBaseException {
+        mockedDynamicConfig.when(DynamicConfigStore::isAsyncIngestionEnabled).thenReturn(true);
+
+        String guid = "rel-guid-123";
+
+        entityMutationService.deleteRelationshipById(guid);
+
+        verify(asyncIngestionProducer).publishEvent(
+                eq("DELETE_RELATIONSHIP_BY_GUID"),
+                eq(Map.of()),
+                eq(Map.of("guid", guid)),
+                any(RequestMetadata.class));
+    }
+
+    // =================== Test 19: deleteRelationshipsByIds success ===================
+
+    @Test
+    void testDeleteRelationshipsByIds_graphSuccess_asyncEnabled_publishesEvent() throws AtlasBaseException {
+        mockedDynamicConfig.when(DynamicConfigStore::isAsyncIngestionEnabled).thenReturn(true);
+
+        List<String> guids = List.of("rel-guid-1", "rel-guid-2");
+
+        entityMutationService.deleteRelationshipsByIds(guids);
+
+        verify(asyncIngestionProducer).publishEvent(
+                eq("DELETE_RELATIONSHIPS_BY_GUIDS"),
+                eq(Map.of()),
+                eq(Map.of("guids", guids)),
+                any(RequestMetadata.class));
     }
 }

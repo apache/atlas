@@ -24,11 +24,15 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
+import org.apache.atlas.repository.store.graph.v2.AsyncIngestionProducer;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationService;
+import org.apache.atlas.repository.store.graph.v2.RequestMetadata;
+import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
@@ -36,6 +40,7 @@ import javax.inject.Singleton;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
+import java.util.Map;
 
 /**
  * REST interface for entity relationships.
@@ -46,15 +51,18 @@ import java.util.List;
 @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 @Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class RelationshipREST {
+    private static final Logger LOG = LoggerFactory.getLogger(RelationshipREST.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.RelationshipREST");
 
     private final AtlasRelationshipStore relationshipStore;
     private final EntityMutationService entityMutationService;
+    private final AsyncIngestionProducer asyncIngestionProducer;
 
     @Inject
-    public RelationshipREST(AtlasRelationshipStore relationshipStore, EntityMutationService entityMutationService) {
+    public RelationshipREST(AtlasRelationshipStore relationshipStore, EntityMutationService entityMutationService, AsyncIngestionProducer asyncIngestionProducer) {
         this.relationshipStore = relationshipStore;
         this.entityMutationService = entityMutationService;
+        this.asyncIngestionProducer = asyncIngestionProducer;
     }
 
     /**
@@ -70,7 +78,9 @@ public class RelationshipREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.create(" + relationship + ")");
             }
 
-            return relationshipStore.create(relationship);
+            AtlasRelationship result = relationshipStore.create(relationship);
+            publishRelationshipAsyncEvent("RELATIONSHIP_CREATE", Map.of(), result);
+            return result;
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -192,6 +202,19 @@ public class RelationshipREST {
             entityMutationService.deleteRelationshipsByIds(guids);
         } finally {
             AtlasPerfTracer.log(perf);
+        }
+    }
+
+    private void publishRelationshipAsyncEvent(String eventType,
+                                               Map<String, Object> operationMetadata,
+                                               Object payload) {
+        if (DynamicConfigStore.isAsyncIngestionEnabled()) {
+            try {
+                asyncIngestionProducer.publishEvent(eventType, operationMetadata, payload,
+                        RequestMetadata.fromCurrentRequest());
+            } catch (Exception e) {
+                LOG.error("Async ingestion publish failed for {} (non-fatal)", eventType, e);
+            }
         }
     }
 }
