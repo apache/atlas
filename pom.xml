@@ -1848,13 +1848,12 @@
             <id>gsenia</id>
             <name>Greg Senia</name>
             <email>gsenia@apache.org</email>
-            <organization>New York Life Insurance</organization>
+            <organization />
             <roles>
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
             <timezone>America/New_York</timezone>
-            <!--<organizationUrl>http://www.newyorklife.com</organizationUrl>-->
         </developer>
         <developer>
             <id>rhbutani</id>
