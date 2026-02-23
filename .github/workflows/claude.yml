@@ -53,9 +53,11 @@ jobs:
       - name: Run Claude Code
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.LITELLM_API_KEY }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           trigger_phrase: "@claude"
+          show_full_output: true
           claude_args: |
+            --model claude-sonnet-4
             --allowedTools "Skill,Read,Glob,Grep,mcp__github_inline_comment__create_inline_comment,Bash(git diff:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr edit:*),Bash(gh pr review:*),Bash(gh api:*)"
 
   # Job 2: Auto-review PRs on open/sync
@@ -92,8 +94,9 @@ jobs:
       - name: Claude PR Review
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.LITELLM_API_KEY }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           track_progress: ${{ github.event_name != 'workflow_dispatch' }}
+          show_full_output: true
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
@@ -187,7 +190,7 @@ jobs:
       - name: Run QA Pipeline
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.LITELLM_API_KEY }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           trigger_phrase: "/claude-qa-pipeline"
           prompt: |
             REPO: ${{ github.repository }}
@@ -425,7 +428,7 @@ jobs:
         if: steps.pr.outputs.found == 'true'
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.LITELLM_API_KEY }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           # Note: track_progress is not supported for workflow_run events
           prompt: |
             REPO: ${{ github.repository }}
