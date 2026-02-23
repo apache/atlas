@@ -59,7 +59,6 @@ class AsyncIngestionProducerTest {
         mockedAppProps = mockStatic(ApplicationProperties.class);
         PropertiesConfiguration config = new PropertiesConfiguration();
         config.setProperty("atlas.async.ingestion.topic", "TEST_ASYNC_ENTITIES");
-        config.setProperty("atlas.async.ingestion.send.timeout.ms", "5000");
         mockedAppProps.when(ApplicationProperties::get).thenReturn(config);
 
         asyncIngestionProducer = new AsyncIngestionProducer();
@@ -243,7 +242,7 @@ class AsyncIngestionProducerTest {
     @Test
     void testShutdown_closesProducer() {
         asyncIngestionProducer.shutdown();
-        verify(mockKafkaProducer).close();
+        verify(mockKafkaProducer).close(java.time.Duration.ofSeconds(10));
     }
 
     // =================== Test 12: shutdown with no producer ===================

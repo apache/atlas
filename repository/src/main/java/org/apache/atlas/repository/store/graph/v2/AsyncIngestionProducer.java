@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
@@ -40,13 +41,10 @@ public class AsyncIngestionProducer {
 
     private static final String PROPERTY_PREFIX = "atlas.kafka";
     private static final String CONFIG_TOPIC = "atlas.async.ingestion.topic";
-    private static final String CONFIG_SEND_TIMEOUT = "atlas.async.ingestion.send.timeout.ms";
     private static final String DEFAULT_TOPIC = "ATLAS_ASYNC_ENTITIES";
-    private static final long DEFAULT_SEND_TIMEOUT_MS = 10000;
 
     private volatile KafkaProducer<String, String> producer;
     private String topic;
-    private long sendTimeoutMs;
 
     // Micrometer metrics
     private Counter sendSuccessCounter;
@@ -58,11 +56,9 @@ public class AsyncIngestionProducer {
         try {
             Configuration appConfig = ApplicationProperties.get();
             this.topic = appConfig.getString(CONFIG_TOPIC, DEFAULT_TOPIC);
-            this.sendTimeoutMs = appConfig.getLong(CONFIG_SEND_TIMEOUT, DEFAULT_SEND_TIMEOUT_MS);
         } catch (Exception e) {
             LOG.warn("Failed to read async ingestion config, using defaults", e);
             this.topic = DEFAULT_TOPIC;
-            this.sendTimeoutMs = DEFAULT_SEND_TIMEOUT_MS;
         }
 
         try {
@@ -80,7 +76,7 @@ public class AsyncIngestionProducer {
             LOG.warn("Failed to register async ingestion metrics", e);
         }
 
-        LOG.info("AsyncIngestionProducer initialized - topic: {}, sendTimeoutMs: {}", topic, sendTimeoutMs);
+        LOG.info("AsyncIngestionProducer initialized - topic: {}", topic);
     }
 
     /**
@@ -148,7 +144,7 @@ public class AsyncIngestionProducer {
     public void shutdown() {
         if (producer != null) {
             try {
-                producer.close();
+                producer.close(Duration.ofSeconds(10));
                 LOG.info("AsyncIngestionProducer: Kafka producer closed");
             } catch (Exception e) {
                 LOG.warn("AsyncIngestionProducer: error closing Kafka producer", e);
@@ -174,6 +170,21 @@ public class AsyncIngestionProducer {
 
                         // Ensure acks=all for durability
                         props.putIfAbsent(ProducerConfig.ACKS_CONFIG, "all");
+
+                        // Bound how long send() blocks when buffer is full (prevents HTTP thread hang)
+                        props.putIfAbsent(ProducerConfig.MAX_BLOCK_MS_CONFIG, "5000");
+
+                        // Bound total delivery time (send + retries) — callbacks fire after this
+                        props.putIfAbsent(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, "30000");
+
+                        // Per-request timeout to broker
+                        props.putIfAbsent(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, "10000");
+
+                        // Limit retries to avoid prolonged send attempts
+                        props.putIfAbsent(ProducerConfig.RETRIES_CONFIG, "3");
+
+                        // Micro-batch for throughput
+                        props.putIfAbsent(ProducerConfig.LINGER_MS_CONFIG, "10");
 
                         producer = new KafkaProducer<>(props);
                         LOG.info("AsyncIngestionProducer: Kafka producer created for topic {}", topic);
