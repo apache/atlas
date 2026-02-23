@@ -86,9 +86,9 @@ else
   done
 fi
 
-if [ "${ARG_PROFILES}" == "embedded-solr-it" ]
+if [ "${ARG_PROFILES}" == "dist,embedded-solr-it" ]
 then
-  mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean verify
+  mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -X -DskipDocs clean verify
 else
   mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean package
 fi
