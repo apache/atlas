@@ -262,6 +262,13 @@ jobs:
           echo "$HOME/.temporalio/bin" >> $GITHUB_PATH
           $HOME/.temporalio/bin/temporal --version
 
+      - name: Connect to VPN
+        uses: ./.github/actions/globalprotect-connect-action
+        with:
+          portal-url: vpn2.atlan.app
+          username: ${{ secrets.GLOBALPROTECT_USERNAME }}
+          password: ${{ secrets.GLOBALPROTECT_PASSWORD }}
+
       - name: Trigger Temporal workflow
         id: trigger_temporal
         run: |
