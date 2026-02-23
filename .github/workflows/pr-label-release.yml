@@ -313,43 +313,12 @@ jobs:
 
           echo "workflow_id=$WORKFLOW_ID" >> $GITHUB_OUTPUT
 
-      - name: Wait for Temporal workflow to complete
-        run: |
-          WORKFLOW_ID="${{ steps.trigger_temporal.outputs.workflow_id }}"
-          MAX_WAIT=3600  # 60 minutes
-          ELAPSED=0
-          POLL_INTERVAL=30
+      # NOTE: We do NOT wait for Temporal workflow to complete here.
+      # Waiting would be expensive (60-90+ minutes of GitHub Actions billing).
+      # Instead, Temporal handles the full release lifecycle and posts the final
+      # result comment to the PR via AddGitHubPRCommentActivity.
 
-          echo "Polling Temporal workflow: $WORKFLOW_ID"
-
-          while [ $ELAPSED -lt $MAX_WAIT ]; do
-            DESCRIBE=$(temporal workflow describe --tls \
-              --address "temporal-server.atlan.com" \
-              --namespace "default" \
-              --workflow-id "$WORKFLOW_ID" 2>&1)
-
-            STATUS_LINE=$(echo "$DESCRIBE" | grep -E "^\s*Status" | head -1)
-            echo "[$ELAPSED s] $STATUS_LINE"
-
-            if echo "$STATUS_LINE" | grep -qi "Completed"; then
-              echo "Temporal workflow completed successfully"
-              exit 0
-            fi
-
-            if echo "$STATUS_LINE" | grep -qiE "FAILED|TERMINATED|TIMED_OUT|CANCELED"; then
-              echo "Temporal workflow ended with non-success status"
-              echo "$DESCRIBE"
-              exit 1
-            fi
-
-            sleep $POLL_INTERVAL
-            ELAPSED=$((ELAPSED + POLL_INTERVAL))
-          done
-
-          echo "Timed out waiting for Temporal workflow after ${MAX_WAIT}s"
-          exit 1
-
-      - name: Post release status to PR
+      - name: Post release triggered to PR
         if: always()
         uses: actions/github-script@v7
         with:
@@ -363,20 +332,22 @@ jobs:
             const cohortPath = '${{ matrix.cohort.value }}';
             const jobStatus = '${{ job.status }}';
 
-            const statusEmoji = jobStatus === 'success' ? '✅' : '❌';
+            const statusEmoji = jobStatus === 'success' ? '🚀' : '❌';
             const statusText  = jobStatus === 'success'
-              ? 'Release completed successfully'
-              : 'Release failed';
+              ? 'Release triggered - Temporal workflow started'
+              : 'Failed to trigger release';
 
             const body = [
-              `## 🚀 Ring Release Status`,
+              `## ${statusEmoji} Ring Release Triggered`,
               ``,
-              `**Status:** ${statusEmoji} ${statusText}`,
+              `**Status:** ${statusText}`,
               `**Ring:** \`${ring}\`  **Image Tag:** \`${imageTag}\``,
               `**Cohort:** \`${cohortPath}\``,
               `**Tenants:** ${tenants || '_none resolved_'}`,
               ``,
               `**Temporal Workflow:** [${workflowId}](https://temporal.atlan.com/namespaces/default/workflows/${workflowId})`,
+              ``,
+              `> ℹ️ Temporal will post the final release status once complete.`,
               ``,
               `[View GitHub Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})`
             ].join('\n');
