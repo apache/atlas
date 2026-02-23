@@ -120,6 +120,7 @@ public enum AtlasConfiguration {
     SEARCH_LOGGER_MAX_THREADS("atlas.enable.search.logger.max.threads", 20),
 
     PERSONA_POLICY_ASSET_MAX_LIMIT("atlas.persona.policy.asset.maxlimit", 1000),
+    KEYCLOAK_STATELESS_SESSION_ENABLED("atlas.authentication.method.keycloak.stateless.enabled", true),
     ENABLE_KEYCLOAK_TOKEN_INTROSPECTION("atlas.canary.keycloak.token-introspection", false),
     KEYCLOAK_TOKEN_INTROSPECT_CACHE_TTL_SECOND("atlas.keycloak.token-introspection.cache.ttl", 60),
     KEYCLOAK_INTROSPECTION_USE_CACHE("atlas.keycloak.introspection.use.cache", false),

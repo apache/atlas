@@ -209,6 +209,7 @@ data:
 
     atlas.authentication.method.keycloak=true
     atlas.authentication.method.keycloak.file=${sys:atlas.home}/conf/keycloak.json
+    atlas.authentication.method.keycloak.stateless.enabled=true
     atlas.authentication.method.keycloak.ugi-groups=false
     atlas.authentication.method.keycloak.groups_claim=groups
 

@@ -49,6 +49,7 @@ import javax.servlet.*;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -148,7 +149,8 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
             LOG.debug("Knox doFilter {}", httpRequest.getRequestURI());
         }
 
-        if (httpRequest.getSession() != null && httpRequest.getSession().getAttribute("locallogin") != null) {
+        HttpSession session = httpRequest.getSession(false);
+        if (session != null && session.getAttribute("locallogin") != null) {
             servletRequest.setAttribute("ssoEnabled", false);
             filterChain.doFilter(servletRequest, servletResponse);
             return;
