@@ -41,9 +41,10 @@ public class EntityMutationService {
     private final AtlasInstanceConverter instanceConverter;
     private final EntityGraphRetriever entityGraphRetriever;
     private final AtlasRelationshipStore relationshipStore;
+    private final AsyncIngestionProducer asyncIngestionProducer;
 
     @Inject
-    public EntityMutationService(AtlasEntityStoreV2 entityStore, EntityMutationPostProcessor entityMutationPostProcessor, AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, EntityGraphMapper entityGraphMapper, IAtlasEntityChangeNotifier entityChangeNotifier, AtlasInstanceConverter instanceConverter, EntityGraphRetriever entityGraphRetriever, AtlasRelationshipStore relationshipStore) {
+    public EntityMutationService(AtlasEntityStoreV2 entityStore, EntityMutationPostProcessor entityMutationPostProcessor, AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, EntityGraphMapper entityGraphMapper, IAtlasEntityChangeNotifier entityChangeNotifier, AtlasInstanceConverter instanceConverter, EntityGraphRetriever entityGraphRetriever, AtlasRelationshipStore relationshipStore, AsyncIngestionProducer asyncIngestionProducer) {
         this.entityStore = entityStore;
         this.entityMutationPostProcessor = entityMutationPostProcessor;
         this.typeRegistry = typeRegistry;
@@ -53,6 +54,7 @@ public class EntityMutationService {
         this.instanceConverter = instanceConverter;
         this.entityGraphRetriever = entityGraphRetriever;
         this.relationshipStore = relationshipStore;
+        this.asyncIngestionProducer = asyncIngestionProducer;
     }
 
     public EntityMutationResponse createOrUpdate(EntityStream entityStream,
@@ -70,7 +72,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.BULK_CREATE_OR_UPDATE,
+                    context.toOperationMetadata(), context.getOriginalEntities());
             AtlasPerfTracer.log(perf);
         }
     }
@@ -91,7 +95,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.SET_CLASSIFICATIONS,
+                    Map.of("overrideClassifications", overrideClassifications), entityHeaders);
             AtlasPerfTracer.log(perf);
         }
     }
@@ -106,7 +112,10 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.UPDATE_BY_UNIQUE_ATTRIBUTE,
+                    Map.of("typeName", entityType.getTypeName()),
+                    Map.of("uniqueAttributes", uniqAttributes, "entity", updatedEntityInfo));
         }
     }
 
@@ -119,7 +128,10 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.DELETE_BY_UNIQUE_ATTRIBUTE,
+                    Map.of("typeName", entityType.getTypeName()),
+                    Map.of("uniqueAttributes", uniqAttributes));
         }
     }
 
@@ -132,7 +144,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.DELETE_BY_GUID,
+                    Map.of(), Map.of("guids", List.of(guid)));
         }
     }
 
@@ -145,7 +159,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.ADD_CLASSIFICATIONS,
+                    Map.of(), Map.of("guid", guid, "classifications", classifications));
         }
     }
 
@@ -158,7 +174,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.UPDATE_CLASSIFICATIONS,
+                    Map.of(), Map.of("guid", guid, "classifications", classifications));
         }
     }
 
@@ -171,7 +189,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.DELETE_CLASSIFICATION,
+                    Map.of(), Map.of("guid", guid, "classificationName", classificationName));
         }
     }
 
@@ -184,7 +204,15 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            Map<String, Object> deleteClassPayload = new HashMap<>();
+            deleteClassPayload.put("guid", guid);
+            deleteClassPayload.put("classificationName", classificationName);
+            if (associatedEntityGuid != null) {
+                deleteClassPayload.put("associatedEntityGuid", associatedEntityGuid);
+            }
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.DELETE_CLASSIFICATION,
+                    Map.of(), deleteClassPayload);
         }
     }
 
@@ -197,7 +225,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.DELETE_BY_GUIDS,
+                    Map.of(), Map.of("guids", guids));
         }
     }
 
@@ -210,7 +240,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.RESTORE_BY_GUIDS,
+                    Map.of(), Map.of("guids", guids));
         }
     }
 
@@ -223,7 +255,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.ADD_CLASSIFICATION_BULK,
+                    Map.of(), Map.of("guids", guids, "classification", classification));
         }
     }
 
@@ -236,7 +270,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.BULK_DELETE_BY_UNIQUE_ATTRIBUTES,
+                    Map.of(), Map.of("objectIds", objectIds));
         }
     }
 
@@ -337,7 +373,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.DELETE_RELATIONSHIP_BY_GUID,
+                    Map.of(), Map.of("guid", guid));
         }
     }
 
@@ -350,7 +388,9 @@ public class EntityMutationService {
             rollbackNativeCassandraOperations();
             throw e;
         } finally {
-            executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
+            executeESPostProcessing(isGraphTransactionFailed);
+            publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.DELETE_RELATIONSHIPS_BY_GUIDS,
+                    Map.of(), Map.of("guids", guids));
         }
     }
 
@@ -372,6 +412,27 @@ public class EntityMutationService {
         entityMutationPostProcessor.rollbackCassandraTagOperations(cassandraTagOps);
 
         // Can add more rollbacks for id-graph operations if needed
+    }
+
+    /**
+     * Publish an async ingestion event to Kafka if the graph transaction succeeded
+     * and async ingestion is enabled. Best-effort: catches all exceptions.
+     *
+     * <p>The payload must be a pre-mutation snapshot of the original REST request body,
+     * so the Kafka event faithfully represents what the caller sent. Callers are
+     * responsible for deep-copying the payload before passing it to any mutating
+     * store operation (e.g. via BulkRequestContext.setOriginalEntities).</p>
+     */
+    private void publishAsyncIngestionEvent(boolean isGraphTransactionFailed, String eventType,
+                                            Map<String, Object> operationMetadata, Object payload) {
+        if (!isGraphTransactionFailed && DynamicConfigStore.isAsyncIngestionEnabled()) {
+            try {
+                asyncIngestionProducer.publishEvent(eventType, operationMetadata, payload,
+                        RequestMetadata.fromCurrentRequest());
+            } catch (Exception e) {
+                LOG.error("Async ingestion publish failed for {} (non-fatal)", eventType, e);
+            }
+        }
     }
 
 }

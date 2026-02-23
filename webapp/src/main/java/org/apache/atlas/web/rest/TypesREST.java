@@ -26,9 +26,14 @@ import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.repository.graph.TypeCacheRefresher;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
+import org.apache.atlas.repository.store.graph.v2.AsyncIngestionEventType;
+import org.apache.atlas.repository.store.graph.v2.AsyncIngestionProducer;
+import org.apache.atlas.repository.store.graph.v2.RequestMetadata;
 import org.apache.atlas.repository.util.FilterUtil;
+import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
@@ -46,10 +51,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 
 import static org.apache.atlas.AtlasErrorCode.APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED;
@@ -73,16 +75,18 @@ public class TypesREST {
     private final AtlasTypeDefStore typeDefStore;
     private final RedisService redisService;
     private final TypeCacheRefresher typeCacheRefresher;
+    private final AsyncIngestionProducer asyncIngestionProducer;
     private String typeDefLock;
 
     private static final int MAX_RETRIES = 3;
     private static final long RETRY_DELAY_MS = 1000;
 
     @Inject
-    public TypesREST(AtlasTypeDefStore typeDefStore, RedisService redisService, Configuration configuration, TypeCacheRefresher typeCacheRefresher) {
+    public TypesREST(AtlasTypeDefStore typeDefStore, RedisService redisService, Configuration configuration, TypeCacheRefresher typeCacheRefresher, AsyncIngestionProducer asyncIngestionProducer) {
         this.typeDefStore = typeDefStore;
         this.redisService = redisService;
         this.typeCacheRefresher = typeCacheRefresher;
+        this.asyncIngestionProducer = asyncIngestionProducer;
         this.typeDefLock = configuration.getString(ApplicationProperties.TYPEDEF_LOCK_NAME, "atlas:type-def:lock");
         LOG.info("TypeDef lock name: {}", this.typeDefLock);
     }
@@ -454,11 +458,15 @@ public class TypesREST {
             RequestContext.get().setAllowDuplicateDisplayName(allowDuplicateDisplayName);
             typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomNameForEntityAndAttributeDefs);
             typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
+            AtlasTypesDef inputSnapshot = AtlasType.fromJson(AtlasType.toJson(typesDef), AtlasTypesDef.class);
             AtlasTypesDef atlasTypesDef = createTypeDefsWithRetry(typesDef);
             long latestVersion = Long.parseLong(redisService.getValue(TYPEDEF_LATEST_VERSION, "1")) + 1;
             String latestVersionStr = String.valueOf(latestVersion);
             redisService.putValue(TYPEDEF_LATEST_VERSION, latestVersionStr);
             AtlasTypeDefStoreInitializer.setCurrentTypedefInternalVersion(latestVersion);
+            publishTypeDefAsyncEvent(AsyncIngestionEventType.TYPEDEF_CREATE,
+                    Map.of("allowDuplicateDisplayName", allowDuplicateDisplayName),
+                    inputSnapshot);
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.createAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
@@ -523,12 +531,16 @@ public class TypesREST {
             RequestContext.get().setInTypePatching(patch);
             RequestContext.get().setAllowDuplicateDisplayName(allowDuplicateDisplayName);
             LOG.info("TypesRest.updateAtlasTypeDefs:: Typedef patch enabled:" + patch);
+            AtlasTypesDef inputSnapshot = AtlasType.fromJson(AtlasType.toJson(typesDef), AtlasTypesDef.class);
             AtlasTypesDef atlasTypesDef = updateTypeDefsWithRetry(typesDef);
             long latestVersion = Long.parseLong(redisService.getValue(TYPEDEF_LATEST_VERSION, "1")) + 1;
             String latestVersionStr = String.valueOf(latestVersion);
             redisService.putValue(TYPEDEF_LATEST_VERSION, latestVersionStr);
             AtlasTypeDefStoreInitializer.setCurrentTypedefInternalVersion(latestVersion);
             LOG.info("TypesRest.updateAtlasTypeDefs:: Done");
+            publishTypeDefAsyncEvent(AsyncIngestionEventType.TYPEDEF_UPDATE,
+                    Map.of("allowDuplicateDisplayName", allowDuplicateDisplayName, "patch", patch),
+                    inputSnapshot);
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.updateAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
@@ -573,6 +585,7 @@ public class TypesREST {
             String latestVersionStr = String.valueOf(latestVersion);
             redisService.putValue(TYPEDEF_LATEST_VERSION, latestVersionStr);
             AtlasTypeDefStoreInitializer.setCurrentTypedefInternalVersion(latestVersion);
+            publishTypeDefAsyncEvent(AsyncIngestionEventType.TYPEDEF_DELETE, Collections.emptyMap(), typesDef);
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.deleteAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
             throw atlasBaseException;
@@ -611,6 +624,9 @@ public class TypesREST {
             String latestVersionStr = String.valueOf(latestVersion);
             redisService.putValue(TYPEDEF_LATEST_VERSION, latestVersionStr);
             AtlasTypeDefStoreInitializer.setCurrentTypedefInternalVersion(latestVersion);
+            publishTypeDefAsyncEvent(AsyncIngestionEventType.TYPEDEF_DELETE_BY_NAME,
+                    Collections.emptyMap(),
+                    Map.of("typeName", typeName));
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.deleteAtlasTypeByName:: " + atlasBaseException.getMessage(), atlasBaseException);
             throw atlasBaseException;
@@ -724,6 +740,23 @@ public class TypesREST {
     @PreDestroy
     public void cleanUp() {
         this.redisService.releaseDistributedLock(typeDefLock);
+    }
+
+    /**
+     * Best-effort publish of a typedef mutation event to Kafka for async ingestion.
+     * Only publishes if async ingestion is enabled. Catches all exceptions.
+     */
+    private void publishTypeDefAsyncEvent(String eventType,
+                                          Map<String, Object> operationMetadata,
+                                          Object payload) {
+        if (DynamicConfigStore.isAsyncIngestionEnabled()) {
+            try {
+                asyncIngestionProducer.publishEvent(eventType, operationMetadata, payload,
+                        RequestMetadata.fromCurrentRequest());
+            } catch (Exception e) {
+                LOG.error("Async ingestion publish failed for {} (non-fatal)", eventType, e);
+            }
+        }
     }
 
     private AtlasTypesDef createTypeDefsWithRetry(AtlasTypesDef typesDef) throws AtlasBaseException {

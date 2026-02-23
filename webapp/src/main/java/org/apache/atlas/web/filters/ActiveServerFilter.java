@@ -62,6 +62,25 @@ public class ActiveServerFilter implements Filter {
     private static final String[] WHITELISTED_APIS_SIGNATURE = {"search", "lineage", "auditSearch", "accessors"
         , "evaluator", "featureFlag", "config"};
 
+    private static final String[] ASYNC_INGESTION_BLOCKED_ADMIN_URIS = {
+        "/admin/purge",
+        "/admin/checkstate",
+        "/admin/repairmeanings",
+        "/admin/tasks",           // covers /tasks/retry (POST) and /tasks (DELETE)
+        "/admin/featureFlag",     // covers POST and DELETE /featureFlag/{flag}
+        "/admin/activeSearches/"  // covers DELETE /activeSearches/{id}
+    };
+
+    private static final String[] ASYNC_INGESTION_BLOCKED_REPAIR_URIS = {
+        "/repair/single-index",
+        "/repair/composite-index",
+        "/repair/batch"
+    };
+
+    private static final String[] ASYNC_INGESTION_BLOCKED_MIGRATION_URIS = {
+        "/migration/repair-"  // covers repair-unique-qualified-name, repair-stakeholder-qualified-name
+    };
+
     private final ActiveInstanceState activeInstanceState;
     private ServiceState serviceState;
 
@@ -99,7 +118,18 @@ public class ActiveServerFilter implements Filter {
                 return; // Stop further processing
             }
         }
-        
+
+        // If async ingestion mode is enabled, block admin and repair write operations
+        if (isAsyncIngestionEnabled()) {
+            HttpServletRequest request = (HttpServletRequest) servletRequest;
+            HttpServletResponse response = (HttpServletResponse) servletResponse;
+            if (isBlockedMethod(request.getMethod()) && isAsyncIngestionBlockedURI(request.getRequestURI())) {
+                LOG.warn("Async ingestion mode enabled. Blocking admin/repair request: {}", request.getRequestURI());
+                sendAsyncIngestionModeResponse(response);
+                return;
+            }
+        }
+
         if (isFilteredURI(servletRequest)) {
             LOG.debug("Is a filtered URI: {}. Passing request downstream.",
                     ((HttpServletRequest)servletRequest).getRequestURI());
@@ -278,6 +308,65 @@ public class ActiveServerFilter implements Filter {
             LOG.warn("Failed to check maintenance mode from DynamicConfigStore, falling back to config", e);
         }
         return AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean();
+    }
+
+    /**
+     * Check if async ingestion mode is enabled using DynamicConfigStore.
+     * Defaults to false if DynamicConfigStore is not available.
+     */
+    private boolean isAsyncIngestionEnabled() {
+        try {
+            if (DynamicConfigStore.isEnabled()) {
+                return DynamicConfigStore.isAsyncIngestionEnabled();
+            }
+        } catch (Exception e) {
+            LOG.warn("Failed to check async ingestion mode from DynamicConfigStore", e);
+        }
+        return false;
+    }
+
+    /**
+     * Check if the given URI should be blocked when async ingestion mode is enabled.
+     * Blocks admin, repair, entity repair, and migration repair endpoints.
+     */
+    private boolean isAsyncIngestionBlockedURI(String requestURI) {
+        for (String uri : ASYNC_INGESTION_BLOCKED_ADMIN_URIS) {
+            if (requestURI.contains(uri)) {
+                return true;
+            }
+        }
+        for (String uri : ASYNC_INGESTION_BLOCKED_REPAIR_URIS) {
+            if (requestURI.contains(uri)) {
+                return true;
+            }
+        }
+        for (String uri : ASYNC_INGESTION_BLOCKED_MIGRATION_URIS) {
+            if (requestURI.contains(uri)) {
+                return true;
+            }
+        }
+        // Entity repair endpoints: /entity/...repair...
+        if (requestURI.contains("/entity/") && requestURI.contains("repair")) {
+            return true;
+        }
+        return false;
+    }
+
+    private void sendAsyncIngestionModeResponse(HttpServletResponse response) throws IOException {
+        response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        AtlasBaseException serverException = new AtlasBaseException(AtlasErrorCode.ASYNC_INGESTION_MODE_ENABLED,
+                AtlasErrorCode.ASYNC_INGESTION_MODE_ENABLED.getFormattedErrorMessage());
+
+        HashMap<String, Object> errorMap = new HashMap<>();
+        errorMap.put("errorCode", serverException.getAtlasErrorCode().getErrorCode());
+        errorMap.put("errorMessage", serverException.getMessage());
+
+        String jsonResponse = AtlasType.toJson(errorMap);
+        response.getOutputStream().write(jsonResponse.getBytes());
+        response.getOutputStream().flush();
     }
 
     @Override

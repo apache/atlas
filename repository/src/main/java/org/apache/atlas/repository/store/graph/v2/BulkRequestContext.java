@@ -17,6 +17,12 @@
  */
 package org.apache.atlas.repository.store.graph.v2;
 
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.type.AtlasType;
+
+import java.util.HashMap;
+import java.util.Map;
+
 public class BulkRequestContext {
     private boolean replaceClassifications;
     private boolean replaceTags;
@@ -24,6 +30,9 @@ public class BulkRequestContext {
 
     private boolean replaceBusinessAttributes;
     private boolean isOverwriteBusinessAttributes;
+
+    private AtlasEntitiesWithExtInfo originalEntities;  // for async ingestion Kafka publish
+    private boolean skipProcessEdgeRestoration;         // query param from REST
 
     public boolean isReplaceClassifications() {
         return replaceClassifications;
@@ -45,6 +54,28 @@ public class BulkRequestContext {
         return isOverwriteBusinessAttributes;
     }
 
+    public AtlasEntitiesWithExtInfo getOriginalEntities() {
+        return originalEntities;
+    }
+
+    public boolean isSkipProcessEdgeRestoration() {
+        return skipProcessEdgeRestoration;
+    }
+
+    /**
+     * Build an operation metadata map for async ingestion Kafka events.
+     */
+    public Map<String, Object> toOperationMetadata() {
+        Map<String, Object> meta = new HashMap<>();
+        meta.put("replaceClassifications", replaceClassifications);
+        meta.put("replaceTags", replaceTags);
+        meta.put("appendTags", appendTags);
+        meta.put("replaceBusinessAttributes", replaceBusinessAttributes);
+        meta.put("overwriteBusinessAttributes", isOverwriteBusinessAttributes);
+        meta.put("skipProcessEdgeRestoration", skipProcessEdgeRestoration);
+        return meta;
+    }
+
     public BulkRequestContext() {
         this.replaceClassifications = false;
         this.replaceTags = false;
@@ -52,6 +83,7 @@ public class BulkRequestContext {
 
         this.replaceBusinessAttributes = false;
         this.isOverwriteBusinessAttributes = false;
+        this.skipProcessEdgeRestoration = false;
     }
 
     private BulkRequestContext(Builder builder) {
@@ -61,6 +93,8 @@ public class BulkRequestContext {
 
         this.replaceBusinessAttributes = builder.replaceBusinessAttributes;
         this.isOverwriteBusinessAttributes = builder.isOverwriteBusinessAttributes;
+        this.originalEntities = builder.originalEntities;
+        this.skipProcessEdgeRestoration = builder.skipProcessEdgeRestoration;
     }
 
     public static class Builder {
@@ -70,6 +104,8 @@ public class BulkRequestContext {
 
         private boolean replaceBusinessAttributes = false;
         private boolean isOverwriteBusinessAttributes = false;
+        private AtlasEntitiesWithExtInfo originalEntities;
+        private boolean skipProcessEdgeRestoration = false;
 
         public Builder setReplaceClassifications(boolean replaceClassifications) {
             this.replaceClassifications = replaceClassifications;
@@ -108,6 +144,16 @@ public class BulkRequestContext {
 
         public Builder setOverwriteBusinessAttributes(boolean overwriteBusinessAttributes) {
             isOverwriteBusinessAttributes = overwriteBusinessAttributes;
+            return this;
+        }
+
+        public Builder setOriginalEntities(AtlasEntitiesWithExtInfo originalEntities) {
+            this.originalEntities = AtlasType.fromJson(AtlasType.toJson(originalEntities), AtlasEntitiesWithExtInfo.class);
+            return this;
+        }
+
+        public Builder setSkipProcessEdgeRestoration(boolean skipProcessEdgeRestoration) {
+            this.skipProcessEdgeRestoration = skipProcessEdgeRestoration;
             return this;
         }
 
