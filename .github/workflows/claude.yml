@@ -93,7 +93,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.LITELLM_API_KEY }}
-          track_progress: true
+          track_progress: ${{ github.event_name != 'workflow_dispatch' }}
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
