@@ -51,7 +51,7 @@ public class AsyncIngestionApiBlockingIT extends AtlasInProcessBaseIT {
     // =================== Config Helpers ===================
 
     private void setAsyncIngestionEnabled(boolean enabled) throws Exception {
-        String configUrl = getAtlasBaseUrl() + "/api/atlas/admin/config?key=ENABLE_ASYNC_INGESTION&value=" + enabled;
+        String configUrl = getAtlasBaseUrl() + "/api/atlas/configs/ENABLE_ASYNC_INGESTION";
 
         URL url = new URL(configUrl);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -61,8 +61,9 @@ public class AsyncIngestionApiBlockingIT extends AtlasInProcessBaseIT {
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setDoOutput(true);
 
+        String body = "{\"value\":\"" + enabled + "\"}";
         try (OutputStream os = conn.getOutputStream()) {
-            os.write("{}".getBytes(StandardCharsets.UTF_8));
+            os.write(body.getBytes(StandardCharsets.UTF_8));
         }
 
         int status = conn.getResponseCode();
@@ -252,5 +253,54 @@ public class AsyncIngestionApiBlockingIT extends AtlasInProcessBaseIT {
     void testAdminApisWorkAfterDisabling() throws Exception {
         HttpResult result = makeRequest("POST", "/admin/checkstate", "{}");
         assertNotBlockedByAsyncIngestion(result);
+    }
+
+    // =================== Additional blocked-endpoint tests (async ingestion re-enabled) ===================
+
+    @Test
+    @Order(18)
+    void testReEnableAsyncIngestionForAdditionalTests() throws Exception {
+        setAsyncIngestionEnabled(true);
+    }
+
+    @Test
+    @Order(19)
+    void testAdminRepairMeaningsBlocked() throws Exception {
+        HttpResult result = makeRequest("POST", "/admin/repairmeanings", "{}");
+        assertBlockedByAsyncIngestion(result);
+    }
+
+    @Test
+    @Order(20)
+    void testAdminActiveSearchesDeleteBlocked() throws Exception {
+        HttpResult result = makeRequest("DELETE", "/admin/activeSearches/fake-id", null);
+        assertBlockedByAsyncIngestion(result);
+    }
+
+    @Test
+    @Order(21)
+    void testRepairCompositeIndexBlocked() throws Exception {
+        HttpResult result = makeRequest("POST", "/v2/repair/composite-index", "{}");
+        assertBlockedByAsyncIngestion(result);
+    }
+
+    @Test
+    @Order(22)
+    void testRepairBatchBlocked() throws Exception {
+        HttpResult result = makeRequest("POST", "/v2/repair/batch", "{}");
+        assertBlockedByAsyncIngestion(result);
+    }
+
+    @Test
+    @Order(23)
+    void testMigrationRepairStakeholderQualifiedNameBlocked() throws Exception {
+        HttpResult result = makeRequest("POST", "/v2/migration/repair-stakeholder-qualified-name", "{}");
+        assertBlockedByAsyncIngestion(result);
+    }
+
+    @Test
+    @Order(24)
+    void testDisableAsyncIngestionAfterAdditionalTests() throws Exception {
+        setAsyncIngestionEnabled(false);
     }
 }

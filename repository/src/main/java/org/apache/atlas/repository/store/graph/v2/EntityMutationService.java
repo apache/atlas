@@ -205,9 +205,14 @@ public class EntityMutationService {
             throw e;
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);
+            Map<String, Object> deleteClassPayload = new HashMap<>();
+            deleteClassPayload.put("guid", guid);
+            deleteClassPayload.put("classificationName", classificationName);
+            if (associatedEntityGuid != null) {
+                deleteClassPayload.put("associatedEntityGuid", associatedEntityGuid);
+            }
             publishAsyncIngestionEvent(isGraphTransactionFailed, AsyncIngestionEventType.DELETE_CLASSIFICATION,
-                    Map.of(), Map.of("guid", guid, "classificationName", classificationName,
-                                     "associatedEntityGuid", associatedEntityGuid));
+                    Map.of(), deleteClassPayload);
         }
     }
 
