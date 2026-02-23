@@ -284,6 +284,7 @@ public enum AtlasErrorCode {
     MAINTENANCE_MODE_ENABLED(503, "ATLAS-503-00-001", "Atlas is in maintenance mode for this specific operation. Please try again later."),
     SERVICE_UNAVAILABLE(503, "ATLAS-503-00-002", "Service is unavailable or a network error occurred: {0}"),
     TASK_INTERRUPTED(503, "ATLAS-503-00-003", "Task interrupted: {0}"),
+    ASYNC_INGESTION_MODE_ENABLED(503, "ATLAS-503-00-004", "Atlas is in async ingestion mode. Admin and repair operations are temporarily blocked. Disable async ingestion first."),
 
     BATCH_SIZE_TOO_LARGE(406, "ATLAS-406-00-001", "Batch size is too large, please use a smaller batch size"),
 

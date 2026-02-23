@@ -42,6 +42,7 @@ import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.repository.store.graph.v2.repair.AtlasRepairAttributeService;
+import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.repository.store.graph.v2.tags.PaginatedVertexIdResult;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -109,9 +110,10 @@ public class EntityREST {
     private final EntityMutationService entityMutationService;
     private final AtlasRepairAttributeService repairAttributeService;
     private final RepairIndex repairIndex;
+    private final AsyncIngestionProducer asyncIngestionProducer;
 
     @Inject
-    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository, EntityGraphRetriever retriever, EntityMutationService entityMutationService, AtlasRepairAttributeService repairAttributeService, RepairIndex repairIndex) {
+    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository, EntityGraphRetriever retriever, EntityMutationService entityMutationService, AtlasRepairAttributeService repairAttributeService, RepairIndex repairIndex, AsyncIngestionProducer asyncIngestionProducer) {
         this.typeRegistry      = typeRegistry;
         this.entitiesStore     = entitiesStore;
         this.esBasedAuditRepository = esBasedAuditRepository;
@@ -119,6 +121,7 @@ public class EntityREST {
         this.entityMutationService = entityMutationService;
         this.repairAttributeService = repairAttributeService;
         this.repairIndex = repairIndex;
+        this.asyncIngestionProducer = asyncIngestionProducer;
     }
 
     /**
@@ -848,6 +851,8 @@ public class EntityREST {
                     .setAppendTags(appendTags)
                     .setReplaceBusinessAttributes(replaceBusinessAttributes)
                     .setOverwriteBusinessAttributes(isOverwriteBusinessAttributes)
+                    .setSkipProcessEdgeRestoration(skipProcessEdgeRestoration)
+                    .setOriginalEntities(entities)
                     .build();
             return entityMutationService.createOrUpdate(entityStream, context);
         } finally {
@@ -1274,6 +1279,8 @@ public class EntityREST {
             }
 
             entitiesStore.addOrUpdateBusinessAttributes(guid, businessAttributes, isOverwrite);
+            publishEntityAsyncEvent(AsyncIngestionEventType.ADD_OR_UPDATE_BUSINESS_ATTRIBUTES,
+                    Map.of("guid", guid, "isOverwrite", isOverwrite), businessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -1293,6 +1300,8 @@ public class EntityREST {
             }
 
             entitiesStore.addOrUpdateBusinessAttributesByDisplayName(guid, businessAttributes, isOverwrite);
+            publishEntityAsyncEvent(AsyncIngestionEventType.ADD_OR_UPDATE_BUSINESS_ATTRIBUTES_BY_DISPLAY_NAME,
+                    Map.of("guid", guid, "isOverwrite", isOverwrite), businessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -1312,6 +1321,8 @@ public class EntityREST {
             }
 
             entitiesStore.removeBusinessAttributes(guid, businessAttributes);
+            publishEntityAsyncEvent(AsyncIngestionEventType.REMOVE_BUSINESS_ATTRIBUTES,
+                    Map.of("guid", guid), businessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -1331,6 +1342,8 @@ public class EntityREST {
             }
 
             entitiesStore.addOrUpdateBusinessAttributes(guid, Collections.singletonMap(bmName, businessAttributes), false);
+            publishEntityAsyncEvent(AsyncIngestionEventType.ADD_OR_UPDATE_BUSINESS_ATTRIBUTES,
+                    Map.of("guid", guid, "isOverwrite", false, "bmName", bmName), businessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -1350,6 +1363,8 @@ public class EntityREST {
             }
 
             entitiesStore.removeBusinessAttributes(guid, Collections.singletonMap(bmName, businessAttributes));
+            publishEntityAsyncEvent(AsyncIngestionEventType.REMOVE_BUSINESS_ATTRIBUTES,
+                    Map.of("guid", guid, "bmName", bmName), businessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -2028,7 +2043,18 @@ public class EntityREST {
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
 
-
+    private void publishEntityAsyncEvent(String eventType,
+                                         Map<String, Object> operationMetadata,
+                                         Object payload) {
+        if (DynamicConfigStore.isAsyncIngestionEnabled()) {
+            try {
+                asyncIngestionProducer.publishEvent(eventType, operationMetadata, payload,
+                        RequestMetadata.fromCurrentRequest());
+            } catch (Exception e) {
+                LOG.error("Async ingestion publish failed for {} (non-fatal)", eventType, e);
+            }
+        }
     }
 }
