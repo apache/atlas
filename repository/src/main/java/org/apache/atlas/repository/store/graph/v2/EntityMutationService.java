@@ -418,11 +418,10 @@ public class EntityMutationService {
      * Publish an async ingestion event to Kafka if the graph transaction succeeded
      * and async ingestion is enabled. Best-effort: catches all exceptions.
      *
-     * <p>NOTE: JSON serialization of the payload happens synchronously on the HTTP thread
-     * (inside AsyncIngestionProducer.publishEvent) before the Kafka send() call.
-     * This means the Kafka message captures the post-mutation state of entities
-     * (with generated GUIDs, qualifiedNames, system attributes etc.), which is the
-     * desired behavior for the replay consumer. No deep copy is needed.</p>
+     * <p>The payload must be a pre-mutation snapshot of the original REST request body,
+     * so the Kafka event faithfully represents what the caller sent. Callers are
+     * responsible for deep-copying the payload before passing it to any mutating
+     * store operation (e.g. via BulkRequestContext.setOriginalEntities).</p>
      */
     private void publishAsyncIngestionEvent(boolean isGraphTransactionFailed, String eventType,
                                             Map<String, Object> operationMetadata, Object payload) {

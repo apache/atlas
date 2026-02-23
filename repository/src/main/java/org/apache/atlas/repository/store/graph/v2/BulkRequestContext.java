@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.type.AtlasType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -147,7 +148,7 @@ public class BulkRequestContext {
         }
 
         public Builder setOriginalEntities(AtlasEntitiesWithExtInfo originalEntities) {
-            this.originalEntities = originalEntities;
+            this.originalEntities = AtlasType.fromJson(AtlasType.toJson(originalEntities), AtlasEntitiesWithExtInfo.class);
             return this;
         }
 

@@ -33,6 +33,7 @@ import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
@@ -457,6 +458,7 @@ public class TypesREST {
             RequestContext.get().setAllowDuplicateDisplayName(allowDuplicateDisplayName);
             typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomNameForEntityAndAttributeDefs);
             typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
+            AtlasTypesDef inputSnapshot = AtlasType.fromJson(AtlasType.toJson(typesDef), AtlasTypesDef.class);
             AtlasTypesDef atlasTypesDef = createTypeDefsWithRetry(typesDef);
             long latestVersion = Long.parseLong(redisService.getValue(TYPEDEF_LATEST_VERSION, "1")) + 1;
             String latestVersionStr = String.valueOf(latestVersion);
@@ -464,7 +466,7 @@ public class TypesREST {
             AtlasTypeDefStoreInitializer.setCurrentTypedefInternalVersion(latestVersion);
             publishTypeDefAsyncEvent(AsyncIngestionEventType.TYPEDEF_CREATE,
                     Map.of("allowDuplicateDisplayName", allowDuplicateDisplayName),
-                    typesDef);
+                    inputSnapshot);
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.createAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
@@ -529,6 +531,7 @@ public class TypesREST {
             RequestContext.get().setInTypePatching(patch);
             RequestContext.get().setAllowDuplicateDisplayName(allowDuplicateDisplayName);
             LOG.info("TypesRest.updateAtlasTypeDefs:: Typedef patch enabled:" + patch);
+            AtlasTypesDef inputSnapshot = AtlasType.fromJson(AtlasType.toJson(typesDef), AtlasTypesDef.class);
             AtlasTypesDef atlasTypesDef = updateTypeDefsWithRetry(typesDef);
             long latestVersion = Long.parseLong(redisService.getValue(TYPEDEF_LATEST_VERSION, "1")) + 1;
             String latestVersionStr = String.valueOf(latestVersion);
@@ -537,7 +540,7 @@ public class TypesREST {
             LOG.info("TypesRest.updateAtlasTypeDefs:: Done");
             publishTypeDefAsyncEvent(AsyncIngestionEventType.TYPEDEF_UPDATE,
                     Map.of("allowDuplicateDisplayName", allowDuplicateDisplayName, "patch", patch),
-                    typesDef);
+                    inputSnapshot);
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.updateAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);

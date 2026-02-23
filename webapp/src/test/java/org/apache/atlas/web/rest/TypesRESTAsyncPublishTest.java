@@ -10,6 +10,7 @@ import org.apache.atlas.repository.store.graph.v2.RequestMetadata;
 import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
@@ -89,7 +90,7 @@ class TypesRESTAsyncPublishTest {
         verify(asyncIngestionProducer).publishEvent(
                 eq(AsyncIngestionEventType.TYPEDEF_CREATE),
                 anyMap(),
-                eq(input),
+                argThat(arg -> AtlasType.toJson(arg).equals(AtlasType.toJson(input))),
                 any(RequestMetadata.class));
     }
 
@@ -135,7 +136,7 @@ class TypesRESTAsyncPublishTest {
         verify(asyncIngestionProducer).publishEvent(
                 eq(AsyncIngestionEventType.TYPEDEF_UPDATE),
                 anyMap(),
-                eq(input),
+                argThat(arg -> AtlasType.toJson(arg).equals(AtlasType.toJson(input))),
                 any(RequestMetadata.class));
     }
 
@@ -207,7 +208,7 @@ class TypesRESTAsyncPublishTest {
         verify(asyncIngestionProducer).publishEvent(
                 eq(AsyncIngestionEventType.TYPEDEF_CREATE),
                 opMetaCaptor.capture(),
-                eq(input),
+                argThat(arg -> AtlasType.toJson(arg).equals(AtlasType.toJson(input))),
                 any(RequestMetadata.class));
 
         Map<String, Object> opMeta = opMetaCaptor.getValue();
@@ -230,7 +231,7 @@ class TypesRESTAsyncPublishTest {
         verify(asyncIngestionProducer).publishEvent(
                 eq(AsyncIngestionEventType.TYPEDEF_UPDATE),
                 opMetaCaptor.capture(),
-                eq(input),
+                argThat(arg -> AtlasType.toJson(arg).equals(AtlasType.toJson(input))),
                 any(RequestMetadata.class));
 
         Map<String, Object> opMeta = opMetaCaptor.getValue();
