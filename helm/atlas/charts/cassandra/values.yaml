@@ -367,14 +367,15 @@ icarus:
     repo: ghcr.io/atlanhq/cassandra-icarus-atlan-v2
     tag: 1.0.4
   port: 4567
-  jvmOpts: "-Xmx1g -Xms512m"
+  jvmOpts: "-Xmx2g -Xms1g"
+  jvmOpts_lite: "-Xmx512m -Xms256m"
   resources:
     limits:
-      cpu: 0.5
-      memory: 2Gi
+      cpu: 1
+      memory: 4Gi
     requests:
-      cpu: 0.5
-      memory: 2Gi
+      cpu: 1
+      memory: 4Gi
   resources_lite:
     limits:
       cpu: 1
