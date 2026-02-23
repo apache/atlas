@@ -433,8 +433,9 @@ jobs:
 
           # Rollout timeout: wait for pods to be ready with correct image
           # ArgoCD syncs a large umbrella chart, atlas StatefulSet may take time to reach
-          ROLLOUT_TIMEOUT=900  # 15 minutes
-          ROLLOUT_INTERVAL=30  # poll every 30 seconds
+          ROLLOUT_TIMEOUT_SECS=900   # 15 minutes per attempt
+          ROLLOUT_INTERVAL_SECS=30   # poll every 30 seconds
+          MAX_RETRIES=2              # retry entire rollout check if timeout (total max: 30 min)
 
           for TENANT in "${TENANT_LIST[@]}"; do
             TENANT=$(echo "$TENANT" | xargs)
@@ -461,78 +462,94 @@ jobs:
             EXPECTED_IMAGE_PATTERN="${REPO_NAME}-${RING_NAME}"
 
             echo "Waiting for rollout: pattern='$EXPECTED_IMAGE_PATTERN', tag='$EXPECTED_TAG'"
-            echo "Timeout: ${ROLLOUT_TIMEOUT}s, Poll interval: ${ROLLOUT_INTERVAL}s"
+            echo "Timeout: ${ROLLOUT_TIMEOUT_SECS}s per attempt, Max retries: ${MAX_RETRIES}"
 
-            # --- Rollout wait loop: wait for pods to be ready with correct image ---
-            ROLLOUT_START=$(date +%s)
+            # --- Rollout wait loop with retries ---
             ROLLOUT_SUCCESS=false
+            ATTEMPT=1
 
-            while true; do
-              ELAPSED=$(($(date +%s) - ROLLOUT_START))
-              if [ $ELAPSED -ge $ROLLOUT_TIMEOUT ]; then
-                echo "TIMEOUT: Rollout did not complete within ${ROLLOUT_TIMEOUT}s"
-                break
-              fi
+            while [ $ATTEMPT -le $MAX_RETRIES ]; do
+              echo ""
+              echo "--- Attempt $ATTEMPT of $MAX_RETRIES ---"
+              ROLLOUT_START=$(date +%s)
 
-              echo "[${ELAPSED}s] Checking pod status..."
+              while true; do
+                ELAPSED=$(($(date +%s) - ROLLOUT_START))
+                if [ $ELAPSED -ge $ROLLOUT_TIMEOUT_SECS ]; then
+                  echo "TIMEOUT: Attempt $ATTEMPT did not complete within ${ROLLOUT_TIMEOUT_SECS}s"
+                  break
+                fi
 
-              # Get pods
-              PODS_JSON=$(KUBECONFIG=$KUBECONFIG kubectl get pods -n atlas -l app=atlas -o json 2>/dev/null)
-              if [ $? -ne 0 ]; then
-                echo "  kubectl get pods failed, retrying..."
-                sleep $ROLLOUT_INTERVAL
-                continue
-              fi
+                echo "[${ELAPSED}s] Checking pod status..."
 
-              TOTAL_PODS=$(echo "$PODS_JSON" | jq '.items | length')
-              NOT_READY=$(echo "$PODS_JSON" | jq '[.items[].status.containerStatuses[]? | select(.ready == false)] | length')
-              READY=$(echo "$PODS_JSON"     | jq '[.items[].status.containerStatuses[]? | select(.ready == true)]  | length')
-              TOTAL_CONTAINERS=$(echo "$PODS_JSON" | jq '[.items[].status.containerStatuses[]?] | length')
-
-              echo "  Pods: $TOTAL_PODS | Containers ready: $READY/$TOTAL_CONTAINERS"
-
-              # Check if pods exist
-              if [ "$TOTAL_PODS" == "0" ]; then
-                echo "  No pods found yet, waiting..."
-                sleep $ROLLOUT_INTERVAL
-                continue
-              fi
-
-              # Check if all containers are ready
-              if [ "$NOT_READY" != "0" ]; then
-                echo "  $NOT_READY containers not ready, waiting..."
-                sleep $ROLLOUT_INTERVAL
-                continue
-              fi
-
-              # Check image tag on all pods
-              ACTUAL_IMAGES=$(echo "$PODS_JSON" | jq -r \
-                '.items[].status.containerStatuses[]? | select(.name == "atlas-main") | .image')
-
-              MISMATCH_COUNT=0
-              for IMG in $ACTUAL_IMAGES; do
-                ACTUAL_TAG="${IMG##*:}"
-
-                if [[ "$IMG" != *"$EXPECTED_IMAGE_PATTERN"* ]]; then
-                  MISMATCH_COUNT=$((MISMATCH_COUNT + 1))
+                # Get pods
+                PODS_JSON=$(KUBECONFIG=$KUBECONFIG kubectl get pods -n atlas -l app=atlas -o json 2>/dev/null)
+                if [ $? -ne 0 ]; then
+                  echo "  kubectl get pods failed, retrying..."
+                  sleep $ROLLOUT_INTERVAL_SECS
                   continue
                 fi
 
-                if [ "$ACTUAL_TAG" != "$EXPECTED_TAG" ]; then
-                  MISMATCH_COUNT=$((MISMATCH_COUNT + 1))
+                TOTAL_PODS=$(echo "$PODS_JSON" | jq '.items | length')
+                NOT_READY=$(echo "$PODS_JSON" | jq '[.items[].status.containerStatuses[]? | select(.ready == false)] | length')
+                READY=$(echo "$PODS_JSON"     | jq '[.items[].status.containerStatuses[]? | select(.ready == true)]  | length')
+                TOTAL_CONTAINERS=$(echo "$PODS_JSON" | jq '[.items[].status.containerStatuses[]?] | length')
+
+                echo "  Pods: $TOTAL_PODS | Containers ready: $READY/$TOTAL_CONTAINERS"
+
+                # Check if pods exist
+                if [ "$TOTAL_PODS" == "0" ]; then
+                  echo "  No pods found yet, waiting..."
+                  sleep $ROLLOUT_INTERVAL_SECS
                   continue
+                fi
+
+                # Check if all containers are ready
+                if [ "$NOT_READY" != "0" ]; then
+                  echo "  $NOT_READY containers not ready, waiting..."
+                  sleep $ROLLOUT_INTERVAL_SECS
+                  continue
+                fi
+
+                # Check image tag on all pods
+                ACTUAL_IMAGES=$(echo "$PODS_JSON" | jq -r \
+                  '.items[].status.containerStatuses[]? | select(.name == "atlas-main") | .image')
+
+                MISMATCH_COUNT=0
+                for IMG in $ACTUAL_IMAGES; do
+                  ACTUAL_TAG="${IMG##*:}"
+
+                  if [[ "$IMG" != *"$EXPECTED_IMAGE_PATTERN"* ]]; then
+                    MISMATCH_COUNT=$((MISMATCH_COUNT + 1))
+                    continue
+                  fi
+
+                  if [ "$ACTUAL_TAG" != "$EXPECTED_TAG" ]; then
+                    MISMATCH_COUNT=$((MISMATCH_COUNT + 1))
+                    continue
+                  fi
+                done
+
+                if [ "$MISMATCH_COUNT" == "0" ]; then
+                  echo "  ✓ All $TOTAL_PODS pods have correct image"
+                  ROLLOUT_SUCCESS=true
+                  break
+                else
+                  ACTUAL_UNIQUE=$(echo "$ACTUAL_IMAGES" | sort -u | head -1)
+                  ACTUAL_TAG_SHOWN="${ACTUAL_UNIQUE##*:}"
+                  echo "  Image not updated yet: current=$ACTUAL_TAG_SHOWN, expected=$EXPECTED_TAG"
+                  sleep $ROLLOUT_INTERVAL_SECS
                 fi
               done
 
-              if [ "$MISMATCH_COUNT" == "0" ]; then
-                echo "  ✓ All $TOTAL_PODS pods have correct image"
-                ROLLOUT_SUCCESS=true
+              # If successful, break out of retry loop
+              if [ "$ROLLOUT_SUCCESS" == "true" ]; then
                 break
-              else
-                ACTUAL_UNIQUE=$(echo "$ACTUAL_IMAGES" | sort -u | head -1)
-                ACTUAL_TAG_SHOWN="${ACTUAL_UNIQUE##*:}"
-                echo "  Image not updated yet: current=$ACTUAL_TAG_SHOWN, expected=$EXPECTED_TAG"
-                sleep $ROLLOUT_INTERVAL
+              fi
+
+              ATTEMPT=$((ATTEMPT + 1))
+              if [ $ATTEMPT -le $MAX_RETRIES ]; then
+                echo "Retrying rollout check..."
               fi
             done
 
