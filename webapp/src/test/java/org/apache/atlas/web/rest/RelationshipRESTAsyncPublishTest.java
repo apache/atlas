@@ -9,6 +9,7 @@ import org.apache.atlas.repository.store.graph.v2.AsyncIngestionProducer;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationService;
 import org.apache.atlas.repository.store.graph.v2.RequestMetadata;
 import org.apache.atlas.service.config.DynamicConfigStore;
+import org.apache.atlas.type.AtlasType;
 import org.junit.jupiter.api.*;
 import org.mockito.MockedStatic;
 
@@ -70,7 +71,7 @@ class RelationshipRESTAsyncPublishTest {
         verify(asyncIngestionProducer).publishEvent(
                 eq(AsyncIngestionEventType.RELATIONSHIP_CREATE),
                 eq(Map.of()),
-                eq(created),
+                argThat(arg -> AtlasType.toJson(arg).equals(AtlasType.toJson(input))),
                 any(RequestMetadata.class));
     }
 
@@ -127,7 +128,7 @@ class RelationshipRESTAsyncPublishTest {
         verify(asyncIngestionProducer).publishEvent(
                 eq(AsyncIngestionEventType.RELATIONSHIP_BULK_CREATE_OR_UPDATE),
                 eq(Map.of()),
-                eq(output),
+                argThat(arg -> AtlasType.toJson(arg).equals(AtlasType.toJson(input))),
                 any(RequestMetadata.class));
     }
 
@@ -173,7 +174,7 @@ class RelationshipRESTAsyncPublishTest {
         verify(asyncIngestionProducer).publishEvent(
                 eq(AsyncIngestionEventType.RELATIONSHIP_UPDATE),
                 eq(Map.of()),
-                eq(updated),
+                argThat(arg -> AtlasType.toJson(arg).equals(AtlasType.toJson(input))),
                 any(RequestMetadata.class));
     }
 

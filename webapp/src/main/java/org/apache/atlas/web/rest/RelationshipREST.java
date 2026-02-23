@@ -29,8 +29,11 @@ import org.apache.atlas.repository.store.graph.v2.AsyncIngestionProducer;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationService;
 import org.apache.atlas.repository.store.graph.v2.RequestMetadata;
 import org.apache.atlas.service.config.DynamicConfigStore;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,8 +82,9 @@ public class RelationshipREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.create(" + relationship + ")");
             }
 
+            AtlasRelationship inputSnapshot = AtlasType.fromJson(AtlasType.toJson(relationship), AtlasRelationship.class);
             AtlasRelationship result = relationshipStore.create(relationship);
-            publishRelationshipAsyncEvent(AsyncIngestionEventType.RELATIONSHIP_CREATE, Map.of(), result);
+            publishRelationshipAsyncEvent(AsyncIngestionEventType.RELATIONSHIP_CREATE, Map.of(), inputSnapshot);
             return result;
         } finally {
             AtlasPerfTracer.log(perf);
@@ -100,8 +104,9 @@ public class RelationshipREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.createOrUpdate(" + relationships + ")");
             }
 
+            List<AtlasRelationship> inputSnapshot = AtlasJson.fromJson(AtlasType.toJson(relationships), new TypeReference<List<AtlasRelationship>>() {});
             List<AtlasRelationship> result = relationshipStore.createOrUpdate(relationships);
-            publishRelationshipAsyncEvent(AsyncIngestionEventType.RELATIONSHIP_BULK_CREATE_OR_UPDATE, Map.of(), result);
+            publishRelationshipAsyncEvent(AsyncIngestionEventType.RELATIONSHIP_BULK_CREATE_OR_UPDATE, Map.of(), inputSnapshot);
             return result;
         } finally {
             AtlasPerfTracer.log(perf);
@@ -121,8 +126,9 @@ public class RelationshipREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.update(" + relationship + ")");
             }
 
+            AtlasRelationship inputSnapshot = AtlasType.fromJson(AtlasType.toJson(relationship), AtlasRelationship.class);
             AtlasRelationship result = relationshipStore.update(relationship);
-            publishRelationshipAsyncEvent(AsyncIngestionEventType.RELATIONSHIP_UPDATE, Map.of(), result);
+            publishRelationshipAsyncEvent(AsyncIngestionEventType.RELATIONSHIP_UPDATE, Map.of(), inputSnapshot);
             return result;
         } finally {
             AtlasPerfTracer.log(perf);
