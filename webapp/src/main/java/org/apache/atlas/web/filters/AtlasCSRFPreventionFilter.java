@@ -251,7 +251,7 @@ public class AtlasCSRFPreventionFilter implements Filter {
 		}
 
 		public HttpSession getSession() {
-			return httpRequest.getSession();
+			return httpRequest.getSession(false);
 		}
 
 		@Override

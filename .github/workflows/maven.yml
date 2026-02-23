@@ -24,11 +24,8 @@ on:
       - beta
       - master
       - staging
-      - lite_master
-      - alcon-v2-418
-      - ms-428-delete-optimisation-phase3
+      - ms-635
       - lg-async-producer
-      - ring-*
 
     paths-ignore:
       - '.claude/**'

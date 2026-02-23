@@ -23,15 +23,6 @@ on:
       - master
       - beta
       - staging
-    paths-ignore:
-      - '.claude/**'
-      - '.cursor/**'
-      - '.github/**'
-      - 'docs/**'
-      - 'helm/**'
-      - 'local-dev/**'
-      - 'README.txt'
-      - 'README.md'
 
 permissions:
   contents: read
@@ -44,23 +35,49 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - uses: actions/checkout@v3
+
+      - name: Check if tests should run
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            src:
+              - '**'
+              - '!.claude/**'
+              - '!.cursor/**'
+              - '!.github/**'
+              - '!docs/**'
+              - '!helm/**'
+              - '!local-dev/**'
+              - '!README.txt'
+              - '!README.md'
+
+      - name: Skip message
+        if: steps.filter.outputs.src != 'true'
+        run: |
+          echo "## Integration Tests Skipped" >> $GITHUB_STEP_SUMMARY
+          echo "No source code changes detected. Only docs/config files were modified." >> $GITHUB_STEP_SUMMARY
+          echo "Skipping integration tests."
+
       # ============================================
       # DISK CLEANUP - Testcontainers need space
       # ============================================
       - name: Free up disk space
+        if: steps.filter.outputs.src == 'true'
         run: |
           echo "Freeing disk space..."
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/share/swift || true
 
-      - uses: actions/checkout@v3
-
       - name: Set up JDK 17
+        if: steps.filter.outputs.src == 'true'
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'zulu'
 
       - name: Cache Maven packages
+        if: steps.filter.outputs.src == 'true'
         uses: actions/cache@v3
         with:
           path: ~/.m2/repository
@@ -70,6 +87,7 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Create Maven Settings
+        if: steps.filter.outputs.src == 'true'
         uses: s4u/maven-settings-action@v2.8.0
         with:
           servers: |
@@ -80,11 +98,13 @@ jobs:
             }]
 
       - name: Verify Docker
+        if: steps.filter.outputs.src == 'true'
         run: |
           docker --version
           docker info
 
       - name: Build webapp module
+        if: steps.filter.outputs.src == 'true'
         run: |
           mvn install -pl webapp -am -DskipTests -Drat.skip=true -q
         env:
@@ -92,6 +112,7 @@ jobs:
 
       - name: Run integration tests
         id: tests
+        if: steps.filter.outputs.src == 'true'
         continue-on-error: true
         env:
           TESTCONTAINERS_RYUK_DISABLED: true
@@ -109,7 +130,7 @@ jobs:
 
       - name: Publish test results
         uses: dorny/test-reporter@v1
-        if: always() && steps.tests.outcome != 'skipped'
+        if: always() && steps.filter.outputs.src == 'true' && steps.tests.outcome != 'skipped'
         with:
           name: Integration Test Results
           path: webapp/target/surefire-reports/TEST-*.xml
@@ -117,7 +138,7 @@ jobs:
           fail-on-error: false
 
       - name: Generate test reports
-        if: always() && steps.tests.outcome != 'skipped'
+        if: always() && steps.filter.outputs.src == 'true' && steps.tests.outcome != 'skipped'
         run: |
           python3 webapp/src/test/scripts/generate-test-report.py \
             webapp/target/surefire-reports \
@@ -134,7 +155,7 @@ jobs:
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
-        if: always() && steps.tests.outcome != 'skipped'
+        if: always() && steps.filter.outputs.src == 'true' && steps.tests.outcome != 'skipped'
         with:
           name: integration-test-reports-${{ github.run_id }}
           path: |
@@ -144,7 +165,7 @@ jobs:
           retention-days: 14
 
       - name: Fail if tests failed
-        if: steps.tests.outputs.exit_code != '0'
+        if: steps.filter.outputs.src == 'true' && steps.tests.outputs.exit_code != '0'
         run: |
           echo "Integration tests failed with exit code ${{ steps.tests.outputs.exit_code }}"
           exit 1

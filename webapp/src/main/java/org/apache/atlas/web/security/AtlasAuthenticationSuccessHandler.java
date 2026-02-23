@@ -56,7 +56,6 @@ public class AtlasAuthenticationSuccessHandler implements AuthenticationSuccessH
 
         if (request.getSession() != null) { // incase of form based login mark it as local login in session
             request.getSession().setAttribute(LOCALLOGIN,"true");
-            request.getServletContext().setAttribute(request.getSession().getId(), LOCALLOGIN);
 
             if (this.sessionTimeout != -1) {
                 request.getSession().setMaxInactiveInterval(sessionTimeout);
