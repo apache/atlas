@@ -86,7 +86,11 @@ else
   done
 fi
 
-mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean package
+if [ "${ARG_PROFILES}" == "embedded-solr-it" ]
+then
+  mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean verify
+else
+  mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean package
 
 mv -f distro/target/apache-atlas-${ATLAS_VERSION}-server.tar.gz     /home/atlas/dist/
 mv -f distro/target/apache-atlas-${ATLAS_VERSION}-hive-hook.tar.gz  /home/atlas/dist/
