@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Timer;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.micrometer.prometheus.PrometheusConfig;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.repository.store.graph.v2.AsyncIngestionEventType;
 import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -19,10 +21,7 @@ import org.mockito.MockedStatic;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,13 +35,13 @@ class AsyncIngestionProducerTest {
     private KafkaProducer<String, String> mockKafkaProducer;
 
     private AsyncIngestionProducer asyncIngestionProducer;
-    private SimpleMeterRegistry meterRegistry;
+    private PrometheusMeterRegistry meterRegistry;
     private MockedStatic<MetricUtils> mockedMetricUtils;
     private MockedStatic<ApplicationProperties> mockedAppProps;
 
     @BeforeAll
     void setUpAll() {
-        meterRegistry = new SimpleMeterRegistry();
+        meterRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
         mockedMetricUtils = mockStatic(MetricUtils.class);
         mockedMetricUtils.when(MetricUtils::getMeterRegistry).thenReturn(meterRegistry);
     }
@@ -82,14 +81,33 @@ class AsyncIngestionProducerTest {
         return rm;
     }
 
+    /** Stub 2-arg send to invoke the callback with a success RecordMetadata. */
+    private void stubSendWithSuccessCallback() {
+        RecordMetadata recordMetadata = new RecordMetadata(
+                new TopicPartition("TEST_ASYNC_ENTITIES", 0), 0L, 0L, 0L, 0L, 0, 0);
+        when(mockKafkaProducer.send(any(ProducerRecord.class), any(Callback.class)))
+                .thenAnswer(invocation -> {
+                    Callback cb = invocation.getArgument(1);
+                    cb.onCompletion(recordMetadata, null);
+                    return mock(Future.class);
+                });
+    }
+
+    /** Stub 2-arg send to invoke the callback with an exception. */
+    private void stubSendWithFailureCallback(Exception exception) {
+        when(mockKafkaProducer.send(any(ProducerRecord.class), any(Callback.class)))
+                .thenAnswer(invocation -> {
+                    Callback cb = invocation.getArgument(1);
+                    cb.onCompletion(null, exception);
+                    return mock(Future.class);
+                });
+    }
+
     // =================== Test 1: Happy path ===================
 
     @Test
     void testPublishEvent_success_returnsEventId() throws Exception {
-        RecordMetadata recordMetadata = new RecordMetadata(
-                new TopicPartition("TEST_ASYNC_ENTITIES", 0), 0L, 0L, 0L, 0L, 0, 0);
-        Future<RecordMetadata> future = CompletableFuture.completedFuture(recordMetadata);
-        when(mockKafkaProducer.send(any(ProducerRecord.class))).thenReturn(future);
+        stubSendWithSuccessCallback();
 
         String eventId = asyncIngestionProducer.publishEvent(
                 AsyncIngestionEventType.BULK_CREATE_OR_UPDATE,
@@ -101,13 +119,11 @@ class AsyncIngestionProducerTest {
         assertFalse(eventId.isEmpty());
     }
 
-    // =================== Test 2: Kafka failure ===================
+    // =================== Test 2: Kafka failure (async — still returns eventId) ===================
 
     @Test
-    void testPublishEvent_kafkaFailure_returnsNull_doesNotThrow() throws Exception {
-        CompletableFuture<RecordMetadata> failedFuture = new CompletableFuture<>();
-        failedFuture.completeExceptionally(new ExecutionException("Kafka down", new RuntimeException()));
-        when(mockKafkaProducer.send(any(ProducerRecord.class))).thenReturn(failedFuture);
+    void testPublishEvent_kafkaFailure_returnsEventId_doesNotThrow() throws Exception {
+        stubSendWithFailureCallback(new RuntimeException("Kafka down"));
 
         String eventId = asyncIngestionProducer.publishEvent(
                 AsyncIngestionEventType.BULK_CREATE_OR_UPDATE,
@@ -115,25 +131,7 @@ class AsyncIngestionProducerTest {
                 Map.of("entities", "test"),
                 createTestRequestMetadata());
 
-        assertNull(eventId, "eventId should be null on Kafka failure");
-    }
-
-    // =================== Test 3: Timeout ===================
-
-    @Test
-    void testPublishEvent_timeout_returnsNull_doesNotThrow() throws Exception {
-        @SuppressWarnings("unchecked")
-        Future<RecordMetadata> slowFuture = mock(Future.class);
-        when(slowFuture.get(anyLong(), any())).thenThrow(new TimeoutException("send timed out"));
-        when(mockKafkaProducer.send(any(ProducerRecord.class))).thenReturn(slowFuture);
-
-        String eventId = asyncIngestionProducer.publishEvent(
-                AsyncIngestionEventType.DELETE_BY_GUID,
-                Map.of(),
-                Map.of("guids", "g1"),
-                createTestRequestMetadata());
-
-        assertNull(eventId, "eventId should be null on timeout");
+        assertNotNull(eventId, "eventId should be non-null even on async Kafka failure (fire-and-forget)");
     }
 
     // =================== Test 4: Lazy producer init ===================
@@ -159,10 +157,7 @@ class AsyncIngestionProducerTest {
     @SuppressWarnings("unchecked")
     @Test
     void testPublishEvent_correctJsonSchema() throws Exception {
-        RecordMetadata recordMetadata = new RecordMetadata(
-                new TopicPartition("TEST_ASYNC_ENTITIES", 0), 0L, 0L, 0L, 0L, 0, 0);
-        Future<RecordMetadata> future = CompletableFuture.completedFuture(recordMetadata);
-        when(mockKafkaProducer.send(any(ProducerRecord.class))).thenReturn(future);
+        stubSendWithSuccessCallback();
 
         RequestMetadata rm = createTestRequestMetadata();
         Map<String, Object> opMeta = Map.of("replaceClassifications", false, "replaceTags", true);
@@ -171,7 +166,7 @@ class AsyncIngestionProducerTest {
         asyncIngestionProducer.publishEvent(AsyncIngestionEventType.BULK_CREATE_OR_UPDATE, opMeta, payload, rm);
 
         ArgumentCaptor<ProducerRecord<String, String>> captor = ArgumentCaptor.forClass(ProducerRecord.class);
-        verify(mockKafkaProducer).send(captor.capture());
+        verify(mockKafkaProducer).send(captor.capture(), any(Callback.class));
 
         ProducerRecord<String, String> record = captor.getValue();
         JsonNode json = MAPPER.readTree(record.value());
@@ -196,16 +191,13 @@ class AsyncIngestionProducerTest {
     @SuppressWarnings("unchecked")
     @Test
     void testPublishEvent_recordKeyIsEventId() throws Exception {
-        RecordMetadata recordMetadata = new RecordMetadata(
-                new TopicPartition("TEST_ASYNC_ENTITIES", 0), 0L, 0L, 0L, 0L, 0, 0);
-        Future<RecordMetadata> future = CompletableFuture.completedFuture(recordMetadata);
-        when(mockKafkaProducer.send(any(ProducerRecord.class))).thenReturn(future);
+        stubSendWithSuccessCallback();
 
         String eventId = asyncIngestionProducer.publishEvent(
                 AsyncIngestionEventType.BULK_CREATE_OR_UPDATE, Map.of(), Map.of(), createTestRequestMetadata());
 
         ArgumentCaptor<ProducerRecord<String, String>> captor = ArgumentCaptor.forClass(ProducerRecord.class);
-        verify(mockKafkaProducer).send(captor.capture());
+        verify(mockKafkaProducer).send(captor.capture(), any(Callback.class));
 
         ProducerRecord<String, String> record = captor.getValue();
         assertEquals(eventId, record.key(), "ProducerRecord key should match eventId");
@@ -218,10 +210,7 @@ class AsyncIngestionProducerTest {
 
     @Test
     void testMetrics_successIncrementsCounter() throws Exception {
-        RecordMetadata recordMetadata = new RecordMetadata(
-                new TopicPartition("TEST_ASYNC_ENTITIES", 0), 0L, 0L, 0L, 0L, 0, 0);
-        Future<RecordMetadata> future = CompletableFuture.completedFuture(recordMetadata);
-        when(mockKafkaProducer.send(any(ProducerRecord.class))).thenReturn(future);
+        stubSendWithSuccessCallback();
 
         Counter successCounter = meterRegistry.find("async.ingestion.producer.send.success").counter();
         double before = successCounter != null ? successCounter.count() : 0;
@@ -237,9 +226,7 @@ class AsyncIngestionProducerTest {
 
     @Test
     void testMetrics_failureIncrementsCounter() throws Exception {
-        CompletableFuture<RecordMetadata> failedFuture = new CompletableFuture<>();
-        failedFuture.completeExceptionally(new ExecutionException("fail", new RuntimeException()));
-        when(mockKafkaProducer.send(any(ProducerRecord.class))).thenReturn(failedFuture);
+        stubSendWithFailureCallback(new RuntimeException("Kafka fail"));
 
         Counter failCounter = meterRegistry.find("async.ingestion.producer.send.failure").counter();
         double before = failCounter != null ? failCounter.count() : 0;

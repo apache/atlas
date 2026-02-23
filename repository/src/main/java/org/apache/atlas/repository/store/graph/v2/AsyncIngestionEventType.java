@@ -28,6 +28,8 @@ public final class AsyncIngestionEventType {
     public static final String DELETE_RELATIONSHIP_BY_GUID    = "DELETE_RELATIONSHIP_BY_GUID";
     public static final String DELETE_RELATIONSHIPS_BY_GUIDS  = "DELETE_RELATIONSHIPS_BY_GUIDS";
     public static final String RELATIONSHIP_CREATE            = "RELATIONSHIP_CREATE";
+    public static final String RELATIONSHIP_BULK_CREATE_OR_UPDATE = "RELATIONSHIP_BULK_CREATE_OR_UPDATE";
+    public static final String RELATIONSHIP_UPDATE            = "RELATIONSHIP_UPDATE";
 
     // ---- Business metadata mutations (EntityREST) ----
     public static final String ADD_OR_UPDATE_BUSINESS_ATTRIBUTES              = "ADD_OR_UPDATE_BUSINESS_ATTRIBUTES";

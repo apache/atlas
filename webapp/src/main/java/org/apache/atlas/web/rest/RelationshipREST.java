@@ -100,7 +100,9 @@ public class RelationshipREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.createOrUpdate(" + relationships + ")");
             }
 
-            return relationshipStore.createOrUpdate(relationships);
+            List<AtlasRelationship> result = relationshipStore.createOrUpdate(relationships);
+            publishRelationshipAsyncEvent(AsyncIngestionEventType.RELATIONSHIP_BULK_CREATE_OR_UPDATE, Map.of(), result);
+            return result;
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -119,7 +121,9 @@ public class RelationshipREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.update(" + relationship + ")");
             }
 
-            return relationshipStore.update(relationship);
+            AtlasRelationship result = relationshipStore.update(relationship);
+            publishRelationshipAsyncEvent(AsyncIngestionEventType.RELATIONSHIP_UPDATE, Map.of(), result);
+            return result;
         } finally {
             AtlasPerfTracer.log(perf);
         }

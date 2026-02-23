@@ -11,7 +11,6 @@ import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -21,8 +20,6 @@ import javax.annotation.PreDestroy;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Kafka producer for async ingestion events.
@@ -123,16 +120,21 @@ public class AsyncIngestionProducer {
 
             Timer.Sample sample = sendLatencyTimer != null ? Timer.start() : null;
 
-            Future<RecordMetadata> future = p.send(record);
-            RecordMetadata metadata = future.get(sendTimeoutMs, TimeUnit.MILLISECONDS);
-
-            if (sample != null && sendLatencyTimer != null) {
-                sample.stop(sendLatencyTimer);
-            }
-            incrementSuccess();
-
-            LOG.debug("AsyncIngestionProducer: published {} event {} to {}@{}", eventType, eventId,
-                    metadata.topic(), metadata.partition());
+            String evtType = eventType;
+            String evtId = eventId;
+            p.send(record, (metadata, exception) -> {
+                if (sample != null && sendLatencyTimer != null) {
+                    sample.stop(sendLatencyTimer);
+                }
+                if (exception != null) {
+                    LOG.error("AsyncIngestionProducer: failed to publish {} event {} (non-fatal)", evtType, evtId, exception);
+                    incrementFailure();
+                } else {
+                    incrementSuccess();
+                    LOG.debug("AsyncIngestionProducer: published {} event {} to {}@{}", evtType, evtId,
+                            metadata.topic(), metadata.partition());
+                }
+            });
             return eventId;
 
         } catch (Exception e) {
