@@ -106,13 +106,13 @@ class BulkPurgeServiceTest {
     @Test
     void testBulkPurgeByConnection_nullConnectionQN_throwsException() {
         assertThrows(AtlasBaseException.class,
-                () -> bulkPurgeService.bulkPurgeByConnection(null, "admin"));
+                () -> bulkPurgeService.bulkPurgeByConnection(null, "admin", false));
     }
 
     @Test
     void testBulkPurgeByConnection_emptyConnectionQN_throwsException() {
         assertThrows(AtlasBaseException.class,
-                () -> bulkPurgeService.bulkPurgeByConnection("", "admin"));
+                () -> bulkPurgeService.bulkPurgeByConnection("", "admin", false));
     }
 
     @Test
@@ -123,7 +123,7 @@ class BulkPurgeServiceTest {
                 .thenReturn(null);
 
         AtlasBaseException ex = assertThrows(AtlasBaseException.class,
-                () -> bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin"));
+                () -> bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false));
         assertTrue(ex.getMessage().contains("Connection not found"));
     }
 
@@ -155,7 +155,7 @@ class BulkPurgeServiceTest {
         when(mockRedisService.getValue(anyString())).thenReturn(null);
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
 
-        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
+        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         assertNotNull(requestId);
         assertFalse(requestId.isEmpty());
@@ -190,7 +190,7 @@ class BulkPurgeServiceTest {
         when(mockRedisService.getValue("bulk_purge:" + TEST_CONNECTION_QN)).thenReturn(runningStatus);
 
         AtlasBaseException ex = assertThrows(AtlasBaseException.class,
-                () -> bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin"));
+                () -> bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false));
         assertTrue(ex.getMessage().contains("already in progress"));
     }
 
@@ -211,7 +211,7 @@ class BulkPurgeServiceTest {
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
 
         // Should NOT throw — stale lock should be overridden
-        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
+        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
         assertNotNull(requestId);
     }
 
@@ -263,7 +263,7 @@ class BulkPurgeServiceTest {
         // Set up ES mock to make purge take a while (large count, slow scroll)
         setupFullEsMock(100000, Collections.emptyList());
 
-        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
+        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Cancel immediately — purge is in activePurges synchronously after submit
         boolean cancelled = bulkPurgeService.cancelPurge(requestId);
@@ -298,7 +298,7 @@ class BulkPurgeServiceTest {
         when(v2.getEdges(AtlasEdgeDirection.BOTH)).thenReturn(Collections.emptyList());
         when(v2.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class))).thenReturn(Collections.emptyList());
 
-        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
+        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Verify graph operations occurred (using timeout for async)
         verify(mockGraph, timeout(5000).atLeastOnce()).getVertex("vertex-1");
@@ -325,7 +325,7 @@ class BulkPurgeServiceTest {
         // Vertex already deleted — returns null
         when(mockGraph.getVertex("deleted-vertex")).thenReturn(null);
 
-        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
+        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Verify commit was called (batch completes even with null vertices)
         verify(mockGraph, timeout(5000).atLeastOnce()).commit();
@@ -344,7 +344,7 @@ class BulkPurgeServiceTest {
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(false);
 
-        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
+        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // The status should be stored in Redis with FAILED (using timeout for async)
         verify(mockRedisService, timeout(5000).atLeastOnce()).putValue(
@@ -396,7 +396,7 @@ class BulkPurgeServiceTest {
         when(mockTaskNotificationSender.createHasLineageCalculationTasks(anyMap()))
                 .thenReturn(mockNotification);
 
-        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
+        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Verify lineage repair tasks were queued (using timeout for async)
         verify(mockTaskNotificationSender, timeout(5000).atLeastOnce()).createHasLineageCalculationTasks(anyMap());
@@ -418,7 +418,7 @@ class BulkPurgeServiceTest {
 
         setupFullEsMock(0, Collections.emptyList()); // No entities — fast path
 
-        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
+        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Verify audit event was written (using timeout for async)
         verify(mockAuditRepository, timeout(5000).atLeastOnce()).putEventsV2(any(EntityAuditEventV2.class));
@@ -440,7 +440,7 @@ class BulkPurgeServiceTest {
         // 5000 entities → should auto-scale to 1 worker (< 10000)
         setupFullEsMock(5000, Collections.emptyList()); // empty scroll to finish quickly
 
-        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
+        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Verify workerCount=1 was set in Redis status (using timeout for async)
         verify(mockRedisService, timeout(5000).atLeastOnce()).putValue(
@@ -455,7 +455,7 @@ class BulkPurgeServiceTest {
     void testPurgeContext_toStatusMap_containsAllFields() {
         BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
                 "req-123", "default/snowflake/1234567890", "CONNECTION", "admin",
-                "{\"query\":{\"term\":{\"connectionQualifiedName\":\"default/snowflake/1234567890\"}}}");
+                "{\"query\":{\"prefix\":{\"__qualifiedNameHierarchy\":\"default/snowflake/1234567890/\"}}}", true);
         ctx.status = "RUNNING";
         ctx.totalDiscovered = 5000;
         ctx.workerCount = 4;
@@ -478,13 +478,15 @@ class BulkPurgeServiceTest {
         assertEquals(25, statusMap.get("completedBatches"));
         assertEquals(24, statusMap.get("lastProcessedBatchIndex"));
         assertEquals(4, statusMap.get("workerCount"));
+        assertEquals(true, statusMap.get("deleteConnection"));
+        assertEquals(false, statusMap.get("connectionDeleted"));
         assertFalse(statusMap.containsKey("error"));
     }
 
     @Test
     void testPurgeContext_toStatusMap_includesErrorWhenSet() {
         BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
-                "req-456", "key", "CONNECTION", "admin", "{}");
+                "req-456", "key", "CONNECTION", "admin", "{}", false);
         ctx.status = "FAILED";
         ctx.error = "Connection timeout";
 
@@ -496,7 +498,7 @@ class BulkPurgeServiceTest {
     @Test
     void testPurgeContext_toJson_producesValidJson() throws Exception {
         BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
-                "req-789", "key", "QUALIFIED_NAME_PREFIX", "admin", "{}");
+                "req-789", "key", "QUALIFIED_NAME_PREFIX", "admin", "{}", false);
         ctx.status = "PENDING";
 
         String json = ctx.toJson();
@@ -531,7 +533,7 @@ class BulkPurgeServiceTest {
     // ======================== ES Query Builder Tests ========================
 
     @Test
-    void testBulkPurgeByConnection_generatesTermQuery() throws Exception {
+    void testBulkPurgeByConnection_generatesPrefixQueryWithTrailingSlash() throws Exception {
         mockedGraphUtils.when(() -> AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(
                 eq(mockGraph), eq(Constants.CONNECTION_ENTITY_TYPE),
                 eq(Constants.QUALIFIED_NAME), eq(TEST_CONNECTION_QN)))
@@ -540,12 +542,15 @@ class BulkPurgeServiceTest {
         when(mockRedisService.getValue(anyString())).thenReturn(null);
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
 
-        bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
+        bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
-        // Verify Redis was written with the initial PENDING status containing a term query
+        // Verify the ES query uses a prefix on __qualifiedNameHierarchy with trailing "/"
+        // so the Connection entity itself is excluded from purge results
         verify(mockRedisService, atLeastOnce()).putValue(
                 argThat(key -> key.startsWith("bulk_purge:")),
-                argThat(json -> json.contains("PENDING")),
+                argThat(json -> json.contains("prefix") &&
+                        json.contains(Constants.QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY) &&
+                        json.contains(TEST_CONNECTION_QN + "/")),
                 anyInt());
     }
 

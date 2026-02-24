@@ -61,19 +61,21 @@ public class BulkPurgeREST {
 
     /**
      * Submit a bulk purge request for all assets belonging to a connection.
-     * The Connection entity itself is NOT deleted.
+     * The Connection entity itself is NOT deleted unless {@code deleteConnection} is true.
      *
      * @param connectionQualifiedName the qualifiedName of the connection whose assets to purge
+     * @param deleteConnection        if true, delete the Connection entity after all child assets are purged (default: false)
      * @return requestId for tracking the purge progress
      */
     @POST
     @Path("/connection")
-    public Response purgeByConnection(@QueryParam("connectionQualifiedName") String connectionQualifiedName) throws AtlasBaseException {
+    public Response purgeByConnection(@QueryParam("connectionQualifiedName") String connectionQualifiedName,
+                                      @QueryParam("deleteConnection") @DefaultValue("false") boolean deleteConnection) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "BulkPurgeREST.purgeByConnection(" + connectionQualifiedName + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "BulkPurgeREST.purgeByConnection(" + connectionQualifiedName + ", deleteConnection=" + deleteConnection + ")");
             }
 
             if (StringUtils.isBlank(connectionQualifiedName)) {
@@ -86,16 +88,17 @@ public class BulkPurgeREST {
                     "Bulk purge by connection : " + connectionQualifiedName);
 
             String submittedBy = RequestContext.getCurrentUser();
-            String requestId = bulkPurgeService.bulkPurgeByConnection(connectionQualifiedName, submittedBy);
+            String requestId = bulkPurgeService.bulkPurgeByConnection(connectionQualifiedName, submittedBy, deleteConnection);
 
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("requestId", requestId);
             response.put("purgeKey", connectionQualifiedName);
             response.put("purgeMode", "CONNECTION");
+            response.put("deleteConnection", deleteConnection);
             response.put("message", "Bulk purge submitted successfully");
 
-            LOG.info("BulkPurge: Connection purge submitted by {} for {}, requestId={}",
-                    submittedBy, connectionQualifiedName, requestId);
+            LOG.info("BulkPurge: Connection purge submitted by {} for {}, deleteConnection={}, requestId={}",
+                    submittedBy, connectionQualifiedName, deleteConnection, requestId);
 
             return Response.ok(response).build();
         } finally {

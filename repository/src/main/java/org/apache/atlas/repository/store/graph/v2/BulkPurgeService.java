@@ -110,9 +110,13 @@ public class BulkPurgeService {
 
     /**
      * Purge all assets belonging to a connection.
-     * The Connection entity itself is NOT deleted.
+     * The Connection entity itself is NOT deleted unless {@code deleteConnection} is true.
+     *
+     * @param connectionQN     qualifiedName of the connection
+     * @param submittedBy      user who submitted the request
+     * @param deleteConnection if true, delete the Connection entity after all child assets are purged
      */
-    public String bulkPurgeByConnection(String connectionQN, String submittedBy) throws AtlasBaseException {
+    public String bulkPurgeByConnection(String connectionQN, String submittedBy, boolean deleteConnection) throws AtlasBaseException {
         if (connectionQN == null || connectionQN.isEmpty()) {
             throw new AtlasBaseException("connectionQualifiedName is required");
         }
@@ -124,11 +128,14 @@ public class BulkPurgeService {
             throw new AtlasBaseException("Connection not found: " + connectionQN);
         }
 
-        // ES query: prefix on __qualifiedNameHierarchy (connection QN is a prefix of all asset QNs)
-        // Note: connectionQualifiedName is not always in the ES vertex index, but
-        // __qualifiedNameHierarchy is always indexed by JanusGraph and contains the qualifiedName.
-        String esQuery = buildPrefixQuery(QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, connectionQN);
-        return submitPurge(connectionQN, PURGE_MODE_CONNECTION, esQuery, submittedBy);
+        // ES query: prefix on __qualifiedNameHierarchy matching child assets only.
+        // Append "/" so the prefix matches children but NOT the Connection entity itself:
+        //   Connection QN "default/snowflake/123" → hierarchy value "default/snowflake/123" (no trailing /)
+        //   Child QN      "default/snowflake/123/db" → hierarchy includes "default/snowflake/123/db"
+        // Prefix "default/snowflake/123/" matches children but not the connection.
+        // This also prevents prefix collisions between connections (e.g. "123" vs "1234").
+        String esQuery = buildPrefixQuery(QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, connectionQN + "/");
+        return submitPurge(connectionQN, PURGE_MODE_CONNECTION, esQuery, submittedBy, deleteConnection);
     }
 
     /**
@@ -141,7 +148,7 @@ public class BulkPurgeService {
 
         // ES query: prefix on __qualifiedNameHierarchy (always indexed by JanusGraph)
         String esQuery = buildPrefixQuery(QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, qualifiedNamePrefix);
-        return submitPurge(qualifiedNamePrefix, PURGE_MODE_QN_PREFIX, esQuery, submittedBy);
+        return submitPurge(qualifiedNamePrefix, PURGE_MODE_QN_PREFIX, esQuery, submittedBy, false);
     }
 
     /**
@@ -185,7 +192,7 @@ public class BulkPurgeService {
 
     // ======================== PRIVATE METHODS ========================
 
-    private String submitPurge(String purgeKey, String purgeMode, String esQuery, String submittedBy) throws AtlasBaseException {
+    private String submitPurge(String purgeKey, String purgeMode, String esQuery, String submittedBy, boolean deleteConnection) throws AtlasBaseException {
         String redisKey = REDIS_KEY_PREFIX + purgeKey;
         String lockKey  = REDIS_LOCK_PREFIX + purgeKey;
 
@@ -214,7 +221,7 @@ public class BulkPurgeService {
         String requestId = UUID.randomUUID().toString();
 
         // Write initial status
-        PurgeContext ctx = new PurgeContext(requestId, purgeKey, purgeMode, submittedBy, esQuery);
+        PurgeContext ctx = new PurgeContext(requestId, purgeKey, purgeMode, submittedBy, esQuery, deleteConnection);
         ctx.status = "PENDING";
         writeRedisStatus(ctx);
 
@@ -276,6 +283,12 @@ public class BulkPurgeService {
                 // Phase 3: Post-purge reconciliation
                 esCleanup(ctx);
                 queueLineageRecalcTasks(ctx);
+
+                // Phase 4: Delete the Connection entity itself (if requested)
+                if (ctx.deleteConnection && PURGE_MODE_CONNECTION.equals(ctx.purgeMode)) {
+                    deleteConnectionVertex(ctx);
+                }
+
                 writeSummaryAuditEvent(ctx, startTime);
 
                 ctx.status = "COMPLETED";
@@ -622,6 +635,46 @@ public class BulkPurgeService {
     }
 
     /**
+     * Phase 4: Delete the Connection vertex itself after all child assets have been purged.
+     */
+    private void deleteConnectionVertex(PurgeContext ctx) {
+        try {
+            AtlasVertex connVertex = AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(graph,
+                    CONNECTION_ENTITY_TYPE, QUALIFIED_NAME, ctx.purgeKey);
+            if (connVertex == null) {
+                LOG.warn("BulkPurge: Connection vertex not found for deletion: {}", ctx.purgeKey);
+                return;
+            }
+
+            // Remove all edges
+            Iterable<AtlasEdge> edges = connVertex.getEdges(AtlasEdgeDirection.BOTH);
+            for (AtlasEdge edge : edges) {
+                try {
+                    graph.removeEdge(edge);
+                } catch (Exception e) {
+                    LOG.debug("BulkPurge: Could not remove edge {} from connection vertex", edge.getId(), e);
+                }
+            }
+
+            graph.removeVertex(connVertex);
+            graph.commit();
+
+            ctx.connectionDeleted = true;
+            ctx.totalDeleted.incrementAndGet();
+
+            LOG.info("BulkPurge: Connection entity deleted for purgeKey={}", ctx.purgeKey);
+        } catch (Exception e) {
+            LOG.error("BulkPurge: Failed to delete Connection entity for purgeKey={}", ctx.purgeKey, e);
+            ctx.error = "Child assets purged but Connection deletion failed: " + e.getMessage();
+            try {
+                graph.rollback();
+            } catch (Exception re) {
+                LOG.warn("BulkPurge: Rollback failed after connection deletion failure", re);
+            }
+        }
+    }
+
+    /**
      * Phase 3b: Queue lineage recalculation tasks for external vertices.
      */
     private void queueLineageRecalcTasks(PurgeContext ctx) {
@@ -801,6 +854,7 @@ public class BulkPurgeService {
         final String       submittedBy;
         final String       esQuery;
         final long         submittedAt;
+        final boolean      deleteConnection;
 
         volatile String    status;
         volatile String    error;
@@ -809,19 +863,21 @@ public class BulkPurgeService {
         volatile int       workerCount;
         volatile int       lastProcessedBatchIndex;
         volatile boolean   cancelRequested;
+        volatile boolean   connectionDeleted;
 
         final AtomicInteger totalDeleted     = new AtomicInteger(0);
         final AtomicInteger totalFailed      = new AtomicInteger(0);
         final AtomicInteger completedBatches = new AtomicInteger(0);
         final Set<String>   externalLineageVertexIds = ConcurrentHashMap.newKeySet();
 
-        PurgeContext(String requestId, String purgeKey, String purgeMode, String submittedBy, String esQuery) {
-            this.requestId   = requestId;
-            this.purgeKey    = purgeKey;
-            this.purgeMode   = purgeMode;
-            this.submittedBy = submittedBy;
-            this.esQuery     = esQuery;
-            this.submittedAt = System.currentTimeMillis();
+        PurgeContext(String requestId, String purgeKey, String purgeMode, String submittedBy, String esQuery, boolean deleteConnection) {
+            this.requestId        = requestId;
+            this.purgeKey         = purgeKey;
+            this.purgeMode        = purgeMode;
+            this.submittedBy      = submittedBy;
+            this.esQuery          = esQuery;
+            this.submittedAt      = System.currentTimeMillis();
+            this.deleteConnection = deleteConnection;
         }
 
         String toJson() {
@@ -848,6 +904,8 @@ public class BulkPurgeService {
             map.put("lastHeartbeat", lastHeartbeat);
             map.put("workerCount", workerCount);
             map.put("batchSize", AtlasConfiguration.BULK_PURGE_BATCH_SIZE.getInt());
+            map.put("deleteConnection", deleteConnection);
+            map.put("connectionDeleted", connectionDeleted);
             if (error != null) {
                 map.put("error", error);
             }
