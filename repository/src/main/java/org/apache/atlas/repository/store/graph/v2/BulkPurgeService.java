@@ -124,8 +124,10 @@ public class BulkPurgeService {
             throw new AtlasBaseException("Connection not found: " + connectionQN);
         }
 
-        // ES query: termQuery on connectionQualifiedName
-        String esQuery = buildTermQuery(CONNECTION_QUALIFIED_NAME, connectionQN);
+        // ES query: prefix on __qualifiedNameHierarchy (connection QN is a prefix of all asset QNs)
+        // Note: connectionQualifiedName is not always in the ES vertex index, but
+        // __qualifiedNameHierarchy is always indexed by JanusGraph and contains the qualifiedName.
+        String esQuery = buildPrefixQuery(QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, connectionQN);
         return submitPurge(connectionQN, PURGE_MODE_CONNECTION, esQuery, submittedBy);
     }
 
@@ -137,8 +139,8 @@ public class BulkPurgeService {
             throw new AtlasBaseException("qualifiedName prefix must be at least " + MIN_QN_PREFIX_LENGTH + " characters");
         }
 
-        // ES query: prefixQuery on qualifiedName
-        String esQuery = buildPrefixQuery(QUALIFIED_NAME, qualifiedNamePrefix);
+        // ES query: prefix on __qualifiedNameHierarchy (always indexed by JanusGraph)
+        String esQuery = buildPrefixQuery(QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, qualifiedNamePrefix);
         return submitPurge(qualifiedNamePrefix, PURGE_MODE_QN_PREFIX, esQuery, submittedBy);
     }
 
