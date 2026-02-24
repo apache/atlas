@@ -768,7 +768,7 @@ define(['require',
                     cell: "select-row",
                     resizeable: false,
                     orderable: false,
-                    renderable: (columnToShow ? _.contains(columnToShow, 'selected') : true),
+                    renderable: (columnToShow ? _.includes(columnToShow, 'selected') : true),
                     headerCell: "select-all"
                 };
 
@@ -908,7 +908,7 @@ define(['require',
                         resizeable: true,
                         orderable: true,
                         sortable: true,
-                        renderable: (columnToShow ? _.contains(columnToShow, 'typeName') : true),
+                        renderable: (columnToShow ? _.includes(columnToShow, 'typeName') : true),
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
@@ -919,7 +919,7 @@ define(['require',
                         })
                     };
                     this.getTagCol({ 'col': col, 'columnToShow': columnToShow });
-                    if ((!_.contains(["glossary"], this.fromView))) {
+                    if ((!_.includes(["glossary"], this.fromView))) {
                         this.getTermCol({ 'col': col, 'columnToShow': columnToShow });
                     }
 
@@ -969,7 +969,7 @@ define(['require',
                             attrObj = attrObj.concat(businessMetadataAttr);
                             _.each(attrObj, function(obj, key) {
                                 var key = obj.name,
-                                    isRenderable = _.contains(columnToShow, key),
+                                    isRenderable = _.includes(columnToShow, key),
                                     // isSortable = obj.typeName.search(/(array|map)/i) == -1, // commented : as sorting is required for all the columns except classifications and terms
                                     isSortable = obj.typeName.search(/(string|date|boolean|int|number|byte|float|long|double|short)/i) == 0, // commented : as sorting is required for all the columns except non-primitive types
                                     columnLabel;
@@ -1123,7 +1123,7 @@ define(['require',
                         sortable: false,
                         resizeable: true,
                         orderable: true,
-                        renderable: (columnToShow ? _.contains(columnToShow, 'tag') : true),
+                        renderable: (columnToShow ? _.includes(columnToShow, 'tag') : true),
                         className: 'searchTag',
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
@@ -1154,7 +1154,7 @@ define(['require',
                         sortable: false,
                         resizeable: true,
                         orderable: true,
-                        renderable: (columnToShow ? _.contains(columnToShow, 'term') : true),
+                        renderable: (columnToShow ? _.includes(columnToShow, 'term') : true),
                         className: 'searchTag',
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {

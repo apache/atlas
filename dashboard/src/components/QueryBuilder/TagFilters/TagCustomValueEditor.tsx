@@ -63,6 +63,10 @@ export const TagCustomValueEditor = (props: ValueEditorProps) => {
         .sort()
     : [];
 
+  if (props.operator === "is_null" || props.operator === "not_null") {
+    return null;
+  }
+
   if (props.field == "__typeName") {
     return (
       <Autocomplete
@@ -176,9 +180,6 @@ export const TagCustomValueEditor = (props: ValueEditorProps) => {
         showTimeInput
       />
     );
-  }
-  if (props.operator === "is_null" || props.operator === "not_null") {
-    return;
   }
   return <ValueEditor {...props} />;
 };

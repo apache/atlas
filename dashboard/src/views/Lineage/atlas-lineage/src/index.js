@@ -715,9 +715,9 @@ export default class LineageHelper {
     if (this.options.legends === false) {
       return;
     }
-    var container = select(this.options.legendsEl || this.options.el)
-      .insert("div", ":first-child")
-      .classed("legends", true);
+    var parent = select(this.options.legendsEl || this.options.el);
+    parent.selectAll("div.legends").remove();
+    var container = parent.insert("div", ":first-child").classed("legends", true);
 
     let span = container.append("span").style("color", "#fb4200");
     span.append("i").classed("fa fa-circle-o fa-fw", true);

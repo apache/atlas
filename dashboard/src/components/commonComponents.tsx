@@ -21,6 +21,7 @@ import { IconButton } from "../components/muiComponents";
 
 import {
   dateFormat,
+  escapeHtml,
   extractKeyValueFromEntity,
   formatedDate,
   isArray,
@@ -113,7 +114,9 @@ export const ExtractObject = (props: any) => {
       if (tempVarfor$check.indexOf("$") == -1) {
         let tmpVal = getValue(inputOutputField as any);
 
-        valueOfArray.push('<span class="json-string">' + tmpVal + "</span>");
+        valueOfArray.push(
+          '<span class="json-string">' + escapeHtml(String(tmpVal)) + "</span>"
+        );
       }
     } else if (isObject(inputOutputField) && id == undefined) {
       let attributesList = inputOutputField;
