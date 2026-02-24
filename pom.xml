@@ -133,7 +133,7 @@
         <jackson.version>2.12.7</jackson.version>
         <jacoco.version>0.8.13</jacoco.version>
         <janusgraph.cassandra.version>0.5.3</janusgraph.cassandra.version>
-        <janusgraph.version>1.0.0</janusgraph.version>
+        <janusgraph.version>1.1.0</janusgraph.version>
         <java.version.required>1.8</java.version.required>
         <javac.source.version>1.8</javac.source.version>
         <javac.target.version>1.8</javac.target.version>
@@ -195,7 +195,7 @@
         <surefire.forkCount>2C</surefire.forkCount>
         <surefire.version>3.0.0-M5</surefire.version>
         <testng.version>7.0.0</testng.version>
-        <tinkerpop.version>3.7.0</tinkerpop.version>
+        <tinkerpop.version>3.7.5</tinkerpop.version>
         <woodstox-core.version>5.0.3</woodstox-core.version>
         <zookeeper.version>3.9.2</zookeeper.version>
     </properties>
@@ -1018,7 +1018,7 @@
         <dependency>
             <groupId>cglib</groupId>
             <artifactId>cglib</artifactId>
-            <version>2.2.2</version>
+            <version>3.3.0</version>
         </dependency>
 
         <dependency>
