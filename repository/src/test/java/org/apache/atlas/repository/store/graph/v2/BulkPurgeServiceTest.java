@@ -330,7 +330,7 @@ class BulkPurgeServiceTest {
         // Verify commit was called (batch completes even with null vertices)
         verify(mockGraph, timeout(5000).atLeastOnce()).commit();
         // Verify no removeVertex was called (vertex was null)
-        verify(mockGraph, timeout(5000).never()).removeVertex(any());
+        verify(mockGraph, never()).removeVertex(any());
     }
 
     @Test
