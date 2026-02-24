@@ -16,14 +16,16 @@
 name: Mothership PR Code Review
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches: [master, staging]
-    paths:
-      - '**.java'
-      - '**.xml'
-      - 'pom.xml'
-      - '**/pom.xml'
+  workflow_dispatch: # Disabled — replaced by Claude PR Review (claude.yml)
+  # pull_request:
+  #   types: [opened, synchronize, reopened]
+  #   branches: [master, staging]
+  #   paths:
+  #     - '**.java'
+  #     - '**.xml'
+  #     - 'pom.xml'
+  #     - '**/pom.xml'
+
 
 # Prevent multiple runs for the same PR
 concurrency:
