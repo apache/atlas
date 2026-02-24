@@ -443,8 +443,24 @@ const noTreeData = () => {
   return [{ id: "No Records Found", label: "No Records Found" }];
 };
 
+export const escapeHtml = (str: string): string => {
+  if (typeof str !== "string") return "";
+  const map: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#x27;"
+  };
+  return str.replace(/[&<>"']/g, (char) => map[char]);
+};
+
 const sanitizeHtmlContent = (htmlContent: HTMLElement | string | any) => {
-  let cleanContent = sanitizeHtml(htmlContent, {
+  const content =
+    typeof htmlContent === "string"
+      ? htmlContent
+      : htmlContent?.toString?.() ?? "";
+  const cleanContent = sanitizeHtml(content, {
     allowedTags: [
       "b",
       "em",
@@ -464,7 +480,9 @@ const sanitizeHtmlContent = (htmlContent: HTMLElement | string | any) => {
     allowedAttributes: {
       a: ["href"]
     },
-    allowedSchemesByTag: ["script", "img", "iframe", "svg", "title"] as any
+    allowedSchemesByTag: {
+      a: ["http", "https", "mailto"]
+    }
   });
   return cleanContent;
 };

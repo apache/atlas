@@ -18,7 +18,7 @@
 import { Typography } from "@components/muiComponents";
 import { useState } from "react";
 import MuiLink from "@mui/material/Link";
-import { isEmpty } from "@utils/Utils";
+import { isEmpty, sanitizeHtmlContent } from "@utils/Utils";
 
 const ShowMoreText = ({
   value = "",
@@ -41,13 +41,14 @@ const ShowMoreText = ({
   const displayValue = shouldTruncate
     ? value.substring(0, maxLength) + "..."
     : value;
+  const safeValue = isHtml ? sanitizeHtmlContent(displayValue) : displayValue;
 
   return (
     <>
       {isHtml ? (
         <div
           className="long-descriptions"
-          dangerouslySetInnerHTML={{ __html: displayValue }}
+          dangerouslySetInnerHTML={{ __html: safeValue }}
         />
       ) : (
         displayValue

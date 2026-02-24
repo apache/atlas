@@ -18,10 +18,23 @@
 
 const https = require("https");
 const fs = require("fs");
+const path = require("path");
 const { parseString } = require("xml2js");
 
 const POM_URL = "https://raw.githubusercontent.com/apache/atlas/master/pom.xml";
 const OUTPUT_PATH = "src/resources/data/team.json";
+const LOCAL_POM = path.join(__dirname, "..", "..", "pom.xml");
+
+function writeEmptyTeam() {
+  const outputDir = path.dirname(OUTPUT_PATH);
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  if (!fs.existsSync(OUTPUT_PATH)) {
+    fs.writeFileSync(OUTPUT_PATH, JSON.stringify([], null, 2));
+    console.log(`✅ Created empty ${OUTPUT_PATH} (fallback)`);
+  }
+}
 
 function fetchXML(url) {
   return new Promise((resolve, reject) => {
@@ -84,7 +97,44 @@ function fetchXML(url) {
       console.log(`✅ Team data written to ${OUTPUT_PATH}`);
     });
   } catch (err) {
-    console.error("❌ Failed to fetch pom.xml:", err.message);
-    process.exit(1);
+    console.warn("⚠️ Failed to fetch pom.xml (network unavailable):", err.message);
+    console.warn("   Trying local pom.xml as fallback...");
+    try {
+      const xmlData = fs.readFileSync(LOCAL_POM, "utf8");
+      parseString(xmlData, (parseErr, result) => {
+        if (parseErr) {
+          writeEmptyTeam();
+          return;
+        }
+        let developersList = [];
+        if (
+          result &&
+          result.project &&
+          result.project.developers &&
+          Array.isArray(result.project.developers) &&
+          result.project.developers[0] &&
+          result.project.developers[0].developer
+        ) {
+          developersList = result.project.developers[0].developer;
+        }
+        const keys = developersList.length > 0 ? Object.keys(developersList[0]) : [];
+        const output = developersList.map(dev => {
+          const obj = {};
+          keys.forEach(k => {
+            obj[k] = dev[k] || [""];
+          });
+          return obj;
+        });
+        const outputDir = path.dirname(OUTPUT_PATH);
+        if (!fs.existsSync(outputDir)) {
+          fs.mkdirSync(outputDir, { recursive: true });
+        }
+        fs.writeFileSync(OUTPUT_PATH, JSON.stringify(output, null, 2));
+        console.log(`✅ Team data written from local pom.xml to ${OUTPUT_PATH}`);
+      });
+    } catch (localErr) {
+      console.warn("   Local pom.xml not found:", localErr.message);
+      writeEmptyTeam();
+    }
   }
 })();

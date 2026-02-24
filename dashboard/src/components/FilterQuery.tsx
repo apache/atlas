@@ -26,6 +26,7 @@ import {
 } from "@utils/Enum";
 import moment from "moment";
 import { useLocation, useNavigate } from "react-router-dom";
+import { globalSearchFilterInitialQuery } from "@utils/Utils";
 
 export const FilterQuery = ({ value }: any) => {
   const location = useLocation();
@@ -104,6 +105,26 @@ export const FilterQuery = ({ value }: any) => {
       searchParams.delete("gtype");
       searchParams.delete("viewType");
       searchParams.delete("guid");
+    }
+
+    if (currentType === "type") {
+      searchParams.delete("entityFilters");
+      globalSearchFilterInitialQuery.setQuery({ entityFilters: [] });
+    }
+    if (currentType === "tag") {
+      searchParams.delete("tagFilters");
+      globalSearchFilterInitialQuery.setQuery({ tagFilters: [] });
+    }
+    if (currentType === "relationshipName") {
+      searchParams.delete("relationshipFilters");
+      globalSearchFilterInitialQuery.setQuery({ relationshipFilters: [] });
+    }
+    if (
+      currentType === "entityFilters" ||
+      currentType === "tagFilters" ||
+      currentType === "relationshipFilters"
+    ) {
+      globalSearchFilterInitialQuery.setQuery({ [currentType]: [] });
     }
 
     searchParams.delete(currentType);

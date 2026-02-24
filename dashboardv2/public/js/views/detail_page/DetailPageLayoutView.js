@@ -281,7 +281,7 @@ define(['require',
                         if (Globals.entityTypeConfList && _.isEmptyArray(Globals.entityTypeConfList)) {
                             this.editEntity = true;
                         } else {
-                            if (_.contains(Globals.entityTypeConfList, collectionJSON.typeName)) {
+                            if (_.includes(Globals.entityTypeConfList, collectionJSON.typeName)) {
                                 this.editEntity = true;
                             }
                         }

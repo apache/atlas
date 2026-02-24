@@ -450,14 +450,9 @@ const Filters = ({
       } else {
         searchParams.delete("entityFilters");
       }
-      navigate(
-        {
-          search: searchParams.toString()
-        },
-        { replace: true }
-      );
     } else {
       isFilterValidate = false;
+      searchParams.delete("entityFilters");
     }
 
     if (!isEmpty(classificationQuery)) {
@@ -482,15 +477,46 @@ const Filters = ({
       } else {
         searchParams.delete("tagFilters");
       }
-      navigate(
-        {
-          search: searchParams.toString()
-        },
-        { replace: true }
-      );
     } else {
       isFilterValidate = false;
+      searchParams.delete("tagFilters");
     }
+
+    if (!isEmpty(relationshipQuery)) {
+      const fieldsArray = fields();
+      const updatedRules = relationshipQuery.rules.map((rule) => {
+        const fieldObj = fieldsArray.find((field) => field.name === rule.field);
+        return {
+          ...rule,
+          type: fieldObj ? fieldObj.type : undefined
+        };
+      });
+      const updatedRelationshipQuery = {
+        ...relationshipQuery,
+        rules: updatedRules
+      };
+      let queryBuilderData = cloneDeep(updatedRelationshipQuery);
+      let ruleUrl;
+      ruleUrl = attributeFilter.generateUrl({
+        value: processCombinators(queryBuilderData),
+        formatedDateToLong: true
+      });
+
+      if (!isEmpty(ruleUrl)) {
+        searchParams.set("relationshipFilters", ruleUrl);
+      } else {
+        searchParams.delete("relationshipFilters");
+      }
+    } else {
+      searchParams.delete("relationshipFilters");
+    }
+
+    navigate(
+      {
+        search: searchParams.toString()
+      },
+      { replace: true }
+    );
 
     if (!isEmpty(entityFilters) || !isEmpty(typeQuery)) {
       globalSearchFilterInitialQuery.setQuery({ ["entityFilters"]: typeQuery });

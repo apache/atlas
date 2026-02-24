@@ -15,11 +15,15 @@
  * limitations under the License.
  */
 
+import { sanitizeHtmlContent } from "@utils/Utils";
+
 const HtmlRenderer = ({ htmlString }: { htmlString: any }) => {
+  const safeHtml =
+    typeof htmlString === "string" ? sanitizeHtmlContent(htmlString) : "";
   return (
     <div
       className="html-content"
-      dangerouslySetInnerHTML={{ __html: htmlString }}
+      dangerouslySetInnerHTML={{ __html: safeHtml }}
     />
   );
 };

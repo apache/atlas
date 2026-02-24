@@ -150,7 +150,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             id = data.guid;
                         }
                         if (value.length > 0) {
-                            scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + getValue(value) + '</a>');
+                            scope.$('td div[data-id="' + _.escape(id) + '"]').html('<a href="#!/detailPage/' + _.escape(id) + '">' + _.escape(getValue(value)) + '</a>');
                         } else {
                             scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + _.escape(id) + '</a>');
                         }
@@ -438,7 +438,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             var generatedQuery = _.map(filterObj.rules, function(obj, key) {
                 var obj = $.extend(true, {}, obj); // not to update the timezone abbr on original obj , copy of obj is used 
                 if (_.has(obj, 'condition')) {
-                    return '&nbsp<span class="operator">' + obj.condition + '</span>&nbsp' + '(' + objToString(obj) + ')';
+                    return '&nbsp<span class="operator">' + _.escape(obj.condition) + '</span>&nbsp' + '(' + objToString(obj) + ')';
                 } else {
                     if (obj.type === "date") {
                         if (Enums.queryBuilderDateRangeUIValueToAPI[obj.value]) {
@@ -456,7 +456,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             var typeKeyValue = '<span class="key">Type:</span>&nbsp<span class="value">' + _.escape(value.type) + '</span>';
             if (entityFilters) {
                 var conditionForEntity = entityFilters.rules.length == 1 ? '' : 'AND';
-                typeKeyValue += '&nbsp<span class="operator">' + conditionForEntity + '</span>&nbsp(<span class="operator">' + entityFilters.condition + '</span>&nbsp(' + objToString(entityFilters) + '))';
+                typeKeyValue += '&nbsp<span class="operator">' + conditionForEntity + '</span>&nbsp(<span class="operator">' + _.escape(entityFilters.condition) + '</span>&nbsp(' + objToString(entityFilters) + '))';
             }
             queryArray.push(typeKeyValue)
         }
@@ -464,7 +464,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             var tagKeyValue = '<span class="key">Classification:</span>&nbsp<span class="value">' + _.escape(value.tag) + '</span>';
             if (tagFilters) {
                 var conditionFortag = tagFilters.rules.length == 1 ? '' : 'AND';
-                tagKeyValue += '&nbsp<span class="operator">' + conditionFortag + '</span>&nbsp(<span class="operator">' + tagFilters.condition + '</span>&nbsp(' + objToString(tagFilters) + '))';
+                tagKeyValue += '&nbsp<span class="operator">' + conditionFortag + '</span>&nbsp(<span class="operator">' + _.escape(tagFilters.condition) + '</span>&nbsp(' + objToString(tagFilters) + '))';
             }
             queryArray.push(tagKeyValue);
         }
@@ -472,7 +472,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             var relationshipKeyValue = '<span class="key">Relationship:</span>&nbsp<span class="value">' + _.escape(value.relationshipName) + '</span>';
             if (relationshipFilters) {
                 var conditionForRealtionship = (relationshipFilters.rules && relationshipFilters.rules.length == 1) ? '' : 'AND';
-                relationshipKeyValue += '&nbsp<span class="operator">' + conditionForRealtionship + '</span>&nbsp(<span class="operator">' + relationshipFilters.condition + '</span>&nbsp(' + objToString(relationshipFilters) + '))';
+                relationshipKeyValue += '&nbsp<span class="operator">' + conditionForRealtionship + '</span>&nbsp(<span class="operator">' + _.escape(relationshipFilters.condition) + '</span>&nbsp(' + objToString(relationshipFilters) + '))';
             }
             queryArray.push(relationshipKeyValue);
         }
@@ -504,13 +504,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         if (!_.isUndefinedNull(val)) {
                             if (k == "attributes") {
                                 val = val.split(',');
-                            } else if (_.contains(["tagFilters", "entityFilters", "relationshipFilters"], k)) {
+                            } else if (_.includes(["tagFilters", "entityFilters", "relationshipFilters"], k)) {
                                 val = CommonViewFunction.attributeFilter.generateAPIObj(val);
-                            } else if (_.contains(["includeDE", "excludeST", "excludeSC"], k)) {
+                            } else if (_.includes(["includeDE", "excludeST", "excludeSC"], k)) {
                                 val = val ? false : true;
                             }
                         }
-                        if (_.contains(["includeDE", "excludeST", "excludeSC"], k)) {
+                        if (_.includes(["includeDE", "excludeST", "excludeSC"], k)) {
                             val = _.isUndefinedNull(val) ? true : val;
                         }
                         if (!obj[skey]) {
@@ -593,7 +593,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                     }
                                 }
                                 val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
-                            } else if (_.contains(["includeDE", "excludeST", "excludeSC"], k)) {
+                            } else if (_.includes(["includeDE", "excludeST", "excludeSC"], k)) {
                                 val = val ? false : true;
                             }
                         }
@@ -631,7 +631,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         }
                         var type = (obj.type || obj.attributeType),
                             //obj.value will come as an object when selected type is Date and operator is isNull or not_null;
-                            value = ((_.isString(obj.value) && _.contains(["is_null", "not_null"], obj.operator) && type === 'date') || _.isObject(obj.value) ? "" : _.trim(obj.value || obj.attributeValue)),
+                            value = ((_.isString(obj.value) && _.includes(["is_null", "not_null"], obj.operator) && type === 'date') || _.isObject(obj.value) ? "" : _.trim(obj.value || obj.attributeValue)),
                             url = [(obj.id || obj.attributeName), mapApiOperatorToUI(obj.operator), value];
                         if (obj.operator === "TIME_RANGE") {
                             if (value.indexOf("-") > -1) {

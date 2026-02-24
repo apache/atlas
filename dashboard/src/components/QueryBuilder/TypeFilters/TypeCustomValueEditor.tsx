@@ -87,6 +87,10 @@ export const TypeCustomValueEditor = (props: ValueEditorProps) => {
         .sort()
     : [];
 
+  if (props.operator === "is_null" || props.operator === "not_null") {
+    return null;
+  }
+
   if (
     props.field == "__classificationNames" ||
     props.field === "__propagatedClassificationNames"
@@ -123,10 +127,6 @@ export const TypeCustomValueEditor = (props: ValueEditorProps) => {
         sx={{ minWidth: "200px" }}
       />
     );
-  }
-
-  if (props.operator === "is_null" || props.operator === "not_null") {
-    return;
   }
 
   const handleTimeRangeChange = (selectedValue: string) => {

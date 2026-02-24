@@ -573,7 +573,7 @@ define(['require',
                         if (!_.isEmpty(data)) {
                             _.each(data.guidEntityMap, function(obj, index) {
                                 var nodeData = that.LineageHelperRef.getNode(obj.guid);
-                                if ((that.filterObj.isProcessHideCheck && obj && obj.isProcess) || (that.filterObj.isDeletedEntityHideCheck && obj && obj.isDeleted) || (Globals.isLineageOnDemandEnabled && obj && _.contains(["Input", "Output"], obj.btnType))) {
+                                if ((that.filterObj.isProcessHideCheck && obj && obj.isProcess) || (that.filterObj.isDeletedEntityHideCheck && obj && obj.isDeleted) || (Globals.isLineageOnDemandEnabled && obj && _.includes(["Input", "Output"], obj.btnType))) {
                                     return;
                                 }
                                 var label = _.escape(obj.displayText);

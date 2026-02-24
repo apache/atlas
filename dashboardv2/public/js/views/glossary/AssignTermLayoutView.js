@@ -217,7 +217,7 @@ define(['require',
                             if (Enums.entityStateReadOnly[entity.model.status]) {
                                 deletedEntity.push(name);
                             } else {
-                                if (_.indexOf((entity.model.meaningNames || _.pluck(entity.model.meanings, 'displayText')), termName) === -1) {
+                                if (_.indexOf((entity.model.meaningNames || _.map(entity.model.meanings, 'displayText')), termName) === -1) {
                                     data.push({ guid: entity.model.guid })
                                 } else {
                                     skipEntity.push(name);

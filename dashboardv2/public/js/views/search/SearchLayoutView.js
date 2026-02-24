@@ -283,7 +283,7 @@ define(['require',
                 }
                 var tagCheck = function(filterObj, type) {
                     var filterAddOn = Enums.addOnClassification.filter(function(a) { a !== Enums.addOnClassification[0] });
-                    if (that.value.tag && !_.contains(filterAddOn, that.value.tag)) {
+                    if (that.value.tag && !_.includes(filterAddOn, that.value.tag)) {
                         that.ui.tagAttrFilter.prop('disabled', false);
                         if (filterObj && filterObj.length) {
                             that.ui.tagAttrFilter.addClass('active');
@@ -572,7 +572,7 @@ define(['require',
                 });
 
                 _.each(_.uniq(serviceArr), function(service) {
-                    serviceStr += '<li><div class="pretty p-switch p-fill"><input type="checkbox" class="pull-left" data-value="' + (service) + '" value="" ' + (_.contains(that.filterTypeSelected, service) ? "checked" : "") + '/><div class="state p-primary"><label>' + (service.toUpperCase()) + '</label></div></div></li>';
+                    serviceStr += '<li><div class="pretty p-switch p-fill"><input type="checkbox" class="pull-left" data-value="' + (service) + '" value="" ' + (_.includes(that.filterTypeSelected, service) ? "checked" : "") + '/><div class="state p-primary"><label>' + (service.toUpperCase()) + '</label></div></div></li>';
                 });
                 var templt = serviceStr + '<hr class="hr-filter"/><div class="text-right"><div class="divider"></div><button class="btn btn-action btn-sm filterDone">Done</button></div>';
                 return templt;
@@ -590,7 +590,7 @@ define(['require',
                     foundNewClassification = false;
                 this.typeHeaders.fullCollection.each(function(model) {
                     var name = Utils.getName(model.toJSON(), 'name');
-                    if (model.get('category') == 'ENTITY' && (serviceTypeToBefiltered && serviceTypeToBefiltered.length ? _.contains(serviceTypeToBefiltered, model.get('serviceType')) : true)) {
+                    if (model.get('category') == 'ENTITY' && (serviceTypeToBefiltered && serviceTypeToBefiltered.length ? _.includes(serviceTypeToBefiltered, model.get('serviceType')) : true)) {
                         var entityCount = (that.entityCountObj.entity.entityActive[name] || 0) + (that.entityCountObj.entity.entityDeleted[name] || 0);
                         typeStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (entityCount ? "(" + _.numberFormatWithComma(entityCount) + ")" : '') + '</option>';
                     }

@@ -57,15 +57,22 @@ module.exports = function(grunt) {
                     hostname: '0.0.0.0',
                     middleware: function(connect, options, middlewares) {
                         middlewares.unshift(require('grunt-middleware-proxy/lib/Utils').getProxyMiddleware());
+                        middlewares.unshift(function(req, res, next) {
+                            if (req.url === '/login.jsp' || req.url.indexOf('/login.jsp') === 0) {
+                                req.url = '/index.html';
+                            }
+                            next();
+                        });
                         return middlewares;
                     }
                 },
                 proxies: [{
-                    context: '/api', // the context of the data service
-                    host: '127.0.0.1',
-                    auth: "admin:admin",
-                    port: 21000, // the port that the data service is running on
-                    https: false
+                    context: '/api/atlas',
+                    host: 'ccycloud-2.prasad-relationshipattribute.root.comops.site',
+                    auth: 'admin:admin',
+                    port: 31000,
+                    https: false,
+                    rewriteHost: true
                 }],
             },
         },
