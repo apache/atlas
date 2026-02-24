@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -62,15 +62,15 @@ import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 public class BulkPurgeService {
     private static final Logger LOG = LoggerFactory.getLogger(BulkPurgeService.class);
 
-    private static final String REDIS_KEY_PREFIX        = "bulk_purge:";
-    private static final String REDIS_LOCK_PREFIX       = "bulk_purge_lock:";
-    private static final String PURGE_MODE_CONNECTION   = "CONNECTION";
-    private static final String PURGE_MODE_QN_PREFIX    = "QUALIFIED_NAME_PREFIX";
-    private static final int    MIN_QN_PREFIX_LENGTH    = 10;
-    private static final ObjectMapper MAPPER            = new ObjectMapper();
+    private static final String REDIS_KEY_PREFIX = "bulk_purge:";
+    private static final String REDIS_LOCK_PREFIX = "bulk_purge_lock:";
+    private static final String PURGE_MODE_CONNECTION = "CONNECTION";
+    private static final String PURGE_MODE_QN_PREFIX = "QUALIFIED_NAME_PREFIX";
+    private static final int MIN_QN_PREFIX_LENGTH = 10;
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private final AtlasGraph                graph;
-    private final RedisService              redisService;
+    private final AtlasGraph graph;
+    private final RedisService redisService;
     private final Set<EntityAuditRepository> auditRepositories;
     private final AtlasDistributedTaskNotificationSender taskNotificationSender;
 
@@ -87,9 +87,9 @@ public class BulkPurgeService {
                             RedisService redisService,
                             Set<EntityAuditRepository> auditRepositories,
                             AtlasDistributedTaskNotificationSender taskNotificationSender) {
-        this.graph                  = graph;
-        this.redisService           = redisService;
-        this.auditRepositories      = auditRepositories;
+        this.graph = graph;
+        this.redisService = redisService;
+        this.auditRepositories = auditRepositories;
         this.taskNotificationSender = taskNotificationSender;
 
         this.coordinatorExecutor = Executors.newFixedThreadPool(2,
@@ -197,7 +197,7 @@ public class BulkPurgeService {
 
     private String submitPurge(String purgeKey, String purgeMode, String esQuery, String submittedBy, boolean deleteConnection) throws AtlasBaseException {
         String redisKey = REDIS_KEY_PREFIX + purgeKey;
-        String lockKey  = REDIS_LOCK_PREFIX + purgeKey;
+        String lockKey = REDIS_LOCK_PREFIX + purgeKey;
 
         // Check for existing active purge
         String existingStatus = redisService.getValue(redisKey);
@@ -324,8 +324,8 @@ public class BulkPurgeService {
      * Phase 1+2: Stream ES scroll results and delete vertices in parallel.
      */
     private void streamAndDelete(PurgeContext ctx) throws Exception {
-        int batchSize   = AtlasConfiguration.BULK_PURGE_BATCH_SIZE.getInt();
-        int esPageSize  = AtlasConfiguration.BULK_PURGE_ES_PAGE_SIZE.getInt();
+        int batchSize = AtlasConfiguration.BULK_PURGE_BATCH_SIZE.getInt();
+        int esPageSize = AtlasConfiguration.BULK_PURGE_ES_PAGE_SIZE.getInt();
         int scrollTimeoutMin = AtlasConfiguration.BULK_PURGE_SCROLL_TIMEOUT_MINUTES.getInt();
 
         // Determine worker count
@@ -408,7 +408,7 @@ public class BulkPurgeService {
      */
     private void processBatch(PurgeContext ctx, BatchWork work) {
         int batchDeleted = 0;
-        int batchFailed  = 0;
+        int batchFailed = 0;
 
         // Use injected graph — JanusGraph manages thread-local transactions internally
         AtlasGraph workerGraph = this.graph;
@@ -504,7 +504,7 @@ public class BulkPurgeService {
 
             for (AtlasEdge edge : edges) {
                 try {
-                    AtlasVertex inVertex  = edge.getInVertex();
+                    AtlasVertex inVertex = edge.getInVertex();
                     AtlasVertex outVertex = edge.getOutVertex();
                     AtlasVertex other = (inVertex.getId().equals(vertex.getId())) ? outVertex : inVertex;
 
@@ -540,10 +540,10 @@ public class BulkPurgeService {
      * Stream ES scroll results into the batch queue.
      */
     private void streamESScrollIntoBatchQueue(PurgeContext ctx,
-                                               BlockingQueue<BatchWork> batchQueue,
-                                               int batchSize,
-                                               int esPageSize,
-                                               int scrollTimeoutMin) throws Exception {
+                                              BlockingQueue<BatchWork> batchQueue,
+                                              int batchSize,
+                                              int esPageSize,
+                                              int scrollTimeoutMin) throws Exception {
         RestClient esClient = getEsClient();
         String scrollTimeout = scrollTimeoutMin + "m";
 
@@ -701,7 +701,7 @@ public class BulkPurgeService {
                 ctx.externalLineageVertexIds.size(), ctx.purgeKey);
 
         int repaired = 0;
-        int skipped  = 0;
+        int skipped = 0;
 
         String[] lineageLabels = {PROCESS_INPUTS, PROCESS_OUTPUTS};
 
@@ -739,7 +739,9 @@ public class BulkPurgeService {
                         graph.rollback();
                     } catch (Exception re) { /* ignore */ }
                     if (attempt < 3) {
-                        try { Thread.sleep(attempt * 500L); } catch (InterruptedException ie) {
+                        try {
+                            Thread.sleep(attempt * 500L);
+                        } catch (InterruptedException ie) {
                             Thread.currentThread().interrupt();
                             break;
                         }
@@ -853,8 +855,8 @@ public class BulkPurgeService {
     // ======================== HELPER METHODS ========================
 
     private int getWorkerCount(long totalEntities, int configuredMax) {
-        if (totalEntities < 10_000)    return 1;
-        if (totalEntities < 100_000)   return 2;
+        if (totalEntities < 10_000) return 1;
+        if (totalEntities < 100_000) return 2;
         if (totalEntities < 1_000_000) return Math.min(configuredMax, 4);
         return Math.min(configuredMax, 8);
     }
@@ -878,41 +880,39 @@ public class BulkPurgeService {
         }
     }
 
-    // ======================== INNER CLASSES ========================
-
     /**
      * Holds state for an active purge operation.
      */
     static class PurgeContext {
-        final String       requestId;
-        final String       purgeKey;
-        final String       purgeMode;
-        final String       submittedBy;
-        final String       esQuery;
-        final long         submittedAt;
-        final boolean      deleteConnection;
+        final String requestId;
+        final String purgeKey;
+        final String purgeMode;
+        final String submittedBy;
+        final String esQuery;
+        final long submittedAt;
+        final boolean deleteConnection;
 
-        volatile String    status;
-        volatile String    error;
-        volatile long      lastHeartbeat;
-        volatile long      totalDiscovered;
-        volatile int       workerCount;
-        volatile int       lastProcessedBatchIndex;
-        volatile boolean   cancelRequested;
-        volatile boolean   connectionDeleted;
+        volatile String status;
+        volatile String error;
+        volatile long lastHeartbeat;
+        volatile long totalDiscovered;
+        volatile int workerCount;
+        volatile int lastProcessedBatchIndex;
+        volatile boolean cancelRequested;
+        volatile boolean connectionDeleted;
 
-        final AtomicInteger totalDeleted     = new AtomicInteger(0);
-        final AtomicInteger totalFailed      = new AtomicInteger(0);
+        final AtomicInteger totalDeleted = new AtomicInteger(0);
+        final AtomicInteger totalFailed = new AtomicInteger(0);
         final AtomicInteger completedBatches = new AtomicInteger(0);
-        final Set<String>   externalLineageVertexIds = ConcurrentHashMap.newKeySet();
+        final Set<String> externalLineageVertexIds = ConcurrentHashMap.newKeySet();
 
         PurgeContext(String requestId, String purgeKey, String purgeMode, String submittedBy, String esQuery, boolean deleteConnection) {
-            this.requestId        = requestId;
-            this.purgeKey         = purgeKey;
-            this.purgeMode        = purgeMode;
-            this.submittedBy      = submittedBy;
-            this.esQuery          = esQuery;
-            this.submittedAt      = System.currentTimeMillis();
+            this.requestId = requestId;
+            this.purgeKey = purgeKey;
+            this.purgeMode = purgeMode;
+            this.submittedBy = submittedBy;
+            this.esQuery = esQuery;
+            this.submittedAt = System.currentTimeMillis();
             this.deleteConnection = deleteConnection;
         }
 
@@ -956,10 +956,10 @@ public class BulkPurgeService {
         static final BatchWork POISON_PILL = new BatchWork(Collections.emptyList(), -1);
 
         final List<String> vertexIds;
-        final int          batchIndex;
+        final int batchIndex;
 
         BatchWork(List<String> vertexIds, int batchIndex) {
-            this.vertexIds  = vertexIds;
+            this.vertexIds = vertexIds;
             this.batchIndex = batchIndex;
         }
     }
