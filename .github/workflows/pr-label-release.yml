@@ -256,11 +256,6 @@ jobs:
             console.log(`Tenants in cohort: ${tenantNames}`);
             core.setOutput('tenant_names', tenantNames);
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
       - name: Setup Temporal CLI
         run: |
           curl -sSf https://temporal.download/cli.sh | sh
@@ -268,11 +263,23 @@ jobs:
           $HOME/.temporalio/bin/temporal --version
 
       - name: Connect to VPN
-        uses: ./.github/actions/globalprotect-connect-action
-        with:
-          portal-url: vpn2.atlan.app
-          username: ${{ secrets.GLOBALPROTECT_USERNAME }}
-          password: ${{ secrets.GLOBALPROTECT_PASSWORD }}
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y openconnect
+          echo "${{ secrets.GLOBALPROTECT_PASSWORD }}" | sudo openconnect \
+            --protocol=gp \
+            --user="${{ secrets.GLOBALPROTECT_USERNAME }}" \
+            --passwd-on-stdin \
+            --background \
+            "vpnsec.atlan.app"
+          sleep 5
+
+          # Verify VPN is running
+          if ! pgrep -x openconnect > /dev/null; then
+            echo "ERROR: OpenConnect exited unexpectedly"
+            exit 1
+          fi
+          echo "VPN connected successfully"
 
       - name: Trigger Temporal workflow
         id: trigger_temporal
