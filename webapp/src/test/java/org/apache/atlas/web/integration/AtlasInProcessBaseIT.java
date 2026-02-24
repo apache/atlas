@@ -61,7 +61,7 @@ public abstract class AtlasInProcessBaseIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasInProcessBaseIT.class);
 
-    private static final int MAX_STARTUP_WAIT_SECONDS = 100; // 5 minutes
+    private static final int MAX_STARTUP_WAIT_SECONDS = 300; // 5 minutes
 
     // Singleton containers (shared across all test classes, stopped by JVM shutdown hook)
     private static final CassandraContainer<?> cassandra;
