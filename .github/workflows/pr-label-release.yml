@@ -145,16 +145,30 @@ jobs:
           github-token: ${{ secrets.ORG_PAT_GITHUB }}
           script: |
             const prNumber = parseInt('${{ needs.get-pr-number.outputs.pr_number }}');
+            const eventName = context.eventName;
 
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber
-            });
+            let labels = [];
 
-            const labels = pr.labels.map(label => label.name);
+            if (eventName === 'pull_request') {
+              // For 'labeled' event, only process the newly added label
+              const addedLabel = context.payload.label?.name;
+              if (addedLabel) {
+                console.log(`Labeled event: processing only newly added label: ${addedLabel}`);
+                labels = [addedLabel];
+              }
+            } else {
+              // For 'workflow_run' event, process all cohort labels on the PR
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber
+              });
+              labels = pr.labels.map(label => label.name);
+              console.log(`Workflow run event: processing all labels`);
+            }
+
             core.setOutput('labels', JSON.stringify(labels));
-            console.log(`PR labels: ${JSON.stringify(labels)}`);
+            console.log(`Labels to process: ${JSON.stringify(labels)}`);
 
       - name: Parse labels
         id: parse

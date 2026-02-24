@@ -113,10 +113,12 @@ The `pr-label-release.yml` workflow now:
 
 Temporal handles the full release lifecycle:
 1. Patches ArgoCD Application manifests
-2. Waits for ArgoCD to sync the StatefulSet resource (5 min initial delay + 15 min polling)
+2. Waits for ArgoCD to sync the StatefulSet resource (5 min initial delay + 60 min polling)
 3. Routes `WaitForStatefulSetRolloutActivity` to tenant worker for direct K8s access
 4. Verifies all pods are updated with correct image (dynamic timeout: 15 min/pod, max 120 min)
 5. Posts final "Service Release Result" comment to PR
+
+**Note:** For cleanup flows (PR close or manual cleanup), verification is skipped. Once the image override is removed from ArgoCD, the workflow completes immediately. ArgoCD handles the actual rollback asynchronously.
 
 ### Multi-Worker Architecture
 
@@ -147,10 +149,12 @@ This architecture ensures:
 | Stage | Timeout | Notes |
 |-------|---------|-------|
 | ArgoCD sync initial delay | 5 min | Wait for ArgoCD to process refresh |
-| ArgoCD sync polling | 15 min | Polls every 15s for StatefulSet sync status |
+| ArgoCD sync polling | 60 min | Polls every 15s for StatefulSet sync status |
 | StatefulSet rollout per pod | 15 min | Dynamic: `replicas × 15 min` |
 | StatefulSet rollout minimum | 15 min | Floor for small deployments |
 | StatefulSet rollout maximum | 120 min | Cap for large deployments |
+
+**Cleanup flows** (PR close, manual cleanup): Verification is skipped entirely. The workflow removes the image override and exits immediately without waiting for ArgoCD sync or pod rollout.
 
 ---
 
