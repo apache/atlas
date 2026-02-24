@@ -35,7 +35,7 @@ jobs:
       id-token: write
       actions: read
     env:
-      ANTHROPIC_BASE_URL: https://llmproxy.atlan.dev
+      ANTHROPIC_BASE_URL: https://aigateway.atlan.dev
       CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: '1'
     steps:
       - name: Checkout repository
@@ -73,7 +73,7 @@ jobs:
       actions: read
     timeout-minutes: 15
     env:
-      ANTHROPIC_BASE_URL: https://llmproxy.atlan.dev
+      ANTHROPIC_BASE_URL: https://aigateway.atlan.dev
       CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: '1'
     concurrency:
       group: claude-review-${{ github.event.pull_request.number || inputs.pr_number }}
@@ -152,7 +152,7 @@ jobs:
       id-token: write
       actions: read
     env:
-      ANTHROPIC_BASE_URL: https://llmproxy.atlan.dev
+      ANTHROPIC_BASE_URL: https://aigateway.atlan.dev
       CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: '1'
     steps:
       - name: Checkout repository
@@ -237,7 +237,7 @@ jobs:
       actions: read
       id-token: write
     env:
-      ANTHROPIC_BASE_URL: https://llmproxy.atlan.dev
+      ANTHROPIC_BASE_URL: https://aigateway.atlan.dev
       CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: '1'
     steps:
       - name: Checkout repository
