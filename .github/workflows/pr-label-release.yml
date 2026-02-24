@@ -256,6 +256,11 @@ jobs:
             console.log(`Tenants in cohort: ${tenantNames}`);
             core.setOutput('tenant_names', tenantNames);
 
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Setup Temporal CLI
         run: |
           curl -sSf https://temporal.download/cli.sh | sh
