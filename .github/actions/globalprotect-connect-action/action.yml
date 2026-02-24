@@ -76,14 +76,14 @@ runs:
           # Wait for connection to establish
           sleep 10
 
-          # Connectivity test
-          echo "Testing connectivity..."
-          curl -k -sS --max-time 15 https://llmproxy.atlan.dev -o /dev/null
+          # Connectivity test against AI Gateway (the actual API endpoint)
+          echo "Testing connectivity to AI Gateway..."
+          curl -k -sS --max-time 15 https://aigateway.atlan.dev -o /dev/null
 
           if [ $? -eq 0 ]; then
-            echo "Connectivity test successful"
+            echo "AI Gateway connectivity test successful"
           else
-            echo "Connectivity test failed"
+            echo "AI Gateway connectivity test failed — aigateway.atlan.dev is unreachable via VPN"
             exit 1
           fi
 
