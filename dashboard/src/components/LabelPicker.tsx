@@ -170,7 +170,7 @@ const LabelPicker = (props: {
               size="small"
               multiple
               onClose={(
-                _event: React.ChangeEvent<{}>,
+                _event: React.ChangeEvent<object>,
                 reason: AutocompleteCloseReason
               ) => {
                 if (reason === "escape") {

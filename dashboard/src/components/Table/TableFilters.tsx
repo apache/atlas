@@ -232,8 +232,8 @@ export const TableFilter = ({
       return col;
     }
 
-    for (const obj of ruleObj?.criterion) {
-      if (obj.hasOwnProperty("criterion")) {
+    for (const obj of ruleObj?.criterion ?? []) {
+      if (Object.prototype.hasOwnProperty.call(obj, "criterion")) {
         return getIdFromRuleObj(obj);
       } else {
         return col.add(obj.attributeName);

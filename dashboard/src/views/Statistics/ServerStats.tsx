@@ -71,7 +71,7 @@ const ServerStats = ({ selectedValue, currentMetricsData }: any) => {
   }) => {
     var returnObj = [];
     for (var key in obj) {
-      if (obj.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
         returnObj.push({ label: key, dataValue: obj[key] });
       }
     }

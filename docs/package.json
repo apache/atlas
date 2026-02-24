@@ -14,15 +14,15 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@babel/cli": "^7.16.7",
-    "@babel/core": "^7.16.7",
-    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
-    "@babel/preset-react": "^7.16.7",
-    "axios": "^1.13.1",
+    "@babel/cli": "7.16.7",
+    "@babel/core": "7.16.7",
+    "@babel/plugin-syntax-dynamic-import": "7.8.3",
+    "@babel/preset-react": "7.16.7",
+    "axios": "1.13.1",
     "babel-loader": "8.0.6",
     "babel-plugin-lodash": "3.3.4",
     "babel-plugin-react-transform": "3.0.0",
-    "gh-pages": "^5.0.0",
+    "gh-pages": "5.0.0",
     "react-github-btn": "1.0.5",
     "react-syntax-highlighter": "11.0.1",
     "reactstrap": "8.0.0",
@@ -42,6 +42,12 @@
     "ejs": "3.1.10",
     "minimatch": "9.0.5",
     "prismjs": "1.30.0",
-    "qs": "6.14.2"
+    "qs": "6.14.2",
+    "loader-utils": "2.0.4",
+    "shell-quote": "1.7.3",
+    "trim": "0.0.3",
+    "form-data": "2.5.5",
+    "pbkdf2": "3.1.5",
+    "sha.js": "2.4.12"
   }
 }

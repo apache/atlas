@@ -67,12 +67,11 @@ module.exports = function(grunt) {
                     }
                 },
                 proxies: [{
-                    context: '/api/atlas',
-                    host: 'ccycloud-2.prasad-relationshipattribute.root.comops.site',
-                    auth: 'admin:admin',
-                    port: 31000,
-                    https: false,
-                    rewriteHost: true
+                    context: '/api', // the context of the data service
+                    host: '127.0.0.1',
+                    auth: "admin:admin",
+                    port: 21000, // the port that the data service is running on
+                    https: false
                 }],
             },
         },

@@ -19,11 +19,10 @@
 import dagreD3 from "dagre-d3";
 import { select, selection, event } from "d3-selection";
 import { curveBasis } from "d3-shape";
-import { LineageUtils, DataUtils } from "./Utils";
+import { LineageUtils, DataUtils, isEmpty } from "./Utils";
 import d3Tip from "d3-tip";
 
 import "./styles/style.scss";
-import { isEmpty } from "@utils/Utils";
 
 export default class LineageHelper {
   constructor(options) {

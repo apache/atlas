@@ -10,7 +10,12 @@
     "start": "grunt dev",
     "build": "grunt build",
     "dev-minify": "grunt dev-minify",
-    "build-minify": "grunt build-minify"
+    "build-minify": "grunt build-minify",
+    "prebuild": "npm run build-atlas-lineage",
+    "build-atlas-lineage": "cd public/js/external_lib/atlas-lineage && (npm ci 2>/dev/null || npm install) && npm run build",
+    "prebuild-minify": "npm run build-atlas-lineage",
+    "predev": "npm run build-atlas-lineage",
+    "predev-minify": "npm run build-atlas-lineage"
   },
   "keywords": [
     "Apache",
@@ -69,5 +74,8 @@
     "grunt-template": "1.0.0",
     "load-grunt-tasks": "3.5.2",
     "sass": "1.74.1"
+  },
+  "overrides": {
+    "underscore": "1.13.7"
   }
 }
