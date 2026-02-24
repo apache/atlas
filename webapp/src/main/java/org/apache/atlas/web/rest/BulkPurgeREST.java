@@ -83,7 +83,7 @@ public class BulkPurgeREST {
             // Authorization check
             AtlasAuthorizationUtils.verifyAccess(
                     new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_PURGE),
-                    "Bulk purge by connection: " + connectionQualifiedName);
+                    "Bulk purge by connection : " + connectionQualifiedName);
 
             String submittedBy = RequestContext.getCurrentUser();
             String requestId = bulkPurgeService.bulkPurgeByConnection(connectionQualifiedName, submittedBy);
