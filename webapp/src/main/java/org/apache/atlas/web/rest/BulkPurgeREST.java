@@ -77,7 +77,7 @@ public class BulkPurgeREST {
             }
 
             if (StringUtils.isBlank(connectionQualifiedName)) {
-                throw new AtlasBaseException("Query parameter 'connectionQualifiedName' is required");
+                throw new AtlasBaseException("Query parameter 'connectionQualifiedName' is required ");
             }
 
             // Authorization check
