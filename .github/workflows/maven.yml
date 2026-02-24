@@ -24,6 +24,7 @@ on:
       - beta
       - master
       - staging
+      - ring-*
       - ms-635
       - lg-async-producer
 
