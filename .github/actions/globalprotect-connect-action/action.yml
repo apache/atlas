@@ -1,0 +1,92 @@
+name: "GlobalProtect VPN Connect"
+description: "Connect to GlobalProtect VPN using OpenConnect"
+author: "Atlan"
+
+inputs:
+  portal-url:
+    description: "GlobalProtect portal URL"
+    required: true
+  username:
+    description: "GlobalProtect username"
+    required: true
+  password:
+    description: "GlobalProtect password"
+    required: true
+  max-attempts:
+    description: "Maximum number of connection attempts"
+    required: false
+    default: "3"
+
+outputs:
+  vpn-connected:
+    description: "Whether VPN connection was successful"
+    value: ${{ steps.openconnect-connection.outputs.connected }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Connect via OpenConnect
+      uses: nick-fields/retry@v3
+      id: openconnect-connection
+      env:
+        GP_PORTAL_URL: ${{ inputs.portal-url }}
+        GP_USERNAME: ${{ inputs.username }}
+        GP_PASSWORD: ${{ inputs.password }}
+      with:
+        max_attempts: ${{ fromJSON(inputs.max-attempts) }}
+        timeout_minutes: 10
+        shell: bash
+        command: |
+          echo "Connecting to GlobalProtect VPN using OpenConnect..."
+
+          # Install OpenConnect
+          echo "Installing OpenConnect..."
+          sudo apt-get update
+          sudo apt-get install -y openconnect
+
+          # Check required inputs
+          if [ -z "$GP_PORTAL_URL" ]; then
+            echo "portal-url input not provided"
+            exit 1
+          fi
+
+          if [ -z "$GP_USERNAME" ]; then
+            echo "username input not provided"
+            exit 1
+          fi
+
+          if [ -z "$GP_PASSWORD" ]; then
+            echo "password input not provided"
+            exit 1
+          fi
+
+          echo "Attempting OpenConnect to: $GP_PORTAL_URL"
+
+          # Connect via OpenConnect
+          echo "$GP_PASSWORD" | sudo openconnect \
+            --protocol=gp \
+            --user="$GP_USERNAME" \
+            --passwd-on-stdin \
+            --background \
+            "$GP_PORTAL_URL" || {
+            echo "OpenConnect connection failed"
+            exit 1
+          }
+
+          # Wait for connection to establish
+          sleep 10
+
+          # Connectivity test
+          echo "Testing connectivity..."
+          curl -k -sS --max-time 15 https://llmproxy.atlan.dev -o /dev/null
+
+          if [ $? -eq 0 ]; then
+            echo "Connectivity test successful"
+          else
+            echo "Connectivity test failed"
+            exit 1
+          fi
+
+          # Set output
+          echo "connected=true" >> $GITHUB_OUTPUT
+          echo "VPN connection established successfully"

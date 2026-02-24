@@ -24,7 +24,9 @@ on:
       - beta
       - master
       - staging
+      - ring-*
       - ms-635
+      - lg-async-producer
 
     paths-ignore:
       - '.claude/**'
@@ -882,6 +884,46 @@ jobs:
           echo "📦 Chart: ${{ matrix.chart }}"
           echo "📌 Version: ${{ steps.version.outputs.chart }}"
           echo "🏷️  Registry: oci://ghcr.io/atlanhq/helm-charts/${{ matrix.chart }}"
+      
+      - name: Create GitHub Release
+        if: steps.can_publish.outputs.should_publish == 'true'
+        uses: ncipollo/release-action@v1
+        with:
+          tag: helm-${{ matrix.chart }}-v${{ steps.version.outputs.chart }}
+          name: "${{ matrix.chart }} Helm Chart v${{ steps.version.outputs.chart }}"
+          body: |
+            ## 📦 ${{ matrix.chart }} Helm Chart Release
+            
+            **Chart**: `${{ matrix.chart }}`  
+            **Chart Version**: `${{ steps.version.outputs.chart }}`  
+            **Base Version**: `${{ matrix.base_version }}`  
+            **Branch**: `${{ steps.branch.outputs.name }}`  
+            **Commit**: `${{ steps.commit.outputs.id }}`
+            
+            ### 📥 Installation
+            
+            **Via OCI Registry (Recommended):**
+            ```bash
+            helm install ${{ matrix.chart }} oci://ghcr.io/atlanhq/helm-charts/${{ matrix.chart }} \
+              --version ${{ steps.version.outputs.chart }}
+            ```
+            
+            **With custom values:**
+            ```bash
+            helm install ${{ matrix.chart }} oci://ghcr.io/atlanhq/helm-charts/${{ matrix.chart }} \
+              --version ${{ steps.version.outputs.chart }} \
+              -f custom-values.yaml
+            ```
+            
+            ### 🔗 Links
+            
+            - **Registry**: `oci://ghcr.io/atlanhq/helm-charts/${{ matrix.chart }}`
+            - **Repository**: [atlanhq/atlas-metastore](https://github.com/atlanhq/atlas-metastore)
+            - **Path**: `${{ matrix.path }}`
+          artifacts: "./helm-packages/${{ matrix.chart }}-*.tgz"
+          token: ${{ secrets.ORG_PAT_GITHUB }}
+          allowUpdates: true
+          makeLatest: false
       
       - name: Chart publish summary
         if: steps.can_publish.outputs.should_publish == 'true'

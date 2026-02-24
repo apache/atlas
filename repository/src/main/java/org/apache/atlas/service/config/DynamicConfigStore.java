@@ -451,6 +451,20 @@ public class DynamicConfigStore implements ApplicationContextAware {
         return false;
     }
 
+    /**
+     * Check if async ingestion is enabled.
+     * When enabled, write operations also publish to Kafka for a shadow consumer.
+     * Only enabled when DynamicConfigStore is activated and the flag is set to true.
+     *
+     * @return true if async ingestion is enabled, false otherwise
+     */
+    public static boolean isAsyncIngestionEnabled() {
+        if (isActivated()) {
+            return getConfigAsBoolean(ConfigKey.ENABLE_ASYNC_INGESTION.getKey());
+        }
+        return false; // disabled by default when config store is not activated
+    }
+
     // ================== Internal Methods ==================
 
     String getConfigInternal(String key) {
