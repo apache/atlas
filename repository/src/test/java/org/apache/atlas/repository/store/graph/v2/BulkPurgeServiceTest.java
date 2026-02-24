@@ -379,6 +379,7 @@ class BulkPurgeServiceTest {
 
         when(mockGraph.getVertex("5001")).thenReturn(processVertex);
         when(processVertex.getId()).thenReturn("5001");
+        when(processVertex.getProperty(org.apache.atlas.type.Constants.HAS_LINEAGE, Boolean.class)).thenReturn(true);
         when(processVertex.getEdges(AtlasEdgeDirection.BOTH)).thenReturn(Collections.singletonList(lineageEdge));
 
         // Lineage edge pointing to an external connection vertex
