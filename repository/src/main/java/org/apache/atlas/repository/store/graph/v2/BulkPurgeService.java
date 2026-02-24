@@ -29,7 +29,6 @@ import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.notification.task.AtlasDistributedTaskNotificationSender;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -44,6 +43,8 @@ import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import com.google.common.annotations.VisibleForTesting;
 
 import javax.inject.Inject;
 import java.io.InputStream;
@@ -71,6 +72,9 @@ public class BulkPurgeService {
 
     private final ExecutorService coordinatorExecutor;
 
+    // Lazily initialized ES client (cached for reuse across calls)
+    private volatile RestClient esClient;
+
     // Active purge tracking for cancel support
     private final ConcurrentHashMap<String, PurgeContext> activePurges = new ConcurrentHashMap<>();
 
@@ -89,6 +93,18 @@ public class BulkPurgeService {
                         .setDaemon(true)
                         .setNameFormat("bulk-purge-coordinator-%d")
                         .build());
+    }
+
+    private RestClient getEsClient() {
+        if (esClient == null) {
+            esClient = AtlasElasticsearchDatabase.getLowLevelClient();
+        }
+        return esClient;
+    }
+
+    @VisibleForTesting
+    void setEsClient(RestClient client) {
+        this.esClient = client;
     }
 
     /**
@@ -375,8 +391,8 @@ public class BulkPurgeService {
         int batchDeleted = 0;
         int batchFailed  = 0;
 
-        // Get the thread-local graph instance for this worker
-        AtlasGraph workerGraph = AtlasGraphProvider.getGraphInstance();
+        // Use injected graph — JanusGraph manages thread-local transactions internally
+        AtlasGraph workerGraph = this.graph;
 
         for (String vertexId : work.vertexIds) {
             if (ctx.cancelRequested) break;
@@ -484,7 +500,7 @@ public class BulkPurgeService {
     // ======================== ES OPERATIONS ========================
 
     private long getEntityCount(String esQuery) throws Exception {
-        RestClient esClient = AtlasElasticsearchDatabase.getLowLevelClient();
+        RestClient esClient = getEsClient();
         String endpoint = "/" + VERTEX_INDEX_NAME + "/_count";
 
         Request request = new Request("POST", endpoint);
@@ -504,7 +520,7 @@ public class BulkPurgeService {
                                                int batchSize,
                                                int esPageSize,
                                                int scrollTimeoutMin) throws Exception {
-        RestClient esClient = AtlasElasticsearchDatabase.getLowLevelClient();
+        RestClient esClient = getEsClient();
         String scrollTimeout = scrollTimeoutMin + "m";
 
         // Build scroll request — only fetch _id field (vertex ID)
@@ -588,7 +604,7 @@ public class BulkPurgeService {
      */
     private void esCleanup(PurgeContext ctx) {
         try {
-            RestClient esClient = AtlasElasticsearchDatabase.getLowLevelClient();
+            RestClient esClient = getEsClient();
             String endpoint = "/" + VERTEX_INDEX_NAME + "/_delete_by_query?conflicts=proceed&slices=auto";
 
             Request request = new Request("POST", endpoint);
