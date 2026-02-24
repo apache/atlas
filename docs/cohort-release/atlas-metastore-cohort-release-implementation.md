@@ -10,10 +10,12 @@ The cohort release system allows developers to deploy changes to a limited set o
 2. PR opened from `ring-*` to `master`
 3. Docker image built on push to `ring-*`
 4. Cohort label added to PR (e.g., `cohort:github:path:internal-level-1`)
-5. GitHub Action triggers a Temporal workflow (`ServiceReleaseWorkflow`)
+5. GitHub Action triggers a Temporal workflow and exits immediately (fire-and-forget for cost optimization)
 6. Temporal patches ArgoCD Application manifests per tenant to override the image
-7. On PR close without merge (abandoned ring), overrides are auto-cleaned up
-8. On PR merge (GA), developer manually cleans up after GA chart rolls out
+7. Temporal waits for ArgoCD sync, then verifies StatefulSet rollout on tenant cluster
+8. Temporal posts final release status as PR comment
+9. On PR close without merge (abandoned ring), overrides are auto-cleaned up
+10. On PR merge (GA), developer manually cleans up after GA chart rolls out
 
 ## Workflow Diagram
 
@@ -69,10 +71,9 @@ Therefore, all workflow logic from the four reusable workflows is **inlined** di
 | File | Change |
 |------|--------|
 | `.github/workflows/maven.yml` | Added `ring-*` to build trigger branches; skip `helm-publish` on ring branches |
-| `.github/workflows/pr-label-release.yml` | New — orchestrates cohort release with inlined logic from 4 reusable workflows |
+| `.github/workflows/pr-label-release.yml` | New — triggers Temporal and exits (fire-and-forget for cost optimization) |
 | `.github/workflows/pr-close-release.yml` | New — auto-cleanup on close-without-merge only |
 | `.github/workflows/manual-cohort-cleanup.yml` | New — manual cleanup via workflow_dispatch |
-| `.github/workflows/integration-tests.yml` | Added `.github/**` to paths-ignore |
 
 ### Changes in `platform-temporal-workflows`
 
@@ -80,8 +81,12 @@ Therefore, all workflow logic from the four reusable workflows is **inlined** di
 |------|--------|
 | `service-release/types.go` | Added `ServiceImageValuePath` map and `GetServiceImagePath()` for per-service image path configuration |
 | `service-release/activities.go` | Updated `buildValuesObjectPatchOperations` and `buildValuesStringPatchOperations` to use dynamic path |
-| `service-release/argocd_activities.go` | Updated `validateImageConfiguration` to traverse nested paths |
+| `service-release/argocd_activities.go` | Updated `validateImageConfiguration` to traverse nested paths; added `WaitForArgoCDSyncActivity` for StatefulSet sync verification |
+| `service-release/app_workflow.go` | Added atlas-specific gates: ArgoCD sync wait + StatefulSet rollout verification (routed to tenant worker) |
+| `service-release/statefulset_rollout_activity.go` | New — verifies StatefulSet rollout on tenant cluster with dynamic timeout (15 min/pod) |
 | `ring-branch-sync/activities.go` | Added `"atlanhq/atlas-metastore": "master"` to `RingBranchSyncRepos` |
+| `cmd/tenants-worker/main.go` | Registered `WaitForStatefulSetRolloutActivity` for tenant workers |
+| `pkg/k8/client.go` | Added `GetStatefulSetRolloutStatus()` method |
 
 ### Changes in `atlan-releases`
 
@@ -92,6 +97,60 @@ Therefore, all workflow logic from the four reusable workflows is **inlined** di
 | `cohorts/atlas-dummy-1.json` | New — test cohort for atlas-metastore |
 
 Note: The atlan-releases changes are for potential future use by other private service repos. Atlas-metastore does not use these reusable workflows due to the public/private restriction.
+
+---
+
+## GitHub Actions Cost Optimization
+
+GitHub Actions charges per minute of execution time. Initial implementations had GitHub Actions wait for Temporal to complete (potentially 20+ minutes per release), accumulating significant costs.
+
+### Solution: Fire-and-Forget with Temporal Verification
+
+The `pr-label-release.yml` workflow now:
+1. Triggers the Temporal workflow
+2. Posts an initial "Ring Release Triggered" comment
+3. Exits immediately (~1 min total)
+
+Temporal handles the full release lifecycle:
+1. Patches ArgoCD Application manifests
+2. Waits for ArgoCD to sync the StatefulSet resource (5 min initial delay + 15 min polling)
+3. Routes `WaitForStatefulSetRolloutActivity` to tenant worker for direct K8s access
+4. Verifies all pods are updated with correct image (dynamic timeout: 15 min/pod, max 120 min)
+5. Posts final "Service Release Result" comment to PR
+
+### Multi-Worker Architecture
+
+The release verification uses Temporal's task queue routing:
+
+```
+Control-Plane Worker (platform cluster)
+├── ServiceReleaseWorkflow (parent)
+├── ServiceReleasePatchWorkflow (per tenant)
+├── GetArgoCDAppManifestActivity
+├── CreateImagePatchActivity
+├── ApplyKubectlPatchActivity
+├── WaitForArgoCDSyncActivity
+└── (routes to tenant worker) ──┐
+                                │
+Tenant Worker (tenant vCluster) ◄┘
+└── WaitForStatefulSetRolloutActivity
+    └── Direct K8s access to verify StatefulSet rollout
+```
+
+This architecture ensures:
+- ArgoCD patching happens on control-plane (has ArgoCD access)
+- Pod verification happens on tenant worker (has direct K8s access to tenant cluster)
+- GitHub Actions billing is minimized (~1 min per release)
+
+### Timeout Configuration
+
+| Stage | Timeout | Notes |
+|-------|---------|-------|
+| ArgoCD sync initial delay | 5 min | Wait for ArgoCD to process refresh |
+| ArgoCD sync polling | 15 min | Polls every 15s for StatefulSet sync status |
+| StatefulSet rollout per pod | 15 min | Dynamic: `replicas × 15 min` |
+| StatefulSet rollout minimum | 15 min | Floor for small deployments |
+| StatefulSet rollout maximum | 120 min | Cap for large deployments |
 
 ---
 
@@ -259,9 +318,11 @@ You can add the label before or after the build completes. The release only proc
 
 #### 5. Monitor the Release
 
-- **GitHub Actions tab:** Watch `PR Label Release` workflow progress
+- **GitHub Actions tab:** Watch `PR Label Release` workflow (triggers Temporal and exits quickly)
 - **Temporal UI:** Check `ServiceReleaseWorkflow` at https://temporal.atlan.com/namespaces/default/workflows
-- **PR comment:** `atlan-ci` posts a summary with status, tenant results, and workflow link
+- **PR comments:** Two comments from `atlan-ci`:
+  1. **"Ring Release Triggered"** — posted immediately when GitHub Actions triggers Temporal
+  2. **"Service Release Result"** — posted by Temporal after rollout verification completes
 - **Slack:** Results posted to `#testing_notifications`
 
 #### 6. Verify on Tenants
