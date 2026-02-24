@@ -26,12 +26,10 @@ import org.apache.atlas.model.notification.AtlasDistributedTaskNotification;
 import org.apache.atlas.notification.task.AtlasDistributedTaskNotificationSender;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.http.HttpEntity;
@@ -48,7 +46,6 @@ import org.mockito.MockitoAnnotations;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -76,13 +73,9 @@ class BulkPurgeServiceTest {
     @Mock private AtlasDistributedTaskNotificationSender mockTaskNotificationSender;
     @Mock private AtlasVertex      mockConnectionVertex;
     @Mock private RestClient       mockEsClient;
-    @Mock private Response         mockEsResponse;
-    @Mock private HttpEntity       mockHttpEntity;
 
     private BulkPurgeService bulkPurgeService;
     private MockedStatic<AtlasGraphUtilsV2> mockedGraphUtils;
-    private MockedStatic<AtlasElasticsearchDatabase> mockedEsDb;
-    private MockedStatic<AtlasGraphProvider> mockedGraphProvider;
 
     @BeforeEach
     void setUp() {
@@ -93,21 +86,19 @@ class BulkPurgeServiceTest {
         bulkPurgeService = new BulkPurgeService(
                 mockGraph, mockRedisService, mockAuditRepository, mockTaskNotificationSender);
 
-        // Mock static dependencies
-        mockedGraphUtils = mockStatic(AtlasGraphUtilsV2.class);
-        mockedEsDb = mockStatic(AtlasElasticsearchDatabase.class);
-        mockedGraphProvider = mockStatic(AtlasGraphProvider.class);
+        // Inject the mock ES client directly — avoids thread-scoped MockedStatic issues
+        bulkPurgeService.setEsClient(mockEsClient);
 
-        mockedEsDb.when(AtlasElasticsearchDatabase::getLowLevelClient).thenReturn(mockEsClient);
-        mockedGraphProvider.when(AtlasGraphProvider::getGraphInstance).thenReturn(mockGraph);
+        // AtlasGraphUtilsV2 is only called from the test thread (in submitPurge validation)
+        mockedGraphUtils = mockStatic(AtlasGraphUtilsV2.class);
     }
 
     @AfterEach
-    void tearDown() {
-        if (mockedGraphUtils != null)    mockedGraphUtils.close();
-        if (mockedEsDb != null)          mockedEsDb.close();
-        if (mockedGraphProvider != null)  mockedGraphProvider.close();
+    void tearDown() throws Exception {
+        if (mockedGraphUtils != null) mockedGraphUtils.close();
         RequestContext.clear();
+        // Give async tasks a moment to finish to avoid thread leaks
+        Thread.sleep(100);
     }
 
     // ======================== Validation Tests ========================
@@ -267,16 +258,14 @@ class BulkPurgeServiceTest {
 
         when(mockRedisService.getValue(anyString())).thenReturn(null);
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
-
-        // Mock ES to block so the purge stays active
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
-        setupEsCountResponse(100);
+
+        // Set up ES mock to make purge take a while (large count, slow scroll)
+        setupFullEsMock(100000, Collections.emptyList());
 
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
 
-        // Give the coordinator thread a moment to start
-        Thread.sleep(200);
-
+        // Cancel immediately — purge is in activePurges synchronously after submit
         boolean cancelled = bulkPurgeService.cancelPurge(requestId);
         assertTrue(cancelled);
     }
@@ -285,7 +274,6 @@ class BulkPurgeServiceTest {
 
     @Test
     void testProcessBatch_deletesVerticesAndEdges() throws Exception {
-        // This tests the full execution flow with a small dataset
         mockedGraphUtils.when(() -> AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(
                 eq(mockGraph), eq(Constants.CONNECTION_ENTITY_TYPE),
                 eq(Constants.QUALIFIED_NAME), eq(TEST_CONNECTION_QN)))
@@ -295,13 +283,10 @@ class BulkPurgeServiceTest {
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
 
-        // Mock ES count = 2 entities
-        setupEsCountResponse(2);
+        // Mock ES: count=2, scroll returns 2 vertex IDs, then empty
+        setupFullEsMock(2, Arrays.asList("vertex-1", "vertex-2"));
 
-        // Mock ES scroll returning 2 vertex IDs, then empty
-        setupEsScrollResponse(Arrays.asList("vertex-1", "vertex-2"));
-
-        // Mock graph operations for vertex-1
+        // Mock graph operations
         AtlasVertex v1 = mock(AtlasVertex.class);
         AtlasVertex v2 = mock(AtlasVertex.class);
         AtlasEdge edge1 = mock(AtlasEdge.class);
@@ -313,21 +298,15 @@ class BulkPurgeServiceTest {
         when(v2.getEdges(AtlasEdgeDirection.BOTH)).thenReturn(Collections.emptyList());
         when(v2.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class))).thenReturn(Collections.emptyList());
 
-        // Mock ES delete_by_query (post-purge cleanup)
-        setupEsDeleteByQueryResponse();
-
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
 
-        // Wait for async execution to complete
-        Thread.sleep(3000);
-
-        // Verify graph operations occurred
-        verify(mockGraph, atLeastOnce()).getVertex("vertex-1");
-        verify(mockGraph, atLeastOnce()).getVertex("vertex-2");
-        verify(mockGraph, atLeastOnce()).removeEdge(edge1);
-        verify(mockGraph, atLeastOnce()).removeVertex(v1);
-        verify(mockGraph, atLeastOnce()).removeVertex(v2);
-        verify(mockGraph, atLeastOnce()).commit();
+        // Verify graph operations occurred (using timeout for async)
+        verify(mockGraph, timeout(5000).atLeastOnce()).getVertex("vertex-1");
+        verify(mockGraph, timeout(5000).atLeastOnce()).getVertex("vertex-2");
+        verify(mockGraph, timeout(5000).atLeastOnce()).removeEdge(edge1);
+        verify(mockGraph, timeout(5000).atLeastOnce()).removeVertex(v1);
+        verify(mockGraph, timeout(5000).atLeastOnce()).removeVertex(v2);
+        verify(mockGraph, timeout(5000).atLeastOnce()).commit();
     }
 
     @Test
@@ -341,20 +320,17 @@ class BulkPurgeServiceTest {
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
 
-        setupEsCountResponse(1);
-        setupEsScrollResponse(Arrays.asList("deleted-vertex"));
+        setupFullEsMock(1, Arrays.asList("deleted-vertex"));
 
         // Vertex already deleted — returns null
         when(mockGraph.getVertex("deleted-vertex")).thenReturn(null);
 
-        setupEsDeleteByQueryResponse();
-
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
-        Thread.sleep(3000);
 
+        // Verify commit was called (batch completes even with null vertices)
+        verify(mockGraph, timeout(5000).atLeastOnce()).commit();
         // Verify no removeVertex was called (vertex was null)
-        verify(mockGraph, never()).removeVertex(any());
-        verify(mockGraph, atLeastOnce()).commit();
+        verify(mockGraph, timeout(5000).never()).removeVertex(any());
     }
 
     @Test
@@ -369,11 +345,9 @@ class BulkPurgeServiceTest {
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(false);
 
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
-        Thread.sleep(1000);
 
-        // The status should be stored in Redis with FAILED
-        // Verify putValue was called with a JSON containing "FAILED"
-        verify(mockRedisService, atLeastOnce()).putValue(
+        // The status should be stored in Redis with FAILED (using timeout for async)
+        verify(mockRedisService, timeout(5000).atLeastOnce()).putValue(
                 argThat(key -> key.startsWith("bulk_purge:")),
                 argThat(json -> json.contains("FAILED")),
                 anyInt());
@@ -392,8 +366,7 @@ class BulkPurgeServiceTest {
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
 
-        setupEsCountResponse(1);
-        setupEsScrollResponse(Arrays.asList("process-vertex"));
+        setupFullEsMock(1, Arrays.asList("process-vertex"));
 
         // Create a Process vertex with cross-connection lineage edges
         AtlasVertex processVertex = mock(AtlasVertex.class);
@@ -418,19 +391,16 @@ class BulkPurgeServiceTest {
         // For lineage repair: graph.getVertex for external vertex
         when(mockGraph.getVertex("external-vertex-id")).thenReturn(externalVertex);
 
-        setupEsDeleteByQueryResponse();
-
         // Mock the task notification
         AtlasDistributedTaskNotification mockNotification = mock(AtlasDistributedTaskNotification.class);
         when(mockTaskNotificationSender.createHasLineageCalculationTasks(anyMap()))
                 .thenReturn(mockNotification);
 
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
-        Thread.sleep(3000);
 
-        // Verify lineage repair tasks were queued
-        verify(mockTaskNotificationSender, atLeastOnce()).createHasLineageCalculationTasks(anyMap());
-        verify(mockTaskNotificationSender, atLeastOnce()).send(any(AtlasDistributedTaskNotification.class));
+        // Verify lineage repair tasks were queued (using timeout for async)
+        verify(mockTaskNotificationSender, timeout(5000).atLeastOnce()).createHasLineageCalculationTasks(anyMap());
+        verify(mockTaskNotificationSender, timeout(5000).atLeastOnce()).send(any(AtlasDistributedTaskNotification.class));
     }
 
     // ======================== Audit Event Tests ========================
@@ -446,22 +416,18 @@ class BulkPurgeServiceTest {
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
 
-        setupEsCountResponse(0); // No entities to delete — fast path
-        setupEsDeleteByQueryResponse();
+        setupFullEsMock(0, Collections.emptyList()); // No entities — fast path
 
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
-        Thread.sleep(2000);
 
-        // Verify audit event was written
-        verify(mockAuditRepository, atLeastOnce()).putEventsV2(any(EntityAuditEventV2.class));
+        // Verify audit event was written (using timeout for async)
+        verify(mockAuditRepository, timeout(5000).atLeastOnce()).putEventsV2(any(EntityAuditEventV2.class));
     }
 
     // ======================== Worker Count Auto-Scaling Tests ========================
 
     @Test
     void testWorkerCountAutoScaling() throws Exception {
-        // Test the auto-scaling logic via a full submission
-        // We verify indirectly through the status map
         mockedGraphUtils.when(() -> AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(
                 eq(mockGraph), eq(Constants.CONNECTION_ENTITY_TYPE),
                 eq(Constants.QUALIFIED_NAME), eq(TEST_CONNECTION_QN)))
@@ -472,16 +438,12 @@ class BulkPurgeServiceTest {
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
 
         // 5000 entities → should auto-scale to 1 worker (< 10000)
-        setupEsCountResponse(5000);
-        setupEsScrollResponse(Collections.emptyList()); // empty scroll to finish quickly
-
-        setupEsDeleteByQueryResponse();
+        setupFullEsMock(5000, Collections.emptyList()); // empty scroll to finish quickly
 
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin");
-        Thread.sleep(2000);
 
-        // Verify workerCount was set in Redis status
-        verify(mockRedisService, atLeastOnce()).putValue(
+        // Verify workerCount=1 was set in Redis status (using timeout for async)
+        verify(mockRedisService, timeout(5000).atLeastOnce()).putValue(
                 argThat(key -> key.startsWith("bulk_purge:")),
                 argThat(json -> json.contains("\"workerCount\":1")),
                 anyInt());
@@ -589,64 +551,58 @@ class BulkPurgeServiceTest {
 
     // ======================== Helper Methods ========================
 
-    private void setupEsCountResponse(long count) throws Exception {
-        String countJson = "{\"count\":" + count + "}";
-        ByteArrayInputStream countStream = new ByteArrayInputStream(countJson.getBytes(StandardCharsets.UTF_8));
-        HttpEntity countEntity = mock(HttpEntity.class);
-        when(countEntity.getContent()).thenReturn(countStream);
+    /**
+     * Sets up a unified ES mock that routes requests based on endpoint.
+     * Uses thenAnswer to create fresh response objects per call, avoiding
+     * ByteArrayInputStream reuse issues.
+     */
+    private void setupFullEsMock(long count, List<String> vertexIds) throws Exception {
+        when(mockEsClient.performRequest(any(Request.class))).thenAnswer(invocation -> {
+            Request req = invocation.getArgument(0);
+            String endpoint = req.getEndpoint();
+            String method = req.getMethod();
 
-        Response countResponse = mock(Response.class);
-        when(countResponse.getEntity()).thenReturn(countEntity);
+            if (endpoint.contains("_count")) {
+                return newMockResponse("{\"count\":" + count + "}");
+            }
+            if (endpoint.contains("_delete_by_query")) {
+                return newMockResponse("{\"deleted\":0}");
+            }
+            if ("DELETE".equals(method)) {
+                return newMockResponse("{}");
+            }
+            if (endpoint.equals("/_search/scroll")) {
+                // Scroll continuation: always return empty hits
+                return newMockResponse("{\"_scroll_id\":\"sid\",\"hits\":{\"hits\":[]}}");
+            }
+            if (endpoint.contains("_search")) {
+                // Initial scroll: return vertex IDs
+                StringBuilder hitsArray = new StringBuilder("[");
+                for (int i = 0; i < vertexIds.size(); i++) {
+                    if (i > 0) hitsArray.append(",");
+                    hitsArray.append("{\"_id\":\"").append(vertexIds.get(i)).append("\"}");
+                }
+                hitsArray.append("]");
+                return newMockResponse("{\"_scroll_id\":\"sid\",\"hits\":{\"hits\":" + hitsArray + "}}");
+            }
 
-        // Match count endpoint
-        when(mockEsClient.performRequest(argThat(req ->
-                req != null && req.getEndpoint().contains("_count"))))
-                .thenReturn(countResponse);
+            return newMockResponse("{}");
+        });
     }
 
-    private void setupEsScrollResponse(List<String> vertexIds) throws Exception {
-        // Build initial scroll response
-        StringBuilder hitsArray = new StringBuilder("[");
-        for (int i = 0; i < vertexIds.size(); i++) {
-            if (i > 0) hitsArray.append(",");
-            hitsArray.append("{\"_id\":\"").append(vertexIds.get(i)).append("\"}");
+    /**
+     * Creates a fresh mock Response with a new ByteArrayInputStream each time.
+     */
+    private Response newMockResponse(String body) {
+        try {
+            Response response = mock(Response.class);
+            HttpEntity entity = mock(HttpEntity.class);
+            when(entity.getContent()).thenReturn(
+                    new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8)));
+            when(response.getEntity()).thenReturn(entity);
+            return response;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        hitsArray.append("]");
-
-        String scrollJson = "{\"_scroll_id\":\"test-scroll-id\",\"hits\":{\"hits\":" + hitsArray + "}}";
-        String emptyScrollJson = "{\"_scroll_id\":\"test-scroll-id\",\"hits\":{\"hits\":[]}}";
-
-        Response scrollResponse1 = createMockResponse(scrollJson);
-        Response scrollResponse2 = createMockResponse(emptyScrollJson);
-        Response clearScrollResponse = createMockResponse("{}");
-
-        // Match scroll endpoints
-        when(mockEsClient.performRequest(argThat(req ->
-                req != null && req.getEndpoint().contains("_search") && req.getEndpoint().contains("scroll"))))
-                .thenReturn(scrollResponse1);
-
-        when(mockEsClient.performRequest(argThat(req ->
-                req != null && req.getEndpoint().equals("/_search/scroll"))))
-                .thenReturn(scrollResponse2);
-
-        when(mockEsClient.performRequest(argThat(req ->
-                req != null && req.getMethod().equals("DELETE"))))
-                .thenReturn(clearScrollResponse);
-    }
-
-    private void setupEsDeleteByQueryResponse() throws Exception {
-        Response deleteResponse = createMockResponse("{\"deleted\":0}");
-        when(mockEsClient.performRequest(argThat(req ->
-                req != null && req.getEndpoint().contains("_delete_by_query"))))
-                .thenReturn(deleteResponse);
-    }
-
-    private Response createMockResponse(String body) throws Exception {
-        Response response = mock(Response.class);
-        HttpEntity entity = mock(HttpEntity.class);
-        when(entity.getContent()).thenReturn(
-                new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8)));
-        when(response.getEntity()).thenReturn(entity);
-        return response;
     }
 }
