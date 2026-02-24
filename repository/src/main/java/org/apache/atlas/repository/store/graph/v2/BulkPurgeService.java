@@ -36,6 +36,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase;
 import org.apache.atlas.service.redis.RedisService;
+import org.janusgraph.util.encoding.LongEncoding;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.elasticsearch.client.Request;
@@ -562,7 +563,9 @@ public class BulkPurgeService {
                 for (JsonNode hit : hits) {
                     if (ctx.cancelRequested) break;
 
-                    String vertexId = hit.get("_id").asText();
+                    // ES _id is base-36 encoded; decode to the JanusGraph long vertex ID
+                    String esDocId = hit.get("_id").asText();
+                    String vertexId = String.valueOf(LongEncoding.decode(esDocId));
                     currentBatch.add(vertexId);
 
                     if (currentBatch.size() >= batchSize) {

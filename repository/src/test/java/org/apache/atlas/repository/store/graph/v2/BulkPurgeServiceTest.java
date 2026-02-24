@@ -25,6 +25,7 @@ import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.notification.AtlasDistributedTaskNotification;
 import org.apache.atlas.notification.task.AtlasDistributedTaskNotificationSender;
 import org.apache.atlas.repository.Constants;
+import org.janusgraph.util.encoding.LongEncoding;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -283,16 +284,18 @@ class BulkPurgeServiceTest {
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
 
-        // Mock ES: count=2, scroll returns 2 vertex IDs, then empty
-        setupFullEsMock(2, Arrays.asList("vertex-1", "vertex-2"));
+        // ES _id is base-36 encoded; graph.getVertex() expects the decoded long as a string
+        String esId1 = LongEncoding.encode(1001L);
+        String esId2 = LongEncoding.encode(1002L);
+        setupFullEsMock(2, Arrays.asList(esId1, esId2));
 
-        // Mock graph operations
+        // Mock graph operations — use decoded long vertex IDs
         AtlasVertex v1 = mock(AtlasVertex.class);
         AtlasVertex v2 = mock(AtlasVertex.class);
         AtlasEdge edge1 = mock(AtlasEdge.class);
 
-        when(mockGraph.getVertex("vertex-1")).thenReturn(v1);
-        when(mockGraph.getVertex("vertex-2")).thenReturn(v2);
+        when(mockGraph.getVertex("1001")).thenReturn(v1);
+        when(mockGraph.getVertex("1002")).thenReturn(v2);
         when(v1.getEdges(AtlasEdgeDirection.BOTH)).thenReturn(Collections.singletonList(edge1));
         when(v1.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class))).thenReturn(Collections.emptyList());
         when(v2.getEdges(AtlasEdgeDirection.BOTH)).thenReturn(Collections.emptyList());
@@ -301,8 +304,8 @@ class BulkPurgeServiceTest {
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Verify graph operations occurred (using timeout for async)
-        verify(mockGraph, timeout(5000).atLeastOnce()).getVertex("vertex-1");
-        verify(mockGraph, timeout(5000).atLeastOnce()).getVertex("vertex-2");
+        verify(mockGraph, timeout(5000).atLeastOnce()).getVertex("1001");
+        verify(mockGraph, timeout(5000).atLeastOnce()).getVertex("1002");
         verify(mockGraph, timeout(5000).atLeastOnce()).removeEdge(edge1);
         verify(mockGraph, timeout(5000).atLeastOnce()).removeVertex(v1);
         verify(mockGraph, timeout(5000).atLeastOnce()).removeVertex(v2);
@@ -320,10 +323,11 @@ class BulkPurgeServiceTest {
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
 
-        setupFullEsMock(1, Arrays.asList("deleted-vertex"));
+        String esId = LongEncoding.encode(9999L);
+        setupFullEsMock(1, Arrays.asList(esId));
 
         // Vertex already deleted — returns null
-        when(mockGraph.getVertex("deleted-vertex")).thenReturn(null);
+        when(mockGraph.getVertex("9999")).thenReturn(null);
 
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
@@ -366,15 +370,16 @@ class BulkPurgeServiceTest {
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
 
-        setupFullEsMock(1, Arrays.asList("process-vertex"));
+        String esId = LongEncoding.encode(5001L);
+        setupFullEsMock(1, Arrays.asList(esId));
 
         // Create a Process vertex with cross-connection lineage edges
         AtlasVertex processVertex = mock(AtlasVertex.class);
         AtlasVertex externalVertex = mock(AtlasVertex.class);
         AtlasEdge lineageEdge = mock(AtlasEdge.class);
 
-        when(mockGraph.getVertex("process-vertex")).thenReturn(processVertex);
-        when(processVertex.getId()).thenReturn("process-vertex");
+        when(mockGraph.getVertex("5001")).thenReturn(processVertex);
+        when(processVertex.getId()).thenReturn("5001");
         when(processVertex.getEdges(AtlasEdgeDirection.BOTH)).thenReturn(Collections.singletonList(lineageEdge));
 
         // Lineage edge pointing to an external connection vertex
