@@ -27,6 +27,7 @@ on:
       - ring-*
       - ms-635
       - lg-async-producer
+      - ms-428-delete-by-conn
 
     paths-ignore:
       - '.claude/**'
