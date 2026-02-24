@@ -25,7 +25,7 @@
     "@types/react-redux": "7.1.33",
     "@types/sanitize-html": "2.13.0",
     "autosuggest-highlight": "3.3.4",
-    "axios": "1.13.1",
+    "axios": "1.13.5",
     "d3": "5.16.0",
     "d3-tip": "0.7.1",
     "dagre-d3": "0.6.4",
