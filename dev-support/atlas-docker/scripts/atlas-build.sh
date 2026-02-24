@@ -86,11 +86,7 @@ else
   done
 fi
 
-if [[ "${ARG_PROFILES}" == *"embedded-solr-it"* ]]; then
-  mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -q -DskipDocs clean verify
-else
-  mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean package
-fi
+mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean verify
 
 status=$?
 
