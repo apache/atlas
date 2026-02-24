@@ -36,6 +36,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase;
 import org.apache.atlas.service.redis.RedisService;
+import org.apache.atlas.type.AtlasType;
 import org.janusgraph.util.encoding.LongEncoding;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
@@ -762,7 +763,9 @@ public class BulkPurgeService {
                     EntityAuditActionV2.ENTITY_PURGE,
                     details,
                     summaryEntity);
-            event.setEntityQualifiedName("bulk-purge:" + ctx.purgeKey);
+            // Must use AtlasType.toJson() — ESBasedAuditRepository template injects this
+            // raw into a JSON document (slot {5} is unquoted in the template).
+            event.setEntityQualifiedName(AtlasType.toJson("bulk-purge:" + ctx.purgeKey));
 
             for (EntityAuditRepository auditRepository : auditRepositories) {
                 auditRepository.putEventsV2(event);
