@@ -84,7 +84,7 @@ class BulkPurgeServiceTest {
         RequestContext.get();
 
         bulkPurgeService = new BulkPurgeService(
-                mockGraph, mockRedisService, mockAuditRepository, mockTaskNotificationSender);
+                mockGraph, mockRedisService, Set.of(mockAuditRepository), mockTaskNotificationSender);
 
         // Inject the mock ES client directly — avoids thread-scoped MockedStatic issues
         bulkPurgeService.setEsClient(mockEsClient);

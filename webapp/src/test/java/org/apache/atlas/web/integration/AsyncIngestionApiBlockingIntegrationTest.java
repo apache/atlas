@@ -30,9 +30,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class AsyncIngestionApiBlockingIT extends AtlasInProcessBaseIT {
+public class AsyncIngestionApiBlockingIntegrationTest extends AtlasInProcessBaseIT {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AsyncIngestionApiBlockingIT.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AsyncIngestionApiBlockingIntegrationTest.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final String ASYNC_INGESTION_ERROR_CODE = "ATLAS-503-00-004";
 

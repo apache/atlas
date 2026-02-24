@@ -41,9 +41,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class AsyncIngestionBusinessAttributesIT extends AtlasInProcessBaseIT {
+public class AsyncIngestionBusinessAttributesIntegrationTest extends AtlasInProcessBaseIT {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AsyncIngestionBusinessAttributesIT.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AsyncIngestionBusinessAttributesIntegrationTest.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private static final String ASYNC_TOPIC = "ATLAS_ASYNC_ENTITIES";

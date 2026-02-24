@@ -67,7 +67,7 @@ public class BulkPurgeService {
 
     private final AtlasGraph                graph;
     private final RedisService              redisService;
-    private final EntityAuditRepository     auditRepository;
+    private final Set<EntityAuditRepository> auditRepositories;
     private final AtlasDistributedTaskNotificationSender taskNotificationSender;
 
     private final ExecutorService coordinatorExecutor;
@@ -81,11 +81,11 @@ public class BulkPurgeService {
     @Inject
     public BulkPurgeService(AtlasGraph graph,
                             RedisService redisService,
-                            EntityAuditRepository auditRepository,
+                            Set<EntityAuditRepository> auditRepositories,
                             AtlasDistributedTaskNotificationSender taskNotificationSender) {
         this.graph                  = graph;
         this.redisService           = redisService;
-        this.auditRepository        = auditRepository;
+        this.auditRepositories      = auditRepositories;
         this.taskNotificationSender = taskNotificationSender;
 
         this.coordinatorExecutor = Executors.newFixedThreadPool(2,
@@ -692,7 +692,9 @@ public class BulkPurgeService {
                     details.toString(),
                     null);
 
-            auditRepository.putEventsV2(event);
+            for (EntityAuditRepository auditRepository : auditRepositories) {
+                auditRepository.putEventsV2(event);
+            }
             LOG.info("BulkPurge: Audit event written for purgeKey={}", ctx.purgeKey);
         } catch (Exception e) {
             LOG.error("BulkPurge: Failed to write audit event for purgeKey={}", ctx.purgeKey, e);
