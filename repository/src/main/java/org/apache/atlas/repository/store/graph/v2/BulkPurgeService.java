@@ -24,6 +24,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.notification.task.AtlasDistributedTaskNotificationSender;
@@ -673,24 +674,37 @@ public class BulkPurgeService {
         try {
             long duration = System.currentTimeMillis() - startTime;
 
-            ObjectNode details = MAPPER.createObjectNode();
-            details.put("purgeKey", ctx.purgeKey);
-            details.put("purgeMode", ctx.purgeMode);
-            details.put("totalDeleted", ctx.totalDeleted.get());
-            details.put("totalFailed", ctx.totalFailed.get());
-            details.put("totalDiscovered", ctx.totalDiscovered);
-            details.put("durationMs", duration);
-            details.put("requestId", ctx.requestId);
-            details.put("workerCount", ctx.workerCount);
+            ObjectNode detailsNode = MAPPER.createObjectNode();
+            detailsNode.put("purgeKey", ctx.purgeKey);
+            detailsNode.put("purgeMode", ctx.purgeMode);
+            detailsNode.put("totalDeleted", ctx.totalDeleted.get());
+            detailsNode.put("totalFailed", ctx.totalFailed.get());
+            detailsNode.put("totalDiscovered", ctx.totalDiscovered);
+            detailsNode.put("durationMs", duration);
+            detailsNode.put("requestId", ctx.requestId);
+            detailsNode.put("workerCount", ctx.workerCount);
 
-            String entityId = ctx.purgeKey; // Use purgeKey as entityId
+            // ESBasedAuditRepository expects:
+            //   1. details string prefixed with the audit action prefix ("Purged: ")
+            //   2. a non-null AtlasEntity on the event (skips if null)
+            String auditPrefix = "Purged: ";
+            String details = auditPrefix + detailsNode.toString();
+
+            // Create a minimal AtlasEntity so ES audit doesn't skip this event
+            AtlasEntity summaryEntity = new AtlasEntity("__internal");
+            summaryEntity.setGuid(ctx.requestId);
+            summaryEntity.setAttribute("qualifiedName", "bulk-purge:" + ctx.purgeKey);
+            summaryEntity.setUpdateTime(new java.util.Date());
+
+            String entityId = ctx.purgeKey;
             EntityAuditEventV2 event = new EntityAuditEventV2(
                     entityId,
                     System.currentTimeMillis(),
                     ctx.submittedBy,
                     EntityAuditActionV2.ENTITY_PURGE,
-                    details.toString(),
-                    null);
+                    details,
+                    summaryEntity);
+            event.setEntityQualifiedName("bulk-purge:" + ctx.purgeKey);
 
             for (EntityAuditRepository auditRepository : auditRepositories) {
                 auditRepository.putEventsV2(event);
