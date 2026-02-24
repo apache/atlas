@@ -22,6 +22,17 @@ import { serverErrorHandler } from "@utils/Utils";
 
 let prevNetworkErrorTime = 0;
 
+function errorHandelingForAbortAndStatus0() {
+  const diffTime = new Date().getTime() - prevNetworkErrorTime;
+  if (diffTime > 3000) {
+    prevNetworkErrorTime = new Date().getTime();
+    toast.error(
+      "Network Connection Failure : " +
+        "It seems you are not connected to the internet. Please check your internet connection and try again"
+    );
+  }
+}
+
 const fetchApi = async (url: string, config: AxiosRequestConfig) => {
   const configs: AxiosRequestConfig = {
     url: url,
@@ -40,16 +51,6 @@ const fetchApi = async (url: string, config: AxiosRequestConfig) => {
     const resp: AxiosResponse = await axios(configs as AxiosRequestConfig);
     return resp;
   } catch (error: any) {
-    function errorHandelingForAbortAndStatus0() {
-      var diffTime = new Date().getTime() - prevNetworkErrorTime;
-      if (diffTime > 3000) {
-        prevNetworkErrorTime = new Date().getTime();
-        toast.error(
-          "Network Connection Failure : " +
-          "It seems you are not connected to the internet. Please check your internet connection and try again"
-        );
-      }
-    }
     if (axios.isAxiosError(error)) {
       if(error.response?.status){
         switch (Number(error.response.status)) {

@@ -217,13 +217,13 @@ const QuickSearch = () => {
               const code = e.keyCode || e.which;
 
               switch (code) {
-                case 13: // Enter key
+                case 13: { // Enter key
                   e.preventDefault();
                   const inputValue = (e.target as HTMLInputElement).value.trim();
-                  
+
                   // If input is empty, use "*" for wildcard search (matching classic UI behavior)
                   const searchQuery = inputValue === "" ? "*" : inputValue;
-                  
+
                   // Try to find exact match in options
                   const activeOption = options.find(
                     (option: { title: any }) =>
@@ -239,6 +239,7 @@ const QuickSearch = () => {
                     handleValues(searchQuery);
                   }
                   break;
+                }
                 case 9: // Tab key
                 case 27: // Escape key
                   setOpen(false);

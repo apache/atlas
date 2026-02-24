@@ -82,7 +82,9 @@ const SchemaTab = ({
       try {
         let mapObj = JSON.parse(defObj?.options?.schemaAttributes);
         schemaTableAttribute = pick(firstColumn.attributes, mapObj);
-      } catch (e) {}
+      } catch {
+        /* JSON parse error - ignore */
+      }
     }
   }
 

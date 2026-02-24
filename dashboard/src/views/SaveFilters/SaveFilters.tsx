@@ -154,7 +154,7 @@ const SaveFilters = ({
 
     if (selectedSearchData && Object.keys(selectedSearchData).length > 0) {
       for (let key in saveObj.searchParameters) {
-        if (saveObj.searchParameters.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(saveObj.searchParameters, key)) {
           selectedSearchData.searchParameters[key] =
             saveObj.searchParameters[key];
         }
@@ -255,7 +255,6 @@ const SaveFilters = ({
                             inputValue,
                             label: `Add: "${inputValue}"`
                           });
-                        } else {
                         }
 
                         return filtered;

@@ -579,11 +579,12 @@ const BarTreeView: FC<{
         searchParams.delete("relationshipName");
         searchParams.set("type", node.id);
         break;
-      case "Classifications":
+      case "Classifications": {
         searchParams.delete("relationshipName");
         const id = node.label.split(" (")[0];
         searchParams.set("tag", id);
         break;
+      }
       case "Glossary":
         setGlossarySearchParams(node, searchParams, isEmptyServicetype);
         break;
@@ -992,7 +993,9 @@ const BarTreeView: FC<{
       link.click();
 
       document.body.removeChild(link);
-    } catch (error) {}
+    } catch {
+      /* ignore download error */
+    }
   };
 
   const label = { inputProps: { "aria-label": "Switch demo" } };

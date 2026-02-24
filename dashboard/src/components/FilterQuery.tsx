@@ -38,7 +38,7 @@ export const FilterQuery = ({ value }: any) => {
     return Object.keys(filterObj?.rules || {})?.map((key) => {
       let obj = { ...filterObj.rules[key] };
 
-      if (obj.hasOwnProperty("condition")) {
+      if (Object.prototype.hasOwnProperty.call(obj, "condition")) {
         return (
           <Typography className="operator" fontWeight="600">
             {obj.condition}

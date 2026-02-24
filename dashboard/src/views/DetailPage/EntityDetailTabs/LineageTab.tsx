@@ -487,17 +487,15 @@ const LineageTab = ({ entity, isProcess }: any) => {
   const updateQueryObject = (parentId, btnType) => {
     let inputLimit = null;
     let outputLimit = null;
-    if (lineageData.lineageOnDemandPayload.hasOwnProperty(parentId)) {
+    if (Object.prototype.hasOwnProperty.call(lineageData.lineageOnDemandPayload, parentId)) {
       Object.entries(lineageData.lineageOnDemandPayload).forEach(
         ([key, value]) => {
           if (key === parentId) {
             if (btnType === "Input") {
               value.inputRelationsLimit =
                 value.inputRelationsLimit + lineageNodeCount;
-              value.outputRelationsLimit = value.outputRelationsLimit;
             }
             if (btnType === "Output") {
-              value.inputRelationsLimit = value.inputRelationsLimit;
               value.outputRelationsLimit =
                 value.outputRelationsLimit + lineageNodeCount;
             }

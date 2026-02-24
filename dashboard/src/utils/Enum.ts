@@ -253,6 +253,7 @@ export const regex = {
       min: -2147483648,
       max: 2147483647
     },
+    /* eslint-disable @typescript-eslint/no-loss-of-precision -- 64-bit long range constants */
     long: {
       min: -9223372036854775808,
       max: 9223372036854775807

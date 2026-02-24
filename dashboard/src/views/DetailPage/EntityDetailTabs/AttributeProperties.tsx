@@ -95,7 +95,7 @@ const AttributeProperties = ({
       return attributes;
     } else if (propertiesName == "Relationship") {
       return relationshipAttributes;
-    } else if ((propertiesName = "User-defined")) {
+    } else if (propertiesName === "User-defined") {
       return customAttributes;
     }
   };

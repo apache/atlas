@@ -23,7 +23,7 @@ module.exports = {
     "plugin:@typescript-eslint/recommended",
     "plugin:react-hooks/recommended"
   ],
-  ignorePatterns: ["dist", ".eslintrc.cjs"],
+  ignorePatterns: ["dist", "bin", "target", ".eslintrc.cjs"],
   parser: "@typescript-eslint/parser",
   plugins: ["react-refresh"],
   rules: {
@@ -32,8 +32,18 @@ module.exports = {
       { allowConstantExport: true }
     ],
     "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+        ignoreRestSiblings: true,
+        destructuredArrayIgnorePattern: "^_"
+      }
+    ],
+    "@typescript-eslint/ban-ts-comment": "off",
     "prefer-const": "off",
     "no-var": "off",
-    "no-useless-catch": "warning"
+    "no-useless-catch": "warn"
   }
 };

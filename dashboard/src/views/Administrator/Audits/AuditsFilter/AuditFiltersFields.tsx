@@ -248,7 +248,7 @@ export const getObjDef = (
       ];
     }
     Object.assign(obj, getOperator(obj.type, false));
-    if (regex.RANGE_CHECK.hasOwnProperty(obj.type)) {
+    if (Object.prototype.hasOwnProperty.call(regex.RANGE_CHECK, obj.type)) {
       obj.validator = {
         min: regex.RANGE_CHECK[obj.type].min,
         max: regex.RANGE_CHECK[obj.type].max
