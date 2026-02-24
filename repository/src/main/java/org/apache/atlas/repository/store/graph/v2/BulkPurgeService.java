@@ -95,7 +95,7 @@ public class BulkPurgeService {
                         .build());
     }
 
-    private RestClient getEsClient() {
+    private synchronized RestClient getEsClient() {
         if (esClient == null) {
             esClient = AtlasElasticsearchDatabase.getLowLevelClient();
         }
