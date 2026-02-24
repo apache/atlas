@@ -73,7 +73,7 @@ const EntityDetailPage: React.FC = () => {
   const fetchRelationShipDetails = async (guid: string) => {
     try {
       const relationshipResp = await getDetailPageRelationship(guid);
-      const { relationship } = relationshipResp?.data;
+      const { relationship } = relationshipResp?.data ?? {};
       setRelationshipData(relationship);
     } catch (error) {
       setLoading(false);

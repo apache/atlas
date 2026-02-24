@@ -19,10 +19,16 @@
 import LineageUtils from "./LineageUtils";
 import DataUtils from "./DataUtils";
 
+const isEmpty = (value) =>
+	value === undefined ||
+	value === null ||
+	(typeof value === "object" && Object.keys(value).length === 0) ||
+	(typeof value === "string" && value.trim().length === 0);
+
 String.prototype.trunc =
 	String.prototype.trunc ||
 	function(n) {
 		return this.length > n ? this.substr(0, n - 1) + "..." : this;
 	};
 
-export { LineageUtils, DataUtils };
+export { LineageUtils, DataUtils, isEmpty };

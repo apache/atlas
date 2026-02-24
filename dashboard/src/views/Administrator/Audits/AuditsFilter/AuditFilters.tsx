@@ -233,7 +233,7 @@ const AuditFilters = ({
     }
   };
 
-  const handleQueryChange = (newQuery: SetStateAction<{}>) => {
+  const handleQueryChange = (newQuery: SetStateAction<object>) => {
     const enrichedRules = newQuery.rules.map((rule: { field: any }) => {
       const field = fields(entityDefs, enumDefs).find(
         (f) => f.name === rule.field

@@ -206,7 +206,6 @@ const RelationShipSearch: React.FC = () => {
       enableSorting: false,
       show: true
     },
-    ,
     {
       accessorFn: (row: any) => row.typeName,
       accessorKey: "typeName",

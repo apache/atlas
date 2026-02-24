@@ -198,7 +198,7 @@ const EntityStats = ({
 
   let sortedStats: any = {};
   sortedKeys.forEach(function (key) {
-    if (stats.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(stats, key)) {
       sortedStats[key] = stats[key];
     }
   });

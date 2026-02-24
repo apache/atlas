@@ -781,7 +781,7 @@ let backNavigate: string = "";
 
 const GlobalQueryState = {
   query: {},
-  setQuery: function (newQuery: {}) {
+  setQuery: function (newQuery: Record<string, unknown>) {
     this.query = newQuery;
   },
   getQuery: function () {

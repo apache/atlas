@@ -174,14 +174,12 @@ const Filters = ({
       : {};
 
   let attrEntityTypeObj = entityTypeObj;
-  let entityAttributeLength = "";
   if (attrEntityTypeObj) {
     attrEntityTypeObj = getNestedSuperTypeObj({
       data: attrEntityTypeObj,
       collection: entityDefs,
       attrMerge: true
     });
-    entityAttributeLength = attrEntityTypeObj.length;
   }
   const fields = () => {
     let filters = [];
@@ -266,7 +264,6 @@ const Filters = ({
           const fullName = businessMetadataKey + "." + returnObj.id;
           returnObj.id = fullName;
           returnObj.name = fullName; // Also update name so query builder uses the full name
-          returnObj.label = returnObj.label;
           returnObj.data = { entityType: "businessMetadata" };
           filters.push(returnObj);
         }

@@ -115,14 +115,14 @@ const isEmptyObject = (obj: { [x: string]: string }) => {
   );
 };
 
-const extend = function () {
+const extend = function (...args: any[]) {
   let extended: any = {};
   let deep = false;
   let i = 0;
-  let length = arguments.length;
+  const length = args.length;
 
-  if (Object.prototype.toString.call(arguments[0]) === "[object Boolean]") {
-    deep = arguments[0];
+  if (Object.prototype.toString.call(args[0]) === "[object Boolean]") {
+    deep = args[0];
     i++;
   }
 
@@ -142,7 +142,7 @@ const extend = function () {
   };
 
   for (; i < length; i++) {
-    let obj = arguments[i];
+    const obj = args[i];
     merge(obj);
   }
 

@@ -82,11 +82,11 @@ export const attributeFilter = {
     const mapApiOperatorToUI = (oper) => {
       return queryBuilderApiOperatorToUI[oper] || oper;
     };
-    const conditionalURl = (options, splitter) => {
+    const conditionalURl = (options, _splitter) => {
       if (!isEmpty(options)) {
         return (options.rules || options.criterion)
           .map((obj) => {
-            if (obj.hasOwnProperty("condition")) {
+            if (Object.prototype.hasOwnProperty.call(obj, "condition")) {
               return (
                 obj.condition + "(" + conditionalURl(obj, spliter + 1) + ")"
               );
@@ -96,7 +96,6 @@ export const attributeFilter = {
                 ? attributeDefs.find((attr) => attr.name == obj.attributeName)
                 : {};
               if (attributeDef) {
-                obj.attributeValue = obj.attributeValue;
                 obj["attributeType"] = attributeDef.typeName;
               }
             }

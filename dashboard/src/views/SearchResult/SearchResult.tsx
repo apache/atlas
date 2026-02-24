@@ -213,7 +213,9 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
         try {
           (globalSearchParams as any).basicParams.query = qParam;
           (globalSearchParams as any).dslParams.query = qParam;
-        } catch (_e) {}
+        } catch {
+          /* ignore */
+        }
       }
 
       const isDslSearch = searchParams.get("searchType") == "dsl";
@@ -381,7 +383,6 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
       sortingFn: "alphanumeric",
       show: true
     },
-    ,
     {
       accessorFn: (row: any) => row.attributes.owner,
       accessorKey: "owner",
@@ -928,7 +929,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
             : searchData.entities || []
         }
         columns={allColumns.filter(
-          (value: {}) => Object.keys(value).length !== 0
+          (value: object) => Object.keys(value).length !== 0
         )}
         emptyText="No Records found!"
         isFetching={loader}
