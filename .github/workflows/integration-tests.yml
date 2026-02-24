@@ -43,15 +43,8 @@ jobs:
         with:
           filters: |
             src:
-              - '**'
-              - '!.claude/**'
-              - '!.cursor/**'
-              - '!.github/**'
-              - '!docs/**'
-              - '!helm/**'
-              - '!local-dev/**'
-              - '!README.txt'
-              - '!README.md'
+              - '**/*.java'
+              - '**/pom.xml'
 
       - name: Skip message
         if: steps.filter.outputs.src != 'true'
