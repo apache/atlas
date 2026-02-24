@@ -541,17 +541,26 @@ class BulkPurgeServiceTest {
 
         when(mockRedisService.getValue(anyString())).thenReturn(null);
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
+        when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
+
+        // Capture the ES query sent to the _count endpoint
+        setupFullEsMock(0, Collections.emptyList());
 
         bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
-        // Verify the ES query uses a prefix on __qualifiedNameHierarchy with trailing "/"
-        // so the Connection entity itself is excluded from purge results
-        verify(mockRedisService, atLeastOnce()).putValue(
-                argThat(key -> key.startsWith("bulk_purge:")),
-                argThat(json -> json.contains("prefix") &&
-                        json.contains(Constants.QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY) &&
-                        json.contains(TEST_CONNECTION_QN + "/")),
-                anyInt());
+        // Verify ES _count request contains a prefix query with trailing "/"
+        // on __qualifiedNameHierarchy so the Connection entity itself is excluded
+        verify(mockEsClient, timeout(5000).atLeastOnce()).performRequest(argThat(request -> {
+            if (!request.getEndpoint().contains("_count")) return false;
+            try {
+                String body = new String(request.getEntity().getContent().readAllBytes(), StandardCharsets.UTF_8);
+                return body.contains("prefix") &&
+                       body.contains(Constants.QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY) &&
+                       body.contains(TEST_CONNECTION_QN + "/");
+            } catch (Exception e) {
+                return false;
+            }
+        }));
     }
 
     // ======================== Helper Methods ========================
