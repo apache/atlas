@@ -135,6 +135,9 @@ parseArgs() {
     --branch=*)
       BRANCH=${i#*=}
       ;;
+    --profile=*)
+      PROFILE=${i#*=}
+      ;;
     --skip-ut=*)
       SKIP_UT=${i#*=}
       ;;
@@ -592,6 +595,11 @@ buildAndInstall () {
   #$MVN clean install -DskipITs
 
   MVN_GOALS="clean install -DskipCheck"
+
+  if [[ $PROFILE != "" ]]; then
+    echo "Profile $PROFILE is being used."
+    MVN_GOALS+=" -P$PROFILE"
+  fi
 
   if [[ $SKIP_UT == "true" ]]; then
     echo "Unit Tests flag set to true."
