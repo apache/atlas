@@ -22,7 +22,6 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
-import org.apache.atlas.model.notification.AtlasDistributedTaskNotification;
 import org.apache.atlas.notification.task.AtlasDistributedTaskNotificationSender;
 import org.apache.atlas.repository.Constants;
 import org.janusgraph.util.encoding.LongEncoding;
@@ -395,17 +394,16 @@ class BulkPurgeServiceTest {
 
         // For lineage repair: graph.getVertex for external vertex
         when(mockGraph.getVertex("external-vertex-id")).thenReturn(externalVertex);
-
-        // Mock the task notification
-        AtlasDistributedTaskNotification mockNotification = mock(AtlasDistributedTaskNotification.class);
-        when(mockTaskNotificationSender.createHasLineageCalculationTasks(anyMap()))
-                .thenReturn(mockNotification);
+        // External vertex has no remaining active lineage edges (the process was purged)
+        when(externalVertex.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class)))
+                .thenReturn(Collections.emptyList());
 
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
-        // Verify lineage repair tasks were queued (using timeout for async)
-        verify(mockTaskNotificationSender, timeout(5000).atLeastOnce()).createHasLineageCalculationTasks(anyMap());
-        verify(mockTaskNotificationSender, timeout(5000).atLeastOnce()).send(any(AtlasDistributedTaskNotification.class));
+        // Verify lineage was repaired synchronously: __hasLineage set to false on external vertex.
+        // setEncodedProperty ultimately calls element.setProperty(), so verify on the mock vertex.
+        verify(externalVertex, timeout(5000).atLeastOnce())
+                .setProperty(eq(org.apache.atlas.type.Constants.HAS_LINEAGE), eq(false));
     }
 
     // ======================== Audit Event Tests ========================

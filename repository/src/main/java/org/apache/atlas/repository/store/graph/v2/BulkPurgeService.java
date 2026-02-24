@@ -56,6 +56,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 
 @Component
 public class BulkPurgeService {
@@ -284,7 +285,7 @@ public class BulkPurgeService {
             } else {
                 // Phase 3: Post-purge reconciliation
                 esCleanup(ctx);
-                queueLineageRecalcTasks(ctx);
+                repairExternalLineage(ctx);
 
                 // Phase 4: Delete the Connection entity itself (if requested)
                 if (ctx.deleteConnection && PURGE_MODE_CONNECTION.equals(ctx.purgeMode)) {
@@ -421,8 +422,13 @@ public class BulkPurgeService {
                     continue; // Already deleted (idempotent)
                 }
 
-                // Collect cross-connection lineage edges BEFORE removal
-                collectExternalLineageVertices(ctx, vertex);
+                // Only collect lineage for vertices that actually have lineage.
+                // Since ALL same-connection entities are deleted, only vertices with
+                // __hasLineage=true can have external lineage partners to repair.
+                Boolean vertexHasLineage = vertex.getProperty(HAS_LINEAGE, Boolean.class);
+                if (Boolean.TRUE.equals(vertexHasLineage)) {
+                    collectExternalLineageVertices(ctx, vertex);
+                }
 
                 // Remove all edges
                 Iterable<AtlasEdge> edges = vertex.getEdges(AtlasEdgeDirection.BOTH);
@@ -679,51 +685,75 @@ public class BulkPurgeService {
     }
 
     /**
-     * Phase 3b: Queue lineage recalculation tasks for external vertices.
+     * Phase 3b: Repair __hasLineage on external vertices whose lineage partners were purged.
+     *
+     * For each external vertex, checks whether it still has any active lineage edges.
+     * If none remain, sets {@code __hasLineage = false} directly on the graph vertex.
+     * This mirrors the synchronous path in {@code DeleteHandlerV1.resetHasLineageOnInputOutputDelete}.
      */
-    private void queueLineageRecalcTasks(PurgeContext ctx) {
+    private void repairExternalLineage(PurgeContext ctx) {
         if (ctx.externalLineageVertexIds.isEmpty()) {
             LOG.info("BulkPurge: No external lineage vertices to repair for purgeKey={}", ctx.purgeKey);
             return;
         }
 
-        LOG.info("BulkPurge: Queueing lineage repair for {} external vertices for purgeKey={}",
+        LOG.info("BulkPurge: Repairing lineage on {} external vertices for purgeKey={}",
                 ctx.externalLineageVertexIds.size(), ctx.purgeKey);
 
-        try {
-            // Resolve vertex types
-            Map<String, String> typeByVertexId = new HashMap<>();
-            for (String vertexId : ctx.externalLineageVertexIds) {
+        int repaired = 0;
+        int skipped  = 0;
+
+        String[] lineageLabels = {PROCESS_INPUTS, PROCESS_OUTPUTS};
+
+        for (String vertexId : ctx.externalLineageVertexIds) {
+            boolean repairSuccess = false;
+            for (int attempt = 1; attempt <= 3 && !repairSuccess; attempt++) {
                 try {
-                    AtlasVertex v = graph.getVertex(vertexId);
-                    if (v != null) {
-                        String typeName = v.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class);
-                        if (typeName != null) {
-                            typeByVertexId.put(vertexId, typeName);
+                    AtlasVertex vertex = graph.getVertex(vertexId);
+                    if (vertex == null) {
+                        skipped++;
+                        repairSuccess = true;
+                        break;
+                    }
+
+                    boolean hasActiveLineage = false;
+                    Iterable<AtlasEdge> edges = vertex.getEdges(AtlasEdgeDirection.BOTH, lineageLabels);
+                    for (AtlasEdge edge : edges) {
+                        String edgeState = edge.getProperty(STATE_PROPERTY_KEY, String.class);
+                        if (ACTIVE_STATE_VALUE.equals(edgeState)) {
+                            hasActiveLineage = true;
+                            break;  // O(1) for vertices that still have other lineage
                         }
                     }
+
+                    if (!hasActiveLineage) {
+                        AtlasGraphUtilsV2.setEncodedProperty(vertex, HAS_LINEAGE, false);
+                        graph.commit();
+                        repaired++;
+                    }
+                    repairSuccess = true;
                 } catch (Exception e) {
-                    LOG.debug("BulkPurge: Could not resolve type for vertex {}", vertexId, e);
+                    LOG.warn("BulkPurge: Lineage repair attempt {}/3 failed for vertex {}",
+                            attempt, vertexId, e);
+                    try {
+                        graph.rollback();
+                    } catch (Exception re) { /* ignore */ }
+                    if (attempt < 3) {
+                        try { Thread.sleep(attempt * 500L); } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                    }
                 }
             }
-
-            // Batch into 1000-vertex chunks and send to distributed task topic
-            List<Map.Entry<String, String>> entries = new ArrayList<>(typeByVertexId.entrySet());
-            for (int i = 0; i < entries.size(); i += 1000) {
-                int end = Math.min(i + 1000, entries.size());
-                Map<String, String> batch = new HashMap<>();
-                for (int j = i; j < end; j++) {
-                    batch.put(entries.get(j).getKey(), entries.get(j).getValue());
-                }
-                taskNotificationSender.send(
-                        taskNotificationSender.createHasLineageCalculationTasks(batch));
+            if (!repairSuccess) {
+                LOG.error("BulkPurge: Failed to repair lineage for vertex {} after 3 attempts", vertexId);
+                skipped++;
             }
-
-            LOG.info("BulkPurge: Queued lineage repair for {} vertices in {} batches for purgeKey={}",
-                    typeByVertexId.size(), (int) Math.ceil(typeByVertexId.size() / 1000.0), ctx.purgeKey);
-        } catch (Exception e) {
-            LOG.error("BulkPurge: Failed to queue lineage repair for purgeKey={}", ctx.purgeKey, e);
         }
+
+        LOG.info("BulkPurge: Lineage repair complete for purgeKey={}: repaired={}, skipped={}",
+                ctx.purgeKey, repaired, skipped);
     }
 
     /**
