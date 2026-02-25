@@ -408,21 +408,53 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     @Override
     public AtlasEdge getOrCreate(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship, boolean skipAuth) throws AtlasBaseException {
-        AtlasEdge ret = getRelationship(end1Vertex, end2Vertex, relationship);
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("relationshipStore.getOrCreate");
+        try {
+            AtlasEdge ret;
+            AtlasPerfMetrics.MetricRecorder lookupMetric = RequestContext.get().startMetricRecord("relationshipStore.getOrCreate.lookup");
+            try {
+                ret = getRelationship(end1Vertex, end2Vertex, relationship);
+            } finally {
+                RequestContext.get().endMetricRecord(lookupMetric);
+            }
 
-        if (ret == null) {
-            ret = createRelationship(end1Vertex, end2Vertex, relationship, false, skipAuth);
-            recordRelationshipMutation(RelationshipMutation.RELATIONSHIP_CREATE, ret, entityRetriever);
+            if (ret == null) {
+                AtlasPerfMetrics.MetricRecorder createMetric = RequestContext.get().startMetricRecord("relationshipStore.getOrCreate.create");
+                try {
+                    ret = createRelationship(end1Vertex, end2Vertex, relationship, false, skipAuth);
+                } finally {
+                    RequestContext.get().endMetricRecord(createMetric);
+                }
+                recordRelationshipMutation(RelationshipMutation.RELATIONSHIP_CREATE, ret, entityRetriever);
+            }
+
+            return ret;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
         }
-
-        return ret;
     }
 
     @Override
     public AtlasEdge getRelationship(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasRelationship relationship) throws AtlasBaseException {
-        String relationshipLabel = getRelationshipEdgeLabel(fromVertex, toVertex, relationship.getTypeName());
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("relationshipStore.getRelationship");
+        try {
+            String relationshipLabel;
+            AtlasPerfMetrics.MetricRecorder resolveLabelMetric = RequestContext.get().startMetricRecord("relationshipStore.getRelationship.resolveLabel");
+            try {
+                relationshipLabel = getRelationshipEdgeLabel(fromVertex, toVertex, relationship.getTypeName());
+            } finally {
+                RequestContext.get().endMetricRecord(resolveLabelMetric);
+            }
 
-        return getRelationshipEdge(fromVertex, toVertex, relationshipLabel);
+            AtlasPerfMetrics.MetricRecorder fetchEdgeMetric = RequestContext.get().startMetricRecord("relationshipStore.getRelationship.fetchEdge");
+            try {
+                return getRelationshipEdge(fromVertex, toVertex, relationshipLabel);
+            } finally {
+                RequestContext.get().endMetricRecord(fetchEdgeMetric);
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
     }
 
     @Override
@@ -463,75 +495,107 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     }
 
     private AtlasEdge createRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship, boolean existingRelationshipCheck, boolean skipAuth) throws AtlasBaseException {
-        AtlasEdge ret;
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("relationshipStore.createRelationship");
+        AtlasEdge ret = null;
 
         try {
-            validateRelationship(end1Vertex, end2Vertex, relationship);
-
-            String relationshipLabel = getRelationshipEdgeLabel(end1Vertex, end2Vertex, relationship.getTypeName());
+            String relationshipLabel;
+            AtlasPerfMetrics.MetricRecorder validateMetric = RequestContext.get().startMetricRecord("relationshipStore.createRelationship.validate");
+            try {
+                validateRelationship(end1Vertex, end2Vertex, relationship);
+                relationshipLabel = getRelationshipEdgeLabel(end1Vertex, end2Vertex, relationship.getTypeName());
+            } finally {
+                RequestContext.get().endMetricRecord(validateMetric);
+            }
 
             if (existingRelationshipCheck) {
-                ret = getRelationshipEdge(end1Vertex, end2Vertex, relationshipLabel);
+                AtlasPerfMetrics.MetricRecorder existingRelationshipMetric = RequestContext.get().startMetricRecord("relationshipStore.createRelationship.existingRelationship");
+                try {
+                    ret = getRelationshipEdge(end1Vertex, end2Vertex, relationshipLabel);
 
-                if (ret != null) {
-                    throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_EXISTS, relationship.getTypeName(),
-                                                 AtlasGraphUtilsV2.getIdFromVertex(end1Vertex), AtlasGraphUtilsV2.getIdFromVertex(end2Vertex));
+                    if (ret != null) {
+                        throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_EXISTS, relationship.getTypeName(),
+                                                     AtlasGraphUtilsV2.getIdFromVertex(end1Vertex), AtlasGraphUtilsV2.getIdFromVertex(end2Vertex));
+                    }
+                } finally {
+                    RequestContext.get().endMetricRecord(existingRelationshipMetric);
                 }
             }
 
             AtlasRelationshipType relationType = typeRegistry.getRelationshipTypeByName(relationship.getTypeName());
 
+            AtlasPerfMetrics.MetricRecorder authorizationMetric = RequestContext.get().startMetricRecord("relationshipStore.createRelationship.authorize");
+            try {
+                AtlasEntityHeader end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end1Vertex);
+                AtlasEntityHeader end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
 
-            AtlasEntityHeader end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end1Vertex);
-            AtlasEntityHeader end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
-
-            if(!skipAuth){
-                AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD,
-                        relationship.getTypeName(), end1Entity, end2Entity));
+                if(!skipAuth){
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD,
+                            relationship.getTypeName(), end1Entity, end2Entity));
+                }
+            } finally {
+                RequestContext.get().endMetricRecord(authorizationMetric);
             }
 
 
-            if (existingRelationshipCheck) {
-                ret = graphHelper.getOrCreateEdge(end1Vertex, end2Vertex, relationshipLabel);
-            } else {
-                ret = graphHelper.addEdge(end1Vertex, end2Vertex, relationshipLabel);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Created relationship edge from [{}] --> [{}] using edge label: [{}]", getTypeName(end1Vertex), getTypeName(end2Vertex), relationshipLabel);
+            AtlasPerfMetrics.MetricRecorder edgeCreateMetric = RequestContext.get().startMetricRecord("relationshipStore.createRelationship.edgeCreate");
+            try {
+                if (existingRelationshipCheck) {
+                    ret = graphHelper.getOrCreateEdge(end1Vertex, end2Vertex, relationshipLabel);
+                } else {
+                    ret = graphHelper.addEdge(end1Vertex, end2Vertex, relationshipLabel);
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Created relationship edge from [{}] --> [{}] using edge label: [{}]", getTypeName(end1Vertex), getTypeName(end2Vertex), relationshipLabel);
+                    }
                 }
+            } finally {
+                RequestContext.get().endMetricRecord(edgeCreateMetric);
             }
 
             // map additional properties to relationship edge
             if (ret != null) {
-                // Accept a valid (assigned) guid from the supplied relationship, or generate one.
-                String        relationshipGuid = relationship.getGuid();
-                PropagateTags tagPropagation   = getRelationshipTagPropagation(end1Vertex, end2Vertex, relationship);
-                final String  guid             = AtlasTypeUtil.isAssignedGuid(relationshipGuid) ? relationshipGuid : UUID.randomUUID().toString();
+                AtlasPerfMetrics.MetricRecorder systemAttributesMetric = RequestContext.get().startMetricRecord("relationshipStore.createRelationship.systemAttributes");
+                try {
+                    // Accept a valid (assigned) guid from the supplied relationship, or generate one.
+                    String        relationshipGuid = relationship.getGuid();
+                    PropagateTags tagPropagation   = getRelationshipTagPropagation(end1Vertex, end2Vertex, relationship);
+                    final String  guid             = AtlasTypeUtil.isAssignedGuid(relationshipGuid) ? relationshipGuid : UUID.randomUUID().toString();
 
-                AtlasGraphUtilsV2.setEncodedProperty(ret, ENTITY_TYPE_PROPERTY_KEY, relationship.getTypeName());
-                AtlasGraphUtilsV2.setEncodedProperty(ret, RELATIONSHIP_GUID_PROPERTY_KEY, guid);
-                AtlasGraphUtilsV2.setEncodedProperty(ret, HOME_ID_KEY, relationship.getHomeId());
-                AtlasGraphUtilsV2.setEncodedProperty(ret, VERSION_PROPERTY_KEY, getRelationshipVersion(relationship));
-                AtlasGraphUtilsV2.setEncodedProperty(ret, PROVENANCE_TYPE_KEY, relationship.getProvenanceType());
-                AtlasGraphUtilsV2.setEncodedProperty(ret, RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, tagPropagation.name());
+                    AtlasGraphUtilsV2.setEncodedProperty(ret, ENTITY_TYPE_PROPERTY_KEY, relationship.getTypeName());
+                    AtlasGraphUtilsV2.setEncodedProperty(ret, RELATIONSHIP_GUID_PROPERTY_KEY, guid);
+                    AtlasGraphUtilsV2.setEncodedProperty(ret, HOME_ID_KEY, relationship.getHomeId());
+                    AtlasGraphUtilsV2.setEncodedProperty(ret, VERSION_PROPERTY_KEY, getRelationshipVersion(relationship));
+                    AtlasGraphUtilsV2.setEncodedProperty(ret, PROVENANCE_TYPE_KEY, relationship.getProvenanceType());
+                    AtlasGraphUtilsV2.setEncodedProperty(ret, RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, tagPropagation.name());
 
-                // blocked propagated classifications
-                deleteDelegate.getHandler().handleBlockedClassifications(ret, relationship.getBlockedPropagatedClassifications());
+                    // blocked propagated classifications
+                    deleteDelegate.getHandler().handleBlockedClassifications(ret, relationship.getBlockedPropagatedClassifications());
 
-                // propagate tags
-                deleteDelegate.getHandler().addTagPropagation(ret, tagPropagation);
+                    // propagate tags
+                    deleteDelegate.getHandler().addTagPropagation(ret, tagPropagation);
+                } finally {
+                    RequestContext.get().endMetricRecord(systemAttributesMetric);
+                }
             }
 
             if (MapUtils.isNotEmpty(relationType.getAllAttributes())) {
-                for (AtlasAttribute attr : relationType.getAllAttributes().values()) {
-                    String attrName           = attr.getName();
-                    String attrVertexProperty = attr.getVertexPropertyName();
-                    Object attrValue          = relationship.getAttribute(attrName);
+                AtlasPerfMetrics.MetricRecorder relationshipAttributesMetric = RequestContext.get().startMetricRecord("relationshipStore.createRelationship.relationshipAttributes");
+                try {
+                    for (AtlasAttribute attr : relationType.getAllAttributes().values()) {
+                        String attrName           = attr.getName();
+                        String attrVertexProperty = attr.getVertexPropertyName();
+                        Object attrValue          = relationship.getAttribute(attrName);
 
-                    AtlasGraphUtilsV2.setEncodedProperty(ret, attrVertexProperty, attrValue);
+                        AtlasGraphUtilsV2.setEncodedProperty(ret, attrVertexProperty, attrValue);
+                    }
+                } finally {
+                    RequestContext.get().endMetricRecord(relationshipAttributesMetric);
                 }
             }
         } catch (RepositoryException e) {
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
         }
         return ret;
     }
