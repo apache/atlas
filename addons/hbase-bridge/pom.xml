@@ -38,7 +38,7 @@
         <checkstyle.skip>false</checkstyle.skip>
         <hadoop.version>3.4.2</hadoop.version>
         <javax.ws.rs-api.version>2.1.1</javax.ws.rs-api.version>
-        <jetty.version>9.3.14.v20161028</jetty.version>
+        <jetty.version>9.4.53.v20231009</jetty.version>
     </properties>
 
     <dependencies>
