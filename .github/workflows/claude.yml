@@ -89,7 +89,7 @@ jobs:
       pull-requests: write
       id-token: write
       actions: read
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
       ANTHROPIC_BASE_URL: https://aigateway.atlan.dev
       CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: '1'
