@@ -103,6 +103,8 @@ jobs:
             }
 
             // Check if build workflow has completed successfully for the current HEAD SHA
+            // Important: We must check the actual 'build' job, not just the workflow.
+            // The workflow can succeed even if 'build' was skipped (e.g., only helm files changed).
             const buildWorkflowId = 'maven.yml';
             const headSha = pr.head.sha;
             console.log(`Checking build workflow: ${buildWorkflowId} for SHA: ${headSha}`);
@@ -115,15 +117,33 @@ jobs:
               per_page: 1
             });
 
-            if (workflows.workflow_runs.length > 0) {
-              console.log(`Build workflow run found for current SHA: ${workflows.workflow_runs[0].html_url}`);
+            if (workflows.workflow_runs.length === 0) {
+              console.log(`No completed workflow runs found for SHA ${headSha}`);
+              core.setOutput('should_proceed', 'false');
+              return;
             }
 
-            const hasSuccessfulBuild = workflows.workflow_runs.length > 0 &&
-                                      workflows.workflow_runs[0].conclusion === 'success';
+            const workflowRun = workflows.workflow_runs[0];
+            console.log(`Workflow run found: ${workflowRun.html_url}`);
 
-            if (!hasSuccessfulBuild) {
-              console.log(`Build workflow (${buildWorkflowId}) not completed successfully for SHA ${headSha}`);
+            // Check if the 'build' job specifically succeeded (not skipped)
+            const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: workflowRun.id
+            });
+
+            const buildJob = jobs.jobs.find(job => job.name === 'build');
+            if (!buildJob) {
+              console.log('Build job not found in workflow run');
+              core.setOutput('should_proceed', 'false');
+              return;
+            }
+
+            console.log(`Build job status: ${buildJob.status}, conclusion: ${buildJob.conclusion}`);
+
+            if (buildJob.conclusion !== 'success') {
+              console.log(`Build job did not succeed (conclusion: ${buildJob.conclusion}). Docker image may not exist.`);
               core.setOutput('should_proceed', 'false');
               return;
             }
@@ -190,13 +210,11 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
           echo "Cohort labels: ${COHORTS}"
 
+  # Process all cohorts sequentially in a single job to avoid parallel VPN connection issues.
+  # GlobalProtect VPN only allows one connection per credential set at a time.
   trigger-release:
     needs: [check-prerequisites, parse-labels, get-pr-number]
     if: needs.get-pr-number.outputs.pr_number != '' && needs.parse-labels.outputs.cohort_labels != '[]'
-    strategy:
-      matrix:
-        cohort: ${{ fromJson(needs.parse-labels.outputs.cohort_labels) }}
-      fail-fast: false
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -235,41 +253,6 @@ jobs:
 
             console.log(`Repo: ${repoName}, Service: ${serviceName}, Tag: ${imageTag}, Image: ${imageRepo}, Ring: ${ringName}`);
 
-      # Resolve the tenant list for PR status reporting.
-      # Only 'github' cohort source is supported (reads cohorts/<value>.json from atlan-releases).
-      - name: Get tenant list from cohort file
-        id: get_tenants
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.ORG_PAT_GITHUB }}
-          script: |
-            const source = '${{ matrix.cohort.source }}';
-            const key    = '${{ matrix.cohort.key }}';
-            const value  = '${{ matrix.cohort.value }}';
-
-            if (source !== 'github' || key !== 'path') {
-              console.log(`Cohort source '${source}/${key}' does not support tenant name resolution. Skipping.`);
-              core.setOutput('tenant_names', '');
-              return;
-            }
-
-            const filePath = `cohorts/${value}.json`;
-            console.log(`Fetching cohort file: ${filePath}`);
-
-            const { data: file } = await github.rest.repos.getContent({
-              owner: 'atlanhq',
-              repo: 'atlan-releases',
-              path: filePath,
-              ref: 'main'
-            });
-
-            const content = Buffer.from(file.content, 'base64').toString('utf-8');
-            const cohortFile = JSON.parse(content);
-            const tenantNames = cohortFile.tenants.map(t => t.name).join(',');
-
-            console.log(`Tenants in cohort: ${tenantNames}`);
-            core.setOutput('tenant_names', tenantNames);
-
       - name: Setup Temporal CLI
         run: |
           curl -sSf https://temporal.download/cli.sh | sh
@@ -295,56 +278,115 @@ jobs:
           fi
           echo "VPN connected successfully"
 
-      - name: Trigger Temporal workflow
+      # Process each cohort sequentially to trigger Temporal workflows
+      - name: Trigger Temporal workflows for all cohorts
         id: trigger_temporal
-        run: |
-          WORKFLOW_ID="service-release-parent-${{ steps.get_image_tag.outputs.service_name }}-$(date +%s)"
+        uses: actions/github-script@v7
+        env:
+          COHORT_LABELS: ${{ needs.parse-labels.outputs.cohort_labels }}
+        with:
+          github-token: ${{ secrets.ORG_PAT_GITHUB }}
+          script: |
+            const { execSync } = require('child_process');
 
-          ARGS=$(jq -n \
-            --arg ring_name "${{ steps.get_image_tag.outputs.ring_name }}" \
-            --arg service_name "${{ steps.get_image_tag.outputs.service_name }}" \
-            --arg image_tag "${{ steps.get_image_tag.outputs.image_tag }}" \
-            --arg image_repo "${{ steps.get_image_tag.outputs.image_repo }}" \
-            --arg source "${{ matrix.cohort.source }}" \
-            --arg type "${{ matrix.cohort.key == 'type' && matrix.cohort.value || '' }}" \
-            --arg channel "${{ matrix.cohort.key == 'channel' && matrix.cohort.value || '' }}" \
-            --arg cloud "${{ matrix.cohort.key == 'cloud' && matrix.cohort.value || '' }}" \
-            --arg tenant_names "" \
-            --arg pull_request_url "${{ steps.get_image_tag.outputs.pull_request_url }}" \
-            --arg path "${{ matrix.cohort.key == 'path' && matrix.cohort.value || '' }}" \
-            '{
-              ringName: $ring_name,
-              serviceName: $service_name,
-              imageTag: $image_tag,
-              imageRepo: $image_repo,
-              cohortSource: $source,
-              workspaceType: $type,
-              channel: $channel,
-              cloud: $cloud,
-              tenantNames: ($tenant_names
-                | split(",")
-                | map(. | gsub("^ +| +$";""))
-                | map(select(. != ""))),
-              pullRequestUrl: $pull_request_url,
-              path: $path
-            }')
+            const cohorts = JSON.parse(process.env.COHORT_LABELS);
+            const ringName = '${{ steps.get_image_tag.outputs.ring_name }}';
+            const serviceName = '${{ steps.get_image_tag.outputs.service_name }}';
+            const imageTag = '${{ steps.get_image_tag.outputs.image_tag }}';
+            const imageRepo = '${{ steps.get_image_tag.outputs.image_repo }}';
+            const pullRequestUrl = '${{ steps.get_image_tag.outputs.pull_request_url }}';
 
-          echo "Triggering workflow: $WORKFLOW_ID"
-          echo "Arguments: $ARGS"
+            const results = [];
 
-          OUTPUT=$(temporal workflow start --tls \
-            --address "temporal-server.atlan.com" \
-            --namespace "default" \
-            --task-queue "control-plane-worker" \
-            --type "ServiceReleaseWorkflow" \
-            --workflow-id "$WORKFLOW_ID" \
-            --input "$ARGS")
+            for (const cohort of cohorts) {
+              const workflowId = `service-release-parent-${serviceName}-${Date.now()}`;
 
-          echo "$OUTPUT"
-          RUN_ID=$(echo "$OUTPUT" | grep -i "RunId" | awk '{print $2}')
-          echo "Workflow triggered: https://temporal.atlan.com/namespaces/default/workflows/${WORKFLOW_ID}/${RUN_ID}/history"
+              // Resolve tenant names for github:path cohorts
+              let tenantNames = '';
+              if (cohort.source === 'github' && cohort.key === 'path') {
+                try {
+                  const { data: file } = await github.rest.repos.getContent({
+                    owner: 'atlanhq',
+                    repo: 'atlan-releases',
+                    path: `cohorts/${cohort.value}.json`,
+                    ref: 'main'
+                  });
+                  const content = Buffer.from(file.content, 'base64').toString('utf-8');
+                  const cohortFile = JSON.parse(content);
+                  tenantNames = cohortFile.tenants.map(t => t.name).join(',');
+                } catch (e) {
+                  console.log(`Warning: Could not fetch cohort file for ${cohort.value}: ${e.message}`);
+                }
+              }
 
-          echo "workflow_id=$WORKFLOW_ID" >> $GITHUB_OUTPUT
+              // Build Temporal workflow arguments
+              const args = {
+                ringName,
+                serviceName,
+                imageTag,
+                imageRepo,
+                cohortSource: cohort.source,
+                workspaceType: cohort.key === 'type' ? cohort.value : '',
+                channel: cohort.key === 'channel' ? cohort.value : '',
+                cloud: cohort.key === 'cloud' ? cohort.value : '',
+                tenantNames: [],
+                pullRequestUrl,
+                path: cohort.key === 'path' ? cohort.value : ''
+              };
+
+              console.log(`\n=== Triggering release for cohort: ${cohort.source}:${cohort.key}:${cohort.value} ===`);
+              console.log(`Workflow ID: ${workflowId}`);
+              console.log(`Arguments: ${JSON.stringify(args, null, 2)}`);
+
+              try {
+                const cmd = `temporal workflow start --tls \
+                  --address "temporal-server.atlan.com" \
+                  --namespace "default" \
+                  --task-queue "control-plane-worker" \
+                  --type "ServiceReleaseWorkflow" \
+                  --workflow-id "${workflowId}" \
+                  --input '${JSON.stringify(args)}'`;
+
+                const output = execSync(cmd, { encoding: 'utf-8' });
+                console.log(output);
+
+                const runIdMatch = output.match(/RunId\s+(\S+)/i);
+                const runId = runIdMatch ? runIdMatch[1] : '';
+
+                results.push({
+                  cohort: `${cohort.source}:${cohort.key}:${cohort.value}`,
+                  cohortValue: cohort.value,
+                  workflowId,
+                  runId,
+                  tenantNames,
+                  success: true
+                });
+              } catch (e) {
+                console.log(`ERROR: Failed to trigger workflow for ${cohort.value}: ${e.message}`);
+                results.push({
+                  cohort: `${cohort.source}:${cohort.key}:${cohort.value}`,
+                  cohortValue: cohort.value,
+                  workflowId,
+                  runId: '',
+                  tenantNames,
+                  success: false,
+                  error: e.message
+                });
+              }
+
+              // Small delay between triggers to be safe
+              await new Promise(r => setTimeout(r, 1000));
+            }
+
+            core.setOutput('results', JSON.stringify(results));
+            core.setOutput('ring_name', ringName);
+            core.setOutput('image_tag', imageTag);
+
+            // Fail the step if any trigger failed
+            const failures = results.filter(r => !r.success);
+            if (failures.length > 0) {
+              core.setFailed(`Failed to trigger ${failures.length} workflow(s)`);
+            }
 
       # NOTE: We do NOT wait for Temporal workflow to complete here.
       # Waiting would be expensive (60-90+ minutes of GitHub Actions billing).
@@ -354,40 +396,57 @@ jobs:
       - name: Post release triggered to PR
         if: always()
         uses: actions/github-script@v7
+        env:
+          TRIGGER_RESULTS: ${{ steps.trigger_temporal.outputs.results }}
         with:
           github-token: ${{ secrets.ORG_PAT_GITHUB }}
           script: |
             const prNumber = parseInt('${{ needs.get-pr-number.outputs.pr_number }}');
-            const ring     = '${{ steps.get_image_tag.outputs.ring_name }}';
+            const ring = '${{ steps.get_image_tag.outputs.ring_name }}';
             const imageTag = '${{ steps.get_image_tag.outputs.image_tag }}';
-            const workflowId = '${{ steps.trigger_temporal.outputs.workflow_id }}';
-            const tenants  = '${{ steps.get_tenants.outputs.tenant_names }}';
-            const cohortPath = '${{ matrix.cohort.value }}';
             const jobStatus = '${{ job.status }}';
 
-            const statusEmoji = jobStatus === 'success' ? '🚀' : '❌';
-            const statusText  = jobStatus === 'success'
-              ? 'Release triggered - Temporal workflow started'
-              : 'Failed to trigger release';
+            let results = [];
+            try {
+              results = JSON.parse(process.env.TRIGGER_RESULTS || '[]');
+            } catch (e) {
+              console.log('Could not parse trigger results');
+            }
+
+            const successCount = results.filter(r => r.success).length;
+            const failCount = results.filter(r => !r.success).length;
+
+            const statusEmoji = failCount === 0 ? '🚀' : (successCount > 0 ? '⚠️' : '❌');
+            const statusText = failCount === 0
+              ? 'All releases triggered successfully'
+              : (successCount > 0 ? `${successCount} succeeded, ${failCount} failed` : 'All releases failed');
+
+            const cohortDetails = results.map(r => {
+              const icon = r.success ? '✅' : '❌';
+              const link = r.success
+                ? `[${r.workflowId}](https://temporal.atlan.com/namespaces/default/workflows/${r.workflowId})`
+                : `Failed: ${r.error || 'Unknown error'}`;
+              return `| ${icon} | \`${r.cohortValue}\` | ${r.tenantNames || '_none_'} | ${link} |`;
+            }).join('\n');
 
             const body = [
               `## ${statusEmoji} Ring Release Triggered`,
               ``,
               `**Status:** ${statusText}`,
               `**Ring:** \`${ring}\`  **Image Tag:** \`${imageTag}\``,
-              `**Cohort:** \`${cohortPath}\``,
-              `**Tenants:** ${tenants || '_none resolved_'}`,
               ``,
-              `**Temporal Workflow:** [${workflowId}](https://temporal.atlan.com/namespaces/default/workflows/${workflowId})`,
+              `| Status | Cohort | Tenants | Temporal Workflow |`,
+              `|--------|--------|---------|-------------------|`,
+              cohortDetails,
               ``,
-              `> ℹ️ Temporal will post the final release status once complete.`,
+              `> ℹ️ Temporal will post the final release status for each cohort once complete.`,
               ``,
               `[View GitHub Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})`
             ].join('\n');
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
-              repo:  context.repo.repo,
+              repo: context.repo.repo,
               issue_number: prNumber,
               body
             });
