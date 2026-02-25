@@ -37,7 +37,7 @@
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
         <checkstyle.skip>false</checkstyle.skip>
         <hadoop.version>3.4.2</hadoop.version>
-        <jetty.version>9.3.14.v20161028</jetty.version>
+        <jetty.version>9.4.53.v20231009</jetty.version>
     </properties>
 
     <dependencies>
