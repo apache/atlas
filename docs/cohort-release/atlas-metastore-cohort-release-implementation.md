@@ -247,6 +247,16 @@ Removing a label doesn't trigger cleanup. Tenants from that cohort stay on the r
 
 **Mitigation:** Re-add the label, or use `manual-cohort-cleanup.yml`.
 
+### Limitation: ArgoCD behaviour (tenant umbrella app)
+
+Verification depends on the tenant's ArgoCD application. Today, atlas is deployed as part of a **large umbrella chart** (many subcharts: redis, kafka, cassandra, keycloak, etc.). This leads to two limitations:
+
+1. **Hung or slow Argo app:** If the tenant Argo app is hung or does not sync the StatefulSet within the allowed timeout (5 min initial delay + 60 min polling), `WaitForArgoCDSyncActivity` fails and the release is reported as failed even if the patch was applied.
+
+2. **Sync contention:** When many resources are syncing, ArgoCD may take a long time to reach the atlas StatefulSet. For a smoother flow, **add the cohort label when no other syncs are in progress** on the target tenant app (e.g., avoid adding a label right after a large chart or config change).
+
+**Planned resolution (Phase 2):** Split metastore components into a **separate ArgoCD application** so that atlas is not under the huge umbrella chart. ArgoCD will then sync a smaller, focused app and verification will be more reliable and faster.
+
 ---
 
 ## Developer Guide: How to Use Cohort Releases
