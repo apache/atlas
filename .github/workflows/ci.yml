@@ -65,21 +65,26 @@ jobs:
       - name: Clean up Docker space
         run: docker system prune --all --force --volumes
 
-      - name: Build Atlas - JDK 8
         run: |
-          cd dev-support/atlas-docker
-          export DOCKER_BUILDKIT=1
-          export COMPOSE_DOCKER_CLI_BUILD=1
-          docker compose -f docker-compose.atlas-base.yml build
-          SKIPTESTS=false PROFILE=embedded-solr-it docker compose -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
-          ATLAS_BUILD_CONTAINER=$(docker ps -a -q --filter "name=atlas-build")
-          EXIT_CODE=$(docker inspect --format '{{.State.ExitCode}}' "$ATLAS_BUILD_CONTAINER")
-          
-          # If the exit code is non-zero, fail the workflow
-          if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "atlas-build container failed with exit code $EXIT_CODE."
-            exit 1
-          fi
+          set -euo pipefail
+          mvn -Pembedded-solr-it -DskipTests=false -DskipDocs clean verify --no-transfer-progress -B -V
+
+      - name: Collect Atlas distribution tarballs
+        run: |
+          cp -f distro/target/apache-atlas-*-server.tar.gz     dev-support/atlas-docker/dist/
+          cp -f distro/target/apache-atlas-*-hive-hook.tar.gz  dev-support/atlas-docker/dist/
+          cp -f distro/target/apache-atlas-*-hbase-hook.tar.gz dev-support/atlas-docker/dist/
+          cp -f distro/target/apache-atlas-*-kafka-hook.tar.gz dev-support/atlas-docker/dist/
+          ls -la dev-support/atlas-docker/dist/apache-atlas-*.tar.gz
+
+      - name: Generate code coverage report
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./dev-support/checks/coverage.sh
+          mkdir -p dev-support/atlas-docker/dist
+          rm -rf dev-support/atlas-docker/dist/coverage || true
+          mv -f target/coverage dev-support/atlas-docker/dist/
 
       - name: Upload Code Coverage Results
         uses: actions/upload-artifact@v4
