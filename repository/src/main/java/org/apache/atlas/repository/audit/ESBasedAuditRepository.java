@@ -282,103 +282,125 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     @Override
     public EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("ESAuditRepo.searchEvents");
         try {
             String response = performSearchOnIndex(queryString);
             return getResultFromResponse(response);
         } catch (IOException e) {
             throw new AtlasBaseException(e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
         }
     }
 
     private EntityAuditSearchResult getResultFromResponse(String responseString) throws AtlasBaseException {
-        List<EntityAuditEventV2> entityAudits = new ArrayList<>();
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("ESAuditRepo.getResultFromResponse");
+
         EntityAuditSearchResult searchResult = new EntityAuditSearchResult();
-        Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
-        Map<String, Object> hits_0 = (Map<String, Object>) responseMap.get("hits");
-        List<LinkedHashMap> hits_1 = (List<LinkedHashMap>) hits_0.get("hits");
-        Map<String, AtlasEntityHeader> existingLinkedEntities = searchResult.getLinkedEntities();
 
-        for (LinkedHashMap hit : hits_1) {
-            Map source = (Map) hit.get("_source");
-            String entityGuid = (String) source.get(ENTITYID);
-            EntityAuditEventV2 event = new EntityAuditEventV2();
-            event.setEntityId(entityGuid);
-            event.setAction(EntityAuditEventV2.EntityAuditActionV2.fromString((String) source.get(ACTION)));
-            event.setDetail((Map<String, Object>) source.get(DETAIL));
-            event.setUser((String) source.get(USER));
-            event.setCreated((long) source.get(CREATED));
-            if (source.get(TIMESTAMP) != null) {
-                event.setTimestamp((long) source.get(TIMESTAMP));
-            }
-            if (source.get(TYPE_NAME) != null) {
-                event.setTypeName((String) source.get(TYPE_NAME));
-            }
+        try {
+            List<EntityAuditEventV2> entityAudits = new ArrayList<>();
+            Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
+            Map<String, Object> hits_0 = (Map<String, Object>) responseMap.get("hits");
+            List<LinkedHashMap> hits_1 = (List<LinkedHashMap>) hits_0.get("hits");
+            Map<String, AtlasEntityHeader> existingLinkedEntities = searchResult.getLinkedEntities();
 
-            event.setEntityQualifiedName((String) source.get(ENTITY_QUALIFIED_NAME));
+            for (LinkedHashMap hit : hits_1) {
+                Map source = (Map) hit.get("_source");
+                String entityGuid = (String) source.get(ENTITYID);
+                EntityAuditEventV2 event = new EntityAuditEventV2();
+                event.setEntityId(entityGuid);
+                event.setAction(EntityAuditEventV2.EntityAuditActionV2.fromString((String) source.get(ACTION)));
+                event.setDetail((Map<String, Object>) source.get(DETAIL));
+                event.setUser((String) source.get(USER));
+                event.setCreated((long) source.get(CREATED));
+                if (source.get(TIMESTAMP) != null) {
+                    event.setTimestamp((long) source.get(TIMESTAMP));
+                }
+                if (source.get(TYPE_NAME) != null) {
+                    event.setTypeName((String) source.get(TYPE_NAME));
+                }
 
-            String eventKey = (String) source.get(EVENT_KEY);
-            if (StringUtils.isEmpty(eventKey)) {
-                eventKey = event.getEntityId() + ":" + event.getTimestamp();
-            }
+                event.setEntityQualifiedName((String) source.get(ENTITY_QUALIFIED_NAME));
 
-            Map<String, Object> detail = event.getDetail();
-            if (detail != null && detail.containsKey("attributes")) {
-                Map<String, Object> attributes = (Map<String, Object>) detail.get("attributes");
+                String eventKey = (String) source.get(EVENT_KEY);
+                if (StringUtils.isEmpty(eventKey)) {
+                    eventKey = event.getEntityId() + ":" + event.getTimestamp();
+                }
 
-                for (Map.Entry<String, Object> entry: attributes.entrySet()) {
-                    if (ALLOWED_LINKED_ATTRIBUTES.contains(entry.getKey())) {
-                        List<String> guids = (List<String>) entry.getValue();
+                AtlasPerfMetrics.MetricRecorder recorder_0 = RequestContext.get().startMetricRecord("ESAuditRepo.getResultFromResponse.attributes");
+                Map<String, Object> detail = event.getDetail();
+                if (detail != null && detail.containsKey("attributes")) {
+                    Map<String, Object> attributes = (Map<String, Object>) detail.get("attributes");
 
-                        if (guids != null && !guids.isEmpty()){
-                            for (String guid: guids){
-                                if(!existingLinkedEntities.containsKey(guid)){
-                                    try {
-                                        AtlasEntityHeader entityHeader = fetchAtlasEntityHeader(guid);
-                                        if (entityHeader != null) {
-                                            existingLinkedEntities.put(guid, entityHeader);
+                    for (Map.Entry<String, Object> entry: attributes.entrySet()) {
+                        if (ALLOWED_LINKED_ATTRIBUTES.contains(entry.getKey())) {
+                            List<String> guids = (List<String>) entry.getValue();
+
+                            if (guids != null && !guids.isEmpty()){
+                                for (String guid: guids){
+                                    if(!existingLinkedEntities.containsKey(guid)){
+                                        try {
+                                            AtlasEntityHeader entityHeader = fetchAtlasEntityHeader(guid);
+                                            if (entityHeader != null) {
+                                                existingLinkedEntities.put(guid, entityHeader);
+                                            }
+                                        } catch (AtlasBaseException e) {
+                                            LOG.error("Error while fetching entity header for guid: {}", guid, e);
                                         }
-                                    } catch (AtlasBaseException e) {
-                                        LOG.error("Error while fetching entity header for guid: {}", guid, e);
                                     }
                                 }
                             }
                         }
                     }
                 }
+                RequestContext.get().endMetricRecord(recorder_0);
+
+                event.setHeaders((Map<String, String>) source.get("headers"));
+
+                event.setEventKey(eventKey);
+                entityAudits.add(event);
             }
-
-            event.setHeaders((Map<String, String>) source.get("headers"));
-
-            event.setEventKey(eventKey);
-            entityAudits.add(event);
+            Map<String, Object> aggregationsMap = (Map<String, Object>) responseMap.get("aggregations");
+            Map<String, Object> countObject = (Map<String, Object>) hits_0.get("total");
+            int totalCount = (int) countObject.get("value");
+            searchResult.setEntityAudits(entityAudits);
+            searchResult.setLinkedEntities(existingLinkedEntities);
+            searchResult.setAggregations(aggregationsMap);
+            searchResult.setTotalCount(totalCount);
+            searchResult.setCount(entityAudits.size());
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
         }
-        Map<String, Object> aggregationsMap = (Map<String, Object>) responseMap.get("aggregations");
-        Map<String, Object> countObject = (Map<String, Object>) hits_0.get("total");
-        int totalCount = (int) countObject.get("value");
-        searchResult.setEntityAudits(entityAudits);
-        searchResult.setLinkedEntities(existingLinkedEntities);
-        searchResult.setAggregations(aggregationsMap);
-        searchResult.setTotalCount(totalCount);
-        searchResult.setCount(entityAudits.size());
+
         return searchResult;
     }
 
     private AtlasEntityHeader fetchAtlasEntityHeader(String domainGUID) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("ESAuditRepo.getResultFromResponse");
         try {
             AtlasEntityHeader entityHeader = entityGraphRetriever.toAtlasEntityHeader(domainGUID);
             return entityHeader;
         } catch (AtlasBaseException e) {
             throw new AtlasBaseException(e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
         }
     }
 
     private String performSearchOnIndex(String queryString) throws IOException {
-        HttpEntity entity = new NStringEntity(queryString, ContentType.APPLICATION_JSON);
-        String endPoint = INDEX_NAME + "/_search";
-        Request request = new Request("GET", endPoint);
-        request.setEntity(entity);
-        Response response = lowLevelClient.performRequest(request);
-        return EntityUtils.toString(response.getEntity());
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("ESAuditRepo.performSearchOnIndex");
+
+        try {
+            HttpEntity entity = new NStringEntity(queryString, ContentType.APPLICATION_JSON);
+            String endPoint = INDEX_NAME + "/_search";
+            Request request = new Request("GET", endPoint);
+            request.setEntity(entity);
+            Response response = lowLevelClient.performRequest(request);
+            return EntityUtils.toString(response.getEntity());
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
     }
 
     @Override
