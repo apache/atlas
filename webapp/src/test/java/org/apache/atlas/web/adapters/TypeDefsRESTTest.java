@@ -108,7 +108,7 @@ public class TypeDefsRESTTest {
         AtlasErrorCode errorCode = null;
 
         try {
-            typesREST.deleteAtlasTypeByName(bmWithAllTypes);
+            typesREST.deleteAtlasTypeByName(bmWithAllTypes, false);
         } catch (AtlasBaseException e) {
             errorCode = e.getAtlasErrorCode();
         }
@@ -124,7 +124,7 @@ public class TypeDefsRESTTest {
         errorCode = null;
 
         try {
-            typesREST.deleteAtlasTypeByName(bmWithAllTypes);
+            typesREST.deleteAtlasTypeByName(bmWithAllTypes, false);
         } catch (AtlasBaseException e) {
             errorCode = e.getAtlasErrorCode();
         }
@@ -135,7 +135,7 @@ public class TypeDefsRESTTest {
 
         entityREST.removeBusinessAttributes(dbEntity.getGuid(), bmWithAllTypes, objectMap);
 
-        typesREST.deleteAtlasTypeByName(bmWithAllTypes);
+        typesREST.deleteAtlasTypeByName(bmWithAllTypes, false);
     }
 
     @Test
@@ -155,7 +155,7 @@ public class TypeDefsRESTTest {
         AtlasErrorCode errorCode = null;
 
         try {
-            typesREST.deleteAtlasTypeByName(bmWithSuperType);
+            typesREST.deleteAtlasTypeByName(bmWithSuperType, false);
         } catch (AtlasBaseException e) {
             errorCode = e.getAtlasErrorCode();
         }
@@ -171,7 +171,7 @@ public class TypeDefsRESTTest {
         errorCode = null;
 
         try {
-            typesREST.deleteAtlasTypeByName(bmWithSuperType);
+            typesREST.deleteAtlasTypeByName(bmWithSuperType, false);
         } catch (AtlasBaseException e) {
             errorCode = e.getAtlasErrorCode();
         }
@@ -182,7 +182,7 @@ public class TypeDefsRESTTest {
 
         entityREST.removeBusinessAttributes(dbEntity.getGuid(), bmWithSuperType, objectMap);
 
-        typesREST.deleteAtlasTypeByName(bmWithSuperType);
+        typesREST.deleteAtlasTypeByName(bmWithSuperType, false);
     }
 
     @Test

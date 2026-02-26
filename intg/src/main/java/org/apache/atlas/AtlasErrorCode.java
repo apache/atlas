@@ -257,7 +257,9 @@ public enum AtlasErrorCode {
     IMPORT_REGISTRATION_FAILED(500, "ATLAS-500-00-020", "Failed to register import request"),
     IMPORT_FAILED(500, "ATLAS-500-00-021", "Import with id {0} failed"),
     ABORT_IMPORT_FAILED(500, "ATLAS-500-00-022", "Failed to abort import with id {0}"),
-    IMPORT_QUEUEING_FAILED(500, "ATLAS-500-00-023", "Failed to add import with id {0} to request queue, please try again later");
+    IMPORT_QUEUEING_FAILED(500, "ATLAS-500-00-023", "Failed to add import with id {0} to request queue, please try again later"),
+
+    NON_INDEXABLE_BM_DELETE_NOT_ALLOWED(400, "ATLAS-400-00-106", "Deletion not allowed for non-indexable Business Metadata ''{0}'' without force-delete. Please use the force-delete parameter to remove.");
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasErrorCode.class);
     private final        String errorCode;

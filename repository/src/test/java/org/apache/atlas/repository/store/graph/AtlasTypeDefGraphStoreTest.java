@@ -369,10 +369,10 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
             AtlasTypesDef typesDef            = TestResourceFileUtils.readObjectFromJson(".", hivedbV2Json, AtlasTypesDef.class);
 
             typeDefStore.createTypesDef(typesDef);
-            typeDefStore.deleteTypeByName(hiveDB2);
-            typeDefStore.deleteTypeByName(relationshipDefName);
-            typeDefStore.deleteTypeByName(hostEntityDef);
-            typeDefStore.deleteTypeByName(clusterEntityDef);
+            typeDefStore.deleteTypeByName(hiveDB2, false);
+            typeDefStore.deleteTypeByName(relationshipDefName, false);
+            typeDefStore.deleteTypeByName(hostEntityDef, false);
+            typeDefStore.deleteTypeByName(clusterEntityDef, false);
         } catch (AtlasBaseException e) {
             fail("Deletion should've succeeded");
         }
