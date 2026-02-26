@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.web.rest;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAdminAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
@@ -70,17 +71,20 @@ public class BulkPurgeREST {
     @POST
     @Path("/connection")
     public Response purgeByConnection(@QueryParam("connectionQualifiedName") String connectionQualifiedName,
-                                      @QueryParam("deleteConnection") @DefaultValue("false") boolean deleteConnection) throws AtlasBaseException {
+                                      @QueryParam("deleteConnection") @DefaultValue("false") boolean deleteConnection,
+                                      @QueryParam("workerCount") @DefaultValue("0") int workerCount) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "BulkPurgeREST.purgeByConnection(" + connectionQualifiedName + ", deleteConnection=" + deleteConnection + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "BulkPurgeREST.purgeByConnection(" + connectionQualifiedName + ", deleteConnection=" + deleteConnection + ", workerCount=" + workerCount + ")");
             }
 
             if (StringUtils.isBlank(connectionQualifiedName)) {
                 throw new AtlasBaseException("Query parameter 'connectionQualifiedName' is required");
             }
+
+            validateWorkerCount(workerCount);
 
             // Authorization check
             AtlasAuthorizationUtils.verifyAccess(
@@ -88,17 +92,20 @@ public class BulkPurgeREST {
                     "Bulk purge by connection : " + connectionQualifiedName);
 
             String submittedBy = RequestContext.getCurrentUser();
-            String requestId = bulkPurgeService.bulkPurgeByConnection(connectionQualifiedName, submittedBy, deleteConnection);
+            String requestId = bulkPurgeService.bulkPurgeByConnection(connectionQualifiedName, submittedBy, deleteConnection, workerCount);
 
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("requestId", requestId);
             response.put("purgeKey", connectionQualifiedName);
             response.put("purgeMode", "CONNECTION");
             response.put("deleteConnection", deleteConnection);
+            if (workerCount > 0) {
+                response.put("workerCountOverride", workerCount);
+            }
             response.put("message", "Bulk purge submitted successfully");
 
-            LOG.info("BulkPurge: Connection purge submitted by {} for {}, deleteConnection={}, requestId={}",
-                    submittedBy, connectionQualifiedName, deleteConnection, requestId);
+            LOG.info("BulkPurge: Connection purge submitted by {} for {}, deleteConnection={}, workerCount={}, requestId={}",
+                    submittedBy, connectionQualifiedName, deleteConnection, workerCount, requestId);
 
             return Response.ok(response).build();
         } finally {
@@ -114,12 +121,13 @@ public class BulkPurgeREST {
      */
     @POST
     @Path("/qualifiedName")
-    public Response purgeByQualifiedName(@QueryParam("prefix") String prefix) throws AtlasBaseException {
+    public Response purgeByQualifiedName(@QueryParam("prefix") String prefix,
+                                          @QueryParam("workerCount") @DefaultValue("0") int workerCount) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "BulkPurgeREST.purgeByQualifiedName(" + prefix + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "BulkPurgeREST.purgeByQualifiedName(" + prefix + ", workerCount=" + workerCount + ")");
             }
 
             if (StringUtils.isBlank(prefix)) {
@@ -130,22 +138,27 @@ public class BulkPurgeREST {
                 throw new AtlasBaseException("Query parameter 'prefix' must be at least 10 characters for safety");
             }
 
+            validateWorkerCount(workerCount);
+
             // Authorization check
             AtlasAuthorizationUtils.verifyAccess(
                     new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_PURGE),
                     "Bulk purge by qualifiedName prefix: " + prefix);
 
             String submittedBy = RequestContext.getCurrentUser();
-            String requestId = bulkPurgeService.bulkPurgeByQualifiedName(prefix, submittedBy);
+            String requestId = bulkPurgeService.bulkPurgeByQualifiedName(prefix, submittedBy, workerCount);
 
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("requestId", requestId);
             response.put("purgeKey", prefix);
             response.put("purgeMode", "QUALIFIED_NAME_PREFIX");
+            if (workerCount > 0) {
+                response.put("workerCountOverride", workerCount);
+            }
             response.put("message", "Bulk purge submitted successfully");
 
-            LOG.info("BulkPurge: QualifiedName purge submitted by {} for prefix={}, requestId={}",
-                    submittedBy, prefix, requestId);
+            LOG.info("BulkPurge: QualifiedName purge submitted by {} for prefix={}, workerCount={}, requestId={}",
+                    submittedBy, prefix, workerCount, requestId);
 
             return Response.ok(response).build();
         } finally {
@@ -232,6 +245,16 @@ public class BulkPurgeREST {
             }
         } finally {
             AtlasPerfTracer.log(perf);
+        }
+    }
+
+    private void validateWorkerCount(int workerCount) throws AtlasBaseException {
+        if (workerCount < 0) {
+            throw new AtlasBaseException("workerCount must be non-negative");
+        }
+        int configuredMax = AtlasConfiguration.BULK_PURGE_WORKER_COUNT.getInt();
+        if (workerCount > configuredMax) {
+            throw new AtlasBaseException("workerCount " + workerCount + " exceeds configured maximum of " + configuredMax);
         }
     }
 }
