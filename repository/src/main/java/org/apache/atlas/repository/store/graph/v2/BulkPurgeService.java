@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
@@ -30,6 +29,7 @@ import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.notification.task.AtlasDistributedTaskNotificationSender;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
+import org.apache.atlas.repository.graph.IAtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -49,6 +49,8 @@ import org.springframework.stereotype.Component;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import java.io.InputStream;
 import java.util.*;
@@ -64,12 +66,14 @@ public class BulkPurgeService {
 
     private static final String REDIS_KEY_PREFIX = "bulk_purge:";
     private static final String REDIS_LOCK_PREFIX = "bulk_purge_lock:";
+    private static final String REDIS_ACTIVE_PURGE_KEYS = "bulk_purge_active_keys";
     private static final String PURGE_MODE_CONNECTION = "CONNECTION";
     private static final String PURGE_MODE_QN_PREFIX = "QUALIFIED_NAME_PREFIX";
     private static final int MIN_QN_PREFIX_LENGTH = 10;
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final AtlasGraph graph;
+    private final IAtlasGraphProvider graphProvider;
     private final RedisService redisService;
     private final Set<EntityAuditRepository> auditRepositories;
     private final AtlasDistributedTaskNotificationSender taskNotificationSender;
@@ -82,12 +86,17 @@ public class BulkPurgeService {
     // Active purge tracking for cancel support
     private final ConcurrentHashMap<String, PurgeContext> activePurges = new ConcurrentHashMap<>();
 
+    // Orphan checker background thread
+    private ScheduledExecutorService orphanCheckerExecutor;
+
     @Inject
     public BulkPurgeService(AtlasGraph graph,
+                            IAtlasGraphProvider graphProvider,
                             RedisService redisService,
                             Set<EntityAuditRepository> auditRepositories,
                             AtlasDistributedTaskNotificationSender taskNotificationSender) {
         this.graph = graph;
+        this.graphProvider = graphProvider;
         this.redisService = redisService;
         this.auditRepositories = auditRepositories;
         this.taskNotificationSender = taskNotificationSender;
@@ -97,6 +106,33 @@ public class BulkPurgeService {
                         .setDaemon(true)
                         .setNameFormat("bulk-purge-coordinator-%d")
                         .build());
+    }
+
+    @PostConstruct
+    private void startOrphanChecker() {
+        if (!AtlasConfiguration.BULK_PURGE_ORPHAN_CHECK_ENABLED.getBoolean()) {
+            LOG.info("BulkPurge: Orphan checker is disabled");
+            return;
+        }
+
+        long intervalMs = AtlasConfiguration.BULK_PURGE_ORPHAN_CHECK_INTERVAL_MS.getLong();
+
+        orphanCheckerExecutor = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder().setDaemon(true)
+                        .setNameFormat("bulk-purge-orphan-checker").build());
+
+        orphanCheckerExecutor.scheduleAtFixedRate(
+                this::checkAndRecoverOrphanedPurges,
+                intervalMs, intervalMs, TimeUnit.MILLISECONDS);
+
+        LOG.info("BulkPurge: Orphan checker started with interval={}ms", intervalMs);
+    }
+
+    @PreDestroy
+    private void stopOrphanChecker() {
+        if (orphanCheckerExecutor != null) {
+            orphanCheckerExecutor.shutdownNow();
+        }
     }
 
     private synchronized RestClient getEsClient() {
@@ -257,6 +293,7 @@ public class BulkPurgeService {
         redisService.putValue("bulk_purge_request:" + requestId, ctx.toJson(), redisTtl);
 
         activePurges.put(purgeKey, ctx);
+        addToActivePurgeKeys(purgeKey);
 
         // Submit to coordinator executor
         coordinatorExecutor.submit(() -> executePurge(ctx, lockKey, redisKey));
@@ -307,9 +344,29 @@ public class BulkPurgeService {
                 LOG.info("BulkPurge: Cancelled for purgeKey={}, deleted={}, failed={}",
                         ctx.purgeKey, ctx.totalDeleted.get(), ctx.totalFailed.get());
             } else {
-                // Phase 3: Post-purge reconciliation
+                // Phase 3a: ES delete_by_query safety net
                 esCleanup(ctx);
+
+                // Phase 5: Verification — confirm all deleted
+                try {
+                    long remainingAfterEsCleanup = getEntityCount(ctx.esQuery);
+                    ctx.remainingAfterCleanup = remainingAfterEsCleanup;
+                    if (remainingAfterEsCleanup > 0) {
+                        LOG.error("BulkPurge: {} entities remain after ES cleanup for purgeKey={}",
+                                remainingAfterEsCleanup, ctx.purgeKey);
+                        ctx.error = remainingAfterEsCleanup + " entities remain after cleanup";
+                    } else {
+                        LOG.info("BulkPurge: Verification passed — 0 entities remaining for purgeKey={}", ctx.purgeKey);
+                    }
+                } catch (Exception e) {
+                    LOG.warn("BulkPurge: Verification count failed for purgeKey={}", ctx.purgeKey, e);
+                }
+
+                // Phase 3b: Repair __hasLineage on external vertices
                 repairExternalLineage(ctx);
+
+                // Phase 3c: Clean stale propagated classifications on external vertices
+                repairExternalPropagatedClassifications(ctx);
 
                 // Phase 4: Delete the Connection entity itself (if requested)
                 if (ctx.deleteConnection && PURGE_MODE_CONNECTION.equals(ctx.purgeMode)) {
@@ -320,8 +377,8 @@ public class BulkPurgeService {
 
                 ctx.status = "COMPLETED";
                 long duration = System.currentTimeMillis() - startTime;
-                LOG.info("BulkPurge: Completed for purgeKey={}, deleted={}, failed={}, duration={}ms",
-                        ctx.purgeKey, ctx.totalDeleted.get(), ctx.totalFailed.get(), duration);
+                LOG.info("BulkPurge: Completed for purgeKey={}, deleted={}, failed={}, remaining={}, duration={}ms",
+                        ctx.purgeKey, ctx.totalDeleted.get(), ctx.totalFailed.get(), ctx.remainingAfterCleanup, duration);
             }
 
             writeRedisStatus(ctx);
@@ -336,6 +393,9 @@ public class BulkPurgeService {
                 heartbeatExecutor.shutdownNow();
             }
             activePurges.remove(ctx.purgeKey);
+            if ("COMPLETED".equals(ctx.status) || "CANCELLED".equals(ctx.status) || "FAILED".equals(ctx.status)) {
+                removeFromActivePurgeKeys(ctx.purgeKey);
+            }
             try {
                 redisService.releaseDistributedLock(lockKey);
             } catch (Exception e) {
@@ -346,6 +406,8 @@ public class BulkPurgeService {
 
     /**
      * Phase 1+2: Stream ES scroll results and delete vertices in parallel.
+     * Uses a bulk-loading graph (storage.batch-loading=true) to disable the
+     * ConsistentKeyLocker and eliminate lock contention between workers.
      */
     private void streamAndDelete(PurgeContext ctx) throws Exception {
         int batchSize = AtlasConfiguration.BULK_PURGE_BATCH_SIZE.getInt();
@@ -377,6 +439,12 @@ public class BulkPurgeService {
         ctx.workerCount = workerCount;
         writeRedisStatus(ctx);
 
+        // Create bulk-loading graph: disables ConsistentKeyLocker to eliminate
+        // lock contention between workers. Safe for connection purge because all
+        // vertices within the connection are being deleted.
+        AtlasGraph workerGraph = getBulkLoadingGraph();
+        LOG.info("BulkPurge: Created bulk-loading graph for purgeKey={}", ctx.purgeKey);
+
         // Create batch queue with backpressure
         BlockingQueue<BatchWork> batchQueue = new LinkedBlockingQueue<>(workerCount * 2);
 
@@ -390,41 +458,57 @@ public class BulkPurgeService {
         // Start workers
         List<Future<?>> workerFutures = new ArrayList<>();
         for (int i = 0; i < workerCount; i++) {
-            workerFutures.add(workerPool.submit(() -> workerLoop(ctx, batchQueue)));
+            workerFutures.add(workerPool.submit(() -> workerLoop(ctx, batchQueue, workerGraph)));
         }
 
-        // Stream ES scroll into queue (coordinator role)
-        streamESScrollIntoBatchQueue(ctx, batchQueue, batchSize, esPageSize, scrollTimeoutMin);
+        try {
+            // Stream ES scroll into queue (coordinator role)
+            streamESScrollIntoBatchQueue(ctx, batchQueue, batchSize, esPageSize, scrollTimeoutMin);
+        } finally {
+            // ALWAYS send poison pills + wait for workers, even on ES scroll failure
+            for (int i = 0; i < workerCount; i++) {
+                batchQueue.put(BatchWork.POISON_PILL);
+            }
 
-        // Send poison pills to stop workers
-        for (int i = 0; i < workerCount; i++) {
-            batchQueue.put(BatchWork.POISON_PILL);
-        }
+            for (Future<?> f : workerFutures) {
+                try {
+                    f.get(2, TimeUnit.MINUTES);
+                } catch (TimeoutException e) {
+                    LOG.warn("BulkPurge: Worker timed out during shutdown for purgeKey={}", ctx.purgeKey);
+                } catch (ExecutionException e) {
+                    LOG.error("BulkPurge: Worker failed for purgeKey={}", ctx.purgeKey, e.getCause());
+                }
+            }
 
-        // Wait for all workers to finish
-        for (Future<?> f : workerFutures) {
+            workerPool.shutdown();
+            workerPool.awaitTermination(1, TimeUnit.MINUTES);
+
+            // Shutdown bulk-loading graph (only used for Phase 1+2)
             try {
-                f.get();
-            } catch (ExecutionException e) {
-                LOG.error("BulkPurge: Worker failed for purgeKey={}", ctx.purgeKey, e.getCause());
+                workerGraph.shutdown();
+                LOG.info("BulkPurge: Bulk-loading graph shut down for purgeKey={}", ctx.purgeKey);
+            } catch (Exception e) {
+                LOG.warn("BulkPurge: Failed to shut down bulk-loading graph for purgeKey={}", ctx.purgeKey, e);
             }
         }
+    }
 
-        workerPool.shutdown();
-        workerPool.awaitTermination(1, TimeUnit.MINUTES);
+    @VisibleForTesting
+    AtlasGraph getBulkLoadingGraph() throws Exception {
+        return graphProvider.getBulkLoading();
     }
 
     /**
      * Worker loop: pulls batches from queue until poison pill received.
      */
-    private void workerLoop(PurgeContext ctx, BlockingQueue<BatchWork> queue) {
+    private void workerLoop(PurgeContext ctx, BlockingQueue<BatchWork> queue, AtlasGraph workerGraph) {
         while (!ctx.cancelRequested) {
             try {
                 BatchWork work = queue.poll(5, TimeUnit.SECONDS);
                 if (work == null) continue;
                 if (work == BatchWork.POISON_PILL) break;
 
-                processBatch(ctx, work);
+                processBatch(ctx, work, workerGraph);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -436,19 +520,26 @@ public class BulkPurgeService {
 
     /**
      * Process a single batch: delete vertices, commit, update progress.
+     * Uses batch vertex retrieval (single round-trip) and relies on
+     * JanusGraph's AbstractVertex.remove() to handle edge cleanup internally.
      */
-    private void processBatch(PurgeContext ctx, BatchWork work) {
+    private void processBatch(PurgeContext ctx, BatchWork work, AtlasGraph workerGraph) {
         int batchDeleted = 0;
         int batchFailed = 0;
 
-        // Use injected graph — JanusGraph manages thread-local transactions internally
-        AtlasGraph workerGraph = this.graph;
+        // Batch vertex retrieval: single round-trip instead of N individual getVertex() calls
+        String[] ids = work.vertexIds.toArray(new String[0]);
+        Set<AtlasVertex> vertexSet = workerGraph.getVertices(ids);
+        Map<String, AtlasVertex> vertexMap = new HashMap<>(vertexSet.size());
+        for (AtlasVertex v : vertexSet) {
+            vertexMap.put(v.getId().toString(), v);
+        }
 
         for (String vertexId : work.vertexIds) {
             if (ctx.cancelRequested) break;
 
             try {
-                AtlasVertex vertex = workerGraph.getVertex(vertexId);
+                AtlasVertex vertex = vertexMap.get(vertexId);
                 if (vertex == null) {
                     continue; // Already deleted (idempotent)
                 }
@@ -461,17 +552,8 @@ public class BulkPurgeService {
                     collectExternalLineageVertices(ctx, vertex);
                 }
 
-                // Remove all edges
-                Iterable<AtlasEdge> edges = vertex.getEdges(AtlasEdgeDirection.BOTH);
-                for (AtlasEdge edge : edges) {
-                    try {
-                        workerGraph.removeEdge(edge);
-                    } catch (Exception e) {
-                        // Edge may already be removed by another vertex deletion
-                        LOG.debug("BulkPurge: Could not remove edge {} for vertex {}", edge.getId(), vertexId);
-                    }
-                }
-
+                // removeVertex() handles edge removal internally via JanusGraph's
+                // AbstractVertex.remove() — no need for explicit edge iteration
                 workerGraph.removeVertex(vertex);
                 batchDeleted++;
             } catch (Exception e) {
@@ -687,16 +769,8 @@ public class BulkPurgeService {
                 return;
             }
 
-            // Remove all edges
-            Iterable<AtlasEdge> edges = connVertex.getEdges(AtlasEdgeDirection.BOTH);
-            for (AtlasEdge edge : edges) {
-                try {
-                    graph.removeEdge(edge);
-                } catch (Exception e) {
-                    LOG.debug("BulkPurge: Could not remove edge {} from connection vertex", edge.getId(), e);
-                }
-            }
-
+            // removeVertex() handles edge removal internally via JanusGraph's
+            // AbstractVertex.remove() — no need for explicit edge iteration
             graph.removeVertex(connVertex);
             graph.commit();
 
@@ -790,7 +864,114 @@ public class BulkPurgeService {
     }
 
     /**
-     * Phase 3c: Write a summary audit event.
+     * Phase 3c: Clean stale propagated classifications on external vertices.
+     *
+     * When entity A (in connection, has tag "PII") propagated that tag via lineage to
+     * entity B (in another connection), bulk purge deletes A but B retains stale
+     * __propagatedTraitNames and classification edges. This method cleans them up.
+     */
+    private void repairExternalPropagatedClassifications(PurgeContext ctx) {
+        if (ctx.externalLineageVertexIds.isEmpty()) {
+            LOG.info("BulkPurge: No external vertices to check for stale propagated classifications for purgeKey={}", ctx.purgeKey);
+            return;
+        }
+
+        LOG.info("BulkPurge: Checking {} external vertices for stale propagated classifications for purgeKey={}",
+                ctx.externalLineageVertexIds.size(), ctx.purgeKey);
+
+        int cleaned = 0;
+        int errors = 0;
+
+        for (String vertexId : ctx.externalLineageVertexIds) {
+            try {
+                AtlasVertex vertex = graph.getVertex(vertexId);
+                if (vertex == null) {
+                    continue;
+                }
+
+                List<String> staleClassificationNames = new ArrayList<>();
+
+                // Find propagated classification edges where the source entity no longer exists
+                Iterable<AtlasEdge> classEdges = vertex.getEdges(AtlasEdgeDirection.OUT, CLASSIFICATION_LABEL);
+                List<AtlasEdge> edgesToRemove = new ArrayList<>();
+
+                for (AtlasEdge edge : classEdges) {
+                    Boolean isPropagated = edge.getProperty(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, Boolean.class);
+                    if (!Boolean.TRUE.equals(isPropagated)) {
+                        continue;
+                    }
+
+                    // Check if the source entity (the one that originally had the classification) still exists
+                    AtlasVertex classificationVertex = edge.getInVertex();
+                    String sourceEntityGuid = classificationVertex.getProperty(CLASSIFICATION_ENTITY_GUID, String.class);
+
+                    if (sourceEntityGuid != null) {
+                        AtlasVertex sourceEntity = AtlasGraphUtilsV2.findByGuid(graph, sourceEntityGuid);
+                        if (sourceEntity == null) {
+                            // Source entity was deleted (part of purged connection) — mark for removal
+                            String classificationName = edge.getProperty(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, String.class);
+                            if (classificationName != null) {
+                                staleClassificationNames.add(classificationName);
+                            }
+                            edgesToRemove.add(edge);
+                        }
+                    }
+                }
+
+                if (!edgesToRemove.isEmpty()) {
+                    // Remove stale classification edges
+                    for (AtlasEdge edge : edgesToRemove) {
+                        graph.removeEdge(edge);
+                    }
+
+                    // Update __propagatedTraitNames: remove stale names
+                    List<String> currentPropagatedTraits = vertex.getMultiValuedProperty(
+                            PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, String.class);
+                    if (currentPropagatedTraits != null && !currentPropagatedTraits.isEmpty()) {
+                        List<String> updatedTraits = new ArrayList<>(currentPropagatedTraits);
+                        updatedTraits.removeAll(staleClassificationNames);
+
+                        vertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
+                        for (String trait : updatedTraits) {
+                            vertex.addListProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, trait);
+                        }
+
+                        // Rebuild __propagatedClassificationNames (pipe-delimited string)
+                        if (updatedTraits.isEmpty()) {
+                            vertex.removeProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY);
+                        } else {
+                            StringBuilder sb = new StringBuilder();
+                            for (String trait : updatedTraits) {
+                                if (sb.length() > 0) sb.append("|");
+                                sb.append(trait);
+                            }
+                            AtlasGraphUtilsV2.setEncodedProperty(vertex, PROPAGATED_CLASSIFICATION_NAMES_KEY, sb.toString());
+                        }
+                    }
+
+                    // Update modification timestamp
+                    AtlasGraphUtilsV2.setEncodedProperty(vertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, System.currentTimeMillis());
+
+                    graph.commit();
+                    cleaned++;
+                    LOG.debug("BulkPurge: Cleaned {} stale propagated classifications from vertex {}",
+                            staleClassificationNames.size(), vertexId);
+                }
+            } catch (Exception e) {
+                LOG.warn("BulkPurge: Failed to clean propagated classifications for vertex {}", vertexId, e);
+                errors++;
+                try {
+                    graph.rollback();
+                } catch (Exception re) { /* ignore */ }
+            }
+        }
+
+        LOG.info("BulkPurge: Propagated classification cleanup complete for purgeKey={}: cleaned={}, errors={}",
+                ctx.purgeKey, cleaned, errors);
+    }
+
+    /**
+     * Write a summary audit event.
      */
     private void writeSummaryAuditEvent(PurgeContext ctx, long startTime) {
         try {
@@ -913,6 +1094,183 @@ public class BulkPurgeService {
         }
     }
 
+    // ======================== ACTIVE PURGE KEY REGISTRY ========================
+
+    private void addToActivePurgeKeys(String purgeKey) {
+        try {
+            int redisTtl = AtlasConfiguration.BULK_PURGE_REDIS_TTL_SECONDS.getInt();
+            String existing = redisService.getValue(REDIS_ACTIVE_PURGE_KEYS);
+            Set<String> keys = parseActivePurgeKeys(existing);
+            keys.add(purgeKey);
+            redisService.putValue(REDIS_ACTIVE_PURGE_KEYS, MAPPER.writeValueAsString(keys), redisTtl);
+        } catch (Exception e) {
+            LOG.warn("BulkPurge: Failed to add purge key to active registry: {}", purgeKey, e);
+        }
+    }
+
+    private void removeFromActivePurgeKeys(String purgeKey) {
+        try {
+            int redisTtl = AtlasConfiguration.BULK_PURGE_REDIS_TTL_SECONDS.getInt();
+            String existing = redisService.getValue(REDIS_ACTIVE_PURGE_KEYS);
+            Set<String> keys = parseActivePurgeKeys(existing);
+            keys.remove(purgeKey);
+            if (keys.isEmpty()) {
+                redisService.removeValue(REDIS_ACTIVE_PURGE_KEYS);
+            } else {
+                redisService.putValue(REDIS_ACTIVE_PURGE_KEYS, MAPPER.writeValueAsString(keys), redisTtl);
+            }
+        } catch (Exception e) {
+            LOG.warn("BulkPurge: Failed to remove purge key from active registry: {}", purgeKey, e);
+        }
+    }
+
+    private Set<String> getActivePurgeKeys() {
+        String existing = redisService.getValue(REDIS_ACTIVE_PURGE_KEYS);
+        return parseActivePurgeKeys(existing);
+    }
+
+    private Set<String> parseActivePurgeKeys(String json) {
+        if (json == null || json.isEmpty()) {
+            return new LinkedHashSet<>();
+        }
+        try {
+            JsonNode node = MAPPER.readTree(json);
+            Set<String> keys = new LinkedHashSet<>();
+            if (node.isArray()) {
+                for (JsonNode item : node) {
+                    keys.add(item.asText());
+                }
+            }
+            return keys;
+        } catch (Exception e) {
+            LOG.warn("BulkPurge: Failed to parse active purge keys from Redis", e);
+            return new LinkedHashSet<>();
+        }
+    }
+
+    // ======================== ORPHAN CHECKER ========================
+
+    @VisibleForTesting
+    void checkAndRecoverOrphanedPurges() {
+        boolean lockAcquired = false;
+        try {
+            lockAcquired = redisService.acquireDistributedLock("bulk_purge_orphan_checker_lock");
+        } catch (Exception e) {
+            LOG.debug("BulkPurge: Orphan checker could not acquire lock", e);
+            return;
+        }
+        if (!lockAcquired) return;
+
+        try {
+            Set<String> activePurgeKeys = getActivePurgeKeys();
+            if (activePurgeKeys.isEmpty()) return;
+
+            for (String purgeKey : activePurgeKeys) {
+                try {
+                    String redisValue = redisService.getValue(REDIS_KEY_PREFIX + purgeKey);
+                    if (redisValue == null) {
+                        removeFromActivePurgeKeys(purgeKey);
+                        continue;
+                    }
+
+                    JsonNode status = MAPPER.readTree(redisValue);
+                    String purgeStatus = status.has("status") ? status.get("status").asText() : "";
+                    long lastHeartbeat = status.has("lastHeartbeat") ? status.get("lastHeartbeat").asLong() : 0;
+                    long fiveMinutesAgo = System.currentTimeMillis() - (5 * 60 * 1000);
+
+                    if ("RUNNING".equals(purgeStatus) && lastHeartbeat < fiveMinutesAgo) {
+                        // Orphaned — check if work remains
+                        String esQuery = status.has("esQuery") ? status.get("esQuery").asText() : null;
+                        if (esQuery == null) {
+                            removeFromActivePurgeKeys(purgeKey);
+                            continue;
+                        }
+
+                        long remaining = getEntityCount(esQuery);
+
+                        if (remaining == 0) {
+                            markOrphanedPurgeCompleted(purgeKey, status);
+                        } else {
+                            int resubmitCount = status.has("resubmitCount") ? status.get("resubmitCount").asInt() : 0;
+                            int maxResubmits = AtlasConfiguration.BULK_PURGE_ORPHAN_MAX_RESUBMITS.getInt();
+
+                            if (resubmitCount < maxResubmits) {
+                                LOG.info("BulkPurge: Auto-recovering orphaned purge for {} (remaining={}, attempt={})",
+                                        purgeKey, remaining, resubmitCount + 1);
+                                resubmitOrphanedPurge(purgeKey, status, resubmitCount + 1);
+                            } else {
+                                LOG.error("BulkPurge: Orphaned purge for {} exceeded max resubmits ({})", purgeKey, maxResubmits);
+                            }
+                        }
+                    } else if ("COMPLETED".equals(purgeStatus) || "CANCELLED".equals(purgeStatus) || "FAILED".equals(purgeStatus)) {
+                        removeFromActivePurgeKeys(purgeKey);
+                    }
+                } catch (Exception e) {
+                    LOG.warn("BulkPurge: Orphan checker error for purgeKey={}", purgeKey, e);
+                }
+            }
+        } catch (Exception e) {
+            LOG.warn("BulkPurge: Orphan checker failed", e);
+        } finally {
+            try {
+                redisService.releaseDistributedLock("bulk_purge_orphan_checker_lock");
+            } catch (Exception e) {
+                LOG.debug("BulkPurge: Failed to release orphan checker lock", e);
+            }
+        }
+    }
+
+    private void markOrphanedPurgeCompleted(String purgeKey, JsonNode status) {
+        try {
+            ObjectNode updated = (ObjectNode) status;
+            updated.put("status", "COMPLETED");
+            updated.put("orphanRecovery", true);
+
+            int redisTtl = AtlasConfiguration.BULK_PURGE_REDIS_TTL_SECONDS.getInt();
+            redisService.putValue(REDIS_KEY_PREFIX + purgeKey, MAPPER.writeValueAsString(updated), redisTtl);
+
+            String requestId = status.has("requestId") ? status.get("requestId").asText() : null;
+            if (requestId != null) {
+                redisService.putValue("bulk_purge_request:" + requestId, MAPPER.writeValueAsString(updated), redisTtl);
+            }
+
+            removeFromActivePurgeKeys(purgeKey);
+            LOG.info("BulkPurge: Marked orphaned purge as COMPLETED for purgeKey={}", purgeKey);
+        } catch (Exception e) {
+            LOG.error("BulkPurge: Failed to mark orphaned purge as completed for {}", purgeKey, e);
+        }
+    }
+
+    private void resubmitOrphanedPurge(String purgeKey, JsonNode status, int resubmitCount) {
+        try {
+            String purgeMode = status.has("purgeMode") ? status.get("purgeMode").asText() : PURGE_MODE_CONNECTION;
+            String esQuery = status.get("esQuery").asText();
+            String submittedBy = status.has("submittedBy") ? status.get("submittedBy").asText() : "orphan-checker";
+            boolean deleteConnection = status.has("deleteConnection") && status.get("deleteConnection").asBoolean();
+
+            String requestId = UUID.randomUUID().toString();
+
+            PurgeContext ctx = new PurgeContext(requestId, purgeKey, purgeMode, submittedBy, esQuery, deleteConnection, 0);
+            ctx.status = "PENDING";
+            ctx.resubmitCount = resubmitCount;
+            writeRedisStatus(ctx);
+
+            int redisTtl = AtlasConfiguration.BULK_PURGE_REDIS_TTL_SECONDS.getInt();
+            redisService.putValue("bulk_purge_request:" + requestId, ctx.toJson(), redisTtl);
+
+            activePurges.put(purgeKey, ctx);
+
+            String lockKey = REDIS_LOCK_PREFIX + purgeKey;
+            String redisKey = REDIS_KEY_PREFIX + purgeKey;
+            coordinatorExecutor.submit(() -> executePurge(ctx, lockKey, redisKey));
+
+            LOG.info("BulkPurge: Resubmitted orphaned purge for {} as requestId={} (attempt={})",
+                    purgeKey, requestId, resubmitCount);
+        } catch (Exception e) {
+            LOG.error("BulkPurge: Failed to resubmit orphaned purge for {}", purgeKey, e);
+        }
+    }
+
     /**
      * Holds state for an active purge operation.
      */
@@ -930,10 +1288,12 @@ public class BulkPurgeService {
         volatile String error;
         volatile long lastHeartbeat;
         volatile long totalDiscovered;
+        volatile long remainingAfterCleanup = -1;
         volatile int workerCount;
         volatile int lastProcessedBatchIndex;
         volatile boolean cancelRequested;
         volatile boolean connectionDeleted;
+        volatile int resubmitCount;
 
         final AtomicInteger totalDeleted = new AtomicInteger(0);
         final AtomicInteger totalFailed = new AtomicInteger(0);
@@ -967,6 +1327,7 @@ public class BulkPurgeService {
             map.put("status", status);
             map.put("submittedBy", submittedBy);
             map.put("submittedAt", submittedAt);
+            map.put("esQuery", esQuery);
             map.put("totalDiscovered", totalDiscovered);
             map.put("deletedCount", totalDeleted.get());
             map.put("failedCount", totalFailed.get());
@@ -977,6 +1338,12 @@ public class BulkPurgeService {
             map.put("batchSize", AtlasConfiguration.BULK_PURGE_BATCH_SIZE.getInt());
             map.put("deleteConnection", deleteConnection);
             map.put("connectionDeleted", connectionDeleted);
+            if (remainingAfterCleanup >= 0) {
+                map.put("remainingAfterCleanup", remainingAfterCleanup);
+            }
+            if (resubmitCount > 0) {
+                map.put("resubmitCount", resubmitCount);
+            }
             if (error != null) {
                 map.put("error", error);
             }
