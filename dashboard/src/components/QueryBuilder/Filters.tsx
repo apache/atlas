@@ -25,7 +25,7 @@ import {
   FormControlLabel
 } from "@mui/material";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Accordion,
   AccordionDetails,
@@ -154,9 +154,9 @@ const Filters = ({
     paramsObject[key] = value;
   });
 
-  const { type, tag, tagFilters, entityFilters } = paramsObject || {};
+  const { type, tag: _tag, tagFilters, entityFilters } = paramsObject || {};
 
-  let obj = {
+  const _obj = {
     value: paramsObject,
     relationship: getUrlState.isRelationSearch() ? true : false,
     searchVent: {}
@@ -335,10 +335,10 @@ const Filters = ({
 
   const applyFilter = () => {
     let isTag;
-    let isRelationship;
-    let filtertype;
+    let _isRelationship: boolean | undefined;
+    let _filtertype: string | undefined;
 
-    let isFilterValidate = true;
+    let _isFilterValidate = true;
 
     const highlightInvalidField = (ruleId: string) => {
       const element = document.querySelector(
@@ -412,16 +412,16 @@ const Filters = ({
 
     if (tagParams) {
       isTag = true;
-      filtertype = isTag ? "tagFilters" : "entityFilters";
+      _filtertype = isTag ? "tagFilters" : "entityFilters";
     }
     if (typeParams) {
       isTag = false;
-      filtertype = isTag ? "tagFilters" : "entityFilters";
+      _filtertype = isTag ? "tagFilters" : "entityFilters";
     }
     if (relationshipParams) {
       isTag = false;
-      isRelationship = true;
-      filtertype = "relationshipFilters";
+      _isRelationship = true;
+      _filtertype = "relationshipFilters";
     }
 
     if (!isEmpty(typeQuery)) {
@@ -448,7 +448,7 @@ const Filters = ({
         searchParams.delete("entityFilters");
       }
     } else {
-      isFilterValidate = false;
+      _isFilterValidate = false;
       searchParams.delete("entityFilters");
     }
 
@@ -475,7 +475,7 @@ const Filters = ({
         searchParams.delete("tagFilters");
       }
     } else {
-      isFilterValidate = false;
+      _isFilterValidate = false;
       searchParams.delete("tagFilters");
     }
 

@@ -509,6 +509,8 @@ export default class LineageHelper {
     svg
       .attr("viewBox", "0 0 " + width + " " + height)
       .attr("enable-background", "new 0 0 " + width + " " + height);
+    // Clear previous graph content to avoid duplicate layers when createGraph runs multiple times
+    svg.selectAll("g, defs").remove();
     var svgGroupEl = svg.append("g");
 
     // Append defs

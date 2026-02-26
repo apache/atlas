@@ -18,7 +18,7 @@
  */
 
 import { Popover, Stack, Typography } from "@mui/material";
-import { SetStateAction, useEffect, useState } from "react";
+import { SetStateAction, useState } from "react";
 import type {
   Operator,
   RuleGroupType,
@@ -38,7 +38,6 @@ import {
 } from "@components/muiComponents";
 import { fields } from "./AuditFiltersFields";
 import { useAppSelector } from "@hooks/reducerHook";
-import DatePicker from "react-datepicker";
 import moment from "moment";
 import { GlobalQueryState, isEmpty } from "@utils/Utils";
 import { attributeFilter } from "@utils/CommonViewFunction";
@@ -52,7 +51,7 @@ const customOperators: Operator[] = [
 ];
 
 const CustomValueEditor: React.FC<ValueEditorProps> = (props) => {
-  const { field, operator, value, handleOnChange, loader } = props;
+  const { field, operator, value, handleOnChange } = props;
   const [_customRange, setCustomRange] = useState<[Date | null, Date | null]>([
     null,
     null
@@ -166,7 +165,7 @@ const AuditFilters = ({
   filtersPopover,
   handleCloseFilterPopover,
   setupdateTable,
-  queryApiObj,
+  queryApiObj: _queryApiObj,
   setQueryApiObj
 }: any) => {
   const { entityData = {} } = useAppSelector((state: any) => state.entity);
