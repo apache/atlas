@@ -65,8 +65,8 @@ jobs:
       - name: Clean up Docker space
         run: docker system prune --all --force --volumes
 
+      - name: Build Atlas - JDK 8
         run: |
-          set -euo pipefail
           mvn -Pembedded-solr-it -DskipTests=false -DskipDocs clean verify --no-transfer-progress -B -V
 
       - name: Collect Atlas distribution tarballs
