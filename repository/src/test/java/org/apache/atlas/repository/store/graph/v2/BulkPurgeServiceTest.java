@@ -441,15 +441,60 @@ class BulkPurgeServiceTest {
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
 
-        // 5000 entities → should auto-scale to 1 worker (< 10000)
+        // 5000 entities → should auto-scale to 2 workers (1K–10K range)
         setupFullEsMock(5000, Collections.emptyList()); // empty scroll to finish quickly
 
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
-        // Verify workerCount=1 was set in Redis status (using timeout for async)
+        // Verify workerCount=2 was set in Redis status (using timeout for async)
         verify(mockRedisService, timeout(5000).atLeastOnce()).putValue(
                 argThat(key -> key.startsWith("bulk_purge:")),
-                argThat(json -> json.contains("\"workerCount\":1")),
+                argThat(json -> json.contains("\"workerCount\":2")),
+                anyInt());
+    }
+
+    @Test
+    void testWorkerCountAutoScaling_allThresholds() {
+        // getWorkerCount is now package-visible for testing
+        assertEquals(1, bulkPurgeService.getWorkerCount(500, 10));     // < 1K → 1
+        assertEquals(1, bulkPurgeService.getWorkerCount(999, 10));     // < 1K → 1
+        assertEquals(2, bulkPurgeService.getWorkerCount(1000, 10));    // 1K–10K → 2
+        assertEquals(2, bulkPurgeService.getWorkerCount(9999, 10));    // 1K–10K → 2
+        assertEquals(4, bulkPurgeService.getWorkerCount(10000, 10));   // 10K–50K → 4
+        assertEquals(4, bulkPurgeService.getWorkerCount(49999, 10));   // 10K–50K → 4
+        assertEquals(8, bulkPurgeService.getWorkerCount(50000, 10));   // 50K–500K → min(10, 8) = 8
+        assertEquals(8, bulkPurgeService.getWorkerCount(499999, 10));  // 50K–500K → min(10, 8) = 8
+        assertEquals(10, bulkPurgeService.getWorkerCount(500000, 10)); // > 500K → configuredMax = 10
+        assertEquals(10, bulkPurgeService.getWorkerCount(1000000, 10));// > 500K → configuredMax = 10
+    }
+
+    @Test
+    void testWorkerCountAutoScaling_lowConfiguredMax() {
+        // When configuredMax is lower than the tier value, it should cap
+        assertEquals(3, bulkPurgeService.getWorkerCount(50000, 3));    // 50K–500K → min(3, 8) = 3
+        assertEquals(3, bulkPurgeService.getWorkerCount(500000, 3));   // > 500K → configuredMax = 3
+    }
+
+    @Test
+    void testWorkerCountOverride_usedInsteadOfAutoScaling() throws Exception {
+        mockedGraphUtils.when(() -> AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(
+                eq(mockGraph), eq(Constants.CONNECTION_ENTITY_TYPE),
+                eq(Constants.QUALIFIED_NAME), eq(TEST_CONNECTION_QN)))
+                .thenReturn(mockConnectionVertex);
+
+        when(mockRedisService.getValue(anyString())).thenReturn(null);
+        when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
+        when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
+
+        // 500 entities would auto-scale to 1 worker, but we override with 5
+        setupFullEsMock(500, Collections.emptyList());
+
+        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false, 5);
+
+        // Verify workerCount=5 was set in Redis status (override used instead of auto-scaled 1)
+        verify(mockRedisService, timeout(5000).atLeastOnce()).putValue(
+                argThat(key -> key.startsWith("bulk_purge:")),
+                argThat(json -> json.contains("\"workerCount\":5")),
                 anyInt());
     }
 
@@ -459,7 +504,7 @@ class BulkPurgeServiceTest {
     void testPurgeContext_toStatusMap_containsAllFields() {
         BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
                 "req-123", "default/snowflake/1234567890", "CONNECTION", "admin",
-                "{\"query\":{\"prefix\":{\"__qualifiedNameHierarchy\":\"default/snowflake/1234567890/\"}}}", true);
+                "{\"query\":{\"prefix\":{\"__qualifiedNameHierarchy\":\"default/snowflake/1234567890/\"}}}", true, 0);
         ctx.status = "RUNNING";
         ctx.totalDiscovered = 5000;
         ctx.workerCount = 4;
@@ -490,7 +535,7 @@ class BulkPurgeServiceTest {
     @Test
     void testPurgeContext_toStatusMap_includesErrorWhenSet() {
         BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
-                "req-456", "key", "CONNECTION", "admin", "{}", false);
+                "req-456", "key", "CONNECTION", "admin", "{}", false, 0);
         ctx.status = "FAILED";
         ctx.error = "Connection timeout";
 
@@ -502,7 +547,7 @@ class BulkPurgeServiceTest {
     @Test
     void testPurgeContext_toJson_producesValidJson() throws Exception {
         BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
-                "req-789", "key", "QUALIFIED_NAME_PREFIX", "admin", "{}", false);
+                "req-789", "key", "QUALIFIED_NAME_PREFIX", "admin", "{}", false, 0);
         ctx.status = "PENDING";
 
         String json = ctx.toJson();

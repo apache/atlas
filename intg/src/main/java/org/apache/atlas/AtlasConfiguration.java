@@ -196,7 +196,7 @@ public enum AtlasConfiguration {
 
     // Bulk purge configuration
     BULK_PURGE_BATCH_SIZE("atlas.bulk.purge.batch.size", 1000),
-    BULK_PURGE_WORKER_COUNT("atlas.bulk.purge.worker.count", 4),
+    BULK_PURGE_WORKER_COUNT("atlas.bulk.purge.worker.count", 10),
     BULK_PURGE_ES_PAGE_SIZE("atlas.bulk.purge.es.page.size", 5000),
     BULK_PURGE_COMMIT_MAX_RETRIES("atlas.bulk.purge.commit.max.retries", 3),
     BULK_PURGE_HEARTBEAT_INTERVAL_MS("atlas.bulk.purge.heartbeat.interval.ms", 30000),
