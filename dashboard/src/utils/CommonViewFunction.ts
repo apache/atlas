@@ -27,7 +27,6 @@ import {
 import {
   convertToValidDate,
   formatedDate,
-  getUrlState,
   isEmpty,
   isObject,
   isString

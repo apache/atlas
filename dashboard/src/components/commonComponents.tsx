@@ -34,13 +34,8 @@ import {
 } from "../utils/Utils";
 import { JSONPrettyPrint, getValue } from "../utils/CommonViewFunction";
 import { useSelector } from "react-redux";
-import {
-  entityStateReadOnly,
-  filterQueryValue,
-  queryBuilderDateRangeUIValueToAPI,
-  systemAttributes
-} from "../utils/Enum";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { entityStateReadOnly } from "../utils/Enum";
+import { Link, useLocation } from "react-router-dom";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import { useEffect, useState } from "react";
 import { getDetailPageData } from "../api/apiMethods/detailpageApiMethod";

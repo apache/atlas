@@ -26,16 +26,13 @@ import {
   Divider,
   FormControl,
   IconButton,
-  MenuItem,
   Popover,
   Slide,
   Stack,
-  Switch,
   TextField,
   Typography
 } from "@mui/material";
 import LineageHelper from "@views/Lineage/atlas-lineage/src";
-import { useSelector } from "react-redux";
 import {
   Close as CloseIcon,
   Search as SearchIcon,
@@ -48,7 +45,6 @@ import {
   Refresh as RefreshIcon
 } from "@mui/icons-material";
 import { LightTooltip } from "@components/muiComponents";
-import { useAppSelector } from "@hooks/reducerHook";
 import {
   cloneDeep,
   extend,
@@ -60,7 +56,7 @@ import { lineageDepth } from "@utils/Enum";
 import { AntSwitch } from "@utils/Muiutils";
 
 const TypeSystemTreeView = ({ entityDefs }: any) => {
-  const optionsVal = [
+  const _optionsVal = [
     { label: "3" },
     { label: "6" },
     { label: "9" },
@@ -75,8 +71,8 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
   let selectedDetailNode = {};
   const [isFullScreen, setIsFullScreen] = useState(false);
   const typeSystemTreeViewPageRef = useRef(null);
-  const panelRef = useRef(null);
-  const tableBodyRef = useRef(null);
+  const _panelRef = useRef(null);
+  const _tableBodyRef = useRef(null);
 
   const [lineageMethods, setLineageMethods] = useState({});
   const [settingsPopover, setSettingsPopover] = useState(null);
@@ -95,7 +91,7 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
   const [nodeDetailsChecked, setNodeDetailsChecked] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [nodeDetails, setNodeDetails] = useState({});
-  const [value, setValue] = useState<any>();
+  const [_value, setValue] = useState<any>();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -128,7 +124,25 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
   };
 
   useEffect(() => {
-    let node = lineageDivRef.current.getBoundingClientRect();
+    if (!lineageDivRef.current) return;
+
+    const clearPreviousContent = () => {
+      if (lineageHelperRef.current) {
+        try {
+          lineageHelperRef.current.clear?.();
+        } catch (_e) {
+          /* ignore */
+        }
+        lineageHelperRef.current = null;
+      }
+      if (lineageDivRef.current) {
+        lineageDivRef.current.innerHTML = "";
+      }
+    };
+
+    clearPreviousContent();
+
+    const node = lineageDivRef.current.getBoundingClientRect();
 
     const lineageGraph = new LineageHelper({
       el: lineageDivRef.current,
@@ -158,10 +172,14 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
         return nodeDetailsChecked;
       }
     });
-    // LineageHelperRef = lineageGraph;
+
     lineageHelperRef.current = lineageGraph;
     setLineageMethods(lineageGraph);
     fetchGraph();
+
+    return () => {
+      clearPreviousContent();
+    };
   }, [currentPathChecked, nodeDetailsChecked]);
 
   const fetchGraph = (options: any) => {
@@ -240,7 +258,7 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
             styleObj: styleObj
           });
         };
-        const setGraphData = function (fromEntityId, toEntityId) {
+        const _setGraphData = function (fromEntityId: string, toEntityId: string) {
           setNode(
             fromEntityId,
             options.data.find((obj) => obj.guid === fromEntityId)
@@ -405,11 +423,11 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
     setNodeDetailsChecked(event.target.checked);
   };
 
-  const handleChange = (newValue: any) => {
+  const _handleChange = (newValue: any) => {
     setValue(newValue);
   };
 
-  const onClickSaveSvg = (e, a) => {
+  const onClickSaveSvg = (_e: React.MouseEvent, _a: unknown) => {
     lineageMethods.exportLineage({ downloadFileName: "TypeSystemView" });
   };
 
@@ -466,7 +484,7 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
     newValue: string | null
   ) => {
     e.stopPropagation();
-    const { label, value }: any = newValue;
+    const { label }: any = newValue;
     if (!isRefreshing) {
       filterData(label);
     } else {
@@ -480,10 +498,10 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
     newValue: string | null
   ) => {
     e.stopPropagation();
-    const { label, value }: any = newValue;
+    const { label, value: searchValue }: any = newValue;
 
     if (!isRefreshing) {
-      lineageMethods.searchNode({ guid: value });
+      lineageMethods.searchNode({ guid: searchValue });
     } else {
       setIsRefreshing(false);
     }

@@ -9,7 +9,8 @@
     "prebuild": "npm run fetch-team",
     "build": "NODE_OPTIONS=--openssl-legacy-provider node ./docz-lib/docz/bin/index.js build",
     "predeploy": "npm install && NODE_OPTIONS=--openssl-legacy-provider npm run build",
-    "deploy": "gh-pages -d site"
+    "deploy": "gh-pages -d site",
+    "postinstall": "patch-package"
   },
   "author": "",
   "license": "MIT",
@@ -23,6 +24,7 @@
     "babel-plugin-lodash": "3.3.4",
     "babel-plugin-react-transform": "3.0.0",
     "gh-pages": "5.0.0",
+    "patch-package": "^6.5.1",
     "react-github-btn": "1.0.5",
     "react-syntax-highlighter": "11.0.1",
     "reactstrap": "8.0.0",
@@ -48,6 +50,11 @@
     "trim": "0.0.3",
     "form-data": "2.5.5",
     "pbkdf2": "3.1.5",
-    "sha.js": "2.4.12"
+    "sha.js": "2.4.12",
+    "node-forge": "1.3.2",
+    "trim-newlines": "3.0.1",
+    "ip": "npm:neoip@2.1.0",
+    "webpack-dev-middleware": "5.3.4",
+    "path-to-regexp": "3.3.0"
   }
 }
