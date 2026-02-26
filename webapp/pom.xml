@@ -32,6 +32,7 @@
     <description>Apache Atlas Web Application</description>
 
     <properties>
+        <atlas.testtools.scope>test</atlas.testtools.scope>
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
         <checkstyle.skip>false</checkstyle.skip>
         <debug.jetty.daemon>true</debug.jetty.daemon>
@@ -490,17 +491,17 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-testtools</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.easymock</groupId>
             <artifactId>easymock</artifactId>
             <version>3.4</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-testtools</artifactId>
+            <version>${project.version}</version>
+            <scope>${atlas.testtools.scope}</scope>
         </dependency>
     </dependencies>
 
@@ -821,6 +822,16 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>embedded-solr-it</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <atlas.testtools.scope>runtime</atlas.testtools.scope>
+            </properties>
+        </profile>
+
         <profile>
             <id>dist</id>
             <activation>

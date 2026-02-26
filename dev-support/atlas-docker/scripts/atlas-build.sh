@@ -86,14 +86,20 @@ else
   done
 fi
 
-mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean package
-
-mv -f distro/target/apache-atlas-${ATLAS_VERSION}-server.tar.gz     /home/atlas/dist/
-mv -f distro/target/apache-atlas-${ATLAS_VERSION}-hive-hook.tar.gz  /home/atlas/dist/
-mv -f distro/target/apache-atlas-${ATLAS_VERSION}-hbase-hook.tar.gz /home/atlas/dist/
-mv -f distro/target/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz /home/atlas/dist/
+mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean verify --no-transfer-progress -B -V
 
 status=$?
+
+for f in \
+  "distro/target/apache-atlas-${ATLAS_VERSION}-server.tar.gz" \
+  "distro/target/apache-atlas-${ATLAS_VERSION}-hive-hook.tar.gz" \
+  "distro/target/apache-atlas-${ATLAS_VERSION}-hbase-hook.tar.gz" \
+  "distro/target/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz"
+do
+  if [ -f "${f}" ]; then
+    mv -f "${f}" /home/atlas/dist/
+  fi
+done
 
 # Run code coverage and generate reports
 ./dev-support/checks/coverage.sh
