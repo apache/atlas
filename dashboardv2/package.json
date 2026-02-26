@@ -76,6 +76,7 @@
     "sass": "1.74.1"
   },
   "overrides": {
-    "underscore": "1.13.7"
+    "underscore": "1.13.7",
+    "lodash": "4.17.23"
   }
 }
