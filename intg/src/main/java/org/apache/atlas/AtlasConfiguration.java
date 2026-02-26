@@ -195,14 +195,14 @@ public enum AtlasConfiguration {
     DELETE_OWNED_BATCH_SIZE("atlas.delete.owned.batch.size", 100),
 
     // Bulk purge configuration
-    BULK_PURGE_BATCH_SIZE("atlas.bulk.purge.batch.size", 1000),
-    BULK_PURGE_WORKER_COUNT("atlas.bulk.purge.worker.count", 4),
+    BULK_PURGE_BATCH_SIZE("atlas.bulk.purge.batch.size", 500),
+    BULK_PURGE_WORKER_COUNT("atlas.bulk.purge.worker.count", 10),
     BULK_PURGE_ES_PAGE_SIZE("atlas.bulk.purge.es.page.size", 5000),
     BULK_PURGE_COMMIT_MAX_RETRIES("atlas.bulk.purge.commit.max.retries", 3),
     BULK_PURGE_HEARTBEAT_INTERVAL_MS("atlas.bulk.purge.heartbeat.interval.ms", 30000),
     BULK_PURGE_REDIS_TTL_SECONDS("atlas.bulk.purge.redis.ttl.seconds", 86400),
     BULK_PURGE_KAFKA_NOTIFY_INTERVAL("atlas.bulk.purge.kafka.notify.interval", 10),
-    BULK_PURGE_SCROLL_TIMEOUT_MINUTES("atlas.bulk.purge.scroll.timeout.minutes", 10);
+    BULK_PURGE_SCROLL_TIMEOUT_MINUTES("atlas.bulk.purge.scroll.timeout.minutes", 30);
 
     private static final Configuration APPLICATION_PROPERTIES;
 

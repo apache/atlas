@@ -120,6 +120,19 @@ public class BulkPurgeService {
      * @param deleteConnection if true, delete the Connection entity after all child assets are purged
      */
     public String bulkPurgeByConnection(String connectionQN, String submittedBy, boolean deleteConnection) throws AtlasBaseException {
+        return bulkPurgeByConnection(connectionQN, submittedBy, deleteConnection, 0);
+    }
+
+    /**
+     * Purge all assets belonging to a connection.
+     * The Connection entity itself is NOT deleted unless {@code deleteConnection} is true.
+     *
+     * @param connectionQN       qualifiedName of the connection
+     * @param submittedBy        user who submitted the request
+     * @param deleteConnection   if true, delete the Connection entity after all child assets are purged
+     * @param workerCountOverride if > 0, use this many workers (capped at configuredMax) instead of auto-scaling
+     */
+    public String bulkPurgeByConnection(String connectionQN, String submittedBy, boolean deleteConnection, int workerCountOverride) throws AtlasBaseException {
         if (connectionQN == null || connectionQN.isEmpty()) {
             throw new AtlasBaseException("connectionQualifiedName is required");
         }
@@ -138,20 +151,31 @@ public class BulkPurgeService {
         // Prefix "default/snowflake/123/" matches children but not the connection.
         // This also prevents prefix collisions between connections (e.g. "123" vs "1234").
         String esQuery = buildPrefixQuery(QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, connectionQN + "/");
-        return submitPurge(connectionQN, PURGE_MODE_CONNECTION, esQuery, submittedBy, deleteConnection);
+        return submitPurge(connectionQN, PURGE_MODE_CONNECTION, esQuery, submittedBy, deleteConnection, workerCountOverride);
     }
 
     /**
      * Purge all assets matching a qualifiedName prefix.
      */
     public String bulkPurgeByQualifiedName(String qualifiedNamePrefix, String submittedBy) throws AtlasBaseException {
+        return bulkPurgeByQualifiedName(qualifiedNamePrefix, submittedBy, 0);
+    }
+
+    /**
+     * Purge all assets matching a qualifiedName prefix.
+     *
+     * @param qualifiedNamePrefix the qualifiedName prefix to match
+     * @param submittedBy         user who submitted the request
+     * @param workerCountOverride if > 0, use this many workers (capped at configuredMax) instead of auto-scaling
+     */
+    public String bulkPurgeByQualifiedName(String qualifiedNamePrefix, String submittedBy, int workerCountOverride) throws AtlasBaseException {
         if (qualifiedNamePrefix == null || qualifiedNamePrefix.length() < MIN_QN_PREFIX_LENGTH) {
             throw new AtlasBaseException("qualifiedName prefix must be at least " + MIN_QN_PREFIX_LENGTH + " characters");
         }
 
         // ES query: prefix on __qualifiedNameHierarchy (always indexed by JanusGraph)
         String esQuery = buildPrefixQuery(QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, qualifiedNamePrefix);
-        return submitPurge(qualifiedNamePrefix, PURGE_MODE_QN_PREFIX, esQuery, submittedBy, false);
+        return submitPurge(qualifiedNamePrefix, PURGE_MODE_QN_PREFIX, esQuery, submittedBy, false, workerCountOverride);
     }
 
     /**
@@ -195,7 +219,7 @@ public class BulkPurgeService {
 
     // ======================== PRIVATE METHODS ========================
 
-    private String submitPurge(String purgeKey, String purgeMode, String esQuery, String submittedBy, boolean deleteConnection) throws AtlasBaseException {
+    private String submitPurge(String purgeKey, String purgeMode, String esQuery, String submittedBy, boolean deleteConnection, int workerCountOverride) throws AtlasBaseException {
         String redisKey = REDIS_KEY_PREFIX + purgeKey;
         String lockKey = REDIS_LOCK_PREFIX + purgeKey;
 
@@ -224,7 +248,7 @@ public class BulkPurgeService {
         String requestId = UUID.randomUUID().toString();
 
         // Write initial status
-        PurgeContext ctx = new PurgeContext(requestId, purgeKey, purgeMode, submittedBy, esQuery, deleteConnection);
+        PurgeContext ctx = new PurgeContext(requestId, purgeKey, purgeMode, submittedBy, esQuery, deleteConnection, workerCountOverride);
         ctx.status = "PENDING";
         writeRedisStatus(ctx);
 
@@ -341,8 +365,15 @@ public class BulkPurgeService {
             return;
         }
 
-        // Auto-scale worker count
-        int workerCount = getWorkerCount(totalEntities, configuredWorkerCount);
+        // Determine worker count: use override if provided, otherwise auto-scale
+        int workerCount;
+        if (ctx.workerCountOverride > 0) {
+            workerCount = Math.min(ctx.workerCountOverride, configuredWorkerCount);
+            LOG.info("BulkPurge: Using worker count override={} (capped to {}) for purgeKey={}",
+                    ctx.workerCountOverride, workerCount, ctx.purgeKey);
+        } else {
+            workerCount = getWorkerCount(totalEntities, configuredWorkerCount);
+        }
         ctx.workerCount = workerCount;
         writeRedisStatus(ctx);
 
@@ -854,11 +885,13 @@ public class BulkPurgeService {
 
     // ======================== HELPER METHODS ========================
 
-    private int getWorkerCount(long totalEntities, int configuredMax) {
-        if (totalEntities < 10_000) return 1;
-        if (totalEntities < 100_000) return 2;
-        if (totalEntities < 1_000_000) return Math.min(configuredMax, 4);
-        return Math.min(configuredMax, 8);
+    @VisibleForTesting
+    int getWorkerCount(long totalEntities, int configuredMax) {
+        if (totalEntities < 1_000)   return 1;
+        if (totalEntities < 10_000)  return 2;
+        if (totalEntities < 50_000)  return 4;
+        if (totalEntities < 500_000) return Math.min(configuredMax, 8);
+        return configuredMax;
     }
 
     private void writeRedisStatus(PurgeContext ctx) {
@@ -891,6 +924,7 @@ public class BulkPurgeService {
         final String esQuery;
         final long submittedAt;
         final boolean deleteConnection;
+        final int workerCountOverride;
 
         volatile String status;
         volatile String error;
@@ -906,7 +940,7 @@ public class BulkPurgeService {
         final AtomicInteger completedBatches = new AtomicInteger(0);
         final Set<String> externalLineageVertexIds = ConcurrentHashMap.newKeySet();
 
-        PurgeContext(String requestId, String purgeKey, String purgeMode, String submittedBy, String esQuery, boolean deleteConnection) {
+        PurgeContext(String requestId, String purgeKey, String purgeMode, String submittedBy, String esQuery, boolean deleteConnection, int workerCountOverride) {
             this.requestId = requestId;
             this.purgeKey = purgeKey;
             this.purgeMode = purgeMode;
@@ -914,6 +948,7 @@ public class BulkPurgeService {
             this.esQuery = esQuery;
             this.submittedAt = System.currentTimeMillis();
             this.deleteConnection = deleteConnection;
+            this.workerCountOverride = workerCountOverride;
         }
 
         String toJson() {
