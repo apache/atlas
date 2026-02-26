@@ -215,7 +215,7 @@ public class AuthREST {
                 String query = parameters.getQueryString();
                 EntityAuditSearchResult result = auditRepository.searchEvents(query); // attributes are not getting passed in query
                 if (result != null && !CollectionUtils.isEmpty(result.getEntityAudits())) {
-                    events = result.getEntityAudits();
+                    events.addAll(result.getEntityAudits());
                 }
                 from += size;
             } while (events.size() == size);
