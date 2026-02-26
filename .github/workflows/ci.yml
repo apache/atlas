@@ -67,15 +67,16 @@ jobs:
 
       - name: Build Atlas - JDK 8
         run: |
-          mvn -Pembedded-solr-it -DskipTests=false -DskipDocs clean verify --no-transfer-progress -B -V
+          mvn -Pdist,embedded-solr-it -DskipTests=false -DskipDocs clean verify --no-transfer-progress -B -V
 
       - name: Collect Atlas distribution tarballs
         run: |
+          mkdir -p dev-support/atlas-docker/dist
+          ls -la distro/target || true
           cp -f distro/target/apache-atlas-*-server.tar.gz     dev-support/atlas-docker/dist/
           cp -f distro/target/apache-atlas-*-hive-hook.tar.gz  dev-support/atlas-docker/dist/
           cp -f distro/target/apache-atlas-*-hbase-hook.tar.gz dev-support/atlas-docker/dist/
           cp -f distro/target/apache-atlas-*-kafka-hook.tar.gz dev-support/atlas-docker/dist/
-          ls -la dev-support/atlas-docker/dist/apache-atlas-*.tar.gz
 
       - name: Generate code coverage report
         shell: bash
