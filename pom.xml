@@ -72,6 +72,7 @@
         <module>repository</module>
         <module>server-api</module>
         <module>test-tools</module>
+        <module>tools/atlas-gremlin-cli</module>
         <module>tools/atlas-index-repair</module>
         <module>tools/classification-updater</module>
         <module>tools/notification-analyzer</module>
