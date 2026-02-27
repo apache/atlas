@@ -148,11 +148,8 @@ define([
         },
         preRouteExecute: function() {
             $(".tooltip").tooltip("hide");
-            // console.log("Pre-Route Change Operations can be performed here !!");
         },
         postRouteExecute: function(name, args) {
-            // console.log("Post-Route Change Operations can be performed here !!");
-            // console.log("Route changed: ", name);
         },
         getHeaderOptions: function(Header, options) {
             var that = this;
@@ -522,7 +519,6 @@ define([
                 updateTabState: true
             });
 
-            console.log('No route:', actions);
         }
     });
     return AppRouter;

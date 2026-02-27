@@ -240,7 +240,7 @@ module.exports = function(grunt) {
                 files: [{
                     expand: true,
                     cwd: distPath + '/js',
-                    src: ['external_lib/**/*.js', '!external_lib/**/purify.min.js', 'libs/**/*.js'],
+                    src: ['external_lib/**/*.js', '!external_lib/**/purify.min.js', 'libs/**/*.js','!external_lib/atlas-lineage/**', 'libs/**/*.js'],
                     dest: distPath + '/js'
                 }]
             },

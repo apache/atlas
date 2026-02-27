@@ -268,7 +268,6 @@ const EntityForm = ({
         payload: (error as Error).message
       });
       setLoader(false);
-      console.log("Error while creating entity", error);
       toast.dismiss(toastId.current);
       serverError(error, toastId);
     }
@@ -305,7 +304,6 @@ const EntityForm = ({
     } catch (error) {
       setLoader(false);
       dispatch({ type: "FETCH_FAILURE", payload: (error as Error).message });
-      console.log("Error while fetching entity type data", error);
       toast.dismiss(toastId.current);
       serverError(error, toastId);
     }

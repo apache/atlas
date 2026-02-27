@@ -72,7 +72,6 @@ const FormAutocomplete = ({ data, control }: any) => {
       }
     } catch (error) {
       setloading(false);
-      console.log("Error while fetching attributes", error);
       toast.dismiss(toastId.current);
       serverError(error, toastId);
     }

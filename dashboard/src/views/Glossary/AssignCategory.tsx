@@ -272,7 +272,6 @@ const AssignCategory = ({
       }
     } catch (error) {
       setLoading(false);
-      console.log(`Error occur while assigning ${"Category"}`, error);
       serverError(error, toastId);
     }
   };

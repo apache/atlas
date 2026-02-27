@@ -360,7 +360,6 @@ define(['require',
                 var that = this,
                     chartData = {};
                 ++that.chartLoaderCount;
-                console.log("startTime: " + new Date(params.startTime) + ", endTime: " + new Date(params.endTime) + " ,typeName: " + params.typeName);
                 that.entityTypeChartCollection.queryParams = params;
                 that.entityTypeChartCollection.fetch({
                     success: function(data) {

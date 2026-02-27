@@ -135,7 +135,6 @@ const Labels = ({ loading, labels }: any) => {
 
       setAddLabel(true);
     } catch (error) {
-      console.log("Error while adding labels", error);
       toast.dismiss(toastId.current);
       serverError(error, toastId);
     }

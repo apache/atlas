@@ -60,7 +60,6 @@ const DeleteTag = (props: {
       setExpandNode(null);
     } catch (error) {
       setLoader(false);
-      console.log(`Error occur while removing ${node.id}`, error);
       serverError(error, toastId);
     }
   };

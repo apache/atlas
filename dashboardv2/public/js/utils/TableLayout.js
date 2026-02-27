@@ -594,7 +594,6 @@ define(['require',
 
                 // Listen to resize events
                 this.columns.on('resize', function(columnModel, newWidth, oldWidth) {
-                    console.log('Resize event on column; name, model, new and old width: ', columnModel.get("name"), columnModel, newWidth, oldWidth);
                 });
             },
 

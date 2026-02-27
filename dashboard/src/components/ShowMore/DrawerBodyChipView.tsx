@@ -178,7 +178,6 @@ const DrawerBodyChipView = ({
       }
     } catch (error) {
       setRemoveLoader(false);
-      console.log(`Error occur while removing ${title}`, error);
       serverError(error, toastId);
     }
   };
