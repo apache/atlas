@@ -195,14 +195,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
             return;
         }
 
-        for (int i = 0; ; i++) {
-            String deletedKeyName = janusPropertyKey + "_deleted_" + i;
-
-            if (null == management.getPropertyKey(deletedKeyName)) {
-                management.changeName(janusPropertyKey, deletedKeyName);
-                break;
-            }
-        }
+        janusPropertyKey.remove();
     }
 
     @Override
