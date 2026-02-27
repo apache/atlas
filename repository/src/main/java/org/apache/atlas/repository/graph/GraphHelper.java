@@ -100,6 +100,7 @@ import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
 import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
+import static org.apache.atlas.repository.graph.AtlasGraphProvider.getGraphInstance;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -159,6 +160,44 @@ public final class GraphHelper {
         }
 
         RequestContext.get().endMetricRecord(metric);
+
+        return ret;
+    }
+
+    /**
+     * Returns at most {@code limit} adjacent edges, skipping the first {@code offset} matches,
+     * using {@link AtlasGraph#getAdjacentEdgesPaged} so that backends can implement efficient
+     * paging (for example via a traversal with range()).
+     */
+    public static List<AtlasEdge> getAdjacentEdgesByLabelPaged(AtlasVertex instanceVertex,
+            AtlasEdgeDirection direction,
+            final String edgeLabel,
+            int offset,
+            int limit) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getAdjacentEdgesByLabelPaged");
+
+        List<AtlasEdge> ret = new ArrayList<>();
+
+        try {
+            if (instanceVertex == null || edgeLabel == null || offset < 0 || limit <= 0) {
+                return ret;
+            }
+
+            AtlasGraph<?, ?> graph = getGraphInstance();
+
+            Iterable<AtlasEdge> edges =
+                    (Iterable<AtlasEdge>) graph.getAdjacentEdgesPaged(instanceVertex, direction, edgeLabel, offset, limit);
+
+            if (edges != null) {
+                for (AtlasEdge edge : edges) {
+                    if (edge != null) {
+                        ret.add(edge);
+                    }
+                }
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
 
         return ret;
     }

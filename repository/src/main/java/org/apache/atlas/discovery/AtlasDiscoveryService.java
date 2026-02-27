@@ -112,6 +112,22 @@ public interface AtlasDiscoveryService {
     AtlasSearchResult searchRelatedEntities(String guid, String relation, boolean getApproximateCount, SearchParameters searchParameters) throws AtlasBaseException;
 
     /**
+     * Optimized version of {@link #searchRelatedEntities(String, String, boolean, SearchParameters)}
+     * that correctly selects between graph-layer paging (for unsorted queries) and
+     * standard Gremlin traversal (for sorted queries) to maximize performance.
+     *
+     * @param guid unique ID of the entity.
+     * @param relation relation name.
+     * @param getApproximateCount whether to calculate approximate count
+     * @param searchParameters search parameters including sorting, pagination, filters
+     * @param disableDefaultSorting when false (default), applies default "name" sorting if sortBy is not specified;
+     *                              when true, no default sorting is applied (enables graph-layer optimization)
+     * @return AtlasSearchResult containing related entities
+     * @throws AtlasBaseException
+     */
+    AtlasSearchResult searchRelatedEntitiesV2(String guid, String relation, boolean getApproximateCount, SearchParameters searchParameters, boolean disableDefaultSorting) throws AtlasBaseException;
+
+    /**
      * @param savedSearch Search to be saved
      * @throws AtlasBaseException
      */

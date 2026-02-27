@@ -935,4 +935,95 @@ public class DiscoveryRESTTest {
         }
         return ret;
     }
+
+    @Test
+    public void testSearchRelatedEntitiesV2_REST_UnsortedQuery_Success() throws AtlasBaseException {
+        // Setup
+        String            guid       = "test-guid-123";
+        String            relation   = "testRelation";
+        AtlasSearchResult mockResult = new AtlasSearchResult();
+        mockResult.setApproximateCount(10L);
+
+        when(mockDiscoveryService.searchRelatedEntitiesV2(
+                eq(guid), eq(relation), eq(false), any(SearchParameters.class), eq(true)
+        )).thenReturn(mockResult);
+
+        // Execute - unsorted query with disableDefaultSorting=true
+        AtlasSearchResult result = discoveryREST.searchRelatedEntitiesV2(
+                guid,           // guid
+                relation,       // relation
+                null,           // attributes
+                null,           // sortBy
+                null,           // sortOrder
+                false,          // excludeDeletedEntities
+                false,          // includeClassificationAttributes
+                false,          // getApproximateCount
+                true,           // disableDefaultSorting
+                10,             // limit
+                0);             // offset
+
+        // Verify
+        assertNotNull(result);
+        assertEquals(result.getApproximateCount(), 10L);
+        verify(mockDiscoveryService).searchRelatedEntitiesV2(
+                eq(guid), eq(relation), eq(false), any(SearchParameters.class), eq(true));
+    }
+
+    @Test
+    public void testSearchRelatedEntitiesV2_REST_SortedQuery_Success() throws AtlasBaseException {
+        // Setup
+        String            guid       = "test-guid-456";
+        String            relation   = "testRelation";
+        AtlasSearchResult mockResult = new AtlasSearchResult();
+        mockResult.setApproximateCount(20L);
+
+        when(mockDiscoveryService.searchRelatedEntitiesV2(
+                eq(guid), eq(relation), eq(false), any(SearchParameters.class), eq(false)
+        )).thenReturn(mockResult);
+
+        // Execute - sorted query
+        AtlasSearchResult result = discoveryREST.searchRelatedEntitiesV2(
+                guid,                // guid
+                relation,            // relation
+                null,                // attributes
+                "name",              // sortBy
+                SortOrder.ASCENDING, // sortOrder
+                false,               // excludeDeletedEntities
+                false,               // includeClassificationAttributes
+                false,               // getApproximateCount
+                false,               // disableDefaultSorting
+                10,                  // limit
+                0);                  // offset
+
+        // Verify
+        assertNotNull(result);
+        assertEquals(result.getApproximateCount(), 20L);
+        verify(mockDiscoveryService).searchRelatedEntitiesV2(
+                eq(guid), eq(relation), eq(false), any(SearchParameters.class), eq(false));
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void testSearchRelatedEntitiesV2_REST_InvalidGuid_ThrowsException() throws AtlasBaseException {
+        // Setup
+        String invalidGuid = null;
+        String relation    = "testRelation";
+
+        when(mockDiscoveryService.searchRelatedEntitiesV2(
+                eq(invalidGuid), eq(relation), eq(false), any(SearchParameters.class), eq(false)
+        )).thenThrow(new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS));
+
+        // Execute - should throw exception
+        discoveryREST.searchRelatedEntitiesV2(
+                invalidGuid,    // guid
+                relation,       // relation
+                null,           // attributes
+                null,           // sortBy
+                null,           // sortOrder
+                false,          // excludeDeletedEntities
+                false,          // includeClassificationAttributes
+                false,          // getApproximateCount
+                false,          // disableDefaultSorting
+                10,             // limit
+                0);             // offset
+    }
 }

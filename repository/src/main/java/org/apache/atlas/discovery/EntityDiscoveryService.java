@@ -648,6 +648,229 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return ret;
     }
 
+    /**
+     * Optimized version of {@link #searchRelatedEntities(String, String, boolean, SearchParameters)}
+     * that uses graph-layer paging when sorting is not required, providing better performance
+     * for large relationship sets by pushing pagination down to the database level.
+     *
+     * When sorting is required, falls back to standard Gremlin traversal approach.
+     *
+     * @param guid unique ID of the entity
+     * @param relation relation name
+     * @param getApproximateCount whether to calculate approximate count
+     * @param searchParameters search parameters including sorting, pagination, filters
+     * @param disableDefaultSorting when false (default), applies default "name" sorting if sortBy is not specified;
+     *                              when true, no default sorting is applied (enables graph-layer optimization)
+     */
+    @GraphTransaction
+    @Override
+    public AtlasSearchResult searchRelatedEntitiesV2(String guid, String relation, boolean getApproximateCount, SearchParameters searchParameters, boolean disableDefaultSorting) throws AtlasBaseException {
+        AtlasSearchResult ret = new AtlasSearchResult(AtlasQueryType.RELATIONSHIP);
+
+        if (StringUtils.isEmpty(guid) || StringUtils.isEmpty(relation)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid: '" + guid + "', relation: '" + relation + "'");
+        }
+
+        // Validate entity
+        AtlasVertex     entityVertex   = entityRetriever.getEntityVertex(guid);
+        String          entityTypeName = GraphHelper.getTypeName(entityVertex);
+        AtlasEntityType entityType     = typeRegistry.getEntityTypeByName(entityTypeName);
+
+        if (entityType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_TYPE, entityTypeName, guid);
+        }
+
+        // Validate relation
+        AtlasEntityType endEntityType = null;
+        AtlasAttribute  attribute     = entityType.getAttribute(relation);
+
+        if (attribute == null) {
+            attribute = entityType.getRelationshipAttribute(relation, null);
+        }
+
+        if (attribute != null) {
+            // Get end entity type through relationship attribute
+            endEntityType = attribute.getReferencedEntityType(typeRegistry);
+
+            if (endEntityType == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_ATTRIBUTE, relation, attribute.getTypeName());
+            }
+
+            relation = attribute.getRelationshipEdgeLabel();
+        } else {
+            // Get end entity type through label
+            String endEntityTypeName = GraphHelper.getReferencedEntityTypeName(entityVertex, relation);
+
+            if (StringUtils.isNotEmpty(endEntityTypeName)) {
+                endEntityType = typeRegistry.getEntityTypeByName(endEntityTypeName);
+            }
+        }
+
+        // Validate sortBy attribute
+        String    sortBy              = searchParameters.getSortBy();
+        SortOrder sortOrder           = searchParameters.getSortOrder();
+        int       offset              = searchParameters.getOffset();
+        int       limit               = searchParameters.getLimit();
+        String    sortByAttributeName = null;
+
+        // Determine sorting strategy:
+        // 1. If sortBy explicitly provided → use it
+        // 2. If sortBy NOT provided AND disableDefaultSorting=false → use default sorting
+        // 3. Otherwise → no sorting (use graph-layer optimization)
+
+        if (StringUtils.isNotEmpty(sortBy)) {
+            sortByAttributeName = sortBy;
+        } else if (!disableDefaultSorting) {
+            sortByAttributeName = DEFAULT_SORT_ATTRIBUTE_NAME;
+        } else {
+            sortByAttributeName = null;
+            sortOrder           = null;
+        }
+
+        // Validate the sortByAttributeName if set
+        if (sortByAttributeName != null) {
+            if (endEntityType != null) {
+                AtlasAttribute sortByAttribute = endEntityType.getAttribute(sortByAttributeName);
+
+                if (sortByAttribute == null) {
+                    sortByAttributeName = null;
+                    sortOrder           = null;
+
+                    if (StringUtils.isNotEmpty(sortBy)) {
+                        LOG.info("Invalid sortBy '{}' for type {}, using unsorted query", sortBy, endEntityType.getTypeName());
+                    } else {
+                        LOG.info("Default sortBy '{}' not found for type {}, using unsorted query", DEFAULT_SORT_ATTRIBUTE_NAME, endEntityType.getTypeName());
+                    }
+                } else {
+                    sortByAttributeName = sortByAttribute.getVertexPropertyName();
+
+                    if (sortOrder == null) {
+                        sortOrder = ASCENDING;
+                    }
+                }
+            } else {
+                sortByAttributeName = null;
+                sortOrder           = null;
+
+                if (StringUtils.isNotEmpty(sortBy)) {
+                    LOG.info("Invalid sortBy '{}', using unsorted query", sortBy);
+                }
+            }
+        }
+
+        List<AtlasEntityHeader> resultList = new ArrayList<>();
+
+        // Use graph-layer paging for unsorted queries (database-level pagination)
+        if (sortOrder == null || StringUtils.isEmpty(sortByAttributeName)) {
+            LOG.debug("Using graph-layer paging: relation={}, offset={}, limit={}", relation, offset, limit);
+
+            List<AtlasEdge> pagedEdges = GraphHelper.getAdjacentEdgesByLabelPaged(
+                    entityVertex, AtlasEdgeDirection.BOTH, relation, offset, limit);
+
+            for (AtlasEdge edge : pagedEdges) {
+                AtlasVertex endVertex = getOtherVertex(edge, entityVertex);
+
+                if (endVertex == null) {
+                    continue;
+                }
+
+                if (skipDeletedEntities(searchParameters.getExcludeDeletedEntities(), endVertex)) {
+                    continue;
+                }
+
+                String endVertexGuid = endVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+
+                if (StringUtils.isEmpty(endVertexGuid)) {
+                    continue;
+                }
+
+                AtlasVertex       resolvedVertex = entityRetriever.getEntityVertex(endVertexGuid);
+                AtlasEntityHeader entity         = entityRetriever.toAtlasEntityHeader(resolvedVertex, searchParameters.getAttributes());
+
+                if (searchParameters.getIncludeClassificationAttributes()) {
+                    entity.setClassifications(entityRetriever.getAllClassifications(resolvedVertex));
+                }
+
+                resultList.add(entity);
+            }
+        } else {
+            LOG.debug("Using Gremlin traversal: relation={}, sortBy={}, order={}, offset={}, limit={}", relation, sortByAttributeName, sortOrder, offset, limit);
+
+            // Get related entities using Gremlin traversal with sorting
+            GraphTraversal gt = graph.V(entityVertex.getId()).bothE(relation).otherV();
+
+            if (searchParameters.getExcludeDeletedEntities()) {
+                gt.has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
+            }
+
+            if (sortOrder == ASCENDING) {
+                gt.order().by(sortByAttributeName, Order.asc);
+            } else {
+                gt.order().by(sortByAttributeName, Order.desc);
+            }
+
+            gt.range(offset, offset + limit);
+
+            while (gt.hasNext()) {
+                Vertex v = (Vertex) gt.next();
+
+                if (v != null && v.property(Constants.GUID_PROPERTY_KEY).isPresent()) {
+                    String            endVertexGuid = v.property(Constants.GUID_PROPERTY_KEY).value().toString();
+                    AtlasVertex       vertex        = entityRetriever.getEntityVertex(endVertexGuid);
+                    AtlasEntityHeader entity        = entityRetriever.toAtlasEntityHeader(vertex, searchParameters.getAttributes());
+
+                    if (searchParameters.getIncludeClassificationAttributes()) {
+                        entity.setClassifications(entityRetriever.getAllClassifications(vertex));
+                    }
+
+                    resultList.add(entity);
+                }
+            }
+        }
+
+        ret.setEntities(resultList);
+
+        if (ret.getEntities() == null) {
+            ret.setEntities(new ArrayList<>());
+        }
+
+        // Set approximate count
+        if (getApproximateCount) {
+            Iterator<AtlasEdge> edges = GraphHelper.getAdjacentEdgesByLabel(entityVertex, AtlasEdgeDirection.BOTH, relation);
+
+            if (searchParameters.getExcludeDeletedEntities()) {
+                List<AtlasEdge> edgeList = new ArrayList<>();
+
+                edges.forEachRemaining(edgeList::add);
+
+                Predicate activePredicate = SearchPredicateUtil.getEQPredicateGenerator()
+                                                                .generatePredicate(Constants.STATE_PROPERTY_KEY,
+                                                                                   AtlasEntity.Status.ACTIVE.name(),
+                                                                                   String.class);
+
+                CollectionUtils.filter(edgeList, activePredicate);
+
+                ret.setApproximateCount(edgeList.size());
+            } else {
+                ret.setApproximateCount(IteratorUtils.size(edges));
+            }
+        }
+
+        scrubSearchResults(ret);
+
+        return ret;
+    }
+
+    /**
+     * Returns the vertex at the other end of {@code edge} from {@code vertex}.
+     */
+    private AtlasVertex getOtherVertex(AtlasEdge edge, AtlasVertex vertex) {
+        AtlasVertex outVertex = edge.getOutVertex();
+        AtlasVertex inVertex  = edge.getInVertex();
+
+        return StringUtils.equals(outVertex.getIdForDisplay(), vertex.getIdForDisplay()) ? inVertex : outVertex;
+    }
+
     @Override
     public AtlasUserSavedSearch addSavedSearch(String currentUser, AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
         try {
