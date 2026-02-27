@@ -128,10 +128,6 @@ const AddUpdateTermForm = (props: {
       );
       onClose();
     } catch (error) {
-      console.log(
-        `Error occur while ${isAdd ? "creating" : "updating"} Glossary`,
-        error
-      );
       serverError(error, toastId);
     }
   };

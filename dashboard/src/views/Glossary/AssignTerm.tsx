@@ -364,7 +364,6 @@ const AssignTerm = ({
         setRowSelection({});
       }
     } catch (error) {
-      console.log(`Error occur while assigningTerm`, error);
       serverError(error, toastId);
     }
   };
@@ -419,7 +418,6 @@ const AssignTerm = ({
       toastId.current = toast.success(`Term is associated successfully`);
       onClose();
     } catch (error) {
-      console.log(`Error occur while assigningTerm`, error);
       serverError(error, toastId);
     }
   };

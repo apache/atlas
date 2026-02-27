@@ -248,10 +248,6 @@ const BusinessMetadataDetailsLayout = () => {
       setBMAttribute({});
       dispatchState(setEditBMAttribute({}));
     } catch (error) {
-      console.log(
-        `Error occur while creating or updating BusinessMetadata attributes`,
-        error
-      );
       serverError(error, toastId);
     }
   };

@@ -69,7 +69,7 @@ define(['require',
                     }
                     return resp[this.modelAttrName];
                 } catch (e) {
-                    console.log(e);
+                    // Error handled
                 }
             },
 
@@ -117,7 +117,6 @@ define(['require',
                 var retCols = _.map(cols, function(v, k, l) {
                     var defaults = collection.constructor.tableCols[k];
                     if (!defaults) {
-                        //console.log("Error!! " + k + " not found in collection: " , collection);
                         defaults = {};
                     }
                     return _.extend({

@@ -141,7 +141,6 @@ const TreeNodeIcons = (props: {
       toast.dismiss(toastId.current);
       toastId.current = toast.success(`${node.id} was deleted successfully`);
     } catch (error) {
-      console.log(`Error occur while removing ${node.id}`, error);
       serverError(error, toastId);
     }
   };
@@ -158,7 +157,6 @@ const TreeNodeIcons = (props: {
         `${filterData.name} was updated successfully`
       );
     } catch (error) {
-      console.log(`Error occur while updating ${node.id}`, error);
       serverError(error, toastId);
     }
   };

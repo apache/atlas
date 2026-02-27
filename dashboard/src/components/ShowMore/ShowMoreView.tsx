@@ -181,7 +181,6 @@ const ShowMoreView = ({
         }
       }
     } catch (error) {
-      console.log(`Error occur while removing ${title}`, error);
       serverError(error, toastId);
     }
   };

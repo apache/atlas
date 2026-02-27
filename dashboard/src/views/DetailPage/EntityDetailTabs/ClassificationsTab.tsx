@@ -144,7 +144,6 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
       );
       setOpenModal(false);
     } catch (error) {
-      console.log(`Error occur while removing Classification`, error);
       serverError(error, toastId);
     }
   };
