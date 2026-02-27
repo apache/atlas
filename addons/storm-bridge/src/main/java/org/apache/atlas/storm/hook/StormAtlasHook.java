@@ -18,15 +18,20 @@
 
 package org.apache.atlas.storm.hook;
 
+import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasConstants;
+import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
+import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityExtInfo;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
+import org.apache.atlas.storm.model.StormDataTypes;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.HdfsNameServiceResolver;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -37,21 +42,16 @@ import org.apache.storm.generated.SpoutSpec;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.generated.TopologyInfo;
 import org.apache.storm.utils.Utils;
-import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasConstants;
-import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
-import org.apache.atlas.hook.AtlasHook;
-import org.apache.atlas.storm.model.StormDataTypes;
 import org.slf4j.Logger;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Date;
 
 import static org.apache.atlas.repository.Constants.STORM_SOURCE;
 
@@ -264,7 +264,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 final String dbName  = config.get("HiveBolt.options.databaseName");
                 final String tblName = config.get("HiveBolt.options.tableName");
 
-                if (dbName == null || tblName ==null) {
+                if (dbName == null || tblName == null) {
                     LOG.error("Hive database or table name not found");
                 } else {
                     AtlasEntity dbEntity = new AtlasEntity("hive_db");
