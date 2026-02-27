@@ -38,6 +38,29 @@ jobs:
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
+
+      - name: Ensure Docker is available
+        shell: bash
+        run: |
+          set -euxo pipefail
+          echo "Runner: $(uname -a)"
+
+          if ! command -v docker >/dev/null 2>&1; then
+            echo "docker not found on PATH; installing docker.io + compose plugin..."
+            sudo apt-get update
+            sudo apt-get install -y docker.io docker-compose-plugin
+          fi
+
+          # Ensure daemon is running (hosted runners typically already have this)
+          sudo systemctl start docker || sudo service docker start || true
+
+          # Ensure the current user can access the docker socket
+          if [ -S /var/run/docker.sock ]; then
+            sudo chmod 666 /var/run/docker.sock || true
+          fi
+
+          docker --version
+          docker compose version || true
       - name: Delete huge unnecessary tools folder
         run: rm -rf /opt/hostedtoolcache
       - name: Cache for maven dependencies
