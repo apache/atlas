@@ -44,6 +44,7 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.patches.AddMandatoryAttributesPatch;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.patches.AtlasPatchRegistry;
@@ -461,7 +462,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     new RemoveLegacyRefAttributesPatchHandler(typeDefStore, typeRegistry),
                     new UpdateTypeDefOptionsPatchHandler(typeDefStore, typeRegistry),
                     new SetServiceTypePatchHandler(typeDefStore, typeRegistry),
-                    new UpdateAttributeMetadataHandler(typeDefStore, typeRegistry),
+                    new UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph),
                     new AddSuperTypePatchHandler(typeDefStore, typeRegistry),
                     new AddMandatoryAttributePatchHandler(typeDefStore, typeRegistry)
             };
@@ -1179,8 +1180,11 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     }
 
     static class UpdateAttributeMetadataHandler extends PatchHandler {
-        public UpdateAttributeMetadataHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
+        public final AtlasGraph graph;
+
+        public UpdateAttributeMetadataHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry, AtlasGraph graph) {
             super(typeDefStore, typeRegistry, new String[] {"UPDATE_ATTRIBUTE_METADATA"});
+            this.graph = graph;
         }
 
         @Override
@@ -1198,7 +1202,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                 if (typeDef.getClass().equals(AtlasEntityDef.class)) {
                     AtlasEntityDef entityDef = new AtlasEntityDef((AtlasEntityDef) typeDef);
 
-                    updateAttributeMetadata(patch, entityDef.getAttributeDefs());
+                    updateAttributeMetadata(patch.getTypeName(), patch, entityDef.getAttributeDefs());
 
                     entityDef.setTypeVersion(patch.getUpdateToVersion());
 
@@ -1208,7 +1212,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                 } else if (typeDef.getClass().equals(AtlasStructDef.class)) {
                     AtlasStructDef updatedDef = new AtlasStructDef((AtlasStructDef) typeDef);
 
-                    updateAttributeMetadata(patch, updatedDef.getAttributeDefs());
+                    updateAttributeMetadata(patch.getTypeName(), patch, updatedDef.getAttributeDefs());
 
                     updatedDef.setTypeVersion(patch.getUpdateToVersion());
 
@@ -1227,15 +1231,15 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             return ret;
         }
 
-        private void updateAttributeMetadata(TypeDefPatch patch, List<AtlasAttributeDef> attributeDefsFromEntity) {
+        private void updateAttributeMetadata(String typeName, TypeDefPatch patch, List<AtlasAttributeDef> attributeDefsFromEntity) {
             for (AtlasAttributeDef attributeDef : attributeDefsFromEntity) {
                 if (attributeDef.getName().equalsIgnoreCase(patch.getAttributeName())) {
-                    updateAttribute(attributeDef, patch.getParams());
+                    updateAttribute(typeName, attributeDef, patch.getParams());
                 }
             }
         }
 
-        private void updateAttribute(AtlasAttributeDef atlasAttributeDef, Map<String, Object> params) {
+        private void updateAttribute(String typeName, AtlasAttributeDef atlasAttributeDef, Map<String, Object> params) {
             if (!params.isEmpty()) {
                 for (Map.Entry<String, Object> entry : params.entrySet()) {
                     try {
@@ -1269,6 +1273,20 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
                                     throw new RuntimeException(msg);
                                 }
+                            }
+                        } else if (AtlasAttributeDef.IS_INDEXABLE_ATTR_NAME.equalsIgnoreCase(entry.getKey())) {
+                            boolean isIndexable = (Boolean) entry.getValue();
+                            if (!isIndexable && atlasAttributeDef.getIsIndexable()) {
+                                AtlasEntityType type = typeRegistry.getEntityTypeByName(typeName);
+                                String propertyName = type.getVertexPropertyName(atlasAttributeDef.getName());
+
+                                LOG.info("Updating Model attribute {}'s property {} to {}.", propertyName, entry.getKey(), entry.getValue());
+                                try (AtlasGraphManagement mgmt = graph.getManagementSystem()) {
+                                    mgmt.disableIndex(propertyName);
+                                }
+                                atlasAttributeDef.setIsIndexable(isIndexable);
+                            } else {
+                                LOG.info("Model attribute {}'s property {} is already set to {}. No update needed.", atlasAttributeDef.getName(), entry.getKey(), entry.getValue());
                             }
                         } else {
                             //sanity exception

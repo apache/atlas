@@ -166,6 +166,14 @@ public interface AtlasGraphManagement extends AutoCloseable {
      */
     void updateSchemaStatus();
 
+    /**
+     * Drops the index with the given name.
+     *
+     * @param indexName
+     * @throws Exception
+     */
+    void disableIndex(String indexName) throws Exception;
+
     /***
      * Re-index elements.
      * @param indexName: Name of the index that needs to be operated on.
