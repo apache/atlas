@@ -249,13 +249,6 @@ affinity:
     - weight: 1
       preference:
         matchExpressions:
-        - key: lifecycle     #Azure
-          operator: In
-          values:
-          - ondemand
-    - weight: 1
-      preference:
-        matchExpressions:
         - key: cloud.google.com/gke-provisioning  #GCP
           operator: In
           values:
