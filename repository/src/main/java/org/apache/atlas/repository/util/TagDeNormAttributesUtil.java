@@ -117,15 +117,14 @@ public class TagDeNormAttributesUtil {
                                                                      List<AtlasClassification> finalTags,
                                                                      List<AtlasClassification> finalPropagatedTags,
                                                                      AtlasTypeRegistry typeRegistry,
-                                                                     IFullTextMapper fullTextMapperV2) throws AtlasBaseException {
-        // Add tag Propagation, asset having other tags
+                                                                     IFullTextMapper fullTextMapperV2,
+                                                                     boolean isDelete) throws AtlasBaseException {
         Map<String, Object> deNormAttrs = new HashMap<>();
 
         if (CollectionUtils.isNotEmpty(finalTags))
             deNormAttrs.put(CLASSIFICATION_TEXT_KEY, getClassificationTextKey(finalTags, typeRegistry, fullTextMapperV2));
 
-        //filter propagated attachments
-        updateDenormAttributesForPropagatedTags(propagatedTag, finalPropagatedTags, deNormAttrs);
+        updateDenormAttributesForPropagatedTags(propagatedTag, finalPropagatedTags, deNormAttrs, isDelete);
 
         return deNormAttrs;
     }
@@ -181,7 +180,10 @@ public class TagDeNormAttributesUtil {
         return deNormAttrs;
     }
 
-    private static void updateDenormAttributesForPropagatedTags(AtlasClassification propagatedTag, List<AtlasClassification> finalPropagatedTags, Map<String, Object> deNormAttrs) {
+    private static void updateDenormAttributesForPropagatedTags(AtlasClassification propagatedTag,
+                                                                  List<AtlasClassification> finalPropagatedTags,
+                                                                  Map<String, Object> deNormAttrs,
+                                                                  boolean isDelete) {
         List<String> propTraits = finalPropagatedTags.stream()
                 .map(AtlasStruct::getTypeName)
                 .collect(Collectors.toList());
@@ -194,8 +196,18 @@ public class TagDeNormAttributesUtil {
 
             deNormAttrs.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, finalTagNames.toString());
         } else {
-            deNormAttrs.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, Collections.singletonList(propagatedTag.getTypeName()));
-            deNormAttrs.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, CLASSIFICATION_NAME_DELIMITER + propagatedTag.getTypeName());
+            if (isDelete) {
+                // MS-655: During delete propagation, no remaining propagated tags means
+                // __propagatedTraitNames should be empty. Previously this branch incorrectly
+                // wrote the deleted tag name back into ES.
+                //TO DO: We will do a larger ES sync design change in future to avoid calculating de-norm attributes
+                // but directly sync latest state from cassandra for the asset.
+                deNormAttrs.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, Collections.emptyList());
+                deNormAttrs.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, CLASSIFICATION_NAME_DELIMITER);
+            } else {
+                deNormAttrs.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, Collections.singletonList(propagatedTag.getTypeName()));
+                deNormAttrs.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, CLASSIFICATION_NAME_DELIMITER + propagatedTag.getTypeName());
+            }
         }
     }
 

@@ -5700,7 +5700,7 @@ public class EntityGraphMapper {
 
                 // compute fresh classification‑text de‑norm attributes for this batch
                 Map<String, Map<String, Object>> deNormMap = new HashMap<>();
-                updateClassificationTextV2(originalClassification, vertexIds, batchToDelete, deNormMap);
+                updateClassificationTextV2(originalClassification, vertexIds, batchToDelete, deNormMap, true);
                 // push them to ES
                 if (MapUtils.isNotEmpty(deNormMap)) {
                     ESConnector.writeTagProperties(deNormMap);
@@ -6268,7 +6268,7 @@ public class EntityGraphMapper {
                 if (CollectionUtils.isEmpty(finalClassifications)) {
                     deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForNoTags();
                 } else {
-                    deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForTags(currentTag, finalClassifications, finalPropagatedClassifications, typeRegistry, fullTextMapperV2);
+                    deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForTags(currentTag, finalClassifications, finalPropagatedClassifications, typeRegistry, fullTextMapperV2, false);
                 }
 
                 deNormAttributesMap.put(vertex.getIdForDisplay(), deNormAttributes);
@@ -6282,7 +6282,8 @@ public class EntityGraphMapper {
     void updateClassificationTextV2(AtlasClassification currentTag,
                                                  List<String> propagatedVertexIds,
                                                  List<Tag> propagatedTags,
-                                                 Map<String, Map<String, Object>> deNormAttributesMap) throws AtlasBaseException {
+                                                 Map<String, Map<String, Object>> deNormAttributesMap,
+                                                 boolean isDelete) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateClassificationTextV2");
 
         if(CollectionUtils.isNotEmpty(propagatedVertexIds)) {
@@ -6299,7 +6300,7 @@ public class EntityGraphMapper {
                 if (CollectionUtils.isEmpty(finalClassifications)) {
                     deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForNoTags();
                 } else {
-                    deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForTags(currentTag, finalClassifications, propagatedClassifications, typeRegistry, fullTextMapperV2);
+                    deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForTags(currentTag, finalClassifications, propagatedClassifications, typeRegistry, fullTextMapperV2, isDelete);
                 }
 
                 deNormAttributesMap.put(tagAttachment.getVertexId(), deNormAttributes);
@@ -6782,7 +6783,7 @@ public class EntityGraphMapper {
 
                 // compute fresh classification‑text de‑norm attributes for this batch
                 Map<String, Map<String, Object>> deNormMap = new HashMap<>();
-                updateClassificationTextV2(originalClassification, vertexIds, batchToUpdate, deNormMap);
+                updateClassificationTextV2(originalClassification, vertexIds, batchToUpdate, deNormMap, false);
 
                 // push them to ES
                 if (MapUtils.isNotEmpty(deNormMap)) {
@@ -7016,7 +7017,7 @@ public class EntityGraphMapper {
                 .toList();
 
         Map<String, Map<String, Object>> deNormMap = new HashMap<>();
-        updateClassificationTextV2(sourceTag, vertexIdsToDelete, tagsToDelete, deNormMap);
+        updateClassificationTextV2(sourceTag, vertexIdsToDelete, tagsToDelete, deNormMap, true);
         if (MapUtils.isNotEmpty(deNormMap)) {
             ESConnector.writeTagProperties(deNormMap);
         }
