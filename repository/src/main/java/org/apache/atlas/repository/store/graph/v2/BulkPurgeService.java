@@ -839,7 +839,7 @@ public class BulkPurgeService {
     }
 
     private void esCleanupSync(RestClient esClient, PurgeContext ctx) throws Exception {
-        String endpoint = "/" + VERTEX_INDEX_NAME + "/_delete_by_query?conflicts=proceed";
+        String endpoint = "/" + VERTEX_INDEX_NAME + "/_delete_by_query?conflicts=proceed&refresh=true";
 
         Request request = new Request("POST", endpoint);
         request.setEntity(new NStringEntity(ctx.esQuery, ContentType.APPLICATION_JSON));
@@ -888,6 +888,9 @@ public class BulkPurgeService {
                 long failures = taskResponseNode.path("failures").size();
                 LOG.info("BulkPurge: ES cleanup completed (async) for purgeKey={}, deleted={}, failures={}",
                         ctx.purgeKey, deleted, failures);
+
+                // Refresh index so subsequent _count verification sees the deletions
+                refreshEsIndex(esClient);
                 return;
             }
 
@@ -901,6 +904,15 @@ public class BulkPurgeService {
 
         LOG.warn("BulkPurge: ES cleanup async task {} did not complete within {}ms for purgeKey={}. " +
                 "Task continues in background.", taskId, maxWaitMs, ctx.purgeKey);
+    }
+
+    private void refreshEsIndex(RestClient esClient) {
+        try {
+            Request refreshRequest = new Request("POST", "/" + VERTEX_INDEX_NAME + "/_refresh");
+            esClient.performRequest(refreshRequest);
+        } catch (Exception e) {
+            LOG.warn("BulkPurge: ES index refresh failed (verification count may be stale)", e);
+        }
     }
 
     /**
