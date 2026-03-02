@@ -97,6 +97,7 @@ public class EntityREST {
     public static final String PREFIX_ATTR_ = "attr_";
     private static final int HUNDRED_THOUSAND = 100000;
     private static final int TWO_MILLION = HUNDRED_THOUSAND * 10 * 2;
+    private static final int AUDIT_ENTITY_HEADER_BATCH_SIZE = 500;
     private static  final int  ENTITIES_ALLOWED_IN_BULK = AtlasConfiguration.ATLAS_BULK_API_MAX_ENTITIES_ALLOWED.getInt();
     private static final Set<String> ATTRS_WITH_TWO_MILLION_LIMIT = Arrays.stream(AtlasConfiguration.ATLAS_ENTITIES_ATTRIBUTE_ALLOWED_LARGE_ATTRIBUTES
             .getStringArray())
@@ -1146,35 +1147,54 @@ public class EntityREST {
     private void scrubAndSetEntityAudits(EntityAuditSearchResult result, boolean suppressLogs, Set<String> attributes, boolean isCsaExportAgent) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("scrubEntityAudits");
         if (!isCsaExportAgent) { // avoid enriching asset attributes for csa adoption export workloads
-            for (EntityAuditEventV2 event : result.getEntityAudits()) {
-                try {
-                    AtlasSearchResult ret = new AtlasSearchResult();
-                    AtlasEntityWithExtInfo entityWithExtInfo = entitiesStore.getByIdWithoutAuthorization(event.getEntityId());
-                    AtlasEntityHeader entityHeader = new AtlasEntityHeader(entityWithExtInfo.getEntity());
-                    ret.addEntity(entityHeader);
-                    AtlasSearchResultScrubRequest request = new AtlasSearchResultScrubRequest(typeRegistry, ret);
-                    AtlasAuthorizationUtils.scrubSearchResults(request, suppressLogs);
-                    if (entityHeader.getScrubbed() != null && entityHeader.getScrubbed()) {
+            List<EntityAuditEventV2> auditEvents = result.getEntityAudits();
+
+            // Phase 1: Collect unique entity IDs and batch-fetch headers in chunked graph transactions
+            List<String> uniqueEntityIds = auditEvents.stream()
+                    .map(EntityAuditEventV2::getEntityId)
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            Map<String, AtlasEntityHeader> entityHeaderCache = new HashMap<>();
+
+            for (int i = 0; i < uniqueEntityIds.size(); i += AUDIT_ENTITY_HEADER_BATCH_SIZE) {
+                List<String> batch = uniqueEntityIds.subList(i, Math.min(i + AUDIT_ENTITY_HEADER_BATCH_SIZE, uniqueEntityIds.size()));
+                entityHeaderCache.putAll(entitiesStore.getEntityHeadersByIdsWithoutAuthorization(batch, attributes));
+            }
+
+            // Phase 2: Batch-scrub all found entity headers in a single authorization call
+            AtlasSearchResult scrubResult = new AtlasSearchResult();
+            for (AtlasEntityHeader header : entityHeaderCache.values()) {
+                scrubResult.addEntity(header);
+            }
+            AtlasSearchResultScrubRequest scrubRequest = new AtlasSearchResultScrubRequest(typeRegistry, scrubResult);
+            AtlasAuthorizationUtils.scrubSearchResults(scrubRequest, suppressLogs);
+
+            // Phase 3: Apply scrubbed headers to each audit event
+            for (EntityAuditEventV2 event : auditEvents) {
+                String entityId = event.getEntityId();
+                AtlasEntityHeader cachedHeader = entityHeaderCache.get(entityId);
+
+                if (cachedHeader != null) {
+                    if (cachedHeader.getScrubbed() != null && cachedHeader.getScrubbed()) {
                         event.setDetail(null);
                     }
+                    AtlasEntityHeader entityHeader = new AtlasEntityHeader(cachedHeader);
                     Map<String, Object> entityAttrs = entityHeader.getAttributes();
                     if (attributes == null) entityAttrs.clear();
                     else entityAttrs.keySet().retainAll(attributes);
 
                     event.setEntityDetail(entityHeader);
-                } catch (AtlasBaseException e) {
-                    if (e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
-                        try {
-                            AtlasEntityHeader entityHeader = event.getEntityHeader();
-                            AtlasSearchResult ret = new AtlasSearchResult();
-                            ret.addEntity(entityHeader);
-                            AtlasSearchResultScrubRequest request = new AtlasSearchResultScrubRequest(typeRegistry, ret);
-                            AtlasAuthorizationUtils.scrubSearchResults(request, suppressLogs);
-                            if (entityHeader.getScrubbed() != null && entityHeader.getScrubbed()) {
-                                event.setDetail(null);
-                            }
-                        } catch (AtlasBaseException abe) {
-                            throw abe;
+                } else {
+                    // Entity not found in graph — fall back to header from audit event (e.g. purged entity)
+                    AtlasEntityHeader entityHeader = event.getEntityHeader();
+                    if (entityHeader != null) {
+                        AtlasSearchResult fallbackResult = new AtlasSearchResult();
+                        fallbackResult.addEntity(entityHeader);
+                        AtlasSearchResultScrubRequest fallbackRequest = new AtlasSearchResultScrubRequest(typeRegistry, fallbackResult);
+                        AtlasAuthorizationUtils.scrubSearchResults(fallbackRequest, suppressLogs);
+                        if (entityHeader.getScrubbed() != null && entityHeader.getScrubbed()) {
+                            event.setDetail(null);
                         }
                     }
                 }

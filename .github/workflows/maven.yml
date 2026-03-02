@@ -28,7 +28,7 @@ on:
       - ms-635
       - lg-async-producer
       - ms-428-delete-by-conn
-
+      - ms-664-fix-audit-search
     paths-ignore:
       - '.claude/**'
       - '.cursor/**'

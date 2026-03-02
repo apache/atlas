@@ -94,6 +94,8 @@ public interface AtlasEntityStore {
 
     public AtlasEntityHeader getAtlasEntityHeaderWithoutAuthorization(String guid, String qualifiedName, String typeName) throws AtlasBaseException ;
 
+    Map<String, AtlasEntityHeader> getEntityHeadersByIdsWithoutAuthorization(List<String> guids, Set<String> attributes) throws AtlasBaseException;
+
     /**
      * Batch GET to retrieve entities by their ID
      * @param guid

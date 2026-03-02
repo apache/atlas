@@ -409,6 +409,46 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
+    public Map<String, AtlasEntityHeader> getEntityHeadersByIdsWithoutAuthorization(List<String> guids, Set<String> attributes) throws AtlasBaseException {
+        Map<String, AtlasEntityHeader> ret = new HashMap<>();
+        Set<String> fetchAttributes = attributes != null ? attributes : Collections.emptySet();
+
+        for (String guid : guids) {
+            try {
+                AtlasVertex vertex = entityRetriever.getEntityVertex(guid);
+
+                Set<String> primitiveAttributes = fetchAttributes;
+                if (CollectionUtils.isNotEmpty(fetchAttributes)) {
+                    String typeName = vertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
+                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+                    if (entityType != null) {
+                        primitiveAttributes = fetchAttributes.stream()
+                                .filter(attr -> {
+                                    AtlasAttribute attribute = entityType.getAttribute(attr);
+                                    return attribute != null && !attribute.isObjectRef();
+                                })
+                                .collect(Collectors.toSet());
+                    }
+                }
+
+                AtlasEntityHeader header = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex, primitiveAttributes);
+                if (header != null) {
+                    ret.put(guid, header);
+                }
+            } catch (AtlasBaseException e) {
+                if (e.getAtlasErrorCode() != AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
+                    throw e;
+                }
+                LOG.warn("Entity not found for guid: {}, skipping", guid);
+            }
+        }
+
+        return ret;
+    }
+
+
+    @Override
+    @GraphTransaction
     public AtlasEntityHeader getEntityHeaderByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> getEntityHeaderByUniqueAttributes({}, {})", entityType.getTypeName(), uniqAttributes);

@@ -94,6 +94,10 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
     private static final Set<String> ALLOWED_LINKED_ATTRIBUTES = new HashSet<>(Arrays.asList(DOMAIN_GUIDS));
     private static final String ENTITY_AUDITS_INDEX = "entity_audits";
+    private static final List<String> SOURCE_FIELDS = Arrays.asList(
+            ENTITYID, ACTION, DETAIL, USER, CREATED, TIMESTAMP,
+            TYPE_NAME, ENTITY_QUALIFIED_NAME, EVENT_KEY, "headers"
+    );
 
     /*
     *    created   → event creation time
@@ -284,13 +288,33 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     public EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("ESAuditRepo.searchEvents");
         try {
-            String response = performSearchOnIndex(queryString);
+            String optimizedQuery = addSourceFieldsIfAbsent(queryString);
+            String response = performSearchOnIndex(optimizedQuery);
             return getResultFromResponse(response);
         } catch (IOException e) {
             throw new AtlasBaseException(e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
+    }
+
+    private String addSourceFieldsIfAbsent(String queryString) {
+        if (StringUtils.isEmpty(queryString)) {
+            return queryString;
+        }
+
+        try {
+            Map<String, Object> dsl = AtlasType.fromJson(queryString, Map.class);
+
+            if (dsl != null && !dsl.containsKey("_source")) {
+                dsl.put("_source", SOURCE_FIELDS);
+                return AtlasType.toJson(dsl);
+            }
+        } catch (Exception e) {
+            LOG.warn("Failed to inject _source fields into audit query, using original query", e);
+        }
+
+        return queryString;
     }
 
     private EntityAuditSearchResult getResultFromResponse(String responseString) throws AtlasBaseException {
