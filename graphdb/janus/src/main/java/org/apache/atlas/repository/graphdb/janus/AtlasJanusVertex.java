@@ -158,6 +158,8 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
         return this;
     }
 
-
+    public AtlasJanusGraph getAtlasJanusGraph() {
+        return graph;
+    }
 
 }

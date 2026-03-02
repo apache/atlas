@@ -1983,7 +1983,6 @@ public class EntityGraphMapper {
         if (type instanceof AtlasEntityType) {
             AtlasEntityType entityType = (AtlasEntityType) type;
             AtlasAttribute  attribute     = ctx.getAttribute();
-            AtlasType atlasType = attribute.getAttributeType();
             String          attributeName = attribute.getName();
 
             if (entityType.hasRelationshipAttribute(attributeName)) {
@@ -2009,46 +2008,8 @@ public class EntityGraphMapper {
 
                 Map<String, Object> relationshipAttributes = getRelationshipAttributes(ctx.getValue());
                 AtlasRelationship relationship = new AtlasRelationship(relationshipName, relationshipAttributes);
-                String relationshipLabel = StringUtils.EMPTY;
 
                 if (createEdge) {
-                    // hard delete the edge if it exists and is  soft deleted
-                    if (relationshipStore instanceof  AtlasRelationshipStoreV2){
-                        MetricRecorder relationshipLabelMetric = RequestContext.get().startMetricRecord("getEdgeUsingRelationship.resolveRelationshipLabel");
-                        try {
-                            relationshipLabel = ((AtlasRelationshipStoreV2) relationshipStore).getRelationshipEdgeLabel(fromVertex, toVertex, relationship.getTypeName());
-                        } finally {
-                            RequestContext.get().endMetricRecord(relationshipLabelMetric);
-                        }
-                    }
-                    if (StringUtils.isNotEmpty(relationshipLabel)) {
-                        MetricRecorder scanSoftDeletedEdgesMetric = RequestContext.get().startMetricRecord("getEdgeUsingRelationship.scanSoftDeletedEdges");
-                        long scannedEdges = 0L;
-                        try {
-                            Iterator<AtlasEdge> edges = fromVertex.getEdges(AtlasEdgeDirection.OUT, relationshipLabel).iterator();
-                            while (edges.hasNext()) {
-                                AtlasEdge edge = edges.next();
-                                scannedEdges++;
-                                if (edge.getInVertex().equals(toVertex) && getStatus(edge) == DELETED) {
-                                    MetricRecorder deleteSoftDeletedEdgeMetric = RequestContext.get().startMetricRecord("getEdgeUsingRelationship.deleteSoftDeletedEdge");
-                                    try {
-                                        // Hard delete the newEdge
-                                        if (atlasType instanceof AtlasArrayType) {
-                                            deleteDelegate.getHandler(DeleteType.HARD).deleteEdgeReference(edge, ((AtlasArrayType) atlasType).getElementType().getTypeCategory(), attribute.isOwnedRef(),
-                                                    true, attribute.getRelationshipEdgeDirection(), entityVertex);
-                                        } else {
-                                            deleteDelegate.getHandler(DeleteType.HARD).deleteEdgeReference(edge, attribute.getAttributeType().getTypeCategory(), attribute.isOwnedRef(),
-                                                    true, attribute.getRelationshipEdgeDirection(), entityVertex);
-                                        }
-                                    } finally {
-                                        RequestContext.get().endMetricRecord(deleteSoftDeletedEdgeMetric);
-                                    }
-                                }
-                            }
-                        } finally {
-                            RequestContext.get().endMetricRecord(scanSoftDeletedEdgesMetric, scannedEdges);
-                        }
-                    }
                     MetricRecorder getOrCreateMetric = RequestContext.get().startMetricRecord("getEdgeUsingRelationship.getOrCreate");
                     try {
                         newEdge = relationshipStore.getOrCreate(fromVertex, toVertex, relationship, false);
