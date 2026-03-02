@@ -1276,6 +1276,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                             }
                         } else if (AtlasAttributeDef.IS_INDEXABLE_ATTR_NAME.equalsIgnoreCase(entry.getKey())) {
                             boolean isIndexable = (Boolean) entry.getValue();
+
                             if (!isIndexable && atlasAttributeDef.getIsIndexable()) {
                                 AtlasEntityType type = typeRegistry.getEntityTypeByName(typeName);
                                 String propertyName = type.getVertexPropertyName(atlasAttributeDef.getName());

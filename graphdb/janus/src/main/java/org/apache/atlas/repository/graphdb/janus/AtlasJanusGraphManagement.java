@@ -120,18 +120,18 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
     private void updateIndex(String indexName, SchemaAction action) {
         try {
-            JanusGraphManagement management = null;
-            JanusGraph           janusGraph = this.graph.getGraph();
-            SchemaStatus waitForStatus = null;
-            SchemaStatus currentStatus = null;
+            JanusGraphManagement management    = null;
+            JanusGraph           janusGraph    = this.graph.getGraph();
+            SchemaStatus         waitForStatus = null;
+            SchemaStatus         currentStatus = null;
 
             try {
-                management = janusGraph.openManagement();
-                JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
+                management                      = janusGraph.openManagement();
+                JanusGraphIndex indexToUpdate   = management.getGraphIndex(indexName);
 
                 if (indexToUpdate != null && indexToUpdate.isCompositeIndex()) {
-                    PropertyKey[] propertyKeys = indexToUpdate.getFieldKeys();
-                    currentStatus = indexToUpdate.getIndexStatus(propertyKeys[0]);
+                    PropertyKey[] propertyKeys  = indexToUpdate.getFieldKeys();
+                    currentStatus               = indexToUpdate.getIndexStatus(propertyKeys[0]);
 
                     if (action == ENABLE_INDEX && currentStatus == REGISTERED) {
                         waitForStatus = ENABLED;
@@ -157,8 +157,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
                 if (!report.getConvergedKeys().isEmpty() && report.getConvergedKeys().containsKey(indexName)) {
                     LOG.info("SchemaStatus updated for index: {}, from {} to {}.", indexName, currentStatus, waitForStatus);
-                }
-                else if (!report.getNotConvergedKeys().isEmpty() && report.getNotConvergedKeys().containsKey(indexName)) {
+                } else if (!report.getNotConvergedKeys().isEmpty() && report.getNotConvergedKeys().containsKey(indexName)) {
                     LOG.error("SchemaStatus failed to update index: {}, from {} to {}.", indexName, currentStatus, waitForStatus);
                 }
             }
