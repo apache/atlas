@@ -32,8 +32,11 @@ import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
@@ -44,6 +47,9 @@ import org.apache.http.HttpHost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
@@ -63,8 +69,18 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.Charset.defaultCharset;
+import static org.apache.atlas.AtlasConfiguration.ENTITY_AUDIT_DLQ_BACKOFF_BASE_MS;
+import static org.apache.atlas.AtlasConfiguration.ENTITY_AUDIT_DLQ_BACKOFF_MAX_MS;
+import static org.apache.atlas.AtlasConfiguration.ENTITY_AUDIT_DLQ_ENABLED;
+import static org.apache.atlas.AtlasConfiguration.ENTITY_AUDIT_DLQ_MAX_RETRIES;
+import static org.apache.atlas.AtlasConfiguration.ENTITY_AUDIT_DLQ_PUBLISH_TO_KAFKA_ENABLED;
+import static org.apache.atlas.AtlasConfiguration.ENTITY_AUDIT_DLQ_QUEUE_CAPACITY;
+import static org.apache.atlas.AtlasConfiguration.ENTITY_AUDIT_DLQ_TOPIC;
 import static org.apache.atlas.repository.Constants.DOMAIN_GUIDS;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.INDEX_BACKEND_CONF;
 import static org.springframework.util.StreamUtils.copyToString;
@@ -94,6 +110,22 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
     private static final Set<String> ALLOWED_LINKED_ATTRIBUTES = new HashSet<>(Arrays.asList(DOMAIN_GUIDS));
     private static final String ENTITY_AUDITS_INDEX = "entity_audits";
+    private static final int DLQ_POLL_TIMEOUT_SECONDS = 5;
+
+    /**
+     * ES error types that are non-retriable (mapping/parsing/index). Sending these to DLQ would create poison pills.
+     * Aligned with AtlanElasticSearchIndex permanent-error list and DLQReplayService poison-pill handling.
+     * Includes: mapping/parsing (same payload will always fail), index_not_found / invalid_index_name (config/setup;
+     * retry won't fix without human intervention).
+     */
+    private static final Set<String> MAPPING_OR_PERMANENT_ES_ERROR_TYPES = Set.of(
+            "mapper_parsing_exception",
+            "illegal_argument_exception",
+            "parsing_exception",
+            "strict_dynamic_mapping_exception",
+            "version_conflict",
+            "index_not_found_exception",
+            "invalid_index_name_exception");
     private static final List<String> SOURCE_FIELDS = Arrays.asList(
             ENTITYID, ACTION, DETAIL, USER, CREATED, TIMESTAMP,
             TYPE_NAME, ENTITY_QUALIFIED_NAME, EVENT_KEY, "headers"
@@ -105,9 +137,65 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
          eventKey  → entityId:timestamp
     * */
 
+    /** Metric name for entity audit DLQ outcomes (Victoria Metrics / Prometheus). */
+    private static final String METRIC_ENTITY_AUDIT_DLQ = "atlas.entity.audit.dlq.events";
+
+    /** Holder for failed audit events enqueued to async DLQ for retry. */
+    private static record EntityAuditDLQEntry(List<EntityAuditEventV2> events, int retryCount) {}
+
+    /**
+     * Record audit DLQ failure metric to the existing Micrometer/Prometheus registry (scraped by Victoria Metrics).
+     * Does not throw; failures are logged and ignored.
+     */
+    private static void recordAuditDlqMetric(String outcome, int eventCount) {
+        if (eventCount <= 0) {
+            return;
+        }
+        try {
+            MeterRegistry registry = MetricUtils.getMeterRegistry();
+            if (registry != null) {
+                Counter.builder(METRIC_ENTITY_AUDIT_DLQ)
+                        .description("Entity audit events in DLQ flow (failures, enqueued, dropped, published)")
+                        .tag("outcome", outcome)
+                        .register(registry)
+                        .increment(eventCount);
+            }
+        } catch (Exception e) {
+            LOG.warn("Failed to record entity audit DLQ metric outcome={} count={}", outcome, eventCount, e);
+        }
+    }
+
+    /**
+     * Returns true if the exception indicates a mapping or other permanent ES error.
+     * Such errors must not be sent to the DLQ (poison pill: replay would fail every time).
+     * Walks the cause chain (same pattern as AtlanElasticSearchIndex and AtlasEntityStoreV2.isPermanentBackendException)
+     * so we detect permanent errors whether on the top-level exception or a wrapped cause.
+     * Package-private for testability (ESBasedAuditRepositoryDLQTest verifies poison-pill detection).
+     */
+    static boolean isMappingOrPermanentException(Throwable t) {
+        Throwable current = t;
+        while (current != null) {
+            String msg = current.getMessage();
+            if (msg != null) {
+                String msgLower = msg.toLowerCase();
+                for (String type : MAPPING_OR_PERMANENT_ES_ERROR_TYPES) {
+                    if (msgLower.contains(type)) {
+                        return true;
+                    }
+                }
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
     private RestClient lowLevelClient;
     private final Configuration configuration;
     private EntityGraphRetriever entityGraphRetriever;
+    private BlockingQueue<EntityAuditDLQEntry> auditDlqQueue;
+    private Thread auditDlqReplayThread;
+    private volatile boolean auditDlqReplayRunning;
+    private volatile KafkaProducer<String, String> auditDlqKafkaProducer;
 
     @Inject
     public ESBasedAuditRepository(Configuration configuration, EntityGraphRetriever entityGraphRetriever) {
@@ -130,124 +218,160 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("pushInES");
 
         try {
-            if (CollectionUtils.isEmpty(events)) {
-                return;
-            }
-
-            Map<String, String> requestContextHeaders = RequestContext.get().getRequestContextHeaders();
-            String entityPayloadTemplate = getQueryTemplate(requestContextHeaders);
-
-            StringBuilder bulkRequestBody = new StringBuilder();
-            for (EntityAuditEventV2 event : events) {
-                String created = String.format("%s", event.getTimestamp());
-                String auditDetailPrefix = EntityAuditListenerV2.getV2AuditPrefix(event.getAction());
-                String details = event.getDetails().substring(auditDetailPrefix.length());
-
-                AtlasEntity auditEntity = event.getEntity();
-
-                if (auditEntity == null) {
-                    LOG.warn("Audit entity is null for event (entityId={}, action={}); skipping ES audit record",
-                            event.getEntityId(), event.getAction());
-                    continue;
-                }
-
-                String typeName = auditEntity.getTypeName();
-                long   updateTimestamp;
-
-                if (auditEntity.getUpdateTime() != null) {
-                    updateTimestamp = auditEntity.getUpdateTime().getTime();
+            putEventsV2Internal(events);
+        } catch (Exception e) {
+            // Do not fail the main request; pass failed request into async DLQ for retry (MS-642).
+            int eventCount = (events != null) ? events.size() : 0;
+            boolean isMappingOrPermanent = isMappingOrPermanentException(e);
+            if (isMappingOrPermanent) {
+                LOG.error("Entity audit write to ES failed with mapping/permanent error (will not enqueue to DLQ to avoid poison pill). eventCount={}, error={}",
+                        eventCount, e.getMessage(), e);
+                recordAuditDlqMetric("dropped_mapping_permanent", eventCount);
+            } else if (ENTITY_AUDIT_DLQ_ENABLED.getBoolean() && auditDlqQueue != null && eventCount > 0) {
+                boolean offered = auditDlqQueue.offer(new EntityAuditDLQEntry(new ArrayList<>(events), 0));
+                if (offered) {
+                    LOG.warn("Entity audit write to ES failed; enqueued to async DLQ for retry. eventCount={}, error={}",
+                            eventCount, e.getMessage());
+                    recordAuditDlqMetric("enqueued", eventCount);
                 } else {
-                    updateTimestamp = event.getTimestamp();
-                    LOG.warn("Entity updateTime is null for audit event (entityId={}, type={}); using event timestamp as fallback",
-                            event.getEntityId(), typeName);
+                    LOG.error("Entity audit DLQ full; dropping {} events. error={}. Consider increasing atlas.entity.audit.dlq.queue.capacity",
+                            eventCount, e.getMessage(), e);
+                    recordAuditDlqMetric("dropped_queue_full", eventCount);
                 }
-
-                String bulkItem = MessageFormat.format(entityPayloadTemplate,
-                        event.getEntityId(),
-                        event.getAction(),
-                        details,
-                        event.getUser(),
-                        event.getEntityId() + ":" + updateTimestamp,
-                        event.getEntityQualifiedName(),
-                        typeName,
-                        created,
-                        "" + updateTimestamp);
-
-                bulkRequestBody.append(bulkMetadata);
-                bulkRequestBody.append(bulkItem);
-                bulkRequestBody.append("\n");
+            } else {
+                LOG.error("Entity audit write to ES failed; main request will not fail. eventCount={}, error={}. " +
+                        "Check ES health/circuit breaker if this recurs.", eventCount, e.getMessage(), e);
+                recordAuditDlqMetric("dropped_dlq_disabled", eventCount);
             }
-            String endpoint = INDEX_NAME + "/_bulk";
-            HttpEntity entity = new NStringEntity(bulkRequestBody.toString(), ContentType.APPLICATION_JSON);
-            Request request = new Request("POST", endpoint);
-            request.setEntity(entity);
+        } finally {
+            try {
+                RequestContext.get().endMetricRecord(metric);
+            } catch (Exception metricEx) {
+                LOG.warn("Failed to end metric record for pushInES", metricEx);
+            }
+        }
+    }
 
-            int maxRetries = AtlasConfiguration.ES_MAX_RETRIES.getInt();
-            long initialRetryDelay = AtlasConfiguration.ES_RETRY_DELAY_MS.getLong();
+    /**
+     * Performs the actual ES bulk write for audit events. Throws on failure; callers are expected to
+     * catch and handle gracefully so the main request does not fail (see putEventsV2).
+     */
+    private void putEventsV2Internal(List<EntityAuditEventV2> events) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(events)) {
+            return;
+        }
 
-            for (int retryCount = 0; retryCount < maxRetries; retryCount++) {
-                Response response = null;
-                try {
-                    response = lowLevelClient.performRequest(request);
-                    int statusCode = response.getStatusLine().getStatusCode();
+        Map<String, String> requestContextHeaders = RequestContext.get().getRequestContextHeaders();
+        String entityPayloadTemplate = getQueryTemplate(requestContextHeaders);
 
-                    // Accept any 2xx status code as a success.
-                    if (statusCode >= 200 && statusCode < 300) {
-                        String responseString = EntityUtils.toString(response.getEntity());
-                        Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
+        StringBuilder bulkRequestBody = new StringBuilder();
+        for (EntityAuditEventV2 event : events) {
+            String created = String.format("%s", event.getTimestamp());
+            String auditDetailPrefix = EntityAuditListenerV2.getV2AuditPrefix(event.getAction());
+            String detailsRaw = event.getDetails();
+            String details = (detailsRaw != null && detailsRaw.length() >= auditDetailPrefix.length())
+                    ? detailsRaw.substring(auditDetailPrefix.length())
+                    : (detailsRaw != null ? detailsRaw : "{}");
 
-                        if ((boolean) responseMap.get("errors")) {
-                            LOG.error("Elasticsearch returned errors for bulk audit event request. Full response: {}", responseString);
-                            List<String> errors = new ArrayList<>();
-                            List<Map<String, Object>> resultItems = (List<Map<String, Object>>) responseMap.get("items");
-                            for (Map<String, Object> resultItem : resultItems) {
-                                if (resultItem.get("index") != null) {
-                                    Map<String, Object> resultIndex = (Map<String, Object>) resultItem.get("index");
-                                    if (resultIndex.get("error") != null) {
-                                        errors.add(resultIndex.get("error").toString());
-                                    }
+            AtlasEntity auditEntity = event.getEntity();
+
+            if (auditEntity == null) {
+                LOG.warn("Audit entity is null for event (entityId={}, action={}); skipping ES audit record",
+                        event.getEntityId(), event.getAction());
+                continue;
+            }
+
+            String typeName = auditEntity.getTypeName();
+            long   updateTimestamp;
+
+            if (auditEntity.getUpdateTime() != null) {
+                updateTimestamp = auditEntity.getUpdateTime().getTime();
+            } else {
+                updateTimestamp = event.getTimestamp();
+                LOG.warn("Entity updateTime is null for audit event (entityId={}, type={}); using event timestamp as fallback",
+                        event.getEntityId(), typeName);
+            }
+
+            String bulkItem = MessageFormat.format(entityPayloadTemplate,
+                    event.getEntityId(),
+                    event.getAction(),
+                    details,
+                    event.getUser(),
+                    event.getEntityId() + ":" + updateTimestamp,
+                    event.getEntityQualifiedName(),
+                    typeName,
+                    created,
+                    "" + updateTimestamp);
+
+            bulkRequestBody.append(bulkMetadata);
+            bulkRequestBody.append(bulkItem);
+            bulkRequestBody.append("\n");
+        }
+        if (bulkRequestBody.length() == 0) {
+            return;
+        }
+        String endpoint = INDEX_NAME + "/_bulk";
+        HttpEntity entity = new NStringEntity(bulkRequestBody.toString(), ContentType.APPLICATION_JSON);
+        Request request = new Request("POST", endpoint);
+        request.setEntity(entity);
+
+        int maxRetries = AtlasConfiguration.ES_MAX_RETRIES.getInt();
+        long initialRetryDelay = AtlasConfiguration.ES_RETRY_DELAY_MS.getLong();
+
+        for (int retryCount = 0; retryCount < maxRetries; retryCount++) {
+            Response response = null;
+            try {
+                response = lowLevelClient.performRequest(request);
+                int statusCode = response.getStatusLine().getStatusCode();
+
+                // Accept any 2xx status code as a success.
+                if (statusCode >= 200 && statusCode < 300) {
+                    String responseString = EntityUtils.toString(response.getEntity());
+                    Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
+
+                    if ((boolean) responseMap.get("errors")) {
+                        LOG.error("Elasticsearch returned errors for bulk audit event request. Full response: {}", responseString);
+                        List<String> errors = new ArrayList<>();
+                        List<Map<String, Object>> resultItems = (List<Map<String, Object>>) responseMap.get("items");
+                        for (Map<String, Object> resultItem : resultItems) {
+                            if (resultItem.get("index") != null) {
+                                Map<String, Object> resultIndex = (Map<String, Object>) resultItem.get("index");
+                                if (resultIndex.get("error") != null) {
+                                    errors.add(resultIndex.get("error").toString());
                                 }
                             }
-                            throw new AtlasBaseException("Error pushing entity audits to ES: " + errors);
                         }
-                        return; // Success, exit the method.
+                        throw new AtlasBaseException("Error pushing entity audits to ES: " + errors);
                     }
-
-                    String responseBody = EntityUtils.toString(response.getEntity());
-
-                    if ((statusCode >= 500 && statusCode < 600) || statusCode==429) {
-                        LOG.warn("Failed to push entity audits to ES due to server error ({}). Retrying... ({}/{}) Response: {}",
-                                statusCode, retryCount + 1, maxRetries, responseBody);
-                    } else {
-                        throw new AtlasBaseException("Unable to push entity audits to ES. Status code: " + statusCode + ", Response: " + responseBody);
-                    }
-
-                } catch (IOException e) {
-                    LOG.warn("Failed to push entity audits to ES due to IOException. Retrying... ({}/{})", retryCount + 1, maxRetries, e);
+                    return; // Success, exit the method.
                 }
 
-                if (retryCount < maxRetries - 1) {
-                    try {
-                        long exponentialBackoffDelay = initialRetryDelay * (long) Math.pow(2, retryCount);
-                        Thread.sleep(exponentialBackoffDelay);
-                    } catch (InterruptedException interruptedException) {
-                        Thread.currentThread().interrupt();
-                        throw new AtlasBaseException("ES audit push interrupted during retry delay", interruptedException);
-                    }
+                String responseBody = EntityUtils.toString(response.getEntity());
+
+                if ((statusCode >= 500 && statusCode < 600) || statusCode==429) {
+                    LOG.warn("Failed to push entity audits to ES due to server error ({}). Retrying... ({}/{}) Response: {}",
+                            statusCode, retryCount + 1, maxRetries, responseBody);
+                } else {
+                    throw new AtlasBaseException("Unable to push entity audits to ES. Status code: " + statusCode + ", Response: " + responseBody);
+                }
+
+            } catch (IOException e) {
+                LOG.warn("Failed to push entity audits to ES due to IOException. Retrying... ({}/{})", retryCount + 1, maxRetries, e);
+            }
+
+            if (retryCount < maxRetries - 1) {
+                try {
+                    long exponentialBackoffDelay = initialRetryDelay * (long) Math.pow(2, retryCount);
+                    Thread.sleep(exponentialBackoffDelay);
+                } catch (InterruptedException interruptedException) {
+                    Thread.currentThread().interrupt();
+                    throw new AtlasBaseException("ES audit push interrupted during retry delay", interruptedException);
                 }
             }
-
-            LOG.error("Failed to push entity audits to ES after {} retries", maxRetries);
-            throw new AtlasBaseException("Unable to push entity audits to ES after " + maxRetries + " retries");
-
-        } catch (Exception e) {
-            if (e instanceof AtlasBaseException) {
-                throw e;
-            }
-            throw new AtlasBaseException("Unable to push entity audits to ES", e);
-        } finally {
-            RequestContext.get().endMetricRecord(metric);
         }
+
+        LOG.error("Failed to push entity audits to ES after {} retries", maxRetries);
+        throw new AtlasBaseException("Unable to push entity audits to ES after " + maxRetries + " retries");
     }
 
     private String getQueryTemplate(Map<String, String> requestContextHeaders) {
@@ -437,6 +561,162 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         LOG.info("ESBasedAuditRepo - start!");
         initApplicationProperties();
         startInternal();
+        if (ENTITY_AUDIT_DLQ_ENABLED.getBoolean()) {
+            int capacity = ENTITY_AUDIT_DLQ_QUEUE_CAPACITY.getInt();
+            auditDlqQueue = new LinkedBlockingQueue<>(capacity);
+            auditDlqReplayRunning = true;
+            auditDlqReplayThread = new Thread(this::runAuditDlqReplayLoop, "EntityAudit-DLQ-Replay");
+            auditDlqReplayThread.setDaemon(true);
+            auditDlqReplayThread.start();
+            LOG.info("Entity audit async DLQ started; queue capacity={}", capacity);
+        }
+    }
+
+    /**
+     * Background loop: drain retry queue, retry push to ES with backoff. After max retries, publish to Kafka DLQ (inspect later).
+     */
+    private void runAuditDlqReplayLoop() {
+        int maxRetries = ENTITY_AUDIT_DLQ_MAX_RETRIES.getInt();
+        long backoffBaseMs = ENTITY_AUDIT_DLQ_BACKOFF_BASE_MS.getLong();
+        long backoffMaxMs = ENTITY_AUDIT_DLQ_BACKOFF_MAX_MS.getLong();
+        while (auditDlqReplayRunning && auditDlqQueue != null) {
+            try {
+                EntityAuditDLQEntry entry = auditDlqQueue.poll(DLQ_POLL_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                if (entry == null) {
+                    continue;
+                }
+                try {
+                    putEventsV2Internal(entry.events());
+                } catch (Exception e) {
+                    if (isMappingOrPermanentException(e)) {
+                        LOG.error("Entity audit retry failed with mapping/permanent error (dropping, will not re-queue). eventCount={}. error={}",
+                                entry.events().size(), e.getMessage(), e);
+                        recordAuditDlqMetric("retry_dropped_mapping_permanent", entry.events().size());
+                    } else if (entry.retryCount() < maxRetries) {
+                        // Backoff before re-queue so we don't process immediately; during the failure period retries would likely fail again.
+                        long backoffMs = Math.min(backoffMaxMs, backoffBaseMs * (long) Math.pow(2, entry.retryCount()));
+                        try {
+                            Thread.sleep(backoffMs);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                        boolean reOffered = auditDlqQueue.offer(new EntityAuditDLQEntry(entry.events(), entry.retryCount() + 1));
+                        if (reOffered) {
+                            LOG.warn("Entity audit retry failed (retry {}/{}); backoff {}ms, re-queued. error={}",
+                                    entry.retryCount() + 1, maxRetries, backoffMs, e.getMessage());
+                            recordAuditDlqMetric("retry_requeued", entry.events().size());
+                        } else {
+                            LOG.error("Entity audit retry queue full; dropping {} events after {} retries",
+                                    entry.events().size(), entry.retryCount() + 1, e);
+                            recordAuditDlqMetric("retry_dropped_queue_full", entry.events().size());
+                        }
+                    } else {
+                        if (ENTITY_AUDIT_DLQ_PUBLISH_TO_KAFKA_ENABLED.getBoolean()) {
+                            publishToKafkaDLQ(entry.events(), e.getMessage());
+                        } else {
+                            LOG.error("Entity audit retry failed after {} retries; dropping {} events (Kafka DLQ publish disabled). error={}",
+                                    maxRetries, entry.events().size(), e.getMessage(), e);
+                            recordAuditDlqMetric("dropped_kafka_disabled", entry.events().size());
+                        }
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                LOG.info("Entity audit retry thread interrupted");
+                break;
+            }
+        }
+    }
+
+    /**
+     * Publish failed audit events to Kafka DLQ topic so they can be inspected/replayed later. Does not throw.
+     */
+    private void publishToKafkaDLQ(List<EntityAuditEventV2> events, String failureReason) {
+        try {
+            KafkaProducer<String, String> producer = getOrCreateAuditDlqKafkaProducer();
+            if (producer == null) {
+                LOG.error("Entity audit retry failed after max retries; cannot publish to DLQ (producer not available). eventCount={}. error={}",
+                        events.size(), failureReason);
+                recordAuditDlqMetric("dropped_producer_unavailable", events.size());
+                return;
+            }
+            String topic = ENTITY_AUDIT_DLQ_TOPIC.getString();
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("failureReason", failureReason);
+            payload.put("eventCount", events.size());
+            payload.put("timestamp", System.currentTimeMillis());
+            payload.put("events", events);
+            String json = AtlasType.toJson(payload);
+            producer.send(new ProducerRecord<>(topic, null, json));
+            LOG.warn("Entity audit retry failed after max retries; published {} events to DLQ topic {} for inspection. error={}",
+                    events.size(), topic, failureReason);
+            recordAuditDlqMetric("published_kafka", events.size());
+        } catch (Exception ex) {
+            LOG.error("Entity audit: failed to publish {} events to Kafka DLQ; events will be lost. error={}", events.size(), ex.getMessage(), ex);
+            recordAuditDlqMetric("dropped_kafka_publish_failed", events.size());
+        }
+    }
+
+    private KafkaProducer<String, String> getOrCreateAuditDlqKafkaProducer() {
+        if (auditDlqKafkaProducer != null) {
+            return auditDlqKafkaProducer;
+        }
+        synchronized (this) {
+            if (auditDlqKafkaProducer != null) {
+                return auditDlqKafkaProducer;
+            }
+            try {
+                String bootstrapServers = ApplicationProperties.get().getString("atlas.kafka.bootstrap.servers", "").trim();
+                if (bootstrapServers.isEmpty()) {
+                    LOG.warn("Entity audit DLQ Kafka publish enabled but atlas.kafka.bootstrap.servers not set; DLQ publish disabled");
+                    return null;
+                }
+                Properties props = new Properties();
+                props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+                props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+                props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+                auditDlqKafkaProducer = new KafkaProducer<>(props);
+                return auditDlqKafkaProducer;
+            } catch (Exception e) {
+                LOG.error("Entity audit: failed to create Kafka producer for DLQ", e);
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Test hook: process at most one DLQ entry (poll with 0 timeout). Used to drive replay without
+     * starting the background thread. Returns true if an entry was consumed (success or re-queued/dropped).
+     */
+    @VisibleForTesting
+    boolean processOneDlqEntryForTest() {
+        if (auditDlqQueue == null) {
+            return false;
+        }
+        try {
+            EntityAuditDLQEntry entry = auditDlqQueue.poll(0, TimeUnit.SECONDS);
+            if (entry == null) {
+                return false;
+            }
+            int maxRetries = ENTITY_AUDIT_DLQ_MAX_RETRIES.getInt();
+            try {
+                putEventsV2Internal(entry.events());
+            } catch (Exception e) {
+                if (!isMappingOrPermanentException(e) && entry.retryCount() < maxRetries) {
+                    auditDlqQueue.offer(new EntityAuditDLQEntry(entry.events(), entry.retryCount() + 1));
+                }
+            }
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
+    @VisibleForTesting
+    int getAuditDlqQueueSize() {
+        return auditDlqQueue != null ? auditDlqQueue.size() : 0;
     }
 
     @VisibleForTesting
@@ -583,6 +863,26 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     public void stop() throws AtlasException {
         try {
             LOG.info("ESBasedAuditRepo - stop!");
+            auditDlqReplayRunning = false;
+            if (auditDlqReplayThread != null) {
+                auditDlqReplayThread.interrupt();
+                try {
+                    auditDlqReplayThread.join(TimeUnit.SECONDS.toMillis(30));
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    LOG.warn("Interrupted while waiting for entity audit DLQ replay thread to stop");
+                }
+                auditDlqReplayThread = null;
+            }
+            auditDlqQueue = null;
+            if (auditDlqKafkaProducer != null) {
+                try {
+                    auditDlqKafkaProducer.close();
+                } catch (Exception e) {
+                    LOG.warn("Error closing entity audit DLQ Kafka producer", e);
+                }
+                auditDlqKafkaProducer = null;
+            }
             if (lowLevelClient != null) {
                 lowLevelClient.close();
                 lowLevelClient = null;

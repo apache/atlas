@@ -181,6 +181,14 @@ public enum AtlasConfiguration {
     ES_MAX_RETRIES("atlas.es.max.retries", 5),
     ES_RETRY_DELAY_MS("atlas.es.retry.delay.ms", 1000),
 
+    // Entity audit: async retry with backoff, then publish to Kafka DLQ if still failing (main request never fails)
+    ENTITY_AUDIT_DLQ_ENABLED("atlas.entity.audit.dlq.enabled", true),
+    ENTITY_AUDIT_DLQ_QUEUE_CAPACITY("atlas.entity.audit.dlq.queue.capacity", 10000),
+    ENTITY_AUDIT_DLQ_MAX_RETRIES("atlas.entity.audit.dlq.max.retries", 3),
+    ENTITY_AUDIT_DLQ_BACKOFF_BASE_MS("atlas.entity.audit.dlq.backoff.base.ms", 1000),
+    ENTITY_AUDIT_DLQ_BACKOFF_MAX_MS("atlas.entity.audit.dlq.backoff.max.ms", 60000),
+    ENTITY_AUDIT_DLQ_TOPIC("atlas.entity.audit.dlq.topic", "ENTITY_AUDIT_DLQ"),
+    ENTITY_AUDIT_DLQ_PUBLISH_TO_KAFKA_ENABLED("atlas.entity.audit.dlq.publish.to.kafka.enabled", true),
 
     MIN_EDGES_SUPER_VERTEX("atlas.jg.super.vertex.min.edge.count", 100),
 
