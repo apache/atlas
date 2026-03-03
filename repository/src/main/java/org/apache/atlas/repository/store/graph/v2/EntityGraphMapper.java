@@ -4288,12 +4288,15 @@ public class EntityGraphMapper {
     private List<AtlasClassification> mapClassificationsV2(List<AtlasClassification> classifications) throws AtlasBaseException {
         List<AtlasClassification> mappedClassifications = new ArrayList<>(classifications.size());
         for (AtlasClassification c : classifications) {
+            if (MapUtils.isEmpty(c.getAttributes())) {
+                mappedClassifications.add(c);
+                continue;
+            }
             // Apply attribute mapping to ensure schema compatibility with v1
             AtlasClassification mappedClassification = tagAttributeMapper.mapClassificationAttributes(c);
             mappedClassifications.add(mappedClassification);
         }
-        classifications = mappedClassifications;
-        return classifications;
+        return mappedClassifications;
     }
 
     public int propagateClassification(String entityGuid, String classificationVertexId, String relationshipGuid, Boolean previousRestrictPropagationThroughLineage,Boolean previousRestrictPropagationThroughHierarchy) throws AtlasBaseException {
