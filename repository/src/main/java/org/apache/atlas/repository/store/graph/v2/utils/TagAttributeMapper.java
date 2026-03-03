@@ -130,7 +130,7 @@ public class TagAttributeMapper {
 
         AtlasClassification result = classification.deepCopy();
         String typeName = classification.getTypeName();
-        
+
         if (StringUtils.isEmpty(typeName)) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, "Classification typeName is empty");
         }
@@ -316,30 +316,33 @@ public class TagAttributeMapper {
     }
 
     /**
-     * Maps the attributes of a struct to ensure proper structure.
+     * Normalizes attributes against a struct type definition, ensuring all defined attributes
+     * are present in the output. Attributes missing from the input are added with null.
+     * This prevents silent data loss when payloads omit optional attributes.
+     *
+     * @param structType      The type definition to normalize against
+     * @param inputAttributes The input attributes (may be null or incomplete)
+     * @return Normalized map with all type-defined attributes present
      */
+    private Map<String, Object> normalizeAttributes(AtlasStructType structType, Map<String, Object> inputAttributes) throws AtlasBaseException {
+        Map<String, Object> normalizedAttributes = new HashMap<>();
+
+        Map<String, AtlasAttribute> typeAttributes = structType.getAllAttributes();
+        if (MapUtils.isNotEmpty(typeAttributes)) {
+            for (AtlasAttribute attribute : typeAttributes.values()) {
+                String attrName = attribute.getName();
+                Object attrValue = inputAttributes != null ? inputAttributes.get(attrName) : null;
+
+                Object mappedValue = mapAttributeValue(attribute, attrValue);
+                normalizedAttributes.put(attrName, mappedValue);
+            }
+        }
+
+        return normalizedAttributes;
+    }
+
     private Map<String, Object> mapStructAttributes(AtlasStructType structType, Map<String, Object> structAttributes) throws AtlasBaseException {
-        if (MapUtils.isEmpty(structAttributes)) {
-            return structAttributes;
-        }
-
-        Map<String, Object> mappedAttributes = new HashMap<>();
-        for (Map.Entry<String, Object> entry : structAttributes.entrySet()) {
-            String attrName = entry.getKey();
-            Object attrValue = entry.getValue();
-
-            AtlasAttribute attribute = structType.getAttribute(attrName);
-            if (attribute == null) {
-                LOG.warn("Attribute {}.{} not found in struct definition. Skipping.", structType.getTypeName(), attrName);
-                continue;
-            }
-
-            Object mappedValue = mapAttributeValue(attribute, attrValue);
-            if (mappedValue != null) {
-                mappedAttributes.put(attrName, mappedValue);
-            }
-        }
-        return mappedAttributes;
+        return normalizeAttributes(structType, structAttributes);
     }
 
     private Object buildStructInstance(AtlasStructType structType, Map<String, Object> attributes) throws AtlasBaseException {
