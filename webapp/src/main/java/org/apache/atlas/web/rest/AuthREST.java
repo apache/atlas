@@ -208,17 +208,19 @@ public class AuthREST {
 
         List<EntityAuditEventV2> events = new ArrayList<>();
         try {
+            List<EntityAuditEventV2> batch;
             do {
                 dsl.put("from", from);
                 dsl.put("size", size);
                 parameters.setDsl(dsl);
                 String query = parameters.getQueryString();
                 EntityAuditSearchResult result = auditRepository.searchEvents(query); // attributes are not getting passed in query
-                if (result != null && !CollectionUtils.isEmpty(result.getEntityAudits())) {
-                    events.addAll(result.getEntityAudits());
-                }
+                batch = (result != null && !CollectionUtils.isEmpty(result.getEntityAudits()))
+                        ? result.getEntityAudits()
+                        : new ArrayList<>();
+                events.addAll(batch);
                 from += size;
-            } while (events.size() == size);
+            } while (batch.size() == size);
         } catch (AtlasBaseException e) {
             LOG.error("ERROR in getPolicyAuditLogs while fetching entity audits {}: ", e.getMessage());
         } finally {
