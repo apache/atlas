@@ -352,10 +352,21 @@ public class TagAttributeMapper {
         return normalizeAttributes(structType, structAttributes);
     }
 
+    @SuppressWarnings("unchecked")
     private Object buildStructInstance(AtlasStructType structType, Map<String, Object> attributes) throws AtlasBaseException {
         Map<String, Object> result = new HashMap<>();
         result.put("typeName", structType.getTypeName());
-        result.put("attributes", mapStructAttributes(structType, attributes));
+
+        // Cassandra stores structs in wrapped format: {"typeName": "...", "attributes": {...}}
+        // API/write path sends flat maps: {"attrName": "value", ...}
+        // Extract inner attributes map when wrapped format is detected.
+        Map<String, Object> innerAttributes = attributes;
+        if (attributes.containsKey("typeName") && attributes.containsKey("attributes")
+                && attributes.get("attributes") instanceof Map) {
+            innerAttributes = (Map<String, Object>) attributes.get("attributes");
+        }
+
+        result.put("attributes", mapStructAttributes(structType, innerAttributes));
         return result;
     }
 
