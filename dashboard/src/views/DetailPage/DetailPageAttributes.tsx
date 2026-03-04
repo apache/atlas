@@ -30,6 +30,15 @@ import {
   isEmpty,
   sanitizeHtmlContent
 } from "@utils/Utils";
+
+const getDescriptionForDisplay = (desc: unknown): string => {
+  if (typeof desc === "string") return desc;
+  if (desc && typeof desc === "object" && !Array.isArray(desc)) {
+    const val = Object.values(desc).find((v) => typeof v === "string");
+    return (val as string) || "";
+  }
+  return "";
+};
 import { useState } from "react";
 import { useAppSelector } from "@hooks/reducerHook";
 import { toast } from "react-toastify";
@@ -194,7 +203,7 @@ const DetailPageAttribute = ({
                   >
                     {!isEmpty(shortDescription) ? (
                       <ShowMoreText
-                        value={shortDescription}
+                        value={getDescriptionForDisplay(shortDescription)}
                         maxLength={160}
                         more={"show more"}
                         less={"show less"}
@@ -257,7 +266,7 @@ const DetailPageAttribute = ({
                 <div>
                   {alignment == "formatted" ? (
                     <ShowMoreText
-                      value={sanitizeHtmlContent(description)}
+                      value={sanitizeHtmlContent(getDescriptionForDisplay(description))}
                       maxLength={160}
                       more={"show more"}
                       less={"show less"}
@@ -266,7 +275,7 @@ const DetailPageAttribute = ({
                   ) : (
                     <div style={{ wordBreak: "break-all" }}>
                       <ShowMoreText
-                        value={sanitizeHtmlContent(description)}
+                        value={sanitizeHtmlContent(getDescriptionForDisplay(description))}
                         maxLength={160}
                         more={"show more"}
                         less={"show less"}

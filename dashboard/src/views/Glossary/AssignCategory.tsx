@@ -78,7 +78,7 @@ const AssignCategory = ({
   const glossary = [...glossaryData];
 
   const updatedGlossary = glossary.map((gloss) => {
-    if (isEmpty(gloss?.catgeories)) {
+    if (isEmpty(gloss?.categories)) {
       return gloss;
     }
 
