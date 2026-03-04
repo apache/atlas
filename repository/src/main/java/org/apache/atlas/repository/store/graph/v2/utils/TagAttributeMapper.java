@@ -334,7 +334,10 @@ public class TagAttributeMapper {
                 Object attrValue = inputAttributes != null ? inputAttributes.get(attrName) : null;
 
                 if (attrValue == null) {
-                    attrValue = attribute.getAttributeDef().getDefaultValue();
+                    String defaultValue = attribute.getAttributeDef().getDefaultValue();
+                    if (defaultValue != null) {
+                        attrValue = attribute.getAttributeType().getNormalizedValue(defaultValue);
+                    }
                 }
 
                 Object mappedValue = mapAttributeValue(attribute, attrValue);

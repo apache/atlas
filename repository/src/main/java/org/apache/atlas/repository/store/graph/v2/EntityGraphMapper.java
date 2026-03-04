@@ -3943,12 +3943,11 @@ public class EntityGraphMapper {
         for (AtlasVertex entityVertex : entityVertices) {
             List<AtlasClassification> currentTags = tagDAO.getAllClassificationsForVertex(entityVertex.getIdForDisplay());
 
-            // Normalize classifications to fill in missing struct attributes from type definition.
-            // Cassandra may have incomplete data (e.g., tagAttachmentKey dropped by older write path),
-            // so we normalize before generating __classificationsText for ES.
-            currentTags = mapClassificationsV2(currentTags);
-
             try {
+                // Normalize classifications to fill in missing struct attributes from type definition.
+                // Cassandra may have incomplete data (e.g., tagAttachmentKey dropped by older write path),
+                // so we normalize before generating __classificationsText for ES.
+                currentTags = mapClassificationsV2(currentTags);
                 Map<String, Map<String, Object>> deNormMap = new HashMap<>();
 
                 deNormMap.put(entityVertex.getIdForDisplay(),
