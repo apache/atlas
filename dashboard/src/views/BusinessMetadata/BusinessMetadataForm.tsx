@@ -343,10 +343,6 @@ const BusinessMetaDataForm = ({
       setBMAttribute({});
       setForm(false);
     } catch (error) {
-      console.log(
-        `Error occur while creating or updating BusinessMetadata`,
-        error
-      );
       serverError(error, toastId);
     }
   };

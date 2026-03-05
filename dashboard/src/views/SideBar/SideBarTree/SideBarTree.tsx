@@ -798,6 +798,9 @@ const BarTreeView: FC<{
     } else if (key === "classification") {
       // Map classification to tag parameter for URL (matching classic UI)
       searchParams.set("tag", value);
+    } else if (key === "termName") {
+      // Map termName (API format) to term parameter for URL (matching classic UI)
+      searchParams.set("term", value);
     } else if (value !== null && value !== undefined && value !== "") {
       // Only set parameter if value is not null, undefined, or empty string
       searchParams.set(key, value);

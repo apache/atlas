@@ -70,8 +70,8 @@ export const ExtractObject = (props: any) => {
         const { data: response } = await getDetailPageData(guid, {}, "headers");
         const { name } = extractKeyValueFromEntity(response);
         setHeaderData(name as string);
-      } catch (error) {
-        console.log(error);
+      } catch {
+        // Error handled silently
       }
     }
   };

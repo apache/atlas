@@ -50,7 +50,7 @@ const config = {
 				use: {
 					loader: "babel-loader",
 					options: {
-						presets: ["@babel/preset-env"],
+						presets: [["@babel/preset-env", { targets: { ie: "11" } }]],
 						plugins: ["@babel/plugin-transform-class-properties"]
 					}
 				}

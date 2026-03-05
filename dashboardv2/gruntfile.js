@@ -87,7 +87,6 @@ module.exports = function(grunt) {
                     'require.js': { 'requirejs': 'requirejs' },
                     'text.js': { 'requirejs-text': 'requirejs-text' },
                     'underscore-min.js': { 'underscore': 'underscore' },
-                    'bootstrap.min.js': { 'bootstrap/dist/js': 'bootstrap/js' },
                     'backbone-min.js': { 'backbone': 'backbone' },
                     'backbone.babysitter.min.js': { 'backbone.babysitter/lib': 'backbone-babysitter' },
                     'backbone.marionette.min.js': { 'backbone.marionette/lib': 'backbone-marionette' },
@@ -125,7 +124,6 @@ module.exports = function(grunt) {
                     srcPrefix: nodeModulePath
                 },
                 files: {
-                    'bootstrap.min.css': { 'bootstrap/dist/css': 'bootstrap/css' },
                     'glyphicons-halflings-regular.woff2': { 'bootstrap/fonts': 'bootstrap/fonts' },
                     'backgrid.css': { 'backgrid/lib': 'backgrid/css' },
                     'backgrid-filter.min.css': { 'backgrid-filter': 'backgrid-filter/css' },
@@ -222,6 +220,18 @@ module.exports = function(grunt) {
                 cwd: modulesPath,
                 src: ['**', '!**/scss/**', "!**/atlas-lineage/**", "**/atlas-lineage/dist/**", "!index.html.tpl"],
                 dest: distPath
+            },
+            bootstrap: {
+                files: [
+                    {
+                        src: nodeModulePath + 'bootstrap/dist/js/bootstrap-patched.min.js',
+                        dest: libPath + 'bootstrap/js/bootstrap.min.js'
+                    },
+                    {
+                        src: nodeModulePath + 'bootstrap/dist/css/bootstrap-patched.min.css',
+                        dest: libPath + 'bootstrap/css/bootstrap.min.css'
+                    }
+                ]
             }
         },
         clean: {
@@ -240,7 +250,7 @@ module.exports = function(grunt) {
                 files: [{
                     expand: true,
                     cwd: distPath + '/js',
-                    src: ['external_lib/**/*.js', '!external_lib/**/purify.min.js', 'libs/**/*.js'],
+                    src: ['external_lib/**/*.js', '!external_lib/**/purify.min.js', 'libs/**/*.js','!external_lib/atlas-lineage/**', 'libs/**/*.js'],
                     dest: distPath + '/js'
                 }]
             },
@@ -351,6 +361,7 @@ module.exports = function(grunt) {
     grunt.registerTask('dev', [
         'clean',
         'copy:libs',
+        'copy:bootstrap',
         'copy:build',
         'rename',
         'sass:build',
@@ -363,6 +374,7 @@ module.exports = function(grunt) {
     grunt.registerTask('build', [
         'clean',
         'copy:libs',
+        'copy:bootstrap',
         'copy:build',
         'rename',
         'sass:build',
@@ -372,6 +384,7 @@ module.exports = function(grunt) {
     grunt.registerTask('dev-minify', [
         'clean',
         'copy:libs',
+        'copy:bootstrap',
         'copy:build',
         'rename',
         'sass:build',
@@ -386,6 +399,7 @@ module.exports = function(grunt) {
     grunt.registerTask('build-minify', [
         'clean',
         'copy:libs',
+        'copy:bootstrap',
         'copy:build',
         'rename',
         'sass:build',

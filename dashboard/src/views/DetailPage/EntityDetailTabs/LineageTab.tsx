@@ -308,7 +308,6 @@ const LineageTab = ({ entity, isProcess }: any) => {
       setLoader(false);
     } catch (error) {
       setLoader(false);
-      console.log("Error while fetching lineage data", error);
     }
   };
   useEffect(() => {

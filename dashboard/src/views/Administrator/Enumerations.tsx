@@ -106,7 +106,6 @@ const Enumerations = () => {
       reset({ enumType: "", enumValues: [] });
       dispatch(fetchEnumData());
     } catch (error) {
-      console.log(`Error occur while creating or updating Enum`, error);
       serverError(error, toastId);
     }
   };

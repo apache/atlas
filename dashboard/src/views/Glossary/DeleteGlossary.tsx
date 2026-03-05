@@ -76,7 +76,6 @@ const DeleteGlossary = (props: {
       onClose();
       setExpandNode(null);
     } catch (error) {
-      console.log(`Error occur while removing ${id}`, error);
       serverError(error, toastId);
     }
   };

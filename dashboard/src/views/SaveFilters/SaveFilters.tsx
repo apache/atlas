@@ -184,7 +184,6 @@ const SaveFilters = ({
       updatedData();
       onClose();
     } catch (error) {
-      console.log(`Error occur while updating filters`, error);
       serverError(error, toastId);
     }
   };

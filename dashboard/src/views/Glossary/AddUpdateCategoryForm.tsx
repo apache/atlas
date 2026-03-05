@@ -132,10 +132,6 @@ const AddUpdateCategoryForm = (props: {
       );
       onClose();
     } catch (error) {
-      console.log(
-        `Error occur while ${isAdd ? "created" : "updated"} Glossary`,
-        error
-      );
       serverError(error, toastId);
     }
   };

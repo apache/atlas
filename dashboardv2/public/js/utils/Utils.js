@@ -305,7 +305,6 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         }
         if (typeof(Storage) === "undefined") {
             _.extend(this, Utils.cookie);
-            console.log('Sorry! No Web Storage support');
         }
     }
     Utils.localStorage = new Utils.localStorage();

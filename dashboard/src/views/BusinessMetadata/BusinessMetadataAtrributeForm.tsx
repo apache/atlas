@@ -177,7 +177,6 @@ const BusinessMetadataAttributeForm = ({
       reset({ enumType: "", enumValues: [] });
       dispatchState(fetchEnumData());
     } catch (error) {
-      console.log(`Error occur while creating or updating Enum`, error);
       serverError(error, toastId);
     }
   };
