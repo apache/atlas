@@ -182,6 +182,7 @@ public enum AtlasErrorCode {
     INVALID_OPERATOR(400, "ATLAS-400-00-103", "Invalid operator specified for attribute: {0}"),
     BLANK_NAME_ATTRIBUTE(400, "ATLAS-400-00-104", "Name Attribute can't be empty!"),
     BLANK_VALUE_ATTRIBUTE(400, "ATLAS-400-00-105", "Value Attribute can't be empty!"),
+    INVALID_RELATIONSHIP_LABEL(400, "ATLAS-400-00-106", "Invalid relationship label '{0}'. The referenced entity type '{1}' could not be resolved from the type registry."),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 

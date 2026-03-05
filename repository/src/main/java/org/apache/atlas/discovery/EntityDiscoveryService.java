@@ -76,10 +76,8 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
-import org.apache.atlas.util.SearchPredicateUtil;
 import org.apache.atlas.util.SearchTracker;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections4.IteratorUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -504,7 +502,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     @Override
     @GraphTransaction
-    public AtlasSearchResult searchRelatedEntities(String guid, String relation, boolean getApproximateCount, SearchParameters searchParameters) throws AtlasBaseException {
+    public AtlasSearchResult searchRelatedEntities(String guid, String relation, boolean getApproximateCount, SearchParameters searchParameters, boolean disableDefaultSorting) throws AtlasBaseException {
         AtlasSearchResult ret = new AtlasSearchResult(AtlasQueryType.RELATIONSHIP);
 
         if (StringUtils.isEmpty(guid) || StringUtils.isEmpty(relation)) {
@@ -544,6 +542,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             if (StringUtils.isNotEmpty(endEntityTypeName)) {
                 endEntityType = typeRegistry.getEntityTypeByName(endEntityTypeName);
             }
+
+            if (endEntityType == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_LABEL, relation, endEntityTypeName);
+            }
         }
 
         //validate sortBy attribute
@@ -551,24 +553,29 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         SortOrder sortOrder           = searchParameters.getSortOrder();
         int       offset              = searchParameters.getOffset();
         int       limit               = searchParameters.getLimit();
-        String    sortByAttributeName = DEFAULT_SORT_ATTRIBUTE_NAME;
+        String    sortByAttributeName = null;
 
-        if (StringUtils.isNotEmpty(sortBy)) {
-            sortByAttributeName = sortBy;
-        }
+        if (disableDefaultSorting && StringUtils.isEmpty(sortBy)) {
+            sortOrder = null;
+        } else {
+            if (StringUtils.isNotEmpty(sortBy)) {
+                sortByAttributeName = sortBy;
+            } else if (!disableDefaultSorting) {
+                sortByAttributeName = DEFAULT_SORT_ATTRIBUTE_NAME;
+            }
 
-        if (endEntityType != null) {
             AtlasAttribute sortByAttribute = endEntityType.getAttribute(sortByAttributeName);
 
             if (sortByAttribute == null) {
+                if (StringUtils.isNotEmpty(sortBy)) {
+                    LOG.info("Invalid sortBy '{}' for type {}, using unsorted query",
+                            sortBy, endEntityType.getTypeName());
+                } else {
+                    LOG.info("Default sortBy '{}' not found for type {}, using unsorted query",
+                            DEFAULT_SORT_ATTRIBUTE_NAME, endEntityType.getTypeName());
+                }
                 sortByAttributeName = null;
                 sortOrder           = null;
-
-                if (StringUtils.isNotEmpty(sortBy)) {
-                    LOG.info("Invalid sortBy Attribute {} for entityType {}, Ignoring Sorting", sortBy, endEntityType.getTypeName());
-                } else {
-                    LOG.info("Invalid Default sortBy Attribute {} for entityType {}, Ignoring Sorting", DEFAULT_SORT_ATTRIBUTE_NAME, endEntityType.getTypeName());
-                }
             } else {
                 sortByAttributeName = sortByAttribute.getVertexPropertyName();
 
@@ -576,11 +583,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                     sortOrder = ASCENDING;
                 }
             }
-        } else {
-            sortOrder = null;
-
-            LOG.info("Invalid sortBy Attribute {}, Ignoring Sorting", sortBy);
         }
+
+        LOG.debug("searchRelatedEntities: guid={}, relation={}, sortBy={}, order={}, offset={}, limit={}, excludeDeleted={}",
+                guid, relation, sortByAttributeName, sortOrder, offset, limit, searchParameters.getExcludeDeletedEntities());
 
         //get relationship(end vertices) vertices
         GraphTraversal gt = graph.V(entityVertex.getId()).bothE(relation).otherV();
@@ -589,7 +595,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             gt.has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
         }
 
-        if (sortOrder != null) {
+        if (sortOrder != null && StringUtils.isNotEmpty(sortByAttributeName)) {
             if (sortOrder == ASCENDING) {
                 gt.order().by(sortByAttributeName, Order.asc);
             } else {
@@ -607,37 +613,39 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             if (v != null && v.property(Constants.GUID_PROPERTY_KEY).isPresent()) {
                 String            endVertexGuid = v.property(Constants.GUID_PROPERTY_KEY).value().toString();
                 AtlasVertex       vertex        = entityRetriever.getEntityVertex(endVertexGuid);
-                AtlasEntityHeader entity        = entityRetriever.toAtlasEntityHeader(vertex, searchParameters.getAttributes());
 
-                if (searchParameters.getIncludeClassificationAttributes()) {
-                    entity.setClassifications(entityRetriever.getAllClassifications(vertex));
+                if (vertex != null) {
+                    AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(vertex, searchParameters.getAttributes());
+
+                    if (searchParameters.getIncludeClassificationAttributes()) {
+                        entity.setClassifications(entityRetriever.getAllClassifications(vertex));
+                    }
+
+                    resultList.add(entity);
                 }
-
-                resultList.add(entity);
             }
         }
 
         ret.setEntities(resultList);
 
-        if (ret.getEntities() == null) {
-            ret.setEntities(new ArrayList<>());
-        }
-
-        //set approximate count
-        //state of the edge and endVertex will be same
+        // Set approximate count
         if (getApproximateCount) {
             Iterator<AtlasEdge> edges = GraphHelper.getAdjacentEdgesByLabel(entityVertex, AtlasEdgeDirection.BOTH, relation);
 
             if (searchParameters.getExcludeDeletedEntities()) {
-                List<AtlasEdge> edgeList = new ArrayList<>();
+                // Count edges where end vertex is ACTIVE (edges remain ACTIVE when only one end is deleted)
+                int activeCount = 0;
 
-                edges.forEachRemaining(edgeList::add);
+                while (edges.hasNext()) {
+                    AtlasEdge   edge      = edges.next();
+                    AtlasVertex endVertex = getOtherVertex(edge, entityVertex);
 
-                Predicate activePredicate = SearchPredicateUtil.getEQPredicateGenerator().generatePredicate(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name(), String.class);
+                    if (endVertex != null && GraphHelper.getStatus(endVertex) == ACTIVE) {
+                        activeCount++;
+                    }
+                }
 
-                CollectionUtils.filter(edgeList, activePredicate);
-
-                ret.setApproximateCount(edgeList.size());
+                ret.setApproximateCount(activeCount);
             } else {
                 ret.setApproximateCount(IteratorUtils.size(edges));
             }
@@ -646,6 +654,13 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         scrubSearchResults(ret);
 
         return ret;
+    }
+
+    private AtlasVertex getOtherVertex(AtlasEdge edge, AtlasVertex vertex) {
+        AtlasVertex outVertex = edge.getOutVertex();
+        AtlasVertex inVertex  = edge.getInVertex();
+
+        return StringUtils.equals(outVertex.getIdForDisplay(), vertex.getIdForDisplay()) ? inVertex : outVertex;
     }
 
     @Override

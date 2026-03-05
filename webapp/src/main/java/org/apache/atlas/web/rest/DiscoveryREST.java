@@ -55,6 +55,7 @@ import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -514,17 +515,21 @@ public class DiscoveryREST {
     /**
      * Relationship search to search for related entities satisfying the search parameters
      *
-     * @param guid Attribute name
-     * @param relation relationName
-     * @param attributes set of attributes in search result.
-     * @param sortByAttribute sort the result using this attribute name, default value is 'name'
-     * @param sortOrder sorting order
+     * @param guid entity GUID
+     * @param relation relationship name or attribute name
+     * @param attributes set of attributes to include in search result
+     * @param sortByAttribute attribute name to sort results by (if not specified and disableDefaultSorting=false, defaults to 'name')
+     * @param sortOrder sorting order (ASCENDING or DESCENDING)
+     * @param excludeDeletedEntities exclude deleted entities from results
+     * @param includeClassificationAttributes include classification attributes in result entities
+     * @param getApproximateCount calculate and return approximate count of total relationships
+     * @param disableDefaultSorting if true, disables default sorting by 'name' when sortByAttribute is not specified; allows unsorted results for better performance
      * @param limit limit the result set to only include the specified number of entries
      * @param offset start offset of the result set (useful for pagination)
      * @return Atlas search result
      * @throws AtlasBaseException
      * @HTTP 200 On successful search
-     * @HTTP 400 guid is not a valid entity type or attributeName is not a valid relationship attribute
+     * @HTTP 400 guid is not a valid entity type or relationship name is not a valid relationship attribute
      */
     @GET
     @Path("relationship")
@@ -537,6 +542,7 @@ public class DiscoveryREST {
             @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
             @QueryParam("includeClassificationAttributes") boolean includeClassificationAttributes,
             @QueryParam("getApproximateCount") boolean getApproximateCount,
+            @DefaultValue("false") @QueryParam("disableDefaultSorting") boolean disableDefaultSorting,
             @QueryParam("limit") int limit,
             @QueryParam("offset") int offset) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
@@ -547,7 +553,7 @@ public class DiscoveryREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.relatedEntitiesSearch(" + guid + ", " + relation + ", " + sortByAttribute + ", " + sortOrder + ", " + excludeDeletedEntities + ", " + getApproximateCount + ", " + limit + ", " + offset + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchRelatedEntities(" + guid + ", " + relation + ", " + sortByAttribute + ", " + sortOrder + ", " + excludeDeletedEntities + ", " + getApproximateCount + ", " + disableDefaultSorting + ", " + limit + ", " + offset + ")");
             }
 
             SearchParameters parameters = new SearchParameters();
@@ -560,7 +566,7 @@ public class DiscoveryREST {
             parameters.setOffset(offset);
             parameters.setIncludeClassificationAttributes(includeClassificationAttributes);
 
-            return discoveryService.searchRelatedEntities(guid, relation, getApproximateCount, parameters);
+            return discoveryService.searchRelatedEntities(guid, relation, getApproximateCount, parameters, disableDefaultSorting);
         } finally {
             AtlasPerfTracer.log(perf);
         }
