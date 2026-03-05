@@ -767,7 +767,10 @@ define(['require',
                         }
 
                         if (this.value.term) {
-                            this.ui.termLov.append('<option value="' + _.escape(this.value.term) + '" selected="selected">' + _.escape(this.value.term) + '</option>');
+                            if (this.ui.termLov.find('option[value="' + _.escape(this.value.term) + '"]').length === 0) {
+                                this.ui.termLov.append('<option value="' + _.escape(this.value.term) + '" selected="selected">' + _.escape(this.value.term) + '</option>');
+                            }
+                            this.ui.termLov.val(this.value.term);
                         }
                         if (this.ui.termLov.data('select2')) {
                             if (this.ui.termLov.val() !== this.value.term) {
@@ -791,7 +794,7 @@ define(['require',
             getSearchedTermGuid: function() {
                 var searchedTerm = this.ui.termLov.select2('val'),
                     searchedTermGuid = null;
-                if (searchedTerm) {
+                if (searchedTerm && this.glossaryTermArray && _.isArray(this.glossaryTermArray)) {
                     this.glossaryTermArray.find(function(obj) {
                         if (searchedTerm === obj.id)
                             searchedTermGuid = obj.guid;

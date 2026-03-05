@@ -103,7 +103,6 @@ define(["require", "d3", "d3-tip"], function(require, d3, d3Tip) {
                 .attr("class", "d3-tip")
                 .offset([10, 0])
                 .html(function(d) {
-                    console.log(d)
                     return '<table><thead><tr><td colspan="3"><strong class="x-value">' + d.value + '</strong></td></tr></thead><tbody><tr><td class="key">' + type + '</td><td class="value">' + d.count + '</td></tr></tbody></table>';
                 });
 

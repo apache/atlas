@@ -19,7 +19,7 @@
     "@babel/core": "7.16.7",
     "@babel/plugin-syntax-dynamic-import": "7.8.3",
     "@babel/preset-react": "7.16.7",
-    "axios": "1.13.1",
+    "axios": "1.13.5",
     "babel-loader": "8.0.6",
     "babel-plugin-lodash": "3.3.4",
     "babel-plugin-react-transform": "3.0.0",
@@ -28,7 +28,9 @@
     "react-github-btn": "1.0.5",
     "react-syntax-highlighter": "11.0.1",
     "reactstrap": "8.0.0",
-    "xml2js": "0.5.0"
+    "xml2js": "0.5.0",
+    "ws": "5.2.4",
+    "tslib": "2.8.1"
   },
   "dependencies": {
     "docz": "1.2.0",
@@ -42,7 +44,7 @@
     "braces": "3.0.3",
     "cross-spawn": "7.0.6",
     "ejs": "3.1.10",
-    "minimatch": "9.0.5",
+    "minimatch": "9.0.6",
     "prismjs": "1.30.0",
     "qs": "6.14.2",
     "loader-utils": "2.0.4",
@@ -55,6 +57,18 @@
     "trim-newlines": "3.0.1",
     "ip": "npm:neoip@2.1.0",
     "webpack-dev-middleware": "5.3.4",
-    "path-to-regexp": "3.3.0"
+    "path-to-regexp": "3.3.0",
+    "ws": "5.2.4",
+    "minimatch": "9.0.6",
+    "nth-check": "2.0.1",
+    "acorn": "6.4.1",
+    "lodash": "4.17.23",
+    "react-dev-utils": "11.0.4",
+    "@babel/runtime": "7.26.10",
+    "ajv": "6.12.6",
+    "bn.js": "5.2.3",
+    "micromatch": "4.0.8",
+    "yargs-parser": "13.1.2",
+    "js-yaml": "3.14.2"
   }
 }

@@ -345,7 +345,6 @@ define([
                         .append("g")
                         .attr("class", "node")
                         .on("mousedown", function() {
-                            console.log(d3.event);
                             d3.event.preventDefault();
                         })
                         .on("click", function(d) {

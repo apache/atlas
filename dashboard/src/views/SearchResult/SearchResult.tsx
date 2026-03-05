@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import { useCallback, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { getBasicSearchResult } from "../../api/apiMethods/searchApiMethod";
 import { useSearchParams } from "react-router-dom";
 import { FormControlLabel, FormGroup, IconButton, Stack } from "@mui/material";
@@ -159,18 +159,36 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
             : null
         }),
         ...(isEmpty(classificationParams || glossaryTypeParams) && {
-          tagFilters: !isEmpty(tagFilterParams)
-            ? searchParamsAPiQuery(tagFilterParams)
-            : null
+          tagFilters: (() => {
+            const raw = !isEmpty(tagFilterParams)
+              ? searchParamsAPiQuery(tagFilterParams)
+              : null;
+            const tagFilterObj = raw as {
+              condition?: string;
+              criterion?: { attributeName?: string }[];
+            } | null;
+            if (!tagFilterObj?.criterion?.length) return raw;
+            // Remove criterion with attributeName "tag" - classic UI incorrectly
+            // puts term filter here; term is sent via termName
+            const validCriterion = tagFilterObj.criterion.filter(
+              (c) => c.attributeName !== "tag"
+            );
+            if (validCriterion.length === 0) return null;
+            return { ...tagFilterObj, criterion: validCriterion };
+          })()
         }),
         ...(isEmpty(classificationParams || glossaryTypeParams) && {
-          attributes:
-            searchParams.get("attributes")?.split(",") != null
-              ? findUniqueValues(
-                  searchParams.get("attributes")?.split(",") || [],
-                  defaultColumnsName
-                )
-              : []
+          attributes: (() => {
+            const attrParam = searchParams.get("attributes");
+            if (!attrParam) return [];
+            const attrs = findUniqueValues(
+              attrParam.split(",").map((a: string) => a?.trim()).filter(Boolean),
+              defaultColumnsName
+            );
+            // Filter out classic UI column names that are not valid entity attributes
+            const invalidEntityAttrs = ["tag", "selected"];
+            return attrs.filter((a: string) => !invalidEntityAttrs.includes(a));
+          })()
         }),
         limit:
           searchParams.get("pageLimit") != null
@@ -287,6 +305,21 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
     },
     [updateTable, searchParams]
   );
+
+  const location = useLocation();
+
+  // Trigger refetch when URL search params change from custom filter click.
+  // Fixes first-click issue: ensures fetch runs after navigation with correct params.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (
+      location.pathname === "/search/searchResult" &&
+      location.search &&
+      params.get("isCF") === "true"
+    ) {
+      setUpdateTable(moment.now());
+    }
+  }, [location.search]);
 
   const refreshTable = () => {
     setUpdateTable(moment.now());

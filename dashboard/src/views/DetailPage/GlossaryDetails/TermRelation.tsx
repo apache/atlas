@@ -83,7 +83,6 @@ const TermRelation = ({ glossaryTypeData }: any) => {
       toastId.current = toast.success(`Attributes updated successfully`);
       handleCloseModal;
     } catch (error) {
-      console.log(`Error occur while updating Attributes`, error);
       serverError(error, toastId);
     }
   };

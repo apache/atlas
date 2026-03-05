@@ -203,7 +203,6 @@ const DialogShowMoreLess = ({
       !isEmpty(setUpdateTable) && setUpdateTable(moment.now());
     } catch (error) {
       setOpenModal(false);
-      console.log(`Error occur while removing ${colName}`, error);
       serverError(error, toastId);
     }
   };

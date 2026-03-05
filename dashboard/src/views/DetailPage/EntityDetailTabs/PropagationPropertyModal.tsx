@@ -151,7 +151,6 @@ const PropagationPropertyModal = ({
       setLoader(false);
     } catch (error) {
       setLoader(false);
-      console.log("Error while fetching relationship data", error);
     }
   };
 
@@ -407,7 +406,6 @@ const PropagationPropertyModal = ({
       refresh();
     } catch (error) {
       setLoading(false);
-      console.log("Error while fetching relationship data", error);
     }
   };
 

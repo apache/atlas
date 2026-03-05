@@ -124,11 +124,11 @@ const LineageLayout = ({
   }) => setNodeCount(event.target.value);
 
   const resetLineage = () => {
-    console.log("Reset lineage");
+    // Reset lineage handler
   };
 
   const saveAsPNG = () => {
-    console.log("Save as PNG");
+    // Save as PNG handler
   };
   return (
     <>

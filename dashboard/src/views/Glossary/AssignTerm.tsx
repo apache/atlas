@@ -351,10 +351,12 @@ const AssignTerm = ({
       }
 
       if (!isEmpty(entityGuid)) {
-        dispatchApi(fetchDetailPageData(entityGuid as string));
-
+        // Only fetch entity detail for entity pages; category uses glossaryDetails
+        if (gType !== "category") {
+          dispatchApi(fetchDetailPageData(entityGuid as string));
+        }
         if (!isEmpty(gType)) {
-          const params = { gtype: gType, entityGuid };
+          const params = { gtype: gType, guid: entityGuid };
           dispatchApi(fetchGlossaryData());
           dispatchApi(fetchGlossaryDetails(params));
         }
@@ -364,7 +366,6 @@ const AssignTerm = ({
         setRowSelection({});
       }
     } catch (error) {
-      console.log(`Error occur while assigningTerm`, error);
       serverError(error, toastId);
     }
   };
@@ -411,15 +412,16 @@ const AssignTerm = ({
         updateTable(moment.now());
       }
       if (!isEmpty(entityGuid)) {
-        let params: any = { gtype: gType, guid: entityGuid };
+        const params = { gtype: gType, guid: entityGuid };
         dispatchApi(fetchGlossaryDetails(params));
-        dispatchApi(fetchDetailPageData(entityGuid as string));
+        if (gType !== "category") {
+          dispatchApi(fetchDetailPageData(entityGuid as string));
+        }
       }
       toast.dismiss(toastId.current);
       toastId.current = toast.success(`Term is associated successfully`);
       onClose();
     } catch (error) {
-      console.log(`Error occur while assigningTerm`, error);
       serverError(error, toastId);
     }
   };

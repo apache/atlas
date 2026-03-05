@@ -32,7 +32,6 @@ function writeEmptyTeam() {
   }
   if (!fs.existsSync(OUTPUT_PATH)) {
     fs.writeFileSync(OUTPUT_PATH, JSON.stringify([], null, 2));
-    console.log(`✅ Created empty ${OUTPUT_PATH} (fallback)`);
   }
 }
 
@@ -94,7 +93,6 @@ function fetchXML(url) {
       }
 
       fs.writeFileSync(OUTPUT_PATH, JSON.stringify(output, null, 2));
-      console.log(`✅ Team data written to ${OUTPUT_PATH}`);
     });
   } catch (err) {
     console.warn("⚠️ Failed to fetch pom.xml (network unavailable):", err.message);
@@ -130,7 +128,6 @@ function fetchXML(url) {
           fs.mkdirSync(outputDir, { recursive: true });
         }
         fs.writeFileSync(OUTPUT_PATH, JSON.stringify(output, null, 2));
-        console.log(`✅ Team data written from local pom.xml to ${OUTPUT_PATH}`);
       });
     } catch (localErr) {
       console.warn("   Local pom.xml not found:", localErr.message);

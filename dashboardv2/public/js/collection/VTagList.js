@@ -44,7 +44,7 @@ define(['require',
                     }
 
                 } catch (e) {
-                    console.log(e);
+                    // Error handled
                 }
             },
         },
