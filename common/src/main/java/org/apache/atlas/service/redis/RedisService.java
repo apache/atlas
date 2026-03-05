@@ -12,6 +12,8 @@ public interface RedisService {
 
   void releaseDistributedLock(String key);
 
+  void forceReleaseDistributedLock(String key);
+
   void releaseDistributedLockV2(Lock lock, String key);
 
   String getValue(String key);

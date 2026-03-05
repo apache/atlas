@@ -206,8 +206,11 @@ public class BulkPurgeREST {
     }
 
     /**
-     * Cancel an in-progress bulk purge.
-     * The cancel is best-effort — some batches may complete after cancel is requested.
+     * Cancel an in-progress bulk purge. Works from any pod — writes cancel signal
+     * to Redis (durable, cross-pod) then attempts local in-memory cancel for instant
+     * effect if this pod is running the purge.
+     *
+     * <p>Best-effort: some batches may complete after cancel is requested.</p>
      *
      * @param requestId the requestId of the purge to cancel
      */
@@ -225,7 +228,6 @@ public class BulkPurgeREST {
                 throw new AtlasBaseException("Query parameter 'requestId' is required");
             }
 
-            // Authorization check
             AtlasAuthorizationUtils.verifyAccess(
                     new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_PURGE),
                     "Bulk purge cancel: " + requestId);
@@ -240,9 +242,35 @@ public class BulkPurgeREST {
                 LOG.info("BulkPurge: Cancel requested for requestId={}", requestId);
                 return Response.ok(response).build();
             } else {
-                response.put("message", "No active purge found with requestId: " + requestId);
+                response.put("message", "No purge request found with requestId: " + requestId);
                 return Response.status(Response.Status.NOT_FOUND).entity(response).build();
             }
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Get system-level status of the bulk purge coordinator.
+     * Shows active/queued/max coordinators and active purge summaries.
+     */
+    @GET
+    @Path("/system-status")
+    public Response getSystemStatus() throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "BulkPurgeREST.getSystemStatus()");
+            }
+
+            // Authorization check
+            AtlasAuthorizationUtils.verifyAccess(
+                    new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_PURGE),
+                    "Bulk purge system status");
+
+            Map<String, Object> status = bulkPurgeService.getSystemStatus();
+            return Response.ok(status).build();
         } finally {
             AtlasPerfTracer.log(perf);
         }

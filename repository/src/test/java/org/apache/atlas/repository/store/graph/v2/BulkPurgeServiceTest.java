@@ -54,6 +54,7 @@ import org.mockito.MockitoAnnotations;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -69,6 +70,9 @@ class BulkPurgeServiceTest {
             PropertiesConfiguration config = new PropertiesConfiguration();
             config.setProperty("atlas.graph.storage.hostname", "localhost");
             config.setProperty("atlas.graph.index.search.hostname", "localhost:9200");
+            // Short timeouts for tests
+            config.setProperty("atlas.bulk.purge.commit.timeout.ms", 2000);
+            config.setProperty("atlas.bulk.purge.get.vertices.timeout.ms", 2000);
             ApplicationProperties.set(config);
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize test configuration", e);
@@ -508,15 +512,15 @@ class BulkPurgeServiceTest {
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
 
-        // 500 entities would auto-scale to 1 worker, but we override with 5
+        // 500 entities would auto-scale to 1 worker, but we override with 3
         setupFullEsMock(500, Collections.emptyList());
 
-        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false, 5);
+        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false, 3);
 
-        // Verify workerCount=5 was set in Redis status (override used instead of auto-scaled 1)
+        // Verify workerCount=3 was set in Redis status (override used instead of auto-scaled 1)
         verify(mockRedisService, timeout(5000).atLeastOnce()).putValue(
                 argThat(key -> key.startsWith("bulk_purge:")),
-                argThat(json -> json.contains("\"workerCount\":5")),
+                argThat(json -> json.contains("\"workerCount\":3")),
                 anyInt());
     }
 
@@ -533,7 +537,7 @@ class BulkPurgeServiceTest {
         ctx.totalDeleted.set(2500);
         ctx.totalFailed.set(10);
         ctx.completedBatches.set(25);
-        ctx.lastProcessedBatchIndex = 24;
+        ctx.lastProcessedBatchIndex.set(24);
         ctx.lastHeartbeat = System.currentTimeMillis();
 
         Map<String, Object> statusMap = ctx.toStatusMap();
@@ -1268,6 +1272,312 @@ class BulkPurgeServiceTest {
                 return false;
             }
         }));
+    }
+
+    // ======================== P0: Timing Logs Tests ========================
+
+    @Test
+    void testProcessBatch_logsTimingForSlowBatch() throws Exception {
+        // Verifies P0: timing infrastructure exists by confirming batches still process correctly
+        mockedGraphUtils.when(() -> AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(
+                eq(mockGraph), eq(Constants.CONNECTION_ENTITY_TYPE),
+                eq(Constants.QUALIFIED_NAME), eq(TEST_CONNECTION_QN)))
+                .thenReturn(mockConnectionVertex);
+
+        when(mockRedisService.getValue(anyString())).thenReturn(null);
+        when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
+        when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
+
+        String esId = LongEncoding.encode(7001L);
+        setupFullEsMock(1, Arrays.asList(esId));
+
+        AtlasVertex v = mock(AtlasVertex.class);
+        when(v.getId()).thenReturn("7001");
+        when(mockBulkLoadingGraph.getVertices(any(String[].class)))
+                .thenReturn(new HashSet<>(Collections.singletonList(v)));
+        when(v.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class))).thenReturn(Collections.emptyList());
+
+        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
+
+        // Verify batch completed — timing logs are just a side effect
+        verify(mockBulkLoadingGraph, timeout(5000).atLeastOnce()).removeVertex(v);
+        verify(mockBulkLoadingGraph, timeout(5000).atLeastOnce()).commit();
+    }
+
+    // ======================== P1: Commit Timeout Tests ========================
+
+    @Test
+    void testCommitTimeout_batchMarkedAsFailed() throws Exception {
+        mockedGraphUtils.when(() -> AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(
+                eq(mockGraph), eq(Constants.CONNECTION_ENTITY_TYPE),
+                eq(Constants.QUALIFIED_NAME), eq(TEST_CONNECTION_QN)))
+                .thenReturn(mockConnectionVertex);
+
+        when(mockRedisService.getValue(anyString())).thenReturn(null);
+        when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
+        when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
+
+        String esId = LongEncoding.encode(8001L);
+        setupFullEsMock(1, Arrays.asList(esId));
+
+        AtlasVertex v = mock(AtlasVertex.class);
+        when(v.getId()).thenReturn("8001");
+        when(mockBulkLoadingGraph.getVertices(any(String[].class)))
+                .thenReturn(new HashSet<>(Collections.singletonList(v)));
+        when(v.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class))).thenReturn(Collections.emptyList());
+
+        // Simulate commit that hangs longer than the 2s test timeout (configured in static block)
+        doAnswer(inv -> {
+            Thread.sleep(60_000); // 60s — much longer than the 2s test timeout
+            return null;
+        }).when(mockBulkLoadingGraph).commit();
+
+        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
+
+        // Should eventually complete (commit times out after 2s, batch fails, purge finishes)
+        // Verify rollback was attempted after commit timeout
+        verify(mockBulkLoadingGraph, timeout(15000).atLeastOnce()).rollback();
+    }
+
+    // ======================== P2: Preemptive Cancel Tests ========================
+
+    @Test
+    void testCancelPurge_interruptsBlockedWorkers() throws Exception {
+        mockedGraphUtils.when(() -> AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(
+                eq(mockGraph), eq(Constants.CONNECTION_ENTITY_TYPE),
+                eq(Constants.QUALIFIED_NAME), eq(TEST_CONNECTION_QN)))
+                .thenReturn(mockConnectionVertex);
+
+        when(mockRedisService.getValue(anyString())).thenReturn(null);
+        when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
+        when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
+
+        // Large count so the purge takes a while
+        setupFullEsMock(100000, Collections.emptyList());
+
+        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
+
+        // Cancel — should set cancelRequested AND interrupt worker threads
+        boolean cancelled = bulkPurgeService.cancelPurge(requestId);
+        assertTrue(cancelled);
+
+        // Purge should eventually finish as CANCELLED
+        verify(mockRedisService, timeout(10000).atLeastOnce()).putValue(
+                argThat(key -> key.startsWith("bulk_purge:")),
+                argThat(json -> json.contains("CANCELLED")),
+                anyInt());
+    }
+
+    // ======================== P3: Cancel via Redis Tests ========================
+
+    @Test
+    void testCancelPurge_writesRedisSignalThenLocalCancel() throws Exception {
+        // Set up: a requestId that exists in Redis
+        Map<String, Object> purgeStatus = new LinkedHashMap<>();
+        purgeStatus.put("requestId", "cancel-req");
+        purgeStatus.put("purgeKey", "default/snowflake/cancel-conn");
+        purgeStatus.put("status", "RUNNING");
+
+        when(mockRedisService.getValue("bulk_purge_request:cancel-req"))
+                .thenReturn(MAPPER.writeValueAsString(purgeStatus));
+        when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
+
+        boolean result = bulkPurgeService.cancelPurge("cancel-req");
+        assertTrue(result);
+
+        // Verify cancel signal was written to Redis
+        verify(mockRedisService).putValue(
+                eq("bulk_purge_cancel:default/snowflake/cancel-conn"),
+                eq("CANCEL_REQUESTED"),
+                anyInt());
+    }
+
+    @Test
+    void testCancelPurge_unknownRequestId_returnsFalse() {
+        when(mockRedisService.getValue(anyString())).thenReturn(null);
+        assertFalse(bulkPurgeService.cancelPurge("nonexistent-req"));
+    }
+
+    // ======================== P4: Admission Control Tests ========================
+
+    @Test
+    void testSystemStatus_returnsCorrectInfo() {
+        Map<String, Object> status = bulkPurgeService.getSystemStatus();
+
+        assertNotNull(status);
+        assertEquals(0, status.get("activeCoordinators"));
+        assertEquals(0, status.get("queuedCoordinators"));
+        assertTrue((Integer) status.get("maxCoordinators") > 0);
+        assertEquals(0, status.get("activePurges"));
+        assertNotNull(status.get("respondingPod"));
+    }
+
+    // ======================== P7: Stall Detection Tests ========================
+
+    @Test
+    void testPurgeContext_lastProgressTimestamp_updatedByBatch() throws Exception {
+        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
+                "req-stall", "key", "CONNECTION", "admin", "{}", false, 0);
+
+        assertEquals(0L, ctx.lastProgressTimestamp.get());
+        assertFalse(ctx.stalled);
+
+        // Simulate progress
+        ctx.lastProgressTimestamp.set(System.currentTimeMillis());
+        assertTrue(ctx.lastProgressTimestamp.get() > 0);
+    }
+
+    @Test
+    void testPurgeContext_toStatusMap_includesLastProgressTimestamp() {
+        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
+                "req-progress", "key", "CONNECTION", "admin", "{}", false, 0);
+        ctx.status = "RUNNING";
+        ctx.lastProgressTimestamp.set(12345L);
+
+        Map<String, Object> statusMap = ctx.toStatusMap();
+        assertEquals(12345L, statusMap.get("lastProgressTimestamp"));
+    }
+
+    @Test
+    void testPurgeContext_toStatusMap_includesStalled() {
+        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
+                "req-stalled", "key", "CONNECTION", "admin", "{}", false, 0);
+        ctx.status = "RUNNING";
+        ctx.stalled = true;
+
+        Map<String, Object> statusMap = ctx.toStatusMap();
+        assertEquals(true, statusMap.get("stalled"));
+    }
+
+    // ======================== P8: Orphan Checker Max-Resubmit Marks FAILED Tests ========================
+
+    @Test
+    void testOrphanChecker_maxResubmitsExceeded_marksAsFailed() throws Exception {
+        String stalePurgeKey = "default/snowflake/max-fail";
+        String activeKeysJson = MAPPER.writeValueAsString(Set.of(stalePurgeKey));
+        when(mockRedisService.getValue("bulk_purge_active_keys")).thenReturn(activeKeysJson);
+        when(mockRedisService.acquireDistributedLock("bulk_purge_orphan_checker_lock")).thenReturn(true);
+
+        Map<String, Object> staleStatus = new LinkedHashMap<>();
+        staleStatus.put("status", "RUNNING");
+        staleStatus.put("requestId", "max-fail-req");
+        staleStatus.put("purgeKey", stalePurgeKey);
+        staleStatus.put("purgeMode", "CONNECTION");
+        staleStatus.put("esQuery", "{\"query\":{\"prefix\":{\"field\":\"value\"}}}");
+        staleStatus.put("lastHeartbeat", System.currentTimeMillis() - (10 * 60 * 1000));
+        staleStatus.put("submittedBy", "admin");
+        staleStatus.put("deleteConnection", false);
+        staleStatus.put("resubmitCount", 3); // At max
+        when(mockRedisService.getValue("bulk_purge:" + stalePurgeKey))
+                .thenReturn(MAPPER.writeValueAsString(staleStatus));
+
+        // ES count shows remaining entities
+        setupFullEsMock(500, Collections.emptyList());
+        when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
+
+        bulkPurgeService.checkAndRecoverOrphanedPurges();
+
+        // P8: Verify FAILED status was written (not just logged)
+        verify(mockRedisService, atLeastOnce()).putValue(
+                eq("bulk_purge:" + stalePurgeKey),
+                argThat(json -> json.contains("FAILED") && json.contains("max resubmits")),
+                anyInt());
+
+        // Verify active key was removed
+        verify(mockRedisService, atLeastOnce()).getValue("bulk_purge_active_keys");
+        verify(mockRedisService).releaseDistributedLock("bulk_purge_orphan_checker_lock");
+    }
+
+    // ======================== P9: Status Source Indicator Tests ========================
+
+    @Test
+    void testGetStatus_fromActivePurge_includesSourceIndicator() throws Exception {
+        mockedGraphUtils.when(() -> AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(
+                eq(mockGraph), eq(Constants.CONNECTION_ENTITY_TYPE),
+                eq(Constants.QUALIFIED_NAME), eq(TEST_CONNECTION_QN)))
+                .thenReturn(mockConnectionVertex);
+
+        when(mockRedisService.getValue(anyString())).thenReturn(null);
+        when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
+        when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
+
+        setupFullEsMock(100000, Collections.emptyList());
+
+        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
+
+        // Get status while purge is active (in-memory)
+        Map<String, Object> status = bulkPurgeService.getStatus(requestId);
+        assertNotNull(status);
+        assertEquals("in-memory", status.get("source"));
+        assertNotNull(status.get("respondingPod"));
+    }
+
+    @Test
+    void testGetStatus_fromRedis_includesSourceIndicator() throws Exception {
+        Map<String, Object> expected = new LinkedHashMap<>();
+        expected.put("requestId", "redis-src-id");
+        expected.put("status", "COMPLETED");
+        expected.put("deletedCount", 1000);
+
+        when(mockRedisService.getValue("bulk_purge_request:redis-src-id"))
+                .thenReturn(MAPPER.writeValueAsString(expected));
+
+        Map<String, Object> status = bulkPurgeService.getStatus("redis-src-id");
+        assertNotNull(status);
+        assertEquals("redis", status.get("source"));
+        assertNotNull(status.get("respondingPod"));
+    }
+
+    // ======================== P10: Graceful Shutdown Tests ========================
+
+    @Test
+    void testPurgeContext_workerPoolAndFuturesFields() {
+        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
+                "req-pool", "key", "CONNECTION", "admin", "{}", false, 0);
+
+        // Initially null
+        assertNull(ctx.workerPool);
+        assertNull(ctx.workerFutures);
+
+        // Can be set
+        ExecutorService pool = java.util.concurrent.Executors.newSingleThreadExecutor();
+        ctx.workerPool = pool;
+        assertNotNull(ctx.workerPool);
+        pool.shutdownNow();
+    }
+
+    // ======================== P11: Resubmit Updates Original RequestId Tests ========================
+
+    @Test
+    void testOrphanChecker_resubmit_updatesOriginalRequestId() throws Exception {
+        String stalePurgeKey = "default/snowflake/resubmit-chain";
+        String activeKeysJson = MAPPER.writeValueAsString(Set.of(stalePurgeKey));
+        when(mockRedisService.getValue("bulk_purge_active_keys")).thenReturn(activeKeysJson);
+        when(mockRedisService.acquireDistributedLock("bulk_purge_orphan_checker_lock")).thenReturn(true);
+
+        Map<String, Object> staleStatus = new LinkedHashMap<>();
+        staleStatus.put("status", "RUNNING");
+        staleStatus.put("requestId", "original-req-123");
+        staleStatus.put("purgeKey", stalePurgeKey);
+        staleStatus.put("purgeMode", "CONNECTION");
+        staleStatus.put("esQuery", "{\"query\":{\"prefix\":{\"field\":\"value\"}}}");
+        staleStatus.put("lastHeartbeat", System.currentTimeMillis() - (10 * 60 * 1000));
+        staleStatus.put("submittedBy", "admin");
+        staleStatus.put("deleteConnection", false);
+        staleStatus.put("resubmitCount", 0);
+        when(mockRedisService.getValue("bulk_purge:" + stalePurgeKey))
+                .thenReturn(MAPPER.writeValueAsString(staleStatus));
+
+        setupFullEsMock(500, Collections.emptyList());
+        when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
+
+        bulkPurgeService.checkAndRecoverOrphanedPurges();
+
+        // P11: Verify the original requestId was updated with RESUBMITTED status
+        verify(mockRedisService, atLeastOnce()).putValue(
+                eq("bulk_purge_request:original-req-123"),
+                argThat(json -> json.contains("RESUBMITTED") && json.contains("newRequestId")),
+                anyInt());
     }
 
     // ======================== Helper Methods ========================

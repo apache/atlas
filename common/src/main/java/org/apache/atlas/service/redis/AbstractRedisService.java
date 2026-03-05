@@ -171,6 +171,26 @@ public abstract class AbstractRedisService implements RedisService {
     }
 
     @Override
+    public void forceReleaseDistributedLock(String key) {
+        try {
+            RLock lock = redisClient.getFairLock(key);
+            if (lock.isLocked()) {
+                lock.forceUnlock();
+                getLogger().info("Force-released distributed lock for {}", key);
+            }
+        } catch (Exception e) {
+            getLogger().error("Failed to force-release distributed lock for {}", key, e);
+        } finally {
+            try {
+                cleanupLockMonitoring(key);
+            } catch (Exception ex) {
+                getLogger().warn("Failed to cleanup lock monitoring for {}", key, ex);
+            }
+            keyLockMap.remove(key);
+        }
+    }
+
+    @Override
     public void releaseDistributedLockV2(Lock lock, String key) {
         try {
             if (lock != null) {

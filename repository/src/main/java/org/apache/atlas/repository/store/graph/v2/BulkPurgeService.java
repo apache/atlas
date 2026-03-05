@@ -27,7 +27,6 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.notification.task.AtlasDistributedTaskNotificationSender;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.graph.IAtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -59,9 +58,11 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_REFRESH_PROPAGATION;
@@ -76,10 +77,26 @@ public class BulkPurgeService {
     private static final String REDIS_KEY_PREFIX = "bulk_purge:";
     private static final String REDIS_LOCK_PREFIX = "bulk_purge_lock:";
     private static final String REDIS_ACTIVE_PURGE_KEYS = "bulk_purge_active_keys";
+    private static final String REDIS_CANCEL_PREFIX = "bulk_purge_cancel:";
     private static final String PURGE_MODE_CONNECTION = "CONNECTION";
     private static final String PURGE_MODE_QN_PREFIX = "QUALIFIED_NAME_PREFIX";
     private static final int MIN_QN_PREFIX_LENGTH = 10;
+    private static final long BATCH_WARN_THRESHOLD_MS = 30_000;
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final String HOSTNAME = getHostname();
+
+    // Internal defaults (not externally configurable — change here if needed)
+    private static final int    COORDINATOR_POOL_SIZE           = 2;
+    private static final int    ES_PAGE_SIZE                    = 5000;
+    private static final int    COMMIT_MAX_RETRIES              = 3;
+    private static final long   COMMIT_TIMEOUT_MS               = 120_000;
+    private static final long   GET_VERTICES_TIMEOUT_MS         = 60_000;
+    private static final int    HEARTBEAT_INTERVAL_MS           = 30_000;
+    private static final int    SCROLL_TIMEOUT_MINUTES          = 30;
+    private static final long   STALL_THRESHOLD_MS              = 900_000; // 15 minutes
+    private static final int    INCREMENTAL_ES_CLEANUP_INTERVAL = 50;
+    private static final long   ORPHAN_CHECK_INTERVAL_MS        = 300_000;
+    private static final int    ORPHAN_MAX_RESUBMITS            = 3;
 
     private final AtlasGraph graph;
     private final IAtlasGraphProvider graphProvider;
@@ -88,7 +105,10 @@ public class BulkPurgeService {
     private final AtlasDistributedTaskNotificationSender taskNotificationSender;
     private final TaskManagement taskManagement;
 
-    private final ExecutorService coordinatorExecutor;
+    private final ThreadPoolExecutor coordinatorExecutor;
+
+    // Dedicated executor for commit/getVertices timeout enforcement
+    private final ExecutorService timeoutExecutor;
 
     // Lazily initialized ES client (cached for reuse across calls)
     private volatile RestClient esClient;
@@ -115,10 +135,18 @@ public class BulkPurgeService {
         this.taskNotificationSender = taskNotificationSender;
         this.taskManagement = taskManagement;
 
-        this.coordinatorExecutor = Executors.newFixedThreadPool(2,
+        this.coordinatorExecutor = new ThreadPoolExecutor(
+                COORDINATOR_POOL_SIZE, COORDINATOR_POOL_SIZE, 0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(COORDINATOR_POOL_SIZE),  // bounded queue = pool size
                 new ThreadFactoryBuilder()
                         .setDaemon(true)
                         .setNameFormat("bulk-purge-coordinator-%d")
+                        .build());
+
+        this.timeoutExecutor = Executors.newCachedThreadPool(
+                new ThreadFactoryBuilder()
+                        .setDaemon(true)
+                        .setNameFormat("bulk-purge-timeout-%d")
                         .build());
     }
 
@@ -129,23 +157,42 @@ public class BulkPurgeService {
             return;
         }
 
-        long intervalMs = AtlasConfiguration.BULK_PURGE_ORPHAN_CHECK_INTERVAL_MS.getLong();
-
         orphanCheckerExecutor = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder().setDaemon(true)
                         .setNameFormat("bulk-purge-orphan-checker").build());
 
         orphanCheckerExecutor.scheduleAtFixedRate(
                 this::checkAndRecoverOrphanedPurges,
-                intervalMs, intervalMs, TimeUnit.MILLISECONDS);
+                ORPHAN_CHECK_INTERVAL_MS, ORPHAN_CHECK_INTERVAL_MS, TimeUnit.MILLISECONDS);
 
-        LOG.info("BulkPurge: Orphan checker started with interval={}ms", intervalMs);
+        LOG.info("BulkPurge: Orphan checker started with interval={}ms", ORPHAN_CHECK_INTERVAL_MS);
     }
 
     @PreDestroy
-    private void stopOrphanChecker() {
+    private void shutdown() {
+        LOG.info("BulkPurge: Shutting down — marking {} active purges as FAILED", activePurges.size());
+
+        // Mark all in-memory active purges as FAILED in Redis before shutdown
+        for (Map.Entry<String, PurgeContext> entry : activePurges.entrySet()) {
+            try {
+                PurgeContext ctx = entry.getValue();
+                ctx.status = "FAILED";
+                ctx.error = "Pod shutdown";
+                writeRedisStatus(ctx);
+            } catch (Exception e) {
+                LOG.warn("BulkPurge: Failed to mark purge {} as FAILED during shutdown", entry.getKey(), e);
+            }
+        }
+
         if (orphanCheckerExecutor != null) {
             orphanCheckerExecutor.shutdownNow();
+        }
+        coordinatorExecutor.shutdownNow();
+        timeoutExecutor.shutdownNow();
+        try {
+            coordinatorExecutor.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -249,16 +296,21 @@ public class BulkPurgeService {
         // Search active purges first
         for (PurgeContext ctx : activePurges.values()) {
             if (ctx.requestId.equals(requestId)) {
-                return ctx.toStatusMap();
+                Map<String, Object> status = ctx.toStatusMap();
+                status.put("source", "in-memory");
+                status.put("respondingPod", HOSTNAME);
+                return status;
             }
         }
 
         // Check Redis for completed/failed purges
-        // Scan all known keys (in production, store requestId -> purgeKey mapping)
         String redisValue = redisService.getValue("bulk_purge_request:" + requestId);
         if (redisValue != null) {
             try {
-                return MAPPER.readValue(redisValue, Map.class);
+                Map<String, Object> status = MAPPER.readValue(redisValue, Map.class);
+                status.put("source", "redis");
+                status.put("respondingPod", HOSTNAME);
+                return status;
             } catch (Exception e) {
                 LOG.warn("Failed to parse purge status from Redis for requestId={}", requestId, e);
             }
@@ -268,17 +320,74 @@ public class BulkPurgeService {
     }
 
     /**
-     * Cancel an in-progress purge.
+     * Cancel an in-progress purge. Interrupts worker threads if they are blocked.
+     */
+    /**
+     * Cancel a purge by requestId. Writes cancel signal to Redis first (durable,
+     * works cross-pod), then attempts local in-memory cancel for instant effect
+     * if this pod happens to be running the purge.
      */
     public boolean cancelPurge(String requestId) {
-        for (PurgeContext ctx : activePurges.values()) {
-            if (ctx.requestId.equals(requestId)) {
-                LOG.info("BulkPurge: Cancel requested for requestId={}, purgeKey={}", requestId, ctx.purgeKey);
-                ctx.cancelRequested = true;
-                return true;
-            }
+        // Look up purgeKey from Redis — this is the durable source of truth
+        String redisValue = redisService.getValue("bulk_purge_request:" + requestId);
+        if (redisValue == null) {
+            return false;
         }
-        return false;
+
+        try {
+            JsonNode status = MAPPER.readTree(redisValue);
+            String purgeKey = status.has("purgeKey") ? status.get("purgeKey").asText() : null;
+            if (purgeKey == null) {
+                return false;
+            }
+
+            // 1. Redis first — ensures durability even if this pod crashes
+            int redisTtl = AtlasConfiguration.BULK_PURGE_REDIS_TTL_SECONDS.getInt();
+            redisService.putValue(REDIS_CANCEL_PREFIX + purgeKey, "CANCEL_REQUESTED", redisTtl);
+            LOG.info("BulkPurge: Cancel signal written to Redis for requestId={}, purgeKey={}", requestId, purgeKey);
+
+            // 2. Local cancel — instant effect if this pod is running the purge
+            for (PurgeContext ctx : activePurges.values()) {
+                if (ctx.requestId.equals(requestId)) {
+                    ctx.cancelRequested = true;
+                    interruptWorkers(ctx);
+                    LOG.info("BulkPurge: Local cancel applied for requestId={}, purgeKey={}", requestId, purgeKey);
+                    break;
+                }
+            }
+
+            return true;
+        } catch (Exception e) {
+            LOG.error("BulkPurge: Failed to cancel purge for requestId={}", requestId, e);
+            return false;
+        }
+    }
+
+    /**
+     * Get system-level information about the bulk purge coordinator.
+     */
+    public Map<String, Object> getSystemStatus() {
+        Map<String, Object> status = new LinkedHashMap<>();
+        status.put("activeCoordinators", coordinatorExecutor.getActiveCount());
+        status.put("queuedCoordinators", coordinatorExecutor.getQueue().size());
+        status.put("maxCoordinators", coordinatorExecutor.getMaximumPoolSize());
+        status.put("activePurges", activePurges.size());
+        status.put("respondingPod", HOSTNAME);
+
+        List<Map<String, Object>> purgeList = new ArrayList<>();
+        for (PurgeContext ctx : activePurges.values()) {
+            Map<String, Object> purgeInfo = new LinkedHashMap<>();
+            purgeInfo.put("requestId", ctx.requestId);
+            purgeInfo.put("purgeKey", ctx.purgeKey);
+            purgeInfo.put("status", ctx.status);
+            purgeInfo.put("currentPhase", ctx.currentPhase);
+            purgeInfo.put("deletedCount", ctx.totalDeleted.get());
+            purgeInfo.put("completedBatches", ctx.completedBatches.get());
+            purgeList.add(purgeInfo);
+        }
+        status.put("purges", purgeList);
+
+        return status;
     }
 
     // ======================== PRIVATE METHODS ========================
@@ -323,8 +432,18 @@ public class BulkPurgeService {
         activePurges.put(purgeKey, ctx);
         addToActivePurgeKeys(purgeKey);
 
-        // Submit to coordinator executor
-        coordinatorExecutor.submit(() -> executePurge(ctx, lockKey, redisKey));
+        // Submit to coordinator executor (bounded queue — rejects if at capacity)
+        try {
+            coordinatorExecutor.submit(() -> executePurge(ctx, lockKey, redisKey));
+        } catch (RejectedExecutionException e) {
+            activePurges.remove(purgeKey);
+            removeFromActivePurgeKeys(purgeKey);
+            ctx.status = "FAILED";
+            ctx.error = "System at capacity — all coordinator slots are busy. Retry later.";
+            writeRedisStatus(ctx);
+            throw new AtlasBaseException("Bulk purge system at capacity (" +
+                    coordinatorExecutor.getMaximumPoolSize() + " concurrent purges). Please retry later.");
+        }
 
         LOG.info("BulkPurge: Submitted requestId={}, purgeKey={}, purgeMode={}, submittedBy={}",
                 requestId, purgeKey, purgeMode, submittedBy);
@@ -360,18 +479,35 @@ public class BulkPurgeService {
             ctx.lastHeartbeat = System.currentTimeMillis();
             writeRedisStatus(ctx);
 
-            // Start heartbeat
+            // Start heartbeat with stall detection (P7) and force-cancel check (P3)
             heartbeatExecutor = Executors.newSingleThreadScheduledExecutor(
                     new ThreadFactoryBuilder().setDaemon(true).setNameFormat("bulk-purge-heartbeat-" + ctx.purgeKey).build());
-            int heartbeatInterval = AtlasConfiguration.BULK_PURGE_HEARTBEAT_INTERVAL_MS.getInt();
             heartbeatExecutor.scheduleAtFixedRate(() -> {
                 try {
                     ctx.lastHeartbeat = System.currentTimeMillis();
+
+                    // P7: Progress-based stall detection
+                    long lastProgress = ctx.lastProgressTimestamp.get();
+                    if (lastProgress > 0 && (System.currentTimeMillis() - lastProgress) > STALL_THRESHOLD_MS) {
+                        LOG.error("BulkPurge: STALLED — no progress for {}ms, purgeKey={}, completedBatches={}",
+                                System.currentTimeMillis() - lastProgress, ctx.purgeKey, ctx.completedBatches.get());
+                        ctx.stalled = true;
+                    }
+
+                    // P3: Check Redis for force-cancel signal from another pod
+                    String cancelSignal = redisService.getValue(REDIS_CANCEL_PREFIX + ctx.purgeKey);
+                    if ("CANCEL_REQUESTED".equals(cancelSignal)) {
+                        LOG.info("BulkPurge: Force-cancel signal detected via Redis for purgeKey={}", ctx.purgeKey);
+                        ctx.cancelRequested = true;
+                        interruptWorkers(ctx);
+                        redisService.removeValue(REDIS_CANCEL_PREFIX + ctx.purgeKey);
+                    }
+
                     writeRedisStatus(ctx);
                 } catch (Exception e) {
                     LOG.warn("BulkPurge: Heartbeat failed for {}", ctx.purgeKey, e);
                 }
-            }, heartbeatInterval, heartbeatInterval, TimeUnit.MILLISECONDS);
+            }, HEARTBEAT_INTERVAL_MS, HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
 
             long startTime = System.currentTimeMillis();
             ctx.currentPhase = "VERTEX_DELETION";
@@ -387,24 +523,48 @@ public class BulkPurgeService {
 
                 ctx.currentPhase = "ES_CLEANUP";
                 writeRedisStatus(ctx);
-                esCleanup(ctx);
-                LOG.info("BulkPurge: Phase ES_CLEANUP completed in {}ms for purgeKey={}",
-                        System.currentTimeMillis() - phaseStart, ctx.purgeKey);
+
+                // Retry ES cleanup up to 3 times if entities remain after delete_by_query.
+                // The first attempt may fail due to transient ES issues (circuit breaker,
+                // concurrent load, shard relocation) — the exception is caught inside esCleanup().
+                int esCleanupMaxRetries = 3;
+                long remainingAfterEsCleanup = -1;
+                for (int esAttempt = 1; esAttempt <= esCleanupMaxRetries; esAttempt++) {
+                    esCleanup(ctx);
+                    LOG.info("BulkPurge: ES cleanup attempt {}/{} completed in {}ms for purgeKey={}",
+                            esAttempt, esCleanupMaxRetries, System.currentTimeMillis() - phaseStart, ctx.purgeKey);
+
+                    try {
+                        remainingAfterEsCleanup = getEntityCount(ctx.esQuery);
+                    } catch (Exception e) {
+                        LOG.warn("BulkPurge: ES verification count failed on attempt {} for purgeKey={}",
+                                esAttempt, ctx.purgeKey, e);
+                        remainingAfterEsCleanup = -1;
+                    }
+
+                    if (remainingAfterEsCleanup <= 0) {
+                        break;
+                    }
+
+                    if (esAttempt < esCleanupMaxRetries) {
+                        LOG.warn("BulkPurge: {} entities remain after ES cleanup attempt {} for purgeKey={}, retrying...",
+                                remainingAfterEsCleanup, esAttempt, ctx.purgeKey);
+                        try { Thread.sleep(2000L * esAttempt); } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                    }
+                }
 
                 ctx.currentPhase = "ES_VERIFICATION";
                 writeRedisStatus(ctx);
-                try {
-                    long remainingAfterEsCleanup = getEntityCount(ctx.esQuery);
-                    ctx.remainingAfterCleanup = remainingAfterEsCleanup;
-                    if (remainingAfterEsCleanup > 0) {
-                        LOG.error("BulkPurge: {} entities remain after ES cleanup for purgeKey={}",
-                                remainingAfterEsCleanup, ctx.purgeKey);
-                        ctx.error = remainingAfterEsCleanup + " entities remain after cleanup";
-                    } else {
-                        LOG.info("BulkPurge: Verification passed — 0 entities remaining for purgeKey={}", ctx.purgeKey);
-                    }
-                } catch (Exception e) {
-                    LOG.warn("BulkPurge: Verification count failed for purgeKey={}", ctx.purgeKey, e);
+                ctx.remainingAfterCleanup = Math.max(0, remainingAfterEsCleanup);
+                if (remainingAfterEsCleanup > 0) {
+                    LOG.error("BulkPurge: {} entities remain after all ES cleanup attempts for purgeKey={}",
+                            remainingAfterEsCleanup, ctx.purgeKey);
+                    ctx.error = remainingAfterEsCleanup + " entities remain after cleanup";
+                } else {
+                    LOG.info("BulkPurge: Verification passed — 0 entities remaining for purgeKey={}", ctx.purgeKey);
                 }
 
                 phaseStart = System.currentTimeMillis();
@@ -466,6 +626,13 @@ public class BulkPurgeService {
             if ("COMPLETED".equals(ctx.status) || "CANCELLED".equals(ctx.status) || "FAILED".equals(ctx.status)) {
                 removeFromActivePurgeKeys(ctx.purgeKey);
             }
+            // Clean up any stale cancel signal so a re-triggered purge for the
+            // same purgeKey does not get immediately cancelled.
+            try {
+                redisService.removeValue(REDIS_CANCEL_PREFIX + ctx.purgeKey);
+            } catch (Exception e) {
+                LOG.warn("BulkPurge: Failed to remove cancel signal for {}", ctx.purgeKey, e);
+            }
             try {
                 redisService.releaseDistributedLock(lockKey);
             } catch (Exception e) {
@@ -481,8 +648,6 @@ public class BulkPurgeService {
      */
     private void streamAndDelete(PurgeContext ctx) throws Exception {
         int batchSize = AtlasConfiguration.BULK_PURGE_BATCH_SIZE.getInt();
-        int esPageSize = AtlasConfiguration.BULK_PURGE_ES_PAGE_SIZE.getInt();
-        int scrollTimeoutMin = AtlasConfiguration.BULK_PURGE_SCROLL_TIMEOUT_MINUTES.getInt();
 
         // Determine worker count
         int configuredWorkerCount = AtlasConfiguration.BULK_PURGE_WORKER_COUNT.getInt();
@@ -509,40 +674,61 @@ public class BulkPurgeService {
         ctx.workerCount = workerCount;
         writeRedisStatus(ctx);
 
-        // Create bulk-loading graph: disables ConsistentKeyLocker to eliminate
-        // lock contention between workers. Safe for connection purge because all
-        // vertices within the connection are being deleted.
-        AtlasGraph workerGraph = getBulkLoadingGraph();
-        LOG.info("BulkPurge: Created bulk-loading graph for purgeKey={}", ctx.purgeKey);
-
         // Create batch queue with backpressure
         BlockingQueue<BatchWork> batchQueue = new LinkedBlockingQueue<>(workerCount * 2);
 
-        // Create worker pool
+        // Create worker pool — stored in PurgeContext for cancel/interrupt support (P2)
         ExecutorService workerPool = Executors.newFixedThreadPool(workerCount,
                 new ThreadFactoryBuilder()
                         .setDaemon(true)
                         .setNameFormat("bulk-purge-worker-%d-" + ctx.purgeKey)
                         .build());
+        ctx.workerPool = workerPool;
 
-        // Start workers
+        // Each worker gets its own bulk-loading graph to avoid ConcurrentModificationException.
+        // JanusGraph's internal commit uses non-thread-safe HashMaps, so sharing one graph
+        // across workers causes corruption when multiple workers commit concurrently.
+        List<AtlasGraph> workerGraphs = new ArrayList<>(workerCount);
+
+        // Start workers — each creates its own graph instance
         List<Future<?>> workerFutures = new ArrayList<>();
         for (int i = 0; i < workerCount; i++) {
+            AtlasGraph workerGraph = getBulkLoadingGraph();
+            workerGraphs.add(workerGraph);
+            LOG.info("BulkPurge: Created bulk-loading graph for worker {} (purgeKey={})", i, ctx.purgeKey);
             workerFutures.add(workerPool.submit(() -> workerLoop(ctx, batchQueue, workerGraph)));
         }
+        ctx.workerFutures = workerFutures;
 
         try {
             // Stream ES scroll into queue (coordinator role)
-            streamESScrollIntoBatchQueue(ctx, batchQueue, batchSize, esPageSize, scrollTimeoutMin);
+            streamESScrollIntoBatchQueue(ctx, batchQueue, batchSize);
         } finally {
-            // ALWAYS send poison pills + wait for workers, even on ES scroll failure
+            // Only clear the queue on cancel/interrupt — in the normal path, workers
+            // must drain remaining batches before seeing their poison pills.
+            // Without this guard, batchQueue.clear() discards unconsumed batches
+            // whose entities never get deleted from graph (counter under-reports too).
+            if (ctx.cancelRequested || Thread.currentThread().isInterrupted()) {
+                batchQueue.clear();
+            }
+
             for (int i = 0; i < workerCount; i++) {
-                batchQueue.put(BatchWork.POISON_PILL);
+                // Use offer with timeout instead of put to avoid blocking forever
+                // if workers already exited (cancel path) and queue is full.
+                if (!batchQueue.offer(BatchWork.POISON_PILL, 30, TimeUnit.SECONDS)) {
+                    LOG.warn("BulkPurge: Timed out enqueuing poison pill for worker {} (purgeKey={}). " +
+                            "Queue may be full with unconsumed batches.", i, ctx.purgeKey);
+                    // Force clear and retry — workers are likely dead
+                    batchQueue.clear();
+                    batchQueue.put(BatchWork.POISON_PILL);
+                }
             }
 
             for (Future<?> f : workerFutures) {
                 try {
                     f.get(2, TimeUnit.MINUTES);
+                } catch (CancellationException e) {
+                    // Expected when interruptWorkers() cancelled this future
                 } catch (TimeoutException e) {
                     LOG.warn("BulkPurge: Worker timed out during shutdown for purgeKey={}", ctx.purgeKey);
                 } catch (ExecutionException e) {
@@ -553,12 +739,14 @@ public class BulkPurgeService {
             workerPool.shutdown();
             workerPool.awaitTermination(1, TimeUnit.MINUTES);
 
-            // Shutdown bulk-loading graph (only used for Phase 1+2)
-            try {
-                workerGraph.shutdown();
-                LOG.info("BulkPurge: Bulk-loading graph shut down for purgeKey={}", ctx.purgeKey);
-            } catch (Exception e) {
-                LOG.warn("BulkPurge: Failed to shut down bulk-loading graph for purgeKey={}", ctx.purgeKey, e);
+            // Shutdown all worker graphs
+            for (int i = 0; i < workerGraphs.size(); i++) {
+                try {
+                    workerGraphs.get(i).shutdown();
+                    LOG.info("BulkPurge: Bulk-loading graph shut down for worker {} (purgeKey={})", i, ctx.purgeKey);
+                } catch (Exception e) {
+                    LOG.warn("BulkPurge: Failed to shut down bulk-loading graph for worker {} (purgeKey={})", i, ctx.purgeKey, e);
+                }
             }
         }
     }
@@ -570,9 +758,10 @@ public class BulkPurgeService {
 
     /**
      * Worker loop: pulls batches from queue until poison pill received.
+     * Checks both cancelRequested flag and Thread.interrupted() for responsive cancellation (P2).
      */
     private void workerLoop(PurgeContext ctx, BlockingQueue<BatchWork> queue, AtlasGraph workerGraph) {
-        while (!ctx.cancelRequested) {
+        while (!ctx.cancelRequested && !Thread.currentThread().isInterrupted()) {
             try {
                 BatchWork work = queue.poll(5, TimeUnit.SECONDS);
                 if (work == null) continue;
@@ -594,19 +783,50 @@ public class BulkPurgeService {
      * JanusGraph's AbstractVertex.remove() to handle edge cleanup internally.
      */
     private void processBatch(PurgeContext ctx, BatchWork work, AtlasGraph workerGraph) {
+        long batchStartTime = System.nanoTime();
         int batchDeleted = 0;
         int batchFailed = 0;
 
-        // Batch vertex retrieval: single round-trip instead of N individual getVertex() calls
+        // P0: Timing for getVertices
+        long t0 = System.nanoTime();
+
+        // P1: getVertices with timeout
         String[] ids = work.vertexIds.toArray(new String[0]);
-        Set<AtlasVertex> vertexSet = workerGraph.getVertices(ids);
+        Set<AtlasVertex> vertexSet;
+        Future<Set<AtlasVertex>> getVerticesFuture = null;
+        try {
+            getVerticesFuture = timeoutExecutor.submit(() -> workerGraph.getVertices(ids));
+            vertexSet = getVerticesFuture.get(GET_VERTICES_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            LOG.error("BulkPurge: getVertices TIMED OUT for batch {} (purgeKey={})", work.batchIndex, ctx.purgeKey);
+            if (getVerticesFuture != null) getVerticesFuture.cancel(true);
+            ctx.totalFailed.addAndGet(work.vertexIds.size());
+            ctx.completedBatches.incrementAndGet();
+            return;
+        } catch (InterruptedException e) {
+            if (getVerticesFuture != null) getVerticesFuture.cancel(true);
+            Thread.currentThread().interrupt();
+            return;
+        } catch (ExecutionException e) {
+            LOG.error("BulkPurge: getVertices FAILED for batch {} (purgeKey={})", work.batchIndex, ctx.purgeKey, e.getCause());
+            ctx.totalFailed.addAndGet(work.vertexIds.size());
+            ctx.completedBatches.incrementAndGet();
+            return;
+        }
+
+        long getVerticesMs = (System.nanoTime() - t0) / 1_000_000;
+
         Map<String, AtlasVertex> vertexMap = new HashMap<>(vertexSet.size());
         for (AtlasVertex v : vertexSet) {
             vertexMap.put(v.getId().toString(), v);
         }
 
+        // P0: Timing for removeVertex loop
+        long t1 = System.nanoTime();
+        long collectLineageNs = 0;
+
         for (String vertexId : work.vertexIds) {
-            if (ctx.cancelRequested) break;
+            if (ctx.cancelRequested || Thread.currentThread().isInterrupted()) break;
 
             try {
                 AtlasVertex vertex = vertexMap.get(vertexId);
@@ -614,16 +834,13 @@ public class BulkPurgeService {
                     continue; // Already deleted (idempotent)
                 }
 
-                // Only collect lineage for vertices that actually have lineage.
-                // Since ALL same-connection entities are deleted, only vertices with
-                // __hasLineage=true can have external lineage partners to repair.
                 Boolean vertexHasLineage = vertex.getProperty(HAS_LINEAGE, Boolean.class);
                 if (Boolean.TRUE.equals(vertexHasLineage)) {
+                    long lineageT0 = System.nanoTime();
                     collectExternalLineageVertices(ctx, vertex);
+                    collectLineageNs += (System.nanoTime() - lineageT0);
                 }
 
-                // For Tag V2: collect entities with direct tags so Phase 3c-1 can
-                // clean propagated tags from Cassandra after vertex deletion
                 if (ctx.isTagV2) {
                     List<String> traitNames = vertex.getMultiValuedProperty(TRAIT_NAMES_PROPERTY_KEY, String.class);
                     if (traitNames != null && !traitNames.isEmpty()) {
@@ -631,8 +848,6 @@ public class BulkPurgeService {
                     }
                 }
 
-                // removeVertex() handles edge removal internally via JanusGraph's
-                // AbstractVertex.remove() — no need for explicit edge iteration
                 workerGraph.removeVertex(vertex);
                 batchDeleted++;
             } catch (Exception e) {
@@ -641,13 +856,17 @@ public class BulkPurgeService {
             }
         }
 
-        // Commit with retry
+        long removeVertexMs = (System.nanoTime() - t1) / 1_000_000;
+
+        // P0: Timing for commit
+        long t2 = System.nanoTime();
         boolean committed = commitWithRetry(workerGraph, work.batchIndex);
+        long commitMs = (System.nanoTime() - t2) / 1_000_000;
+
         if (committed) {
             ctx.totalDeleted.addAndGet(batchDeleted);
             ctx.totalFailed.addAndGet(batchFailed);
         } else {
-            // Whole batch failed
             ctx.totalFailed.addAndGet(work.vertexIds.size());
             try {
                 workerGraph.rollback();
@@ -657,28 +876,71 @@ public class BulkPurgeService {
         }
 
         int batches = ctx.completedBatches.incrementAndGet();
-        ctx.lastProcessedBatchIndex = Math.max(ctx.lastProcessedBatchIndex, work.batchIndex);
+        ctx.lastProcessedBatchIndex.accumulateAndGet(work.batchIndex, Math::max);
 
-        // Periodic progress update
+        // P7: Update progress timestamp for stall detection
+        ctx.lastProgressTimestamp.set(System.currentTimeMillis());
+
+        long totalBatchMs = (System.nanoTime() - batchStartTime) / 1_000_000;
+
+        // P0: Log timing — WARN if batch exceeds threshold
+        if (totalBatchMs > BATCH_WARN_THRESHOLD_MS) {
+            LOG.warn("BulkPurge: SLOW batch {} for purgeKey={}: total={}ms, getVertices={}ms, removeVertex={}ms, " +
+                            "collectLineage={}ms, commit={}ms, vertices={}",
+                    work.batchIndex, ctx.purgeKey, totalBatchMs, getVerticesMs, removeVertexMs,
+                    collectLineageNs / 1_000_000, commitMs, work.vertexIds.size());
+        } else if (batches % 10 == 0) {
+            LOG.info("BulkPurge: Progress purgeKey={}, batches={}, deleted={}, failed={}, " +
+                            "lastBatch: total={}ms, getVertices={}ms, removeVertex={}ms, commit={}ms",
+                    ctx.purgeKey, batches, ctx.totalDeleted.get(), ctx.totalFailed.get(),
+                    totalBatchMs, getVerticesMs, removeVertexMs, commitMs);
+        }
+
+        // Periodic Redis status update
         if (batches % 10 == 0) {
             writeRedisStatus(ctx);
-            LOG.info("BulkPurge: Progress purgeKey={}, batches={}, deleted={}, failed={}",
-                    ctx.purgeKey, batches, ctx.totalDeleted.get(), ctx.totalFailed.get());
+        }
+
+        // P6: Incremental ES cleanup every N committed batches
+        if (INCREMENTAL_ES_CLEANUP_INTERVAL > 0 && batches % INCREMENTAL_ES_CLEANUP_INTERVAL == 0 && committed) {
+            triggerIncrementalEsCleanup(ctx);
         }
     }
 
     private boolean commitWithRetry(AtlasGraph workerGraph, int batchIndex) {
-        int maxRetries = AtlasConfiguration.BULK_PURGE_COMMIT_MAX_RETRIES.getInt();
-
-        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+        for (int attempt = 1; attempt <= COMMIT_MAX_RETRIES; attempt++) {
+            Future<?> commitFuture = null;
             try {
-                workerGraph.commit();
+                // P1: Commit with timeout to prevent indefinite blocking
+                commitFuture = timeoutExecutor.submit(() -> workerGraph.commit());
+                commitFuture.get(COMMIT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
                 return true;
-            } catch (Exception e) {
-                LOG.warn("BulkPurge: Commit failed for batch {} (attempt {}/{})", batchIndex, attempt, maxRetries, e);
-                if (attempt < maxRetries) {
+            } catch (TimeoutException e) {
+                LOG.error("BulkPurge: Commit TIMED OUT for batch {} (attempt {}/{}, timeout={}ms)",
+                        batchIndex, attempt, COMMIT_MAX_RETRIES, COMMIT_TIMEOUT_MS);
+                // Cancel the still-running commit to prevent race with rollback
+                if (commitFuture != null) commitFuture.cancel(true);
+                // Don't retry on timeout — Cassandra is likely under pressure
+                return false;
+            } catch (InterruptedException e) {
+                if (commitFuture != null) commitFuture.cancel(true);
+                Thread.currentThread().interrupt();
+                return false;
+            } catch (ExecutionException e) {
+                LOG.warn("BulkPurge: Commit failed for batch {} (attempt {}/{})", batchIndex, attempt, COMMIT_MAX_RETRIES, e.getCause());
+                if (attempt < COMMIT_MAX_RETRIES) {
                     try {
                         Thread.sleep((long) Math.pow(2, attempt - 1) * 500); // 500ms, 1s, 2s
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        return false;
+                    }
+                }
+            } catch (Exception e) {
+                LOG.warn("BulkPurge: Commit failed for batch {} (attempt {}/{})", batchIndex, attempt, COMMIT_MAX_RETRIES, e);
+                if (attempt < COMMIT_MAX_RETRIES) {
+                    try {
+                        Thread.sleep((long) Math.pow(2, attempt - 1) * 500);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         return false;
@@ -700,8 +962,7 @@ public class BulkPurgeService {
                     AtlasVertex outVertex = edge.getOutVertex();
                     AtlasVertex other = (inVertex.getId().equals(vertex.getId())) ? outVertex : inVertex;
 
-                    String otherConnQN = other.getProperty(CONNECTION_QUALIFIED_NAME, String.class);
-                    if (otherConnQN != null && !otherConnQN.equals(ctx.purgeKey)) {
+                    if (isExternalVertex(ctx, other)) {
                         ctx.externalLineageVertexIds.add(other.getId().toString());
                     }
                 } catch (Exception e) {
@@ -710,6 +971,30 @@ public class BulkPurgeService {
             }
         } catch (Exception e) {
             LOG.debug("BulkPurge: Could not collect lineage vertices for {}", vertex.getId(), e);
+        }
+    }
+
+    /**
+     * Determine if a vertex is external to the purge scope.
+     *
+     * In CONNECTION mode: external means the vertex belongs to a different connection.
+     * In QN_PREFIX mode: external means the vertex's qualifiedName does NOT start with
+     * the purge prefix — it could be in the same connection but outside the prefix scope.
+     */
+    private boolean isExternalVertex(PurgeContext ctx, AtlasVertex other) {
+        if (PURGE_MODE_CONNECTION.equals(ctx.purgeMode)) {
+            String otherConnQN = other.getProperty(CONNECTION_QUALIFIED_NAME, String.class);
+            return otherConnQN != null && !otherConnQN.equals(ctx.purgeKey);
+        } else {
+            // QN_PREFIX mode: check if the vertex's QN hierarchy falls outside the purge prefix
+            String otherQNH = other.getProperty(QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, String.class);
+            if (otherQNH == null) {
+                // Can't determine — treat as external to be safe
+                return true;
+            }
+            // The ES query uses purgeKey as prefix. For CONNECTION mode the prefix has a trailing "/",
+            // but for QN_PREFIX mode it may not. Use startsWith on the raw purgeKey.
+            return !otherQNH.startsWith(ctx.purgeKey);
         }
     }
 
@@ -733,14 +1018,12 @@ public class BulkPurgeService {
      */
     private void streamESScrollIntoBatchQueue(PurgeContext ctx,
                                               BlockingQueue<BatchWork> batchQueue,
-                                              int batchSize,
-                                              int esPageSize,
-                                              int scrollTimeoutMin) throws Exception {
+                                              int batchSize) throws Exception {
         RestClient esClient = getEsClient();
-        String scrollTimeout = scrollTimeoutMin + "m";
+        String scrollTimeout = SCROLL_TIMEOUT_MINUTES + "m";
 
         // Build scroll request — only fetch _id field (vertex ID)
-        String scrollQuery = buildScrollQuery(ctx.esQuery, esPageSize);
+        String scrollQuery = buildScrollQuery(ctx.esQuery, ES_PAGE_SIZE);
 
         // Initial search with scroll
         String endpoint = "/" + VERTEX_INDEX_NAME + "/_search?scroll=" + scrollTimeout;
@@ -916,6 +1199,52 @@ public class BulkPurgeService {
     }
 
     /**
+     * P6: Fire an async ES _delete_by_query to clean up already-committed batches incrementally.
+     * Non-blocking, idempotent (conflicts=proceed), runs in background.
+     */
+    private void triggerIncrementalEsCleanup(PurgeContext ctx) {
+        try {
+            RestClient esClient = getEsClient();
+            String endpoint = "/" + VERTEX_INDEX_NAME + "/_delete_by_query?conflicts=proceed&wait_for_completion=false";
+
+            Request request = new Request("POST", endpoint);
+            request.setEntity(new NStringEntity(ctx.esQuery, ContentType.APPLICATION_JSON));
+
+            Response response = esClient.performRequest(request);
+            String responseBody = readResponseBody(response);
+            LOG.info("BulkPurge: Incremental ES cleanup submitted for purgeKey={}, batches={}, response={}",
+                    ctx.purgeKey, ctx.completedBatches.get(), responseBody);
+        } catch (Exception e) {
+            LOG.warn("BulkPurge: Incremental ES cleanup failed for purgeKey={}", ctx.purgeKey, e);
+        }
+    }
+
+    /**
+     * P2: Interrupt worker threads to unblock them from stuck operations.
+     */
+    private void interruptWorkers(PurgeContext ctx) {
+        ExecutorService pool = ctx.workerPool;
+        List<Future<?>> futures = ctx.workerFutures;
+
+        if (pool != null) {
+            pool.shutdownNow();
+        }
+        if (futures != null) {
+            for (Future<?> f : futures) {
+                f.cancel(true);
+            }
+        }
+    }
+
+    private static String getHostname() {
+        try {
+            return InetAddress.getLocalHost().getHostName();
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
+    /**
      * Phase 4: Delete the Connection vertex itself after all child assets have been purged.
      */
     private void deleteConnectionVertex(PurgeContext ctx) {
@@ -927,6 +1256,9 @@ public class BulkPurgeService {
                 return;
             }
 
+            // Capture the GUID before deleting the graph vertex — needed for ES cleanup
+            String connGuid = connVertex.getProperty(GUID_PROPERTY_KEY, String.class);
+
             // removeVertex() handles edge removal internally via JanusGraph's
             // AbstractVertex.remove() — no need for explicit edge iteration
             graph.removeVertex(connVertex);
@@ -936,6 +1268,11 @@ public class BulkPurgeService {
             ctx.totalDeleted.incrementAndGet();
 
             LOG.info("BulkPurge: Connection entity deleted for purgeKey={}", ctx.purgeKey);
+
+            // Delete the Connection entity's ES document.
+            // The main esCleanup uses prefix "connectionQN/" which only matches children,
+            // not the Connection entity itself (its __qualifiedNameHierarchy has no trailing "/").
+            deleteConnectionFromES(ctx, connGuid);
         } catch (Exception e) {
             LOG.error("BulkPurge: Failed to delete Connection entity for purgeKey={}", ctx.purgeKey, e);
             ctx.error = "Child assets purged but Connection deletion failed: " + e.getMessage();
@@ -944,6 +1281,25 @@ public class BulkPurgeService {
             } catch (Exception re) {
                 LOG.warn("BulkPurge: Rollback failed after connection deletion failure", re);
             }
+        }
+    }
+
+    private void deleteConnectionFromES(PurgeContext ctx, String connGuid) {
+        try {
+            RestClient esClient = getEsClient();
+            String query = buildTermQuery(GUID_PROPERTY_KEY, connGuid);
+            String endpoint = "/" + VERTEX_INDEX_NAME + "/_delete_by_query?conflicts=proceed&refresh=true";
+
+            Request request = new Request("POST", endpoint);
+            request.setEntity(new NStringEntity(query, ContentType.APPLICATION_JSON));
+
+            Response response = esClient.performRequest(request);
+            String responseBody = readResponseBody(response);
+            LOG.info("BulkPurge: Connection ES document deleted for purgeKey={}, guid={}, response={}",
+                    ctx.purgeKey, connGuid, responseBody);
+        } catch (Exception e) {
+            LOG.warn("BulkPurge: Failed to delete Connection ES document for purgeKey={}, guid={}. " +
+                    "Document will be orphaned in ES.", ctx.purgeKey, connGuid, e);
         }
     }
 
@@ -1360,7 +1716,7 @@ public class BulkPurgeService {
                             }
                         }
 
-                        if (result.isDone() || !result.hasMorePages()) {
+                        if (Boolean.TRUE.equals(result.isDone()) || !result.hasMorePages()) {
                             break;
                         }
                         pagingState = result.getPagingState();
@@ -1378,14 +1734,24 @@ public class BulkPurgeService {
                             removePropagatedTraitFromVertex(extVertex, tag.getTagTypeName());
                             batchCount++;
                             if (batchCount % 50 == 0) {
-                                graph.commit();
+                                try {
+                                    graph.commit();
+                                } catch (Exception commitEx) {
+                                    LOG.warn("BulkPurge: Commit failed during propagated tag cleanup for tag {}, attempting rollback", tag.getTagTypeName(), commitEx);
+                                    try { graph.rollback(); } catch (Exception rbEx) { LOG.warn("BulkPurge: Rollback also failed", rbEx); }
+                                }
                             }
                         } catch (Exception e) {
                             LOG.warn("BulkPurge: Failed to update graph properties on vertex for tag {}", tag.getTagTypeName(), e);
                         }
                     }
                     if (batchCount % 50 != 0 && batchCount > 0) {
-                        graph.commit();
+                        try {
+                            graph.commit();
+                        } catch (Exception commitEx) {
+                            LOG.warn("BulkPurge: Final commit failed during propagated tag cleanup for tag {}, attempting rollback", tag.getTagTypeName(), commitEx);
+                            try { graph.rollback(); } catch (Exception rbEx) { LOG.warn("BulkPurge: Rollback also failed", rbEx); }
+                        }
                     }
 
                     totalCleaned += propagatedTagsToDelete.size();
@@ -1649,7 +2015,18 @@ public class BulkPurgeService {
                     long lastHeartbeat = status.has("lastHeartbeat") ? status.get("lastHeartbeat").asLong() : 0;
                     long fiveMinutesAgo = System.currentTimeMillis() - (5 * 60 * 1000);
 
-                    if ("RUNNING".equals(purgeStatus) && lastHeartbeat < fiveMinutesAgo) {
+                    // P7: Also detect stalled purges (heartbeat alive but no progress)
+                    long lastProgressTs = status.has("lastProgressTimestamp") ? status.get("lastProgressTimestamp").asLong() : 0;
+                    boolean isStalled = "RUNNING".equals(purgeStatus) && lastProgressTs > 0
+                            && (System.currentTimeMillis() - lastProgressTs) > STALL_THRESHOLD_MS;
+
+                    if ("RUNNING".equals(purgeStatus) && (lastHeartbeat < fiveMinutesAgo || isStalled)) {
+                        if (isStalled) {
+                            LOG.warn("BulkPurge: Orphan checker detected STALLED purge for {} " +
+                                    "(heartbeat alive but no progress for {}ms)", purgeKey,
+                                    System.currentTimeMillis() - lastProgressTs);
+                        }
+
                         // Orphaned — check if work remains
                         String esQuery = status.has("esQuery") ? status.get("esQuery").asText() : null;
                         if (esQuery == null) {
@@ -1663,17 +2040,41 @@ public class BulkPurgeService {
                             markOrphanedPurgeCompleted(purgeKey, status);
                         } else {
                             int resubmitCount = status.has("resubmitCount") ? status.get("resubmitCount").asInt() : 0;
-                            int maxResubmits = AtlasConfiguration.BULK_PURGE_ORPHAN_MAX_RESUBMITS.getInt();
+                            int maxResubmits = ORPHAN_MAX_RESUBMITS;
 
                             if (resubmitCount < maxResubmits) {
                                 LOG.info("BulkPurge: Auto-recovering orphaned purge for {} (remaining={}, attempt={})",
                                         purgeKey, remaining, resubmitCount + 1);
                                 resubmitOrphanedPurge(purgeKey, status, resubmitCount + 1);
                             } else {
-                                LOG.error("BulkPurge: Orphaned purge for {} exceeded max resubmits ({})", purgeKey, maxResubmits);
+                                // P8: Mark as FAILED and clean up after max resubmits
+                                LOG.error("BulkPurge: Orphaned purge for {} exceeded max resubmits ({}). Marking as FAILED.",
+                                        purgeKey, maxResubmits);
+                                markOrphanedPurgeFailed(purgeKey, status,
+                                        "Exceeded max resubmits (" + maxResubmits + ") — manual intervention required");
                             }
                         }
-                    } else if ("COMPLETED".equals(purgeStatus) || "CANCELLED".equals(purgeStatus) || "FAILED".equals(purgeStatus)) {
+                    } else if ("FAILED".equals(purgeStatus)) {
+                        // Only retry FAILED purges that were orphan-recovery resubmits (i.e., failed
+                        // due to stale lock or transient issue during recovery, not legitimately failed).
+                        boolean isOrphanRecovery = status.has("orphanRecovery") && status.get("orphanRecovery").asBoolean();
+                        int resubmitCount = status.has("resubmitCount") ? status.get("resubmitCount").asInt() : 0;
+                        int maxResubmits = ORPHAN_MAX_RESUBMITS;
+                        String esQuery = status.has("esQuery") ? status.get("esQuery").asText() : null;
+
+                        if (isOrphanRecovery && esQuery != null && resubmitCount < maxResubmits) {
+                            long remaining = getEntityCount(esQuery);
+                            if (remaining > 0) {
+                                LOG.info("BulkPurge: Retrying FAILED orphan-recovery for {} (remaining={}, attempt={})",
+                                        purgeKey, remaining, resubmitCount + 1);
+                                resubmitOrphanedPurge(purgeKey, status, resubmitCount + 1);
+                            } else {
+                                markOrphanedPurgeCompleted(purgeKey, status);
+                            }
+                        } else {
+                            removeFromActivePurgeKeys(purgeKey);
+                        }
+                    } else if ("COMPLETED".equals(purgeStatus) || "CANCELLED".equals(purgeStatus)) {
                         removeFromActivePurgeKeys(purgeKey);
                     }
                 } catch (Exception e) {
@@ -1712,31 +2113,92 @@ public class BulkPurgeService {
         }
     }
 
+    /**
+     * P8: Mark an orphaned purge as FAILED when max resubmits have been exceeded.
+     */
+    private void markOrphanedPurgeFailed(String purgeKey, JsonNode status, String errorMessage) {
+        try {
+            ObjectNode updated = (ObjectNode) status;
+            updated.put("status", "FAILED");
+            updated.put("error", errorMessage);
+            updated.put("orphanRecovery", true);
+
+            int redisTtl = AtlasConfiguration.BULK_PURGE_REDIS_TTL_SECONDS.getInt();
+            redisService.putValue(REDIS_KEY_PREFIX + purgeKey, MAPPER.writeValueAsString(updated), redisTtl);
+
+            String requestId = status.has("requestId") ? status.get("requestId").asText() : null;
+            if (requestId != null) {
+                redisService.putValue("bulk_purge_request:" + requestId, MAPPER.writeValueAsString(updated), redisTtl);
+            }
+
+            removeFromActivePurgeKeys(purgeKey);
+            LOG.info("BulkPurge: Marked orphaned purge as FAILED for purgeKey={}: {}", purgeKey, errorMessage);
+        } catch (Exception e) {
+            LOG.error("BulkPurge: Failed to mark orphaned purge as FAILED for {}", purgeKey, e);
+        }
+    }
+
     private void resubmitOrphanedPurge(String purgeKey, JsonNode status, int resubmitCount) {
         try {
+            // Force-release the stale lock from the dead process before resubmitting.
+            // The old lock may still be held in Redis (Redisson watchdog timeout is 10 min)
+            // even though the process that held it is dead.
+            String lockKey = REDIS_LOCK_PREFIX + purgeKey;
+            try {
+                redisService.forceReleaseDistributedLock(lockKey);
+                LOG.info("BulkPurge: Force-released stale lock for orphaned purge {}", purgeKey);
+            } catch (Exception e) {
+                LOG.warn("BulkPurge: Failed to force-release stale lock for {}, resubmit may fail", purgeKey, e);
+            }
+
             String purgeMode = status.has("purgeMode") ? status.get("purgeMode").asText() : PURGE_MODE_CONNECTION;
             String esQuery = status.get("esQuery").asText();
             String submittedBy = status.has("submittedBy") ? status.get("submittedBy").asText() : "orphan-checker";
             boolean deleteConnection = status.has("deleteConnection") && status.get("deleteConnection").asBoolean();
+            String originalRequestId = status.has("requestId") ? status.get("requestId").asText() : null;
 
             String requestId = UUID.randomUUID().toString();
 
             PurgeContext ctx = new PurgeContext(requestId, purgeKey, purgeMode, submittedBy, esQuery, deleteConnection, 0);
             ctx.status = "PENDING";
             ctx.resubmitCount = resubmitCount;
+            ctx.orphanRecovery = true;
             writeRedisStatus(ctx);
 
             int redisTtl = AtlasConfiguration.BULK_PURGE_REDIS_TTL_SECONDS.getInt();
             redisService.putValue("bulk_purge_request:" + requestId, ctx.toJson(), redisTtl);
 
+            // P11: Update the ORIGINAL requestId's Redis key to track the resubmit chain
+            if (originalRequestId != null && !originalRequestId.equals(requestId)) {
+                try {
+                    Map<String, Object> originalUpdate = new LinkedHashMap<>();
+                    originalUpdate.put("status", "RESUBMITTED");
+                    originalUpdate.put("newRequestId", requestId);
+                    originalUpdate.put("resubmitCount", resubmitCount);
+                    originalUpdate.put("purgeKey", purgeKey);
+                    redisService.putValue("bulk_purge_request:" + originalRequestId,
+                            MAPPER.writeValueAsString(originalUpdate), redisTtl);
+                } catch (Exception e) {
+                    LOG.warn("BulkPurge: Failed to update original requestId {} during resubmit", originalRequestId, e);
+                }
+            }
+
             activePurges.put(purgeKey, ctx);
 
-            String lockKey = REDIS_LOCK_PREFIX + purgeKey;
             String redisKey = REDIS_KEY_PREFIX + purgeKey;
-            coordinatorExecutor.submit(() -> executePurge(ctx, lockKey, redisKey));
+            try {
+                coordinatorExecutor.submit(() -> executePurge(ctx, lockKey, redisKey));
+            } catch (java.util.concurrent.RejectedExecutionException ree) {
+                LOG.error("BulkPurge: Coordinator pool rejected resubmission for {} — pool is full", purgeKey, ree);
+                activePurges.remove(purgeKey);
+                ctx.status = "FAILED";
+                ctx.error = "Resubmission rejected: coordinator pool at capacity";
+                writeRedisStatus(ctx);
+                return;
+            }
 
-            LOG.info("BulkPurge: Resubmitted orphaned purge for {} as requestId={} (attempt={})",
-                    purgeKey, requestId, resubmitCount);
+            LOG.info("BulkPurge: Resubmitted orphaned purge for {} as requestId={} (attempt={}, originalRequestId={})",
+                    purgeKey, requestId, resubmitCount, originalRequestId);
         } catch (Exception e) {
             LOG.error("BulkPurge: Failed to resubmit orphaned purge for {}", purgeKey, e);
         }
@@ -1761,18 +2223,25 @@ public class BulkPurgeService {
         volatile long totalDiscovered;
         volatile long remainingAfterCleanup = -1;
         volatile int workerCount;
-        volatile int lastProcessedBatchIndex;
         volatile boolean cancelRequested;
         volatile boolean connectionDeleted;
         volatile int resubmitCount;
         volatile String currentPhase;
+        volatile boolean stalled;
+        volatile boolean orphanRecovery;
 
         final AtomicInteger totalDeleted = new AtomicInteger(0);
         final AtomicInteger totalFailed = new AtomicInteger(0);
         final AtomicInteger completedBatches = new AtomicInteger(0);
+        final AtomicInteger lastProcessedBatchIndex = new AtomicInteger(0);
+        final AtomicLong lastProgressTimestamp = new AtomicLong(0);
         final Set<String> externalLineageVertexIds = ConcurrentHashMap.newKeySet();
         final Set<String> entitiesWithDirectTags = ConcurrentHashMap.newKeySet();
         volatile boolean isTagV2;
+
+        // P2: Stored for cancel/interrupt support
+        volatile ExecutorService workerPool;
+        volatile List<Future<?>> workerFutures;
 
         PurgeContext(String requestId, String purgeKey, String purgeMode, String submittedBy, String esQuery, boolean deleteConnection, int workerCountOverride) {
             this.requestId = requestId;
@@ -1806,12 +2275,19 @@ public class BulkPurgeService {
             map.put("deletedCount", totalDeleted.get());
             map.put("failedCount", totalFailed.get());
             map.put("completedBatches", completedBatches.get());
-            map.put("lastProcessedBatchIndex", lastProcessedBatchIndex);
+            map.put("lastProcessedBatchIndex", lastProcessedBatchIndex.get());
             map.put("lastHeartbeat", lastHeartbeat);
+            long progressTs = lastProgressTimestamp.get();
+            if (progressTs > 0) {
+                map.put("lastProgressTimestamp", progressTs);
+            }
             map.put("workerCount", workerCount);
             map.put("batchSize", AtlasConfiguration.BULK_PURGE_BATCH_SIZE.getInt());
             map.put("deleteConnection", deleteConnection);
             map.put("connectionDeleted", connectionDeleted);
+            if (stalled) {
+                map.put("stalled", true);
+            }
             if (currentPhase != null) {
                 map.put("currentPhase", currentPhase);
             }
@@ -1820,6 +2296,9 @@ public class BulkPurgeService {
             }
             if (resubmitCount > 0) {
                 map.put("resubmitCount", resubmitCount);
+            }
+            if (orphanRecovery) {
+                map.put("orphanRecovery", true);
             }
             if (error != null) {
                 map.put("error", error);
