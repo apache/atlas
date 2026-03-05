@@ -314,7 +314,7 @@ public class EntityDiscoveryServiceTest {
     public void testSearchRelatedEntities() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         try {
-            AtlasSearchResult result = entityDiscoveryService.searchRelatedEntities("testGuid", "testRelation", false, params);
+            AtlasSearchResult result = entityDiscoveryService.searchRelatedEntities("testGuid", "testRelation", false, params, false);
         } catch (Exception e) {
             assertTrue(true);
         }

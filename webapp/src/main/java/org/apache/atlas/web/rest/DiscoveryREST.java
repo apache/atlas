@@ -55,6 +55,7 @@ import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -537,6 +538,7 @@ public class DiscoveryREST {
             @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
             @QueryParam("includeClassificationAttributes") boolean includeClassificationAttributes,
             @QueryParam("getApproximateCount") boolean getApproximateCount,
+            @DefaultValue("false") @QueryParam("disableDefaultSorting") boolean disableDefaultSorting,
             @QueryParam("limit") int limit,
             @QueryParam("offset") int offset) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
@@ -560,7 +562,7 @@ public class DiscoveryREST {
             parameters.setOffset(offset);
             parameters.setIncludeClassificationAttributes(includeClassificationAttributes);
 
-            return discoveryService.searchRelatedEntities(guid, relation, getApproximateCount, parameters);
+            return discoveryService.searchRelatedEntities(guid, relation, getApproximateCount, parameters, disableDefaultSorting);
         } finally {
             AtlasPerfTracer.log(perf);
         }
