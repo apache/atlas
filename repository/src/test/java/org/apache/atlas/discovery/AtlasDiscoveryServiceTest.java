@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_CLASSIFICATION_TYPES;
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_ENTITY_TYPES;
@@ -698,7 +699,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
 
         params.setLimit(10);
 
-        AtlasSearchResult       relResult = discoveryService.searchRelatedEntities(guid, "__hive_table.columns", false, params);
+        AtlasSearchResult       relResult = discoveryService.searchRelatedEntities(guid, "__hive_table.columns", false, params, false);
         List<AtlasEntityHeader> list      = relResult.getEntities();
 
         assertTrue(CollectionUtils.isNotEmpty(list));
@@ -715,13 +716,169 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         params.setLimit(10);
         params.setSortOrder(SortOrder.DESCENDING);
 
-        AtlasSearchResult       relResult = discoveryService.searchRelatedEntities(guid, "columns", false, params);
+        AtlasSearchResult       relResult = discoveryService.searchRelatedEntities(guid, "columns", false, params, false);
         List<AtlasEntityHeader> list      = relResult.getEntities();
 
         assertTrue(CollectionUtils.isNotEmpty(list));
         assertEquals(list.size(), 6);
         assertTrue(list.get(5).getDisplayText().equalsIgnoreCase("customer_id"));
         assertTrue(list.get(0).getDisplayText().equalsIgnoreCase("time_id"));
+    }
+
+    @Test
+    public void testSearchRelatedEntitiesWithGraphLayerPaging() throws AtlasBaseException {
+        String           guid   = gethiveTableSalesFactGuid();
+        SearchParameters params = new SearchParameters();
+
+        params.setLimit(10);
+
+        // Test 1: With disableDefaultSorting=true (should use graph-layer paging)
+        AtlasSearchResult graphLayerResult = discoveryService.searchRelatedEntities(
+                guid, "__hive_table.columns", false, params, true);
+        List<AtlasEntityHeader> graphLayerList = graphLayerResult.getEntities();
+
+        assertTrue(CollectionUtils.isNotEmpty(graphLayerList));
+        assertEquals(graphLayerList.size(), 6);
+
+        // Test 2: With disableDefaultSorting=false (should use Gremlin with sorting)
+        AtlasSearchResult gremlinResult = discoveryService.searchRelatedEntities(
+                guid, "__hive_table.columns", false, params, false);
+        List<AtlasEntityHeader> gremlinList = gremlinResult.getEntities();
+
+        assertTrue(CollectionUtils.isNotEmpty(gremlinList));
+        assertEquals(gremlinList.size(), 6);
+
+        // Both paths should return same number of entities (order may differ)
+        assertEquals(graphLayerList.size(), gremlinList.size());
+
+        // Verify all entities from graph-layer result are in gremlin result
+        Set<String> graphLayerGuids = graphLayerList.stream()
+                .map(AtlasEntityHeader::getGuid)
+                .collect(java.util.stream.Collectors.toSet());
+        Set<String> gremlinGuids = gremlinList.stream()
+                .map(AtlasEntityHeader::getGuid)
+                .collect(java.util.stream.Collectors.toSet());
+
+        assertEquals(graphLayerGuids, gremlinGuids, "Both methods should return same entities");
+    }
+
+    @Test
+    public void testSearchRelatedEntitiesWithOffset() throws AtlasBaseException {
+        String           guid   = gethiveTableSalesFactGuid();
+        SearchParameters params = new SearchParameters();
+
+        // Fetch first page (entities 0-2)
+        params.setOffset(0);
+        params.setLimit(2);
+        AtlasSearchResult page1 = discoveryService.searchRelatedEntities(
+                guid, "__hive_table.columns", false, params, true);
+        List<AtlasEntityHeader> page1List = page1.getEntities();
+
+        assertTrue(CollectionUtils.isNotEmpty(page1List));
+        assertEquals(page1List.size(), 2);
+
+        // Fetch second page (entities 2-4)
+        params.setOffset(2);
+        params.setLimit(2);
+        AtlasSearchResult page2 = discoveryService.searchRelatedEntities(
+                guid, "__hive_table.columns", false, params, true);
+        List<AtlasEntityHeader> page2List = page2.getEntities();
+
+        assertTrue(CollectionUtils.isNotEmpty(page2List));
+        assertEquals(page2List.size(), 2);
+
+        // Fetch third page (entities 4-6)
+        params.setOffset(4);
+        params.setLimit(2);
+        AtlasSearchResult page3 = discoveryService.searchRelatedEntities(
+                guid, "__hive_table.columns", false, params, true);
+        List<AtlasEntityHeader> page3List = page3.getEntities();
+
+        assertTrue(CollectionUtils.isNotEmpty(page3List));
+        assertEquals(page3List.size(), 2);
+
+        // Verify pages are different
+        assertTrue(!page1List.get(0).getGuid().equals(page2List.get(0).getGuid()),
+                "Page 1 and Page 2 should have different first entities");
+        assertTrue(!page2List.get(0).getGuid().equals(page3List.get(0).getGuid()),
+                "Page 2 and Page 3 should have different first entities");
+
+        // Verify offset beyond available entities returns empty
+        params.setOffset(100);
+        params.setLimit(10);
+        AtlasSearchResult emptyPage = discoveryService.searchRelatedEntities(
+                guid, "__hive_table.columns", false, params, true);
+
+        assertTrue(CollectionUtils.isEmpty(emptyPage.getEntities()) || emptyPage.getEntities().size() == 0);
+    }
+
+    @Test
+    public void testGraphLayerPagingWithDeletedEntities() throws AtlasBaseException {
+        String           guid   = gethiveTableSalesFactGuid();
+        SearchParameters params = new SearchParameters();
+
+        params.setLimit(20);
+        params.setExcludeDeletedEntities(true);
+
+        // Test with graph-layer paging and excludeDeletedEntities=true
+        AtlasSearchResult result = discoveryService.searchRelatedEntities(
+                guid, "__hive_table.columns", false, params, true);
+
+        assertNotNull(result);
+        List<AtlasEntityHeader> entities = result.getEntities();
+        assertTrue(CollectionUtils.isNotEmpty(entities));
+
+        // Verify all returned entities are ACTIVE
+        for (AtlasEntityHeader entity : entities) {
+            assertTrue(!AtlasEntity.Status.DELETED.equals(entity.getStatus()),
+                    "Should not return DELETED entities when excludeDeletedEntities=true");
+        }
+
+        // Test with excludeDeletedEntities=false to get all entities
+        params.setExcludeDeletedEntities(false);
+        AtlasSearchResult resultWithDeleted = discoveryService.searchRelatedEntities(
+                guid, "__hive_table.columns", false, params, true);
+
+        assertNotNull(resultWithDeleted);
+        // Result should have same or more entities when not excluding deleted
+        assertTrue(resultWithDeleted.getEntities().size() >= result.getEntities().size());
+    }
+
+    @Test
+    public void testApproximateCountExcludesDeleted() throws AtlasBaseException {
+        String           guid   = gethiveTableSalesFactGuid();
+        SearchParameters params = new SearchParameters();
+
+        params.setLimit(10);
+        params.setExcludeDeletedEntities(true);
+
+        // Test with graph-layer paging and getApproximateCount=true
+        AtlasSearchResult result = discoveryService.searchRelatedEntities(
+                guid, "__hive_table.columns", true, params, true);
+
+        assertNotNull(result);
+        assertTrue(result.getApproximateCount() > 0, "Approximate count should be greater than 0");
+
+        // The count should reflect only ACTIVE entities
+        long approximateCount = result.getApproximateCount();
+        long actualCount = result.getEntities().size();
+
+        // Approximate count should be close to actual entity count
+        // (may differ if there are more entities beyond limit)
+        assertTrue(approximateCount >= actualCount,
+                "Approximate count should be >= actual returned entities");
+
+        // Test without excluding deleted entities
+        params.setExcludeDeletedEntities(false);
+        AtlasSearchResult resultWithDeleted = discoveryService.searchRelatedEntities(
+                guid, "__hive_table.columns", true, params, true);
+
+        assertNotNull(resultWithDeleted);
+        long countWithDeleted = resultWithDeleted.getApproximateCount();
+
+        // Count including deleted should be >= count excluding deleted
+        assertTrue(countWithDeleted >= approximateCount,
+                "Count with deleted entities should be >= count without deleted");
     }
 
     //test excludeHeaderAttributes

@@ -504,15 +504,15 @@ public class DiscoveryRESTTest {
         AtlasSearchResult expectedResult = getAtlasSearchResult();
 
         when(mockDiscoveryService.searchRelatedEntities(eq(guid), eq(relation), eq(getApproximateCount),
-                any(SearchParameters.class))).thenReturn(expectedResult);
+                any(SearchParameters.class), false)).thenReturn(expectedResult);
 
         AtlasSearchResult actualResult = discoveryREST.searchRelatedEntities(guid, relation, attributes, sortByAttribute,
-                sortOrder, excludeDeletedEntities, includeClassificationAttributes, getApproximateCount, limit, offset);
+                sortOrder, excludeDeletedEntities, includeClassificationAttributes, getApproximateCount, false, limit, offset);
 
         assertNotNull(actualResult);
         assertEquals(actualResult, expectedResult);
         verify(mockDiscoveryService, times(1)).searchRelatedEntities(eq(guid), eq(relation), eq(getApproximateCount),
-                any(SearchParameters.class));
+                any(SearchParameters.class), false);
     }
 
     @Test
@@ -531,7 +531,7 @@ public class DiscoveryRESTTest {
 
         AtlasBaseException exception = expectThrows(AtlasBaseException.class,
                 () -> discoveryREST.searchRelatedEntities(guid, relation, attributes, sortByAttribute, sortOrder,
-                        excludeDeletedEntities, includeClassificationAttributes, getApproximateCount, limit, offset));
+                        excludeDeletedEntities, includeClassificationAttributes, getApproximateCount, false, limit, offset));
 
         TestUtility.assertInvalidParamLength(exception, "guid");
     }
