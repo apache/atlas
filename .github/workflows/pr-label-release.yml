@@ -148,6 +148,88 @@ jobs:
               return;
             }
 
+            // Gate: Check if integration tests job passed (not just the workflow)
+            // Integration tests run as a separate workflow (integration-tests.yml)
+            // We must check the actual 'integration-tests' job, not just the workflow,
+            // because the workflow can succeed even if tests were skipped due to path filters.
+            const integrationWorkflowId = 'integration-tests.yml';
+            const { data: integrationWorkflows } = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: integrationWorkflowId,
+              head_sha: headSha,
+              per_page: 1
+            });
+
+            if (integrationWorkflows.workflow_runs.length > 0) {
+              const integrationRun = integrationWorkflows.workflow_runs[0];
+              console.log(`Integration tests workflow: ${integrationRun.status}, conclusion: ${integrationRun.conclusion}`);
+
+              if (integrationRun.status !== 'completed') {
+                console.log('Integration tests workflow has not completed yet');
+                core.setOutput('should_proceed', 'false');
+                return;
+              }
+
+              // Check the actual 'integration-tests' job within the workflow
+              const { data: integrationJobs } = await github.rest.actions.listJobsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: integrationRun.id
+              });
+
+              const integrationTestJob = integrationJobs.jobs.find(job => job.name === 'integration-tests');
+              if (!integrationTestJob) {
+                console.log('Integration tests job not found in workflow run');
+                core.setOutput('should_proceed', 'false');
+                return;
+              }
+
+              console.log(`Integration tests job: status=${integrationTestJob.status}, conclusion=${integrationTestJob.conclusion}`);
+
+              if (integrationTestJob.conclusion === 'skipped') {
+                console.log('Integration tests were skipped (no source changes). Ring releases require tests to run.');
+                core.setOutput('should_proceed', 'false');
+                return;
+              }
+
+              if (integrationTestJob.conclusion !== 'success') {
+                console.log(`Integration tests did not pass (conclusion: ${integrationTestJob.conclusion})`);
+                core.setOutput('should_proceed', 'false');
+                return;
+              }
+            } else {
+              console.log('No integration tests workflow found for this SHA - required for ring releases');
+              core.setOutput('should_proceed', 'false');
+              return;
+            }
+
+            // Gate: Check for at least 1 approval on current HEAD SHA
+            // Approvals must be on the current commit - stale approvals from previous commits don't count
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+
+            const currentApprovals = reviews.filter(review => 
+              review.state === 'APPROVED' && review.commit_id === headSha
+            );
+            const staleApprovals = reviews.filter(review => 
+              review.state === 'APPROVED' && review.commit_id !== headSha
+            );
+
+            if (staleApprovals.length > 0) {
+              console.log(`Found ${staleApprovals.length} stale approval(s) from previous commits - these don't count`);
+            }
+
+            if (currentApprovals.length === 0) {
+              console.log(`No approvals found on current HEAD (${headSha}). At least 1 approval required for ring release.`);
+              core.setOutput('should_proceed', 'false');
+              return;
+            }
+            console.log(`Found ${currentApprovals.length} approval(s) on current HEAD SHA`);
+
             console.log('All prerequisites met for release');
             core.setOutput('should_proceed', 'true');
 
