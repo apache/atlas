@@ -68,11 +68,12 @@
     "semver": "7.5.4",
     "json5": "2.2.3",
     "braces": "3.0.3",
-    "minimatch": "9.0.6",
+    "minimatch": "9.0.7",
     "elliptic": "6.6.1",
     "rollup": "4.59.0",
     "d3-color": "3.1.0",
     "lodash-es": "4.17.23",
-    "js-yaml": "4.1.1"
+    "js-yaml": "4.1.1",
+    "immutable": "4.3.8"
   }
 }

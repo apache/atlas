@@ -44,7 +44,7 @@
     "braces": "3.0.3",
     "cross-spawn": "7.0.6",
     "ejs": "3.1.10",
-    "minimatch": "9.0.6",
+    "minimatch": "9.0.7",
     "prismjs": "1.30.0",
     "qs": "6.14.2",
     "loader-utils": "2.0.4",
@@ -59,7 +59,6 @@
     "webpack-dev-middleware": "5.3.4",
     "path-to-regexp": "3.3.0",
     "ws": "5.2.4",
-    "minimatch": "9.0.6",
     "nth-check": "2.0.1",
     "acorn": "6.4.1",
     "lodash": "4.17.23",
@@ -69,6 +68,7 @@
     "bn.js": "5.2.3",
     "micromatch": "4.0.8",
     "yargs-parser": "13.1.2",
-    "js-yaml": "3.14.2"
+    "js-yaml": "3.14.2",
+    "immer": "9.0.6"
   }
 }
