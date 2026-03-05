@@ -21,7 +21,8 @@ jobs:
   get-pr-number:
     if: |
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
-      (github.event_name == 'pull_request' && startsWith(github.head_ref, 'ring-'))
+      (github.event_name == 'pull_request' && startsWith(github.head_ref, 'ring-')) ||
+      (github.event_name == 'pull_request_review' && startsWith(github.event.pull_request.head.ref, 'ring-'))
     runs-on: ubuntu-latest
     outputs:
       pr_number: ${{ steps.get-pr.outputs.pr_number }}
@@ -34,8 +35,8 @@ jobs:
           script: |
             let prNumber;
 
-            if (context.eventName === 'pull_request') {
-              prNumber = context.issue.number;
+            if (context.eventName === 'pull_request' || context.eventName === 'pull_request_review') {
+              prNumber = context.payload.pull_request.number;
             } else {
               // For workflow_run events, context.ref is the default branch (master),
               // not the branch that triggered the build. Use head_branch from the
