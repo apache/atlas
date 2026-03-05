@@ -5,8 +5,10 @@ on:
     types: [labeled]
     branches:
       - master
+  pull_request_review:
+    types: [submitted]
   workflow_run:
-    workflows: ["Java CI with Maven"]
+    workflows: ["Java CI with Maven", "Integration Tests"]
     types: [completed]
     branches:
       - ring-*
