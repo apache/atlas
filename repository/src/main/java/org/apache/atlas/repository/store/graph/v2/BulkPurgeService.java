@@ -86,7 +86,7 @@ public class BulkPurgeService {
     private static final String HOSTNAME = getHostname();
 
     // Internal defaults (not externally configurable — change here if needed)
-    private static final int    COORDINATOR_POOL_SIZE           = 2;
+    private static final int    COORDINATOR_POOL_SIZE           = 4;
     private static final int    ES_PAGE_SIZE                    = 5000;
     private static final int    COMMIT_MAX_RETRIES              = 3;
     private static final long   COMMIT_TIMEOUT_MS               = 120_000;
@@ -455,8 +455,18 @@ public class BulkPurgeService {
         ScheduledExecutorService heartbeatExecutor = null;
 
         try {
-            // Acquire distributed lock
-            boolean lockAcquired = redisService.acquireDistributedLock(lockKey);
+            // Acquire distributed lock (retry for orphan recovery to handle watchdog race)
+            boolean lockAcquired = false;
+            int lockRetries = ctx.orphanRecovery ? 3 : 1;
+            for (int attempt = 1; attempt <= lockRetries; attempt++) {
+                lockAcquired = redisService.acquireDistributedLock(lockKey);
+                if (lockAcquired) break;
+                if (attempt < lockRetries) {
+                    LOG.info("BulkPurge: Lock not available for {} (attempt {}/{}), retrying in 2s...",
+                            ctx.purgeKey, attempt, lockRetries);
+                    Thread.sleep(2000);
+                }
+            }
             if (!lockAcquired) {
                 LOG.warn("BulkPurge: Could not acquire lock for {}", ctx.purgeKey);
                 ctx.status = "FAILED";
@@ -2151,6 +2161,13 @@ public class BulkPurgeService {
                 LOG.warn("BulkPurge: Failed to force-release stale lock for {}, resubmit may fail", purgeKey, e);
             }
 
+            // Clean stale cancel signal so the resubmitted purge is not immediately killed
+            try {
+                redisService.removeValue(REDIS_CANCEL_PREFIX + purgeKey);
+            } catch (Exception e) {
+                LOG.warn("BulkPurge: Failed to clean cancel signal for {} before resubmit", purgeKey, e);
+            }
+
             String purgeMode = status.has("purgeMode") ? status.get("purgeMode").asText() : PURGE_MODE_CONNECTION;
             String esQuery = status.get("esQuery").asText();
             String submittedBy = status.has("submittedBy") ? status.get("submittedBy").asText() : "orphan-checker";
@@ -2168,7 +2185,23 @@ public class BulkPurgeService {
             int redisTtl = AtlasConfiguration.BULK_PURGE_REDIS_TTL_SECONDS.getInt();
             redisService.putValue("bulk_purge_request:" + requestId, ctx.toJson(), redisTtl);
 
-            // P11: Update the ORIGINAL requestId's Redis key to track the resubmit chain
+            activePurges.put(purgeKey, ctx);
+            addToActivePurgeKeys(purgeKey);
+
+            String redisKey = REDIS_KEY_PREFIX + purgeKey;
+            try {
+                coordinatorExecutor.submit(() -> executePurge(ctx, lockKey, redisKey));
+            } catch (java.util.concurrent.RejectedExecutionException ree) {
+                LOG.error("BulkPurge: Coordinator pool rejected resubmission for {} — pool is full", purgeKey, ree);
+                activePurges.remove(purgeKey);
+                removeFromActivePurgeKeys(purgeKey);
+                ctx.status = "FAILED";
+                ctx.error = "Resubmission rejected: coordinator pool at capacity";
+                writeRedisStatus(ctx);
+                return;
+            }
+
+            // Update the ORIGINAL requestId to RESUBMITTED only after successful submission
             if (originalRequestId != null && !originalRequestId.equals(requestId)) {
                 try {
                     Map<String, Object> originalUpdate = new LinkedHashMap<>();
@@ -2181,20 +2214,6 @@ public class BulkPurgeService {
                 } catch (Exception e) {
                     LOG.warn("BulkPurge: Failed to update original requestId {} during resubmit", originalRequestId, e);
                 }
-            }
-
-            activePurges.put(purgeKey, ctx);
-
-            String redisKey = REDIS_KEY_PREFIX + purgeKey;
-            try {
-                coordinatorExecutor.submit(() -> executePurge(ctx, lockKey, redisKey));
-            } catch (java.util.concurrent.RejectedExecutionException ree) {
-                LOG.error("BulkPurge: Coordinator pool rejected resubmission for {} — pool is full", purgeKey, ree);
-                activePurges.remove(purgeKey);
-                ctx.status = "FAILED";
-                ctx.error = "Resubmission rejected: coordinator pool at capacity";
-                writeRedisStatus(ctx);
-                return;
             }
 
             LOG.info("BulkPurge: Resubmitted orphaned purge for {} as requestId={} (attempt={}, originalRequestId={})",
