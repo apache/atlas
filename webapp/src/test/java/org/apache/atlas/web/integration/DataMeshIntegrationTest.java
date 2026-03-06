@@ -143,7 +143,6 @@ public class DataMeshIntegrationTest extends AtlasInProcessBaseIT {
         @SuppressWarnings("unchecked")
         List<Object> childList = (List<Object>) children;
         assertFalse(childList.isEmpty(), "Parent should have at least one child domain");
-
         LOG.info("Parent domain has {} children", childList.size());
     }
 

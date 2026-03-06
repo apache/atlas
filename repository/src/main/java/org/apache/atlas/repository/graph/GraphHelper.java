@@ -1025,25 +1025,46 @@ public final class GraphHelper {
         return ret;
     }
 
-    public static List<String> getTraitNamesV2(AtlasVertex entityVertex, Boolean propagated) {
-        List<String>     ret   = new ArrayList<>();
-        try {
-            TagDAO tagDAOCassandra = TagDAOCassandraImpl.getInstance();
-            if (!propagated) {
-                ret = tagDAOCassandra.getAllDirectClassificationsForVertex(entityVertex.getIdForDisplay())
-                                     .stream()
-                                     .map(AtlasClassification::getTypeName)
-                                     .collect(Collectors.toList());
-            } else {
-                ret = tagDAOCassandra.findByVertexIdAndPropagated(entityVertex.getIdForDisplay())
-                                     .stream()
-                                     .map(AtlasClassification::getTypeName)
-                                     .collect(Collectors.toList());
+    /**
+     * Reads classification names from denormalized JanusGraph vertex properties (V1/legacy path).
+     * When TagV2 is enabled, prefer {@code TagDAO.getClassificationNamesForVertex()} which queries
+     * Cassandra directly with a lightweight query that avoids JSON deserialization.
+     */
+    public static List<String> getClassificationNamesFromVertex(AtlasVertex entityVertex) {
+        List<String> ret = new ArrayList<>();
+        String delimitedNames = entityVertex.getProperty(CLASSIFICATION_NAMES_KEY, String.class);
+        if (StringUtils.isNotEmpty(delimitedNames)) {
+            String[] names = StringUtils.split(delimitedNames, CLASSIFICATION_NAME_DELIMITER);
+            for (String name : names) {
+                if (StringUtils.isNotBlank(name)) {
+                    ret.add(name);
+                }
             }
+        }
+        return ret;
+    }
+
+    public static List<String> getPropagatedClassificationNamesFromVertex(AtlasVertex entityVertex) {
+        List<String> ret = new ArrayList<>();
+        String delimitedNames = entityVertex.getProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, String.class);
+        if (StringUtils.isNotEmpty(delimitedNames)) {
+            String[] names = StringUtils.split(delimitedNames, CLASSIFICATION_NAME_DELIMITER);
+            for (String name : names) {
+                if (StringUtils.isNotBlank(name)) {
+                    ret.add(name.trim());
+                }
+            }
+        }
+        return ret;
+    }
+
+    public static List<String> getTraitNamesV2(AtlasVertex entityVertex, Boolean propagated) {
+        try {
+            TagDAO tagDAO = TagDAOCassandraImpl.getInstance();
+            return tagDAO.getClassificationNamesForVertex(entityVertex.getIdForDisplay(), propagated);
         } catch (AtlasBaseException e) {
             throw new RuntimeException(e);
         }
-        return ret;
     }
 
     public static List<AtlasVertex> getPropagatableClassifications(AtlasEdge edge) {

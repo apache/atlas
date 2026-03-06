@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.Tag;
@@ -28,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT;
@@ -106,6 +108,9 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     private final PreparedStatement insertPropagationBySourceStmt;
     private final PreparedStatement deletePropagationStmt;
 
+    // Lightweight query: returns only tag_type_name (avoids JSON deserialization)
+    private final PreparedStatement findTagNamesForAssetStmt;
+
     // Health check prepared statement
     private final PreparedStatement healthCheckStmt;
 
@@ -175,6 +180,10 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
             deletePropagationStmt = prepare(String.format(
                     "DELETE FROM %s.%s WHERE source_id = ? AND tag_type_name = ? AND propagated_asset_id = ?", KEYSPACE, PROPAGATED_TAGS_TABLE_NAME));
+
+            // Lightweight query for tag names only (skips tag_meta_json deserialization)
+            findTagNamesForAssetStmt = prepare(String.format(
+                    "SELECT tag_type_name, is_propagated, is_deleted FROM %s.%s WHERE bucket = ? AND id = ?", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
 
             // === Health check statement ===
             healthCheckStmt = prepare("SELECT release_version FROM system.local");
@@ -359,6 +368,82 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         } catch (Exception e) {
             LOG.error("Error fetching all classifications for vertexId={}", vertexId, e);
             throw new AtlasBaseException("Error fetching all classifications", e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    @Override
+    public List<String> getClassificationNamesForVertex(String vertexId, Boolean propagated) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getClassificationNamesForVertex");
+        try {
+            int bucket = calculateBucket(vertexId);
+            BoundStatement bound = findTagNamesForAssetStmt.bind(bucket, vertexId);
+            ResultSet rs = executeWithRetry(bound);
+
+            List<String> names = new ArrayList<>();
+            for (Row row : rs) {
+                if (!row.getBoolean("is_deleted")) {
+                    if (propagated == null || propagated.equals(row.getBoolean("is_propagated"))) {
+                        names.add(row.getString("tag_type_name"));
+                    }
+                }
+            }
+            return names;
+        } catch (Exception e) {
+            LOG.error("Error fetching classification names for vertexId={}", vertexId, e);
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    @Override
+    public Map<String, List<AtlasClassification>> getAllClassificationsForVertices(Collection<String> vertexIds) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getAllClassificationsForVertices");
+        Map<String, List<AtlasClassification>> result = new HashMap<>();
+
+        if (vertexIds == null || vertexIds.isEmpty()) {
+            return result;
+        }
+
+        try {
+            // Fire all queries in parallel using executeAsync
+            Map<String, CompletionStage<AsyncResultSet>> futures = new LinkedHashMap<>();
+            for (String vertexId : vertexIds) {
+                int bucket = calculateBucket(vertexId);
+                BoundStatement bound = findAllTagsForAssetStmt.bind(bucket, vertexId);
+                futures.put(vertexId, cassSession.executeAsync(bound));
+            }
+
+            // Collect results from all futures
+            for (Map.Entry<String, CompletionStage<AsyncResultSet>> entry : futures.entrySet()) {
+                String vertexId = entry.getKey();
+                try {
+                    AsyncResultSet rs = entry.getValue().toCompletableFuture().join();
+                    List<AtlasClassification> tags = new ArrayList<>();
+                    // Drain all pages (AsyncResultSet does not auto-page like sync ResultSet)
+                    while (rs != null) {
+                        for (Row row : rs.currentPage()) {
+                            if (!row.getBoolean("is_deleted")) {
+                                tags.add(convertToAtlasClassification(row.getString("tag_meta_json")));
+                            }
+                        }
+                        rs = rs.hasMorePages() ? rs.fetchNextPage().toCompletableFuture().join() : null;
+                    }
+                    result.put(vertexId, tags);
+                } catch (Exception e) {
+                    LOG.warn("Async classification fetch failed for vertexId={}, will fall back to sync", vertexId, e);
+                    // Deliberately omit this vertex from the result map. The caller
+                    // (mapVertexToAtlasEntity) detects the missing key and falls back to
+                    // a synchronous per-vertex call via tagDAO.getAllClassificationsForVertex().
+                }
+            }
+
+            return result;
+        } catch (Exception e) {
+            LOG.error("Error in batch classification fetch", e);
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
