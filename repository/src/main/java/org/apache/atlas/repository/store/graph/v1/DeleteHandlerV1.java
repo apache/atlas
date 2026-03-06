@@ -1036,8 +1036,15 @@ public abstract class DeleteHandlerV1 {
     }
 
     protected AtlasAttribute getAttributeForEdge(AtlasEdge edge) throws AtlasBaseException {
-        String labelWithoutPrefix        = edge.getLabel().substring(GraphHelper.EDGE_LABEL_PREFIX.length());
-        AtlasType       parentType       = typeRegistry.getType(AtlasGraphUtilsV2.getTypeName(edge.getOutVertex()));
+        String labelWithoutPrefix = edge.getLabel().substring(GraphHelper.EDGE_LABEL_PREFIX.length());
+        String typeName           = AtlasGraphUtilsV2.getTypeName(edge.getOutVertex());
+
+        if (typeName == null) {
+            LOG.warn("getAttributeForEdge: skipping orphaned edge with null typeName on OUT vertex; edgeId={}, edgeLabel={}", edge.getId(), edge.getLabel());
+            return null;
+        }
+
+        AtlasType       parentType       = typeRegistry.getType(typeName);
         AtlasStructType parentStructType = (AtlasStructType) parentType;
         AtlasStructType.AtlasAttribute attribute = parentStructType.getAttribute(labelWithoutPrefix);
         if (attribute == null) {
@@ -1275,7 +1282,11 @@ public abstract class DeleteHandlerV1 {
                         AtlasVertex inVertex = edge.getInVertex();
                         AtlasAttribute attribute = getAttributeForEdge(edge);
 
-                        deleteEdgeBetweenVertices(outVertex, inVertex, attribute);
+                        if (attribute != null) {
+                            deleteEdgeBetweenVertices(outVertex, inVertex, attribute);
+                        } else {
+                            LOG.warn("Skipping deleteEdgeBetweenVertices for orphaned edge with null attribute; edgeId={}, edgeLabel={}", edge.getId(), edge.getLabel());
+                        }
                     }
                 }
             }
