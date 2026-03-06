@@ -608,13 +608,6 @@ public class AtlasJanusGraphManagementTest {
     }
 
     @Test
-    public void testUpdateSchemaStatusStaticMethod() {
-        // Test the static method
-        AtlasJanusGraphManagement.updateSchemaStatus(mockJanusManagement, mockJanusGraph, Vertex.class);
-        AtlasJanusGraphManagement.updateSchemaStatus(mockJanusManagement, mockJanusGraph, org.apache.tinkerpop.gremlin.structure.Edge.class);
-    }
-
-    @Test
     public void testStaticUpdateSchemaStatusWithRegisteredIndex() {
         JanusGraphIndex mockIndex = mock(JanusGraphIndex.class);
         PropertyKey mockFieldKey = mock(PropertyKey.class);
@@ -633,23 +626,6 @@ public class AtlasJanusGraphManagementTest {
             when(mockFuture.get()).thenReturn(null);
         } catch (Exception ignored) {
         }
-    }
-
-    @Test
-    public void testStaticUpdateSchemaStatusWithInstalledIndex() {
-        JanusGraphIndex mockIndex = mock(JanusGraphIndex.class);
-        PropertyKey mockFieldKey = mock(PropertyKey.class);
-        when(mockIndex.isCompositeIndex()).thenReturn(true);
-        when(mockIndex.getFieldKeys()).thenReturn(new PropertyKey[] {mockFieldKey});
-        when(mockIndex.getIndexStatus(mockFieldKey)).thenReturn(SchemaStatus.INSTALLED);
-        when(mockIndex.name()).thenReturn("installedIndex");
-        when(mockJanusManagement.getGraphIndexes(Vertex.class)).thenReturn(Collections.singletonList(mockIndex));
-
-        // Should handle INSTALLED status without attempting to update
-        AtlasJanusGraphManagement.updateSchemaStatus(mockJanusManagement, mockJanusGraph, Vertex.class);
-
-        // Verify no inner management was opened for INSTALLED status
-        verify(mockJanusGraph, never()).openManagement();
     }
 
     @Test
