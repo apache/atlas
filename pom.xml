@@ -2375,5 +2375,33 @@
             </properties>
         </profile>
 
+        <profile>
+            <id>it-rdbms</id>
+            <properties>
+                <!-- Enunciate uses javac internals and fails on newer JDKs without module exports; not needed for IT runs -->
+                <skipEnunciate>true</skipEnunciate>
+                <skipITs>false</skipITs>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>integration-test</id>
+                                <configuration>
+                                    <includes>
+                                        <include>**/*IT.java</include>
+                                    </includes>
+                                    <excludes combine.self="override" />
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
     </profiles>
 </project>

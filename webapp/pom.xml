@@ -861,6 +861,106 @@
             </properties>
         </profile>
 
+        <!--
+         Profile for running Postgres/RDBMS-backed integration tests.
+         This profile overlays an alternate atlas-application.properties onto target/test-classes
+         (atlas.conf is already set to ${project.build.directory}/test-classes for Jetty ITs).
+       -->
+        <profile>
+            <id>it-rdbms</id>
+            <properties>
+                <it.rdbms.containerName>atlas-it-postgres</it.rdbms.containerName>
+                <it.rdbms.dbName>atlas</it.rdbms.dbName>
+                <it.rdbms.docker.skip>false</it.rdbms.docker.skip>
+                <it.rdbms.hostPort>15432</it.rdbms.hostPort>
+                <it.rdbms.image>postgres:13.21</it.rdbms.image>
+                <it.rdbms.jdbcUrl>jdbc:postgresql://localhost:${it.rdbms.hostPort}/atlas</it.rdbms.jdbcUrl>
+                <it.rdbms.maxConnections>300</it.rdbms.maxConnections>
+                <it.rdbms.password>itpwd</it.rdbms.password>
+                <it.rdbms.scriptsDir>${projectBaseDir}/build-tools/it</it.rdbms.scriptsDir>
+                <it.rdbms.username>atlas</it.rdbms.username>
+                <it.rdbms.waitActiveSeconds>180</it.rdbms.waitActiveSeconds>
+            </properties>
+            <build>
+                <testResources>
+                    <testResource>
+                        <filtering>true</filtering>
+                        <directory>src/test/resources</directory>
+                    </testResource>
+                    <testResource>
+                        <filtering>true</filtering>
+                        <directory>src/test/resources-rdbms</directory>
+                    </testResource>
+                </testResources>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.5.0</version>
+                        <executions>
+                            <execution>
+                                <id>it-rdbms-start-postgres</id>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <phase>initialize</phase>
+                                <configuration>
+                                    <skip>${it.rdbms.docker.skip}</skip>
+                                    <executable>bash</executable>
+                                    <environmentVariables>
+                                        <ATLAS_IT_RDBMS_CONTAINER_NAME>${it.rdbms.containerName}</ATLAS_IT_RDBMS_CONTAINER_NAME>
+                                        <ATLAS_IT_RDBMS_IMAGE>${it.rdbms.image}</ATLAS_IT_RDBMS_IMAGE>
+                                        <ATLAS_IT_RDBMS_HOSTPORT>${it.rdbms.hostPort}</ATLAS_IT_RDBMS_HOSTPORT>
+                                        <ATLAS_IT_RDBMS_USERNAME>${it.rdbms.username}</ATLAS_IT_RDBMS_USERNAME>
+                                        <ATLAS_IT_RDBMS_PASSWORD>${it.rdbms.password}</ATLAS_IT_RDBMS_PASSWORD>
+                                        <ATLAS_IT_RDBMS_DBNAME>${it.rdbms.dbName}</ATLAS_IT_RDBMS_DBNAME>
+                                        <ATLAS_IT_RDBMS_MAX_CONNECTIONS>${it.rdbms.maxConnections}</ATLAS_IT_RDBMS_MAX_CONNECTIONS>
+                                    </environmentVariables>
+                                    <arguments>
+                                        <argument>${it.rdbms.scriptsDir}/it-rdbms-start-postgres.sh</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>it-rdbms-wait-atlas-active</id>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <phase>pre-integration-test</phase>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <environmentVariables>
+                                        <ATLAS_IT_STATUS_URL>http://localhost:31000/api/atlas/admin/status</ATLAS_IT_STATUS_URL>
+                                        <ATLAS_IT_WAIT_ACTIVE_SECONDS>${it.rdbms.waitActiveSeconds}</ATLAS_IT_WAIT_ACTIVE_SECONDS>
+                                    </environmentVariables>
+                                    <arguments>
+                                        <argument>${it.rdbms.scriptsDir}/it-rdbms-wait-atlas-active.sh</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>it-rdbms-stop-postgres</id>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <phase>post-integration-test</phase>
+                                <configuration>
+                                    <skip>${it.rdbms.docker.skip}</skip>
+                                    <executable>bash</executable>
+                                    <environmentVariables>
+                                        <ATLAS_IT_RDBMS_CONTAINER_NAME>${it.rdbms.containerName}</ATLAS_IT_RDBMS_CONTAINER_NAME>
+                                    </environmentVariables>
+                                    <arguments>
+                                        <argument>${it.rdbms.scriptsDir}/it-rdbms-stop-postgres.sh</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>Windows</id>
             <activation>
