@@ -889,6 +889,7 @@ jobs:
       
       - name: Create GitHub Release
         if: steps.can_publish.outputs.should_publish == 'true'
+        continue-on-error: true
         uses: ncipollo/release-action@v1
         with:
           tag: helm-${{ matrix.chart }}-v${{ steps.version.outputs.chart }}
