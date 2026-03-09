@@ -410,6 +410,7 @@ jobs:
                 serviceName,
                 imageTag,
                 imageRepo,
+                maxParallelReleases: 100,
                 cohortSource: cohort.source,
                 workspaceType: cohort.key === 'type' ? cohort.value : '',
                 channel: cohort.key === 'channel' ? cohort.value : '',
