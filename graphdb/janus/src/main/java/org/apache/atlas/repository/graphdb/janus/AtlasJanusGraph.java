@@ -210,13 +210,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     public AtlasEdge getEdgeBetweenVertices(AtlasVertex fromVertex, AtlasVertex toVertex, String edgeLabel) {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getEdgeBetweenVertices");
         try {
-            GraphTraversal gt;
-            AtlasPerfMetrics.MetricRecorder queryMetric = RequestContext.get().startMetricRecord("getEdgeBetweenVertices.query");
-            try {
-                gt = V(fromVertex.getId()).outE(edgeLabel).where(__.otherV().hasId(toVertex.getId()));
-            } finally {
-                RequestContext.get().endMetricRecord(queryMetric);
-            }
+            GraphTraversal gt = V(fromVertex.getId()).outE(edgeLabel).where(__.otherV().hasId(toVertex.getId()));
 
             Edge gremlinEdge = getFirstActiveEdge(gt);
             return (gremlinEdge != null)
@@ -703,24 +697,17 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         }
     }
     private Edge getFirstActiveEdge(GraphTraversal gt) {
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getEdgeBetweenVertices.activeEdgeScan");
-        long scannedEdges = 0L;
-        try {
-            if (gt != null) {
-                while (gt.hasNext()) {
-                    Edge gremlinEdge = (Edge) gt.next();
-                    scannedEdges++;
-                    if (gremlinEdge != null && gremlinEdge.property(STATE_PROPERTY_KEY).isPresent() &&
-                            gremlinEdge.property(STATE_PROPERTY_KEY).value().equals(AtlasEntity.Status.ACTIVE.toString())
-                    ) {
-                        return gremlinEdge;
-                    }
+        if (gt != null) {
+            while (gt.hasNext()) {
+                Edge gremlinEdge = (Edge) gt.next();
+                if (gremlinEdge != null && gremlinEdge.property(STATE_PROPERTY_KEY).isPresent() &&
+                        gremlinEdge.property(STATE_PROPERTY_KEY).value().equals(AtlasEntity.Status.ACTIVE.toString())
+                ) {
+                    return gremlinEdge;
                 }
             }
-
-            return null;
-        } finally {
-            RequestContext.get().endMetricRecord(metric, scannedEdges);
         }
+
+        return null;
     }
 }
