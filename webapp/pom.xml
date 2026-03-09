@@ -823,6 +823,16 @@
 
     <profiles>
         <profile>
+            <id>dist</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <packages.to.exclude>${distro.exclude.packages}</packages.to.exclude>
+            </properties>
+        </profile>
+
+        <profile>
             <id>embedded-solr-it</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
@@ -830,16 +840,6 @@
             <properties>
                 <atlas.testtools.scope>runtime</atlas.testtools.scope>
                 <packages.to.exclude>WEB-INF/lib/dom4j-*.jar</packages.to.exclude>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>dist</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <packages.to.exclude>${distro.exclude.packages}</packages.to.exclude>
             </properties>
         </profile>
 
