@@ -6,7 +6,6 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
-import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.service.config.ConfigKey;
 import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -26,7 +25,7 @@ import java.util.Iterator;
  * latest tag propagation version by default.
  */
 @Component
-@DependsOn({"featureFlagStore", "dynamicConfigStore"})
+@DependsOn("dynamicConfigStore")
 public class TagsV2AutoEnabler {
     private static final Logger LOG = LoggerFactory.getLogger(TagsV2AutoEnabler.class);
 
@@ -60,12 +59,9 @@ public class TagsV2AutoEnabler {
 
             if (!hasClassificationTypes) {
                 LOG.info("No classification types found - enabling Tags V2 for new tenant");
-                // Write to both Redis (for backward compatibility) and Cassandra (if enabled)
-                FeatureFlagStore.setFlag(ENABLE_JANUS_OPTIMISATION_KEY, "true");
-                if (DynamicConfigStore.isEnabled()) {
-                    DynamicConfigStore.setConfig(ENABLE_JANUS_OPTIMISATION_KEY, "true", "system");
-                }
-                LOG.info("Successfully enabled Tags V2 feature flag");
+                // Write to DynamicConfigStore (Cassandra-backed)
+                DynamicConfigStore.setConfig(ENABLE_JANUS_OPTIMISATION_KEY, "true", "system-auto-enable");
+                LOG.info("Successfully enabled Tags V2 feature flag via DynamicConfigStore");
             } else {
                 LOG.info("Classification types found - keeping existing configuration (Tags v2 disabled)");
             }

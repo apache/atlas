@@ -19,10 +19,7 @@
 package org.apache.atlas.repository;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.service.FeatureFlag;
-import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -39,7 +36,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.apache.atlas.service.FeatureFlag.USE_TEMP_ES_INDEX;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 import static org.apache.atlas.type.AtlasStructType.UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX;
 
@@ -563,19 +559,6 @@ public final class Constants {
         }
     }
 
-    public static String getESIndex() {
-        String indexSuffix  = null;
-        if(AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean()) {
-            try {
-                if (FeatureFlagStore.evaluate( USE_TEMP_ES_INDEX.getKey(), "true")) {
-                    indexSuffix = "_temp";
-                }
-            } catch (Exception e) {
-                LOG.error("Failed to evaluate feature flag with error", e);
-            }
-        }
-        return indexSuffix == null ? VERTEX_INDEX_NAME : VERTEX_INDEX_NAME + indexSuffix;
-    }
 
     public static String getStaticFileAsString(String fileName) throws IOException {
         String atlasHomeDir  = System.getProperty("atlas.home");

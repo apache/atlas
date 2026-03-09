@@ -65,8 +65,18 @@ public class TypeDefRefreshConfig {
     @Scheduled(fixedRateString = "${atlas.typedef.scheduler.fixed-rate:600000}")
     public void checkTypeDefVersion() {
         try {
+            // Check if Redis is available before attempting version check
+            if (!redisService.isAvailable()) {
+                LOG.debug("TypeDef version check skipped - Redis unavailable");
+                return;
+            }
+
             // Get version from Redis
             String redisVersionStr = redisService.getValue(AtlasTypeDefStoreInitializer.TYPEDEF_LATEST_VERSION, "1");
+            if (redisVersionStr == null) {
+                LOG.debug("TypeDef version check skipped - could not get version from Redis");
+                return;
+            }
             long redisVersion = Long.parseLong(redisVersionStr);
 
             // Get current version

@@ -20,8 +20,8 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.service.FeatureFlag;
-import org.apache.atlas.service.FeatureFlagStore;
+import org.apache.atlas.service.config.ConfigKey;
+import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.lang3.StringUtils;
@@ -29,23 +29,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.util.*;
 
 /**
- * REST interface for feature flag operations.
- * 
- * Provides CRUD operations for managing feature flags:
- * - Get all feature flags with their current values
- * - Get individual feature flag by key
- * - Update/set feature flag value
- * - Delete feature flag (reset to default)
+ * REST interface for feature flag (configuration) operations.
+ *
+ * Provides CRUD operations for managing configuration flags via DynamicConfigStore:
+ * - Get all configuration flags with their current values
+ * - Get individual configuration flag by key
+ * - Update/set configuration flag value
+ * - Delete configuration flag (reset to default)
+ *
+ * Note: This REST API now uses DynamicConfigStore (Cassandra-backed) instead of
+ * the deprecated FeatureFlagStore.
  */
 @Path("featureflags")
 @Singleton
@@ -56,23 +57,20 @@ public class FeatureFlagREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.FeatureFlagREST");
     private static final Logger LOG = LoggerFactory.getLogger(FeatureFlagREST.class);
 
-    private final FeatureFlagStore featureFlagStore;
-
-    @Inject
-    public FeatureFlagREST(FeatureFlagStore featureFlagStore) {
-        this.featureFlagStore = featureFlagStore;
+    public FeatureFlagREST() {
+        // No injection needed - DynamicConfigStore provides static methods
     }
 
     /**
-     * Get all feature flags with their current values and metadata.
-     * 
-     * Returns all predefined feature flags along with:
-     * - Current value (from Redis/cache or default)
+     * Get all configuration flags with their current values and metadata.
+     *
+     * Returns all predefined configuration flags along with:
+     * - Current value (from Cassandra cache or default)
      * - Default value
      * - Key name
-     * 
+     *
      * @param request HTTP servlet request
-     * @return FeatureFlagListResponse containing all feature flags
+     * @return FeatureFlagListResponse containing all configuration flags
      * @throws AtlasBaseException if operation fails
      */
     @GET
@@ -91,17 +89,15 @@ public class FeatureFlagREST {
             FeatureFlagListResponse response = new FeatureFlagListResponse();
             List<FeatureFlagInfo> flagList = new ArrayList<>();
 
-            // Get all predefined feature flags
-            String[] allKeys = FeatureFlag.getAllKeys();
-            
-            for (String key : allKeys) {
-                FeatureFlag flag = FeatureFlag.fromKey(key);
-                String currentValue = FeatureFlagStore.getFlag(key);
+            // Get all predefined configuration keys from DynamicConfigStore
+            for (ConfigKey configKey : ConfigKey.values()) {
+                String key = configKey.getKey();
+                String currentValue = DynamicConfigStore.getConfig(key);
 
                 FeatureFlagInfo flagInfo = new FeatureFlagInfo();
                 flagInfo.setKey(key);
                 flagInfo.setCurrentValue(currentValue);
-                flagInfo.setDefaultValue(String.valueOf(flag.getDefaultValue()));
+                flagInfo.setDefaultValue(configKey.getDefaultValue());
 
                 flagList.add(flagInfo);
             }
@@ -122,9 +118,9 @@ public class FeatureFlagREST {
     }
 
     /**
-     * Get a specific feature flag by its key.
-     * 
-     * @param key Feature flag key
+     * Get a specific configuration flag by its key.
+     *
+     * @param key Configuration flag key
      * @param request HTTP servlet request
      * @return FeatureFlagInfo containing flag details
      * @throws AtlasBaseException if flag is invalid or operation fails
@@ -145,21 +141,21 @@ public class FeatureFlagREST {
             }
 
             if (StringUtils.isBlank(key)) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Feature flag key cannot be empty");
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Configuration flag key cannot be empty");
             }
 
-            if (!FeatureFlag.isValidFlag(key)) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, 
-                    "Invalid feature flag key: " + key + ". Valid keys are: " + Arrays.toString(FeatureFlag.getAllKeys()));
+            if (!ConfigKey.isValidKey(key)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
+                    "Invalid configuration flag key: " + key + ". Valid keys are: " + Arrays.toString(ConfigKey.getAllKeys()));
             }
 
-            FeatureFlag flag = FeatureFlag.fromKey(key);
-            String currentValue = FeatureFlagStore.getFlag(key);
-            
+            ConfigKey configKey = ConfigKey.fromKey(key);
+            String currentValue = DynamicConfigStore.getConfig(key);
+
             FeatureFlagInfo flagInfo = new FeatureFlagInfo();
             flagInfo.setKey(key);
             flagInfo.setCurrentValue(currentValue);
-            flagInfo.setDefaultValue(String.valueOf(flag.getDefaultValue()));
+            flagInfo.setDefaultValue(configKey.getDefaultValue());
             flagInfo.setTimestamp(new Date());
 
             return flagInfo;
@@ -174,9 +170,9 @@ public class FeatureFlagREST {
     }
 
     /**
-     * Update or set a feature flag value.
-     * 
-     * @param key Feature flag key
+     * Update or set a configuration flag value.
+     *
+     * @param key Configuration flag key
      * @param request Update request containing the new value
      * @param servletRequest HTTP servlet request
      * @return FeatureFlagResponse indicating success
@@ -199,27 +195,28 @@ public class FeatureFlagREST {
             }
 
             if (StringUtils.isBlank(key)) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Feature flag key cannot be empty");
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Configuration flag key cannot be empty");
             }
 
             if (request == null || StringUtils.isBlank(request.getValue())) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Feature flag value cannot be empty");
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Configuration flag value cannot be empty");
             }
 
-            if (!FeatureFlag.isValidFlag(key)) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, 
-                    "Invalid feature flag key: " + key + ". Valid keys are: " + Arrays.toString(FeatureFlag.getAllKeys()));
+            if (!ConfigKey.isValidKey(key)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
+                    "Invalid configuration flag key: " + key + ". Valid keys are: " + Arrays.toString(ConfigKey.getAllKeys()));
             }
 
-            // Set the feature flag
-            FeatureFlagStore.setFlag(key, request.getValue());
+            String updatedBy = servletRequest.getRemoteUser() != null ? servletRequest.getRemoteUser() : "anonymous";
 
-            LOG.info("Feature flag '{}' updated to value: {} by user: {}", key, request.getValue(), 
-                    servletRequest.getRemoteUser() != null ? servletRequest.getRemoteUser() : "anonymous");
+            // Set the configuration flag via DynamicConfigStore
+            DynamicConfigStore.setConfig(key, request.getValue(), updatedBy);
+
+            LOG.info("Configuration flag '{}' updated to value: {} by user: {}", key, request.getValue(), updatedBy);
 
             FeatureFlagResponse response = new FeatureFlagResponse();
             response.setSuccess(true);
-            response.setMessage("Feature flag '" + key + "' updated successfully to: " + request.getValue());
+            response.setMessage("Configuration flag '" + key + "' updated successfully to: " + request.getValue());
             response.setKey(key);
             response.setValue(request.getValue());
             response.setTimestamp(new Date());
@@ -236,12 +233,12 @@ public class FeatureFlagREST {
     }
 
     /**
-     * Delete a feature flag (reset to default value).
-     * 
-     * This removes any custom value set for the feature flag,
+     * Delete a configuration flag (reset to default value).
+     *
+     * This removes any custom value set for the configuration flag,
      * causing it to fall back to its default value.
-     * 
-     * @param key Feature flag key
+     *
+     * @param key Configuration flag key
      * @param request HTTP servlet request
      * @return FeatureFlagResponse indicating success
      * @throws AtlasBaseException if flag is invalid or operation fails
@@ -262,31 +259,31 @@ public class FeatureFlagREST {
             }
 
             if (StringUtils.isBlank(key)) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Feature flag key cannot be empty");
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Configuration flag key cannot be empty");
             }
 
-            if (!FeatureFlag.isValidFlag(key)) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, 
-                    "Invalid feature flag key: " + key + ". Valid keys are: " + Arrays.toString(FeatureFlag.getAllKeys()));
+            if (!ConfigKey.isValidKey(key)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
+                    "Invalid configuration flag key: " + key + ". Valid keys are: " + Arrays.toString(ConfigKey.getAllKeys()));
             }
 
             // Get current value before deletion for logging
-            String previousValue = FeatureFlagStore.getFlag(key);
-            
-            // Delete the feature flag (resets to default)
-            FeatureFlagStore.deleteFlag(key);
-            
-            // Get default value for response
-            FeatureFlag flag = FeatureFlag.fromKey(key);
-            String defaultValue = String.valueOf(flag.getDefaultValue());
+            String previousValue = DynamicConfigStore.getConfig(key);
 
-            LOG.info("Feature flag '{}' deleted (reset to default) by user: {}. Previous value: {}, Default value: {}", 
-                    key, request.getRemoteUser() != null ? request.getRemoteUser() : "anonymous", 
+            // Delete the configuration flag (resets to default)
+            DynamicConfigStore.deleteConfig(key);
+
+            // Get default value for response
+            ConfigKey configKey = ConfigKey.fromKey(key);
+            String defaultValue = configKey.getDefaultValue();
+
+            LOG.info("Configuration flag '{}' deleted (reset to default) by user: {}. Previous value: {}, Default value: {}",
+                    key, request.getRemoteUser() != null ? request.getRemoteUser() : "anonymous",
                     previousValue, defaultValue);
 
             FeatureFlagResponse response = new FeatureFlagResponse();
             response.setSuccess(true);
-            response.setMessage("Feature flag '" + key + "' deleted successfully (reset to default: " + defaultValue + ")");
+            response.setMessage("Configuration flag '" + key + "' deleted successfully (reset to default: " + defaultValue + ")");
             response.setKey(key);
             response.setValue(defaultValue);
             response.setTimestamp(new Date());

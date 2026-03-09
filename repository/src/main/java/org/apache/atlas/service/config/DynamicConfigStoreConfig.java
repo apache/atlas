@@ -45,9 +45,10 @@ public class DynamicConfigStoreConfig {
     private static final String PROP_GRAPH_STORAGE_HOSTNAME = "atlas.graph.storage.hostname";
     private static final String PROP_GRAPH_STORAGE_CQL_PORT = "atlas.graph.storage.cql.port";
 
-    // Default values
-    private static final boolean DEFAULT_ENABLED = false;
-    private static final boolean DEFAULT_ACTIVATED = false;
+    // Default values - DynamicConfigStore is enabled and activated by default
+    // This replaces the legacy FeatureFlagStore
+    private static final boolean DEFAULT_ENABLED = true;
+    private static final boolean DEFAULT_ACTIVATED = true;
     private static final long DEFAULT_SYNC_INTERVAL_MS = 60000L; // 60 seconds
     private static final String DEFAULT_KEYSPACE = "config_store";
     private static final String DEFAULT_TABLE = "configs";

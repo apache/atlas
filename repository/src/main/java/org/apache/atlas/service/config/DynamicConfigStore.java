@@ -5,8 +5,6 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.service.FeatureFlag;
-import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.service.config.DynamicConfigCacheStore.ConfigEntry;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -14,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -26,7 +23,10 @@ import java.util.Objects;
 /**
  * Dynamic Configuration Store backed by Cassandra.
  *
- * This is the main coordinator that:
+ * This is the PRIMARY configuration store for Atlas, replacing the legacy FeatureFlagStore.
+ * It is enabled and activated by default.
+ *
+ * This component:
  * - Provides static methods for getting/setting configs
  * - Manages the in-memory cache
  * - Coordinates with CassandraConfigDAO for persistence
@@ -35,20 +35,14 @@ import java.util.Objects;
  * - Reads ALWAYS come from cache (never hit Cassandra on read path)
  * - Writes update Cassandra first, then update local cache
  * - Background sync (ConfigSyncScheduler) refreshes cache periodically
- * - If Cassandra is disabled, operations are no-ops (fall back to existing behavior)
  *
  * Configuration:
- * - atlas.config.store.cassandra.enabled=true to enable Cassandra connectivity and sync
- * - atlas.config.store.cassandra.activated=true to use Cassandra for reads (instead of Redis)
+ * - atlas.config.store.cassandra.enabled (default: true) - Enable/disable Cassandra config store
+ * - atlas.config.store.cassandra.activated (default: true) - Use Cassandra for reads
  *
- * Migration Strategy:
- * 1. Set enabled=true, activated=false: Enables Cassandra connectivity and data sync from Redis
- *    - Feature flag helper methods fall back to FeatureFlagStore (Redis)
- * 2. Set enabled=true, activated=true: Switches reads to use Cassandra instead of Redis
- *    - Feature flag helper methods read from Cassandra cache
+ * Note: The legacy FeatureFlagStore is deprecated. All new code should use DynamicConfigStore.
  */
 @Component
-@DependsOn("featureFlagStore")
 public class DynamicConfigStore implements ApplicationContextAware {
     private static final Logger LOG = LoggerFactory.getLogger(DynamicConfigStore.class);
 
@@ -65,7 +59,7 @@ public class DynamicConfigStore implements ApplicationContextAware {
     private static final String METRIC_PREFIX = "atlas_config_store";
     private static final String METRIC_FLAG_VALUE = METRIC_PREFIX + "_flag_value";
     private static final String METRIC_DEFAULT_FALLBACK = METRIC_PREFIX + "_default_fallback_total";
-    private static final String METRIC_REDIS_RECOVERY = METRIC_PREFIX + "_redis_recovery_total";
+    private static final String METRIC_DEFAULT_RECOVERY = METRIC_PREFIX + "_default_recovery_total";
 
     @Inject
     public DynamicConfigStore(DynamicConfigStoreConfig config, DynamicConfigCacheStore cacheStore,
@@ -94,35 +88,31 @@ public class DynamicConfigStore implements ApplicationContextAware {
             CassandraConfigDAO.initialize(config);
             cassandraAvailable = true;
 
-            // Phase 1 (enabled=true, activated=false): Sync feature flags from Redis to Cassandra
-            // This ensures Cassandra has the current Redis values before activation
-            // Phase 2 (enabled=true, activated=true): Skip Redis sync, Cassandra is the source of truth
+            // Seed default config values in Cassandra for any missing keys
             if (!config.isActivated()) {
-                syncFeatureFlagsFromRedis();
+                seedDefaultConfigs();
             } else {
-                LOG.info("Cassandra config store is activated - skipping Redis sync, using Cassandra as source of truth");
+                LOG.info("Cassandra config store is activated - using Cassandra as source of truth");
             }
 
             // Load initial data into cache from Cassandra
             loadAllConfigsIntoCache();
 
-            // DEFENSIVE CHECK: If activated but Cassandra has no/partial rows, a previous
-            // Phase 1 deployment may have been missed (e.g., ArgoCD sync gap). Recover by
-            // syncing from Redis so we don't serve empty defaults.
+            // DEFENSIVE CHECK: If activated but Cassandra has no/partial rows, seed defaults
+            // to ensure all ConfigKeys have a value.
             if (config.isActivated()) {
                 int loadedCount = cacheStore.size();
                 int expectedCount = ConfigKey.values().length;
 
                 if (loadedCount < expectedCount) {
                     LOG.warn("CONFIG STORE RECOVERY: Activated store has {}/{} config rows in Cassandra. " +
-                            "Phase 1 (Redis sync) may have been missed for this tenant. " +
-                            "Performing recovery sync from Redis...", loadedCount, expectedCount);
+                            "Seeding missing defaults...", loadedCount, expectedCount);
 
-                    syncFeatureFlagsFromRedis();
+                    seedDefaultConfigs();
                     loadAllConfigsIntoCache();
 
                     int recoveredCount = cacheStore.size();
-                    LOG.warn("CONFIG STORE RECOVERY: After Redis sync, store has {}/{} config rows",
+                    LOG.warn("CONFIG STORE RECOVERY: After seeding defaults, store has {}/{} config rows",
                             recoveredCount, expectedCount);
 
                     recordRecoveryMetric();
@@ -141,9 +131,11 @@ public class DynamicConfigStore implements ApplicationContextAware {
             registerMetrics();
 
         } catch (Exception e) {
-            LOG.error("Failed to initialize DynamicConfigStore - Cassandra config store will be unavailable", e);
-            // Fail-fast if Cassandra is enabled but unavailable
-            throw new RuntimeException("DynamicConfigStore initialization failed - Cassandra unavailable", e);
+            LOG.error("Failed to initialize DynamicConfigStore - will serve ConfigKey defaults until Cassandra recovers", e);
+            // Graceful degradation: mark as initialized but Cassandra unavailable.
+            // All reads will fall back to ConfigKey defaults via getDefaultValue().
+            initialized = true;
+            cassandraAvailable = false;
         }
     }
 
@@ -176,56 +168,23 @@ public class DynamicConfigStore implements ApplicationContextAware {
     }
 
     /**
-     * Sync feature flags from Redis to Cassandra and seed defaults for all ConfigKeys.
-     * This is Phase 1 of the migration: populate Cassandra with current Redis values.
-     * Also seeds any ConfigKey that does not have a corresponding Redis flag with its default value,
-     * ensuring Cassandra always has a complete set of rows after sync.
+     * Seed default values for all ConfigKeys in Cassandra.
+     * This ensures Cassandra has a row for every ConfigKey, preventing empty store issues.
+     * Called during initialization when store is not yet activated (migration phase).
+     *
+     * @deprecated This method is kept for backward compatibility during migration.
+     *             With DynamicConfigStore enabled and activated by default, this is rarely needed.
      */
-    private void syncFeatureFlagsFromRedis() {
-        LOG.info("Starting feature flag sync from Redis to Cassandra...");
-        int syncedFromRedis = 0;
+    @Deprecated
+    private void seedDefaultConfigs() {
+        LOG.info("Seeding default config values in Cassandra...");
         int seededWithDefault = 0;
-        int skippedCount = 0;
 
         try {
             CassandraConfigDAO dao = CassandraConfigDAO.getInstance();
 
-            // Track which ConfigKeys were populated from Redis
-            java.util.Set<String> populatedKeys = new java.util.HashSet<>();
-
-            // Step 1: Sync flags that exist in both FeatureFlag (Redis) and ConfigKey (Cassandra)
-            for (String flagKey : FeatureFlag.getAllKeys()) {
-                if (!ConfigKey.isValidKey(flagKey)) {
-                    LOG.debug("Skipping Redis flag '{}' - not defined in ConfigKey", flagKey);
-                    skippedCount++;
-                    continue;
-                }
-
-                try {
-                    String redisValue = FeatureFlagStore.getFlag(flagKey);
-
-                    if (StringUtils.isNotEmpty(redisValue)) {
-                        dao.putConfig(flagKey, redisValue, "redis-sync");
-                        populatedKeys.add(flagKey);
-                        syncedFromRedis++;
-                        LOG.debug("Synced flag '{}' from Redis to Cassandra: {}", flagKey, redisValue);
-                    } else {
-                        LOG.debug("Skipping flag '{}' - no value in Redis", flagKey);
-                        skippedCount++;
-                    }
-                } catch (Exception e) {
-                    LOG.warn("Failed to sync flag '{}' from Redis - will seed default", flagKey, e);
-                    skippedCount++;
-                }
-            }
-
-            // Step 2: Seed defaults for ConfigKeys not populated from Redis
-            // This ensures Cassandra has a row for every ConfigKey, preventing empty store issues
+            // Seed defaults for all ConfigKeys
             for (ConfigKey configKey : ConfigKey.values()) {
-                if (populatedKeys.contains(configKey.getKey())) {
-                    continue; // Already synced from Redis
-                }
-
                 String defaultValue = configKey.getDefaultValue();
                 if (defaultValue != null) {
                     try {
@@ -242,11 +201,10 @@ public class DynamicConfigStore implements ApplicationContextAware {
                 }
             }
 
-            LOG.info("Feature flag sync completed - syncedFromRedis: {}, seededWithDefault: {}, skipped: {}",
-                    syncedFromRedis, seededWithDefault, skippedCount);
+            LOG.info("Config seeding completed - seededWithDefault: {}", seededWithDefault);
 
         } catch (Exception e) {
-            LOG.error("Failed to sync feature flags from Redis to Cassandra", e);
+            LOG.error("Failed to seed config defaults in Cassandra", e);
             // Don't fail initialization - Cassandra may have existing data or we'll use defaults
         }
     }
@@ -376,29 +334,22 @@ public class DynamicConfigStore implements ApplicationContextAware {
 
     // ================== Feature Flag Helper Methods ==================
     //
-    // These methods check if DynamicConfigStore is activated.
-    // If activated, they read from Cassandra cache.
-    // If not activated, they fall back to FeatureFlagStore (Redis).
+    // These methods read configuration from the Cassandra-backed DynamicConfigStore.
+    // DynamicConfigStore is now enabled and activated by default, replacing the legacy FeatureFlagStore.
     //
 
     /**
      * Check if Tag V2 (Janus optimization) is enabled.
      * Note: The flag ENABLE_JANUS_OPTIMISATION being "true" means Tag V2 is ENABLED.
-     * Falls back to FeatureFlagStore (Redis) if DynamicConfigStore is not activated.
      *
      * @return true if Tag V2 is enabled, false otherwise
      */
     public static boolean isTagV2Enabled() {
-        if (isActivated()) {
-            return getConfigAsBoolean(ConfigKey.ENABLE_JANUS_OPTIMISATION.getKey());
-        }
-        // Fall back to FeatureFlagStore (Redis)
-        return FeatureFlagStore.isTagV2Enabled();
+        return getConfigAsBoolean(ConfigKey.ENABLE_JANUS_OPTIMISATION.getKey());
     }
 
     /**
      * Check if maintenance mode is enabled.
-     * Falls back to FeatureFlagStore (Redis) if DynamicConfigStore is not activated.
      *
      * @return true if maintenance mode is enabled, false otherwise
      */
@@ -406,55 +357,40 @@ public class DynamicConfigStore implements ApplicationContextAware {
         if (isActivated()) {
             return getConfigAsBoolean(ConfigKey.MAINTENANCE_MODE.getKey());
         }
-        // Fall back configmap for MM
-         return AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean();
+        // Fall back to configmap for MM if not activated
+        return AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean();
     }
 
     /**
      * Check if persona hierarchy filter is enabled.
-     * Falls back to FeatureFlagStore (Redis) if DynamicConfigStore is not activated.
      *
      * @return true if enabled, false otherwise
      */
     public static boolean isPersonaHierarchyFilterEnabled() {
-        if (isActivated()) {
-            return getConfigAsBoolean(ConfigKey.ENABLE_PERSONA_HIERARCHY_FILTER.getKey());
-        }
-        // Fall back to FeatureFlagStore (Redis)
-        return FeatureFlagStore.evaluate(ConfigKey.ENABLE_PERSONA_HIERARCHY_FILTER.getKey(), "true");
+        return getConfigAsBoolean(ConfigKey.ENABLE_PERSONA_HIERARCHY_FILTER.getKey());
     }
 
     /**
      * Check if temp ES index should be used.
-     * Falls back to FeatureFlagStore (Redis) if DynamicConfigStore is not activated.
      *
      * @return true if temp ES index should be used, false otherwise
      */
     public static boolean useTempEsIndex() {
-        if (isActivated()) {
-            return getConfigAsBoolean(ConfigKey.USE_TEMP_ES_INDEX.getKey());
-        }
-        // Fall back to FeatureFlagStore (Redis)
-        return FeatureFlagStore.evaluate(ConfigKey.USE_TEMP_ES_INDEX.getKey(), "true");
+        return getConfigAsBoolean(ConfigKey.USE_TEMP_ES_INDEX.getKey());
     }
 
     /**
      * Check if delete batch operations are enabled.
-     * Only enabled when DynamicConfigStore is activated and the flag is set to true.
      *
      * @return true if batch delete operations are enabled, false otherwise
      */
     public static boolean isDeleteBatchEnabled() {
-        if (isActivated()) {
-            return getConfigAsBoolean(ConfigKey.DELETE_BATCH_ENABLED.getKey());
-        }
-        return false;
+        return getConfigAsBoolean(ConfigKey.DELETE_BATCH_ENABLED.getKey());
     }
 
     /**
      * Check if async ingestion is enabled.
      * When enabled, write operations also publish to Kafka for a shadow consumer.
-     * Only enabled when DynamicConfigStore is activated and the flag is set to true.
      *
      * @return true if async ingestion is enabled, false otherwise
      */
@@ -462,7 +398,7 @@ public class DynamicConfigStore implements ApplicationContextAware {
         if (isActivated()) {
             return getConfigAsBoolean(ConfigKey.ENABLE_ASYNC_INGESTION.getKey());
         }
-        return false; // disabled by default when config store is not activated
+        return false;
     }
 
     // ================== Internal Methods ==================
@@ -692,21 +628,7 @@ public class DynamicConfigStore implements ApplicationContextAware {
             }
 
             sb.append("  ").append(key).append(" = ").append(value)
-                    .append(" [source=").append(source).append("]");
-
-            // For flags that also exist in FeatureFlag (Redis), show the Redis value for comparison
-            if (FeatureFlag.isValidFlag(key)) {
-                try {
-                    String redisValue = FeatureFlagStore.getFlag(key);
-                    sb.append(" [redis=").append(redisValue).append("]");
-                    if (!StringUtils.equals(value, redisValue)) {
-                        sb.append(" [MISMATCH]");
-                    }
-                } catch (Exception e) {
-                    sb.append(" [redis=ERROR]");
-                }
-            }
-            sb.append("\n");
+                    .append(" [source=").append(source).append("]\n");
         }
 
         LOG.info(sb.toString());
@@ -733,8 +655,8 @@ public class DynamicConfigStore implements ApplicationContextAware {
      */
     private void recordRecoveryMetric() {
         try {
-            Counter.builder(METRIC_REDIS_RECOVERY)
-                    .description("Count of times Redis recovery sync was triggered on an activated store with missing rows")
+            Counter.builder(METRIC_DEFAULT_RECOVERY)
+                    .description("Count of times default seeding was triggered on an activated store with missing rows")
                     .register(org.apache.atlas.service.metrics.MetricUtils.getMeterRegistry())
                     .increment();
         } catch (Exception e) {

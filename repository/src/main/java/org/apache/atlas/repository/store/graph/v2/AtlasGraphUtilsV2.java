@@ -764,7 +764,7 @@ public class AtlasGraphUtilsV2 {
                 LOG.debug("Checking if classification {} has references using ES", typeName);
             }
 
-            String indexName = Constants.getESIndex();
+            String indexName = Constants.VERTEX_INDEX_NAME;
             AtlasIndexQuery indexQuery = getGraphInstance().elasticsearchQuery(indexName);
 
             String esQuery = buildClassificationReferenceQuery(typeName);

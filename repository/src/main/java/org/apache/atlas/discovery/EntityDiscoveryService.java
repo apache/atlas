@@ -678,7 +678,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     private String getIndexName(IndexSearchParams params) throws AtlasBaseException {
-        String vertexIndexName = getESIndex();
+        String vertexIndexName = VERTEX_INDEX_NAME;
 
         if (StringUtils.isEmpty(params.getPersona()) && StringUtils.isEmpty(params.getPurpose())) {
             return vertexIndexName;
