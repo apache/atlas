@@ -3872,6 +3872,67 @@
                     "entity-delete"
                 ]
             }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
+                "name": "CRUD_ASSET_GROUPING_COLLECTION_ENRICHMENT_STUDIO",
+                "qualifiedName": "CRUD_ASSET_GROUPING_COLLECTION_ENRICHMENT_STUDIO",
+                "description": "Allows admins to perform CRUD operations on AssetGroupingCollection entities under default/critical_assets/*",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "isPolicyEnabled": true,
+                "policyResources": [
+                    "entity-type:AssetGroupingCollection",
+                    "entity-classification:*",
+                    "entity:default/critical_assets/*"
+                ],
+                "policyActions": [
+                    "entity-create",
+                    "entity-read",
+                    "entity-update",
+                    "entity-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
+                "name": "READ_ASSET_GROUPING_STRATEGY_ENRICHMENT_STUDIO",
+                "qualifiedName": "READ_ASSET_GROUPING_STRATEGY_ENRICHMENT_STUDIO",
+                "description": "Allows admins to read all AssetGroupingStrategy entities",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "isPolicyEnabled": true,
+                "policyResources": [
+                    "entity-type:AssetGroupingStrategy",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions": [
+                    "entity-read"
+                ]
+            }
         }
     ]
 }

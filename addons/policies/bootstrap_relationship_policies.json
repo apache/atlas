@@ -1073,6 +1073,45 @@
                     "remove-relationship"
                 ]
             }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "LINK_ASSET_GROUPING_STRATEGY_TO_COLLECTION",
+                "qualifiedName": "LINK_ASSET_GROUPING_STRATEGY_TO_COLLECTION",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "RELATIONSHIP",
+                "policyResources":
+                [
+                    "relationship-type:*",
+                    "end-one-entity-type:AssetGroupingStrategy",
+                    "end-one-entity-classification:*",
+                    "end-one-entity:*",
+                    "end-two-entity-type:AssetGroupingCollection",
+                    "end-two-entity-classification:*",
+                    "end-two-entity:*"
+                ],
+                "policyActions":
+                [
+                    "add-relationship",
+                    "update-relationship",
+                    "remove-relationship"
+                ]
+            }
         }
     ]
 }
