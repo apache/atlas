@@ -297,7 +297,7 @@ public class EntityREST {
             Map<String, Object> attributes = getAttributes(servletRequest);
 
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getByUniqueAttributes(" + typeName + "," + attributes + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getByUniqueAttributes(" + typeName + ", " + attributes + ")");
             }
 
             AtlasEntityType entityType = ensureEntityType(typeName);

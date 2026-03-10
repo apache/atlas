@@ -260,7 +260,11 @@ public class EntityGraphRetriever {
     }
 
     public AtlasEntityHeader toAtlasEntityHeader(AtlasVertex atlasVertex, Set<String> attributes, VertexEdgePropertiesCache vertexEdgePropertiesCache) throws AtlasBaseException {
-        return atlasVertex != null ? mapVertexToAtlasEntityHeader(atlasVertex, attributes, vertexEdgePropertiesCache) : null;
+        return atlasVertex != null ? mapVertexToAtlasEntityHeader(atlasVertex, attributes, vertexEdgePropertiesCache, null) : null;
+    }
+
+    public AtlasEntityHeader toAtlasEntityHeader(AtlasVertex atlasVertex, Set<String> attributes, VertexEdgePropertiesCache vertexEdgePropertiesCache, Map<String, List<AtlasClassification>> classificationCache) throws AtlasBaseException {
+        return atlasVertex != null ? mapVertexToAtlasEntityHeader(atlasVertex, attributes, vertexEdgePropertiesCache, classificationCache) : null;
     }
 
     public AtlasEntityHeader toAtlasEntityHeaderWithClassifications(String guid) throws AtlasBaseException {
@@ -1715,7 +1719,9 @@ public class EntityGraphRetriever {
         }
     }
 
-    private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes, VertexEdgePropertiesCache vertexEdgePropertiesCache) throws AtlasBaseException {
+    private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes,
+                                                              VertexEdgePropertiesCache vertexEdgePropertiesCache,
+                                                              Map<String, List<AtlasClassification>> classificationCache) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeaderWithoutPrefetch");
         AtlasEntityHeader ret = new AtlasEntityHeader();
         String vertexId = entityVertex.getIdForDisplay();
@@ -1731,13 +1737,20 @@ public class EntityGraphRetriever {
             boolean includeClassifications = context.includeClassifications();
             boolean includeClassificationNames = context.isIncludeClassificationNames();
             if (includeClassifications) {
-                List<AtlasClassification> tags = handleGetAllClassifications(entityVertex);
+                List<AtlasClassification> tags = null;
+                if (classificationCache != null) {
+                    tags = classificationCache.get(vertexId);
+                }
+                if (tags == null) {
+                    tags = handleGetAllClassifications(entityVertex);
+                }
                 ret.setClassifications(tags);
                 ret.setClassificationNames(getAllTagNames(tags));
             } else if (includeClassificationNames) {
                 ret.setClassificationNames(getClassificationNames(entityVertex));
             }
-            ret.setLabels(getLabels(entityVertex));
+            String labelsStr = vertexEdgePropertiesCache.getPropertyValue(vertexId, LABELS_PROPERTY_KEY, String.class);
+            ret.setLabels(labelsStr != null ? GraphHelper.parseLabelsString(labelsStr) : getLabels(entityVertex));
 
             ret.setCreatedBy(vertexEdgePropertiesCache.getPropertyValue(vertexId, CREATED_BY_KEY, String.class));
             ret.setUpdatedBy(vertexEdgePropertiesCache.getPropertyValue(vertexId, MODIFIED_BY_KEY, String.class));
@@ -2347,7 +2360,7 @@ public class EntityGraphRetriever {
      * @return map of vertexId to classifications, or {@code null} if prefetch is not applicable
      *         (TagV2 disabled or auth check skipped)
      */
-    private Map<String, List<AtlasClassification>> prefetchClassifications(List<AtlasVertex> vertices) throws AtlasBaseException {
+    public Map<String, List<AtlasClassification>> prefetchClassifications(List<AtlasVertex> vertices) throws AtlasBaseException {
         if (!DynamicConfigStore.isTagV2Enabled() || RequestContext.get().isSkipAuthorizationCheck()) {
             return null;
         }

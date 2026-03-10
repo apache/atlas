@@ -762,6 +762,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     public final class ResultImplDirect implements AtlasIndexQuery.Result<AtlasJanusVertex, AtlasJanusEdge> {
         private LinkedHashMap<String, Object> hit;
         Map<String, LinkedHashMap> innerHitsMap;
+        private AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> cachedVertex;
 
         public ResultImplDirect(LinkedHashMap<String, Object> hit) {
             this.hit = hit;
@@ -772,8 +773,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         @Override
         public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> getVertex() {
-            long vertexId = LongEncoding.decode(String.valueOf(hit.get("_id")));
-            return graph.getVertex(String.valueOf(vertexId));
+            if (cachedVertex == null) {
+                long vertexId = LongEncoding.decode(String.valueOf(hit.get("_id")));
+                cachedVertex = graph.getVertex(String.valueOf(vertexId));
+            }
+            return cachedVertex;
         }
 
         @Override

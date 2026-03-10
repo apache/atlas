@@ -36,7 +36,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -236,6 +238,78 @@ public class SearchIntegrationTest extends AtlasInProcessBaseIT {
 
     @Test
     @Order(9)
+    void testIndexSearchLabelsReturnedFromCache() throws Exception {
+        assertNotNull(firstTableGuid, "Setup must have created at least one table");
+
+        // Add labels to the first table entity
+        Set<String> labels = new HashSet<>();
+        labels.add("search_label_alpha");
+        labels.add("search_label_beta");
+        atlasClient.addLabels(firstTableGuid, labels);
+
+        // Wait for ES to index the label update
+        waitForIndexSync(() -> {
+            SearchParameters params = new SearchParameters();
+            params.setTypeName("Table");
+            params.setLimit(100);
+            params.setOffset(0);
+            params.setExcludeDeletedEntities(true);
+
+            SearchParameters.FilterCriteria filter = new SearchParameters.FilterCriteria();
+            filter.setAttributeName("qualifiedName");
+            filter.setOperator(SearchParameters.Operator.STARTS_WITH);
+            filter.setAttributeValue("test://integration/search/" + searchPrefix);
+            params.setEntityFilters(filter);
+
+            AtlasSearchResult result = atlasClient.facetedSearch(params);
+            if (result == null || result.getEntities() == null) return false;
+
+            for (AtlasEntityHeader header : result.getEntities()) {
+                if (firstTableGuid.equals(header.getGuid())) {
+                    return header.getLabels() != null && header.getLabels().contains("search_label_alpha");
+                }
+            }
+            return false;
+        }, MAX_WAIT_SECONDS);
+
+        // Now run the actual search and verify labels in the returned headers
+        SearchParameters params = new SearchParameters();
+        params.setTypeName("Table");
+        params.setLimit(100);
+        params.setOffset(0);
+        params.setExcludeDeletedEntities(true);
+
+        SearchParameters.FilterCriteria filter = new SearchParameters.FilterCriteria();
+        filter.setAttributeName("qualifiedName");
+        filter.setOperator(SearchParameters.Operator.STARTS_WITH);
+        filter.setAttributeValue("test://integration/search/" + searchPrefix);
+        params.setEntityFilters(filter);
+
+        AtlasSearchResult result = atlasClient.facetedSearch(params);
+
+        assertNotNull(result);
+        assertNotNull(result.getEntities(), "Search should return entities");
+
+        AtlasEntityHeader targetHeader = null;
+        for (AtlasEntityHeader header : result.getEntities()) {
+            if (firstTableGuid.equals(header.getGuid())) {
+                targetHeader = header;
+                break;
+            }
+        }
+
+        assertNotNull(targetHeader, "Search results should include the labeled entity");
+        assertNotNull(targetHeader.getLabels(), "Entity header from search should have labels populated");
+        assertTrue(targetHeader.getLabels().contains("search_label_alpha"),
+                "Labels should contain 'search_label_alpha', got: " + targetHeader.getLabels());
+        assertTrue(targetHeader.getLabels().contains("search_label_beta"),
+                "Labels should contain 'search_label_beta', got: " + targetHeader.getLabels());
+
+        LOG.info("Search returned entity with labels from cache: {}", targetHeader.getLabels());
+    }
+
+    @Test
+    @Order(10)
     void testCleanupSearchData() throws AtlasServiceException {
         if (glossaryGuid != null) {
             atlasClient.deleteGlossaryByGuid(glossaryGuid);

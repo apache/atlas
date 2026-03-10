@@ -28,6 +28,7 @@ import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.*;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.searchlog.SearchLogSearchParams;
@@ -76,6 +77,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final AtlasGraph                      graph;
     private final AtlasGremlinQueryProvider       gremlinQueryProvider;
     private final AtlasTypeRegistry               typeRegistry;
+    private static final ObjectMapper              OBJECT_MAPPER = new ObjectMapper();
     private final GraphBackedSearchIndexer        indexer;
     private final SearchTracker                   searchTracker;
     private final int                             maxResultSetSize;
@@ -582,8 +584,19 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 vertexEdgePropertiesCache = null;
             }
 
-            // If valueMap of certain vertex is empty or null then remove that from processing results
-
+            // Batch-prefetch classifications for all result vertices (TagV2 only, with per-vertex fallback)
+            Map<String, List<AtlasClassification>> classificationCache = null;
+            if (useVertexEdgeBulkFetching && vertexEdgePropertiesCache != null
+                    && RequestContext.get().includeClassifications()) {
+                List<AtlasVertex> resultVertices = new ArrayList<>(vertexIds.size());
+                for (String vid : vertexIds) {
+                    AtlasVertex v = vertexEdgePropertiesCache.getVertexById(vid);
+                    if (v != null) {
+                        resultVertices.add(v);
+                    }
+                }
+                classificationCache = entityRetriever.prefetchClassifications(resultVertices);
+            }
 
             for(Result result : results) {
                 AtlasVertex vertex = result.getVertex();
@@ -592,11 +605,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                     LOG.warn("vertex in null");
                     continue;
                 }
-                vertexIds.add(vertex.getId().toString());
                 AtlasEntityHeader header;
 
                 if(useVertexEdgeBulkFetching) {
-                  header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes, vertexEdgePropertiesCache);
+                  header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes, vertexEdgePropertiesCache, classificationCache);
                 } else {
                     header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
                 }
@@ -754,7 +766,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             String purpose = ((IndexSearchParams) searchParams).getPurpose();
 
             AtlasPerfMetrics.MetricRecorder addPreFiltersToSearchQueryMetric = RequestContext.get().startMetricRecord("addPreFiltersToSearchQuery");
-            ObjectMapper mapper = new ObjectMapper();
+            ObjectMapper mapper = OBJECT_MAPPER;
             List<Map<String, Object>> mustClauseList = new ArrayList<>();
 
             List<String> actions = new ArrayList<>();
