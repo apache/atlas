@@ -14,16 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 
 # Install tzdata, Python, Java
 RUN apt-get update && \
     DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata \
-    python python3 python3-pip openjdk-8-jdk bc iputils-ping ssh pdsh
+    python3 python3-pip openjdk-17-jdk-headless bc iputils-ping ssh pdsh && \
+    ln -sf /usr/bin/python3 /usr/bin/python
 
 # Set environment variables
-ENV JAVA_HOME      /usr/lib/jvm/java-8-openjdk-amd64
+ENV JAVA_HOME      /usr/lib/jvm/java-17-openjdk-amd64
 ENV ATLAS_DIST    /home/atlas/dist
 ENV ATLAS_HOME    /opt/atlas
 ENV ATLAS_SCRIPTS /home/atlas/scripts

@@ -14,14 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 
 # Install Git, which is missing from the Ubuntu base images.
-RUN apt-get update && apt-get install -y git python
+RUN apt-get update && apt-get install -y git python3 python3-pip && \
+    ln -sf /usr/bin/python3 /usr/bin/python
 
 # Install Java.
-RUN apt-get update && apt-get install -y openjdk-8-jdk
-ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
+RUN apt-get update && apt-get install -y openjdk-17-jdk-headless
+ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-amd64
 
 # Install Maven.
 
