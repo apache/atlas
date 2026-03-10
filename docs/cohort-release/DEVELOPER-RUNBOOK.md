@@ -41,7 +41,7 @@ Add a label to deploy to specific tenants:
 
 | Label | Ring | Tenants |
 |-------|------|---------|
-| `cohort:github:path:atlas-ring-0-empty` | Ring 0 | 38 internal/empty tenants |
+| `cohort:github:path:atlas-ring-0-empty` | Ring 0 | 35 internal/empty tenants |
 | `cohort:github:path:atlas-ring-1-tiny` | Ring 1 | 118 tiny tenants (<100K assets) |
 | `cohort:github:path:atlas-ring-2-small` | Ring 2 | 223 small tenants |
 | `cohort:github:path:atlas-ring-3-medium` | Ring 3 | 169 medium tenants |
@@ -137,6 +137,107 @@ If you decide not to proceed:
 | **`atlas-read` not overridden** | Only `atlas` (write path) is patched. Read path stays on master. |
 | **ArgoCD sync slow/stuck** | Release may timeout. Check tenant's ArgoCD app health. |
 | **Large cohorts (>100 tenants)** | Temporal processes 100 tenants in parallel. Larger cohorts are batched. |
+
+---
+
+## Custom Rings
+
+Use a custom ring when you need to deploy to specific tenants not covered by the standard rings (e.g., a customer-specific fix, testing on a particular tenant setup).
+
+### 1. Create Custom Cohort File
+
+Create a JSON file in `atlan-releases/cohorts/`:
+
+```json
+{
+  "description": "Custom ring for MS-999 feature validation",
+  "ring": "custom",
+  "generatedAt": "2026-03-10",
+  "tenantCount": 3,
+  "tenants": [
+    {
+      "name": "tenant-cluster-name-1",
+      "domain": "customer1.atlan.com",
+      "assetCount": 0,
+      "cloudProvider": "aws",
+      "deploymentType": "Production"
+    },
+    {
+      "name": "tenant-cluster-name-2",
+      "domain": "customer2.atlan.com",
+      "assetCount": 0,
+      "cloudProvider": "azure",
+      "deploymentType": "Production"
+    },
+    {
+      "name": "tenant-cluster-name-3",
+      "domain": "customer3.atlan.com",
+      "assetCount": 0,
+      "cloudProvider": "gcp",
+      "deploymentType": "Trial"
+    }
+  ]
+}
+```
+
+**File naming:** `atlas-custom-<ticket>-<desc>.json` (e.g., `atlas-custom-ms-999-dq-fix.json`)
+
+**Important:** The `name` field must be the **cluster name** (e.g., `affirm-mt`, `gcphft`), not the domain prefix.
+
+### 2. Commit to atlan-releases
+
+```bash
+cd atlan-releases
+git checkout main && git pull
+# Create your cohort file
+git add cohorts/atlas-custom-<your-file>.json
+git commit -m "Add custom cohort for <ticket>"
+git push origin main
+```
+
+### 3. Use the Custom Ring Label
+
+Add this label to your ring PR:
+
+```
+cohort:github:path:atlas-custom-<your-file>
+```
+
+For example: `cohort:github:path:atlas-custom-ms-999-dq-fix`
+
+The label format is `cohort:github:path:<filename-without-json>`.
+
+### 4. Clean Up After
+
+Once your ring release is complete (merged to GA or abandoned):
+
+1. Delete the custom cohort file from `atlan-releases`
+2. Or keep it if you plan to reuse for future releases
+
+### Example: Deploy to 2 Specific Customers
+
+```bash
+# 1. Find cluster names
+# affirm.atlan.com → affirm-mt
+# sheetz.atlan.com → sheetz01
+
+# 2. Create cohort file: atlan-releases/cohorts/atlas-custom-dq-validation.json
+{
+  "description": "DQ feature validation on Affirm and Sheetz",
+  "ring": "custom",
+  "generatedAt": "2026-03-10",
+  "tenantCount": 2,
+  "tenants": [
+    {"name": "affirm-mt", "domain": "affirm.atlan.com", "assetCount": 0, "cloudProvider": "aws", "deploymentType": "Production"},
+    {"name": "sheetz01", "domain": "sheetz.atlan.com", "assetCount": 0, "cloudProvider": "aws", "deploymentType": "Trial"}
+  ]
+}
+
+# 3. Commit and push to atlan-releases
+
+# 4. Add label to your ring PR:
+#    cohort:github:path:atlas-custom-dq-validation
+```
 
 ---
 
