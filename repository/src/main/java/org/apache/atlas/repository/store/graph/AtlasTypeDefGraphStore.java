@@ -544,16 +544,14 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
     @GraphTransaction
     public void deleteTypesDef(AtlasTypesDef typesDef, boolean forceDelete) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasTypeDefGraphStore.deleteTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships={}, businessMetadataDefs={}, forceDelete={})",
-                    CollectionUtils.size(typesDef.getEnumDefs()),
-                    CollectionUtils.size(typesDef.getStructDefs()),
-                    CollectionUtils.size(typesDef.getClassificationDefs()),
-                    CollectionUtils.size(typesDef.getEntityDefs()),
-                    CollectionUtils.size(typesDef.getRelationshipDefs()),
-                    CollectionUtils.size(typesDef.getBusinessMetadataDefs()),
-                    forceDelete);
-        }
+        LOG.debug("==> AtlasTypeDefGraphStore.deleteTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships={}, businessMetadataDefs={}, forceDelete={})",
+                CollectionUtils.size(typesDef.getEnumDefs()),
+                CollectionUtils.size(typesDef.getStructDefs()),
+                CollectionUtils.size(typesDef.getClassificationDefs()),
+                CollectionUtils.size(typesDef.getEntityDefs()),
+                CollectionUtils.size(typesDef.getRelationshipDefs()),
+                CollectionUtils.size(typesDef.getBusinessMetadataDefs()),
+                forceDelete);
 
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
 
