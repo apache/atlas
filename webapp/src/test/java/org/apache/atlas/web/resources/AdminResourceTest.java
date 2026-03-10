@@ -1261,7 +1261,7 @@ public class AdminResourceTest {
 
         AtlasImportResult mockResult = mock(AtlasImportResult.class);
         when(mockResult.getOperationStatus()).thenReturn(AtlasImportResult.OperationStatus.SUCCESS);
-        when(mockResult.getProcessedEntities()).thenReturn(new ArrayList<>());
+        when(mockResult.getProcessedEntities()).thenReturn(new HashSet<>());
         when(mockResult.getMetrics()).thenReturn(new HashMap<String, Integer>());
         when(mockResult.getExportResult()).thenReturn(mock(AtlasExportResult.class));
         when(mockResult.getExportResult().getRequest()).thenReturn(null);

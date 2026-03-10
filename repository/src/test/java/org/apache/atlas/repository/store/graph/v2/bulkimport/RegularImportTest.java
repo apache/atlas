@@ -393,7 +393,7 @@ public class RegularImportTest {
 
     private AtlasImportResult createMockAtlasImportResult() {
         AtlasImportResult mockResult = mock(AtlasImportResult.class);
-        when(mockResult.getProcessedEntities()).thenReturn(new ArrayList<>());
+        when(mockResult.getProcessedEntities()).thenReturn(new HashSet<>());
         return mockResult;
     }
 }

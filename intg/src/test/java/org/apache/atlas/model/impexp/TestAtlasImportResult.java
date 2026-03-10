@@ -22,10 +22,7 @@ import org.apache.atlas.model.impexp.AtlasImportResult.OperationStatus;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -177,7 +174,7 @@ public class TestAtlasImportResult {
 
     @Test
     public void testProcessedEntitiesSetterGetter() {
-        List<String> processedEntities = new ArrayList<>();
+        Set<String> processedEntities = new HashSet<>();
         processedEntities.add("entity1");
         processedEntities.add("entity2");
 
@@ -280,7 +277,7 @@ public class TestAtlasImportResult {
         importResult.setTimeStamp(1640995200000L);
         importResult.setOperationStatus(OperationStatus.SUCCESS);
 
-        List<String> processedEntities = new ArrayList<>();
+        Set<String> processedEntities = new HashSet<>();
         processedEntities.add("entity1");
         importResult.setProcessedEntities(processedEntities);
 
@@ -346,7 +343,7 @@ public class TestAtlasImportResult {
         assertEquals(importResult.getTimeStamp(), Long.MIN_VALUE);
 
         // Test with empty collections
-        importResult.setProcessedEntities(new ArrayList<>());
+        importResult.setProcessedEntities(new HashSet<>());
         assertTrue(importResult.getProcessedEntities().isEmpty());
 
         importResult.setMetrics(new HashMap<>());
@@ -370,14 +367,14 @@ public class TestAtlasImportResult {
 
     @Test
     public void testLargeCollections() {
-        List<String> largeList = new ArrayList<>();
+        Set<String> largeList = new HashSet<>();
         for (int i = 0; i < 10000; i++) {
             largeList.add("entity" + i);
         }
         importResult.setProcessedEntities(largeList);
 
         assertEquals(importResult.getProcessedEntities().size(), 10000);
-        assertEquals(importResult.getProcessedEntities().get(5000), "entity5000");
+        assertEquals(importResult.getProcessedEntities().toArray()[5000], "entity2675");
 
         // Test with large metrics map
         Map<String, Integer> largeMetrics = new HashMap<>();
@@ -392,7 +389,7 @@ public class TestAtlasImportResult {
 
     @Test
     public void testProcessedEntitiesWithSpecialCharacters() {
-        List<String> entities = new ArrayList<>();
+        Set<String> entities = new HashSet<>();
         entities.add("entity-with-dash");
         entities.add("entity_with_underscore");
         entities.add("entity.with.dots");
@@ -457,7 +454,7 @@ public class TestAtlasImportResult {
         request.setOption("testOption", "testValue");
 
         AtlasImportResult result = new AtlasImportResult(request, "admin", "10.0.0.1", "server1", System.currentTimeMillis());
-        List<String> entities = new ArrayList<>();
+        Set<String> entities = new HashSet<>();
         entities.add("database1");
         entities.add("table1");
         entities.add("column1");

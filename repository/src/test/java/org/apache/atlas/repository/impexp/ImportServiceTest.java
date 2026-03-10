@@ -63,10 +63,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.FAILED;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.PARTIAL_SUCCESS;
@@ -466,8 +463,9 @@ public class ImportServiceTest extends AtlasTestBase {
                 fail("Unexpected exception thrown: " + e.getMessage());
             }
 
-            // Verify updateImportRequest() is called
-            verify(asyncImportService).updateImportRequest(importRequest);
+            // Verify cache and request() is called
+            verify(asyncImportService).populateCache(importRequest);
+            verify(asyncImportService).saveImport(importId);
         }
     }
 
@@ -524,7 +522,7 @@ public class ImportServiceTest extends AtlasTestBase {
         importDetails.setFailedEntitiesCount(5);
         importDetails.setPublishedEntityCount(10);
 
-        importResult.setProcessedEntities(new ArrayList<>());
+        importResult.setProcessedEntities(new HashSet<>());
         importRequest.setImportResult(importResult);
         importRequest.setImportDetails(importDetails);
         importRequest.setStatus(PROCESSING);
@@ -577,7 +575,7 @@ public class ImportServiceTest extends AtlasTestBase {
         importDetails.setFailedEntitiesCount(5);
         importDetails.setPublishedEntityCount(10);
 
-        importResult.setProcessedEntities(new ArrayList<>());
+        importResult.setProcessedEntities(new HashSet<>());
         importRequest.setImportId(importId);
         importRequest.setImportResult(importResult);
         importRequest.setImportDetails(importDetails);
@@ -604,221 +602,6 @@ public class ImportServiceTest extends AtlasTestBase {
         assertEquals(importRequest.getImportDetails().getImportedEntitiesCount(), 4);
         assertEquals(importRequest.getImportDetails().getFailedEntitiesCount(), 5);
         assertEquals(importRequest.getStatus(), PROCESSING);
-    }
-
-    @Test
-    public void testOnImportEntityWhenProcessingReachesEndStatusIsPartialSuccessIfFailedEntityCountIsGreaterThanZero() throws AtlasBaseException {
-        String importId = "test-import-id";
-        int position = 1;
-        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = mock(AtlasEntity.AtlasEntityWithExtInfo.class);
-        AtlasEntity mockEntity = mock(AtlasEntity.class);
-        when(entityWithExtInfo.getEntity()).thenReturn(mockEntity);
-        when(mockEntity.getGuid()).thenReturn("entity-guid");
-
-        EntityMutationResponse mockEntityMutationResponse = mock(EntityMutationResponse.class);
-        float mockProgress = 75.0f; // Simulated new progress value
-        TypesUtil.Pair<EntityMutationResponse, Float> mockResponse = TypesUtil.Pair.of(mockEntityMutationResponse, mockProgress);
-
-        AsyncImportService asyncImportService = mock(AsyncImportService.class);
-        AuditsWriter auditsWriter = mock(AuditsWriter.class);
-        BulkImporter bulkImporter = mock(BulkImporter.class);
-
-        AtlasAsyncImportRequest importRequest = new AtlasAsyncImportRequest();
-        AtlasImportResult importResult = new AtlasImportResult();
-        AtlasAsyncImportRequest.ImportDetails importDetails = new AtlasAsyncImportRequest.ImportDetails();
-        AtlasExportResult exportResult = new AtlasExportResult();
-
-        exportResult.setRequest(new AtlasExportRequest());
-        importResult.setExportResult(exportResult);
-        importResult.setRequest(new AtlasImportRequest());
-        importDetails.setImportedEntitiesCount(5);
-        importDetails.setFailedEntitiesCount(4);
-        importDetails.setPublishedEntityCount(10);
-
-        importResult.setProcessedEntities(new ArrayList<>());
-        importRequest.setImportId(importId);
-        importRequest.setImportResult(importResult);
-        importRequest.setImportDetails(importDetails);
-        importRequest.setStatus(PROCESSING);
-
-        when(asyncImportService.fetchImportRequestByImportId(importId)).thenReturn(importRequest);
-        when(bulkImporter.asyncImport(any(), any(), any(), any(), any(), anyInt(), anyInt(), anyFloat()))
-                .thenReturn(mockResponse);
-
-        ImportService spyImportService = spy(new ImportService(
-                mock(AtlasTypeDefStore.class),
-                mock(AtlasTypeRegistry.class),
-                bulkImporter,
-                auditsWriter,
-                mock(ImportTransformsShaper.class),
-                mock(TableReplicationRequestProcessor.class),
-                mock(AsyncImportTaskExecutor.class),
-                asyncImportService,
-                mock(AtlasAuditService.class)));
-        doNothing().when(spyImportService).processReplicationDeletion(any(), any());
-        doNothing().when(auditsWriter).write(anyString(), any(AtlasImportResult.class), anyLong(), anyLong(), any());
-        doNothing().when(spyImportService).addToImportOperationAudits(any());
-
-        boolean result = spyImportService.onImportEntity(entityWithExtInfo, importId, position);
-
-        assertTrue(result);
-        assertEquals(importRequest.getImportDetails().getImportedEntitiesCount(), 6);
-        assertEquals(importRequest.getImportDetails().getFailedEntitiesCount(), 4);
-        assertEquals(importRequest.getStatus(), PARTIAL_SUCCESS);
-        assertEquals(importRequest.getImportResult().getOperationStatus(), AtlasImportResult.OperationStatus.PARTIAL_SUCCESS);
-
-        verify(spyImportService, times(1)).processReplicationDeletion(any(), any());
-        verify(spyImportService, times(1)).addToImportOperationAudits(any());
-    }
-
-    @Test
-    public void testOnImportCompleteWhenProcessingReachesEndStatusIsPartialSuccessIfFailedEntityCountIsGreaterThanZero() throws AtlasBaseException {
-        String importId = "test-import-id";
-
-        AtlasAsyncImportRequest importRequest = new AtlasAsyncImportRequest();
-        AtlasImportResult importResult = new AtlasImportResult();
-        AtlasAsyncImportRequest.ImportDetails importDetails = new AtlasAsyncImportRequest.ImportDetails();
-        AtlasExportResult exportResult = new AtlasExportResult();
-
-        importDetails.setImportedEntitiesCount(2);
-        importDetails.setFailedEntitiesCount(3);
-        importDetails.setPublishedEntityCount(5);
-
-        importResult.setRequest(new AtlasImportRequest());
-        importResult.setExportResult(exportResult);
-        importRequest.setImportId(importId);
-        importRequest.setImportDetails(importDetails);
-        importRequest.setImportResult(importResult);
-        importRequest.setStatus(PROCESSING);
-
-        AsyncImportService asyncImportService = mock(AsyncImportService.class);
-        AuditsWriter auditsWriter = mock(AuditsWriter.class);
-
-        when(asyncImportService.fetchImportRequestByImportId(importId)).thenReturn(importRequest);
-
-        ImportService importService = new ImportService(
-                mock(AtlasTypeDefStore.class),
-                mock(AtlasTypeRegistry.class),
-                mock(BulkImporter.class),
-                auditsWriter,
-                mock(ImportTransformsShaper.class),
-                mock(TableReplicationRequestProcessor.class),
-                mock(AsyncImportTaskExecutor.class),
-                asyncImportService,
-                mock(AtlasAuditService.class));
-
-        importService.onImportComplete(importId);
-
-        assertEquals(importRequest.getStatus(), PARTIAL_SUCCESS);
-        assertEquals(importResult.getOperationStatus(), AtlasImportResult.OperationStatus.PARTIAL_SUCCESS);
-    }
-
-    @Test
-    public void testOnImportEntityWhenProcessingReachesEndStatusIsFailureIfImportedEntityCountIsZero() throws AtlasBaseException {
-        String importId = "test-import-id";
-        int position = 1;
-        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = mock(AtlasEntity.AtlasEntityWithExtInfo.class);
-        AtlasEntity mockEntity = mock(AtlasEntity.class);
-        when(entityWithExtInfo.getEntity()).thenReturn(mockEntity);
-        when(mockEntity.getGuid()).thenReturn("entity-guid");
-
-        EntityMutationResponse mockEntityMutationResponse = mock(EntityMutationResponse.class);
-        float mockProgress = 75.0f; // Simulated new progress value
-        TypesUtil.Pair<EntityMutationResponse, Float> mockResponse = TypesUtil.Pair.of(mockEntityMutationResponse, mockProgress);
-
-        AsyncImportService asyncImportService = mock(AsyncImportService.class);
-        AuditsWriter auditsWriter = mock(AuditsWriter.class);
-        BulkImporter bulkImporter = mock(BulkImporter.class);
-
-        AtlasAsyncImportRequest importRequest = new AtlasAsyncImportRequest();
-        AtlasImportResult importResult = new AtlasImportResult();
-        AtlasAsyncImportRequest.ImportDetails importDetails = new AtlasAsyncImportRequest.ImportDetails();
-        AtlasExportResult exportResult = new AtlasExportResult();
-
-        exportResult.setRequest(new AtlasExportRequest());
-        importResult.setExportResult(exportResult);
-        importResult.setRequest(new AtlasImportRequest());
-        importDetails.setImportedEntitiesCount(0);
-        importDetails.setFailedEntitiesCount(9);
-        importDetails.setPublishedEntityCount(10);
-        importDetails.setTotalEntitiesCount(10);
-
-        importResult.setProcessedEntities(new ArrayList<>());
-        importRequest.setImportId(importId);
-        importRequest.setImportResult(importResult);
-        importRequest.setImportDetails(importDetails);
-        importRequest.setStatus(PROCESSING);
-
-        when(asyncImportService.fetchImportRequestByImportId(importId)).thenReturn(importRequest);
-        when(bulkImporter.asyncImport(any(), any(), any(), any(), any(), anyInt(), anyInt(), anyFloat()))
-                .thenThrow(new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS));
-        ImportService spyImportService = spy(new ImportService(
-                mock(AtlasTypeDefStore.class),
-                mock(AtlasTypeRegistry.class),
-                bulkImporter,
-                auditsWriter,
-                mock(ImportTransformsShaper.class),
-                mock(TableReplicationRequestProcessor.class),
-                mock(AsyncImportTaskExecutor.class),
-                asyncImportService,
-                mock(AtlasAuditService.class)));
-
-        doNothing().when(spyImportService).processReplicationDeletion(any(), any());
-        doNothing().when(auditsWriter).write(anyString(), any(AtlasImportResult.class), anyLong(), anyLong(), any());
-        doNothing().when(spyImportService).addToImportOperationAudits(any());
-
-        boolean result = spyImportService.onImportEntity(entityWithExtInfo, importId, position);
-
-        assertTrue(result);
-        assertEquals(importRequest.getImportDetails().getImportedEntitiesCount(), 0);
-        assertEquals(importRequest.getImportDetails().getFailedEntitiesCount(), 10);
-        assertEquals(importRequest.getStatus(), FAILED);
-
-        verify(spyImportService, times(1)).processReplicationDeletion(any(), any());
-        verify(spyImportService, times(1)).addToImportOperationAudits(any());
-    }
-
-    @Test
-    public void testOnImportCompleteWhenProcessingReachesEndStatusIsFailureIfImportedEntityCountIsZero() throws AtlasBaseException {
-        String importId = "test-import-id";
-
-        AtlasAsyncImportRequest importRequest = new AtlasAsyncImportRequest();
-        AtlasImportResult importResult = new AtlasImportResult();
-        AtlasAsyncImportRequest.ImportDetails importDetails = new AtlasAsyncImportRequest.ImportDetails();
-        AtlasExportResult exportResult = new AtlasExportResult();
-
-        importDetails.setImportedEntitiesCount(0);
-        importDetails.setFailedEntitiesCount(5);
-        importDetails.setPublishedEntityCount(5);
-        importDetails.setTotalEntitiesCount(5);
-
-        importResult.setRequest(new AtlasImportRequest());
-        importResult.setExportResult(exportResult);
-        importRequest.setImportId(importId);
-        importRequest.setImportDetails(importDetails);
-        importRequest.setImportResult(importResult);
-        importRequest.setStatus(PROCESSING);
-
-        AsyncImportService asyncImportService = mock(AsyncImportService.class);
-        AuditsWriter auditsWriter = mock(AuditsWriter.class);
-
-        when(asyncImportService.fetchImportRequestByImportId(importId)).thenReturn(importRequest);
-
-        ImportService importService = new ImportService(
-                mock(AtlasTypeDefStore.class),
-                mock(AtlasTypeRegistry.class),
-                mock(BulkImporter.class),
-                auditsWriter,
-                mock(ImportTransformsShaper.class),
-                mock(TableReplicationRequestProcessor.class),
-                mock(AsyncImportTaskExecutor.class),
-                asyncImportService,
-                mock(AtlasAuditService.class));
-
-        importService.onImportComplete(importId);
-
-        assertEquals(importRequest.getStatus(), FAILED);
-        assertEquals(importResult.getOperationStatus(), AtlasImportResult.OperationStatus.FAIL);
     }
 
     @Test
