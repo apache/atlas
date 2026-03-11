@@ -20,6 +20,8 @@ package org.janusgraph.diskstorage.rdbms.dao;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +64,7 @@ public class DaoManager {
     private static final Logger LOG = LoggerFactory.getLogger(DaoManager.class);
 
     private final EntityManagerFactory emFactory;
+    private static final String HIKARI_PASSWORD_KEY = "atlas.graph.storage.rdbms.jpa.hikari.password";
 
     /**
      *
@@ -78,6 +81,16 @@ public class DaoManager {
 
                 if (value != null) {
                     if (key.startsWith("hikari.")) {
+                        if ("hikari.password".equals(key)) {
+                            try {
+                                String decrypted = ApplicationProperties.getDecryptedPassword(ApplicationProperties.get(), HIKARI_PASSWORD_KEY);
+                                if (decrypted != null) {
+                                    value = decrypted;
+                                }
+                            } catch (AtlasException e) {
+                                LOG.error("Error in getting secure password ", e);
+                            }
+                        }
                         hikariConfig.put(key.substring("hikari".length() + 1), value.toString());
                     } else {
                         config.put(key, value.toString());
