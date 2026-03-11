@@ -260,7 +260,14 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
 
         if (MapUtils.isNotEmpty(indexTypeESFields)) {
-            params.add(Parameter.of(ParameterType.customParameterName("fields"), indexTypeESFields));
+            // JanusGraph's StandardSerializer can only serialize HashMap, not LinkedHashMap.
+            // Jackson may deserialize JSON objects as LinkedHashMap, causing commit failures.
+            // Deep-copy to plain HashMap to ensure serializability.
+            HashMap<String, HashMap<String, Object>> sanitized = new HashMap<>();
+            for (Map.Entry<String, HashMap<String, Object>> entry : indexTypeESFields.entrySet()) {
+                sanitized.put(entry.getKey(), new HashMap<>(entry.getValue()));
+            }
+            params.add(Parameter.of(ParameterType.customParameterName("fields"), sanitized));
         }
 
         if (params.size() > 0) {
