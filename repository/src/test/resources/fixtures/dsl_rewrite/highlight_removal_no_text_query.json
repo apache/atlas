@@ -1,0 +1,35 @@
+{
+  "from": 0,
+  "size": 20,
+  "highlight": {
+    "pre_tags": ["<span>"],
+    "post_tags": ["</span>"],
+    "fields": {
+      "displayName": {},
+      "displayName.keyword": {},
+      "name": {},
+      "name.keyword": {}
+    }
+  },
+  "query": {
+    "function_score": {
+      "query": {
+        "bool": {
+          "filter": {
+            "bool": {
+              "must": [
+                { "term": { "connectionQualifiedName": "default/bigquery/1697683194" } },
+                { "term": { "__state": "ACTIVE" } }
+              ]
+            }
+          }
+        }
+      },
+      "functions": [
+        { "filter": { "terms": { "__typeName.keyword": ["Table", "View"] } }, "weight": 5 }
+      ],
+      "boost_mode": "sum",
+      "score_mode": "sum"
+    }
+  }
+}

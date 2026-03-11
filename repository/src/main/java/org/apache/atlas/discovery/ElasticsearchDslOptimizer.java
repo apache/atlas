@@ -41,6 +41,10 @@ import java.util.stream.Collectors;
  * 16. Context-aware filter optimization (safe must->filter in function_score)
  * 17. Function score optimization
  * 18. Duplicate filter removal
+ * 19. Tautology elimination (should[NOT X, X] → remove)
+ * 20. Should must_not rewrite (should[must_not[A], must[A,B]] → must_not[A AND NOT B])
+ * 21. Highlight removal (remove highlight when no text query)
+ * 22. Must_not terms merging (merge multiple must_not terms on same field)
  *
  * Performance Features:
  * - UI "Contains" optimization: *default/path* → __qualifiedNameHierarchy term query (MAJOR)
@@ -100,6 +104,9 @@ public class ElasticsearchDslOptimizer {
         this.optimizationRules = Arrays.asList(
                 new StructureSimplificationRule(),
                 new EmptyBoolEliminationRule(),
+                new TautologyEliminationRule(),       // Remove should[NOT X, X] tautologies early
+                new ShouldMustNotRewriteRule(),        // Rewrite should[must_not[A], must[A,B]] to must_not[A AND NOT B]
+                new HighlightRemovalRule(),             // Remove highlight when no text query present
                 new NestedBoolEliminationRule(), // Flatten structures first
                 new QualifiedNameHierarchyRule(), // Move EARLY - before other rules interfere
                 new MultipleTermsConsolidationRule(),
@@ -112,6 +119,7 @@ public class ElasticsearchDslOptimizer {
                 new MustNotConsolidationRule(), // Consolidate bool.must_not wrappers in must arrays
                 new FilterStructureOptimizationRule(),
                 new BoolFlatteningRule(),
+                new MustNotTermsMergingRule(),          // Merge duplicate must_not terms arrays on same field
                 new DuplicateRemovalRule(),
                 new FilterContextRule(),
                 new FunctionScoreOptimizationRule(),
@@ -2882,6 +2890,533 @@ public class ElasticsearchDslOptimizer {
                 // If anything goes wrong, return null to skip optimization
                 return null;
             }
+        }
+    }
+
+    /**
+     * Rule 19: Tautology Elimination
+     * Removes should clauses that are tautologies — e.g., should[NOT X, X] always matches every document.
+     * When found inside a must/filter array, the entire element is removed (it's a no-op).
+     * Pattern: bool with only "should" containing exactly 2 clauses where one is must_not of a term
+     * and the other is a filter/must of the same term on the same field.
+     */
+    private class TautologyEliminationRule implements OptimizationRule {
+
+        @Override
+        public String getName() {
+            return "TautologyElimination";
+        }
+
+        @Override
+        public JsonNode apply(JsonNode query) {
+            return traverseAndOptimize(query.deepCopy(), this::eliminateTautologies);
+        }
+
+        private JsonNode eliminateTautologies(JsonNode node) {
+            if (!node.isObject()) return node;
+            ObjectNode objectNode = (ObjectNode) node;
+
+            if (!objectNode.has("bool")) return objectNode;
+            ObjectNode boolNode = (ObjectNode) objectNode.get("bool");
+
+            // Remove tautological items from must and filter arrays
+            for (String clause : Arrays.asList("must", "filter")) {
+                if (boolNode.has(clause) && boolNode.get(clause).isArray()) {
+                    ArrayNode array = (ArrayNode) boolNode.get(clause);
+                    ArrayNode cleaned = objectMapper.createArrayNode();
+                    boolean changed = false;
+
+                    for (JsonNode item : array) {
+                        if (isTautology(item)) {
+                            changed = true;
+                            log.debug("TautologyElimination: removing tautological should clause from {}", clause);
+                        } else {
+                            cleaned.add(item);
+                        }
+                    }
+
+                    if (changed) {
+                        boolNode.set(clause, cleaned);
+                    }
+                }
+            }
+
+            return objectNode;
+        }
+
+        /**
+         * Checks if a node is a tautology of the form: bool.should[must_not[term(field=X)], filter/must[term(field=X)]]
+         * This always matches every document since either the doc IS X or it ISN'T.
+         */
+        private boolean isTautology(JsonNode node) {
+            if (!node.isObject() || !node.has("bool")) return false;
+            JsonNode boolNode = node.get("bool");
+
+            if (!boolNode.has("should") || boolNode.get("should").size() != 2) return false;
+            // Must have ONLY should (no must, filter, must_not at this level)
+            int clauseCount = 0;
+            for (String c : Arrays.asList("must", "filter", "must_not", "should")) {
+                if (boolNode.has(c)) clauseCount++;
+            }
+            if (clauseCount != 1) return false;
+
+            ArrayNode should = (ArrayNode) boolNode.get("should");
+            JsonNode branch0 = should.get(0);
+            JsonNode branch1 = should.get(1);
+
+            // Find which branch is the negation and which is the positive
+            String negatedTerm = extractNegatedTermKey(branch0);
+            String positiveTerm = extractPositiveTermKey(branch1);
+
+            if (negatedTerm != null && negatedTerm.equals(positiveTerm)) {
+                return true;
+            }
+
+            // Try the other way around
+            negatedTerm = extractNegatedTermKey(branch1);
+            positiveTerm = extractPositiveTermKey(branch0);
+
+            return negatedTerm != null && negatedTerm.equals(positiveTerm);
+        }
+
+        /** Extracts "field:value" from a bool.must_not[term{field:value}] pattern */
+        private String extractNegatedTermKey(JsonNode node) {
+            if (!node.isObject() || !node.has("bool")) return null;
+            JsonNode boolNode = node.get("bool");
+            if (!boolNode.has("must_not")) return null;
+
+            JsonNode mustNot = boolNode.get("must_not");
+            JsonNode termNode = null;
+
+            if (mustNot.isArray() && mustNot.size() == 1) {
+                termNode = mustNot.get(0);
+            } else if (mustNot.isObject()) {
+                termNode = mustNot;
+            }
+
+            return extractTermKey(termNode);
+        }
+
+        /**
+         * Extracts "field:value" from a term or bool.filter/must containing ONLY a single term.
+         * A true tautology requires the positive branch to be equivalent to just the term —
+         * if it has additional conditions (e.g., must[term(A), terms(B)]), it's NOT a tautology.
+         */
+        private String extractPositiveTermKey(JsonNode node) {
+            // Direct term
+            String key = extractTermKey(node);
+            if (key != null) return key;
+
+            // Wrapped in bool.filter or bool.must — but ONLY if the branch has a single condition
+            if (node.isObject() && node.has("bool")) {
+                JsonNode boolNode = node.get("bool");
+                // Count total clauses in this bool — a tautology positive branch should have exactly 1
+                int totalConditions = 0;
+                for (String c : Arrays.asList("must", "filter", "must_not", "should")) {
+                    if (boolNode.has(c)) {
+                        JsonNode clauseNode = boolNode.get(c);
+                        if (clauseNode.isArray()) {
+                            totalConditions += clauseNode.size();
+                        } else {
+                            totalConditions++;
+                        }
+                    }
+                }
+                // Only treat as tautology if the positive branch has exactly 1 condition
+                if (totalConditions != 1) return null;
+
+                for (String clause : Arrays.asList("filter", "must")) {
+                    if (boolNode.has(clause)) {
+                        JsonNode clauseNode = boolNode.get(clause);
+                        if (clauseNode.isObject()) {
+                            key = extractTermKey(clauseNode);
+                            if (key != null) return key;
+                        } else if (clauseNode.isArray() && clauseNode.size() == 1) {
+                            key = extractTermKey(clauseNode.get(0));
+                            if (key != null) return key;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        /** Returns "field:value" string from a {"term": {"field": "value"}} node */
+        private String extractTermKey(JsonNode node) {
+            if (node == null || !node.isObject() || !node.has("term")) return null;
+            JsonNode termNode = node.get("term");
+            Iterator<String> fields = termNode.fieldNames();
+            if (fields.hasNext()) {
+                String field = fields.next();
+                return field + ":" + termNode.get(field).asText();
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Rule 20: Should Must_Not Rewrite
+     * Rewrites should[must_not[A], must[A, B]] to must_not[A AND NOT B]
+     *
+     * The pattern should[NOT Procedure, Procedure+snowflake/mssql] compiles in Lucene to
+     * (-__typeName.keyword:procedure #*:*) which forces a MatchAllDocsQuery traversal.
+     * Rewriting to must_not[Procedure AND NOT(snowflake/mssql)] lets ES use the term index
+     * to skip directly, avoiding the *:* scan.
+     *
+     * Semantics: "either not-A, or (A and B)" is equivalent to "not (A and not-B)" (De Morgan's law)
+     */
+    private class ShouldMustNotRewriteRule implements OptimizationRule {
+
+        @Override
+        public String getName() {
+            return "ShouldMustNotRewrite";
+        }
+
+        @Override
+        public JsonNode apply(JsonNode query) {
+            return traverseAndOptimize(query.deepCopy(), this::rewriteShouldMustNot);
+        }
+
+        private JsonNode rewriteShouldMustNot(JsonNode node) {
+            if (!node.isObject()) return node;
+            ObjectNode objectNode = (ObjectNode) node;
+
+            if (!objectNode.has("bool")) return objectNode;
+            ObjectNode boolNode = (ObjectNode) objectNode.get("bool");
+
+            // Look for this pattern inside must/filter arrays
+            for (String clause : Arrays.asList("must", "filter")) {
+                if (boolNode.has(clause) && boolNode.get(clause).isArray()) {
+                    ArrayNode array = (ArrayNode) boolNode.get(clause);
+                    ArrayNode rewritten = objectMapper.createArrayNode();
+                    boolean changed = false;
+
+                    for (JsonNode item : array) {
+                        JsonNode replacement = tryRewriteItem(item);
+                        if (replacement != null) {
+                            rewritten.add(replacement);
+                            changed = true;
+                        } else {
+                            rewritten.add(item);
+                        }
+                    }
+
+                    if (changed) {
+                        boolNode.set(clause, rewritten);
+                    }
+                }
+            }
+
+            return objectNode;
+        }
+
+        /**
+         * Tries to rewrite a should[must_not[A], must[A, B, ...]] node.
+         * Returns the rewritten node, or null if the pattern doesn't match.
+         */
+        private JsonNode tryRewriteItem(JsonNode item) {
+            if (!item.isObject() || !item.has("bool")) return null;
+            JsonNode boolNode = item.get("bool");
+
+            if (!boolNode.has("should") || !boolNode.get("should").isArray()) return null;
+            ArrayNode should = (ArrayNode) boolNode.get("should");
+            if (should.size() != 2) return null;
+
+            // Must have ONLY should at this level
+            int clauseCount = 0;
+            for (String c : Arrays.asList("must", "filter", "must_not", "should")) {
+                if (boolNode.has(c)) clauseCount++;
+            }
+            if (clauseCount != 1) return null;
+
+            // Identify which branch is negation and which is positive+condition
+            JsonNode negBranch = null;
+            JsonNode posBranch = null;
+
+            for (int i = 0; i < 2; i++) {
+                JsonNode branch = should.get(i);
+                JsonNode other = should.get(1 - i);
+                String negatedKey = extractNegatedTermKey(branch);
+                if (negatedKey != null && containsPositiveTerm(other, negatedKey)) {
+                    negBranch = branch;
+                    posBranch = other;
+                    break;
+                }
+            }
+
+            if (negBranch == null || posBranch == null) return null;
+
+            // Extract the term being negated (A) and the additional conditions (B) from positive branch
+            JsonNode negatedTermNode = extractNegatedTermNode(negBranch);
+            List<JsonNode> additionalConditions = extractAdditionalConditions(posBranch, negatedTermNode);
+
+            if (negatedTermNode == null || additionalConditions.isEmpty()) return null;
+
+            // Build: must_not[bool.filter[A, bool.must_not[B1, B2, ...]]]
+            ArrayNode innerMustNot = objectMapper.createArrayNode();
+            for (JsonNode condition : additionalConditions) {
+                innerMustNot.add(condition);
+            }
+
+            ObjectNode innerBoolMustNot = objectMapper.createObjectNode();
+            innerBoolMustNot.set("must_not", innerMustNot);
+
+            ArrayNode filterArray = objectMapper.createArrayNode();
+            filterArray.add(negatedTermNode);
+            ObjectNode boolWithMustNot = objectMapper.createObjectNode();
+            boolWithMustNot.set("bool", innerBoolMustNot);
+            filterArray.add(boolWithMustNot);
+
+            ObjectNode innerFilterBool = objectMapper.createObjectNode();
+            innerFilterBool.set("filter", filterArray);
+
+            ObjectNode innerBoolWrapper = objectMapper.createObjectNode();
+            innerBoolWrapper.set("bool", innerFilterBool);
+
+            ArrayNode outerMustNot = objectMapper.createArrayNode();
+            outerMustNot.add(innerBoolWrapper);
+
+            ObjectNode outerBool = objectMapper.createObjectNode();
+            outerBool.set("must_not", outerMustNot);
+
+            ObjectNode result = objectMapper.createObjectNode();
+            result.set("bool", outerBool);
+
+            log.debug("ShouldMustNotRewrite: rewrote should[must_not[A], must[A,B]] to must_not[A AND NOT B]");
+            return result;
+        }
+
+        private String extractNegatedTermKey(JsonNode node) {
+            if (!node.isObject() || !node.has("bool")) return null;
+            JsonNode boolNode = node.get("bool");
+            if (!boolNode.has("must_not")) return null;
+
+            JsonNode mustNot = boolNode.get("must_not");
+            JsonNode termNode = null;
+
+            if (mustNot.isArray() && mustNot.size() == 1) {
+                termNode = mustNot.get(0);
+            } else if (mustNot.isObject()) {
+                termNode = mustNot;
+            }
+
+            if (termNode == null || !termNode.has("term")) return null;
+            JsonNode term = termNode.get("term");
+            Iterator<String> fields = term.fieldNames();
+            if (fields.hasNext()) {
+                String field = fields.next();
+                return field + ":" + term.get(field).asText();
+            }
+            return null;
+        }
+
+        private JsonNode extractNegatedTermNode(JsonNode negBranch) {
+            JsonNode mustNot = negBranch.get("bool").get("must_not");
+            if (mustNot.isArray() && mustNot.size() == 1) return mustNot.get(0);
+            if (mustNot.isObject()) return mustNot;
+            return null;
+        }
+
+        private boolean containsPositiveTerm(JsonNode node, String termKey) {
+            if (!node.isObject() || !node.has("bool")) return false;
+            JsonNode boolNode = node.get("bool");
+
+            for (String clause : Arrays.asList("must", "filter")) {
+                if (boolNode.has(clause)) {
+                    JsonNode clauseNode = boolNode.get(clause);
+                    if (clauseNode.isArray()) {
+                        for (JsonNode item : clauseNode) {
+                            if (item.has("term")) {
+                                JsonNode term = item.get("term");
+                                Iterator<String> fields = term.fieldNames();
+                                if (fields.hasNext()) {
+                                    String field = fields.next();
+                                    String key = field + ":" + term.get(field).asText();
+                                    if (key.equals(termKey)) return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        private List<JsonNode> extractAdditionalConditions(JsonNode posBranch, JsonNode negatedTermNode) {
+            List<JsonNode> conditions = new ArrayList<>();
+            JsonNode boolNode = posBranch.get("bool");
+
+            String negatedTermStr = negatedTermNode.toString();
+
+            for (String clause : Arrays.asList("must", "filter")) {
+                if (boolNode.has(clause)) {
+                    JsonNode clauseNode = boolNode.get(clause);
+                    if (clauseNode.isArray()) {
+                        for (JsonNode item : clauseNode) {
+                            // Skip the term that matches the negated term
+                            if (!item.toString().equals(negatedTermStr)) {
+                                conditions.add(item.deepCopy());
+                            }
+                        }
+                    } else if (!clauseNode.toString().equals(negatedTermStr)) {
+                        conditions.add(clauseNode.deepCopy());
+                    }
+                }
+            }
+            return conditions;
+        }
+    }
+
+    /**
+     * Rule 21: Highlight Removal
+     * Removes the "highlight" section when no text query (match, multi_match, query_string)
+     * is present in the query. Highlight with no text query always returns empty arrays,
+     * but ES still spends time analyzing matched documents.
+     */
+    private class HighlightRemovalRule implements OptimizationRule {
+
+        @Override
+        public String getName() {
+            return "HighlightRemoval";
+        }
+
+        @Override
+        public JsonNode apply(JsonNode query) {
+            if (!query.isObject() || !query.has("highlight")) {
+                return query;
+            }
+
+            // Check if there's any text query in the entire query tree
+            if (query.has("query") && containsTextQuery(query.get("query"))) {
+                return query;
+            }
+
+            // No text query found — highlight is useless, remove it
+            ObjectNode result = query.deepCopy();
+            result.remove("highlight");
+            log.debug("HighlightRemoval: removed highlight section (no text query present)");
+            return result;
+        }
+
+        private boolean containsTextQuery(JsonNode node) {
+            if (node == null) return false;
+
+            if (node.isObject()) {
+                if (node.has("match") || node.has("multi_match") || node.has("query_string") ||
+                    node.has("match_phrase") || node.has("match_phrase_prefix") ||
+                    node.has("common") || node.has("simple_query_string")) {
+                    return true;
+                }
+                for (JsonNode child : node) {
+                    if (containsTextQuery(child)) return true;
+                }
+            } else if (node.isArray()) {
+                for (JsonNode item : node) {
+                    if (containsTextQuery(item)) return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Rule 22: Must_Not Terms Merging
+     * Merges multiple must_not entries that contain "terms" queries on the same field
+     * into a single terms query. Reduces filter cache lookups from N to 1.
+     *
+     * Example:
+     * must_not: [
+     *   { terms: { "__typeName.keyword": ["A","B"] } },
+     *   { terms: { "__typeName.keyword": ["C","D"] } }
+     * ]
+     * becomes:
+     * must_not: [
+     *   { terms: { "__typeName.keyword": ["A","B","C","D"] } }
+     * ]
+     */
+    private class MustNotTermsMergingRule implements OptimizationRule {
+
+        @Override
+        public String getName() {
+            return "MustNotTermsMerging";
+        }
+
+        @Override
+        public JsonNode apply(JsonNode query) {
+            return traverseAndOptimize(query.deepCopy(), this::mergeMustNotTerms);
+        }
+
+        private JsonNode mergeMustNotTerms(JsonNode node) {
+            if (!node.isObject()) return node;
+            ObjectNode objectNode = (ObjectNode) node;
+
+            if (!objectNode.has("bool")) return objectNode;
+            ObjectNode boolNode = (ObjectNode) objectNode.get("bool");
+
+            if (!boolNode.has("must_not") || !boolNode.get("must_not").isArray()) return objectNode;
+
+            ArrayNode mustNot = (ArrayNode) boolNode.get("must_not");
+            if (mustNot.size() < 2) return objectNode;
+
+            // Group terms queries by field
+            Map<String, List<JsonNode>> termsByField = new LinkedHashMap<>();
+            List<JsonNode> nonTermsItems = new ArrayList<>();
+
+            for (JsonNode item : mustNot) {
+                if (item.isObject() && item.has("terms") && item.get("terms").isObject()) {
+                    JsonNode termsNode = item.get("terms");
+                    Iterator<String> fields = termsNode.fieldNames();
+                    if (fields.hasNext()) {
+                        String field = fields.next();
+                        if (termsNode.get(field).isArray()) {
+                            termsByField.computeIfAbsent(field, k -> new ArrayList<>()).add(item);
+                            continue;
+                        }
+                    }
+                }
+                nonTermsItems.add(item);
+            }
+
+            // Check if any field has multiple terms entries
+            boolean hasMultiple = termsByField.values().stream().anyMatch(list -> list.size() > 1);
+            if (!hasMultiple) return objectNode;
+
+            // Build merged must_not array
+            ArrayNode merged = objectMapper.createArrayNode();
+
+            for (Map.Entry<String, List<JsonNode>> entry : termsByField.entrySet()) {
+                String field = entry.getKey();
+                List<JsonNode> items = entry.getValue();
+
+                if (items.size() == 1) {
+                    merged.add(items.get(0));
+                } else {
+                    // Merge all values for this field
+                    ArrayNode allValues = objectMapper.createArrayNode();
+                    Set<String> seen = new LinkedHashSet<>();
+                    for (JsonNode item : items) {
+                        for (JsonNode value : item.get("terms").get(field)) {
+                            String val = value.asText();
+                            if (seen.add(val)) {
+                                allValues.add(value);
+                            }
+                        }
+                    }
+                    ObjectNode mergedTerms = objectMapper.createObjectNode();
+                    ObjectNode fieldNode = objectMapper.createObjectNode();
+                    fieldNode.set(field, allValues);
+                    mergedTerms.set("terms", fieldNode);
+                    merged.add(mergedTerms);
+                    log.debug("MustNotTermsMerging: merged {} must_not terms entries for field '{}'", items.size(), field);
+                }
+            }
+
+            for (JsonNode item : nonTermsItems) {
+                merged.add(item);
+            }
+
+            boolNode.set("must_not", merged);
+            return objectNode;
         }
     }
 

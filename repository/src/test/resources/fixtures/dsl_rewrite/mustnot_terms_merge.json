@@ -1,0 +1,42 @@
+{
+  "from": 0,
+  "size": 20,
+  "query": {
+    "bool": {
+      "filter": [
+        { "term": { "__state": "ACTIVE" } }
+      ],
+      "must_not": [
+        {
+          "terms": {
+            "__typeName.keyword": [
+              "DbtColumnProcess",
+              "BIProcess",
+              "MatillionComponent",
+              "ModelVersion",
+              "FlowDatasetOperation",
+              "FlowFieldOperation",
+              "FabricVisual",
+              "SnowflakeTag",
+              "DbtTag",
+              "BigqueryTag",
+              "AIApplication",
+              "AIModel"
+            ]
+          }
+        },
+        {
+          "terms": {
+            "__typeName.keyword": [
+              "MCIncident",
+              "AnomaloCheck",
+              "FabricDataflowEntityColumn",
+              "FabricSemanticModelTable",
+              "FabricSemanticModelTableColumn"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

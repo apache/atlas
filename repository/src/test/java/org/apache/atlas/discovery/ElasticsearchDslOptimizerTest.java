@@ -4,7 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -19,35 +22,30 @@ import java.util.stream.Collectors;
  * Tests semantic equivalence, scoring preservation, syntax validation, and performance
  * Uses fixture-based testing for easy addition of new test cases
  */
-public class ElasticsearchDslOptimizerTest extends TestCase {
+public class ElasticsearchDslOptimizerTest {
 
     private static final String FIXTURES_BASE_PATH = "src/test/resources/fixtures/dsl_rewrite";
     private ElasticsearchDslOptimizer optimizer;
     private ObjectMapper objectMapper;
     private TestResults testResults;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @BeforeEach
+    public void setUp() {
         optimizer = ElasticsearchDslOptimizer.getInstance();
         objectMapper = new ObjectMapper();
         testResults = new TestResults();
-
-        // Note: Fixture files are now managed manually in src/test/resources/fixtures/dsl_rewrite/
-        // No need to auto-generate fixtures during test setup
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @AfterEach
+    public void tearDown() {
         testResults.printSummary();
-        super.tearDown();
     }
 
     // =====================================================================================
     // MAIN FIXTURE-BASED TEST - AUTOMATICALLY DISCOVERS ALL FIXTURE FILES
     // =====================================================================================
 
-    public void testAllFixtureFiles() {
+    @Test    public void testAllFixtureFiles() {
         System.out.println("=== ElasticsearchDslOptimizer Test Results ===");
         List<File> fixtureFiles = discoverFixtureFiles();
 
@@ -1757,7 +1755,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
     // INDIVIDUAL OPTIMIZATION RULE TESTS (EXISTING)
     // =====================================================================================
 
-    public void testMultipleTermsConsolidation() {
+    @Test    public void testMultipleTermsConsolidation() {
         String input = """
             {
               "query": {
@@ -1777,10 +1775,10 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
 
         // Verify __qualifiedNameHierarchy terms are consolidated
         JsonNode shouldArray = optimized.get("query").get("bool").get("should");
-        assertTrue("Should array must exist", shouldArray.isArray());
+        assertTrue(shouldArray.isArray(), "Should array must exist");
 
         // Should have 2 consolidated terms queries instead of 4 separate ones
-        assertEquals("Should have 2 consolidated terms queries", 2, shouldArray.size());
+        assertEquals(2, shouldArray.size(), "Should have 2 consolidated terms queries");
 
         // Verify consolidation correctness
         boolean hasConsolidatedHierarchy = false;
@@ -1791,23 +1789,23 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
                 JsonNode terms = clause.get("terms");
                 if (terms.has("__qualifiedNameHierarchy")) {
                     JsonNode values = terms.get("__qualifiedNameHierarchy");
-                    assertEquals("Should have 2 consolidated hierarchy values", 2, values.size());
+                    assertEquals(2, values.size(), "Should have 2 consolidated hierarchy values");
                     hasConsolidatedHierarchy = true;
                 } else if (terms.has("status")) {
                     JsonNode values = terms.get("status");
-                    assertEquals("Should have 2 consolidated status values", 2, values.size());
+                    assertEquals(2, values.size(), "Should have 2 consolidated status values");
                     hasConsolidatedStatus = true;
                 }
             }
         }
 
-        assertTrue("Should consolidate __qualifiedNameHierarchy terms", hasConsolidatedHierarchy);
-        assertTrue("Should consolidate status terms", hasConsolidatedStatus);
+        assertTrue(hasConsolidatedHierarchy, "Should consolidate __qualifiedNameHierarchy terms");
+        assertTrue(hasConsolidatedStatus, "Should consolidate status terms");
 
         testResults.addSuccess("MultipleTermsConsolidation");
     }
 
-    public void testQualifiedNameHierarchyConversion() {
+    @Test    public void testQualifiedNameHierarchyConversion() {
         String input = """
             {
               "query": {
@@ -1840,7 +1838,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
 
         // Check if transformation occurred at all
         boolean hasHierarchyInResult = result.getOptimizedQuery().contains("__qualifiedNameHierarchy");
-        assertTrue("Query should contain __qualifiedNameHierarchy after transformation", hasHierarchyInResult);
+        assertTrue(hasHierarchyInResult, "Query should contain __qualifiedNameHierarchy after transformation");
 
         if (shouldArray == null) {
             fail("Should array is null - query structure may have changed");
@@ -1850,19 +1848,17 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         if (shouldArray.size() == 1) {
             // Expected: consolidated into single terms query
             JsonNode consolidatedTerms = shouldArray.get(0);
-            assertTrue("Should have terms query", consolidatedTerms.has("terms"));
-            assertTrue("Should have __qualifiedNameHierarchy field",
-                    consolidatedTerms.get("terms").has("__qualifiedNameHierarchy"));
+            assertTrue(consolidatedTerms.has("terms"), "Should have terms query");
+            assertTrue(consolidatedTerms.get("terms").has("__qualifiedNameHierarchy"), "Should have __qualifiedNameHierarchy field");
 
             JsonNode hierarchyValues = consolidatedTerms.get("terms").get("__qualifiedNameHierarchy");
-            assertEquals("Should have 2 hierarchy values", 2, hierarchyValues.size());
+            assertEquals(2, hierarchyValues.size(), "Should have 2 hierarchy values");
             System.out.println("✅ Consolidation worked correctly");
         } else if (shouldArray.size() == 2) {
             // Alternative: might be 2 separate term queries (pre-consolidation)
             System.out.println("⚠️ Found 2 queries instead of 1 - checking if both are __qualifiedNameHierarchy terms");
             for (JsonNode query : shouldArray) {
-                assertTrue("Each query should be a term with __qualifiedNameHierarchy",
-                        query.has("term") && query.get("term").has("__qualifiedNameHierarchy"));
+                assertTrue(query.has("term") && query.get("term").has("__qualifiedNameHierarchy"), "Each query should be a term with __qualifiedNameHierarchy");
             }
             System.out.println("✅ Transformation worked but consolidation may not have occurred");
         } else {
@@ -1872,7 +1868,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         testResults.addSuccess("QualifiedNameHierarchyConversion + Post-consolidation");
     }
 
-    public void testScoringPreservationInRegularQueries() {
+    @Test    public void testScoringPreservationInRegularQueries() {
         String input = """
             {
               "query": {
@@ -1889,13 +1885,13 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         JsonNode optimized = parseJson(result.getOptimizedQuery());
 
         // Must clauses should be preserved in regular queries (not moved to filter)
-        assertTrue("Must clauses should be preserved", optimized.get("query").get("bool").has("must"));
-        assertEquals("Should have 2 must clauses", 2, optimized.get("query").get("bool").get("must").size());
+        assertTrue(optimized.get("query").get("bool").has("must"), "Must clauses should be preserved");
+        assertEquals(2, optimized.get("query").get("bool").get("must").size(), "Should have 2 must clauses");
 
         testResults.addSuccess("ScoringPreservationInRegularQueries");
     }
 
-    public void testFilterOptimizationInFunctionScore() {
+    @Test    public void testFilterOptimizationInFunctionScore() {
         String input = """
             {
               "query": {
@@ -1922,32 +1918,31 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         JsonNode innerBool = optimized.get("query").get("function_score").get("query").get("bool");
 
         // In function_score context, filter-like clauses should be moved to filter
-        assertTrue("Should have filter array", innerBool.has("filter"));
-        assertTrue("Should still have must for scoring clauses", innerBool.has("must"));
+        assertTrue(innerBool.has("filter"), "Should have filter array");
+        assertTrue(innerBool.has("must"), "Should still have must for scoring clauses");
 
         // Filter should contain term queries
         JsonNode filterArray = innerBool.get("filter");
-        assertTrue("Filter should be array", filterArray.isArray());
-        assertEquals("Filter should have 2 terms", 2, filterArray.size()); // status and type terms
+        assertTrue(filterArray.isArray(), "Filter should be array");
+        assertEquals(2, filterArray.size(), "Filter should have 2 terms"); // status and type terms
 
         // Must should contain match query
         JsonNode mustArray = innerBool.get("must");
-        assertTrue("Must should be array", mustArray.isArray());
-        assertEquals("Must should have 1 match query", 1, mustArray.size()); // name match
+        assertTrue(mustArray.isArray(), "Must should be array");
+        assertEquals(1, mustArray.size(), "Must should have 1 match query"); // name match
 
         testResults.addSuccess("FilterOptimizationInFunctionScore");
     }
 
-    public void testOptimizationPerformance() {
+    @Test    public void testOptimizationPerformance() {
         String complexQuery = generateComplexQuery(100);
 
         long startTime = System.currentTimeMillis();
         ElasticsearchDslOptimizer.OptimizationResult result = optimizer.optimizeQuery(complexQuery);
         long optimizationTime = System.currentTimeMillis() - startTime;
 
-        assertTrue("Optimization took too long: " + optimizationTime + "ms", optimizationTime < 1000);
-        assertTrue("Optimized query should be smaller than original",
-                result.getOptimizedQuery().length() < complexQuery.length());
+        assertTrue(optimizationTime < 1000, "Optimization took too long: " + optimizationTime + "ms");
+        assertTrue(result.getOptimizedQuery().length() < complexQuery.length(), "Optimized query should be smaller than original");
 
         testResults.addSuccess("PerformanceTest");
     }
@@ -1978,7 +1973,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
     // DEBUG METHOD FOR TESTING SPECIFIC FIXTURES
     // =====================================================================================
 
-    public void testSpecificFixture() throws Exception {
+    @Test    public void testSpecificFixture() throws Exception {
         String fixtureName = "task_nested_bool_complex.json"; // Updated from 3.json - change this to test different fixtures
         File fixtureFile = new File(FIXTURES_BASE_PATH, fixtureName);
 
@@ -2018,7 +2013,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
     // MANUAL TEST METHOD FOR BOOL ELIMINATION (func_score_regexp_search.json scenario)
     // =====================================================================================
 
-    public void testBoolEliminationScenario() throws Exception {
+    @Test    public void testBoolEliminationScenario() throws Exception {
         System.out.println("=== MANUAL BOOL ELIMINATION TEST ===");
         // Test the bool elimination scenario from func_score_regexp_search.json
 
@@ -2386,7 +2381,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
     // MANUAL TEST METHOD FOR SPECIFIC JSON
     // =====================================================================================
 
-    public void testSpecificJsonStructure() {
+    @Test    public void testSpecificJsonStructure() {
         // Test the specific nested structure mentioned by the user
         String originalJson = "{\n" +
                 "  \"size\": 1,\n" +
@@ -2479,7 +2474,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
     // DEBUG METHOD FOR FIELD EXTRACTION TESTING
     // =====================================================================================
 
-    public void testFieldExtractionBoolElimination() {
+    @Test    public void testFieldExtractionBoolElimination() {
         // Test field extraction for the 5.json bool elimination scenario
         String originalJson = """
             {
@@ -2569,7 +2564,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
     // TEST METHOD FOR BOOL FLATTENING OPTIMIZATION (func_score_bool_flatten.json scenario)
     // =====================================================================================
 
-    public void testBoolFlatteningOptimization() throws Exception {
+    @Test    public void testBoolFlatteningOptimization() throws Exception {
         System.out.println("=== MANUAL BOOL FLATTENING TEST ===");
         // Test the bool flattening scenario from func_score_bool_flatten.json
 
@@ -2608,7 +2603,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
     }
 
     // TEST METHOD FOR SEMANTIC OPTIMIZATION (bool_single_should_flatten.json scenario)
-    public void testSemanticOptimization8Json() throws Exception {
+    @Test    public void testSemanticOptimization8Json() throws Exception {
         System.out.println("=== MANUAL SEMANTIC OPTIMIZATION TEST ===");
         // Test the semantic optimization scenario from bool_single_should_flatten.json
 
@@ -2647,7 +2642,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
     }
 
     // DEBUG TEST FOR bool_single_should_flatten.json and purpose_double_bool.json FAILURES
-    public void testDebug8And9Json() throws Exception {
+    @Test    public void testDebug8And9Json() throws Exception {
         System.out.println("=== DEBUG BOOL SINGLE SHOULD FLATTEN AND PURPOSE DOUBLE BOOL ===");
 
         // Test files that were previously having issues
@@ -2722,7 +2717,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
     /**
      * Test the new validation-based optimization method
      */
-    public void testValidationBasedOptimization() throws Exception {
+    @Test    public void testValidationBasedOptimization() throws Exception {
         System.out.println("=== TESTING VALIDATION-BASED OPTIMIZATION ===");
 
         // Test 1: Valid query that should pass validation
@@ -2746,8 +2741,8 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         System.out.println("- Original query length: " + validQuery.length());
         System.out.println("- Optimized query length: " + result.getOptimizedQuery().length());
 
-        assertTrue("Valid query should pass validation", result.isValidationPassed());
-        assertNotNull("Optimized query should not be null", result.getOptimizedQuery());
+        assertTrue(result.isValidationPassed(), "Valid query should pass validation");
+        assertNotNull(result.getOptimizedQuery(), "Optimized query should not be null");
 
         // Test 2: Test with invalid JSON that should cause exception
         String invalidJsonQuery = "{ \"query\": { \"bool\": { \"must\": [invalidJson] } }";
@@ -2758,10 +2753,9 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         System.out.println("- Validation passed: " + invalidResult.isValidationPassed());
         System.out.println("- Failure reason: " + invalidResult.getValidationFailureReason());
 
-        assertFalse("Invalid JSON should fail optimization", invalidResult.isValidationPassed());
-        assertEquals("Should fallback to original query", invalidJsonQuery, invalidResult.getOptimizedQuery());
-        assertTrue("Should mention exception in failure reason",
-                invalidResult.getValidationFailureReason().contains("exception"));
+        assertFalse(invalidResult.isValidationPassed(), "Invalid JSON should fail optimization");
+        assertEquals(invalidJsonQuery, invalidResult.getOptimizedQuery(), "Should fallback to original query");
+        assertTrue(invalidResult.getValidationFailureReason().contains("exception"), "Should mention exception in failure reason");
 
         // Test 3: Create a scenario with a mock optimizer that deliberately breaks validation
         testValidationFailureScenario();
@@ -2772,7 +2766,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
     /**
      * Test wildcard consolidation validation
      */
-    public void testAggregationPreservation() throws Exception {
+    @Test    public void testAggregationPreservation() throws Exception {
         System.out.println("🔒 Testing aggregation preservation...");
 
         // Test that aggregations are NOT optimized and preserved exactly as-is
@@ -2831,38 +2825,38 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         JsonNode optimized = parseJson(optimizedQuery);
 
         // The query section might be optimized
-        assertNotNull("Query should exist", optimized.get("query"));
+        assertNotNull(optimized.get("query"), "Query should exist");
 
         // But aggregations should be preserved EXACTLY as-is
-        assertTrue("Should have aggregations", optimized.has("aggs"));
+        assertTrue(optimized.has("aggs"), "Should have aggregations");
         JsonNode originalAggs = original.get("aggs");
         JsonNode optimizedAggs = optimized.get("aggs");
 
         // Compare aggregation structures - should be identical
-        assertEquals("Aggregations should be preserved exactly", originalAggs, optimizedAggs);
+        assertEquals(originalAggs, optimizedAggs, "Aggregations should be preserved exactly");
 
         // Specifically check the problematic group_by_popularity aggregation
-        assertTrue("Should have group_by_popularity", optimizedAggs.has("group_by_popularity"));
+        assertTrue(optimizedAggs.has("group_by_popularity"), "Should have group_by_popularity");
         JsonNode popularity = optimizedAggs.get("group_by_popularity");
 
         // Verify the filter.bool.must structure is preserved in aggregation
-        assertTrue("Should have filter", popularity.has("filter"));
-        assertTrue("Should have filter.bool", popularity.get("filter").has("bool"));
-        assertTrue("Should have filter.bool.must", popularity.get("filter").get("bool").has("must"));
+        assertTrue(popularity.has("filter"), "Should have filter");
+        assertTrue(popularity.get("filter").has("bool"), "Should have filter.bool");
+        assertTrue(popularity.get("filter").get("bool").has("must"), "Should have filter.bool.must");
 
         JsonNode mustArray = popularity.get("filter").get("bool").get("must");
-        assertTrue("Must should be array", mustArray.isArray());
-        assertEquals("Should have 1 must clause", 1, mustArray.size());
+        assertTrue(mustArray.isArray(), "Must should be array");
+        assertEquals(1, mustArray.size(), "Should have 1 must clause");
 
         // Verify the range query is preserved
         JsonNode rangeClause = mustArray.get(0);
-        assertTrue("Should have range query", rangeClause.has("range"));
-        assertTrue("Should have popularityScore range", rangeClause.get("range").has("popularityScore"));
+        assertTrue(rangeClause.has("range"), "Should have range query");
+        assertTrue(rangeClause.get("range").has("popularityScore"), "Should have popularityScore range");
 
         System.out.println("✅ Aggregation preservation test PASSED");
     }
 
-    public void testDebugValidationIssues() throws Exception {
+    @Test    public void testDebugValidationIssues() throws Exception {
         System.out.println("🐛 DEBUG: Testing validation issues...");
 
         // Test Case 1: databaseQualifiedName wildcard transformation
@@ -2921,7 +2915,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         }
     }
 
-    public void testAggsFilterJson() throws Exception {
+    @Test    public void testAggsFilterJson() throws Exception {
         System.out.println("🧪 Testing aggs_filter.json specific case...");
 
         // Test the specific file that was having issues
@@ -2942,35 +2936,33 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         JsonNode optimized = parseJson(optimizedQuery);
 
         // Validate that aggregations are preserved exactly
-        assertTrue("Should have aggregations", optimized.has("aggs"));
+        assertTrue(optimized.has("aggs"), "Should have aggregations");
         JsonNode originalAggs = original.get("aggs");
         JsonNode optimizedAggs = optimized.get("aggs");
 
-        assertEquals("Aggregations should be preserved exactly", originalAggs, optimizedAggs);
+        assertEquals(originalAggs, optimizedAggs, "Aggregations should be preserved exactly");
 
         // Specifically check the group_by_popularity that was being messed up
-        assertTrue("Should have group_by_popularity", optimizedAggs.has("group_by_popularity"));
+        assertTrue(optimizedAggs.has("group_by_popularity"), "Should have group_by_popularity");
         JsonNode originalPopularity = originalAggs.get("group_by_popularity");
         JsonNode optimizedPopularity = optimizedAggs.get("group_by_popularity");
 
-        assertEquals("group_by_popularity should be preserved exactly",
-                originalPopularity, optimizedPopularity);
+        assertEquals(originalPopularity, optimizedPopularity, "group_by_popularity should be preserved exactly");
 
         // Verify the filter.bool.must structure is exactly preserved
         JsonNode filterBool = optimizedPopularity.get("filter").get("bool");
-        assertTrue("Should have must array", filterBool.has("must"));
-        assertTrue("Must should be array", filterBool.get("must").isArray());
-        assertEquals("Should have 1 must clause", 1, filterBool.get("must").size());
+        assertTrue(filterBool.has("must"), "Should have must array");
+        assertTrue(filterBool.get("must").isArray(), "Must should be array");
+        assertEquals(1, filterBool.get("must").size(), "Should have 1 must clause");
 
         // Verify the nested aggs are preserved
-        assertTrue("Should have nested aggs", optimizedPopularity.has("aggs"));
-        assertTrue("Should have percentile_division",
-                optimizedPopularity.get("aggs").has("percentile_division"));
+        assertTrue(optimizedPopularity.has("aggs"), "Should have nested aggs");
+        assertTrue(optimizedPopularity.get("aggs").has("percentile_division"), "Should have percentile_division");
 
         System.out.println("✅ aggs_filter.json test PASSED - aggregations preserved correctly");
     }
 
-    public void testBoolNestingFix() throws Exception {
+    @Test    public void testBoolNestingFix() throws Exception {
         System.out.println("🔧 Testing bool->bool nesting fix...");
 
         // Test the specific case from task_bool_simple.json that was causing bool->bool nesting
@@ -3007,34 +2999,31 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         System.out.println("📝 Output: " + optimizedQuery);
 
         // Check that the result is valid (no bool->bool nesting)
-        assertFalse("Optimized query should not contain 'bool\":{\"bool'",
-                optimizedQuery.contains("\"bool\":{\"bool\""));
-        assertFalse("Optimized query should not contain bool->bool nesting",
-                optimizedQuery.matches(".*\"bool\"\\s*:\\s*\\{\\s*\"bool\".*"));
+        assertFalse(optimizedQuery.contains("\"bool\":{\"bool\""), "Optimized query should not contain 'bool\":{\"bool'");
+        assertFalse(optimizedQuery.matches(".*\"bool\"\\s*:\\s*\\{\\s*\"bool\".*"), "Optimized query should not contain bool->bool nesting");
 
         // Parse the result to validate it's proper JSON and has valid structure
         JsonNode parsed = parseJson(optimizedQuery);
-        assertNotNull("Optimized query should be valid JSON", parsed);
+        assertNotNull(parsed, "Optimized query should be valid JSON");
 
         // Validate that we have a proper bool structure
-        assertTrue("Should have query.bool structure",
-                parsed.has("query") && parsed.get("query").has("bool"));
+        assertTrue(parsed.has("query") && parsed.get("query").has("bool"), "Should have query.bool structure");
 
         JsonNode boolQuery = parsed.get("query").get("bool");
 
         // Should have filter array, not nested bool
-        assertTrue("Should have filter array", boolQuery.has("filter"));
-        assertTrue("Filter should be an array", boolQuery.get("filter").isArray());
-        assertFalse("Should not have nested bool in filter", boolQuery.has("bool"));
+        assertTrue(boolQuery.has("filter"), "Should have filter array");
+        assertTrue(boolQuery.get("filter").isArray(), "Filter should be an array");
+        assertFalse(boolQuery.has("bool"), "Should not have nested bool in filter");
 
         // Verify the filter array contains the expected terms
         JsonNode filterArray = boolQuery.get("filter");
-        assertTrue("Filter array should have at least 2 items", filterArray.size() >= 2);
+        assertTrue(filterArray.size() >= 2, "Filter array should have at least 2 items");
 
         System.out.println("✅ Bool nesting fix validation PASSED");
     }
 
-    public void testDatabaseQualifiedNameTransformation() throws Exception {
+    @Test    public void testDatabaseQualifiedNameTransformation() throws Exception {
         System.out.println("🧪 Testing direct databaseQualifiedName transformation...");
 
         // Test 1: Simple direct case
@@ -3073,7 +3062,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
             System.out.println("⚠️ This suggests transformation happened but original wasn't removed");
         }
 
-        assertTrue("Simple databaseQualifiedName should transform to __qualifiedNameHierarchy", hasHierarchy);
+        assertTrue(hasHierarchy, "Simple databaseQualifiedName should transform to __qualifiedNameHierarchy");
         // Note: Don't fail on stillHasWildcard as some other rules might be interfering
 
         // Test 2: Extract the exact fragment from wildcards_too_many.json
@@ -3133,11 +3122,11 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
             System.out.println("⚠️ This might be expected if other rules are preserving structure");
         }
 
-        assertTrue("Nested databaseQualifiedName should transform to __qualifiedNameHierarchy", complexHasHierarchy);
+        assertTrue(complexHasHierarchy, "Nested databaseQualifiedName should transform to __qualifiedNameHierarchy");
         // Note: Don't fail on complex wildcard remaining as structure optimization might affect this
     }
 
-    public void testWildcardConsolidationValidation() throws Exception {
+    @Test    public void testWildcardConsolidationValidation() throws Exception {
         System.out.println("=== TESTING WILDCARD CONSOLIDATION VALIDATION ===");
 
         // Test with a query that has many wildcard patterns (like wildcards_too_many.json)
@@ -3177,8 +3166,8 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         }
 
         // This should pass validation even though structure changes significantly
-        assertTrue("Wildcard consolidation should pass validation", result.isValidationPassed());
-        assertNotNull("Optimized query should not be null", result.getOptimizedQuery());
+        assertTrue(result.isValidationPassed(), "Wildcard consolidation should pass validation");
+        assertNotNull(result.getOptimizedQuery(), "Optimized query should not be null");
 
         // Verify that optimization actually occurred
         JsonNode original = parseJson(queryWithManyWildcards);
@@ -3193,7 +3182,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         System.out.println("- Optimized regexps: " + optimizedRegexps);
 
         // Expect some consolidation to have occurred
-        assertTrue("Should consolidate some wildcards", originalWildcards > optimizedWildcards || optimizedRegexps > 0);
+        assertTrue(originalWildcards > optimizedWildcards || optimizedRegexps > 0, "Should consolidate some wildcards");
 
         testResults.addSuccess("WildcardConsolidationValidation");
     }
@@ -3231,7 +3220,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
     /**
      * Test validation failure by creating a scenario where field preservation fails
      */
-    public void testDefaultPatternOptimization() throws Exception {
+    @Test    public void testDefaultPatternOptimization() throws Exception {
         System.out.println("=== Testing Default Pattern Optimization ===");
 
         // Test 1: default/*/*/*/* pattern should become terms query
@@ -3248,17 +3237,14 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         JsonNode optimized1 = parseJson(result1.getOptimizedQuery());
 
         // Should convert to terms query with __qualifiedNameHierarchy
-        assertTrue("Should contain __qualifiedNameHierarchy field",
-                result1.getOptimizedQuery().contains("__qualifiedNameHierarchy"));
-        assertTrue("Should contain terms query type",
-                result1.getOptimizedQuery().contains("\"terms\""));
-        assertTrue("Should contain the exact path without wildcard",
-                result1.getOptimizedQuery().contains("default/athena/1731597928/AwsDataCatalog"));
+        assertTrue(result1.getOptimizedQuery().contains("__qualifiedNameHierarchy"), "Should contain __qualifiedNameHierarchy field");
+        assertTrue(result1.getOptimizedQuery().contains("\"terms\""), "Should contain terms query type");
+        assertTrue(result1.getOptimizedQuery().contains("default/athena/1731597928/AwsDataCatalog"), "Should contain the exact path without wildcard");
 
         System.out.println("✅ Default pattern optimization works correctly");
     }
 
-    public void testRegexpSplitting() throws Exception {
+    @Test    public void testRegexpSplitting() throws Exception {
         System.out.println("=== Testing Regexp Splitting for Long Patterns ===");
 
         // Create a query with many wildcards that will generate a long regexp
@@ -3286,13 +3272,12 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         System.out.println("Number of regexp queries created: " + regexpCount);
 
         // Should have created multiple regexp queries or a bool.should structure
-        assertTrue("Should create multiple regexp queries or bool.should structure",
-                regexpCount > 1 || optimizedStr.contains("\"should\""));
+        assertTrue(regexpCount > 1 || optimizedStr.contains("\"should\""), "Should create multiple regexp queries or bool.should structure");
 
         System.out.println("✅ Regexp splitting works correctly");
     }
 
-    public void testOnlyHelpfulRulesReported() throws Exception {
+    @Test    public void testOnlyHelpfulRulesReported() throws Exception {
         System.out.println("=== Testing Only Helpful Rules Are Reported ===");
 
         // Test 1: Query that's already optimal - should report no helpful rules
@@ -3340,7 +3325,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         }
 
         // Verify that we only report rules that actually changed something
-        assertNotNull("Should have metrics", result2.getMetrics());
+        assertNotNull(result2.getMetrics(), "Should have metrics");
         if (!result2.getMetrics().appliedRules.isEmpty()) {
             System.out.println("✅ Only helpful rules reported: " + String.join(", ", result2.getMetrics().appliedRules));
         }
@@ -3348,7 +3333,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         System.out.println("✅ Helpful rules reporting works correctly");
     }
 
-    public void testValidationFailureScenario() {
+    @Test    public void testValidationFailureScenario() {
         System.out.println("\n--- Testing Validation Failure Scenario ---");
 
         // Create a query that exercises the field preservation validation
@@ -3374,7 +3359,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         ElasticsearchDslOptimizer.OptimizationResult validatedResult = optimizer.optimizeQueryWithValidation(queryWithSpecificFields);
         System.out.println("- Validated optimization passed: " + validatedResult.isValidationPassed());
 
-        assertTrue("Field preservation should work for normal queries", validatedResult.isValidationPassed());
+        assertTrue(validatedResult.isValidationPassed(), "Field preservation should work for normal queries");
 
         // Test with null/empty query (should fail)
         String emptyQuery = "";
@@ -3382,10 +3367,10 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         System.out.println("- Empty query validation passed: " + emptyResult.isValidationPassed());
         System.out.println("- Empty query failure reason: " + emptyResult.getValidationFailureReason());
 
-        assertFalse("Empty query should fail validation", emptyResult.isValidationPassed());
+        assertFalse(emptyResult.isValidationPassed(), "Empty query should fail validation");
     }
 
-    public void testMustVsMustNotWildcardConsolidationBug() throws Exception {
+    @Test    public void testMustVsMustNotWildcardConsolidationBug() throws Exception {
         System.out.println("=== Testing Must vs Must_Not Wildcard Consolidation Bug ===");
 
         // This test verifies that wildcards in 'must' and 'must_not' clauses
@@ -3423,8 +3408,8 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         JsonNode optimizedBool = optimized.path("query").path("bool");
 
         // Check that we still have separate must and must_not sections
-        assertTrue("Optimized query should still have 'must' section", optimizedBool.has("must"));
-        assertTrue("Optimized query should still have 'must_not' section", optimizedBool.has("must_not"));
+        assertTrue(optimizedBool.has("must"), "Optimized query should still have 'must' section");
+        assertTrue(optimizedBool.has("must_not"), "Optimized query should still have 'must_not' section");
 
         // Analyze the conditions in each context
         JsonNode mustSection = optimizedBool.path("must");
@@ -3443,35 +3428,31 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
 
         // CRITICAL BUG CHECK: Ensure include patterns didn't end up in must_not and vice versa
         for (String mustPattern : mustPatterns) {
-            assertFalse("SEMANTIC BUG: Include pattern '" + mustPattern + "' found in must_not section!",
-                    mustNotPatterns.contains(mustPattern));
+            assertFalse(mustNotPatterns.contains(mustPattern), "SEMANTIC BUG: Include pattern '" + mustPattern + "' found in must_not section!");
         }
 
         for (String mustNotPattern : mustNotPatterns) {
-            assertFalse("SEMANTIC BUG: Exclude pattern '" + mustNotPattern + "' found in must section!",
-                    mustPatterns.contains(mustNotPattern));
+            assertFalse(mustPatterns.contains(mustNotPattern), "SEMANTIC BUG: Exclude pattern '" + mustNotPattern + "' found in must section!");
         }
 
         // Verify that consolidation, if it happened, stayed within the correct contexts
         boolean mustHasIncludeTerms = mustPatterns.stream().anyMatch(p -> p.contains("include"));
         boolean mustNotHasExcludeTerms = mustNotPatterns.stream().anyMatch(p -> p.contains("exclude"));
 
-        assertTrue("Must section should contain include patterns", mustHasIncludeTerms);
-        assertTrue("Must_not section should contain exclude patterns", mustNotHasExcludeTerms);
+        assertTrue(mustHasIncludeTerms, "Must section should contain include patterns");
+        assertTrue(mustNotHasExcludeTerms, "Must_not section should contain exclude patterns");
 
         // Additional check: If regexp consolidation happened, verify the patterns are semantically correct
         if (containsRegexpQuery(mustSection)) {
             System.out.println("✅ Must section was consolidated to regexp (allowed)");
             String mustRegexpPattern = extractRegexpPattern(mustSection);
-            assertFalse("SEMANTIC BUG: Must regexp contains exclude pattern",
-                    mustRegexpPattern.contains("exclude"));
+            assertFalse(mustRegexpPattern.contains("exclude"), "SEMANTIC BUG: Must regexp contains exclude pattern");
         }
 
         if (containsRegexpQuery(mustNotSection)) {
             System.out.println("✅ Must_not section was consolidated to regexp (allowed)");
             String mustNotRegexpPattern = extractRegexpPattern(mustNotSection);
-            assertFalse("SEMANTIC BUG: Must_not regexp contains include pattern",
-                    mustNotRegexpPattern.contains("include"));
+            assertFalse(mustNotRegexpPattern.contains("include"), "SEMANTIC BUG: Must_not regexp contains include pattern");
         }
 
         System.out.println("✅ Wildcard consolidation correctly preserved must vs must_not semantics");
@@ -3566,7 +3547,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         return null;
     }
 
-    public void testShouldClauseWildcardConsolidation() throws Exception {
+    @Test    public void testShouldClauseWildcardConsolidation() throws Exception {
         System.out.println("=== Testing Should Clause Wildcard Consolidation ===");
 
         // Test the exact scenario from wildcard_staging.json
@@ -3615,7 +3596,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
 
         // Check if wildcards were consolidated
         JsonNode shouldClause = optimized.path("query").path("bool").path("should");
-        assertTrue("Should clause should exist", shouldClause.isArray());
+        assertTrue(shouldClause.isArray(), "Should clause should exist");
 
         // Count wildcards and regexps in the optimized query
         int wildcardCount = 0;
@@ -3630,9 +3611,9 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
                 // Verify the regexp pattern contains all expected substrings
                 String regexpPattern = clause.path("regexp").path("qualifiedName").asText();
                 System.out.println("Consolidated regexp pattern: " + regexpPattern);
-                assertTrue("Regexp should contain 'aar'", regexpPattern.contains("aar"));
-                assertTrue("Regexp should contain 'gtc'", regexpPattern.contains("gtc"));
-                assertTrue("Regexp should contain '1000'", regexpPattern.contains("1000"));
+                assertTrue(regexpPattern.contains("aar"), "Regexp should contain 'aar'");
+                assertTrue(regexpPattern.contains("gtc"), "Regexp should contain 'gtc'");
+                assertTrue(regexpPattern.contains("1000"), "Regexp should contain '1000'");
             } else if (clause.has("term")) {
                 hasTermClause = true;
             }
@@ -3645,21 +3626,19 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         System.out.println("Term clause preserved: " + hasTermClause);
 
         // Verify consolidation happened (3 wildcards → 1 regexp)
-        assertTrue("Term clause should be preserved", hasTermClause);
-        assertTrue("Wildcards should be consolidated (wildcards: " + wildcardCount + ", regexps: " + regexpCount + ")",
-                wildcardCount == 0 && regexpCount == 1);
+        assertTrue(hasTermClause, "Term clause should be preserved");
+        assertTrue(wildcardCount == 0 && regexpCount == 1, "Wildcards should be consolidated (wildcards: " + wildcardCount + ", regexps: " + regexpCount + ")");
 
         // Verify WildcardConsolidation rule was applied
-        assertNotNull("Should have metrics", result.getMetrics());
-        assertTrue("WildcardConsolidation rule should have helped",
-                result.getMetrics().appliedRules.contains("WildcardConsolidation"));
+        assertNotNull(result.getMetrics(), "Should have metrics");
+        assertTrue(result.getMetrics().appliedRules.contains("WildcardConsolidation"), "WildcardConsolidation rule should have helped");
 
         System.out.println("✅ Should clause wildcard consolidation working correctly!");
         System.out.println("✅ 3 wildcards on same field consolidated into 1 regexp");
         System.out.println("✅ Non-wildcard clauses (term) preserved");
     }
 
-    public void testMustClauseTermConsolidationSemanticBug() throws Exception {
+    @Test    public void testMustClauseTermConsolidationSemanticBug() throws Exception {
         System.out.println("=== Testing Must Clause Term Consolidation Semantic Bug ===");
 
         // This test demonstrates a CRITICAL semantic bug
@@ -3692,7 +3671,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
 
         // Analyze the semantic implications
         JsonNode mustClause = optimized.path("query").path("bool").path("must");
-        assertTrue("Must clause should exist", mustClause.isArray());
+        assertTrue(mustClause.isArray(), "Must clause should exist");
 
         // Check if terms were consolidated
         boolean hasTermsQuery = false;
@@ -3734,8 +3713,8 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         }
 
         // Verify the original semantic meaning is preserved
-        assertTrue("Should preserve multiple separate term queries in must clause", hasMultipleTermQueries);
-        assertEquals("Should have exactly 2 separate term queries", 2, termQueryCount);
+        assertTrue(hasMultipleTermQueries, "Should preserve multiple separate term queries in must clause");
+        assertEquals(2, termQueryCount, "Should have exactly 2 separate term queries");
 
         System.out.println("\\n--- CORRECT BEHAVIOR VERIFIED ---");
         System.out.println("✅ Multiple term queries in 'must' clause were NOT consolidated");
@@ -3745,7 +3724,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         System.out.println("   Only consolidate in 'should', 'filter', or separate bool contexts");
     }
 
-    public void testShouldClauseTermConsolidationValid() throws Exception {
+    @Test    public void testShouldClauseTermConsolidationValid() throws Exception {
         System.out.println("\\n=== Testing Should Clause Term Consolidation (Valid) ===");
 
         // This test shows that consolidation IS valid for 'should' clauses
@@ -3772,7 +3751,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
 
         // Check if terms were consolidated (this is OK for should clauses)
         JsonNode shouldClause = optimized.path("query").path("bool").path("should");
-        assertTrue("Should clause should exist", shouldClause.isArray());
+        assertTrue(shouldClause.isArray(), "Should clause should exist");
 
         boolean hasTermsQuery = false;
         for (JsonNode clause : shouldClause) {
@@ -3802,7 +3781,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         System.out.println("\\n✅ Should clause consolidation maintains OR semantics correctly");
     }
 
-    public void testMustClauseDifferentFieldsConsolidation() throws Exception {
+    @Test    public void testMustClauseDifferentFieldsConsolidation() throws Exception {
         System.out.println("\\n=== Testing Must Clause Different Fields (Should NOT Consolidate) ===");
 
         // Test that different fields in must clauses are left alone
@@ -3829,7 +3808,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
 
         // Verify no consolidation happened (should preserve original structure)
         JsonNode mustClause = optimized.path("query").path("bool").path("must");
-        assertTrue("Must clause should exist", mustClause.isArray());
+        assertTrue(mustClause.isArray(), "Must clause should exist");
 
         int termQueryCount = 0;
         boolean hasTermsQuery = false;
@@ -3843,8 +3822,8 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         }
 
         // Verify no terms queries were created (no consolidation)
-        assertFalse("Should NOT create terms queries in must clauses", hasTermsQuery);
-        assertEquals("Should preserve all original term queries", 3, termQueryCount);
+        assertFalse(hasTermsQuery, "Should NOT create terms queries in must clauses");
+        assertEquals(3, termQueryCount, "Should preserve all original term queries");
 
         System.out.println("\\n--- VERIFICATION ---");
         System.out.println("✅ No consolidation in must clause (preserves AND semantics)");
@@ -3852,7 +3831,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         System.out.println("✅ Semantics: status='active' AND type='user' AND region='us-east'");
     }
     
-    public void testBPAAssetsComplexOptimization() throws Exception {
+    @Test    public void testBPAAssetsComplexOptimization() throws Exception {
         System.out.println("=== Testing BPA Assets Complex Optimization ===");
         
         // Test the specific pattern from BPA_Assets.json with multiple issues:
@@ -3971,11 +3950,11 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         int originalBoolCount = countOccurrences(complexQuery, "\"bool\"");
         int optimizedBoolCount = countOccurrences(optimizedStr, "\"bool\"");
         
-        assertTrue("Should reduce bool nesting", optimizedBoolCount < originalBoolCount);
+        assertTrue(optimizedBoolCount < originalBoolCount, "Should reduce bool nesting");
         System.out.println("✅ Bool structures reduced from " + originalBoolCount + " to " + optimizedBoolCount);
         
         // Check 2: Wildcard to regexp conversion
-        assertTrue("Should convert wildcards to regexp", optimizedStr.contains("\"regexp\""));
+        assertTrue(optimizedStr.contains("\"regexp\""), "Should convert wildcards to regexp");
         System.out.println("✅ Wildcards converted to regexp patterns");
         
         // Check 3: Must_not wildcard consolidation 
@@ -3985,9 +3964,9 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         
         // Check 4: Verify semantic preservation
         // The optimized query should still preserve the same logical structure
-        assertTrue("Should maintain must_not semantics", optimizedStr.contains("\"must_not\""));
-        assertTrue("Should maintain __state term", optimizedStr.contains("\"__state\""));
-        assertTrue("Should maintain __guid terms", optimizedStr.contains("\"__guid\""));
+        assertTrue(optimizedStr.contains("\"must_not\""), "Should maintain must_not semantics");
+        assertTrue(optimizedStr.contains("\"__state\""), "Should maintain __state term");
+        assertTrue(optimizedStr.contains("\"__guid\""), "Should maintain __guid terms");
         
         System.out.println("\\n--- VALIDATION ---");
         
@@ -4016,7 +3995,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         }
     }
     
-    public void testMustNotWildcardConsolidation() throws Exception {
+    @Test    public void testMustNotWildcardConsolidation() throws Exception {
         System.out.println("\\n=== Testing Must_Not Wildcard Consolidation ===");
         
         // Test that must_not wildcards CAN be consolidated (semantically safe)
@@ -4042,7 +4021,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         
         // Verify consolidation happened
         JsonNode mustNotClause = optimized.path("query").path("bool").path("must_not");
-        assertTrue("Must_not clause should exist", mustNotClause.isArray());
+        assertTrue(mustNotClause.isArray(), "Must_not clause should exist");
         
         boolean hasRegexpQuery = false;
         int wildcardCount = 0;
@@ -4055,17 +4034,17 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
                     String pattern = regexpNode.get("qualifiedName").asText();
                     System.out.println("✅ Consolidated regexp pattern: " + pattern);
                     // Should contain all three patterns
-                    assertTrue("Should contain exclude1", pattern.contains("exclude1"));
-                    assertTrue("Should contain exclude2", pattern.contains("exclude2"));
-                    assertTrue("Should contain exclude3", pattern.contains("exclude3"));
+                    assertTrue(pattern.contains("exclude1"), "Should contain exclude1");
+                    assertTrue(pattern.contains("exclude2"), "Should contain exclude2");
+                    assertTrue(pattern.contains("exclude3"), "Should contain exclude3");
                 }
             } else if (clause.has("wildcard")) {
                 wildcardCount++;
             }
         }
         
-        assertTrue("Should create regexp from consolidated wildcards", hasRegexpQuery);
-        assertTrue("Should have fewer wildcard queries", wildcardCount < 3);
+        assertTrue(hasRegexpQuery, "Should create regexp from consolidated wildcards");
+        assertTrue(wildcardCount < 3, "Should have fewer wildcard queries");
         
         System.out.println("\\n--- SEMANTIC ANALYSIS ---");
         System.out.println("ORIGINAL: Documents must NOT match (*exclude1* OR *exclude2* OR *exclude3*)");
@@ -4084,7 +4063,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         return count;
     }
     
-    public void testNestedRegexpConsolidation() throws Exception {
+    @Test    public void testNestedRegexpConsolidation() throws Exception {
         System.out.println("\\n=== Testing Nested Regexp Consolidation (BPA Assets Pattern) ===");
         
         // Test case with nested bool.must_not wrappers around regexp queries (like BPA_Assets.json)
@@ -4154,15 +4133,15 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         System.out.println("- Optimized regexp queries: " + optimizedRegexpCount);
         
         // Check if consolidation worked
-        assertTrue("Should consolidate nested regexp queries", optimizedRegexpCount < originalRegexpCount);
+        assertTrue(optimizedRegexpCount < originalRegexpCount, "Should consolidate nested regexp queries");
         
         // Verify the consolidated pattern contains all original patterns
-        assertTrue("Should contain digital_channel pattern", optimizedStr.contains("digital_channel"));
-        assertTrue("Should contain functional_reporting pattern", optimizedStr.contains("functional_reporting"));
-        assertTrue("Should contain _ea pattern", optimizedStr.contains("_ea"));
+        assertTrue(optimizedStr.contains("digital_channel"), "Should contain digital_channel pattern");
+        assertTrue(optimizedStr.contains("functional_reporting"), "Should contain functional_reporting pattern");
+        assertTrue(optimizedStr.contains("_ea"), "Should contain _ea pattern");
         
         // Should preserve must_not semantics
-        assertTrue("Should maintain must_not context", optimizedStr.contains("\"must_not\""));
+        assertTrue(optimizedStr.contains("\"must_not\""), "Should maintain must_not context");
         
         System.out.println("\\n✅ NESTED REGEXP CONSOLIDATION SUCCESS!");
         System.out.println("✅ " + originalRegexpCount + " regexp queries consolidated into " + optimizedRegexpCount);
@@ -4181,7 +4160,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         }
     }
     
-    public void testBPAAssetsMustNotConsolidation() throws Exception {
+    @Test    public void testBPAAssetsMustNotConsolidation() throws Exception {
         System.out.println("\\n=== Testing BPA Assets Must_Not Consolidation Pattern ===");
         
         // Exact pattern from BPA_Assets.json: multiple bool.must_not wrappers within a bool.must array
@@ -4271,17 +4250,17 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         System.out.println("- Optimized bool structures: " + optimizedBoolCount);
         
         // The key expectation: fewer must_not wrappers due to consolidation
-        assertTrue("Should consolidate must_not wrappers", optimizedMustNotCount < originalMustNotCount);
-        assertTrue("Should reduce bool structure complexity", optimizedBoolCount < originalBoolCount);
+        assertTrue(optimizedMustNotCount < originalMustNotCount, "Should consolidate must_not wrappers");
+        assertTrue(optimizedBoolCount < originalBoolCount, "Should reduce bool structure complexity");
         
         // Should contain consolidated patterns  
-        assertTrue("Should contain digital_channel pattern", optimizedStr.contains("digital_channel"));
-        assertTrue("Should contain functional_reporting pattern", optimizedStr.contains("functional_reporting"));
-        assertTrue("Should contain _ea pattern", optimizedStr.contains("_ea"));
-        assertTrue("Should contain _int pattern", optimizedStr.contains("_int"));
+        assertTrue(optimizedStr.contains("digital_channel"), "Should contain digital_channel pattern");
+        assertTrue(optimizedStr.contains("functional_reporting"), "Should contain functional_reporting pattern");
+        assertTrue(optimizedStr.contains("_ea"), "Should contain _ea pattern");
+        assertTrue(optimizedStr.contains("_int"), "Should contain _int pattern");
         
         // Should convert to regexp for better performance
-        assertTrue("Should convert to regexp queries", optimizedStr.contains("\"regexp\""));
+        assertTrue(optimizedStr.contains("\"regexp\""), "Should convert to regexp queries");
         
         System.out.println("\\n🎯 BPA ASSETS OPTIMIZATION SUCCESS!");
         System.out.println("✅ Must_not wrappers reduced from " + originalMustNotCount + " to " + optimizedMustNotCount);
@@ -4298,7 +4277,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         System.out.println("\\n🚀 Ready for production use with BPA Assets queries!");
     }
     
-    public void testUIContainsOptimization() throws Exception {
+    @Test    public void testUIContainsOptimization() throws Exception {
         System.out.println("\\n=== Testing UI Contains Optimization ===");
         
         // Test the UI "contains" pattern optimization that converts inefficient wildcards
@@ -4336,12 +4315,11 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         String optimizedStr = result.getOptimizedQuery();
         
         // Verify the transformation happened
-        assertFalse("Should not contain wildcard queries", optimizedStr.contains("\"wildcard\""));
-        assertTrue("Should contain term query", optimizedStr.contains("\"term\""));
-        assertTrue("Should use __qualifiedNameHierarchy field", optimizedStr.contains("__qualifiedNameHierarchy"));
-        assertTrue("Should contain the core value without wildcards", 
-                  optimizedStr.contains("default/tableau/workspace123/dashboard456"));
-        assertFalse("Should not contain wildcard characters", optimizedStr.contains("*"));
+        assertFalse(optimizedStr.contains("\"wildcard\""), "Should not contain wildcard queries");
+        assertTrue(optimizedStr.contains("\"term\""), "Should contain term query");
+        assertTrue(optimizedStr.contains("__qualifiedNameHierarchy"), "Should use __qualifiedNameHierarchy field");
+        assertTrue(optimizedStr.contains("default/tableau/workspace123/dashboard456"), "Should contain the core value without wildcards");
+        assertFalse(optimizedStr.contains("*"), "Should not contain wildcard characters");
         
         System.out.println("\\n🎯 UI CONTAINS OPTIMIZATION SUCCESS!");
         System.out.println("✅ Wildcard '*default/tableau/workspace123/dashboard456*' converted to term query");
@@ -4394,13 +4372,13 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         System.out.println("- Remaining wildcards: " + optimizedWildcards);
         System.out.println("- New term queries: " + optimizedTerms);
         
-        assertEquals("Should convert all UI wildcard patterns", 0, optimizedWildcards);
-        assertEquals("Should create term queries for each pattern", 1, optimizedTerms);
+        assertEquals(0, optimizedWildcards, "Should convert all UI wildcard patterns");
+        assertEquals(1, optimizedTerms, "Should create term queries for each pattern");
         
         // Verify all patterns converted correctly
-        assertTrue("Should convert athena pattern", multiOptimizedStr.contains("default/athena/database1"));
-        assertTrue("Should convert snowflake pattern", multiOptimizedStr.contains("default/snowflake/schema2"));
-        assertTrue("Should convert bigquery pattern", multiOptimizedStr.contains("default/bigquery/table3"));
+        assertTrue(multiOptimizedStr.contains("default/athena/database1"), "Should convert athena pattern");
+        assertTrue(multiOptimizedStr.contains("default/snowflake/schema2"), "Should convert snowflake pattern");
+        assertTrue(multiOptimizedStr.contains("default/bigquery/table3"), "Should convert bigquery pattern");
         
         System.out.println("\\n✅ ALL UI CONTAINS PATTERNS OPTIMIZED SUCCESSFULLY!");
         System.out.println("✅ " + originalWildcards + " inefficient wildcard queries converted to " + optimizedTerms + " efficient term queries");
@@ -4415,7 +4393,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         System.out.println("\\n🚀 UI Contains optimization ready for production!");
     }
 
-    public void testWildcardCaseInsensitiveNotConsolidated() throws Exception {
+    @Test    public void testWildcardCaseInsensitiveNotConsolidated() throws Exception {
         String input = "{\n" +
                 "    \"query\": {\n" +
                 "        \"bool\": {\n" +
@@ -4447,17 +4425,17 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
 
         // Verify that wildcards were not consolidated
         JsonNode shouldClause = optimized.path("query").path("bool").path("should");
-        assertTrue("Should clause should exist", shouldClause.isArray());
-        assertEquals("Should have same number of wildcards", 2, shouldClause.size());
+        assertTrue(shouldClause.isArray(), "Should clause should exist");
+        assertEquals(2, shouldClause.size(), "Should have same number of wildcards");
 
         // Verify both wildcards are preserved with case_insensitive flag
         for (JsonNode clause : shouldClause) {
-            assertTrue("Should be wildcard query", clause.has("wildcard"));
+            assertTrue(clause.has("wildcard"), "Should be wildcard query");
             JsonNode wildcardNode = clause.get("wildcard");
             JsonNode fieldValue = wildcardNode.fields().next().getValue();
-            assertTrue("Should have case_insensitive flag", fieldValue.has("case_insensitive"));
-            assertTrue("Case insensitive should be true", fieldValue.get("case_insensitive").asBoolean());
-            assertEquals("Pattern should be preserved", "*cust*", fieldValue.get("value").asText());
+            assertTrue(fieldValue.has("case_insensitive"), "Should have case_insensitive flag");
+            assertTrue(fieldValue.get("case_insensitive").asBoolean(), "Case insensitive should be true");
+            assertEquals("*cust*", fieldValue.get("value").asText(), "Pattern should be preserved");
         }
 
         // Verify no regexp queries were created
@@ -4467,10 +4445,10 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
                 regexpCount++;
             }
         }
-        assertEquals("Should not have any regexp queries", 0, regexpCount);
+        assertEquals(0, regexpCount, "Should not have any regexp queries");
     }
 
-    public void testWildcardWithSpecialCharacters() throws Exception {
+    @Test    public void testWildcardWithSpecialCharacters() throws Exception {
         String query = "{\n" +
                 "    \"bool\": {\n" +
                 "        \"must\": [\n" +
@@ -4508,21 +4486,18 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         // Verify that wildcards with special characters are not consolidated
         int originalWildcardCount = countWildcardsInQuery(originalQuery);
         int optimizedWildcardCount = countWildcardsInQuery(optimizedQuery);
-        assertEquals("Wildcards with special characters should not be consolidated", 
-                    originalWildcardCount, optimizedWildcardCount);
+        assertEquals(originalWildcardCount, optimizedWildcardCount, "Wildcards with special characters should not be consolidated");
 
 
         // Verify that the must_not context is preserved
         JsonNode originalMust = originalQuery.get("bool").get("must");
         JsonNode optimizedMust = optimizedQuery.get("bool").get("must");
-        assertEquals("Must array size should be preserved", 
-                    originalMust.size(), optimizedMust.size());
+        assertEquals(originalMust.size(), optimizedMust.size(), "Must array size should be preserved");
 
         // Verify that wildcard patterns are unchanged
         Set<String> originalPatterns = extractWildcardPatterns(originalQuery);
         Set<String> optimizedPatterns = extractWildcardPatterns(optimizedQuery);
-        assertEquals("Wildcard patterns should remain unchanged", 
-                    originalPatterns, optimizedPatterns);
+        assertEquals(originalPatterns, optimizedPatterns, "Wildcard patterns should remain unchanged");
     }
 
     private Set<String> extractWildcardPatterns(JsonNode query) {
@@ -4553,7 +4528,7 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         }
     }
 
-    public void testCaseInsensitiveWildcardOptimization() throws Exception {
+    @Test    public void testCaseInsensitiveWildcardOptimization() throws Exception {
         String query = """
             {
                 "bool": {
@@ -4641,26 +4616,21 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         // Verify that case-insensitive wildcards are not consolidated
         int originalWildcards = countWildcardsInQuery(originalQuery);
         int optimizedWildcards = countWildcardsInQuery(optimizedQuery);
-        assertEquals("Case-insensitive wildcards should not be consolidated", originalWildcards, optimizedWildcards);
+        assertEquals(originalWildcards, optimizedWildcards, "Case-insensitive wildcards should not be consolidated");
 
         // Verify that the case_insensitive flag is preserved
-        assertTrue("Optimized query should preserve case_insensitive wildcards", 
-                  result.getOptimizedQuery().contains("case_insensitive"));
+        assertTrue(result.getOptimizedQuery().contains("case_insensitive"), "Optimized query should preserve case_insensitive wildcards");
 
         // Verify that the wildcard patterns are preserved
-        assertTrue("Optimized query should preserve *INDEX* pattern",
-                  result.getOptimizedQuery().contains("*INDEX*"));
-        assertTrue("Optimized query should preserve *HYBRID* pattern",
-                  result.getOptimizedQuery().contains("*HYBRID*"));
+        assertTrue(result.getOptimizedQuery().contains("*INDEX*"), "Optimized query should preserve *INDEX* pattern");
+        assertTrue(result.getOptimizedQuery().contains("*HYBRID*"), "Optimized query should preserve *HYBRID* pattern");
 
         // Verify that empty regexp patterns are not created
-        assertFalse("Optimized query should not contain empty regexp patterns",
-                   result.getOptimizedQuery().contains("\"regexp\":{\"name.keyword\":\"(|)\"}"));
-        assertFalse("Optimized query should not contain empty regexp patterns",
-                   result.getOptimizedQuery().contains("\"regexp\":{\"displayName.keyword\":\"(|)\"}"));
+        assertFalse(result.getOptimizedQuery().contains("\"regexp\":{\"name.keyword\":\"(|)\"}"), "Optimized query should not contain empty regexp patterns");
+        assertFalse(result.getOptimizedQuery().contains("\"regexp\":{\"displayName.keyword\":\"(|)\"}"), "Optimized query should not contain empty regexp patterns");
     }
 
-    public void testCaseInsensitiveWildcardWithRegexp() throws Exception {
+    @Test    public void testCaseInsensitiveWildcardWithRegexp() throws Exception {
         String query = """
             {
                 "bool": {
@@ -4700,28 +4670,25 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         int optimizedRegexps = countRegexpsInQuery(optimizedQuery);
 
         // Verify that case-insensitive wildcards are preserved
-        assertEquals("Case-insensitive wildcards should be preserved", originalWildcards, optimizedWildcards);
+        assertEquals(originalWildcards, optimizedWildcards, "Case-insensitive wildcards should be preserved");
         
         // Verify that regexp count doesn't increase
-        assertEquals("Regexp count should not increase", originalRegexps, optimizedRegexps);
+        assertEquals(originalRegexps, optimizedRegexps, "Regexp count should not increase");
 
         // Verify that the case_insensitive flag is preserved
-        assertTrue("Optimized query should preserve case_insensitive wildcards", 
-                  result.getOptimizedQuery().contains("case_insensitive"));
+        assertTrue(result.getOptimizedQuery().contains("case_insensitive"), "Optimized query should preserve case_insensitive wildcards");
 
         // Verify that the wildcard pattern is preserved
-        assertTrue("Optimized query should preserve *HYBRID* pattern",
-                  result.getOptimizedQuery().contains("*HYBRID*"));
+        assertTrue(result.getOptimizedQuery().contains("*HYBRID*"), "Optimized query should preserve *HYBRID* pattern");
 
         // Verify no duplicate patterns are created
         String optimizedStr = result.getOptimizedQuery();
         int hybridCount = countOccurrences(optimizedStr, "*HYBRID*");
         int indexCount = countOccurrences(optimizedStr, "*INDEX*");
-        assertEquals("*HYBRID* pattern should appear exactly once", 1, hybridCount);
-        assertEquals("*INDEX* pattern should appear exactly once", 1, indexCount);
+        assertEquals(1, hybridCount, "*HYBRID* pattern should appear exactly once");
+        assertEquals(1, indexCount, "*INDEX* pattern should appear exactly once");
 
         // Verify no empty regexp patterns
-        assertFalse("Optimized query should not contain empty regexp patterns",
-                   optimizedStr.contains("\"regexp\":{\"displayName.keyword\":\"(|)\"}"));
+        assertFalse(optimizedStr.contains("\"regexp\":{\"displayName.keyword\":\"(|)\"}"), "Optimized query should not contain empty regexp patterns");
     }
 } 
