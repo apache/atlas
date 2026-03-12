@@ -4242,18 +4242,16 @@ public class EntityGraphMapper {
                 throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, classificationVertexId=%s): entityGuid and/or classification vertex id is empty", entityGuid, classificationVertexId));
             }
 
-            AtlasVertex entityVertex = graphHelper.getVertexForGUID(entityGuid);
+            AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, entityGuid);
             if (entityVertex == null) {
-                LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): entity vertex not found", entityGuid, classificationVertexId);
-
-                throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, classificationVertexId=%s): entity vertex not found", entityGuid, classificationVertexId));
+                LOG.warn("propagateClassification(entityGuid={}, classificationVertexId={}): entity vertex not found, skipping task execution", entityGuid, classificationVertexId);
+                return 0;
             }
 
             AtlasVertex classificationVertex = graph.getVertex(classificationVertexId);
             if (classificationVertex == null) {
-                LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): classification vertex not found", entityGuid, classificationVertexId);
-
-                throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, classificationVertexId=%s): classification vertex not found", entityGuid, classificationVertexId));
+                LOG.warn("propagateClassification(entityGuid={}, classificationVertexId={}): classification vertex not found, skipping task execution", entityGuid, classificationVertexId);
+                return 0;
             }
 
             /*
@@ -4311,7 +4309,7 @@ public class EntityGraphMapper {
                     throw new AtlasBaseException(String.format("propagateClassificationV2_Optimised(entityGuid=%s, tagTypeName=%s): entityGuid and/or classification vertex id is empty", entityGuid, tagTypeName));
                 }
 
-                AtlasVertex entityVertex = graphHelper.getVertexForGUID(entityGuid);
+                AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, entityGuid);
                 if (entityVertex == null) {
                     String warningMessage = String.format("propagateClassificationV2_Optimised(entityGuid=%s, tagTypeName=%s): entity vertex not found, skipping task execution", entityGuid, tagTypeName);
                     LOG.warn(warningMessage);
@@ -4322,7 +4320,7 @@ public class EntityGraphMapper {
                 if (tag == null) {
                     if (StringUtils.isNotEmpty(parentEntityGuid) && !parentEntityGuid.equals(entityGuid)) {
                         //fallback only to get tag
-                        AtlasVertex parentEntityVertex = graphHelper.getVertexForGUID(parentEntityGuid);
+                        AtlasVertex parentEntityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, parentEntityGuid);
                         if (parentEntityVertex == null) {
                             String warningMessage = String.format("propagateClassificationV2_Optimised(parentEntityGuid=%s, tagTypeName=%s): parentEntityVertex vertex not found, skipping task execution", parentEntityGuid, tagTypeName);
                             LOG.warn(warningMessage);
@@ -4381,14 +4379,14 @@ public class EntityGraphMapper {
             } else {
                 // "Add on Relationship Change" Flow, this logic processes all tags on the `fromVertex`.
                 int assetsAffected = 0;
-                AtlasVertex fromVertex = entityRetriever.getEntityVertex(entityGuid);
+                AtlasVertex fromVertex = AtlasGraphUtilsV2.findByGuid(this.graph, entityGuid);
                 if (fromVertex == null) {
                     String warningMessage = String.format("propagateClassificationV2_Optimised(fromVertexId=%s, tagTypeName=%s): fromVertex not found, skipping task execution", entityGuid, tagTypeName);
                     LOG.warn(warningMessage);
                     return assetsAffected;
                 }
 
-                AtlasVertex toVertex = entityRetriever.getEntityVertex(toVertexGuid);
+                AtlasVertex toVertex = AtlasGraphUtilsV2.findByGuid(this.graph, toVertexGuid);
                 if (toVertex == null) {
                     String warningMessage = String.format("propagateClassificationV2_Optimised(toVertexId=%s, tagTypeName=%s): toVertex not found, skipping task execution", toVertexGuid, tagTypeName);
                     LOG.warn(warningMessage);
@@ -4402,7 +4400,7 @@ public class EntityGraphMapper {
                     if (tag.isPropagationEnabled()) {
                         AtlasClassification atlasClassification = tag.toAtlasClassification();
                         String sourceEntityGuid = atlasClassification.getEntityGuid();
-                        AtlasVertex sourceVertex = entityRetriever.getEntityVertex(sourceEntityGuid);
+                        AtlasVertex sourceVertex = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityGuid);
                         if (sourceVertex == null) {
                             String warningMessage = String.format("propagateClassificationV2_Optimised(sourceVertex=%s, tagTypeName=%s): sourceVertex not found, skipping task execution", sourceEntityGuid, tagTypeName);
                             LOG.warn(warningMessage);
@@ -5109,6 +5107,7 @@ public class EntityGraphMapper {
                 updatedTagPropagation = null;
             }
 
+            // This will never get executed since background tasks fetaure is alwsays enabled
             // compute propagatedEntityVertices once and use it for subsequent iterations and notifications
             if (updatedTagPropagation != null && (currentTagPropagation != updatedTagPropagation || currentRestrictPropagationThroughLineage != updatedRestrictPropagationThroughLineage || currentRestrictPropagationThroughHierarchy != updatedRestrictPropagationThroughHierarchy)) {
                 if (updatedTagPropagation) {
@@ -5564,7 +5563,7 @@ public class EntityGraphMapper {
             String vertexIdForPropagations = sourceVertexId;
 
             if (StringUtils.isNotEmpty(parentEntityGuid)) {
-                AtlasVertex parentVertex = graphHelper.getVertexForGUID(parentEntityGuid);
+                AtlasVertex parentVertex = AtlasGraphUtilsV2.findByGuid(this.graph, parentEntityGuid);
                 if (parentVertex != null) {
                     // If a parent is involved and still exists, use its ID.
                     vertexIdForPropagations = parentVertex.getIdForDisplay();
@@ -6654,7 +6653,7 @@ public class EntityGraphMapper {
                 return 0;
             }
 
-            AtlasVertex sourceEntityVertex = graphHelper.getVertexForGUID(sourceEntityGuid);
+            AtlasVertex sourceEntityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityGuid);
             if (sourceEntityVertex == null) {
                 String warningMessage = String.format("updateClassificationTextPropagationV2(entityGuid=%s, tagTypeName=%s): entity vertex not found, skipping task execution", sourceEntityGuid, tagTypeName);
                 LOG.warn(warningMessage);

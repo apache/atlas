@@ -42,15 +42,10 @@ public interface IAtlasEntityChangeNotifier {
 
     void onClassificationsAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications, boolean forceInline) throws AtlasBaseException;
 
-    void onClassificationsAddedToEntitiesV2(Set<AtlasVertex> vertices, List<AtlasClassification> addedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException;
 
     void onClassificationPropagationAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException;
 
-    void onClassificationPropagationAddedToEntitiesV2(Set<AtlasVertex> vertices, List<AtlasClassification> addedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException;
-
     void onClassificationUpdatedToEntitiesV2(List<AtlasEntity> entities, AtlasClassification updatedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException;
-
-    void onClassificationUpdatedToEntitiesV2(Set<AtlasVertex> vertices, AtlasClassification updatedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException;
 
     void onClassificationDeletedFromEntity(AtlasEntity entity, List<AtlasClassification> deletedClassifications) throws AtlasBaseException;
 
@@ -61,7 +56,6 @@ public interface IAtlasEntityChangeNotifier {
 
     void onClassificationPropagationDeleted(List<AtlasEntity> entities, List<AtlasClassification> deletedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException;
 
-    void onClassificationPropagationDeletedV2(Set<AtlasVertex> vertices, AtlasClassification deletedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException;
     
     void onClassificationPropagationDeleted(AtlasEntity entity, List<AtlasClassification> deletedClassifications, boolean forceInline) throws AtlasBaseException;
 

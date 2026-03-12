@@ -237,35 +237,18 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     }
 
     @Override
-    @Async
-    public void onClassificationPropagationAddedToEntitiesV2(Set<AtlasVertex> vertices, List<AtlasClassification> addedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
-        Set<AtlasStructType.AtlasAttribute> primitiveAttributes = getEntityTypeAttributes(vertices);
-        List<AtlasEntity> entities = instanceConverter.getEnrichedEntitiesWithPrimitiveAttributes(vertices, primitiveAttributes);
-        setRequestContext(requestContext);
-        for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
-            listener.onClassificationPropagationsAdded(entities, addedClassifications, forceInline);
-        }
-    }
-
-    @Override
-    @Async
-    public void onClassificationsAddedToEntitiesV2(Set<AtlasVertex> vertices, List<AtlasClassification> addedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
-        Set<AtlasStructType.AtlasAttribute> primitiveAttributes = getEntityTypeAttributes(vertices);
-        List<AtlasEntity> entities = instanceConverter.getEnrichedEntitiesWithPrimitiveAttributes(vertices, primitiveAttributes);
-        setRequestContext(requestContext);
-        for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
-            listener.onClassificationsAdded(entities, addedClassifications, forceInline);
-        }
-    }
-
-
-    @Override
     public void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications) throws AtlasBaseException {
         doFullTextMapping(entity.getGuid());
 
         if (isV2EntityNotificationEnabled) {
             for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
-                listener.onClassificationsUpdated(entity, updatedClassifications);
+                try {
+                    listener.onClassificationsUpdated(entity, updatedClassifications);
+                } catch (Exception e) {
+                    LOG.error("Classification update notification failed for listener {}: entity(guid={}, typeName={}, qualifiedName={}), classifications={}: {}",
+                            listener.getClass().getSimpleName(), entity.getGuid(), entity.getTypeName(), entity.getAttribute("qualifiedName"),
+                            updatedClassifications.stream().map(AtlasClassification::getTypeName).collect(Collectors.toList()), e.getMessage(), e);
+                }
             }
         } else {
             if (instanceConverter != null) {
@@ -292,7 +275,13 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
 
         if (isV2EntityNotificationEnabled) {
             for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
-                listener.onClassificationPropagationUpdated(entity, updatedClassifications, forceInline);
+                try {
+                    listener.onClassificationPropagationUpdated(entity, updatedClassifications, forceInline);
+                } catch (Exception e) {
+                    LOG.error("Classification propagation update notification failed for listener {}: entity(guid={}, typeName={}, qualifiedName={}), classifications={}, forceInline={}: {}",
+                            listener.getClass().getSimpleName(), entity.getGuid(), entity.getTypeName(), entity.getAttribute("qualifiedName"),
+                            updatedClassifications.stream().map(AtlasClassification::getTypeName).collect(Collectors.toList()), forceInline, e.getMessage(), e);
+                }
             }
         } else {
             if (instanceConverter != null) {
@@ -336,17 +325,6 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         } catch (Exception e) {
             LOG.error("Failed to notify listeners for classification propagation update: {}", e.getMessage(), e);
             throw e;
-        }
-    }
-
-    @Override
-    @Async
-    public void onClassificationUpdatedToEntitiesV2(Set<AtlasVertex> vertices, AtlasClassification updatedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
-        Set<AtlasStructType.AtlasAttribute> primitiveAttributes = getEntityTypeAttributes(vertices);
-        List<AtlasEntity> entities = instanceConverter.getEnrichedEntitiesWithPrimitiveAttributes(vertices, primitiveAttributes);
-        setRequestContext(requestContext);
-        for (AtlasEntity entity : entities) {
-            onClassificationUpdatedToEntity(entity, Collections.singletonList(updatedClassification), forceInline);
         }
     }
 
@@ -434,17 +412,6 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         setRequestContext(requestContext);
         for (AtlasEntity entity : entities) {
             onClassificationPropagationDeleted(entity, deletedClassifications, forceInline);
-        }
-    }
-
-    @Override
-    @Async
-    public void onClassificationPropagationDeletedV2(Set<AtlasVertex> vertices, AtlasClassification deletedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
-        Set<AtlasStructType.AtlasAttribute> primitiveAttributes = getEntityTypeAttributes(vertices);
-        List<AtlasEntity> entities = instanceConverter.getEnrichedEntitiesWithPrimitiveAttributes(vertices, primitiveAttributes);
-        setRequestContext(requestContext);
-        for (AtlasEntity entity : entities) {
-            onClassificationPropagationDeleted(entity, Collections.singletonList(deletedClassification), forceInline);
         }
     }
     

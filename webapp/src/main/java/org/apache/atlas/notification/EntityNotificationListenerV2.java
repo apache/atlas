@@ -115,26 +115,12 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
     @Override
     public void onClassificationsUpdated(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
-        Map<String, List<AtlasClassification>> addedPropagations   = RequestContext.get().getAddedPropagations();
-        Map<String, List<AtlasClassification>> removedPropagations = RequestContext.get().getRemovedPropagations();
-
-        if (addedPropagations.containsKey(entity.getGuid())) {
-            notifyClassificationEvents(Collections.singletonList(entity), CLASSIFICATION_ADD, classifications);
-        } else if (!removedPropagations.containsKey(entity.getGuid())) {
-            notifyClassificationEvents(Collections.singletonList(entity), CLASSIFICATION_UPDATE, classifications);
-        }
+        notifyClassificationEvents(Collections.singletonList(entity), CLASSIFICATION_UPDATE, classifications);
     }
 
     @Override
     public void onClassificationPropagationUpdated(AtlasEntity entity, List<AtlasClassification> classifications, boolean forceInline) throws AtlasBaseException {
-        Map<String, List<AtlasClassification>> addedPropagations   = RequestContext.get().getAddedPropagations();
-        Map<String, List<AtlasClassification>> removedPropagations = RequestContext.get().getRemovedPropagations();
-
-        if (addedPropagations.containsKey(entity.getGuid())) {
-            notifyClassificationEvents(Collections.singletonList(entity), CLASSIFICATION_ADD, classifications, forceInline);
-        } else if (!removedPropagations.containsKey(entity.getGuid())) {
-            notifyClassificationEvents(Collections.singletonList(entity), CLASSIFICATION_UPDATE, classifications, forceInline);
-        }
+        notifyClassificationEvents(Collections.singletonList(entity), CLASSIFICATION_UPDATE, classifications, forceInline);
     }
 
     @Override
