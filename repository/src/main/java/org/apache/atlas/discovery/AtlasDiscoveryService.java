@@ -103,13 +103,27 @@ public interface AtlasDiscoveryService {
     AtlasSearchResult searchRelationsWithParameters(RelationshipSearchParameters searchParameters) throws AtlasBaseException;
 
     /**
-     * @param guid unique ID of the entity.
-     * @param relation relation name.
-     * @param getApproximateCount
-     * @param searchParameters
-     * @return AtlasSearchResult
+     * Search for entities related to a given entity through a specified relationship.
+     *
+     * @param guid unique ID of the entity
+     * @param relation relationship name or attribute name
+     * @param getApproximateCount whether to calculate and return the approximate count of related entities;
+     *                            when true and excludeDeletedEntities is enabled, counts only active entities
+     * @param searchParameters search parameters including:
+     *                         - sortBy: attribute name to sort by (overrides default sorting)
+     *                         - sortOrder: ASCENDING or DESCENDING
+     *                         - limit: maximum number of results to return
+     *                         - offset: starting position for pagination
+     *                         - excludeDeletedEntities: filter out deleted entities
+     *                         - attributes: specific attributes to include in results
+     *                         - includeClassificationAttributes: include classifications in results
+     * @param disableDefaultSorting when false (default), applies default "name" sorting if sortBy is not specified;
+     *                              when true, disables default sorting for better performance with large result sets
+     *                              (recommended for pagination with high offsets on unsorted queries)
+     * @return AtlasSearchResult containing related entities with accurate approximateCount (excludes deleted entities when requested)
+     * @throws AtlasBaseException if guid is invalid, relationship doesn't exist, or query parameters are invalid
      */
-    AtlasSearchResult searchRelatedEntities(String guid, String relation, boolean getApproximateCount, SearchParameters searchParameters) throws AtlasBaseException;
+    AtlasSearchResult searchRelatedEntities(String guid, String relation, boolean getApproximateCount, SearchParameters searchParameters, boolean disableDefaultSorting) throws AtlasBaseException;
 
     /**
      * @param savedSearch Search to be saved
