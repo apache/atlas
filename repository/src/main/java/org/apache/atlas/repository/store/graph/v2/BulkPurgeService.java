@@ -94,7 +94,7 @@ public class BulkPurgeService {
     private static final int    HEARTBEAT_INTERVAL_MS           = 30_000;
     private static final int    SCROLL_TIMEOUT_MINUTES          = 30;
     private static final long   STALL_THRESHOLD_MS              = 900_000; // 15 minutes
-    private static final int    INCREMENTAL_ES_CLEANUP_INTERVAL = 50;
+    private static final int    INCREMENTAL_ES_CLEANUP_INTERVAL = 500;
     private static final long   ORPHAN_CHECK_INTERVAL_MS        = 300_000;
     private static final int    ORPHAN_MAX_RESUBMITS            = 3;
 
@@ -1132,7 +1132,7 @@ public class BulkPurgeService {
     }
 
     private void esCleanupSync(RestClient esClient, PurgeContext ctx) throws Exception {
-        String endpoint = "/" + VERTEX_INDEX_NAME + "/_delete_by_query?conflicts=proceed&refresh=true";
+        String endpoint = "/" + VERTEX_INDEX_NAME + "/_delete_by_query?conflicts=proceed&refresh=false&requests_per_second=5000";
 
         Request request = new Request("POST", endpoint);
         request.setEntity(new NStringEntity(ctx.esQuery, ContentType.APPLICATION_JSON));
@@ -1144,7 +1144,7 @@ public class BulkPurgeService {
 
     private void esCleanupAsync(RestClient esClient, PurgeContext ctx) throws Exception {
         // Submit as async task — ES returns immediately with a task ID
-        String endpoint = "/" + VERTEX_INDEX_NAME + "/_delete_by_query?conflicts=proceed&wait_for_completion=false";
+        String endpoint = "/" + VERTEX_INDEX_NAME + "/_delete_by_query?conflicts=proceed&wait_for_completion=false&requests_per_second=5000";
 
         Request request = new Request("POST", endpoint);
         request.setEntity(new NStringEntity(ctx.esQuery, ContentType.APPLICATION_JSON));
@@ -1215,7 +1215,7 @@ public class BulkPurgeService {
     private void triggerIncrementalEsCleanup(PurgeContext ctx) {
         try {
             RestClient esClient = getEsClient();
-            String endpoint = "/" + VERTEX_INDEX_NAME + "/_delete_by_query?conflicts=proceed&wait_for_completion=false";
+            String endpoint = "/" + VERTEX_INDEX_NAME + "/_delete_by_query?conflicts=proceed&wait_for_completion=false&requests_per_second=5000";
 
             Request request = new Request("POST", endpoint);
             request.setEntity(new NStringEntity(ctx.esQuery, ContentType.APPLICATION_JSON));
@@ -1298,7 +1298,7 @@ public class BulkPurgeService {
         try {
             RestClient esClient = getEsClient();
             String query = buildTermQuery(GUID_PROPERTY_KEY, connGuid);
-            String endpoint = "/" + VERTEX_INDEX_NAME + "/_delete_by_query?conflicts=proceed&refresh=true";
+            String endpoint = "/" + VERTEX_INDEX_NAME + "/_delete_by_query?conflicts=proceed&refresh=false&requests_per_second=5000";
 
             Request request = new Request("POST", endpoint);
             request.setEntity(new NStringEntity(query, ContentType.APPLICATION_JSON));
