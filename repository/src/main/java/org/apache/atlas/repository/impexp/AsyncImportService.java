@@ -29,6 +29,7 @@ import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -49,20 +50,40 @@ import static org.apache.atlas.repository.ogm.impexp.AtlasAsyncImportRequestDTO.
 public class AsyncImportService {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncImportService.class);
 
-    private final DataAccess dataAccess;
+    private final DataAccess                                          dataAccess;
+    private final ImportCacheManager<String, AtlasAsyncImportRequest> importCache;
 
     @Inject
     public AsyncImportService(DataAccess dataAccess) {
-        this.dataAccess = dataAccess;
+        this.dataAccess  = dataAccess;
+        this.importCache = new ImportCacheManager<>();
+    }
+
+    public void populateCache(AtlasAsyncImportRequest importRequest) {
+        if (importRequest != null && StringUtils.isNotEmpty(importRequest.getGuid()) && importRequest.getGuid().charAt(0) != '-') {
+            importCache.put(importRequest.getImportId(), importRequest);
+        }
     }
 
     public AtlasAsyncImportRequest fetchImportRequestByImportId(String importId) {
         try {
+            AtlasAsyncImportRequest cachedRequest = importCache.get(importId);
+
+            if (cachedRequest != null) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Cache hit for importId: {}", importId);
+                }
+                return cachedRequest;
+            }
             AtlasAsyncImportRequest request = new AtlasAsyncImportRequest();
 
             request.setImportId(importId);
 
-            return dataAccess.load(request);
+            request = dataAccess.load(request);
+
+            populateCache(request);
+
+            return request;
         } catch (Exception e) {
             LOG.error("Error fetching request with importId: {}", importId, e);
 
@@ -70,9 +91,21 @@ public class AsyncImportService {
         }
     }
 
+    public void saveImport(String importId) {
+        try {
+            AtlasAsyncImportRequest importRequest = importCache.get(importId);
+            if (importRequest != null) {
+                saveImportRequest(importRequest);
+                importCache.invalidate(importId);
+            }
+        } catch (AtlasBaseException e) {
+            LOG.error("Error saving import request from cache for importId: {}", importId, e);
+        }
+    }
+
     public void saveImportRequest(AtlasAsyncImportRequest importRequest) throws AtlasBaseException {
         try {
-            dataAccess.save(importRequest);
+            dataAccess.saveNoLoad(importRequest);
 
             LOG.debug("Save request ID: {} request: {}", importRequest.getImportId(), importRequest);
         } catch (AtlasBaseException e) {
@@ -105,8 +138,21 @@ public class AsyncImportService {
     public void deleteRequests() {
         try {
             dataAccess.delete(AtlasGraphUtilsV2.findEntityGUIDsByType(ASYNC_IMPORT_TYPE_NAME, SortOrder.ASCENDING));
+
+            importCache.clear();
         } catch (Exception e) {
             LOG.error("Error deleting import requests", e);
+        }
+    }
+
+    public void deleteRequest(AtlasAsyncImportRequest importRequest) {
+        try {
+            if (importRequest != null) {
+                dataAccess.delete(importRequest.getGuid());
+                importCache.invalidate(importRequest.getImportId());
+            }
+        } catch (Exception e) {
+            LOG.warn("Error deleting import request with importId: {}", importRequest.getImportId(), e);
         }
     }
 

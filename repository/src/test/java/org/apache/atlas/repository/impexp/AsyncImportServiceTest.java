@@ -110,7 +110,7 @@ public class AsyncImportServiceTest {
 
         asyncImportService.saveImportRequest(importRequest);
 
-        verify(dataAccess, times(1)).save(importRequest);
+        verify(dataAccess, times(1)).saveNoLoad(importRequest);
     }
 
     @Test
@@ -123,7 +123,7 @@ public class AsyncImportServiceTest {
 
         asyncImportService.updateImportRequest(importRequest);
 
-        verify(dataAccess, times(1)).save(importRequest);
+        verify(dataAccess, times(1)).saveNoLoad(importRequest);
     }
 
     @Test
