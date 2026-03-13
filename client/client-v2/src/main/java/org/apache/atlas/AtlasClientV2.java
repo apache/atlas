@@ -353,7 +353,18 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     public void deleteTypeByName(String typeName) throws AtlasServiceException {
-        callAPI(API_V2.DELETE_TYPE_DEF_BY_NAME, (Class) null, null, typeName);
+        callAPI(API_V2.DELETE_TYPE_DEF_BY_NAME, (Class<?>) null, null, typeName);
+    }
+
+    public void deleteTypeByName(String typeName, boolean forceDelete) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = null;
+
+        if (forceDelete) {
+            queryParams = new MultivaluedMapImpl();
+            queryParams.add("force", "true");
+        }
+
+        callAPI(API_V2.DELETE_TYPE_DEF_BY_NAME, (Class<?>) null, queryParams, typeName);
     }
 
     // Entity APIs
