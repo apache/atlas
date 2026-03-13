@@ -45,20 +45,9 @@ public class ClassificationPropagationTasks {
             String toEntityGuid = (String) parameters.get(PARAM_TO_ENTITY_GUID);
             String tagTypeName = getTaskDef().getTagTypeName();
             String parentEntityGuid = getTaskDef().getParentEntityGuid();
-            Boolean previousRestrictPropagationThroughLineage = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE);
-            Boolean previousRestrictPropagationThroughHierarchy = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
 
-            if (org.apache.atlas.service.config.DynamicConfigStore.isTagV2Enabled()) {
-                LOG.info("Using v2 tag flow (Cassandra) for Add propagation task");
-                int assetsAffected = entityGraphMapper.propagateClassificationV2_Optimised(parameters, entityGuid, tagTypeName, parentEntityGuid, toEntityGuid);
-                context.incrementAssetsAffected(assetsAffected);
-            } else {
-                LOG.info("Using v1 tag flow (JanusGraph) for Add propagation task");
-                String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
-                String relationshipGuid = (String) parameters.get(PARAM_RELATIONSHIP_GUID);
-                int assetsAffected = entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid, previousRestrictPropagationThroughLineage, previousRestrictPropagationThroughHierarchy);
-                context.incrementAssetsAffected(assetsAffected);
-            }
+            int assetsAffected = entityGraphMapper.propagateClassificationV2_Optimised(parameters, entityGuid, tagTypeName, parentEntityGuid, toEntityGuid);
+            context.incrementAssetsAffected(assetsAffected);
         }
     }
 
@@ -72,16 +61,8 @@ public class ClassificationPropagationTasks {
             String tagTypeName = getTaskDef().getTagTypeName();
             String entityGuid = (String) parameters.get(PARAM_ENTITY_GUID);
 
-            if (org.apache.atlas.service.config.DynamicConfigStore.isTagV2Enabled()) {
-                LOG.info("Using v2 tag flow (Cassandra) for UpdateText propagation task");
-                int totalUpdated = entityGraphMapper.updateClassificationTextPropagationV2(entityGuid, tagTypeName);
-                context.incrementAssetsAffected(totalUpdated);
-            } else {
-                LOG.info("Using v1 tag flow (JanusGraph) for UpdateText propagation task");
-                String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
-                int totalUpdated = entityGraphMapper.updateClassificationTextPropagation(classificationVertexId);
-                context.incrementAssetsAffected(totalUpdated);
-            }
+            int totalUpdated = entityGraphMapper.updateClassificationTextPropagationV2(entityGuid, tagTypeName);
+            context.incrementAssetsAffected(totalUpdated);
         }
     }
 
@@ -97,16 +78,8 @@ public class ClassificationPropagationTasks {
             String tagTypeName = getTaskDef().getTagTypeName();
             String parentEntityGuid = getTaskDef().getParentEntityGuid();
 
-            if (org.apache.atlas.service.config.DynamicConfigStore.isTagV2Enabled()) {
-                LOG.info("Using v2 tag flow (Cassandra) for Delete propagation task");
-                int totalDeleted = entityGraphMapper.deleteClassificationPropagationV2(entityGuid, sourceVertexId, parentEntityGuid, tagTypeName);
-                context.incrementAssetsAffected(totalDeleted);
-            } else {
-                LOG.info("Using v1 tag flow (JanusGraph) for Delete propagation task");
-                String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
-                int totalDeleted = entityGraphMapper.deleteClassificationPropagation(entityGuid, classificationVertexId).size();
-                context.incrementAssetsAffected(totalDeleted);
-            }
+            int totalDeleted = entityGraphMapper.deleteClassificationPropagationV2(entityGuid, sourceVertexId, parentEntityGuid, tagTypeName);
+            context.incrementAssetsAffected(totalDeleted);
         }
     }
 
@@ -121,16 +94,8 @@ public class ClassificationPropagationTasks {
             String sourceEntity = getTaskDef().getEntityGuid();
             String parentEntityGuid = getTaskDef().getParentEntityGuid();
 
-            if (org.apache.atlas.service.config.DynamicConfigStore.isTagV2Enabled()) {
-                LOG.info("Using v2 tag flow (Cassandra) for RefreshPropagation task");
-                int affected = entityGraphMapper.classificationRefreshPropagationV2_new(parameters, parentEntityGuid, sourceEntity, classificationTypeName);
-                context.incrementAssetsAffected(affected);
-            } else {
-                LOG.info("Using v1 tag flow (JanusGraph) for RefreshPropagation task");
-                String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
-                int affected = entityGraphMapper.classificationRefreshPropagation(classificationVertexId);
-                context.incrementAssetsAffected(affected);
-            }
+            int affected = entityGraphMapper.classificationRefreshPropagationV2_new(parameters, parentEntityGuid, sourceEntity, classificationTypeName);
+            context.incrementAssetsAffected(affected);
         }
     }
 
