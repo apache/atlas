@@ -166,6 +166,9 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
             setUpdateTime(other.getUpdateTime());
             setUpdatedBy(other.getUpdatedBy());
             setDeleteHandler(other.getDeleteHandler());
+            setDocId(other.getDocId());
+            setVertexId(other.getVertexId());
+            setSuperTypeNames(other.getSuperTypeNames());
         }
     }
 
@@ -179,6 +182,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         setCreatedBy(entity.getCreatedBy());
         setUpdateTime(entity.getUpdateTime());
         setUpdatedBy(entity.getUpdatedBy());
+        setDocId(entity.getDocId());
 
         if (CollectionUtils.isNotEmpty(entity.getClassifications())) {
             this.classificationNames = new ArrayList<>(entity.getClassifications().size());
