@@ -95,19 +95,25 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
                     name = options.name,
                     minExtInfo = options.minExtInfo;
                 if (guid && name && associatedGuid) {
-                    return entitiesUrl + '/guid/' + guid + '/classification/' + name + '?associatedEntityGuid=' + associatedGuid;
+                    return entitiesUrl + '/guid/' + guid + '/classification/' + name + '?associatedEntityGuid=' + associatedGuid + '&ignoreRelationships=true';
                 } else if (guid && name) {
-                    entitiesUrl += '/guid/' + guid + '/classification/' + name;
+                    return entitiesUrl + '/guid/' + guid + '/classification/' + name + '?ignoreRelationships=true';
                 } else if (guid && !name) {
                     entitiesUrl += '/guid/' + guid;
                 }
             }
 
-            if (!minExtInfo) {
-                return entitiesUrl;
-            } else {
-                return entitiesUrl += '?minExtInfo=' + (minExtInfo);
+            if (entitiesUrl.indexOf('/guid/') !== -1) {
+                var queryParams = ['ignoreRelationships=true'];
+                if (options && options.minExtInfo !== undefined && options.minExtInfo !== false) {
+                    queryParams.unshift('minExtInfo=' + options.minExtInfo);
+                }
+                return entitiesUrl + '?' + queryParams.join('&');
             }
+            if (options && options.minExtInfo) {
+                return entitiesUrl + '?minExtInfo=' + (options.minExtInfo);
+            }
+            return entitiesUrl;
         },
         relationApiUrl: function(options) {
             var relationsUrl = this.baseUrlV2 + '/relationship';
@@ -120,10 +126,10 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
             return relationsUrl;
         },
         entityLabelsAPIUrl: function(guid) {
-            return this.entitiesApiUrl({ guid: guid }) + "/labels";
+            return this.baseUrlV2 + '/entity/guid/' + guid + '/labels';
         },
         entityHeaderApiUrl: function(guid) {
-            return this.entitiesApiUrl({ guid: guid }) + "/header"
+            return this.baseUrlV2 + '/entity/guid/' + guid + '/header';
         },
         entitiesTraitsApiUrl: function(token) {
             if (token) {
@@ -191,8 +197,14 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
                 return relationshipUrl
             }
         },
+        relationshipSearchV2ApiUrl: function() {
+            return this.baseUrlV2 + '/search/relationship';
+        },
         relationshipSearchApiUrl: function() {
             return this.baseUrlV2 + '/search/relations';
+        },
+        relationshipAttributesApiUrl: function(guid) {
+            return this.entitiesApiUrl() + '/guid/' + guid + '/relationshipAttributes';
         },
         schemaApiUrl: function(guid) {
             var lineageUrl = this.baseUrl + '/lineage';

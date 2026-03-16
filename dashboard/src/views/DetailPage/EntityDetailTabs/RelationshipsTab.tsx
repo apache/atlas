@@ -21,37 +21,81 @@ import {
   Grid,
   Stack,
   ToggleButton,
-  ToggleButtonGroup,
-  Typography
+  ToggleButtonGroup
 } from "@mui/material";
-import { useMemo, useState } from "react";
-import { TableLayout } from "@components/Table/TableLayout";
-import { getValues } from "@components/commonComponents";
-import { customSortByObjectKeys, isArray, isEmpty } from "@utils/Utils";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { isArray, isEmpty } from "@utils/Utils";
 import { EntityDetailTabProps } from "@models/entityDetailType";
 import RelationshipLineage from "./RelationshipLineage";
 import { AntSwitch } from "@utils/Muiutils";
+import RelationshipCard from "./RelationshipCard";
+import RelationshipCardSkeleton from "./RelationshipCardSkeleton";
+import { getRelationShipV2 } from "@api/apiMethods/searchApiMethod";
+import { useParams } from "react-router-dom";
+import { serverError } from "@utils/Utils";
+import { useSelector } from "react-redux";
+import { EntityState } from "@models/relationshipSearchType";
 
 const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
   entity,
-  referredEntities,
-  loading
+  referredEntities
 }) => {
-  const { relationshipAttributes = {} } = entity || {};
-  let columnData = { ...relationshipAttributes };
-
-  let rowData = [];
-  for (let key in columnData) {
-    rowData.push({ [key]: columnData[key] });
-  }
-
-  let nonEmptyRowData = rowData.filter((obj) => {
-    const entries = Object.entries(obj);
-    return entries.every(([_key, value]) => !isEmpty(value));
-  });
+  const { guid } = useParams<{ guid: string }>();
+  const toastId = useRef<any>(null);
+  const fetchStartedRef = useRef<boolean>(false);
+  const { entityData } = useSelector((state: EntityState) => state.entity);
+  const entityTypeName = entity?.typeName;
 
   const [alignment, setAlignment] = useState<string>("table");
   const [checked, setChecked] = useState<boolean>(false);
+  
+  // Card view state
+  const [cardData, setCardData] = useState<Record<string, any[]>>({});
+  const [cardTotalCounts, setCardTotalCounts] = useState<Record<string, number>>({});
+  const [cardLoading, setCardLoading] = useState<boolean>(false);
+  const [cardLoadingByName, setCardLoadingByName] = useState<
+    Record<string, boolean>
+  >({});
+  const [initialLoadDone, setInitialLoadDone] = useState<boolean>(false);
+  const [sortByNameByAttr, setSortByNameByAttr] = useState<
+    Record<string, boolean>
+  >({});
+  const [showDeletedByAttr, setShowDeletedByAttr] = useState<
+    Record<string, boolean>
+  >({});
+  const [pageLimitByAttr, setPageLimitByAttr] = useState<
+    Record<string, number>
+  >({});
+  const [cardResettingByName, setCardResettingByName] = useState<
+    Record<string, boolean>
+  >({});
+
+  useEffect(() => {
+    if (entityTypeName) {
+      console.log("Relationship tab entity type:", entityTypeName);
+    }
+  }, [entityTypeName]);
+
+  useEffect(() => {
+    setInitialLoadDone(false);
+    setCardData({});
+    setCardTotalCounts({});
+    fetchStartedRef.current = false;
+  }, [guid]);
+
+  const relationNames = useMemo((): string[] => {
+    if (!entityTypeName || !entityData?.entityDefs) {
+      return [];
+    }
+    const entityDef = entityData.entityDefs.find(
+      (def: { name: string }) => def.name === entityTypeName
+    );
+    const relationshipDefs = (entityDef?.relationshipAttributeDefs || []) as Array<{ name: string }>;
+    const names = relationshipDefs
+      .map((def) => def.name)
+      .filter(Boolean) as string[];
+    return [...new Set(names)];
+  }, [entityData, entityTypeName]);
 
   const handleChange = (
     _event: React.MouseEvent<HTMLElement>,
@@ -67,53 +111,359 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
     setChecked(event.target.checked);
   };
 
-  const defaultColumns = useMemo(
-    () => [
-      {
-        id: "relationKey",
-        accessorKey: "relationKey",
-        accessorFn: (row: Record<string, any>) => Object.keys(row)[0] || "",
-        cell: (info: any) => {
-          const keyName: string = info.getValue();
-          const values = info.row.original;
-          return (
-            <Typography fontWeight="600">{`${keyName} ${
-              isArray(values[keyName]) && !isEmpty(values[keyName])
-                ? `(${values[keyName].length})`
-                : ""
-            }`}</Typography>
-          );
-        },
-        header: "Key",
-        width: "30%"
-      },
-      {
-        id: "relationValue",
-        accessorKey: "relationValue",
-        accessorFn: (row: Record<string, any>) => row[Object.keys(row)[0]],
-        cell: (info: any) => {
-          const keyName: string = Object.keys(info.row.original)[0];
-          const value = info.getValue();
-          return (
-            <span className="value-text">
-              {getValues(
-                value,
-                columnData,
-                entity,
-                undefined,
-                "properties",
-                referredEntities,
-                undefined,
-                keyName
-              )}
-            </span>
-          );
-        },
-        header: "Value"
+  // Fetch initial relationship attributes data
+  const getPageLimit = (relationName: string, totalCount?: number) => {
+    const defaultLimit =
+      typeof totalCount === "number" && totalCount < 100 ? totalCount : 100;
+    const currentLimit = pageLimitByAttr[relationName];
+    if (typeof currentLimit !== "number") {
+      return defaultLimit;
+    }
+    if (typeof totalCount === "number" && currentLimit > totalCount) {
+      return totalCount;
+    }
+    return currentLimit;
+  };
+
+  const getRelationshipParams = (
+    relationName: string,
+    offset: number,
+    totalCount?: number,
+    overrides?: {
+      isSorted?: boolean;
+      showDeleted?: boolean;
+      limit?: number;
+    }
+  ) => {
+    const isSorted =
+      typeof overrides?.isSorted === "boolean"
+        ? overrides.isSorted
+        : !!sortByNameByAttr[relationName];
+    const showDeleted =
+      typeof overrides?.showDeleted === "boolean"
+        ? overrides.showDeleted
+        : !!showDeletedByAttr[relationName];
+    const limit =
+      typeof overrides?.limit === "number"
+        ? overrides.limit
+        : getPageLimit(relationName, totalCount);
+    return {
+      limit,
+      offset,
+      guid,
+      sortBy: isSorted ? "name" : undefined,
+      sortOrder: isSorted ? "ASCENDING" : undefined,
+      disableDefaultSorting: !isSorted,
+      excludeDeletedEntities: !showDeleted,
+      includeSubClassifications: true,
+      includeSubTypes: true,
+      includeClassificationAttributes: true,
+      relation: relationName,
+      getApproximateCount: true
+    };
+  };
+
+  const fetchRelationshipData = async (
+    relationName: string,
+    offset: number,
+    totalCount?: number,
+    overrides?: {
+      isSorted?: boolean;
+      showDeleted?: boolean;
+      limit?: number;
+    }
+  ) => {
+    const params = getRelationshipParams(
+      relationName,
+      offset,
+      totalCount,
+      overrides
+    );
+    const response = await getRelationShipV2({ params });
+    return {
+      entities: response?.data?.entities || [],
+      approximateCount:
+        response?.data?.approximateCount ?? response?.data?.totalCount
+    };
+  };
+
+  const fetchInitialRelationshipData = async () => {
+    if (!guid || initialLoadDone || cardLoading || isEmpty(relationNames)) {
+      return;
+    }
+
+    setCardLoading(true);
+    try {
+      const newCardData: Record<string, any[]> = {};
+      const newTotalCounts: Record<string, number> = {};
+      const nextSortByNameByAttr: Record<string, boolean> = {};
+      const nextShowDeletedByAttr: Record<string, boolean> = {};
+
+      const promises = relationNames.map((relationName) =>
+        fetchRelationshipData(relationName, 0, undefined, {
+          showDeleted: true
+        })
+          .then((response) => ({ relationName, response }))
+          .catch((err) => {
+            console.error(`Error fetching relationship ${relationName}:`, err);
+            return { relationName, response: null };
+          })
+      );
+
+      const results = await Promise.all(promises);
+
+      for (const { relationName, response } of results) {
+        if (!response) {
+          newCardData[relationName] = [];
+          nextSortByNameByAttr[relationName] = sortByNameByAttr[relationName] ?? false;
+          nextShowDeletedByAttr[relationName] = showDeletedByAttr[relationName] ?? true;
+          continue;
+        }
+        const entities = response.entities;
+        if (isArray(entities)) {
+          newCardData[relationName] = entities;
+        } else if (!isEmpty(entities)) {
+          newCardData[relationName] = [entities];
+        } else {
+          newCardData[relationName] = [];
+        }
+        if (response.approximateCount !== undefined) {
+          newTotalCounts[relationName] = response.approximateCount;
+        }
+        nextSortByNameByAttr[relationName] =
+          sortByNameByAttr[relationName] ?? false;
+        nextShowDeletedByAttr[relationName] =
+          showDeletedByAttr[relationName] ?? true;
       }
-    ],
-    []
-  );
+
+      setCardData(newCardData);
+      setCardTotalCounts(newTotalCounts);
+      setSortByNameByAttr((prev) => ({ ...nextSortByNameByAttr, ...prev }));
+      setShowDeletedByAttr((prev) => ({ ...nextShowDeletedByAttr, ...prev }));
+      setInitialLoadDone(true);
+    } catch (error: any) {
+      console.error("Error fetching relationship attributes:", error);
+      serverError(error, toastId);
+    } finally {
+      setCardLoading(false);
+    }
+  };
+
+  // Load initial data when tab is switched to card/graph view
+  useEffect(() => {
+    if (
+      (alignment === "table" || alignment === "graph") &&
+      guid &&
+      !initialLoadDone &&
+      !cardLoading &&
+      !isEmpty(relationNames)
+    ) {
+      if (fetchStartedRef.current) {
+        return;
+      }
+      fetchStartedRef.current = true;
+      fetchInitialRelationshipData().finally(() => {
+        fetchStartedRef.current = false;
+      });
+    }
+  }, [alignment, guid, relationNames, initialLoadDone, cardLoading]);
+
+  // Handle load more for a specific card
+  const handleCardLoadMore = async (attributeName: string) => {
+    if (!guid || cardLoadingByName[attributeName]) {
+      return;
+    }
+    const existingData = cardData[attributeName] || [];
+    setCardLoadingByName((prev) => ({ ...prev, [attributeName]: true }));
+    try {
+      const totalCount = cardTotalCounts[attributeName];
+      const response = await fetchRelationshipData(
+        attributeName,
+        existingData.length,
+        totalCount
+      );
+      const updated = [...existingData, ...(response.entities || [])];
+      setCardData((prev) => ({
+        ...prev,
+        [attributeName]: updated
+      }));
+      if (response.approximateCount !== undefined) {
+        setCardTotalCounts((prev) => ({
+          ...prev,
+          [attributeName]: response.approximateCount
+        }));
+      }
+    } catch (error: any) {
+      console.error("Error loading more relationship data:", error);
+      serverError(error, toastId);
+    } finally {
+      setCardLoadingByName((prev) => ({ ...prev, [attributeName]: false }));
+    }
+  };
+
+  useEffect(() => {
+    if (isEmpty(cardTotalCounts)) {
+      return;
+    }
+    setPageLimitByAttr((prev) => {
+      const next = { ...prev };
+      Object.keys(cardTotalCounts).forEach((relationName) => {
+        const totalCount = cardTotalCounts[relationName];
+        const defaultLimit = totalCount < 100 ? totalCount : 100;
+        const current = next[relationName];
+        if (typeof current !== "number") {
+          next[relationName] = defaultLimit;
+          return;
+        }
+        if (current > totalCount) {
+          next[relationName] = totalCount;
+        }
+      });
+      return next;
+    });
+  }, [cardTotalCounts]);
+
+  const resetRelationshipData = async (
+    relationName: string,
+    overrides?: {
+      isSorted?: boolean;
+      showDeleted?: boolean;
+      limit?: number;
+    }
+  ) => {
+    if (!guid || cardLoadingByName[relationName]) {
+      return;
+    }
+    setCardResettingByName((prev) => ({ ...prev, [relationName]: true }));
+    try {
+      const totalCount = cardTotalCounts[relationName];
+      const response = await fetchRelationshipData(
+        relationName,
+        0,
+        totalCount,
+        overrides
+      );
+      const entities = response.entities;
+      const updated = isArray(entities)
+        ? entities
+        : !isEmpty(entities)
+        ? [entities]
+        : [];
+      setCardData((prev) => ({
+        ...prev,
+        [relationName]: updated
+      }));
+      if (response.approximateCount !== undefined) {
+        setCardTotalCounts((prev) => ({
+          ...prev,
+          [relationName]: response.approximateCount
+        }));
+      }
+    } catch (error: any) {
+      console.error("Error resetting relationship data:", error);
+      serverError(error, toastId);
+    } finally {
+      setCardResettingByName((prev) => ({ ...prev, [relationName]: false }));
+    }
+  };
+
+  const handleToggleSort = (relationName: string) => {
+    const nextSorted = !sortByNameByAttr[relationName];
+    setSortByNameByAttr((prev) => ({
+      ...prev,
+      [relationName]: nextSorted
+    }));
+    resetRelationshipData(relationName, { isSorted: nextSorted });
+  };
+
+  const handleToggleShowDeleted = (relationName: string) => {
+    const nextShowDeleted = !showDeletedByAttr[relationName];
+    setShowDeletedByAttr((prev) => ({
+      ...prev,
+      [relationName]: nextShowDeleted
+    }));
+    resetRelationshipData(relationName, { showDeleted: nextShowDeleted });
+  };
+
+  const handlePageLimitChange = (relationName: string, value: string) => {
+    const parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed)) {
+      setPageLimitByAttr((prev) => ({ ...prev, [relationName]: 0 }));
+      return;
+    }
+    setPageLimitByAttr((prev) => ({ ...prev, [relationName]: parsed }));
+  };
+
+  const handlePageLimitSubmit = (relationName: string) => {
+    const totalCount = cardTotalCounts[relationName] ?? 0;
+    const defaultLimit = totalCount < 100 ? totalCount : 100;
+    const currentLimit = pageLimitByAttr[relationName];
+    let nextLimit = currentLimit;
+    if (!Number.isFinite(currentLimit) || currentLimit <= 0) {
+      nextLimit = defaultLimit;
+    }
+    if (totalCount > 0 && nextLimit > totalCount) {
+      nextLimit = totalCount;
+    }
+    setPageLimitByAttr((prev) => ({ ...prev, [relationName]: nextLimit }));
+    resetRelationshipData(relationName, { limit: nextLimit });
+  };
+
+  /**
+   * Computes column layout based on record count:
+   * - >5 records: 1 card per column
+   * - 1-5 records: 2 cards per column
+   * - 0 records: 2 cards per column (when showEmptyValues is true)
+   */
+  const relationshipColumns = useMemo((): string[][] => {
+    const names = Object.keys(cardData);
+    if (isEmpty(names)) {
+      return [];
+    }
+
+    const getCount = (name: string) =>
+      cardTotalCounts[name] ?? cardData[name]?.length ?? 0;
+
+    const largeCards: string[] = [];
+    const smallCards: string[] = [];
+    const emptyCards: string[] = [];
+
+    names.forEach((name) => {
+      const count = getCount(name);
+      if (count > 5) {
+        largeCards.push(name);
+      } else if (count >= 1 && count <= 5) {
+        smallCards.push(name);
+      } else {
+        emptyCards.push(name);
+      }
+    });
+
+    const sortNames = (arr: string[]) =>
+      arr.sort((a, b) => a.localeCompare(b));
+
+    sortNames(largeCards);
+    sortNames(smallCards);
+    sortNames(emptyCards);
+
+    const columns: string[][] = [];
+
+    largeCards.forEach((name) => columns.push([name]));
+
+    for (let i = 0; i < smallCards.length; i += 2) {
+      const chunk = smallCards.slice(i, i + 2);
+      columns.push(chunk);
+    }
+
+    if (checked) {
+      for (let i = 0; i < emptyCards.length; i += 2) {
+        const chunk = emptyCards.slice(i, i + 2);
+        columns.push(chunk);
+      }
+    }
+
+    return columns;
+  }, [cardData, cardTotalCounts, checked]);
 
   return (
     <Grid container marginTop={0} className="properties-container">
@@ -165,26 +515,68 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
             )}
           </Stack>
 
-          {alignment == "graph" && <RelationshipLineage entity={entity} />}
+          {alignment == "graph" && (
+            <RelationshipLineage
+              entity={entity}
+              relationshipAttributes={cardData}
+              isLoading={cardLoading && Object.keys(cardData).length === 0}
+            />
+          )}
 
           {alignment == "table" && (
-            <TableLayout
-              data={
-                !isEmpty(checked ? rowData : nonEmptyRowData)
-                  ? customSortByObjectKeys(checked ? rowData : nonEmptyRowData)
-                  : []
-              }
-              columns={defaultColumns.filter(
-                (value) => Object.keys(value).length !== 0
+            <>
+              {cardLoading && Object.keys(cardData).length === 0 ? (
+                <div className="relationship-cards-grid">
+                  {relationNames.map((name) => (
+                    <RelationshipCardSkeleton key={name} />
+                  ))}
+                </div>
+              ) : (
+                <div className="relationship-cards-grid relationship-cards-grid--custom">
+                  {relationshipColumns.map((columnNames, colIndex) => (
+                    <div
+                      key={`col-${colIndex}`}
+                      className="relationship-cards-column"
+                    >
+                      {columnNames.map((attributeName) => {
+                        const data = cardData[attributeName];
+                        if (isEmpty(data) && !checked) {
+                          return null;
+                        }
+                        return (
+                          <RelationshipCard
+                            key={attributeName}
+                            attributeName={attributeName}
+                            data={data}
+                            referredEntities={referredEntities}
+                            showEmptyValues={checked}
+                            onLoadMore={handleCardLoadMore}
+                            totalCount={cardTotalCounts[attributeName]}
+                            isLoading={cardLoadingByName[attributeName]}
+                            isResetting={cardResettingByName[attributeName]}
+                            isSorted={!!sortByNameByAttr[attributeName]}
+                            showDeleted={!!showDeletedByAttr[attributeName]}
+                            pageLimit={getPageLimit(
+                              attributeName,
+                              cardTotalCounts[attributeName]
+                            )}
+                            onToggleSort={handleToggleSort}
+                            onToggleShowDeleted={handleToggleShowDeleted}
+                            onPageLimitChange={handlePageLimitChange}
+                            onPageLimitSubmit={handlePageLimitSubmit}
+                          />
+                        );
+                      })}
+                    </div>
+                  ))}
+                  {Object.keys(cardData).length === 0 && !cardLoading && (
+                    <div className="relationship-cards-empty">
+                      No relationship data available
+                    </div>
+                  )}
+                </div>
               )}
-              emptyText="No Records found!"
-              isFetching={loading}
-              columnVisibility={false}
-              columnSort={false}
-              showPagination={false}
-              showRowSelection={false}
-              tableFilters={false}
-            />
+            </>
           )}
         </Stack>
       </Grid>

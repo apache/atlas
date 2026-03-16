@@ -40,7 +40,9 @@ define([
             template: RelationshipLayoutViewtmpl,
             className: "resizeGraph",
             /** Layout sub regions */
-            regions: {},
+            regions: {
+                relationshipCardsView: '[data-id="relationshipCardsView"]'
+            },
 
             /** ui selector cache */
             ui: {
@@ -48,11 +50,13 @@ define([
                 searchNode: '[data-id="searchNode"]',
                 relationshipViewToggle: 'input[name="relationshipViewToggle"]',
                 relationshipDetailTable: "[data-id='relationshipDetailTable']",
+                relationshipDetailTableContainer: ".relationship-detail-table",
                 relationshipSVG: "[data-id='relationshipSVG']",
                 relationshipDetailValue: "[data-id='relationshipDetailValue']",
                 zoomControl: "[data-id='zoomControl']",
                 boxClose: '[data-id="box-close"]',
-                noValueToggle: "[data-id='noValueToggle']"
+                noValueToggle: "[data-id='noValueToggle']",
+                relationshipCardsView: "[data-id='relationshipCardsView']"
             },
 
             /** ui events hash */
@@ -71,6 +75,7 @@ define([
                         inputType: this.ui.noValueToggle,
                         tableEl: this.ui.relationshipDetailValue
                     });
+                    this.updateCardsShowEmptyValues(e.currentTarget.checked);
                 };
                 return events;
             },
@@ -80,8 +85,56 @@ define([
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, "entity", "entityName", "guid", "actionCallBack", "attributeDefs"));
+                _.extend(this, _.pick(options, "entity", "entityName", "guid", "actionCallBack", "attributeDefs", "referredEntities", "entityDefCollection"));
                 this.graphData = this.createData(this.entity);
+                this.relationshipCardCounts = {};
+                this.relationshipLoadedCounts = {};
+                this.cardsViewLoadInProgress = false;
+                
+                console.log("[RelationshipLayoutView] Initialized with:", {
+                    guid: this.guid,
+                    entityTypeName: this.entity && this.entity.typeName,
+                    hasAttributeDefs: !!this.attributeDefs,
+                    hasEntityDefCollection: !!this.entityDefCollection
+                });
+                
+                this.handleRelationshipDataUpdate = _.bind(function(payload) {
+                    var relationshipAttributes = payload && payload.data ? payload.data : payload;
+                    var relationshipCounts = payload && payload.counts ? payload.counts : this.relationshipCardCounts;
+                    var loadedCounts = payload && payload.loadedCounts ? payload.loadedCounts : this.relationshipLoadedCounts;
+                    var referredEntities = payload && payload.referredEntities ? payload.referredEntities : null;
+                    console.log("[RelationshipLayoutView] Relationship data updated:", {
+                        relationshipCount: relationshipAttributes ? _.keys(relationshipAttributes).length : 0,
+                        relationshipNames: relationshipAttributes ? _.keys(relationshipAttributes) : []
+                    });
+                    
+                    if (!relationshipAttributes) {
+                        return;
+                    }
+                    this.entity.relationshipAttributes = relationshipAttributes;
+                    this.relationshipCardCounts = relationshipCounts || {};
+                    this.relationshipLoadedCounts = loadedCounts || {};
+                    if (referredEntities) {
+                        this.referredEntities = _.extend({}, this.referredEntities, referredEntities);
+                    }
+                    this.graphData = this.createData(this.entity);
+                    if (!this.ui.relationshipViewToggle.is(':checked')) {
+                        this.$("svg").empty();
+                        if (this.graphData && _.isEmpty(this.graphData.links)) {
+                            this.noRelationship();
+                        } else if (this.graphData) {
+                            this.createGraph(this.graphData);
+                        }
+                    }
+                }, this);
+                this.handleRelationshipLoading = _.bind(function(isLoading) {
+                    console.log("[RelationshipLayoutView] Loading state:", isLoading);
+                    if (isLoading) {
+                        this.$(".fontLoader").show();
+                    } else {
+                        this.$(".fontLoader").hide();
+                    }
+                }, this);
             },
             createData: function(entity) {
                 var that = this,
@@ -89,15 +142,22 @@ define([
                     nodes = {};
                 if (entity && entity.relationshipAttributes) {
                     _.each(entity.relationshipAttributes, function(obj, key) {
-                        if (!_.isEmpty(obj)) {
+                        var relationValue = obj;
+                        if (relationValue && relationValue.entities) {
+                            relationValue = relationValue.entities;
+                        }
+                        if (relationValue && !_.isArray(relationValue)) {
+                            relationValue = [relationValue];
+                        }
+                        if (!_.isEmpty(relationValue)) {
                             links.push({
                                 source: nodes[that.entity.typeName] ||
                                     (nodes[that.entity.typeName] = _.extend({ name: that.entity.typeName }, { value: entity })),
                                 target: nodes[key] ||
                                     (nodes[key] = _.extend({
                                         name: key
-                                    }, { value: obj })),
-                                value: obj
+                                    }, { value: relationValue })),
+                                value: relationValue
                             });
                         }
                     });
@@ -105,94 +165,169 @@ define([
                 return { nodes: nodes, links: links };
             },
             onRender: function() {
-                this.ui.zoomControl.hide();
-                this.$el.addClass("auto-height");
+                console.log("[RelationshipLayoutView] onRender called");
+                this.isRendered = true;
+
+                // Initialize: show card view by default (checked = Card)
+                this.ui.relationshipViewToggle.prop('checked', true);
+                this.relationshipViewToggle(true);
+                
+                console.log("[RelationshipLayoutView] Initial view set to Card");
             },
             onShow: function(argument) {
-                if (this.graphData && _.isEmpty(this.graphData.links)) {
-                    this.noRelationship();
-                } else {
-                    this.createGraph(this.graphData);
+                console.log("[RelationshipLayoutView] onShow called");
+                
+                // Always create graph on show if graph view is active
+                var isGraphView = !this.ui.relationshipViewToggle.is(':checked');
+                if (isGraphView) {
+                    if (this.graphData && _.isEmpty(this.graphData.links)) {
+                        this.noRelationship();
+                    } else if (this.graphData) {
+                        this.createGraph(this.graphData);
+                    }
                 }
                 this.createTable();
+                
+                // Initialize card view (but don't show it yet if in graph view)
+                console.log("[RelationshipLayoutView] Initializing card view in onShow");
+                this.ensureCardsView();
+            },
+            ensureCardsView: function(forceRefresh) {
+                var that = this;
+                console.log("[RelationshipLayoutView] ensureCardsView called, instance exists:", !!this.relationshipCardsViewInstance, "forceRefresh:", !!forceRefresh);
+                console.log("[RelationshipLayoutView] Region available:", !!this.relationshipCardsView);
+                console.log("[RelationshipLayoutView] Entity:", this.entity);
+                console.log("[RelationshipLayoutView] GUID:", this.guid);
+                console.log("[RelationshipLayoutView] AttributeDefs:", this.attributeDefs);
+                console.log("[RelationshipLayoutView] EntityDefCollection:", !!this.entityDefCollection);
+                
+                if (this.relationshipCardsViewInstance) {
+                    if (forceRefresh) {
+                        console.log("[RelationshipLayoutView] Force refresh: triggering fetchInitialCards");
+                        this.relationshipCardsViewInstance.cardData = {};
+                        this.relationshipCardsViewInstance.cardCounts = {};
+                        this.relationshipCardsViewInstance.fetchInitialCards();
+                    } else {
+                        var hasData = _.keys(this.relationshipCardsViewInstance.cardData || {}).length > 0;
+                        if (!hasData) {
+                            console.log("[RelationshipLayoutView] Card view exists but no data, fetching");
+                            this.relationshipCardsViewInstance.fetchInitialCards();
+                        } else {
+                            this.relationshipCardsViewInstance.renderCards();
+                        }
+                    }
+                    return;
+                }
+                if (this.cardsViewLoadInProgress) {
+                    console.log("[RelationshipLayoutView] Card view load already in progress, skipping");
+                    return;
+                }
+                this.cardsViewLoadInProgress = true;
+                console.log("[RelationshipLayoutView] Creating new card view instance");
+                require(['views/detail_page/RelationshipCardsLayoutView'], function(RelationshipCardsLayoutView) {
+                    console.log("[RelationshipLayoutView] RelationshipCardsLayoutView module loaded");
+                    try {
+                        if (!that.relationshipCardsView) {
+                            console.warn("[RelationshipLayoutView] Region not available");
+                            that.cardsViewLoadInProgress = false;
+                            return;
+                        }
+                        that.relationshipCardsViewInstance = new RelationshipCardsLayoutView({
+                            entity: that.entity,
+                            guid: that.guid,
+                            attributeDefs: that.attributeDefs,
+                            entityDefCollection: that.entityDefCollection,
+                            referredEntities: that.referredEntities || {},
+                            showEmptyValues: false,
+                            onDataLoaded: that.handleRelationshipDataUpdate,
+                            onDataLoading: that.handleRelationshipLoading
+                        });
+                        that.relationshipCardsView.show(that.relationshipCardsViewInstance);
+                        console.log("[RelationshipLayoutView] Card view shown in region");
+                    } catch (err) {
+                        console.error("[RelationshipLayoutView] Error showing cards view:", err);
+                    } finally {
+                        that.cardsViewLoadInProgress = false;
+                    }
+                }, function(err) {
+                    console.error("[RelationshipLayoutView] Failed to load RelationshipCardsLayoutView:", err);
+                    that.cardsViewLoadInProgress = false;
+                });
+            },
+            updateCardsShowEmptyValues: function(showEmptyValues) {
+                if (!this.relationshipCardsViewInstance) {
+                    return;
+                }
+                this.relationshipCardsViewInstance.showEmptyValues = !!showEmptyValues;
+                this.relationshipCardsViewInstance.renderCards();
             },
             noRelationship: function() {
                 this.$("svg").html('<text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle">No relationship data found</text>');
             },
             toggleInformationSlider: function(options) {
-                if (options.open && !this.$(".relationship-details").hasClass("open")) {
-                    this.$(".relationship-details").addClass("open");
-                } else if (options.close && this.$(".relationship-details").hasClass("open")) {
-                    d3.selectAll("circle").attr("stroke", "none");
-                    this.$(".relationship-details").removeClass("open");
+                var panel = this.$(".relationship-node-details");
+                if (options && options.close) {
+                    console.log("[RelationshipLayoutView] Closing information slider");
+                    panel.removeClass("slide-to-left").addClass("slide-from-left");
+                } else {
+                    console.log("[RelationshipLayoutView] Toggling information slider");
+                    if (panel.hasClass("slide-to-left")) {
+                        panel.removeClass("slide-to-left").addClass("slide-from-left");
+                    } else {
+                        panel.removeClass("slide-from-left").addClass("slide-to-left");
+                    }
                 }
             },
-            toggleBoxPanel: function(options) {
-                var el = options && options.el,
-                    nodeDetailToggler = options && options.nodeDetailToggler,
-                    currentTarget = options.currentTarget;
-                this.$el.find(".show-box-panel").removeClass("show-box-panel");
-                if (el && el.addClass) {
-                    el.addClass("show-box-panel");
-                }
-                this.$("circle.node-detail-highlight").removeClass("node-detail-highlight");
+            toggleBoxPanel: function() {
+                console.log("[RelationshipLayoutView] Closing box panel");
+                this.$(".relationship-node-details").removeClass("slide-to-left").addClass("slide-from-left");
             },
             searchNode: function(e) {
-                var $el = $(e.currentTarget);
-                this.updateRelationshipDetails(_.extend({}, $el.data(), { searchString: $el.val() }));
-            },
-            updateRelationshipDetails: function(options) {
-                var data = options.obj.value,
-                    typeName = data.typeName || options.obj.name,
-                    searchString = _.escape(options.searchString),
+                var searchString = $(e.currentTarget).val(),
                     listString = "",
+                    data = this.selectedNodeData,
+                    typeName = this.selectedNodeType,
+                    activeEntityColor = "#00b98b",
+                    deletedEntityColor = "#BB5838",
+                    defaultEntityColor = "#e0e0e0",
+                    normalizeEntity = function(entity) {
+                        if (!entity) {
+                            return entity;
+                        }
+                        if (_.isString(entity)) {
+                            entity = { guid: entity };
+                        }
+                        if (entity.guid && this.referredEntities && this.referredEntities[entity.guid]) {
+                            return _.extend({}, entity, this.referredEntities[entity.guid]);
+                        }
+                        return entity;
+                    }.bind(this),
+                    getdefault = function(options) {
+                        return "<pre class='entity-type-name' style='color:" + options.color + "'>" + options.name + "</pre>";
+                    },
+                    getWithButton = function(options) {
+                        var name = options.name,
+                            guid = options.options.guid,
+                            entityTypeButton = "";
+                        if (guid) {
+                            if (options.entity) {
+                                entityTypeButton = "<a href='#/detailPage/" + guid + "' class='entity-type-name' style='color:" + options.color + "'>" + name + "</a>";
+                            } else if (options.relationship) {
+                                entityTypeButton = "<a href='#/relationshipDetailPage/" + guid + "' class='entity-type-name' style='color:" + options.color + "'>" + name + "</a>";
+                            } else {
+                                entityTypeButton = "<a href='#/detailPage/" + guid + "' class='entity-type-name' style='color:" + options.color + "'>" + name + "</a>";
+                            }
+                        } else {
+                            entityTypeButton = "<pre class='entity-type-name' style='color:" + options.color + "'>" + name + "</pre>";
+                        }
+                        return entityTypeButton;
+                    },
                     getEntityTypelist = function(options) {
-                        var activeEntityColor = "#4a90e2",
-                            deletedEntityColor = "#BB5838",
-                            entityTypeHtml = "<pre>",
-                            getdefault = function(obj) {
-                                var options = obj.options,
-                                    status = Enums.entityStateReadOnly[options.entityStatus || options.status] ? " deleted-relation" : "",
-                                    guid = options.guid,
-                                    entityColor = obj.color,
-                                    name = obj.name,
-                                    typeName = options.typeName;
-                                if (typeName === "AtlasGlossaryTerm") {
-                                    return '<li class=' + status + '>' +
-                                        '<a style="color:' + entityColor + '" href="#!/glossary/' + guid + '?guid=' + guid + '&gType=term&viewType=term&fromView=entity">' + name + ' (' + typeName + ')</a>' +
-                                        '</li>';
-                                } else {
-                                    return "<li class=" + status + ">" +
-                                        "<a style='color:" + entityColor + "' href=#!/detailPage/" + guid + "?tabActive=relationship>" + name + " (" + typeName + ")</a>" +
-                                        "</li>";
-                                }
-                            },
-                            getWithButton = function(obj) {
-                                var options = obj.options,
-                                    status = Enums.entityStateReadOnly[options.entityStatus || options.status] ? " deleted-relation" : "",
-                                    guid = options.guid,
-                                    entityColor = obj.color,
-                                    name = obj.name,
-                                    typeName = options.typeName,
-                                    relationship = obj.relationship || false,
-                                    entity = obj.entity || false,
-                                    icon = '<i class="fa fa-trash"></i>',
-                                    title = "Deleted";
-                                if (relationship) {
-                                    icon = '<i class="fa fa-long-arrow-right"></i>';
-                                    status = Enums.entityStateReadOnly[options.relationshipStatus || options.status] ? "deleted-relation" : "";
-                                    title = "Relationship Deleted";
-                                }
-                                return "<li class=" + status + ">" +
-                                    "<a style='color:" + entityColor + "' href=#!/detailPage/" + options.guid + "?tabActive=relationship>" + _.escape(name) + " (" + options.typeName + ")</a>" +
-                                    '<button type="button" title="' + title + '" class="btn btn-sm deleteBtn deletedTableBtn btn-action ">' + icon + '</button>' +
-                                    "</li>";
-                            };
-
-                        var name = options.entityName ? options.entityName : Utils.getName(options, "displayText");
-                        if (options.entityStatus == "ACTIVE") {
+                        var name = options.entityName ? options.entityName : Utils.getName(options, "displayText"),
+                            entityTypeHtml = "";
+                        if (options.entityStatus == "ACTIVE" || options.status == "ACTIVE") {
                             if (options.relationshipStatus == "ACTIVE") {
-                                entityTypeHtml = getdefault({
+                                entityTypeHtml = getWithButton({
                                     color: activeEntityColor,
                                     options: options,
                                     name: name
@@ -228,25 +363,53 @@ define([
                     var entityTypeButton = getEntityTypelist(options);
                     return entityTypeButton;
                 };
+                var buildEntityObj = function(item) {
+                    var normalized = normalizeEntity(item);
+                    var ref = normalized && normalized.guid ? this.referredEntities && this.referredEntities[normalized.guid] : null;
+                    var displayText = (ref && (ref.displayText || (ref.attributes && ref.attributes.name))) ||
+                        normalized.displayText ||
+                        (normalized.attributes && normalized.attributes.name) ||
+                        normalized.qualifiedName ||
+                        normalized.guid ||
+                        "N/A";
+                    var typeName = normalized.typeName || (ref && ref.typeName) || this.selectedNodeType;
+                    return _.extend({}, ref, normalized, {
+                        entityName: displayText,
+                        typeName: typeName
+                    });
+                }.bind(this);
+                var buildListItem = function(item) {
+                    var name = item.entityName || Utils.getName(item, "displayText");
+                    var href = item.guid ? "#/detailPage/" + item.guid : "";
+                    var isDeleted = (item.entityStatus || item.status) == "DELETED";
+                    var color = isDeleted ? deletedEntityColor : activeEntityColor;
+                    var content = href
+                        ? "<a href='" + href + "' class='entity-type-name' style='color:" + color + "'>" + _.escape(name) + "</a>"
+                        : "<span class='entity-type-name' style='color:" + color + "'>" + _.escape(name) + "</span>";
+                    return "<li class='entity-list-item'>" + content + "</li>";
+                };
                 if (_.isArray(data)) {
+                    data = _.map(data, function(item) {
+                        return buildEntityObj(item);
+                    });
                     if (data.length > 1) {
                         this.ui.searchNode.show();
                     }
-                    _.each(_.sortBy(data, "displayText"), function(val) {
-                        var name = Utils.getName(val, "displayText"),
-                            valObj = _.extend({}, val, { entityName: name });
+                    _.each(_.sortBy(data, "entityName"), function(val) {
+                        var name = val.entityName || Utils.getName(val, "displayText");
                         if (searchString) {
-                            if (name.search(new RegExp(searchString, "i")) != -1) {
-                                listString += getElement(valObj);
+                            if (name.toLowerCase().includes(searchString.toLowerCase())) {
+                                listString += buildListItem(val);
                             } else {
                                 return;
                             }
                         } else {
-                            listString += getElement(valObj);
+                            listString += buildListItem(val);
                         }
                     });
                 } else {
-                    listString += getElement(data);
+                    data = buildEntityObj(data);
+                    listString += buildListItem(data);
                 }
                 this.$("[data-id='entityList']").html(listString);
             },
@@ -254,20 +417,47 @@ define([
                 //Ref - http://bl.ocks.org/fancellu/2c782394602a93921faff74e594d1bb1
 
                 var that = this,
-                    width = this.$("svg").width(),
-                    height = this.$("svg").height(),
+                    width = this.$("svg").width() || 1200,
+                    height = Math.max(this.$("svg").height() || 600, 600),
                     nodes = d3.values(data.nodes),
                     links = data.links;
+
+                console.log("[RelationshipLayoutView] Creating graph with dimensions:", {
+                    width: width,
+                    height: height,
+                    nodeCount: nodes.length,
+                    linkCount: links.length
+                });
 
                 var activeEntityColor = "#00b98b",
                     deletedEntityColor = "#BB5838",
                     defaultEntityColor = "#e0e0e0",
                     selectedNodeColor = "#4a90e2";
+                var getNodeCount = function(node) {
+                    if (!node) {
+                        return 0;
+                    }
+                    if (node.name === that.entity.typeName) {
+                        return 0;
+                    }
+                    if (that.relationshipLoadedCounts && _.has(that.relationshipLoadedCounts, node.name)) {
+                        var count = that.relationshipLoadedCounts[node.name];
+                        var parsedCount = _.isNumber(count) ? count : parseInt(count, 10);
+                        if (_.isFinite(parsedCount)) {
+                            return parsedCount;
+                        }
+                    }
+                    if (_.isArray(node.value)) {
+                        return node.value.length;
+                    }
+                    return node.value ? 1 : 0;
+                };
 
                 var svg = d3
                     .select(this.$("svg")[0])
                     .attr("viewBox", "0 0 " + width + " " + height)
-                    .attr("enable-background", "new 0 0 " + width + " " + height),
+                    .attr("enable-background", "new 0 0 " + width + " " + height)
+                    .style("min-height", "600px"),
                     node,
                     path;
 
@@ -298,47 +488,45 @@ define([
                     .attr("orient", "auto")
                     .attr("markerWidth", 6)
                     .attr("markerHeight", 6)
+                    .attr("xoverflow", "visible")
                     .append("svg:path")
-                    .attr("d", "M 0,-5 L 10 ,0 L 0,5")
+                    .attr("d", "M 0,-5 L 10,0 L 0,5")
                     .attr("fill", function(d) {
-                        return d == "deletedLink" ? deletedEntityColor : activeEntityColor;
+                        return d === "deletedLink" ? deletedEntityColor : activeEntityColor;
                     })
-                    .style("stroke", "none");
-
-                var forceLink = d3
-                    .forceLink()
-                    .id(function(d) {
-                        return d.id;
-                    })
-                    .distance(function(d) {
-                        return 100;
-                    })
-                    .strength(1);
+                    .attr("stroke", "none");
 
                 var simulation = d3
-                    .forceSimulation()
-                    .force("link", forceLink)
-                    .force("charge", d3.forceManyBody())
-                    .force("center", d3.forceCenter(width / 2, height / 2));
+                    .forceSimulation(nodes)
+                    .force(
+                        "link",
+                        d3
+                            .forceLink(links)
+                            .id(function(d) {
+                                return d.name;
+                            })
+                            .distance(150)
+                    )
+                    .force("charge", d3.forceManyBody().strength(-300))
+                    .force("center", d3.forceCenter(width / 2, height / 2))
+                    .force("collision", d3.forceCollide().radius(50));
 
-                update();
-
-                function update() {
                     path = container
-                        .append("svg:g")
+                    .append("g")
                         .selectAll("path")
                         .data(links)
                         .enter()
-                        .append("svg:path")
+                    .append("path")
                         .attr("class", "relatioship-link")
+                    .attr("marker-end", function(d) {
+                        return isAllEntityRelationDeleted({ data: d, type: "link" }) ? "url(#deletedLink)" : "url(#activeLink)";
+                    })
                         .attr("stroke", function(d) {
-                            return getPathColor({ data: d, type: "path" });
-                        })
-                        .attr("marker-end", function(d) {
-                            return "url(#" + (isAllEntityRelationDeleted({ data: d }) ? "deletedLink" : "activeLink") + ")";
+                        return isAllEntityRelationDeleted({ data: d, type: "link" }) ? deletedEntityColor : activeEntityColor;
                         });
 
                     node = container
+                    .append("g")
                         .selectAll(".node")
                         .data(nodes)
                         .enter()
@@ -365,70 +553,80 @@ define([
                             .drag()
                             .on("start", dragstarted)
                             .on("drag", dragged)
-                        );
+                            .on("end", dragended)
+                    );
 
-                    var circleContainer = node.append("g");
-
-                    circleContainer
-                        .append("circle")
-                        .attr("cx", 0)
-                        .attr("cy", 0)
-                        .attr("r", function(d) {
-                            d.radius = 25;
-                            return d.radius;
+                node.append("circle")
+                        .attr("r", function() {
+                        return 25;
                         })
                         .attr("fill", function(d) {
-                            if (d && d.value && d.value.guid == that.guid) {
-                                if (isAllEntityRelationDeleted({ data: d, type: "node" })) {
-                                    return deletedEntityColor;
-                                } else {
+                        if (d.name === that.entity.typeName) {
                                     return selectedNodeColor;
-                                }
-                            } else if (isAllEntityRelationDeleted({ data: d, type: "node" })) {
-                                return deletedEntityColor;
                             } else {
-                                return activeEntityColor;
+                            return isAllEntityRelationDeleted({ data: d, type: "node" }) ? deletedEntityColor : activeEntityColor;
                             }
                         })
-                        .attr("typename", function(d) {
-                            return d.name;
+                    .attr("stroke", "#fff")
+                    .attr("stroke-width", "2px")
+                    .style("cursor", "pointer")
+                    .on("click", function(d) {
+                        console.log("[RelationshipLayoutView] Node clicked:", d.name);
+                        if (d && d.value && d.value.guid == that.guid) {
+                            return;
+                        }
+                        console.log("[RelationshipLayoutView] Node payload:", {
+                            name: d.name,
+                            value: d.value,
+                            referredEntitiesCount: that.referredEntities ? _.keys(that.referredEntities).length : 0
+                        });
+                        that.selectedNodeData = d.value;
+                        that.selectedNodeType = d.name;
+                        
+                        // Show the panel
+                        var panel = that.$(".relationship-node-details");
+                        panel.removeClass("slide-to-left").addClass("slide-from-left");
+                        
+                        // Trigger after a small delay to ensure DOM is ready
+                        setTimeout(function() {
+                            panel.removeClass("slide-from-left").addClass("slide-to-left");
+                            that.searchNode({ currentTarget: that.ui.searchNode });
+                        }, 10);
                         });
 
-                    circleContainer
-                        .append("text")
+                    node.append("text")
                         .attr("x", 0)
                         .attr("y", 0)
-                        .attr("dy", 25 - 17)
+                        .attr("dy", function() {
+                            return 25 - 17;
+                        })
                         .attr("text-anchor", "middle")
                         .style("font-family", "FontAwesome")
-                        .style("font-size", function(d) {
-                            return "25px";
-                        })
+                        .style("font-size", "25px")
+                        .attr("class", "relationship-node-icon")
                         .text(function(d) {
                             var iconObj = Enums.graphIcon[d.name];
                             if (iconObj && iconObj.textContent) {
                                 return iconObj.textContent;
-                            } else {
-                                if (d && _.isArray(d.value) && d.value.length > 1) {
-                                    return "\uf0c5";
-                                } else {
-                                    return "\uf016";
-                                }
                             }
+                            if (d && _.isArray(d.value) && d.value.length > 1) {
+                                return "\uf0c5";
+                            }
+                            return "\uf016";
                         })
-                        .attr("fill", function(d) {
-                            return "#fff";
-                        });
+                        .attr("fill", "#fff");
 
-                    var countBox = circleContainer.append("g");
+                    var countBox = node.append("g");
 
                     countBox
                         .append("circle")
                         .attr("cx", 18)
                         .attr("cy", -20)
+                        .attr("class", "relationship-node-count")
                         .attr("r", function(d) {
-                            if (_.isArray(d.value) && d.value.length > 1) {
-                                return 10;
+                            var count = getNodeCount(d);
+                            if (count > 1) {
+                                return 9;
                             }
                         });
 
@@ -438,44 +636,37 @@ define([
                         .attr("dy", -16)
                         .attr("text-anchor", "middle")
                         .attr("fill", defaultEntityColor)
+                        .attr("class", "relationship-node-count")
                         .text(function(d) {
-                            if (_.isArray(d.value) && d.value.length > 1) {
-                                return d.value.length;
+                            var count = getNodeCount(d);
+                            if (count > 1) {
+                                return count;
                             }
                         });
 
-                    node.append("text")
+                    node
+                        .append("text")
                         .attr("x", -15)
                         .attr("y", "35")
+                        .attr("class", "relationship-node-label")
                         .text(function(d) {
                             return d.name;
                         });
 
-                    simulation.nodes(nodes).on("tick", ticked);
-
-                    simulation.force("link").links(links);
-                }
-
-                function ticked() {
+                simulation.on("tick", function() {
                     path.attr("d", function(d) {
-                        var diffX = d.target.x - d.source.x,
-                            diffY = d.target.y - d.source.y,
-                            // Length of path from center of source node to center of target node
-                            pathLength = Math.sqrt(diffX * diffX + diffY * diffY),
-                            // x and y distances from center to outside edge of target node
-                            offsetX = (diffX * d.target.radius) / pathLength,
-                            offsetY = (diffY * d.target.radius) / pathLength;
-
-                        return "M" + d.source.x + "," + d.source.y + "A" + pathLength + "," + pathLength + " 0 0,1 " + (d.target.x - offsetX) + "," + (d.target.y - offsetY);
+                        var dx = d.target.x - d.source.x,
+                            dy = d.target.y - d.source.y,
+                            dr = Math.sqrt(dx * dx + dy * dy);
+                        return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
                     });
 
                     node.attr("transform", function(d) {
                         return "translate(" + d.x + "," + d.y + ")";
                     });
-                }
+                });
 
                 function dragstarted(d) {
-                    d3.event.sourceEvent.stopPropagation();
                     if (d && d.value && d.value.guid != that.guid) {
                         if (!d3.event.active) simulation.alphaTarget(0.3).restart();
                         d.fx = d.x;
@@ -487,6 +678,12 @@ define([
                     if (d && d.value && d.value.guid != that.guid) {
                         d.fx = d3.event.x;
                         d.fy = d3.event.y;
+                    }
+                }
+
+                function dragended(d) {
+                    if (d && d.value && d.value.guid != that.guid) {
+                        if (!d3.event.active) simulation.alphaTarget(0);
                     }
                 }
 
@@ -536,15 +733,74 @@ define([
                 });
             },
             relationshipViewToggle: function(checked) {
-                this.ui.relationshipDetailTable.toggleClass("visible invisible");
-                this.ui.relationshipSVG.toggleClass("visible invisible");
+                var that = this;
+                
+                console.log("[RelationshipLayoutView] Toggle switched, checked:", checked, "(true=Table/Card, false=Graph)");
 
+                // In the original code: checked = Table, unchecked = Graph
+                // So we need to invert the logic
                 if (checked) {
+                    console.log("[RelationshipLayoutView] Switching to Card view");
+                    
+                    // Show card view (checked = Table)
+                    this.ui.relationshipSVG.addClass("invisible").hide();
+                    this.ui.relationshipDetailTableContainer.show();
                     this.ui.zoomControl.hide();
                     this.$el.addClass("auto-height");
+                    this.ui.relationshipDetailTable.hide();
+                    this.ui.relationshipDetailValue.hide();
+                    this.ui.relationshipCardsView.show();
+                    
+                    var cardsEl = this.$(this.ui.relationshipCardsView);
+                    console.log("[RelationshipLayoutView] Card view container visibility:", {
+                        tableContainerVisible: this.$(this.ui.relationshipDetailTableContainer).is(':visible'),
+                        cardsViewVisible: cardsEl.is(':visible'),
+                        cardsViewDisplay: cardsEl.css('display'),
+                        cardsViewHTML: cardsEl.length ? cardsEl.html().substring(0, 100) : '(no element)'
+                    });
+                    
+                    console.log("[RelationshipLayoutView] Card view container shown, calling ensureCardsView");
+                    
+                    // Render card view if not already rendered
+                    this.ensureCardsView();
+                    
+                    // Force a re-render after a short delay to ensure DOM is ready
+                    setTimeout(function() {
+                        if (that.relationshipCardsViewInstance) {
+                            console.log("[RelationshipLayoutView] Force rendering cards after delay");
+                            that.relationshipCardsViewInstance.renderCards();
+                        }
+                    }, 100);
                 } else {
+                    console.log("[RelationshipLayoutView] Switching to Graph view");
+                    
+                    // Show graph view (unchecked = Graph)
+                    this.ui.relationshipSVG.removeClass("invisible").show();
+                    this.ui.relationshipDetailTableContainer.hide();
                     this.ui.zoomControl.show();
                     this.$el.removeClass("auto-height");
+                    this.ui.relationshipDetailTable.show();
+                    this.ui.relationshipDetailValue.show();
+                    this.ui.relationshipCardsView.hide();
+                    
+                    // Ensure graph is created if it hasn't been created yet
+                    if (this.graphData && !_.isEmpty(this.graphData.links)) {
+                        console.log("[RelationshipLayoutView] Recreating graph with", this.graphData.links.length, "links");
+                        // Clear existing graph and recreate
+                        this.$("svg").empty();
+                        this.createGraph(this.graphData);
+                    } else if (this.graphData && _.isEmpty(this.graphData.links)) {
+                        console.log("[RelationshipLayoutView] No relationship data to display");
+                        this.noRelationship();
+                    }
+                }
+            },
+            
+            onDestroy: function() {
+                this.cardsViewLoadInProgress = false;
+                if (this.relationshipCardsViewInstance) {
+                    this.relationshipCardsViewInstance.destroy();
+                    this.relationshipCardsViewInstance = null;
                 }
             }
         }

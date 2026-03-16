@@ -160,9 +160,11 @@ const EntityDetailPage: React.FC = () => {
     removeTab("raudits");
   }
 
+  // To render profile tab check for attribute "profileData" or typeName = "hive_db","hbase_namespace"
+  // Match Classic UI: check if profileData is not undefined (even if null/empty)
   if (
     !isEmpty(entity) &&
-    (!isEmpty(entity?.attributes?.["profileData"]) ||
+    (entity?.attributes?.["profileData"] !== undefined ||
       entity.typeName == "hive_db" ||
       entity.typeName == "hbase_namespace")
   ) {
@@ -529,10 +531,17 @@ const EntityDetailPage: React.FC = () => {
               <LinkTab label="Export/Import Audits" />
             )}
             {!isEmpty(entity) &&
-              (!isEmpty(entity?.attributes?.["profileData"]) ||
+              (entity?.attributes?.["profileData"] !== undefined ||
                 entity.typeName == "hive_db" ||
                 entity.typeName == "hbase_namespace") && (
-                <LinkTab label="Table" />
+                <LinkTab
+                  label={
+                    entity.typeName == "hive_db" ||
+                    entity.typeName == "hbase_namespace"
+                      ? "Tables"
+                      : "Table"
+                  }
+                />
               )}
             {taskTabEnabled && uiTaskTabEnabled && <LinkTab label="Tasks" />}
           </Tabs>

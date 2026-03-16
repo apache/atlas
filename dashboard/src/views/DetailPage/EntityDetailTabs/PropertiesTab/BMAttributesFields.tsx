@@ -157,8 +157,24 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
                 <TextField
                   margin="none"
                   fullWidth
-                  onChange={(text) => {
-                    field.onChange(text);
+                  onChange={(e) => {
+                    const inputValue = e.target.value;
+                    // For numeric types, allow string input while typing, convert to number on blur
+                    if (typeName !== "string") {
+                      // Store as string to allow partial input (e.g., "-", "1.", etc.)
+                      field.onChange(inputValue);
+                    } else {
+                      field.onChange(inputValue);
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // On blur, convert valid numeric strings to numbers
+                    if (typeName !== "string" && e.target.value !== "") {
+                      const numValue = Number(e.target.value);
+                      if (!isNaN(numValue)) {
+                        field.onChange(numValue);
+                      }
+                    }
                   }}
                   variant="outlined"
                   size="small"
@@ -169,10 +185,13 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
                       ? typeof field.value === "string"
                         ? field.value
                         : ""
-                      : typeof field.value === "number"
-                      ? field.value
+                      : field.value !== null && field.value !== undefined
+                      ? String(field.value)
                       : ""
                   }
+                  inputProps={{
+                    step: typeName === "float" || typeName === "double" ? "any" : undefined
+                  }}
                 />
               )}
             </div>
