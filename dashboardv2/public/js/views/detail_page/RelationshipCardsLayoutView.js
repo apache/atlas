@@ -46,17 +46,8 @@ define([
             this.showDeletedByName = {};
             this.pageLimitByName = {};
             this.isInitialLoading = false;
-            
-            console.log("[RelationshipCardsLayoutView] Initialized with:", {
-                guid: this.guid,
-                entityTypeName: this.entity && this.entity.typeName,
-                hasAttributeDefs: !!this.attributeDefs,
-                hasEntityDefCollection: !!this.entityDefCollection,
-                showEmptyValues: this.showEmptyValues
-            });
         },
         onRender: function() {
-            console.log("[RelationshipCardsLayoutView] onRender called, fetching initial cards");
             this.fetchInitialCards();
         },
         getRelationNames: function() {
@@ -70,15 +61,10 @@ define([
                 }
             }
             
-            console.log("[RelationshipCardsLayoutView] Getting relation names, attributeDefs type:", typeof this.attributeDefs, "isArray:", _.isArray(this.attributeDefs), "relationshipAttributeDefs:", this.attributeDefs && this.attributeDefs.relationshipAttributeDefs ? this.attributeDefs.relationshipAttributeDefs.length : 0, "relationDefs count:", relationDefs.length);
-            
             if (_.isEmpty(relationDefs) && this.entityDefCollection && this.entity && this.entity.typeName) {
-                console.log("[RelationshipCardsLayoutView] Extracting relationDefs from entityDefCollection for type:", this.entity.typeName);
-                
                 var entityDef = this.entityDefCollection.fullCollection.findWhere({ name: this.entity.typeName });
                 
                 if (entityDef) {
-                    console.log("[RelationshipCardsLayoutView] Found entityDef, extracting nested attributes");
                     this.attributeDefs = Utils.getNestedSuperTypeObj({
                         data: entityDef.toJSON(),
                         collection: this.entityDefCollection,
@@ -86,21 +72,14 @@ define([
                         seperateRelatioshipAttr: true
                     });
                     relationDefs = (this.attributeDefs && this.attributeDefs.relationshipAttributeDefs) || [];
-                    console.log("[RelationshipCardsLayoutView] Extracted relationDefs count:", relationDefs.length);
-                    console.log("[RelationshipCardsLayoutView] Full attributeDefs:", this.attributeDefs);
                 } else {
                     console.warn("[RelationshipCardsLayoutView] EntityDef not found for type:", this.entity.typeName);
-                    console.log("[RelationshipCardsLayoutView] Available entity types:", 
-                        this.entityDefCollection.fullCollection.map(function(m) { return m.get('name'); })
-                    );
                 }
             }
             
             // If still empty, try to extract from entity.relationshipAttributes
             if (_.isEmpty(relationDefs) && this.entity && this.entity.relationshipAttributes) {
-                console.log("[RelationshipCardsLayoutView] Extracting relation names from entity.relationshipAttributes");
                 var relationNames = _.uniq(_.keys(this.entity.relationshipAttributes));
-                console.log("[RelationshipCardsLayoutView] Relation names from entity:", relationNames);
                 return relationNames;
             }
             
@@ -109,7 +88,6 @@ define([
                 return def.name || def.attributeName || (def.attribute && (def.attribute.name || def.attribute.attributeName));
             })));
             
-            console.log("[RelationshipCardsLayoutView] Relation names extracted:", relationNames);
             return relationNames;
         },
         getPageLimit: function(relationName, totalCount) {
@@ -146,7 +124,7 @@ define([
                 includeSubTypes: true,
                 includeClassificationAttributes: true,
                 relation: relationName,
-                getApproximateCount: true
+                getApproximateCount: offset === 0
             };
         },
         fetchRelationshipData: function(relationName, offset, totalCount, overrides) {
@@ -167,14 +145,6 @@ define([
             params = this.getRelationshipParams(relationName, offset, totalCount, overrides);
             
             var apiUrl = UrlLinks.relationshipSearchV2ApiUrl();
-            console.log("[RelationshipCardsLayoutView] Fetching relationship data:", {
-                relationName: relationName,
-                offset: offset,
-                limit: params.limit,
-                guid: this.guid,
-                apiUrl: apiUrl,
-                fullUrl: apiUrl + "?" + $.param(params)
-            });
 
             return $.ajax({
                 url: apiUrl,
@@ -183,7 +153,6 @@ define([
                 dataType: "json",
                 type: "GET",
                 success: function(response) {
-                    console.log("[RelationshipCardsLayoutView] API SUCCESS for", relationName, "- Full response:", response);
                 },
                 error: function(xhr, status, error) {
                     console.error("[RelationshipCardsLayoutView] API ERROR for", relationName, ":", {
@@ -197,7 +166,6 @@ define([
         },
         fetchInitialCards: function() {
             var that = this;
-            console.log("[RelationshipCardsLayoutView] fetchInitialCards called, guid:", this.guid);
             
             if (!this.guid) {
                 console.warn("[RelationshipCardsLayoutView] No GUID provided, cannot fetch cards");
@@ -205,22 +173,17 @@ define([
             }
             
             var relationNames = this.getRelationNames();
-            console.log("[RelationshipCardsLayoutView] Relation names to fetch:", relationNames);
-            
+
             if (_.isEmpty(relationNames)) {
-                console.log("[RelationshipCardsLayoutView] No relation names found, rendering empty state");
                 this.renderCards();
                 return;
             }
 
-            this.isInitialLoading = true;
             if (_.isFunction(this.onDataLoading)) {
                 this.onDataLoading(true);
             }
             this.renderCards();
-            
-            console.log("[RelationshipCardsLayoutView] Starting parallel fetch for", relationNames.length, "relationships");
-            
+
             var processResponse = function(name, response) {
                 if (!response) {
                     that.cardData[name] = [];
@@ -257,50 +220,44 @@ define([
                 }
             };
 
-            var promises = _.map(relationNames, function(name) {
-                return that.fetchRelationshipData(name, 0, undefined, { showDeleted: true })
+            var completedCount = 0;
+            var totalCount = relationNames.length;
+
+            _.each(relationNames, function(name) {
+                that.fetchRelationshipData(name, 0, undefined, { showDeleted: true })
                     .then(
                         function(response) {
-                            console.log("[RelationshipCardsLayoutView] API response for", name, ":", {
-                                entitiesCount: response && response.entities ? (_.isArray(response.entities) ? response.entities.length : 1) : 0,
-                                approximateCount: response && response.approximateCount,
-                                totalCount: response && response.totalCount
-                            });
                             processResponse(name, response);
+                            that.renderCards();
                             return response;
                         },
                         function(error) {
                             console.error("[RelationshipCardsLayoutView] API error for", name, ":", error);
                             processResponse(name, null);
+                            that.renderCards();
                             return null;
                         }
-                    );
-            });
-
-            $.when.apply($, promises).always(function() {
-                console.log("[RelationshipCardsLayoutView] All API calls completed, cardData:", {
-                    relationshipCount: _.keys(that.cardData).length,
-                    relationships: _.keys(that.cardData),
-                    totalEntities: _.reduce(that.cardData, function(sum, entities) { return sum + entities.length; }, 0)
-                });
-                
-                that.isInitialLoading = false;
-                that.renderCards();
-                if (_.isFunction(that.onDataLoaded)) {
-                    var loadedCounts = {};
-                    _.each(that.cardData, function(values, key) {
-                        loadedCounts[key] = values ? values.length : 0;
+                    )
+                    .always(function() {
+                        completedCount += 1;
+                        if (completedCount >= totalCount) {
+                            if (_.isFunction(that.onDataLoaded)) {
+                                var loadedCounts = {};
+                                _.each(that.cardData, function(values, key) {
+                                    loadedCounts[key] = values ? values.length : 0;
+                                });
+                                that.onDataLoaded({
+                                    data: _.clone(that.cardData),
+                                    counts: _.clone(that.cardCounts),
+                                    loadedCounts: loadedCounts,
+                                    referredEntities: _.clone(that.referredEntities)
+                                });
+                            }
+                            if (_.isFunction(that.onDataLoading)) {
+                                that.onDataLoading(false);
+                            }
+                        }
                     });
-                    that.onDataLoaded({
-                        data: _.clone(that.cardData),
-                        counts: _.clone(that.cardCounts),
-                        loadedCounts: loadedCounts,
-                        referredEntities: _.clone(that.referredEntities)
-                    });
-                }
-                if (_.isFunction(that.onDataLoading)) {
-                    that.onDataLoading(false);
-                }
             });
         },
         getTotalCountForName: function(name, fallbackCount) {
@@ -343,11 +300,6 @@ define([
                 }
                 var newItems = _.isArray(entities) ? entities : (entities ? [entities] : []);
                 that.cardData[relationName] = existing.concat(newItems);
-                if (!_.isUndefined(response.approximateCount)) {
-                    that.cardCounts[relationName] = response.approximateCount;
-                } else if (!_.isUndefined(response.totalCount)) {
-                    that.cardCounts[relationName] = response.totalCount;
-                }
                 var updatedCount = that.getTotalCountForName(relationName, that.cardData[relationName].length);
                 if (newItems.length === 0 || updatedCount <= that.cardData[relationName].length) {
                     that.exhaustedByName[relationName] = true;
@@ -414,6 +366,8 @@ define([
             if (_.isEmpty(list) && !this.showEmptyValues && !this.resettingByName[name]) {
                 return "";
             }
+            var relationNames = this.getRelationNames();
+            var showTypeNameInDisplay = relationNames.length > 1;
             var count = this.getTotalCountForName(name, list.length);
             var searchQuery = this.searchByName[name] || "";
             var normalizedQuery = searchQuery.trim().toLowerCase();
@@ -432,13 +386,17 @@ define([
                 var ref = item && item.guid ? that.referredEntities && that.referredEntities[item.guid] : null;
                 var displayText = (ref && (ref.displayText || (ref.attributes && ref.attributes.name))) ||
                     item.displayText || (item.attributes && item.attributes.name) || item.qualifiedName || item.guid || "N/A";
+                var typeName = (ref && ref.typeName) || item.typeName || "";
+                var displayLabel = showTypeNameInDisplay && typeName
+                    ? displayText + " (" + typeName + ")"
+                    : displayText;
                 var href = item && item.guid ? "#/detailPage/" + item.guid : "";
                 var qualifiedName = item && item.qualifiedName ? item.qualifiedName : "";
                 var nameValue = item && item.attributes && item.attributes.name ? item.attributes.name : "";
                 var searchText = _.escape((displayText + " " + qualifiedName + " " + nameValue).toLowerCase());
                 return "<li class='relationship-card-item' data-search='" + searchText + "'>" +
-                    (href ? "<a class='relationship-card-link' href='" + href + "'>" + _.escape(displayText) + "</a>" :
-                        "<span class='relationship-card-link'>" + _.escape(displayText) + "</span>") +
+                    (href ? "<a class='relationship-card-link' href='" + href + "'>" + _.escape(displayLabel) + "</a>" :
+                        "<span class='relationship-card-link'>" + _.escape(displayLabel) + "</span>") +
                     "</li>";
             }).join("");
 
@@ -512,10 +470,10 @@ define([
          * Computes column layout based on record count (matches React UI):
          * - >5 records: 1 card per column
          * - 1-5 records: 2 cards per column
-         * - 0 records: 2 cards per column (when showEmptyValues is true)
+         * - 0 records: 2 cards per column (when showEmptyValues is true or during loading)
+         * @param {string[]} names - list of relation names to use (relationNames when loading, keys(cardData) when loaded)
          */
-        computeColumns: function() {
-            var names = _.keys(this.cardData);
+        computeColumnsFromNames: function(names) {
             if (_.isEmpty(names)) {
                 return [];
             }
@@ -554,7 +512,7 @@ define([
             for (var i = 0; i < smallCards.length; i += 2) {
                 columns.push(smallCards.slice(i, i + 2));
             }
-            if (this.showEmptyValues) {
+            if (this.showEmptyValues || !_.every(names, function(n) { return _.has(that.cardData, n); })) {
                 for (var j = 0; j < emptyCards.length; j += 2) {
                     columns.push(emptyCards.slice(j, j + 2));
                 }
@@ -589,60 +547,53 @@ define([
         },
         renderCards: function() {
             var that = this;
-            console.log("[RelationshipCardsLayoutView] renderCards called, isInitialLoading:", this.isInitialLoading);
-            
-            if (this.isInitialLoading) {
-                var relationNames = this.getRelationNames();
-                if (!_.isEmpty(relationNames)) {
-                    var skeletonHtml = "<div class='relationship-cards-grid relationship-cards-grid--custom'>";
-                    for (var p = 0; p < relationNames.length; p += 2) {
-                        skeletonHtml += "<div class='relationship-cards-column'>";
-                        skeletonHtml += that.buildSkeletonCardHtml();
-                        if (p + 1 < relationNames.length) {
-                            skeletonHtml += that.buildSkeletonCardHtml();
-                        }
-                        skeletonHtml += "</div>";
-                    }
-                    skeletonHtml += "</div>";
-                    this.$el.html(skeletonHtml);
-                } else {
-                    this.$el.html("<div class='relationship-cards-loader'><i class='fa fa-spinner fa-spin'></i></div>");
-                }
+            var relationNames = this.getRelationNames();
+
+            if (_.isEmpty(relationNames)) {
+                this.$el.html("<div class='relationship-cards-loader'><i class='fa fa-spinner fa-spin'></i></div>");
                 return;
             }
 
-            var columns = this.computeColumns();
+            var allLoaded = _.every(relationNames, function(name) {
+                return _.has(that.cardData, name);
+            });
+            var namesForColumns = allLoaded ? _.keys(this.cardData) : relationNames;
+
+            var columns = this.computeColumnsFromNames(namesForColumns);
             var html = "<div class='relationship-cards-grid relationship-cards-grid--custom'>";
             var cardCount = 0;
             _.each(columns, function(columnNames) {
                 html += "<div class='relationship-cards-column'>";
                 _.each(columnNames, function(name) {
-                    var list = that.cardData[name] || [];
-                    var cardHtml = that.buildCardHtml(name, list, that.cardCounts[name]);
-                    if (cardHtml) {
-                        html += cardHtml;
-                        cardCount++;
+                    var hasData = _.has(that.cardData, name);
+                    if (hasData) {
+                        var list = that.cardData[name] || [];
+                        var cardHtml = that.buildCardHtml(name, list, that.cardCounts[name]);
+                        if (cardHtml) {
+                            html += cardHtml;
+                            cardCount++;
+                        }
+                    } else {
+                        html += that.buildSkeletonCardHtml();
                     }
                 });
                 html += "</div>";
             });
             html += "</div>";
-            
-            console.log("[RelationshipCardsLayoutView] Built", cardCount, "cards");
-            
-            if (cardCount === 0) {
-                console.log("[RelationshipCardsLayoutView] No cards to display, showing empty state");
+
+            var allLoadedAndEmpty = _.every(relationNames, function(n) {
+                return _.has(that.cardData, n) && _.isEmpty(that.cardData[n]);
+            });
+            if (cardCount === 0 && allLoadedAndEmpty && !this.showEmptyValues) {
                 html = "<div class='relationship-cards-empty'>No relationship data available</div>";
             }
             
-            console.log("[RelationshipCardsLayoutView] Setting HTML to container");
             if (this.$el && this.$el.length) {
                 this.$el.html(html);
                 this.bindCardEvents();
             } else {
                 console.warn("[RelationshipCardsLayoutView] $el not available, cannot render cards");
             }
-            console.log("[RelationshipCardsLayoutView] Cards rendered successfully");
         }
     });
 
@@ -732,23 +683,18 @@ define([
                 var container = $(e.currentTarget);
                 var name = container.data("name");
                 
-                console.log("[RelationshipCardsLayoutView] Scroll event triggered for:", name);
-                
                 if (!name) {
                     console.warn("[RelationshipCardsLayoutView] No name found on scroll container");
                     return;
                 }
                 
                 if (that.loadingByName[name]) {
-                    console.log("[RelationshipCardsLayoutView] Already loading for:", name);
                     return;
                 }
                 if (that.resettingByName[name]) {
-                    console.log("[RelationshipCardsLayoutView] Resetting, skip load more:", name);
                     return;
                 }
                 if (that.exhaustedByName[name]) {
-                    console.log("[RelationshipCardsLayoutView] Exhausted, no more data for:", name);
                     return;
                 }
                 
@@ -756,18 +702,7 @@ define([
                 var count = that.getTotalCountForName(name, list.length);
                 var canLoadMore = count > list.length;
                 
-                console.log("[RelationshipCardsLayoutView] Scroll state:", {
-                    name: name,
-                    currentCount: list.length,
-                    totalCount: count,
-                    canLoadMore: canLoadMore,
-                    scrollTop: container[0].scrollTop,
-                    scrollHeight: container[0].scrollHeight,
-                    clientHeight: container[0].clientHeight
-                });
-                
                 if (!canLoadMore) {
-                    console.log("[RelationshipCardsLayoutView] Cannot load more, all data loaded");
                     return;
                 }
                 
@@ -776,32 +711,21 @@ define([
                 var isNearBottom = distanceFromBottom <= 10;
                 var isScrollingDown = container[0].scrollTop > (that.lastScrollTopByName[name] || 0);
                 
-                console.log("[RelationshipCardsLayoutView] Scroll position check:", {
-                    distanceFromBottom: distanceFromBottom,
-                    isNearBottom: isNearBottom,
-                    isScrollingDown: isScrollingDown,
-                    lastScrollTop: that.lastScrollTopByName[name]
-                });
-                
                 that.lastScrollTopByName[name] = container[0].scrollTop;
                 
                 if (!isNearBottom || !isScrollingDown) {
-                    console.log("[RelationshipCardsLayoutView] Not near bottom or not scrolling down");
                     return;
                 }
                 
                 var timeSinceLastTrigger = now - (that.lastTriggerAtByName[name] || 0);
                 if (timeSinceLastTrigger < 400) {
-                    console.log("[RelationshipCardsLayoutView] Too soon since last trigger:", timeSinceLastTrigger, "ms");
                     return;
                 }
                 
                 if (that.lastRequestSizeByName[name] === list.length) {
-                    console.log("[RelationshipCardsLayoutView] Already requested for this size:", list.length);
                     return;
                 }
                 
-                console.log("[RelationshipCardsLayoutView] Triggering load more for:", name);
                 that.lastRequestSizeByName[name] = list.length;
                 that.lastTriggerAtByName[name] = now;
                 that.handleLoadMore(name, container);

@@ -25,6 +25,7 @@ type RelationshipCardProps = {
 	data: any[]
 	referredEntities: any
 	showEmptyValues: boolean
+	showTypeNameInDisplay?: boolean
 	onLoadMore?: (attributeName: string) => void
 	totalCount?: number
 	isLoading?: boolean
@@ -43,6 +44,7 @@ function RelationshipCard({
 	data,
 	referredEntities,
 	showEmptyValues: _showEmptyValues,
+	showTypeNameInDisplay = false,
 	onLoadMore,
 	totalCount,
 	isLoading,
@@ -74,7 +76,7 @@ function RelationshipCard({
 	const getDisplayText = useCallback(
 		(item: any) => {
 			const ref = item?.guid ? referredEntities?.[item.guid] : null
-			return (
+			const displayText =
 				ref?.displayText ||
 				ref?.attributes?.name ||
 				item?.displayText ||
@@ -82,9 +84,13 @@ function RelationshipCard({
 				item?.qualifiedName ||
 				item?.guid ||
 				'N/A'
-			)
+			const typeName = ref?.typeName || item?.typeName || ''
+			if (showTypeNameInDisplay && typeName) {
+				return `${displayText} (${typeName})`
+			}
+			return displayText
 		},
-		[referredEntities]
+		[referredEntities, showTypeNameInDisplay]
 	)
 
 	const handleSearchChange = useCallback(

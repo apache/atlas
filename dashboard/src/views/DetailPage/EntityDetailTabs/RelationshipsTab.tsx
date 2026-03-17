@@ -69,18 +69,32 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
   const [cardResettingByName, setCardResettingByName] = useState<
     Record<string, boolean>
   >({});
-
-  useEffect(() => {
-    if (entityTypeName) {
-      console.log("Relationship tab entity type:", entityTypeName);
-    }
-  }, [entityTypeName]);
+  const [showInitialSkeletons, setShowInitialSkeletons] = useState<boolean>(true);
+  const initialSkeletonTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   useEffect(() => {
     setInitialLoadDone(false);
     setCardData({});
     setCardTotalCounts({});
+    setShowInitialSkeletons(true);
     fetchStartedRef.current = false;
+
+    if (initialSkeletonTimerRef.current) {
+      clearTimeout(initialSkeletonTimerRef.current);
+      initialSkeletonTimerRef.current = null;
+    }
+    initialSkeletonTimerRef.current = setTimeout(() => {
+      setShowInitialSkeletons(false);
+      initialSkeletonTimerRef.current = null;
+    }, 5000);
+
+    return () => {
+      if (initialSkeletonTimerRef.current) {
+        clearTimeout(initialSkeletonTimerRef.current);
+      }
+    };
   }, [guid]);
 
   const relationNames = useMemo((): string[] => {
@@ -159,7 +173,7 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
       includeSubTypes: true,
       includeClassificationAttributes: true,
       relation: relationName,
-      getApproximateCount: true
+      getApproximateCount: offset === 0
     };
   };
 
@@ -188,65 +202,61 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
   };
 
   const fetchInitialRelationshipData = async () => {
-    if (!guid || initialLoadDone || cardLoading || isEmpty(relationNames)) {
+    if (!guid || initialLoadDone || isEmpty(relationNames)) {
       return;
     }
 
     setCardLoading(true);
-    try {
-      const newCardData: Record<string, any[]> = {};
-      const newTotalCounts: Record<string, number> = {};
-      const nextSortByNameByAttr: Record<string, boolean> = {};
-      const nextShowDeletedByAttr: Record<string, boolean> = {};
+    let completedCount = 0;
+    const totalCount = relationNames.length;
 
-      const promises = relationNames.map((relationName) =>
-        fetchRelationshipData(relationName, 0, undefined, {
-          showDeleted: true
+    relationNames.forEach((relationName) => {
+      fetchRelationshipData(relationName, 0, undefined, {
+        showDeleted: true
+      })
+        .then((response) => {
+          const entities = response.entities;
+          const entityList = isArray(entities)
+            ? entities
+            : !isEmpty(entities)
+            ? [entities]
+            : [];
+          setCardData((prev) => ({ ...prev, [relationName]: entityList }));
+          if (response.approximateCount !== undefined) {
+            setCardTotalCounts((prev) => ({
+              ...prev,
+              [relationName]: response.approximateCount
+            }));
+          }
+          setSortByNameByAttr((prev) => ({
+            ...prev,
+            [relationName]: prev[relationName] ?? false
+          }));
+          setShowDeletedByAttr((prev) => ({
+            ...prev,
+            [relationName]: prev[relationName] ?? true
+          }));
         })
-          .then((response) => ({ relationName, response }))
-          .catch((err) => {
-            console.error(`Error fetching relationship ${relationName}:`, err);
-            return { relationName, response: null };
-          })
-      );
-
-      const results = await Promise.all(promises);
-
-      for (const { relationName, response } of results) {
-        if (!response) {
-          newCardData[relationName] = [];
-          nextSortByNameByAttr[relationName] = sortByNameByAttr[relationName] ?? false;
-          nextShowDeletedByAttr[relationName] = showDeletedByAttr[relationName] ?? true;
-          continue;
-        }
-        const entities = response.entities;
-        if (isArray(entities)) {
-          newCardData[relationName] = entities;
-        } else if (!isEmpty(entities)) {
-          newCardData[relationName] = [entities];
-        } else {
-          newCardData[relationName] = [];
-        }
-        if (response.approximateCount !== undefined) {
-          newTotalCounts[relationName] = response.approximateCount;
-        }
-        nextSortByNameByAttr[relationName] =
-          sortByNameByAttr[relationName] ?? false;
-        nextShowDeletedByAttr[relationName] =
-          showDeletedByAttr[relationName] ?? true;
-      }
-
-      setCardData(newCardData);
-      setCardTotalCounts(newTotalCounts);
-      setSortByNameByAttr((prev) => ({ ...nextSortByNameByAttr, ...prev }));
-      setShowDeletedByAttr((prev) => ({ ...nextShowDeletedByAttr, ...prev }));
-      setInitialLoadDone(true);
-    } catch (error: any) {
-      console.error("Error fetching relationship attributes:", error);
-      serverError(error, toastId);
-    } finally {
-      setCardLoading(false);
-    }
+        .catch((err) => {
+          console.error(`Error fetching relationship ${relationName}:`, err);
+          setCardData((prev) => ({ ...prev, [relationName]: [] }));
+          setSortByNameByAttr((prev) => ({
+            ...prev,
+            [relationName]: prev[relationName] ?? false
+          }));
+          setShowDeletedByAttr((prev) => ({
+            ...prev,
+            [relationName]: prev[relationName] ?? true
+          }));
+        })
+        .finally(() => {
+          completedCount += 1;
+          if (completedCount >= totalCount) {
+            setInitialLoadDone(true);
+            setCardLoading(false);
+          }
+        });
+    });
   };
 
   // Load initial data when tab is switched to card/graph view
@@ -268,6 +278,16 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
     }
   }, [alignment, guid, relationNames, initialLoadDone, cardLoading]);
 
+  useEffect(() => {
+    if (!isEmpty(relationNames)) {
+      setShowInitialSkeletons(false);
+      if (initialSkeletonTimerRef.current) {
+        clearTimeout(initialSkeletonTimerRef.current);
+        initialSkeletonTimerRef.current = null;
+      }
+    }
+  }, [relationNames]);
+
   // Handle load more for a specific card
   const handleCardLoadMore = async (attributeName: string) => {
     if (!guid || cardLoadingByName[attributeName]) {
@@ -287,12 +307,6 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
         ...prev,
         [attributeName]: updated
       }));
-      if (response.approximateCount !== undefined) {
-        setCardTotalCounts((prev) => ({
-          ...prev,
-          [attributeName]: response.approximateCount
-        }));
-      }
     } catch (error: any) {
       console.error("Error loading more relationship data:", error);
       serverError(error, toastId);
@@ -414,9 +428,13 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
    * - >5 records: 1 card per column
    * - 1-5 records: 2 cards per column
    * - 0 records: 2 cards per column (when showEmptyValues is true)
+   * During loading, uses relationNames in pairs for stable layout.
    */
   const relationshipColumns = useMemo((): string[][] => {
-    const names = Object.keys(cardData);
+    const loadedNames = Object.keys(cardData);
+    const allLoaded = relationNames.length > 0 && relationNames.every((r) => r in cardData);
+    const names = allLoaded ? loadedNames : relationNames;
+
     if (isEmpty(names)) {
       return [];
     }
@@ -455,7 +473,7 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
       columns.push(chunk);
     }
 
-    if (checked) {
+    if (checked || !allLoaded) {
       for (let i = 0; i < emptyCards.length; i += 2) {
         const chunk = emptyCards.slice(i, i + 2);
         columns.push(chunk);
@@ -463,7 +481,7 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
     }
 
     return columns;
-  }, [cardData, cardTotalCounts, checked]);
+  }, [cardData, cardTotalCounts, checked, relationNames]);
 
   return (
     <Grid container marginTop={0} className="properties-container">
@@ -525,11 +543,19 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
 
           {alignment == "table" && (
             <>
-              {cardLoading && Object.keys(cardData).length === 0 ? (
-                <div className="relationship-cards-grid">
-                  {relationNames.map((name) => (
-                    <RelationshipCardSkeleton key={name} />
-                  ))}
+              {showInitialSkeletons ? (
+                <div className="relationship-cards-grid relationship-cards-grid--custom">
+                  <div className="relationship-cards-column">
+                    <RelationshipCardSkeleton />
+                    <RelationshipCardSkeleton />
+                  </div>
+                </div>
+              ) : isEmpty(relationNames) ||
+                (relationNames.every((r) => r in cardData) &&
+                  Object.values(cardData).every((arr) => isEmpty(arr)) &&
+                  !checked) ? (
+                <div className="relationship-cards-empty">
+                  No relationship data available
                 </div>
               ) : (
                 <div className="relationship-cards-grid relationship-cards-grid--custom">
@@ -540,40 +566,42 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
                     >
                       {columnNames.map((attributeName) => {
                         const data = cardData[attributeName];
-                        if (isEmpty(data) && !checked) {
-                          return null;
+                        const hasData = attributeName in cardData;
+                        if (hasData) {
+                          if (isEmpty(data) && !checked) {
+                            return null;
+                          }
+                          return (
+                            <RelationshipCard
+                              key={attributeName}
+                              attributeName={attributeName}
+                              data={data ?? []}
+                              referredEntities={referredEntities}
+                              showEmptyValues={checked}
+                              showTypeNameInDisplay={relationNames.length > 1}
+                              onLoadMore={handleCardLoadMore}
+                              totalCount={cardTotalCounts[attributeName]}
+                              isLoading={cardLoadingByName[attributeName]}
+                              isResetting={cardResettingByName[attributeName]}
+                              isSorted={!!sortByNameByAttr[attributeName]}
+                              showDeleted={!!showDeletedByAttr[attributeName]}
+                              pageLimit={getPageLimit(
+                                attributeName,
+                                cardTotalCounts[attributeName]
+                              )}
+                              onToggleSort={handleToggleSort}
+                              onToggleShowDeleted={handleToggleShowDeleted}
+                              onPageLimitChange={handlePageLimitChange}
+                              onPageLimitSubmit={handlePageLimitSubmit}
+                            />
+                          );
                         }
                         return (
-                          <RelationshipCard
-                            key={attributeName}
-                            attributeName={attributeName}
-                            data={data}
-                            referredEntities={referredEntities}
-                            showEmptyValues={checked}
-                            onLoadMore={handleCardLoadMore}
-                            totalCount={cardTotalCounts[attributeName]}
-                            isLoading={cardLoadingByName[attributeName]}
-                            isResetting={cardResettingByName[attributeName]}
-                            isSorted={!!sortByNameByAttr[attributeName]}
-                            showDeleted={!!showDeletedByAttr[attributeName]}
-                            pageLimit={getPageLimit(
-                              attributeName,
-                              cardTotalCounts[attributeName]
-                            )}
-                            onToggleSort={handleToggleSort}
-                            onToggleShowDeleted={handleToggleShowDeleted}
-                            onPageLimitChange={handlePageLimitChange}
-                            onPageLimitSubmit={handlePageLimitSubmit}
-                          />
+                          <RelationshipCardSkeleton key={attributeName} />
                         );
                       })}
                     </div>
                   ))}
-                  {Object.keys(cardData).length === 0 && !cardLoading && (
-                    <div className="relationship-cards-empty">
-                      No relationship data available
-                    </div>
-                  )}
                 </div>
               )}
             </>

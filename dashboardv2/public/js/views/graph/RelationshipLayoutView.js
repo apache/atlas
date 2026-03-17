@@ -91,22 +91,11 @@ define([
                 this.relationshipLoadedCounts = {};
                 this.cardsViewLoadInProgress = false;
                 
-                console.log("[RelationshipLayoutView] Initialized with:", {
-                    guid: this.guid,
-                    entityTypeName: this.entity && this.entity.typeName,
-                    hasAttributeDefs: !!this.attributeDefs,
-                    hasEntityDefCollection: !!this.entityDefCollection
-                });
-                
                 this.handleRelationshipDataUpdate = _.bind(function(payload) {
                     var relationshipAttributes = payload && payload.data ? payload.data : payload;
                     var relationshipCounts = payload && payload.counts ? payload.counts : this.relationshipCardCounts;
                     var loadedCounts = payload && payload.loadedCounts ? payload.loadedCounts : this.relationshipLoadedCounts;
                     var referredEntities = payload && payload.referredEntities ? payload.referredEntities : null;
-                    console.log("[RelationshipLayoutView] Relationship data updated:", {
-                        relationshipCount: relationshipAttributes ? _.keys(relationshipAttributes).length : 0,
-                        relationshipNames: relationshipAttributes ? _.keys(relationshipAttributes) : []
-                    });
                     
                     if (!relationshipAttributes) {
                         return;
@@ -128,7 +117,6 @@ define([
                     }
                 }, this);
                 this.handleRelationshipLoading = _.bind(function(isLoading) {
-                    console.log("[RelationshipLayoutView] Loading state:", isLoading);
                     if (isLoading) {
                         this.$(".fontLoader").show();
                     } else {
@@ -165,18 +153,13 @@ define([
                 return { nodes: nodes, links: links };
             },
             onRender: function() {
-                console.log("[RelationshipLayoutView] onRender called");
                 this.isRendered = true;
 
                 // Initialize: show card view by default (checked = Card)
                 this.ui.relationshipViewToggle.prop('checked', true);
                 this.relationshipViewToggle(true);
-                
-                console.log("[RelationshipLayoutView] Initial view set to Card");
             },
             onShow: function(argument) {
-                console.log("[RelationshipLayoutView] onShow called");
-                
                 // Always create graph on show if graph view is active
                 var isGraphView = !this.ui.relationshipViewToggle.is(':checked');
                 if (isGraphView) {
@@ -188,29 +171,19 @@ define([
                 }
                 this.createTable();
                 
-                // Initialize card view (but don't show it yet if in graph view)
-                console.log("[RelationshipLayoutView] Initializing card view in onShow");
                 this.ensureCardsView();
             },
             ensureCardsView: function(forceRefresh) {
                 var that = this;
-                console.log("[RelationshipLayoutView] ensureCardsView called, instance exists:", !!this.relationshipCardsViewInstance, "forceRefresh:", !!forceRefresh);
-                console.log("[RelationshipLayoutView] Region available:", !!this.relationshipCardsView);
-                console.log("[RelationshipLayoutView] Entity:", this.entity);
-                console.log("[RelationshipLayoutView] GUID:", this.guid);
-                console.log("[RelationshipLayoutView] AttributeDefs:", this.attributeDefs);
-                console.log("[RelationshipLayoutView] EntityDefCollection:", !!this.entityDefCollection);
                 
                 if (this.relationshipCardsViewInstance) {
                     if (forceRefresh) {
-                        console.log("[RelationshipLayoutView] Force refresh: triggering fetchInitialCards");
                         this.relationshipCardsViewInstance.cardData = {};
                         this.relationshipCardsViewInstance.cardCounts = {};
                         this.relationshipCardsViewInstance.fetchInitialCards();
                     } else {
                         var hasData = _.keys(this.relationshipCardsViewInstance.cardData || {}).length > 0;
                         if (!hasData) {
-                            console.log("[RelationshipLayoutView] Card view exists but no data, fetching");
                             this.relationshipCardsViewInstance.fetchInitialCards();
                         } else {
                             this.relationshipCardsViewInstance.renderCards();
@@ -219,13 +192,10 @@ define([
                     return;
                 }
                 if (this.cardsViewLoadInProgress) {
-                    console.log("[RelationshipLayoutView] Card view load already in progress, skipping");
                     return;
                 }
                 this.cardsViewLoadInProgress = true;
-                console.log("[RelationshipLayoutView] Creating new card view instance");
                 require(['views/detail_page/RelationshipCardsLayoutView'], function(RelationshipCardsLayoutView) {
-                    console.log("[RelationshipLayoutView] RelationshipCardsLayoutView module loaded");
                     try {
                         if (!that.relationshipCardsView) {
                             console.warn("[RelationshipLayoutView] Region not available");
@@ -243,7 +213,6 @@ define([
                             onDataLoading: that.handleRelationshipLoading
                         });
                         that.relationshipCardsView.show(that.relationshipCardsViewInstance);
-                        console.log("[RelationshipLayoutView] Card view shown in region");
                     } catch (err) {
                         console.error("[RelationshipLayoutView] Error showing cards view:", err);
                     } finally {
@@ -267,10 +236,8 @@ define([
             toggleInformationSlider: function(options) {
                 var panel = this.$(".relationship-node-details");
                 if (options && options.close) {
-                    console.log("[RelationshipLayoutView] Closing information slider");
                     panel.removeClass("slide-to-left").addClass("slide-from-left");
                 } else {
-                    console.log("[RelationshipLayoutView] Toggling information slider");
                     if (panel.hasClass("slide-to-left")) {
                         panel.removeClass("slide-to-left").addClass("slide-from-left");
                     } else {
@@ -279,7 +246,6 @@ define([
                 }
             },
             toggleBoxPanel: function() {
-                console.log("[RelationshipLayoutView] Closing box panel");
                 this.$(".relationship-node-details").removeClass("slide-to-left").addClass("slide-from-left");
             },
             searchNode: function(e) {
@@ -421,13 +387,6 @@ define([
                     height = Math.max(this.$("svg").height() || 600, 600),
                     nodes = d3.values(data.nodes),
                     links = data.links;
-
-                console.log("[RelationshipLayoutView] Creating graph with dimensions:", {
-                    width: width,
-                    height: height,
-                    nodeCount: nodes.length,
-                    linkCount: links.length
-                });
 
                 var activeEntityColor = "#00b98b",
                     deletedEntityColor = "#BB5838",
@@ -571,15 +530,9 @@ define([
                     .attr("stroke-width", "2px")
                     .style("cursor", "pointer")
                     .on("click", function(d) {
-                        console.log("[RelationshipLayoutView] Node clicked:", d.name);
                         if (d && d.value && d.value.guid == that.guid) {
                             return;
                         }
-                        console.log("[RelationshipLayoutView] Node payload:", {
-                            name: d.name,
-                            value: d.value,
-                            referredEntitiesCount: that.referredEntities ? _.keys(that.referredEntities).length : 0
-                        });
                         that.selectedNodeData = d.value;
                         that.selectedNodeType = d.name;
                         
@@ -734,14 +687,10 @@ define([
             },
             relationshipViewToggle: function(checked) {
                 var that = this;
-                
-                console.log("[RelationshipLayoutView] Toggle switched, checked:", checked, "(true=Table/Card, false=Graph)");
 
                 // In the original code: checked = Table, unchecked = Graph
                 // So we need to invert the logic
                 if (checked) {
-                    console.log("[RelationshipLayoutView] Switching to Card view");
-                    
                     // Show card view (checked = Table)
                     this.ui.relationshipSVG.addClass("invisible").hide();
                     this.ui.relationshipDetailTableContainer.show();
@@ -751,29 +700,16 @@ define([
                     this.ui.relationshipDetailValue.hide();
                     this.ui.relationshipCardsView.show();
                     
-                    var cardsEl = this.$(this.ui.relationshipCardsView);
-                    console.log("[RelationshipLayoutView] Card view container visibility:", {
-                        tableContainerVisible: this.$(this.ui.relationshipDetailTableContainer).is(':visible'),
-                        cardsViewVisible: cardsEl.is(':visible'),
-                        cardsViewDisplay: cardsEl.css('display'),
-                        cardsViewHTML: cardsEl.length ? cardsEl.html().substring(0, 100) : '(no element)'
-                    });
-                    
-                    console.log("[RelationshipLayoutView] Card view container shown, calling ensureCardsView");
-                    
                     // Render card view if not already rendered
                     this.ensureCardsView();
                     
                     // Force a re-render after a short delay to ensure DOM is ready
                     setTimeout(function() {
                         if (that.relationshipCardsViewInstance) {
-                            console.log("[RelationshipLayoutView] Force rendering cards after delay");
                             that.relationshipCardsViewInstance.renderCards();
                         }
                     }, 100);
                 } else {
-                    console.log("[RelationshipLayoutView] Switching to Graph view");
-                    
                     // Show graph view (unchecked = Graph)
                     this.ui.relationshipSVG.removeClass("invisible").show();
                     this.ui.relationshipDetailTableContainer.hide();
@@ -785,12 +721,10 @@ define([
                     
                     // Ensure graph is created if it hasn't been created yet
                     if (this.graphData && !_.isEmpty(this.graphData.links)) {
-                        console.log("[RelationshipLayoutView] Recreating graph with", this.graphData.links.length, "links");
                         // Clear existing graph and recreate
                         this.$("svg").empty();
                         this.createGraph(this.graphData);
                     } else if (this.graphData && _.isEmpty(this.graphData.links)) {
-                        console.log("[RelationshipLayoutView] No relationship data to display");
                         this.noRelationship();
                     }
                 }

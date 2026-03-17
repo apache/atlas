@@ -155,8 +155,8 @@
         padding: 8px 12px;
         border-top-left-radius: 10px;
         border-top-right-radius: 10px;
-        background-color: #f2f6f7;
-        color: #37bb9b;
+        background-color: $white;
+        color: $color_jungle_green_approx;
         border-bottom: 1px solid #e2e8f0;
 
         .relationship-card-title-wrap {
@@ -168,7 +168,7 @@
             font-size: 15px;
             font-weight: 600;
             text-transform: capitalize;
-            color: #1e7a6a;
+            color: $color_jungle_green_approx;
             font-family: inherit;
             letter-spacing: 0.01em;
             -webkit-font-smoothing: antialiased;
@@ -178,7 +178,7 @@
             margin-left: 6px;
             font-size: 13px;
             font-weight: 500;
-            color: #1e7a6a;
+            color: $color_jungle_green_approx;
         }
 
         .relationship-card-actions {
@@ -431,7 +431,7 @@
     padding: 8px 12px;
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
-    background-color: #f2f6f7;
+    background-color: $white;
     border-bottom: 1px solid #e2e8f0;
 }
 
