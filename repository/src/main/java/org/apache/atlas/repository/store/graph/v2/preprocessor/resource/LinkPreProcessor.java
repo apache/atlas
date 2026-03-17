@@ -25,9 +25,9 @@ import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 public class LinkPreProcessor extends AbstractResourcePreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(LinkPreProcessor.class);
 
-    private static final Pattern REGEX_ONSITE_URL = Pattern.compile("(?:[\\p{L}\\p{N}\\\\\\.\\#@\\$%\\+&;\\-_~,\\?=/!]+|\\#(\\w)+)");
+    private static final Pattern REGEX_ONSITE_URL = Pattern.compile("(?:[\\p{L}\\p{N}\\\\\\.\\#@\\$%\\+&;\\-_~,\\?=/!']+|\\#(\\w)+)");
     private static final Pattern REGEX_OFFSITE_URL = Pattern.compile("\\s*(?:(?:ht|f)tps?://|mailto:)[\\p{L}\\p{N}]"
-            + "[\\p{L}\\p{N}\\p{Zs}\\.\\#@\\$%\\+&;:\\-_~,\\?=/!\\(\\)]*+\\s*");
+            + "[\\p{L}\\p{N}\\p{Zs}\\.\\#@\\$%\\+&;:\\-_~,\\?=/!\\(\\)']*+\\s*");
     private static final Predicate<String> REGEX_ON_OFFSITE_URL = matchesEither(REGEX_ONSITE_URL, REGEX_OFFSITE_URL);
 
     public LinkPreProcessor(AtlasTypeRegistry typeRegistry,
