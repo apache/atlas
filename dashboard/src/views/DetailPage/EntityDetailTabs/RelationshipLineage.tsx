@@ -20,6 +20,7 @@
 import {
   Button,
   Chip,
+  CircularProgress,
   IconButton,
   InputBase,
   Paper,
@@ -34,7 +35,7 @@ import {
   isArray,
   isEmpty
 } from "@utils/Utils";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as d3 from "d3";
 import { Link as RouterLink, useLocation, useParams } from "react-router-dom";
 import { entityStateReadOnly, graphIcon } from "@utils/Enum";
@@ -74,8 +75,19 @@ const CustomLink = ({
   );
 };
 
-const RelationshipLineage = ({ entity }: { entity: Record<string, any> }) => {
+const RelationshipLineage = ({
+  entity,
+  relationshipAttributes,
+  isLoading
+}: {
+  entity: Record<string, any>;
+  relationshipAttributes?: Record<string, any[]>;
+  isLoading?: boolean;
+}) => {
   const entityData = cloneDeep(entity);
+  if (relationshipAttributes) {
+    entityData.relationshipAttributes = relationshipAttributes;
+  }
   const { guid } = useParams();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -117,7 +129,7 @@ const RelationshipLineage = ({ entity }: { entity: Record<string, any> }) => {
     return { nodes: nodes, links: links };
   };
 
-  let graphData = createData(entityData);
+  const graphData = useMemo(() => createData(entityData), [entityData]);
   const createGraph = (data) => {
     // Use getBoundingClientRect to get the actual width and height
     const svgElement = svgRef?.current;
@@ -409,10 +421,26 @@ const RelationshipLineage = ({ entity }: { entity: Record<string, any> }) => {
   };
 
   useEffect(() => {
-    if (svgRef?.current) {
+    if (!svgRef?.current) {
+      return;
+    }
+    d3.select(svgRef.current).selectAll("*").remove();
+    if (!isEmpty(graphData.links)) {
       createGraph(graphData);
     }
-  }, []);
+  }, [graphData]);
+
+  if (isLoading) {
+    return (
+      <Stack
+        alignItems="center"
+        justifyContent="center"
+        sx={{ minHeight: "320px" }}
+      >
+        <CircularProgress />
+      </Stack>
+    );
+  }
 
   if (graphData && isEmpty(graphData.links)) {
     return <Typography>No relationship data found</Typography>;
@@ -587,7 +615,7 @@ const RelationshipLineage = ({ entity }: { entity: Record<string, any> }) => {
         const valObj = { ...val, entityName: name };
 
         if (searchString) {
-          if (name.search(new RegExp(searchString, "i")) !== -1) {
+          if (name.toLowerCase().includes(searchString.toLowerCase())) {
             listString.push(getElement(valObj));
           } else {
             continue;
@@ -600,7 +628,7 @@ const RelationshipLineage = ({ entity }: { entity: Record<string, any> }) => {
       listString.push(getElement(data));
     }
     return (
-      <Stack sx={{ background: "white" }} minHeight={"150px"} maxWidth="400px">
+      <Stack sx={{ background: "white" }} minHeight={"150px"} maxWidth="520px">
         {/* {listString?.length > 1 && ( */}
         <Paper
           variant="outlined"
@@ -626,7 +654,14 @@ const RelationshipLineage = ({ entity }: { entity: Record<string, any> }) => {
         </Paper>
         {/* )} */}
 
-        <Stack gap={"0.875rem"}>{listString}</Stack>
+        <Stack
+          gap={"0.875rem"}
+          paddingLeft="0.5rem"
+          maxHeight="220px"
+          sx={{ overflowY: "auto" }}
+        >
+          {listString}
+        </Stack>
       </Stack>
     );
   };
@@ -735,7 +770,7 @@ const RelationshipLineage = ({ entity }: { entity: Record<string, any> }) => {
                 </Stack>
 
                 <Stack
-                  maxHeight={"350px"}
+                  maxHeight={"320px"}
                   gap={1}
                   padding="0.875rem"
                   textAlign="left"

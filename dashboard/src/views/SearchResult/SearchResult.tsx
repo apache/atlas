@@ -90,6 +90,8 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
   const toastId: any = useRef(null);
   const [updateTable, setUpdateTable] = useState(moment.now());
   const { entityData } = useSelector((state: EntityState) => state.entity);
+  const { businessMetaData } = useSelector((state: any) => state.businessMetaData);
+  const { businessMetadataDefs } = businessMetaData || {};
   const [pageCount, setPageCount] = useState<number>(0);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [isEmptyData, setIsEmptyData] = useState(false);
@@ -433,18 +435,26 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
     {
       accessorFn: (row: any) => row.typeName,
       accessorKey: "typeName",
-      cell: (info: any) => (
-        <LightTooltip title={`Search ${info.getValue()}`}>
-          <Link
-            className="text-blue text-decoration-none"
-            to={{
-              pathname: "/"
-            }}
-          >
-            {info.getValue()}
-          </Link>
-        </LightTooltip>
-      ),
+      cell: (info: any) => {
+        const typeName = info.getValue();
+        const searchParams = new URLSearchParams();
+        searchParams.set("query", typeName);
+        searchParams.set("searchType", "dsl");
+        
+        return (
+          <LightTooltip title={`Search ${typeName}`}>
+            <Link
+              className="text-blue text-decoration-none"
+              to={{
+                pathname: "/search/searchResult",
+                search: searchParams.toString()
+              }}
+            >
+              {typeName}
+            </Link>
+          </LightTooltip>
+        );
+      },
       header: "Type",
       show: true
     },
@@ -700,11 +710,120 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
       }
     );
 
+  // Function to get business metadata attribute columns
+  const getBusinessMetadataAttributeCols = () => {
+    let businessMetadataAttrCols: any = [];
+    let businessAttributes: any = {};
+
+    // Get business attributes based on search type
+    if (searchParams.get("type") === "_ALL_ENTITY_TYPES") {
+      // For _ALL_ENTITY_TYPES, get all business metadata definitions
+      if (businessMetadataDefs && businessMetadataDefs.length > 0) {
+        businessMetadataDefs.forEach((bmDef: any) => {
+          const attributes = bmDef.attributeDefs || [];
+          if (attributes.length > 0) {
+            // Sort attributes by name to match Classic UI behavior
+            const sortedAttributes = [...attributes].sort((a: any, b: any) => {
+              if (a.name < b.name) return -1;
+              if (a.name > b.name) return 1;
+              return 0;
+            });
+            businessAttributes[bmDef.name] = sortedAttributes;
+          }
+        });
+      }
+    } else {
+      // For specific type, get from entity definition
+      const rawBusinessAttributes = typeDefEntityData?.businessAttributeDefs || {};
+      // Sort attributes within each business metadata
+      Object.keys(rawBusinessAttributes).forEach((bmName: string) => {
+        const attributes = rawBusinessAttributes[bmName];
+        if (Array.isArray(attributes)) {
+          businessAttributes[bmName] = [...attributes].sort((a: any, b: any) => {
+            if (a.name < b.name) return -1;
+            if (a.name > b.name) return 1;
+            return 0;
+          });
+        } else {
+          businessAttributes[bmName] = attributes;
+        }
+      });
+    }
+
+    // Create columns for each business metadata attribute
+    if (businessAttributes && Object.keys(businessAttributes).length > 0) {
+      Object.keys(businessAttributes).forEach((businessMetadataName: string) => {
+        const attributes = businessAttributes[businessMetadataName];
+        if (attributes && Array.isArray(attributes)) {
+          attributes.forEach((attr: any) => {
+            const attributeKey = `${businessMetadataName}.${attr.name}`;
+            businessMetadataAttrCols.push({
+              id: attributeKey, // Set id to match accessorKey for URL params tracking
+              accessorFn: (row: any) => {
+                // Business metadata attributes are flattened in the API response
+                // Format: attributes["bm1.BM_attr1"] (matching Classic UI behavior)
+                // Try flattened format first
+                if (row.attributes?.[attributeKey] !== undefined) {
+                  return row.attributes[attributeKey];
+                }
+                // Fallback to nested format: attributes[bmName][attrName]
+                const bmData = row.attributes?.[businessMetadataName];
+                if (bmData && bmData[attr.name] !== undefined) {
+                  return bmData[attr.name];
+                }
+                return null;
+              },
+              accessorKey: attributeKey,
+              header: attributeKey, // Display as "bm1.BM_attr1" format
+              cell: (info: any) => {
+                const rowData = info.row.original;
+                // Try flattened format first: attributes["bm1.BM_attr1"]
+                let attrValue = rowData.attributes?.[attributeKey];
+                
+                // Fallback to nested format: attributes[bmName][attrName]
+                if (attrValue === undefined || attrValue === null) {
+                  const bmData = rowData.attributes?.[businessMetadataName];
+                  attrValue = bmData?.[attr.name];
+                }
+
+                if (attrValue === undefined || attrValue === null || attrValue === "") {
+                  return <span>NA</span>;
+                }
+
+                // Use getValues helper to format the value properly
+                // Pass attributeKey as the name so getValues can access attributes[attributeKey]
+                return getValues(
+                  info,
+                  typeDefEntityData,
+                  {
+                    ...attr,
+                    name: attributeKey,
+                    isBusinessAttributes: true
+                  }
+                );
+              },
+              show: false, // Default to unchecked/hidden
+              enableSorting:
+                attr.typeName?.search(
+                  /(string|date|boolean|int|number|byte|float|long|double|short)/i
+                ) == 0
+            });
+          });
+        }
+      });
+    }
+
+    return businessMetadataAttrCols;
+  };
+
+  let businessMetadataAttributeCols = getBusinessMetadataAttributeCols();
+
   let dynamicColumns: any = customSortBy(
     [
       ...(entitytAttributeDefsCol || []),
       ...(relationshipAttributeDefsCol || []),
-      ...(superTypeAttributeDefsCol || [])
+      ...(superTypeAttributeDefsCol || []),
+      ...(businessMetadataAttributeCols || [])
     ],
     ["header"]
   );
@@ -862,18 +981,20 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
     let hideColumns: any = {};
 
     for (let col of columns) {
+      // If column is explicitly in URL params, show it (true = visible in React Table)
       if (
         !isEmpty(columnsParams) &&
         columnsParams.split(",").includes(col.accessorKey)
       ) {
         hideColumns[col.accessorKey] = true;
-      } else if (col.show == false) {
+      } 
+      // If column has show: false (like business metadata), hide it by default (false = hidden in React Table)
+      else if (col.show === false) {
         hideColumns[col.accessorKey] = false;
-      } else if (
-        !isEmpty(columnsParams) &&
-        columnsParams.split(",").includes(col.accessorKey) == false
-      ) {
-        hideColumns[col.accessorKey] = false;
+      }
+      // For columns with show: true or default columns, show them
+      else {
+        hideColumns[col.accessorKey] = true;
       }
     }
 

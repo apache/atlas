@@ -465,31 +465,31 @@ const BusinessMetadataAttributeForm = ({
               watched?.[index]?.multiValueSelect) ||
               isEmpty(editbmAttribute)) && (
               <>
-                <Controller
-                  control={control}
-                  name={`attributeDefs.${index}.multiValueSelect` as const}
-                  key={`attributeDefs.${index}.multiValueSelect`}
-                  data-cy={`attributeDefs.${index}.multiValueSelect`}
-                  defaultValue={field?.multiValueSelect}
-                  render={({ field: { value, onChange } }) => (
-                    <>
-                      <Grid
-                        container
-                        columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                        marginBottom="1rem"
-                        alignItems="center"
-                      >
-                        <Grid item md={3} textAlign="right">
-                          <InputLabel>Enable Multivalues</InputLabel>
-                        </Grid>
-                        <Grid item md={7}>
+              <Controller
+                control={control}
+                name={`attributeDefs.${index}.multiValueSelect` as const}
+                key={`attributeDefs.${index}.multiValueSelect`}
+                data-cy={`attributeDefs.${index}.multiValueSelect`}
+                defaultValue={field?.multiValueSelect}
+                render={({ field: { value, onChange } }) => (
+                  <>
+                    <Grid
+                      container
+                      columnSpacing={{ xs: 1, sm: 2, md: 2 }}
+                      marginBottom="1rem"
+                      alignItems="center"
+                    >
+                      <Grid item md={3} textAlign="right">
+                        <InputLabel>Enable Multivalues</InputLabel>
+                      </Grid>
+                      <Grid item md={7}>
                           <Stack direction="row" spacing={2} alignItems="center">
-                            <FormControlLabel
-                              control={
-                                <Checkbox
-                                  disabled={isEmpty(editbmAttribute) ? false : true}
-                                  size="small"
-                                  checked={value}
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              disabled={isEmpty(editbmAttribute) ? false : true}
+                              size="small"
+                              checked={value}
                                   onChange={(e) => {
                                     onChange(e.target.checked);
                                     // Reset cardinality toggle when multivalues is unchecked
@@ -500,10 +500,10 @@ const BusinessMetadataAttributeForm = ({
                                       );
                                     }
                                   }}
-                                />
-                              }
-                              label={undefined}
                             />
+                          }
+                          label={undefined}
+                        />
                             {value && (
                               <Controller
                                 control={control}
@@ -535,10 +535,10 @@ const BusinessMetadataAttributeForm = ({
                             )}
                           </Stack>
                         </Grid>
-                      </Grid>
-                    </>
-                  )}
-                />
+                    </Grid>
+                  </>
+                )}
+              />
               </>
             )}
             {watched?.[index] && watched?.[index]?.typeName == "string" && (
