@@ -345,6 +345,15 @@ pre.code-block .json-string {
   text-decoration: underline;
 }
 
+.relationship-card__link--deleted,
+.relationship-card__text--deleted {
+  color: #bb5838;
+}
+
+.relationship-card__link--deleted:hover {
+  color: #bb5838;
+}
+
 .relationship-card__text {
   color: #334155;
 }

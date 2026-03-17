@@ -46,6 +46,7 @@ define([
             this.showDeletedByName = {};
             this.pageLimitByName = {};
             this.isInitialLoading = false;
+            this.hasApiError = false;
         },
         onRender: function() {
             this.fetchInitialCards();
@@ -179,6 +180,7 @@ define([
                 return;
             }
 
+            this.hasApiError = false;
             if (_.isFunction(this.onDataLoading)) {
                 this.onDataLoading(true);
             }
@@ -233,6 +235,7 @@ define([
                         },
                         function(error) {
                             console.error("[RelationshipCardsLayoutView] API error for", name, ":", error);
+                            that.hasApiError = true;
                             processResponse(name, null);
                             that.renderCards();
                             return null;
@@ -390,13 +393,16 @@ define([
                 var displayLabel = showTypeNameInDisplay && typeName
                     ? displayText + " (" + typeName + ")"
                     : displayText;
-                var href = item && item.guid ? "#/detailPage/" + item.guid : "";
+                var status = (ref && ref.status) || item.status || (item.attributes && item.attributes.status) || "";
+                var isDeleted = status === "DELETED";
+                var deletedClass = isDeleted ? " relationship-card-link--deleted" : "";
+                var href = item && item.guid ? "#!/detailPage/" + item.guid + "?tabActive=relationship" : "";
                 var qualifiedName = item && item.qualifiedName ? item.qualifiedName : "";
                 var nameValue = item && item.attributes && item.attributes.name ? item.attributes.name : "";
                 var searchText = _.escape((displayText + " " + qualifiedName + " " + nameValue).toLowerCase());
                 return "<li class='relationship-card-item' data-search='" + searchText + "'>" +
-                    (href ? "<a class='relationship-card-link' href='" + href + "'>" + _.escape(displayLabel) + "</a>" :
-                        "<span class='relationship-card-link'>" + _.escape(displayLabel) + "</span>") +
+                    (href ? "<a class='relationship-card-link" + deletedClass + "' href='" + href + "'>" + _.escape(displayLabel) + "</a>" :
+                        "<span class='relationship-card-link" + deletedClass + "'>" + _.escape(displayLabel) + "</span>") +
                     "</li>";
             }).join("");
 
@@ -585,7 +591,8 @@ define([
                 return _.has(that.cardData, n) && _.isEmpty(that.cardData[n]);
             });
             if (cardCount === 0 && allLoadedAndEmpty && !this.showEmptyValues) {
-                html = "<div class='relationship-cards-empty'>No relationship data available</div>";
+                var emptyMsg = this.hasApiError ? "Failed to load relationship data" : "No relationship data available";
+                html = "<div class='relationship-cards-empty'>" + emptyMsg + "</div>";
             }
             
             if (this.$el && this.$el.length) {

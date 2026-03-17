@@ -70,6 +70,8 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
     Record<string, boolean>
   >({});
   const [showInitialSkeletons, setShowInitialSkeletons] = useState<boolean>(true);
+  const [hasRelationshipApiError, setHasRelationshipApiError] =
+    useState<boolean>(false);
   const initialSkeletonTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
@@ -79,6 +81,7 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
     setCardData({});
     setCardTotalCounts({});
     setShowInitialSkeletons(true);
+    setHasRelationshipApiError(false);
     fetchStartedRef.current = false;
 
     if (initialSkeletonTimerRef.current) {
@@ -239,6 +242,7 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
         })
         .catch((err) => {
           console.error(`Error fetching relationship ${relationName}:`, err);
+          setHasRelationshipApiError(true);
           setCardData((prev) => ({ ...prev, [relationName]: [] }));
           setSortByNameByAttr((prev) => ({
             ...prev,
@@ -254,6 +258,11 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
           if (completedCount >= totalCount) {
             setInitialLoadDone(true);
             setCardLoading(false);
+            setShowInitialSkeletons(false);
+            if (initialSkeletonTimerRef.current) {
+              clearTimeout(initialSkeletonTimerRef.current);
+              initialSkeletonTimerRef.current = null;
+            }
           }
         });
     });
@@ -555,7 +564,9 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
                   Object.values(cardData).every((arr) => isEmpty(arr)) &&
                   !checked) ? (
                 <div className="relationship-cards-empty">
-                  No relationship data available
+                  {hasRelationshipApiError
+                    ? "Failed to load relationship data"
+                    : "No relationship data available"}
                 </div>
               ) : (
                 <div className="relationship-cards-grid relationship-cards-grid--custom">
