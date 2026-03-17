@@ -18,10 +18,10 @@
     <div class="btn-group pull-left">
         <span class="pull-left">Graph</span>
         <label class="switch pull-left">
-            <input type="checkbox" checked class="switch-input" name="relationshipViewToggle" value="text">
+            <input type="checkbox" class="switch-input" name="relationshipViewToggle" value="text">
             <span class="switch-slider"></span>
         </label>
-        <span class="pull-left">Table</span>
+        <span class="pull-left">Card</span>
     </div>
     <div class="pull-right" data-id="zoomControl">
         <div class="btn-group pull-right">
@@ -52,14 +52,17 @@
         </div>
     </div>
 </div>
-<div class="relationship-detail-table">
-    <div class="entity-relationship-table-toggle">
+<div class="relationship-detail-table" style="display: none;">
+    <div class="entity-relationship-table-toggle" style="padding: 12px 16px;">
         <div class="pretty p-switch p-fill">
             <input type="checkbox" data-id="noValueToggle" />
             <div class="state p-primary">
                 <label>Show Empty Values</label>
             </div>
         </div>
+    </div>
+    <div data-id="relationshipCardsView" style="position: relative;top: 40px;">
+        <!-- Card view will be rendered here -->
     </div>
     <table class="table table-quickMenu bold-key" data-id="relationshipDetailTable">
         <thead>

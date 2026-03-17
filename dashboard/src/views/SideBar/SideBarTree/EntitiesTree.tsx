@@ -161,7 +161,7 @@ const EntitiesTree = ({ sideBarOpen, searchTerm }: Props) => {
   ) => {
     const rootEntityChildren: ChildrenInterface = {
       gType: "Entity",
-      guid: addOnEntities[0],
+      guid: addOnEntities[0], 
       id: addOnEntities[0],
       name: addOnEntities[0],
       type: allEntityTypesData?.category,

@@ -19,6 +19,7 @@
     position: absolute;
     height: 100%;
     width: 100%;
+    min-height: 700px;
     overflow: hidden;
     z-index: 1;
 
@@ -26,10 +27,516 @@
         fill: none;
         stroke-width: 1.5px;
     }
+
+    svg {
+        min-height: 700px;
+        height: 100%;
+    }
+
+    .relationship-node-icon,
+    .relationship-node-label,
+    .relationship-node-count {
+        pointer-events: none;
+    }
 }
 
 .relationship-node-details {
     &.box-panel {
         top: 0;
+    }
+
+    &.slide-to-left {
+        right: 0 !important;
+        left: 0 !important;
+    }
+}
+
+// Relationship Cards Styles - Match React UI structure and breakpoints
+.relationship-cards-container {
+    padding: 0;
+    min-height: 600px;
+
+    .relationship-cards-controls {
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: flex-end;
+        padding: 0 4px;
+    }
+
+    .relationship-cards-loader {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 400px;
+    }
+
+    .relationship-cards-empty {
+        text-align: center;
+        color: #999;
+        padding: 32px;
+    }
+}
+
+// Grid - same structure as React UI: direct children are relationship-card
+.relationship-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 12px;
+    align-items: start;
+    padding: 16px;
+}
+
+@media (min-width: 900px) {
+    .relationship-cards-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1200px) {
+    .relationship-cards-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1400px) {
+    .relationship-cards-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.relationship-cards-grid .relationship-cards-empty {
+    grid-column: 1 / -1;
+}
+
+/* Custom column layout: >5 records = 1/col, 1-5 and 0 = 2/col (matches React UI) */
+.relationship-cards-grid--custom {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.relationship-cards-column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 280px;
+    flex: 0 0 auto;
+}
+
+@media (max-width: 599px) {
+    .relationship-cards-column {
+        min-width: 100%;
+    }
+}
+
+.relationship-cards-grid--custom .relationship-cards-empty {
+    width: 100%;
+    flex: 1 1 100%;
+}
+
+.relationship-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    min-height: 80px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+    background: #fff;
+    height: auto;
+
+    .relationship-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        background-color: $white;
+        color: $color_jungle_green_approx;
+        border-bottom: 1px solid #e2e8f0;
+
+        .relationship-card-title-wrap {
+            display: flex;
+            align-items: baseline;
+        }
+
+        .relationship-card-title {
+            font-size: 15px;
+            font-weight: 600;
+            text-transform: capitalize;
+            color: $color_jungle_green_approx;
+            font-family: inherit;
+            letter-spacing: 0.01em;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .relationship-card-count {
+            margin-left: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: $color_jungle_green_approx;
+        }
+
+        .relationship-card-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #64748b;
+        }
+
+        .relationship-card-action-button {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            padding: 2px 6px;
+            cursor: pointer;
+            color: inherit;
+
+            &.is-active {
+                color: #2563eb;
+            }
+        }
+
+        .relationship-card-toggle {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            color: #64748b;
+
+            input {
+                margin: 0;
+            }
+        }
+    }
+
+    .relationship-card-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 12px;
+        min-height: 0;
+        overflow: hidden;
+
+        .relationship-card-search {
+            margin-bottom: 6px;
+
+            .relationship-card-search-input {
+                width: 100%;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                padding: 6px 10px;
+                font-size: 12px;
+                color: #1f2937;
+                background-color: #f9fafb;
+            }
+        }
+
+        .relationship-card-scroll {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+            position: relative;
+
+            &::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            &::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 4px;
+            }
+
+            &::-webkit-scrollbar-thumb {
+                background: #888;
+                border-radius: 4px;
+
+                &:hover {
+                    background: #555;
+                }
+            }
+        }
+
+        .relationship-card-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+
+            .relationship-card-item {
+                padding: 8px 0;
+                border-bottom: 1px solid #f0f0f0;
+
+                &:last-child {
+                    border-bottom: none;
+                }
+
+                &:hover {
+                    background-color: #f9f9f9;
+                }
+
+                &.has-border {
+                    border-bottom: 1px solid #f0f0f0;
+                }
+
+                .relationship-card-link {
+                    color: #1976d2;
+                    text-decoration: none;
+                    font-size: 13px;
+                    font-family: inherit;
+                    line-height: 1.5;
+                    word-break: break-word;
+
+                    &:hover {
+                        text-decoration: underline;
+                    }
+                }
+
+                .value-text {
+                    word-break: break-word;
+                    font-size: 13px;
+                    font-family: inherit;
+                    line-height: 1.5;
+                    color: #333;
+
+                    a {
+                        color: #1976d2;
+                        text-decoration: none;
+                        font-size: 13px;
+                        font-family: inherit;
+
+                        &:hover {
+                            text-decoration: underline;
+                        }
+                    }
+                }
+            }
+
+            .relationship-card-empty {
+                color: #999;
+                font-style: italic;
+                padding: 16px;
+                text-align: center;
+            }
+        }
+
+        .relationship-card-loader {
+            display: flex;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .relationship-card-inline-loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            width: 100%;
+        }
+    }
+
+    .relationship-card-footer {
+        border-top: 1px solid #e2e8f0;
+        margin-top: auto;
+        padding: 8px 12px;
+
+        .relationship-card-footer-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            min-height: 24px;
+        }
+
+        .relationship-card-count {
+            font-size: 13px;
+            color: #64748b;
+            font-family: inherit;
+            flex-shrink: 0;
+        }
+
+        .relationship-card-page-limit {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+
+            label {
+                font-size: 13px;
+                color: #64748b;
+                margin: 0;
+                white-space: nowrap;
+            }
+
+            .relationship-card-page-limit-input {
+                width: 60px;
+                padding: 4px 8px;
+                font-size: 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 4px;
+            }
+        }
+    }
+}
+
+.relationship-card--empty {
+    .relationship-card-scroll--empty {
+        overflow: hidden;
+    }
+}
+
+.relationship-card-load-more {
+    margin-top: 6px;
+    padding: 6px 0;
+    font-size: 12px;
+    text-align: center;
+    color: #9ca3af;
+}
+
+.relationship-card-no-match {
+    padding: 8px 0;
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.entity-relationship-table-toggle {
+    width: 100%;
+    display: flex;
+    position: relative;
+    margin-top: 12px;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+/* Relationship Card Skeleton Loader */
+.relationship-card-skeleton {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background-color: #ffffff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.relationship-card-skeleton__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    background-color: $white;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.relationship-card-skeleton__title-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.relationship-card-skeleton__line {
+    display: block;
+    height: 14px;
+    background: linear-gradient(
+        90deg,
+        #e2e8f0 25%,
+        #f1f5f9 50%,
+        #e2e8f0 75%
+    );
+    background-size: 200% 100%;
+    animation: relationship-skeleton-pulse 1.5s ease-in-out infinite;
+    border-radius: 4px;
+
+    &--title {
+        width: 100px;
+    }
+
+    &--count {
+        width: 36px;
+    }
+
+    &--short {
+        width: 60%;
+    }
+
+    &--footer {
+        width: 80px;
+        height: 12px;
+    }
+}
+
+.relationship-card-skeleton__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.relationship-card-skeleton__box {
+    display: block;
+    background: linear-gradient(
+        90deg,
+        #e2e8f0 25%,
+        #f1f5f9 50%,
+        #e2e8f0 75%
+    );
+    background-size: 200% 100%;
+    animation: relationship-skeleton-pulse 1.5s ease-in-out infinite;
+    border-radius: 4px;
+
+    &--button {
+        width: 28px;
+        height: 24px;
+    }
+
+    &--checkbox {
+        width: 80px;
+        height: 16px;
+    }
+
+    &--input {
+        width: 60px;
+        height: 24px;
+    }
+}
+
+.relationship-card-skeleton__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+}
+
+.relationship-card-skeleton__body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-height: 80px;
+}
+
+.relationship-card-skeleton__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid #e2e8f0;
+}
+
+@keyframes relationship-skeleton-pulse {
+    0%,
+    100% {
+        background-position: 200% 0;
+    }
+    50% {
+        background-position: -200% 0;
     }
 }

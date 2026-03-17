@@ -22,14 +22,15 @@ import {
   detailPageBusinessMetadataApiUrl,
   detailPageLabelApiUrl,
   detailPageRauditApiUrl,
-  detailPageRelationshipApiUrl
+  detailPageRelationshipApiUrl,
+  detailPageRelationshipAttributesApiUrl
 } from "../apiUrlLinks/detailpageUrl";
 import { _get } from "./apiMethod";
 
 const getDetailPageData = (guid: string, params: object, header?: string) => {
   const config = {
     method: "GET",
-    params: params
+    params: { ...params, ignoreRelationships: true }
   };
   return _get(detailpageApiUrl(guid, header), config);
 };
@@ -85,6 +86,114 @@ const getDetailPageRelationship = (guid: string) => {
   return _get(detailPageRelationshipApiUrl(guid), config);
 };
 
+// TODO: Mock data for relationship attributes (disabled now that API is used).
+// const MOCK_DATA_CONFIG: Record<string, number> = {
+//   tables: 500,
+//   inputToProcess: 150,
+//   "outputTo Process": 3,
+//   ddlQueries: 230,
+//   outputFromProcesses: 1,
+//   model: 0
+// };
+//
+// const getMockRelationshipAttributes = (
+//   params: { limit?: number; offset?: number; attributeName?: string }
+// ) => {
+//   const limit = params.limit || 100;
+//   const offset = params.offset || 0;
+//   const attributeName = params.attributeName;
+//
+//   const generateMockItem = (index: number, type: string) => {
+//     const cleanType = type.replace(/\s+/g, "");
+//     const displayIndex = offset + index + 1;
+//
+//     return {
+//       guid: `mock-guid-${cleanType}-${displayIndex}`,
+//       typeName: "hive_table",
+//       entityStatus: "ACTIVE",
+//       displayText: `hivetable${displayIndex}`,
+//       relationshipType: `hive_table_db`,
+//       relationshipGuid: `mock-rel-guid-${cleanType}-${displayIndex}`,
+//       relationshipStatus: "ACTIVE",
+//       relationshipAttributes: {
+//         typeName: `hive_table_db`
+//       },
+//       qualifiedName: `db88232_1.hivetable${displayIndex}@cm`
+//     };
+//   };
+//
+//   if (attributeName) {
+//     const totalCount = MOCK_DATA_CONFIG[attributeName] || 0;
+//     const remainingCount = Math.max(0, totalCount - offset);
+//     const itemCount = Math.min(limit, remainingCount);
+//
+//     const mockData = [];
+//     for (let i = 0; i < itemCount; i++) {
+//       mockData.push(generateMockItem(i, attributeName));
+//     }
+//
+//     return {
+//       data: {
+//         relationshipAttributes: {
+//           [attributeName]: mockData
+//         },
+//         totalCounts: {
+//           [attributeName]: totalCount
+//         }
+//       }
+//     };
+//   }
+//
+//   const mockResponse: any = {
+//     data: {
+//       relationshipAttributes: {},
+//       totalCounts: {}
+//     }
+//   };
+//
+//   const relationshipTypes = [
+//     "tables",
+//     "inputToProcess",
+//     "outputTo Process",
+//     "ddlQueries",
+//     "outputFromProcesses",
+//     "model"
+//   ];
+//
+//   relationshipTypes.forEach((type) => {
+//     const totalCount = MOCK_DATA_CONFIG[type] || 0;
+//     const itemCount = Math.min(limit, totalCount);
+//
+//     const mockData = [];
+//     for (let i = 0; i < itemCount; i++) {
+//       mockData.push(generateMockItem(i, type));
+//     }
+//
+//     mockResponse.data.relationshipAttributes[type] = mockData;
+//     mockResponse.data.totalCounts[type] = totalCount;
+//   });
+//
+//   return mockResponse;
+// };
+
+const getDetailPageRelationshipAttributes = async (
+  guid: string,
+  params: { limit?: number; offset?: number; attributeName?: string }
+) => {
+  const config = {
+    method: "GET",
+    params: params
+  };
+  
+  try {
+    return await _get(detailPageRelationshipAttributesApiUrl(guid), config);
+  } catch (error: any) {
+    // Mock fallback disabled now that real API is used.
+    // return getMockRelationshipAttributes(params);
+    throw error;
+  }
+};
+
 export {
   getDetailPageData,
   getDetailPageAuditData,
@@ -92,5 +201,6 @@ export {
   getAuditData,
   getLabels,
   getEntityBusinessMetadata,
-  getDetailPageRelationship
+  getDetailPageRelationship,
+  getDetailPageRelationshipAttributes
 };

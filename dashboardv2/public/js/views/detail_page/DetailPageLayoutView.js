@@ -116,6 +116,7 @@ define(['require',
                 events["click " + this.ui.deleteTerm] = 'onClickTermCross';
                 events["click " + this.ui.addTag] = 'onClickAddTagBtn';
                 events["click " + this.ui.tablist] = function(e) {
+                    var that = this;
                     var tabValue = $(e.currentTarget).attr('role');
                     Utils.setUrl({
                         url: Utils.getUrlState.getQueryUrl().queyParams[0],
@@ -124,7 +125,15 @@ define(['require',
                         trigger: false,
                         updateTabState: true
                     });
-
+                    if (tabValue === 'relationship') {
+                        if (this.detailPageObj) {
+                            this.ensureRelationshipView();
+                        } else {
+                            this.listenToOnce(this.collection, 'reset', function() {
+                                that.ensureRelationshipView();
+                            });
+                        }
+                    }
                 };
                 return events;
             },
@@ -144,7 +153,7 @@ define(['require',
                 this.listenTo(this.collection, 'reset', function() {
                     this.entityObject = this.collection.first().toJSON();
                     var collectionJSON = this.entityObject.entity;
-                    this.activeEntityDef = this.entityDefCollection.fullCollection.find({ name: collectionJSON.typeName });
+                    this.activeEntityDef = this.entityDefCollection.fullCollection.findWhere({ name: collectionJSON.typeName });
                     if (!this.activeEntityDef) {
                         Utils.backButtonClick();
                         Utils.notifyError({
@@ -320,7 +329,11 @@ define(['require',
                     if (obj.businessMetadataCollection) {
                         this.renderEntityBusinessMetadataView(obj);
                     }
-                    this.renderRelationshipLayoutView(obj);
+                    this.detailPageObj = obj;
+                    if ((this.value && this.value.tabActive === 'relationship') ||
+                        this.$('.tab-content .tab-pane[role="relationship"]').hasClass('active')) {
+                        this.renderRelationshipLayoutView(obj);
+                    }
                     this.renderAuditTableLayoutView(obj);
                     this.renderTagTableLayoutView(obj);
                     if (Globals.isTasksEnabled && Globals.isUiTasksTabEnabled) { this.renderPendingTaskTableLayoutView(); }
@@ -385,6 +398,15 @@ define(['require',
                         });
                     }
                 }, this);
+                this.$('a[href="#tab-relationship"]').on('shown.bs.tab', function() {
+                    if (that.detailPageObj) {
+                        that.ensureRelationshipView();
+                    } else {
+                        that.listenToOnce(that.collection, 'reset', function() {
+                            that.ensureRelationshipView();
+                        });
+                    }
+                });
             },
             onRender: function() {
                 var that = this;
@@ -438,6 +460,22 @@ define(['require',
                     this.$('.nav.nav-tabs').find('[role="' + this.value.tabActive + '"]').addClass('active').siblings().removeClass('active');
                     this.$('.tab-content').find('[role="' + this.value.tabActive + '"]').addClass('active').siblings().removeClass('active');
                     $("html, body").animate({ scrollTop: (this.$('.tab-content').offset().top + 1200) }, 1000);
+                    if (this.value.tabActive === 'relationship') {
+                        this.ensureRelationshipView();
+                    }
+                } else if (this.$('.tab-content .tab-pane[role="relationship"]').hasClass('active')) {
+                    this.ensureRelationshipView();
+                }
+            },
+            ensureRelationshipView: function() {
+                if (!this.detailPageObj) {
+                    return;
+                }
+                var relationshipView = this.RRelationshipLayoutView.currentView;
+                if (relationshipView && relationshipView.ensureCardsView) {
+                    relationshipView.ensureCardsView(false);
+                } else {
+                    this.renderRelationshipLayoutView(this.detailPageObj);
                 }
             },
             onShow: function() {
@@ -466,6 +504,18 @@ define(['require',
                 } else {
                     return [];
                 }
+            },
+            getEntityDefForRelationships: function() {
+                if (this.activeEntityDef) {
+                    var data = this.activeEntityDef.toJSON();
+                    return Utils.getNestedSuperTypeObj({
+                        data: data,
+                        collection: this.entityDefCollection,
+                        attrMerge: true,
+                        seperateRelatioshipAttr: true
+                    });
+                }
+                return {};
             },
             onClickTagCross: function(e) {
                 var that = this,
@@ -663,7 +713,10 @@ define(['require',
             renderRelationshipLayoutView: function(obj) {
                 var that = this;
                 require(['views/graph/RelationshipLayoutView'], function(RelationshipLayoutView) {
-                    that.RRelationshipLayoutView.show(new RelationshipLayoutView(obj));
+                    var relationshipObj = _.extend({}, obj, {
+                        attributeDefs: that.getEntityDefForRelationships()
+                    });
+                    that.RRelationshipLayoutView.show(new RelationshipLayoutView(relationshipObj));
                 });
             },
             renderSchemaLayoutView: function(obj) {

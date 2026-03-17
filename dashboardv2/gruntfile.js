@@ -50,6 +50,7 @@ module.exports = function(grunt) {
         },
         connect: {
             server: {
+
                 options: {
                     port: 9999,
                     base: distPath,
@@ -224,11 +225,11 @@ module.exports = function(grunt) {
             bootstrap: {
                 files: [
                     {
-                        src: nodeModulePath + 'bootstrap/dist/js/bootstrap-patched.min.js',
+                        src: nodeModulePath + 'bootstrap/dist/js/bootstrap.min.js',
                         dest: libPath + 'bootstrap/js/bootstrap.min.js'
                     },
                     {
-                        src: nodeModulePath + 'bootstrap/dist/css/bootstrap-patched.min.css',
+                        src: nodeModulePath + 'bootstrap/dist/css/bootstrap.min.css',
                         dest: libPath + 'bootstrap/css/bootstrap.min.css'
                     }
                 ]
