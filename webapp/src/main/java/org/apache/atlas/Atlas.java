@@ -43,8 +43,11 @@ import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
 import org.elasticsearch.client.indices.PutIndexTemplateRequest;
+import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -345,8 +348,8 @@ public final class Atlas {
         } catch (Exception es) {
             LOG.error("Caught exception: ", es.toString());
         }
+        String vertexIndex = INDEX_PREFIX + VERTEX_INDEX;
         if (!exists) {
-            String vertexIndex = INDEX_PREFIX + VERTEX_INDEX;
             PutIndexTemplateRequest request = new PutIndexTemplateRequest("atlan-template");
             request.patterns(Arrays.asList(vertexIndex));
             String atlasHomeDir  = System.getProperty("atlas.home");
@@ -371,6 +374,56 @@ public final class Atlas {
                 LOG.error("Caught exception: ", e.toString());
                 throw e;
             }
+        }
+
+        // Create a unified alias "atlas_vertex_index" pointing to the actual vertex index.
+        // This allows consumers to use a stable alias regardless of the backend-specific index name.
+        // Best-effort — failure does not block startup.
+        createVertexIndexAliasIfNotExists(esClient, vertexIndex);
+    }
+
+    private static final String VERTEX_INDEX_ALIAS = "atlas_vertex_index";
+
+    private static void createVertexIndexAliasIfNotExists(RestHighLevelClient esClient, String vertexIndex) {
+        // Skip if the index is already named atlas_vertex_index
+        if (VERTEX_INDEX_ALIAS.equals(vertexIndex)) {
+            LOG.info("Vertex index is already named {}, skipping alias creation", VERTEX_INDEX_ALIAS);
+            return;
+        }
+
+        try {
+            // Check if the target index exists first
+            GetIndexRequest getIndexRequest = new GetIndexRequest(vertexIndex);
+            boolean indexExists = esClient.indices().exists(getIndexRequest, RequestOptions.DEFAULT);
+            if (!indexExists) {
+                LOG.info("Vertex index {} does not exist yet, skipping alias creation", vertexIndex);
+                return;
+            }
+
+            // Check if the alias already exists
+            GetAliasesRequest getAliasesRequest = new GetAliasesRequest(VERTEX_INDEX_ALIAS);
+            boolean aliasExists = esClient.indices().existsAlias(getAliasesRequest, RequestOptions.DEFAULT);
+            if (aliasExists) {
+                LOG.info("Alias {} already exists, skipping creation", VERTEX_INDEX_ALIAS);
+                return;
+            }
+
+            // Create the alias
+            IndicesAliasesRequest aliasRequest = new IndicesAliasesRequest();
+            IndicesAliasesRequest.AliasActions addAction = new IndicesAliasesRequest.AliasActions(
+                    IndicesAliasesRequest.AliasActions.Type.ADD)
+                    .index(vertexIndex)
+                    .alias(VERTEX_INDEX_ALIAS);
+            aliasRequest.addAliasAction(addAction);
+
+            AcknowledgedResponse response = esClient.indices().updateAliases(aliasRequest, RequestOptions.DEFAULT);
+            if (response.isAcknowledged()) {
+                LOG.info("Created alias {} pointing to index {}", VERTEX_INDEX_ALIAS, vertexIndex);
+            } else {
+                LOG.error("Failed to create alias {} for index {}: not acknowledged", VERTEX_INDEX_ALIAS, vertexIndex);
+            }
+        } catch (Exception e) {
+            LOG.error("Failed to create alias {} for index {}: {}", VERTEX_INDEX_ALIAS, vertexIndex, e.toString());
         }
     }
 }
