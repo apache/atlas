@@ -294,9 +294,9 @@ define(['require',
                                 this.editEntity = true;
                             }
                         }
-                        if (collectionJSON.attributes && collectionJSON.attributes.columns) {
+                        if (collectionJSON.attributes && _.isArray(collectionJSON.attributes.columns)) {
                             var valueSorted = _.sortBy(collectionJSON.attributes.columns, function(val) {
-                                return val.attributes && val.attributes.position
+                                return val && val.attributes && val.attributes.position;
                             });
                             collectionJSON.attributes.columns = valueSorted;
                         }
@@ -449,6 +449,7 @@ define(['require',
                     var oldId = this.id;
                     _.extend(this, _.pick(options, 'value', 'id'));
                     if (this.id !== oldId) {
+                        this.detailPageObj = null;
                         this.collection.url = UrlLinks.entitiesApiUrl({ guid: this.id, minExtInfo: true });
                         this.fetchCollection();
                     }

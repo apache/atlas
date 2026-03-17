@@ -336,6 +336,16 @@ function RelationshipCard({
 								const itemGuid = item?.guid
 								const href = itemGuid ? `/detailPage/${itemGuid}` : ''
 								const displayText = getDisplayText(item)
+								const ref = itemGuid ? referredEntities?.[itemGuid] : null
+								const status =
+									ref?.status || item?.status || item?.attributes?.status || ''
+								const isDeleted = status === 'DELETED'
+								const linkClass = isDeleted
+									? 'relationship-card__link relationship-card__link--deleted'
+									: 'relationship-card__link'
+								const textClass = isDeleted
+									? 'relationship-card__text relationship-card__text--deleted'
+									: 'relationship-card__text'
 								return (
 									<li
 										key={`${attributeName}-${index}`}
@@ -350,13 +360,13 @@ function RelationshipCard({
 													onKeyDown={(event) =>
 														handleKeyDown(event, href)
 													}
-													className='relationship-card__link'
+													className={linkClass}
 												>
 													{displayText}
 												</Link>
 											</LightTooltip>
 										) : (
-											<span className='relationship-card__text'>
+											<span className={textClass}>
 												{displayText}
 											</span>
 										)}

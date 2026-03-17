@@ -295,6 +295,14 @@
                     &:hover {
                         text-decoration: underline;
                     }
+
+                    &.relationship-card-link--deleted {
+                        color: $delete_link;
+
+                        &:hover {
+                            color: $delete_link;
+                        }
+                    }
                 }
 
                 .value-text {
