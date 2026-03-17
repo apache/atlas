@@ -253,7 +253,7 @@ define([
                     listString = "",
                     data = this.selectedNodeData,
                     typeName = this.selectedNodeType,
-                    activeEntityColor = "#00b98b",
+                    activeEntityColor = "#1976d2",
                     deletedEntityColor = "#BB5838",
                     defaultEntityColor = "#e0e0e0",
                     normalizeEntity = function(entity) {
@@ -277,11 +277,11 @@ define([
                             entityTypeButton = "";
                         if (guid) {
                             if (options.entity) {
-                                entityTypeButton = "<a href='#/detailPage/" + guid + "' class='entity-type-name' style='color:" + options.color + "'>" + name + "</a>";
+                                entityTypeButton = "<a href='#!/detailPage/" + guid + "' class='entity-type-name' style='color:" + options.color + "'>" + name + "</a>";
                             } else if (options.relationship) {
                                 entityTypeButton = "<a href='#/relationshipDetailPage/" + guid + "' class='entity-type-name' style='color:" + options.color + "'>" + name + "</a>";
                             } else {
-                                entityTypeButton = "<a href='#/detailPage/" + guid + "' class='entity-type-name' style='color:" + options.color + "'>" + name + "</a>";
+                                entityTypeButton = "<a href='#!/detailPage/" + guid + "' class='entity-type-name' style='color:" + options.color + "'>" + name + "</a>";
                             }
                         } else {
                             entityTypeButton = "<pre class='entity-type-name' style='color:" + options.color + "'>" + name + "</pre>";
@@ -346,12 +346,14 @@ define([
                 }.bind(this);
                 var buildListItem = function(item) {
                     var name = item.entityName || Utils.getName(item, "displayText");
-                    var href = item.guid ? "#/detailPage/" + item.guid : "";
+                    var typeName = item.typeName || "";
+                    var displayLabel = typeName ? name + " (" + typeName + ")" : name;
+                    var href = item.guid ? "#!/detailPage/" + item.guid + "?tabActive=relationship" : "";
                     var isDeleted = (item.entityStatus || item.status) == "DELETED";
                     var color = isDeleted ? deletedEntityColor : activeEntityColor;
                     var content = href
-                        ? "<a href='" + href + "' class='entity-type-name' style='color:" + color + "'>" + _.escape(name) + "</a>"
-                        : "<span class='entity-type-name' style='color:" + color + "'>" + _.escape(name) + "</span>";
+                        ? "<a href='" + href + "' class='entity-type-name' style='color:" + color + "'>" + _.escape(displayLabel) + "</a>"
+                        : "<span class='entity-type-name' style='color:" + color + "'>" + _.escape(displayLabel) + "</span>";
                     return "<li class='entity-list-item'>" + content + "</li>";
                 };
                 if (_.isArray(data)) {
@@ -363,8 +365,9 @@ define([
                     }
                     _.each(_.sortBy(data, "entityName"), function(val) {
                         var name = val.entityName || Utils.getName(val, "displayText");
+                        var searchTarget = (name + " " + (val.typeName || "")).toLowerCase();
                         if (searchString) {
-                            if (name.toLowerCase().includes(searchString.toLowerCase())) {
+                            if (searchTarget.includes(searchString.toLowerCase())) {
                                 listString += buildListItem(val);
                             } else {
                                 return;

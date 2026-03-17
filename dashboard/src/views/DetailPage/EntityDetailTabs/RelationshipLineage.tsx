@@ -47,7 +47,6 @@ import ArrowRightAltIcon from "@mui/icons-material/ArrowRightAlt";
 import { CloseIcon, LightTooltip } from "@components/muiComponents";
 import { useAppSelector } from "@hooks/reducerHook";
 import { Link as MUILink } from "@mui/material";
-import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 
 const CustomLink = ({
   href,
@@ -59,7 +58,7 @@ const CustomLink = ({
   params
 }: any): any => {
   return (
-    <li className={status} style={{ listStyle: "numeric" }}>
+    <li className={status}>
       <MUILink
         component={RouterLink}
         to={{
@@ -133,9 +132,10 @@ const RelationshipLineage = ({
   const createGraph = (data) => {
     // Use getBoundingClientRect to get the actual width and height
     const svgElement = svgRef?.current;
-    const { width, height } = svgElement
-      ? svgElement.getBoundingClientRect()
-      : { width: 0, height: 0 };
+    const rect = svgElement ? svgElement.getBoundingClientRect() : null;
+    const width = rect ? rect.width : 0;
+    const height = rect ? rect.height : 0;
+    const padding = 60;
 
     let nodes = d3.values(data.nodes);
     let links = data.links;
@@ -147,8 +147,8 @@ const RelationshipLineage = ({
 
     var svg = d3
         .select(svgElement)
-        .attr("viewBox", `0 0 ${width} ${height}`)
-        .attr("enable-background", `new 0 0 ${width} ${height}`),
+        .attr("viewBox", `${-padding} ${-padding} ${width + padding * 2} ${height + padding * 2}`)
+        .attr("enable-background", `new ${-padding} ${-padding} ${width + padding * 2} ${height + padding * 2}`),
       node,
       path;
 
@@ -295,24 +295,30 @@ const RelationshipLineage = ({
           return "#fff";
         });
 
-      var countBox = circleContainer.append("g");
+      var countBox = circleContainer.append("g").attr("class", "relationship-node-count");
 
       countBox
         .append("circle")
-        .attr("cx", 18)
-        .attr("cy", -20)
+        .attr("cx", 22)
+        .attr("cy", 32)
         .attr("r", function (d) {
           if (isArray(d.value) && d.value.length > 1) {
-            return 10;
+            return 12;
           }
-        });
+        })
+        .attr("fill", "#333")
+        .attr("stroke", "#fff")
+        .attr("stroke-width", "1.5px");
 
       countBox
         .append("text")
-        .attr("dx", 18)
-        .attr("dy", -16)
+        .attr("x", 22)
+        .attr("y", 32)
         .attr("text-anchor", "middle")
-        .attr("fill", defaultEntityColor)
+        .attr("dominant-baseline", "middle")
+        .attr("fill", "#fff")
+        .style("font-size", "11px")
+        .style("font-weight", "600")
         .text(function (d) {
           if (isArray(d.value) && d.value.length > 1) {
             return d.value.length;
@@ -452,11 +458,13 @@ const RelationshipLineage = ({
     let searchString = options.searchString;
     let listString = [];
     const getEntityTypelist = (options) => {
-      let activeEntityColor = "#4a90e2";
+      let activeEntityColor = "#1976d2";
       let deletedEntityColor = "#BB5838";
+      const entityStatus = options.entityStatus || options.status;
+      const relationshipStatus = options.relationshipStatus || options.status;
       const getdefault = (obj) => {
         let options = obj.options;
-        let status = entityStateReadOnly[options.entityStatus || options.status]
+        let status = entityStateReadOnly[entityStatus]
           ? " deleted-relation"
           : "";
         let nodeGuid = options.guid;
@@ -504,61 +512,26 @@ const RelationshipLineage = ({
       };
       const getWithButton = (obj) => {
         let options = obj.options;
-        let status = entityStateReadOnly[options.entityStatus || options.status]
+        let status = entityStateReadOnly[entityStatus]
           ? " deleted-relation"
           : "";
         let entityColor = obj.color;
         let name = obj.name;
-        let typeName = options.typeName;
 
-        let relationship = obj.relationship || false;
-        let entity = obj.entity || false;
-        let icon = '<i class="fa fa-trash"></i>';
-        let title = "Deleted";
-        if (relationship) {
-          icon = '<i class="fa fa-long-arrow-right"></i>';
-          status = entityStateReadOnly[
-            options.relationshipStatus || options.status
-          ]
+        if (obj.relationship) {
+          status = entityStateReadOnly[relationshipStatus]
             ? "deleted-relation"
             : "";
-          title = "Relationship Deleted";
         }
         return (
-          <li className={status} style={{ listStyle: "numeric" }}>
+          <li className={status}>
             <MUILink
               component={RouterLink}
-              to={`#!/detailPage/${options.guid}?tabActive=relationship`}
+              to={`/detailPage/${options.guid}?tabActive=relationship`}
               style={{ color: entityColor }}
             >
               {name} ({options.typeName})
             </MUILink>
-
-            <Button
-              type="button"
-              title={title}
-              className="btn btn-sm deleteBtn deletedTableBtn btn-action"
-              startIcon={
-                relationship ? (
-                  <ArrowRightAltIcon sx={{ fontSize: "1.25rem" }} />
-                ) : (
-                  <LightTooltip title="Deleted">
-                    <IconButton
-                      aria-label="back"
-                      sx={{
-                        display: "inline-flex",
-                        position: "relative",
-                        padding: "4px",
-                        marginLeft: "4px",
-                        color: (theme) => theme.palette.grey[500]
-                      }}
-                    >
-                      <DeleteOutlineOutlinedIcon sx={{ fontSize: "1.25rem" }} />
-                    </IconButton>
-                  </LightTooltip>
-                )
-              }
-            ></Button>
           </li>
         );
       };
@@ -566,22 +539,22 @@ const RelationshipLineage = ({
       const name = options.entityName
         ? options.entityName
         : extractKeyValueFromEntity(options, "displayText").name;
-      if (options.entityStatus == "ACTIVE") {
-        if (options.relationshipStatus == "ACTIVE") {
+      if (entityStatus === "ACTIVE") {
+        if (relationshipStatus === "ACTIVE") {
           return getdefault({
             color: activeEntityColor,
             options: options,
             name: name
           });
-        } else if (options.relationshipStatus == "DELETED") {
+        } else if (relationshipStatus === "DELETED") {
           return getWithButton({
-            color: activeEntityColor,
+            color: deletedEntityColor,
             options: options,
             name: name,
             relationship: true
           });
         }
-      } else if (options.entityStatus == "DELETED") {
+      } else if (entityStatus === "DELETED") {
         return getWithButton({
           color: deletedEntityColor,
           options: options,
@@ -655,10 +628,16 @@ const RelationshipLineage = ({
         {/* )} */}
 
         <Stack
+          component="ol"
           gap={"0.875rem"}
-          paddingLeft="0.5rem"
           maxHeight="220px"
-          sx={{ overflowY: "auto" }}
+          sx={{
+            overflowY: "auto",
+            listStyleType: "decimal",
+            listStylePosition: "outside",
+            paddingLeft: "1.75em",
+            margin: 0
+          }}
         >
           {listString}
         </Stack>
