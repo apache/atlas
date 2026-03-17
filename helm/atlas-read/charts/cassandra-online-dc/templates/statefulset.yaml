@@ -91,29 +91,10 @@ spec:
           {{- else }}
           {{- if eq .Values.global.Deployment_Type "Development" }}
           preferredDuringSchedulingIgnoredDuringExecution:
-          {{- if and .Values.multiarch (hasKey .Values.multiarch "enabled") (eq .Values.multiarch.enabled true) }}
-          - weight: 100
-            preference:
-              matchExpressions:
-                - key: kubernetes.io/arch
-                  operator: In
-                  values:
-                    - arm64
-          {{- end }}
             {{- toYaml .Values.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution | nindent 10 }}
           {{- else }}
           requiredDuringSchedulingIgnoredDuringExecution:
             {{- toYaml .Values.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution | nindent 12 }}
-          {{- if and .Values.multiarch (hasKey .Values.multiarch "enabled") (eq .Values.multiarch.enabled true) }}
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            preference:
-              matchExpressions:
-                - key: kubernetes.io/arch
-                  operator: In
-                  values:
-                    - arm64
-          {{- end }}
           {{- end }}
           {{- end }}
         podAntiAffinity:
