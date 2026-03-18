@@ -35,7 +35,6 @@ import org.testng.annotations.Test;
 import javax.inject.Inject;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 
 import static org.apache.atlas.utils.TestLoadModelUtils.loadFsModel;

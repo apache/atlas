@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
  * vertex lookups, or ImportID→Entity mappings during a single import cycle.</p>
  */
 public class ImportCacheManager<K, V> {
-
     private static final int MAX_SIZE = 10;             // Max 10 entries
     private static final long TTL_MINUTES = 30;         // Expire after 30 minutes
     private static final long TTL_MILLIS = TimeUnit.MINUTES.toMillis(TTL_MINUTES);
