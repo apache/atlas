@@ -79,10 +79,10 @@ Therefore, all workflow logic from the four reusable workflows is **inlined** di
 
 | File | Change |
 |------|--------|
-| `service-release/types.go` | Added `ServiceImageValuePath` map and `GetServiceImagePath()` for per-service image path configuration |
-| `service-release/activities.go` | Updated `buildValuesObjectPatchOperations` and `buildValuesStringPatchOperations` to use dynamic path |
-| `service-release/argocd_activities.go` | Updated `validateImageConfiguration` to traverse nested paths; added `WaitForArgoCDSyncActivity` for StatefulSet sync verification |
-| `service-release/app_workflow.go` | Added atlas-specific gates: ArgoCD sync wait + StatefulSet rollout verification (routed to tenant worker) |
+| `service-release/types.go` | Added `ServiceImageValuePath` map, `GetServiceImagePath()`, `ResultSkipped` status, `SkippedReleases` metric, `SkippedTenants` field |
+| `service-release/activities.go` | Updated patch operations; updated `AggregateResultsActivity` to handle skipped tenants; added skipped count to Slack/GitHub notifications |
+| `service-release/argocd_activities.go` | Updated `validateImageConfiguration` to traverse nested paths; added `WaitForArgoCDSyncActivity`; added `HasAutoSyncEnabled()` helper |
+| `service-release/app_workflow.go` | Added atlas-specific gates: auto-sync check, ArgoCD sync wait, StatefulSet rollout verification (routed to tenant worker) |
 | `service-release/statefulset_rollout_activity.go` | New — verifies StatefulSet rollout on tenant cluster with dynamic timeout (15 min/pod) |
 | `ring-branch-sync/activities.go` | Added `"atlanhq/atlas-metastore": "master"` to `RingBranchSyncRepos` |
 | `cmd/tenants-worker/main.go` | Registered `WaitForStatefulSetRolloutActivity` for tenant workers |
@@ -155,6 +155,87 @@ This architecture ensures:
 | StatefulSet rollout maximum | 120 min | Cap for large deployments |
 
 **Cleanup flows** (PR close, manual cleanup): Verification is skipped entirely. The workflow removes the image override and exits immediately without waiting for ArgoCD sync or pod rollout.
+
+---
+
+## Auto-Sync Safety Check (Atlas Only)
+
+Before patching a tenant's ArgoCD application, the Temporal workflow checks if auto-sync is enabled (`spec.syncPolicy.automated`). Tenants without auto-sync are **skipped** rather than failed.
+
+### Why This Matters
+
+If a tenant doesn't have auto-sync enabled:
+- The image override patch is applied to the ArgoCD Application manifest
+- But ArgoCD won't automatically sync the change to the cluster
+- The tenant would be left in a "pending" state indefinitely
+- The release would eventually timeout waiting for sync
+
+### Behavior
+
+| Auto-Sync Status | Result |
+|------------------|--------|
+| Enabled | Tenant is patched and verified normally |
+| Disabled | Tenant is skipped with `ResultSkipped` status |
+
+Skipped tenants are:
+- Reported separately in PR comments and Slack
+- **Not counted as failures** — the release is `success` if all non-skipped tenants succeed
+- Listed in the release info JSON under `skippedTenants`
+
+---
+
+## Dynamic Ring Redistribution
+
+Ring cohorts are dynamically updated based on live tenant data. This ensures rings accurately reflect current tenant sizes and statuses.
+
+### Data Sources
+
+| Source | Data |
+|--------|------|
+| **Horizon RDS** (via Grafana API) | Tenant metadata: name, domain, type, status, cloud_provider, release_channel |
+| **Vitally/Snowflake** (via Grafana API) | Asset counts for active customers |
+
+### Tenant Filters
+
+Tenants must pass all filters to be included in ring cohorts:
+
+| Filter | Criteria |
+|--------|----------|
+| Status | Must be `LIVE` |
+| Type | Not `Dedicated` |
+| Domain | Not internal (staging.atlan.com, preprod.atlan.com, home.atlan.com) |
+| Release Channel | Only `MAIN-BASE` or `GOLDEN-MAIN-BASE` |
+
+Tenants on beta/staging release channels (STAGING-BASE, PREPROD-BASE, BETA-BASE, GOLDEN-BETA-BASE) are excluded from ring releases.
+
+### Ring Assignment
+
+| Ring | Asset Range |
+|------|-------------|
+| Ring 0 (Empty) | 0 assets |
+| Ring 1 (Tiny) | 1 - 100,000 |
+| Ring 2 (Small) | 100,001 - 1,000,000 |
+| Ring 3 (Medium) | 1,000,001 - 10,000,000 |
+| Ring 4 (Large) | 10,000,001 - 50,000,000 |
+| Ring 5 (Very Large) | 50,000,001+ |
+
+Tenants without asset count data are assigned by type:
+- `DEVELOPER` → Ring 0
+- `DEMO`, `TRIAL`, `POV`, `PARTNER` → Ring 1
+
+### Automation
+
+Ring redistribution is automated via GitHub Actions (`atlan-releases/.github/workflows/redistribute-rings.yml`):
+
+- **Schedule:** Quarterly (1st of Jan, Apr, Jul, Oct at 10:00 UTC)
+- **Manual trigger:** Available via workflow_dispatch
+- **Safety check:** Blocks if any open PRs with ring cohort labels exist in atlas-metastore
+- **Output:** Creates a PR with updated cohort files and Grafana dashboard for review
+
+### Artifacts Updated
+
+- `atlan-releases/cohorts/atlas-ring-*.json` — Tenant lists per ring
+- `atlan-releases/atlas-ring-release-health-updated.json` — Grafana dashboard with tenant lists
 
 ---
 
@@ -410,6 +491,9 @@ If you decide not to proceed with the feature:
 - **Ring branches auto-sync with master.** The `RingBranchSyncWorkflow` periodically merges master into ring branches (using `-X ours` strategy — your ring changes win on conflicts).
 - **Max 20 tenants per cohort.** The Temporal workflow caps cohort size to keep releases manageable.
 - **`atlas-read` is not overridden.** Currently only the `atlas` chart image is patched. If your feature affects the read path, be aware that `atlas-read` will still run the master image.
+- **Tenants without auto-sync are skipped.** If a tenant's ArgoCD app doesn't have auto-sync enabled, it will be skipped (not failed). Check the PR comment for skipped tenants.
+- **Only main-branch tenants are included.** Tenants on STAGING-BASE, PREPROD-BASE, or BETA-BASE release channels are excluded from ring cohorts.
+- **Rings are redistributed quarterly.** Tenant counts change as asset counts grow. The automation runs quarterly; current counts are in `atlan-releases/cohorts/`.
 
 ### Required Secrets
 

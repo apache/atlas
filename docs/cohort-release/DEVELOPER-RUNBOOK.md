@@ -39,14 +39,16 @@ This PR is your **control surface** — labels control deployments, results appe
 
 Add a label to deploy to specific tenants:
 
-| Label | Ring | Tenants |
-|-------|------|---------|
-| `cohort:github:path:atlas-ring-0-empty` | Ring 0 | 35 internal/empty tenants |
-| `cohort:github:path:atlas-ring-1-tiny` | Ring 1 | 118 tiny tenants (<100K assets) |
-| `cohort:github:path:atlas-ring-2-small` | Ring 2 | 223 small tenants |
-| `cohort:github:path:atlas-ring-3-medium` | Ring 3 | 169 medium tenants |
-| `cohort:github:path:atlas-ring-4-large` | Ring 4 | 27 large tenants |
-| `cohort:github:path:atlas-ring-5-very-large` | Ring 5 | 4 very large tenants |
+| Label | Ring | Tenants | Asset Range |
+|-------|------|---------|-------------|
+| `cohort:github:path:atlas-ring-0-empty` | Ring 0 | ~43 | 0 assets |
+| `cohort:github:path:atlas-ring-1-tiny` | Ring 1 | ~131 | 1 - 100K |
+| `cohort:github:path:atlas-ring-2-small` | Ring 2 | ~215 | 100K - 1M |
+| `cohort:github:path:atlas-ring-3-medium` | Ring 3 | ~161 | 1M - 10M |
+| `cohort:github:path:atlas-ring-4-large` | Ring 4 | ~27 | 10M - 50M |
+| `cohort:github:path:atlas-ring-5-very-large` | Ring 5 | ~4 | 50M+ |
+
+> **Note:** Tenant counts are approximate. Rings are dynamically redistributed quarterly based on asset counts from Vitally/Snowflake. See [atlan-releases/cohorts](https://github.com/atlanhq/atlan-releases/tree/main/cohorts) for current counts.
 
 **Start with Ring 0**, then progressively expand.
 
@@ -137,6 +139,8 @@ If you decide not to proceed:
 | **`atlas-read` not overridden** | Only `atlas` (write path) is patched. Read path stays on master. |
 | **ArgoCD sync slow/stuck** | Release may timeout. Check tenant's ArgoCD app health. |
 | **Large cohorts (>100 tenants)** | Temporal processes 100 tenants in parallel. Larger cohorts are batched. |
+| **Tenant skipped (auto-sync disabled)** | Tenants without ArgoCD auto-sync are skipped, not failed. Check PR comment for skipped list. |
+| **Tenant not in ring** | Only tenants on MAIN-BASE/GOLDEN-MAIN-BASE release channels are included. Beta/staging tenants are excluded. |
 
 ---
 
@@ -250,6 +254,22 @@ Before a ring release proceeds, these are checked:
 - [ ] At least 1 PR approval (on latest commit)
 
 If any gate fails, the release is blocked with a PR comment explaining why.
+
+---
+
+## Release Result States
+
+The "Service Release Result" PR comment shows one of these statuses:
+
+| Status | Meaning |
+|--------|---------|
+| ✅ **success** | All tenants deployed successfully |
+| ⚠️ **partial_success** | Some tenants succeeded, some failed |
+| ❌ **failed** | All tenants failed |
+
+**Skipped tenants** are reported separately and don't count as failures:
+- Tenants without ArgoCD auto-sync enabled are skipped
+- The release is still marked **success** if all non-skipped tenants succeed
 
 ---
 
