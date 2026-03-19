@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "atlas-mcp": {
+      "command": "atlas-observability-proxy",
+      "env": {
+        "ATLAS_OBSERVABILITY_URL": "https://atlas-mcp.atlan.com"
+      }
+    },
+    "grafana-mcp": {
+      "command": "grafana-observability-proxy",
+      "env": {
+        "GRAFANA_MCP_URL": "https://grafana-clickhouse-mcp.atlan.com"
+      }
+    }
+  }
+}
