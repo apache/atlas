@@ -51,7 +51,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
@@ -397,10 +396,11 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
 
     @Test
     public void testLast7Days() throws AtlasBaseException {
-        SearchParameters.FilterCriteria ret = filtercriteriaDateRange("LAST_7_DAYS", typeRegistry, graph);
+        SearchParameters.FilterCriteria ret       = filtercriteriaDateRange("LAST_7_DAYS", typeRegistry, graph);
+        Calendar                        startDate = Calendar.getInstance(TIME_ZONE_UTC);
+        Calendar                        endDate   = Calendar.getInstance(TIME_ZONE_UTC);
+
         ret.setAttributeName("createTime");
-        GregorianCalendar startDate = new GregorianCalendar();
-        GregorianCalendar endDate   = new GregorianCalendar();
         startDate.add(Calendar.DATE, -6);
 
         String[] dates      = ret.getAttributeValue().split(",");
@@ -433,8 +433,9 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
     @Test
     public void testLast30Days() throws AtlasBaseException {
         SearchParameters.FilterCriteria ret       = filtercriteriaDateRange("LAST_30_DAYS", typeRegistry, graph);
-        GregorianCalendar               startDate = new GregorianCalendar();
-        GregorianCalendar               endDate   = new GregorianCalendar();
+        Calendar                        startDate = Calendar.getInstance(TIME_ZONE_UTC);
+        Calendar                        endDate   = Calendar.getInstance(TIME_ZONE_UTC);
+
         startDate.add(Calendar.DATE, -29);
 
         String[] dates      = ret.getAttributeValue().split(",");
@@ -448,7 +449,8 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
     @Test
     public void testYesterday() throws AtlasBaseException {
         SearchParameters.FilterCriteria ret           = filtercriteriaDateRange("YESTERDAY", typeRegistry, graph);
-        GregorianCalendar               yesterdayDate = new GregorianCalendar();
+        Calendar                        yesterdayDate = Calendar.getInstance(TIME_ZONE_UTC);
+
         yesterdayDate.add(Calendar.DATE, -1);
 
         String[] dates      = ret.getAttributeValue().split(",");
@@ -479,6 +481,7 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
         SearchParameters.FilterCriteria ret               = filtercriteriaDateRange("THIS_QUARTER", typeRegistry, graph);
         Calendar                        originalstartdate = Calendar.getInstance(TIME_ZONE_UTC);
         Calendar                        originalenddate   = Calendar.getInstance(TIME_ZONE_UTC);
+
         originalstartdate.add(Calendar.MONTH, -1);
         originalstartdate.set(Calendar.DAY_OF_MONTH, originalstartdate.getActualMinimum(Calendar.DAY_OF_MONTH));
         originalenddate.add(Calendar.MONTH, 1);
@@ -497,6 +500,7 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
         SearchParameters.FilterCriteria ret               = filtercriteriaDateRange("LAST_QUARTER", typeRegistry, graph);
         Calendar                        originalstartdate = Calendar.getInstance(TIME_ZONE_UTC);
         Calendar                        originalenddate   = Calendar.getInstance(TIME_ZONE_UTC);
+
         originalstartdate.add(Calendar.MONTH, -4);
         originalstartdate.set(Calendar.DAY_OF_MONTH, originalstartdate.getActualMinimum(Calendar.DAY_OF_MONTH));
         originalenddate.add(Calendar.MONTH, -2);
