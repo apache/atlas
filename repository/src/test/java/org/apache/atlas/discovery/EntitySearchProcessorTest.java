@@ -67,6 +67,7 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
 
     private static final SimpleDateFormat FORMATTED_DATE       = new SimpleDateFormat("dd-MMM-yyyy");
     private static final String           EXPECTED_ENTITY_NAME = "hive_Table_Null_tableType";
+    private static final TimeZone         TIME_ZONE_UTC        = TimeZone.getTimeZone("UTC");
 
     @Inject
     public  GraphBackedSearchIndexer indexer;
@@ -90,7 +91,7 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
         setupTestData();
         createJapaneseEntityWithDescription();
         createChineseEntityWithDescription();
-        FORMATTED_DATE.setTimeZone(TimeZone.getTimeZone("UTC"));
+        FORMATTED_DATE.setTimeZone(TIME_ZONE_UTC);
     }
 
     @Test
@@ -413,8 +414,8 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
     @Test
     public void testLastMonth() throws AtlasBaseException {
         SearchParameters.FilterCriteria ret               = filtercriteriaDateRange("LAST_MONTH", typeRegistry, graph);
-        Calendar                        originalstartdate = Calendar.getInstance();
-        Calendar                        originalenddate   = Calendar.getInstance();
+        Calendar                        originalstartdate = Calendar.getInstance(TIME_ZONE_UTC);
+        Calendar                        originalenddate   = Calendar.getInstance(TIME_ZONE_UTC);
 
         originalstartdate.add(Calendar.MONTH, -1);
         originalstartdate.set(Calendar.DAY_OF_MONTH, originalstartdate.getActualMinimum(Calendar.DAY_OF_MONTH));
@@ -459,8 +460,8 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
     @Test
     public void testThisMonth() throws AtlasBaseException {
         SearchParameters.FilterCriteria ret               = filtercriteriaDateRange("THIS_MONTH", typeRegistry, graph);
-        Calendar                        originalstartdate = Calendar.getInstance();
-        Calendar                        originalenddate   = Calendar.getInstance();
+        Calendar                        originalstartdate = Calendar.getInstance(TIME_ZONE_UTC);
+        Calendar                        originalenddate   = Calendar.getInstance(TIME_ZONE_UTC);
 
         originalstartdate.set(Calendar.DAY_OF_MONTH, originalstartdate.getActualMinimum(Calendar.DAY_OF_MONTH));
         originalenddate.set(Calendar.DAY_OF_MONTH, originalenddate.getActualMaximum(Calendar.DAY_OF_MONTH));
@@ -476,8 +477,8 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
     @Test
     public void testThisQuarter() throws AtlasBaseException {
         SearchParameters.FilterCriteria ret               = filtercriteriaDateRange("THIS_QUARTER", typeRegistry, graph);
-        Calendar                        originalstartdate = Calendar.getInstance();
-        Calendar                        originalenddate   = Calendar.getInstance();
+        Calendar                        originalstartdate = Calendar.getInstance(TIME_ZONE_UTC);
+        Calendar                        originalenddate   = Calendar.getInstance(TIME_ZONE_UTC);
         originalstartdate.add(Calendar.MONTH, -1);
         originalstartdate.set(Calendar.DAY_OF_MONTH, originalstartdate.getActualMinimum(Calendar.DAY_OF_MONTH));
         originalenddate.add(Calendar.MONTH, 1);
@@ -494,8 +495,8 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
     @Test
     public void testLastQuarter() throws AtlasBaseException {
         SearchParameters.FilterCriteria ret               = filtercriteriaDateRange("LAST_QUARTER", typeRegistry, graph);
-        Calendar                        originalstartdate = Calendar.getInstance();
-        Calendar                        originalenddate   = Calendar.getInstance();
+        Calendar                        originalstartdate = Calendar.getInstance(TIME_ZONE_UTC);
+        Calendar                        originalenddate   = Calendar.getInstance(TIME_ZONE_UTC);
         originalstartdate.add(Calendar.MONTH, -4);
         originalstartdate.set(Calendar.DAY_OF_MONTH, originalstartdate.getActualMinimum(Calendar.DAY_OF_MONTH));
         originalenddate.add(Calendar.MONTH, -2);
@@ -512,8 +513,8 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
     @Test
     public void testLast3Months() throws AtlasBaseException {
         SearchParameters.FilterCriteria ret               = filtercriteriaDateRange("LAST_3_MONTHS", typeRegistry, graph);
-        Calendar                        originalstartdate = Calendar.getInstance();
-        Calendar                        originalenddate   = Calendar.getInstance();
+        Calendar                        originalstartdate = Calendar.getInstance(TIME_ZONE_UTC);
+        Calendar                        originalenddate   = Calendar.getInstance(TIME_ZONE_UTC);
 
         originalstartdate.add(Calendar.MONTH, -3);
         originalstartdate.set(Calendar.DAY_OF_MONTH, originalstartdate.getActualMinimum(Calendar.DAY_OF_MONTH));
@@ -531,8 +532,8 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
     @Test
     public void testThisYear() throws AtlasBaseException {
         SearchParameters.FilterCriteria ret               = filtercriteriaDateRange("THIS_YEAR", typeRegistry, graph);
-        Calendar                        originalstartdate = Calendar.getInstance();
-        Calendar                        originalenddate   = Calendar.getInstance();
+        Calendar                        originalstartdate = Calendar.getInstance(TIME_ZONE_UTC);
+        Calendar                        originalenddate   = Calendar.getInstance(TIME_ZONE_UTC);
 
         originalstartdate.set(Calendar.MONTH, 0);
         originalstartdate.set(Calendar.DAY_OF_MONTH, originalstartdate.getActualMinimum(Calendar.DAY_OF_MONTH));
@@ -551,8 +552,8 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
     @Test
     public void testLastYear() throws AtlasBaseException {
         SearchParameters.FilterCriteria ret               = filtercriteriaDateRange("LAST_YEAR", typeRegistry, graph);
-        Calendar                        originalstartdate = Calendar.getInstance();
-        Calendar                        originalenddate   = Calendar.getInstance();
+        Calendar                        originalstartdate = Calendar.getInstance(TIME_ZONE_UTC);
+        Calendar                        originalenddate   = Calendar.getInstance(TIME_ZONE_UTC);
 
         originalstartdate.add(Calendar.YEAR, -1);
         originalstartdate.set(Calendar.MONTH, 0);
@@ -573,8 +574,8 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
     @Test
     public void testLast12Months() throws AtlasBaseException {
         SearchParameters.FilterCriteria ret               = filtercriteriaDateRange("LAST_12_MONTHS", typeRegistry, graph);
-        Calendar                        originalstartdate = Calendar.getInstance();
-        Calendar                        originalenddate   = Calendar.getInstance();
+        Calendar                        originalstartdate = Calendar.getInstance(TIME_ZONE_UTC);
+        Calendar                        originalenddate   = Calendar.getInstance(TIME_ZONE_UTC);
 
         originalstartdate.add(Calendar.MONTH, -12);
         originalstartdate.set(Calendar.DAY_OF_MONTH, originalstartdate.getActualMinimum(Calendar.DAY_OF_MONTH));
@@ -593,8 +594,8 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
     @Test
     public void testLast6Months() throws AtlasBaseException {
         SearchParameters.FilterCriteria ret               = filtercriteriaDateRange("LAST_6_MONTHS", typeRegistry, graph);
-        Calendar                        originalstartdate = Calendar.getInstance();
-        Calendar                        originalenddate   = Calendar.getInstance();
+        Calendar                        originalstartdate = Calendar.getInstance(TIME_ZONE_UTC);
+        Calendar                        originalenddate   = Calendar.getInstance(TIME_ZONE_UTC);
 
         originalstartdate.add(Calendar.MONTH, -6);
         originalstartdate.set(Calendar.DAY_OF_MONTH, originalstartdate.getActualMinimum(Calendar.DAY_OF_MONTH));
