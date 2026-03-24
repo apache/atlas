@@ -76,10 +76,8 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
-import org.apache.atlas.util.SearchPredicateUtil;
 import org.apache.atlas.util.SearchTracker;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections4.IteratorUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -504,7 +502,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     @Override
     @GraphTransaction
-    public AtlasSearchResult searchRelatedEntities(String guid, String relation, boolean getApproximateCount, SearchParameters searchParameters) throws AtlasBaseException {
+    public AtlasSearchResult searchRelatedEntities(String guid, String relation, boolean getApproximateCount, SearchParameters searchParameters, boolean disableDefaultSorting) throws AtlasBaseException {
         AtlasSearchResult ret = new AtlasSearchResult(AtlasQueryType.RELATIONSHIP);
 
         if (StringUtils.isEmpty(guid) || StringUtils.isEmpty(relation)) {
@@ -523,26 +521,56 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         //validate relation
         AtlasEntityType endEntityType = null;
         AtlasAttribute  attribute     = entityType.getAttribute(relation);
+        String[]        edgeLabels    = null;  // Support multiple relationship types
 
         if (attribute == null) {
             attribute = entityType.getRelationshipAttribute(relation, null);
         }
 
         if (attribute != null) {
-            //get end entity type through relationship attribute
-            endEntityType = attribute.getReferencedEntityType(typeRegistry);
+            Set<String> relationshipTypes = entityType.getAttributeRelationshipTypes(relation);
+
+            if (CollectionUtils.isNotEmpty(relationshipTypes) && relationshipTypes.size() > 1) {
+                // Multiple relationship types - need to traverse all edge labels
+                LOG.debug("Attribute '{}' has multiple relationship types: {}", relation, relationshipTypes);
+
+                List<String> edgeLabelList = new ArrayList<>();
+                for (String relType : relationshipTypes) {
+                    AtlasAttribute relAttr = entityType.getRelationshipAttribute(relation, relType);
+                    if (relAttr != null) {
+                        edgeLabelList.add(relAttr.getRelationshipEdgeLabel());
+                    }
+                }
+                edgeLabels = edgeLabelList.toArray(new String[0]);
+
+                // For sortBy validation, use the first end entity type
+                // (all relationship types for same attribute should have compatible sorting attributes)
+                endEntityType = attribute.getReferencedEntityType(typeRegistry);
+            } else {
+                // Single relationship type
+                endEntityType = attribute.getReferencedEntityType(typeRegistry);
+                relation      = attribute.getRelationshipEdgeLabel();
+            }
 
             if (endEntityType == null) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_ATTRIBUTE, relation, attribute.getTypeName());
             }
-
-            relation = attribute.getRelationshipEdgeLabel();
         } else {
             //get end entity type through label
             String endEntityTypeName = GraphHelper.getReferencedEntityTypeName(entityVertex, relation);
 
             if (StringUtils.isNotEmpty(endEntityTypeName)) {
                 endEntityType = typeRegistry.getEntityTypeByName(endEntityTypeName);
+            }
+
+            if (endEntityType == null) {
+                if (StringUtils.isEmpty(endEntityTypeName)) {
+                    // No edges with this label exist on the entity
+                    throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_LABEL_NOT_FOUND, relation, entityTypeName, guid);
+                } else {
+                    // Edges exist but entity type not in registry
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_LABEL, relation, endEntityTypeName);
+                }
             }
         }
 
@@ -551,24 +579,29 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         SortOrder sortOrder           = searchParameters.getSortOrder();
         int       offset              = searchParameters.getOffset();
         int       limit               = searchParameters.getLimit();
-        String    sortByAttributeName = DEFAULT_SORT_ATTRIBUTE_NAME;
+        String    sortByAttributeName = null;
 
-        if (StringUtils.isNotEmpty(sortBy)) {
-            sortByAttributeName = sortBy;
-        }
+        if (disableDefaultSorting && StringUtils.isEmpty(sortBy)) {
+            sortOrder = null;
+        } else {
+            if (StringUtils.isNotEmpty(sortBy)) {
+                sortByAttributeName = sortBy;
+            } else if (!disableDefaultSorting) {
+                sortByAttributeName = DEFAULT_SORT_ATTRIBUTE_NAME;
+            }
 
-        if (endEntityType != null) {
             AtlasAttribute sortByAttribute = endEntityType.getAttribute(sortByAttributeName);
 
             if (sortByAttribute == null) {
+                if (StringUtils.isNotEmpty(sortBy)) {
+                    LOG.info("Invalid sortBy '{}' for type {}, using unsorted query",
+                            sortBy, endEntityType.getTypeName());
+                } else {
+                    LOG.info("Default sortBy '{}' not found for type {}, using unsorted query",
+                            DEFAULT_SORT_ATTRIBUTE_NAME, endEntityType.getTypeName());
+                }
                 sortByAttributeName = null;
                 sortOrder           = null;
-
-                if (StringUtils.isNotEmpty(sortBy)) {
-                    LOG.info("Invalid sortBy Attribute {} for entityType {}, Ignoring Sorting", sortBy, endEntityType.getTypeName());
-                } else {
-                    LOG.info("Invalid Default sortBy Attribute {} for entityType {}, Ignoring Sorting", DEFAULT_SORT_ATTRIBUTE_NAME, endEntityType.getTypeName());
-                }
             } else {
                 sortByAttributeName = sortByAttribute.getVertexPropertyName();
 
@@ -576,20 +609,27 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                     sortOrder = ASCENDING;
                 }
             }
-        } else {
-            sortOrder = null;
-
-            LOG.info("Invalid sortBy Attribute {}, Ignoring Sorting", sortBy);
         }
 
+        LOG.debug("searchRelatedEntities: guid={}, relation={}, edgeLabels={}, sortBy={}, order={}, offset={}, limit={}, excludeDeleted={}",
+                guid, relation, edgeLabels != null ? Arrays.toString(edgeLabels) : relation, sortByAttributeName, sortOrder, offset, limit, searchParameters.getExcludeDeletedEntities());
+
         //get relationship(end vertices) vertices
-        GraphTraversal gt = graph.V(entityVertex.getId()).bothE(relation).otherV();
+        GraphTraversal gt;
+
+        if (edgeLabels != null && edgeLabels.length > 1) {
+            LOG.debug("Traversing multiple edge labels for attribute '{}': {}", relation, Arrays.toString(edgeLabels));
+            gt = graph.V(entityVertex.getId()).bothE(edgeLabels).otherV();
+        } else {
+            String edgeLabel = (edgeLabels != null && edgeLabels.length == 1) ? edgeLabels[0] : relation;
+            gt = graph.V(entityVertex.getId()).bothE(edgeLabel).otherV();
+        }
 
         if (searchParameters.getExcludeDeletedEntities()) {
             gt.has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
         }
 
-        if (sortOrder != null) {
+        if (sortOrder != null && StringUtils.isNotEmpty(sortByAttributeName)) {
             if (sortOrder == ASCENDING) {
                 gt.order().by(sortByAttributeName, Order.asc);
             } else {
@@ -607,40 +647,39 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             if (v != null && v.property(Constants.GUID_PROPERTY_KEY).isPresent()) {
                 String            endVertexGuid = v.property(Constants.GUID_PROPERTY_KEY).value().toString();
                 AtlasVertex       vertex        = entityRetriever.getEntityVertex(endVertexGuid);
-                AtlasEntityHeader entity        = entityRetriever.toAtlasEntityHeader(vertex, searchParameters.getAttributes());
 
-                if (searchParameters.getIncludeClassificationAttributes()) {
-                    entity.setClassifications(entityRetriever.getAllClassifications(vertex));
+                if (vertex != null) {
+                    AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(vertex, searchParameters.getAttributes());
+
+                    if (searchParameters.getIncludeClassificationAttributes()) {
+                        entity.setClassifications(entityRetriever.getAllClassifications(vertex));
+                    }
+
+                    resultList.add(entity);
                 }
-
-                resultList.add(entity);
             }
         }
 
         ret.setEntities(resultList);
 
-        if (ret.getEntities() == null) {
-            ret.setEntities(new ArrayList<>());
-        }
-
-        //set approximate count
-        //state of the edge and endVertex will be same
+        // Set approximate count
         if (getApproximateCount) {
-            Iterator<AtlasEdge> edges = GraphHelper.getAdjacentEdgesByLabel(entityVertex, AtlasEdgeDirection.BOTH, relation);
+            int totalCount = 0;
+
+            String[] labelsToCount = (edgeLabels != null && edgeLabels.length > 0) ? edgeLabels : new String[] {relation};
 
             if (searchParameters.getExcludeDeletedEntities()) {
-                List<AtlasEdge> edgeList = new ArrayList<>();
-
-                edges.forEachRemaining(edgeList::add);
-
-                Predicate activePredicate = SearchPredicateUtil.getEQPredicateGenerator().generatePredicate(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name(), String.class);
-
-                CollectionUtils.filter(edgeList, activePredicate);
-
-                ret.setApproximateCount(edgeList.size());
+                GraphTraversal<AtlasVertex, AtlasVertex> countGt = graph.V(entityVertex.getId()).bothE(labelsToCount).otherV();
+                countGt.has(Constants.STATE_PROPERTY_KEY, ACTIVE.name());
+                totalCount = (int) countGt.count().next().longValue();
             } else {
-                ret.setApproximateCount(IteratorUtils.size(edges));
+                for (String edgeLabel : labelsToCount) {
+                    Iterator<AtlasEdge> edges = GraphHelper.getAdjacentEdgesByLabel(entityVertex, AtlasEdgeDirection.BOTH, edgeLabel);
+                    totalCount += IteratorUtils.size(edges);
+                }
             }
+
+            ret.setApproximateCount(totalCount);
         }
 
         scrubSearchResults(ret);

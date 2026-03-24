@@ -48,7 +48,7 @@ const createEntity = (params: object) => {
 const getEntity = (guid: string, method: string, params: any) => {
   const config: importTmplConfigs = {
     method: method,
-    params: params,
+    params: { ...params, ignoreRelationships: true },
   };
   return _get(getEntityUrl(guid), config);
 };

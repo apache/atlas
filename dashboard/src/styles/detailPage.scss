@@ -151,6 +151,417 @@ pre.code-block .json-string {
   display: none;
 }
 
+.relationship-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .relationship-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .relationship-cards-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1400px) {
+  .relationship-cards-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Custom column layout: >5 records = 1/col, 1-5 and 0 = 2/col */
+.relationship-cards-grid--custom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.relationship-cards-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 280px;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 599px) {
+  .relationship-cards-column {
+    min-width: 100%;
+  }
+}
+
+.relationship-cards-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+.relationship-cards-grid--custom .relationship-cards-empty {
+  width: 100%;
+  flex: 1 1 100%;
+}
+
+.relationship-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  min-height: 80px;
+}
+
+.relationship-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  background-color: #f2f6f7;
+  color: #37bb9b;
+}
+
+.relationship-card__title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.relationship-card__count {
+  margin-left: 6px;
+  font-size: 0.75rem;
+  color: #37bb9b;
+}
+
+.relationship-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+}
+
+.relationship-card__action-button {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  color: inherit;
+}
+
+.relationship-card__action-button.is-active {
+  color: #2563eb;
+}
+
+.relationship-card__toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.relationship-card__toggle input {
+  margin: 0;
+}
+
+.relationship-card__body {
+  overflow-y: auto;
+  padding: 8px 12px;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.relationship-card__body--empty {
+  overflow: hidden;
+}
+
+.relationship-card__inline-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  width: 100%;
+}
+
+.relationship-card__content {
+  display: flex;
+  flex-direction: column;
+}
+
+.relationship-card__search {
+  padding: 6px 12px;
+}
+
+.relationship-card__search-input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  color: #1f2937;
+  background-color: #f9fafb;
+}
+
+.relationship-card__search-input::placeholder {
+  color: #9ca3af;
+}
+
+.relationship-card__search-input:focus {
+  outline: 2px solid #c7d2fe;
+  outline-offset: 1px;
+}
+
+.relationship-card__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.relationship-card__item {
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5;
+}
+
+.relationship-card__link {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.relationship-card__link:hover {
+  text-decoration: underline;
+}
+
+.relationship-card__link--deleted,
+.relationship-card__text--deleted {
+  color: #bb5838;
+}
+
+.relationship-card__link--deleted:hover {
+  color: #bb5838;
+}
+
+.relationship-card__text {
+  color: #334155;
+}
+
+.relationship-card__empty {
+  padding: 8px 0;
+  font-size: 0.875rem;
+  color: #9ca3af;
+  align-self: flex-start;
+  text-align: center;
+  width: 100%;
+}
+
+.relationship-card__no-match {
+  padding: 8px 0;
+  font-size: 0.875rem;
+  color: #9ca3af;
+  align-self: flex-start;
+}
+
+.relationship-card__footer {
+  border-top: 1px solid #e2e8f0;
+  padding: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+.relationship-card__footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 12px;
+  height: 24px;
+  line-height: 24px;
+  width: 100%;
+}
+
+.relationship-card__page-limit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.relationship-card__page-limit input {
+  width: 64px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  color: #1f2937;
+  background-color: #f9fafb;
+}
+
+.relationship-card__loading {
+  padding: 8px 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #6b7280;
+  display: flex;
+  justify-content: center;
+}
+
+.relationship-card__load-more {
+  margin-top: 6px;
+  padding: 6px 0;
+  font-size: 0.75rem;
+  text-align: center;
+  color: #9ca3af;
+  min-height: 28px;
+}
+
+/* Relationship Card Skeleton Loader */
+.relationship-card-skeleton {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.relationship-card-skeleton__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  background-color: #f2f6f7;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.relationship-card-skeleton__title-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.relationship-card-skeleton__line {
+  display: block;
+  height: 14px;
+  background: linear-gradient(
+    90deg,
+    #e2e8f0 25%,
+    #f1f5f9 50%,
+    #e2e8f0 75%
+  );
+  background-size: 200% 100%;
+  animation: relationship-skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: 4px;
+
+  &--title {
+    width: 100px;
+  }
+
+  &--count {
+    width: 36px;
+  }
+
+  &--short {
+    width: 60%;
+  }
+
+  &--footer {
+    width: 80px;
+    height: 12px;
+  }
+}
+
+.relationship-card-skeleton__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.relationship-card-skeleton__box {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    #e2e8f0 25%,
+    #f1f5f9 50%,
+    #e2e8f0 75%
+  );
+  background-size: 200% 100%;
+  animation: relationship-skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: 4px;
+
+  &--button {
+    width: 28px;
+    height: 24px;
+  }
+
+  &--checkbox {
+    width: 80px;
+    height: 16px;
+  }
+
+  &--input {
+    width: 60px;
+    height: 24px;
+  }
+}
+
+.relationship-card-skeleton__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+}
+
+.relationship-card-skeleton__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 80px;
+}
+
+.relationship-card-skeleton__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+@keyframes relationship-skeleton-pulse {
+  0%,
+  100% {
+    background-position: 200% 0;
+  }
+  50% {
+    background-position: -200% 0;
+  }
+}
+
 .long-descriptions,
 .long-descriptions * {
   display: contents;

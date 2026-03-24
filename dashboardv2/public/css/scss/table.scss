@@ -44,6 +44,7 @@ tr.empty {
 .type-node-details,
 .relationship-detail-table {
     position: relative;
+    min-height: 600px;
 
     .hide-empty-value {
         .hide-row {

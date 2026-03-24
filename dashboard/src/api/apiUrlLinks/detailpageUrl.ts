@@ -48,6 +48,10 @@ const detailPageRelationshipApiUrl = (guid: string) => {
   return `${getBaseApiUrl("urlV2")}/relationship/guid/${guid}`;
 };
 
+const detailPageRelationshipAttributesApiUrl = (guid: string) => {
+  return `${entitiesApiUrl()}/guid/${guid}/relationshipAttributes`;
+};
+
 export {
   detailpageApiUrl,
   detailPageAuditApiUrl,
@@ -55,5 +59,6 @@ export {
   auditApiurl,
   detailPageLabelApiUrl,
   detailPageBusinessMetadataApiUrl,
-  detailPageRelationshipApiUrl
+  detailPageRelationshipApiUrl,
+  detailPageRelationshipAttributesApiUrl
 };

@@ -49,9 +49,18 @@ const getRelationShip = (params: any) => {
   return fetchApi(searchApiUrl("relationship"), config);
 };
 
+const getRelationShipV2 = (params: any) => {
+  const config: any = {
+    method: "GET",
+    ...params
+  };
+  return fetchApi(searchApiUrl("relationship"), config);
+};
+
 export {
   getBasicSearchResult,
   getRelationShipResult,
   getGlobalSearchResult,
-  getRelationShip
+  getRelationShip,
+  getRelationShipV2
 };

@@ -181,16 +181,16 @@ define([
                     });
 
                     var dOptions = _.extend({ id: id, value: paramObj }, options);
-                    that.renderViewIfNotExists({
-                        view: App.rNContent,
-                        viewName: "DetailPageLayoutView",
-                        manualRender: function() {
-                            this.view.currentView.manualRender(dOptions);
-                        },
-                        render: function() {
-                            return new DetailPageLayoutView(dOptions);
+                    var currentView = App.rNContent.currentView;
+                    var isSameEntity = currentView && currentView._viewName === "DetailPageLayoutView" && currentView.id === id;
+                    if (isSameEntity) {
+                        currentView.manualRender(dOptions);
+                    } else {
+                        if (currentView && currentView.destroy) {
+                            currentView.destroy();
                         }
-                    });
+                        App.rNContent.show(new DetailPageLayoutView(dOptions));
+                    }
                 });
             }
         },
