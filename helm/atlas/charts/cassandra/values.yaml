@@ -365,10 +365,10 @@ icarus:
   resources:
     limits:
       cpu: 0.5
-      memory: 4Gi
+      memory: 2Gi
     requests:
       cpu: 0.5
-      memory: 4Gi
+      memory: 2Gi
   resources_lite:
     limits:
       cpu: 1
