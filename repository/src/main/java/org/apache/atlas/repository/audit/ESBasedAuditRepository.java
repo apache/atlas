@@ -110,6 +110,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
     private static final Set<String> ALLOWED_LINKED_ATTRIBUTES = new HashSet<>(Arrays.asList(DOMAIN_GUIDS));
     private static final String ENTITY_AUDITS_INDEX = "entity_audits";
+    private static final String NIOFS_MIGRATION_MARKER_ID = "entity_audits_niofs_migrated";
     private static final int DLQ_POLL_TIMEOUT_SECONDS = 5;
 
     /**
@@ -738,6 +739,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 updateFieldLimit();
             }
             updateMappingsIfChanged();
+            ensureStoreTypeNiofs();
         } catch (IOException e) {
             LOG.error("error", e);
             throw new AtlasException(e);
@@ -803,6 +805,103 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             }
         } catch (IOException e) {
             LOG.error("Error while updating the field limit", e);
+        }
+    }
+
+    /**
+     * One-time migration: switches entity_audits from default hybridfs/mmapfs to niofs store type.
+     *
+     * With hybridfs, ES memory-maps all audit segment files at index open time, consuming virtual
+     * address space proportional to the full index size (often 19-400GB). These mmap'd pages compete
+     * for the OS page cache with janusgraph_vertex_index, degrading search performance.
+     *
+     * niofs uses Java NIO FileChannel.read() instead of mmap. Audit pages only enter the page cache
+     * during active queries and are easily evictable, freeing page cache for the vertex index.
+     *
+     * Uses a marker document to ensure the migration runs exactly once across all pods and deployments.
+     * On every startup, each pod does a single cheap HEAD request to check for the marker.
+     * Requires a brief close/open cycle (~2-3 seconds of audit write unavailability) on first run only.
+     */
+    private void ensureStoreTypeNiofs() {
+        try {
+            // Fast path: check if migration was already completed (cheap HEAD request)
+            if (isNiofsMigrationDone()) {
+                return;
+            }
+
+            // Migration not done yet — verify store type and migrate if needed
+            Request getSettings = new Request("GET", INDEX_NAME + "/_settings");
+            Response settingsResponse = lowLevelClient.performRequest(getSettings);
+            String responseBody = copyToString(settingsResponse.getEntity().getContent(), defaultCharset());
+            JsonNode storeType = new ObjectMapper().readTree(responseBody).at("/" + INDEX_NAME + "/settings/index/store/type");
+
+            if (storeType != null && "niofs".equals(storeType.asText())) {
+                // Already niofs (e.g. set manually) — just write the marker so we skip next time
+                writeNiofsMigrationMarker();
+                return;
+            }
+
+            String currentType = (storeType == null || storeType.isMissingNode()) ? "default" : storeType.asText();
+            LOG.info("entity_audits index store type is '{}', migrating to niofs", currentType);
+
+            // Close index
+            Request closeRequest = new Request("POST", INDEX_NAME + "/_close");
+            Response closeResponse = lowLevelClient.performRequest(closeRequest);
+            if (!isSuccess(closeResponse)) {
+                LOG.error("Failed to close entity_audits index for niofs migration");
+                return;
+            }
+
+            boolean migrationSucceeded = false;
+            try {
+                Request putSettings = new Request("PUT", INDEX_NAME + "/_settings");
+                String settingsBody = "{\"index.store.type\": \"niofs\"}";
+                putSettings.setEntity(new NStringEntity(settingsBody, ContentType.APPLICATION_JSON));
+                Response putResponse = lowLevelClient.performRequest(putSettings);
+                if (isSuccess(putResponse)) {
+                    LOG.info("entity_audits index store type set to niofs");
+                    migrationSucceeded = true;
+                } else {
+                    LOG.error("Failed to set niofs store type on entity_audits");
+                }
+            } finally {
+                Request openRequest = new Request("POST", INDEX_NAME + "/_open");
+                Response openResponse = lowLevelClient.performRequest(openRequest);
+                if (isSuccess(openResponse)) {
+                    LOG.info("entity_audits index reopened after niofs migration");
+                } else {
+                    LOG.error("Failed to reopen entity_audits index after niofs migration");
+                    migrationSucceeded = false;
+                }
+
+                if (migrationSucceeded) {
+                    writeNiofsMigrationMarker();
+                }
+            }
+        } catch (Exception e) {
+            LOG.warn("Failed to ensure niofs store type on entity_audits, will retry on next startup", e);
+        }
+    }
+
+    private boolean isNiofsMigrationDone() {
+        try {
+            Request request = new Request("HEAD", INDEX_NAME + "/_doc/" + NIOFS_MIGRATION_MARKER_ID);
+            Response response = lowLevelClient.performRequest(request);
+            return response.getStatusLine().getStatusCode() == 200;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void writeNiofsMigrationMarker() {
+        try {
+            Request request = new Request("PUT", INDEX_NAME + "/_doc/" + NIOFS_MIGRATION_MARKER_ID);
+            String body = "{\"migration\":\"niofs\",\"timestamp\":" + System.currentTimeMillis() + "}";
+            request.setEntity(new NStringEntity(body, ContentType.APPLICATION_JSON));
+            lowLevelClient.performRequest(request);
+            LOG.info("entity_audits niofs migration marker written");
+        } catch (Exception e) {
+            LOG.warn("Failed to write niofs migration marker, migration will re-check on next startup", e);
         }
     }
 

@@ -1,4 +1,12 @@
 {
+  "settings": {
+    "index": {
+      "store": {
+        "type": "niofs"
+      },
+      "refresh_interval": "60s"
+    }
+  },
   "mappings": {
     "properties": {
       "entityQualifiedName": {
