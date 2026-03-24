@@ -1560,7 +1560,7 @@ public class EntityGraphMapper {
             if (!requestContext.isDeletedEntity(graphHelper.getGuid(inverseVertex))) {
                 updateModificationMetadata(inverseVertex);
 
-                requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(inverseVertex));
+                requestContext.recordEntityUpdateForRelationshipChange(entityRetriever.toAtlasEntityHeader(inverseVertex));
             }
         }
     }
@@ -5808,7 +5808,7 @@ public class EntityGraphMapper {
             if (!req.isUpdatedEntity(graphHelper.getGuid(vertex))) {
                 updateModificationMetadata(vertex);
 
-                req.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(vertex));
+                req.recordEntityUpdateForRelationshipChange(entityRetriever.toAtlasEntityHeader(vertex));
             }
         }
     }
@@ -5836,7 +5836,7 @@ public class EntityGraphMapper {
 
             if (!req.isUpdatedEntity(header.getGuid())) {
                 updateModificationMetadata(vertex);
-                req.recordEntityUpdate(header);
+                req.recordEntityUpdateForRelationshipChange(header);
             }
 
             AtlasEntity entity = req.getDifferentialEntity(header.getGuid());

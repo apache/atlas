@@ -434,6 +434,18 @@ public class RequestContext {
             updatedEntities.put(entity.getGuid(), entity);
         }
     }
+
+    /**
+     * Records an entity update triggered by a relationship change (e.g., sub-asset added/removed).
+     * Bypasses the entitiesToSkipUpdate check because relationship mutations are a material change
+     * even when the entity's own attributes are unchanged.
+     */
+    public void recordEntityUpdateForRelationshipChange(AtlasEntityHeader entity) {
+        if (entity != null && entity.getGuid() != null) {
+            updatedEntities.put(entity.getGuid(), entity);
+        }
+    }
+
     public void recordEntityToSkip(String guid) {
         if(! StringUtils.isEmpty(guid)) {
             entitiesToSkipUpdate.add(guid);

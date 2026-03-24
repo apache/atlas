@@ -499,7 +499,7 @@ public abstract class DeleteHandlerV1 {
                             AtlasGraphUtilsV2.setEncodedProperty(referencedVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());
                             AtlasGraphUtilsV2.setEncodedProperty(referencedVertex, MODIFIED_BY_KEY, requestContext.getUser());
 
-                            requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(referencedVertex));
+                            requestContext.recordEntityUpdateForRelationshipChange(entityRetriever.toAtlasEntityHeader(referencedVertex));
                         }
 
                         // Cache differential entity with removed relationship info for mutatedDetails in notifications
@@ -521,7 +521,7 @@ public abstract class DeleteHandlerV1 {
                             AtlasGraphUtilsV2.setEncodedProperty(referencedVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());
                             AtlasGraphUtilsV2.setEncodedProperty(referencedVertex, MODIFIED_BY_KEY, requestContext.getUser());
 
-                            requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(referencedVertex));
+                            requestContext.recordEntityUpdateForRelationshipChange(entityRetriever.toAtlasEntityHeader(referencedVertex));
                         }
 
                         // Cache differential entity with removed relationship info for mutatedDetails in notifications
