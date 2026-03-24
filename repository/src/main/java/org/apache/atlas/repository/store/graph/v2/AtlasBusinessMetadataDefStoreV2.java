@@ -444,11 +444,10 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
         if (isPresent) {
             LOG.error("Cannot delete BusinessMetadata '{}' (request='{}') - attribute '{}' (vertex property: '{}') has references in entity types: {}",
-                      bmDef.getName(), identifier, attributeDef.getName(), vertexPropertyName, allApplicableTypes);
+                    bmDef.getName(), identifier, attributeDef.getName(), vertexPropertyName, allApplicableTypes);
             throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, bmDef.getName());
         }
     }
-
 
     private boolean isBusinessAttributePresentInGraph(String vertexPropertyName, Set<String> allApplicableTypes) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(allApplicableTypes)) {
