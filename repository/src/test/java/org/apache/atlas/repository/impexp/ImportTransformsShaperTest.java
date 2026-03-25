@@ -35,7 +35,7 @@ import org.testng.annotations.Test;
 import javax.inject.Inject;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Set;
 
 import static org.apache.atlas.utils.TestLoadModelUtils.loadFsModel;
 import static org.testng.Assert.assertEquals;
@@ -73,7 +73,7 @@ public class ImportTransformsShaperTest extends AtlasTestBase {
         assertEntities(result.getProcessedEntities(), TAG_NAME);
     }
 
-    private void assertEntities(List<String> entityGuids, String tagName) throws AtlasBaseException {
+    private void assertEntities(Set<String> entityGuids, String tagName) throws AtlasBaseException {
         for (String guid : entityGuids) {
             AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = this.entityStore.getById(guid);
 
