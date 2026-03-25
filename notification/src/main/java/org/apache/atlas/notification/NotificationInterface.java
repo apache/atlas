@@ -21,6 +21,7 @@ import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.notification.entity.EntityMessageDeserializer;
 import org.apache.atlas.notification.hook.HookMessageDeserializer;
 import org.apache.atlas.notification.task.AtlasDistributedTaskMessageDeserializer;
+import org.apache.atlas.notification.task.TaskNotificationDeserializer;
 
 import java.util.List;
 
@@ -52,7 +53,9 @@ public interface NotificationInterface {
 
         RELATIONSHIPS(new EntityMessageDeserializer()),
 
-        ATLAS_DISTRIBUTED_TASKS(new AtlasDistributedTaskMessageDeserializer());
+        ATLAS_DISTRIBUTED_TASKS(new AtlasDistributedTaskMessageDeserializer()),
+
+        TASK_EVENTS(new TaskNotificationDeserializer());
 
         private final AtlasNotificationMessageDeserializer deserializer;
 

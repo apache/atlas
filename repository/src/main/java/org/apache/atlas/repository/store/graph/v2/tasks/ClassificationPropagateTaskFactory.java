@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2.tasks;
 
 import org.apache.atlas.repository.metrics.TaskMetricsService;
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.notification.task.TaskNotificationSender;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
@@ -65,14 +66,16 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
     private final DeleteHandlerDelegate  deleteDelegate;
     private final AtlasRelationshipStore relationshipStore;
     private final TaskMetricsService taskMetricsService;
+    private final TaskNotificationSender taskNotificationSender;
 
     @Inject
-    public ClassificationPropagateTaskFactory(AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore, TaskMetricsService taskMetricsService) {
+    public ClassificationPropagateTaskFactory(AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore, TaskMetricsService taskMetricsService, TaskNotificationSender taskNotificationSender) {
         this.graph             = graph;
         this.entityGraphMapper = entityGraphMapper;
         this.deleteDelegate    = deleteDelegate;
         this.relationshipStore = relationshipStore;
         this.taskMetricsService = taskMetricsService;
+        this.taskNotificationSender = taskNotificationSender;
     }
 
     public org.apache.atlas.tasks.AbstractTask create(AtlasTask task) {
@@ -81,22 +84,22 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
 
         switch (taskType) {
             case CLASSIFICATION_PROPAGATION_ADD:
-                return new ClassificationPropagationTasks.Add(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
+                return new ClassificationPropagationTasks.Add(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService, taskNotificationSender);
 
             case CLASSIFICATION_PROPAGATION_TEXT_UPDATE:
-                return new ClassificationPropagationTasks.UpdateText(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
+                return new ClassificationPropagationTasks.UpdateText(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService, taskNotificationSender);
 
             case CLASSIFICATION_PROPAGATION_DELETE:
-                return new ClassificationPropagationTasks.Delete(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
+                return new ClassificationPropagationTasks.Delete(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService, taskNotificationSender);
 
             case CLASSIFICATION_REFRESH_PROPAGATION:
-                return new ClassificationPropagationTasks.RefreshPropagation(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
+                return new ClassificationPropagationTasks.RefreshPropagation(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService, taskNotificationSender);
 
             case CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE:
-                return new ClassificationPropagationTasks.UpdateRelationship(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
+                return new ClassificationPropagationTasks.UpdateRelationship(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService, taskNotificationSender);
 
             case CLEANUP_CLASSIFICATION_PROPAGATION:
-                return new ClassificationPropagationTasks.CleanUpClassificationPropagation(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
+                return new ClassificationPropagationTasks.CleanUpClassificationPropagation(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService, taskNotificationSender);
 
             default:
                 LOG.warn("Type: {} - {} not found!. The task will be ignored.", taskType, taskGuid);

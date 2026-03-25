@@ -34,6 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.apache.atlas.repository.metrics.TaskMetricsService;
+import org.apache.atlas.model.notification.TaskNotification;
+import org.apache.atlas.notification.task.TaskNotificationSender;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -67,6 +69,7 @@ public abstract class ClassificationTask extends AbstractTask {
     protected final DeleteHandlerDelegate  deleteDelegate;
     protected final AtlasRelationshipStore relationshipStore;
     protected final TaskMetricsService taskMetricsService;
+    protected final TaskNotificationSender taskNotificationSender;
 
 
     public ClassificationTask(AtlasTask task,
@@ -74,13 +77,15 @@ public abstract class ClassificationTask extends AbstractTask {
                               EntityGraphMapper entityGraphMapper,
                               DeleteHandlerDelegate deleteDelegate,
                               AtlasRelationshipStore relationshipStore,
-                              TaskMetricsService taskMetricsService) {
+                              TaskMetricsService taskMetricsService,
+                              TaskNotificationSender taskNotificationSender) {
         super(task);
         this.graph             = graph;
         this.entityGraphMapper = entityGraphMapper;
         this.deleteDelegate    = deleteDelegate;
         this.relationshipStore = relationshipStore;
         this.taskMetricsService = taskMetricsService;
+        this.taskNotificationSender = taskNotificationSender;
     }
 
     @Override
@@ -129,6 +134,7 @@ public abstract class ClassificationTask extends AbstractTask {
 
             LOG.info("Starting classification task execution");
             setStatus(IN_PROGRESS);
+            sendTaskNotification(TaskNotification.Status.STARTED, startTime, 0, 0, null);
             run(params, context);
             setStatus(AtlasTask.Status.COMPLETE);
             int assetsAffected = context.getAssetsAffected();
@@ -137,13 +143,15 @@ public abstract class ClassificationTask extends AbstractTask {
 
             // Record successful completion
             taskMetricsService.recordTaskEnd(
-                taskType, 
+                taskType,
                 version,
                 tenant,
                 System.currentTimeMillis() - startTime,
                 assetsAffected,
                 true
             );
+
+            sendTaskNotification(TaskNotification.Status.COMPLETED, startTime, System.currentTimeMillis(), assetsAffected, null);
 
             return AtlasTask.Status.COMPLETE;
         } catch (AtlasBaseException e) {
@@ -164,6 +172,8 @@ public abstract class ClassificationTask extends AbstractTask {
             );
             taskMetricsService.recordTaskError(taskType, version, tenant, e.getClass().getSimpleName());
 
+            sendTaskNotification(TaskNotification.Status.FAILED, startTime, System.currentTimeMillis(), 0, e.getMessage());
+
             throw e;
         } catch (Throwable t) {
             MDC.put("assets_affected", "0");
@@ -182,6 +192,8 @@ public abstract class ClassificationTask extends AbstractTask {
                 false
             );
             taskMetricsService.recordTaskError(taskType, version, tenant, t.getClass().getSimpleName());
+
+            sendTaskNotification(TaskNotification.Status.FAILED, startTime, System.currentTimeMillis(), 0, t.getMessage());
 
             throw new AtlasBaseException(t);
         } finally {
@@ -233,6 +245,34 @@ public abstract class ClassificationTask extends AbstractTask {
         return new HashMap<>() {{
             put(PARAM_CLASSIFICATION_VERTEX_ID, classificationId);
         }};
+    }
+
+    private void sendTaskNotification(TaskNotification.Status status, long startTime, long endTime, int assetsAffected, String errorMessage) {
+        if (taskNotificationSender == null) {
+            return;
+        }
+
+        try {
+            TaskNotification notification = new TaskNotification(getTaskGuid(), getTaskType(), status);
+            notification.setEntityGuid(getTaskDef().getEntityGuid());
+            notification.setClassificationName(getTaskDef().getTagTypeName());
+            notification.setAssetsAffected(assetsAffected);
+            notification.setStartTime(startTime);
+            notification.setEndTime(endTime);
+            notification.setErrorMessage(errorMessage);
+
+            Map<String, Object> params = getTaskDef().getParameters();
+            if (params != null) {
+                notification.setRestrictPropagationThroughLineage(
+                        (Boolean) params.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE));
+                notification.setRestrictPropagationThroughHierarchy(
+                        (Boolean) params.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_HIERARCHY));
+            }
+
+            taskNotificationSender.sendTaskEvent(notification);
+        } catch (Exception e) {
+            LOG.warn("Failed to send task lifecycle notification for task: {}", getTaskGuid(), e);
+        }
     }
 
     protected void setStatus(AtlasTask.Status status) {

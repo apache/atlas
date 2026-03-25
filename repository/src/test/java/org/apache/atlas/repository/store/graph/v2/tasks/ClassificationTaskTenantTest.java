@@ -164,7 +164,7 @@ class ClassificationTaskTenantTest {
                                           DeleteHandlerDelegate deleteDelegate,
                                           AtlasRelationshipStore relationshipStore,
                                           TaskMetricsService taskMetricsService) {
-            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
+            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService, null);
         }
 
         @Override
