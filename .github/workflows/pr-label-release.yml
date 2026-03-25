@@ -129,6 +129,15 @@ jobs:
             const workflowRun = workflows.workflow_runs[0];
             console.log(`Workflow run found: ${workflowRun.html_url}`);
 
+            // Verify build was actually run against the ring branch, not another branch
+            // with the same SHA. This prevents releases using builds from non-ring branches.
+            const expectedBranch = pr.head.ref;
+            if (workflowRun.head_branch !== expectedBranch) {
+              console.log(`Build found for SHA ${headSha} but on different branch: ${workflowRun.head_branch} (expected: ${expectedBranch})`);
+              core.setOutput('should_proceed', 'false');
+              return;
+            }
+
             // Check if the 'build' job specifically succeeded (not skipped)
             const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
               owner: context.repo.owner,
@@ -170,6 +179,13 @@ jobs:
 
               if (integrationRun.status !== 'completed') {
                 console.log('Integration tests workflow has not completed yet');
+                core.setOutput('should_proceed', 'false');
+                return;
+              }
+
+              // Verify integration tests ran on the ring branch
+              if (integrationRun.head_branch !== expectedBranch) {
+                console.log(`Integration tests found for SHA ${headSha} but on different branch: ${integrationRun.head_branch} (expected: ${expectedBranch})`);
                 core.setOutput('should_proceed', 'false');
                 return;
               }
