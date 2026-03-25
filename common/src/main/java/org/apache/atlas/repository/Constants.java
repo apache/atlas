@@ -140,6 +140,7 @@ public final class Constants {
      */
     public static final String DATA_DOMAIN_ENTITY_TYPE     = "DataDomain";
     public static final String DATA_PRODUCT_ENTITY_TYPE    = "DataProduct";
+    public static final String DATASET_ENTITY_TYPE         = "DataMeshDataset";
 
     public static final String AI_APPLICATION       = "AIApplication";
     public static final String AI_MODEL             = "AIModel";
@@ -299,6 +300,8 @@ public final class Constants {
     public static final String INDEX_SEARCH_VERTEX_PREFIX_DEFAULT      = "$v$";
     public static final String DOMAIN_GUIDS                            = "domainGUIDs";
     public static final String PRODUCT_GUIDS                           = "productGUIDs";
+    public static final String CATALOG_DATASET_GUID_ATTR               = "catalogDatasetGuid";
+    public static final String DATASET_TYPE_ATTR                       = "dataMeshDatasetType";
 
     public static final String ATTR_TENANT_ID = "tenantId";
     public static final String DEFAULT_TENANT_ID = "default";

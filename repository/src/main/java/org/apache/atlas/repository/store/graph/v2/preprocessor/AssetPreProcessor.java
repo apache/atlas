@@ -23,6 +23,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +47,13 @@ public class AssetPreProcessor implements PreProcessor {
 
 
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(ATLAS_GLOSSARY_ENTITY_TYPE, ATLAS_GLOSSARY_TERM_ENTITY_TYPE, ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE, DATA_PRODUCT_ENTITY_TYPE, DATA_DOMAIN_ENTITY_TYPE));
+    private static final Set<String> excludedTypesForDataset = buildExcludedTypesForDataset();
+
+    private static Set<String> buildExcludedTypesForDataset() {
+        Set<String> types = new HashSet<>(excludedTypes);
+        types.add(DATASET_ENTITY_TYPE);
+        return types;
+    }
 
     public AssetPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
         this(typeRegistry, entityRetriever, graph, null);
@@ -101,6 +109,7 @@ public class AssetPreProcessor implements PreProcessor {
 
         userGroupAttributeValidator.validate(entity);
         processDomainLinkAttribute(entity, vertex, operation);
+        processDatasetLinkAttribute(entity, vertex, operation);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
@@ -111,6 +120,7 @@ public class AssetPreProcessor implements PreProcessor {
 
         userGroupAttributeValidator.validate(entity);
         processDomainLinkAttribute(entity, vertex, operation);
+        processDatasetLinkAttribute(entity, vertex, operation);
 
         RequestContext.get().endMetricRecord(metricRecorder);
 
@@ -123,30 +133,62 @@ public class AssetPreProcessor implements PreProcessor {
         }
     }
 
+    private void processDatasetLinkAttribute(AtlasEntity entity, AtlasVertex vertex, EntityMutations.EntityOperation operation) throws AtlasBaseException {
+        if (entity.hasAttribute(CATALOG_DATASET_GUID_ATTR)) {
+            validateDatasetAssetLinks(entity);
+            isAuthorized(vertex, operation, entity);
+        }
+    }
+
+    private void validateDatasetAssetLinks(AtlasEntity entity) throws AtlasBaseException {
+        String datasetGuid = (String) entity.getAttribute(CATALOG_DATASET_GUID_ATTR);
+
+        if (StringUtils.isEmpty(datasetGuid)) {
+            return;
+        }
+
+        validateLinkedEntity(entity, datasetGuid, DATASET_ENTITY_TYPE, "Dataset");
+    }
+
     private void validateDomainAssetLinks(AtlasEntity entity) throws AtlasBaseException {
-        List<String> domainGuids = ( List<String>) entity.getAttribute(DOMAIN_GUIDS);
+        List<String> domainGuids = (List<String>) entity.getAttribute(DOMAIN_GUIDS);
 
-        if(CollectionUtils.isNotEmpty(domainGuids)){
-            if(domainGuids.size() > 1) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Asset can be linked to only one domain");
+        if (CollectionUtils.isEmpty(domainGuids)) {
+            return;
+        }
+
+        if (domainGuids.size() > 1) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Asset can be linked to only one domain");
+        }
+
+        for (String domainGuid : domainGuids) {
+            validateLinkedEntity(entity, domainGuid, DATA_DOMAIN_ENTITY_TYPE, "Domain");
+        }
+    }
+
+    private void validateLinkedEntity(AtlasEntity entity, String guid,
+                                          String expectedEntityType, String label) throws AtlasBaseException {
+        if(DATASET_ENTITY_TYPE.equals(expectedEntityType)) {
+            if (excludedTypesForDataset.contains(entity.getTypeName())) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
+                        entity.getTypeName() + " is not allowed to link with " + label, entity.getTypeName());
             }
-
+        } else {
             if (excludedTypes.contains(entity.getTypeName())) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "This AssetType is not allowed to link with Domain", entity.getTypeName());
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
+                        entity.getTypeName() + " is not allowed to link with " + label, entity.getTypeName());
             }
+        }
 
-            for(String domainGuid : domainGuids) {
-                AtlasVertex domainVertex = entityRetriever.getEntityVertex(domainGuid);
-                if(domainVertex == null) {
-                    throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, domainGuid);
-                }
+        AtlasVertex linkedVertex = entityRetriever.getEntityVertex(guid);
+        if (linkedVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
 
-                String domainEntityType = domainVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
-
-                if (!Objects.equals(domainEntityType, DATA_DOMAIN_ENTITY_TYPE)){
-                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Asset can be linked to only domain");
-                }
-            }
+        String actualType = linkedVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
+        if (!Objects.equals(actualType, expectedEntityType)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
+                    "Asset can be linked to only a " + label + " entity");
         }
     }
 

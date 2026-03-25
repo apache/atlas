@@ -749,6 +749,7 @@
                     "end-two-entity:*",
                     "end-one-entity-type:DataDomain",
                     "end-one-entity-type:DataProduct",
+                    "end-one-entity-type:DataMeshDataset",
                     "end-two-entity-type:Readme",
                     "end-two-entity-type:Link",
                     "relationship-type:*"

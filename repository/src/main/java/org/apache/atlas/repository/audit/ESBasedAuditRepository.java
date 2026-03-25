@@ -74,6 +74,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.Charset.defaultCharset;
+import static org.apache.atlas.repository.Constants.CATALOG_DATASET_GUID_ATTR;
 import static org.apache.atlas.AtlasConfiguration.ENTITY_AUDIT_DLQ_BACKOFF_BASE_MS;
 import static org.apache.atlas.AtlasConfiguration.ENTITY_AUDIT_DLQ_BACKOFF_MAX_MS;
 import static org.apache.atlas.AtlasConfiguration.ENTITY_AUDIT_DLQ_ENABLED;
@@ -108,7 +109,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final String DETAIL = "detail";
     private static final String ENTITY = "entity";
     private static final String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
-    private static final Set<String> ALLOWED_LINKED_ATTRIBUTES = new HashSet<>(Arrays.asList(DOMAIN_GUIDS));
+    private static final Set<String> ALLOWED_LINKED_ATTRIBUTES = new HashSet<>(Arrays.asList(DOMAIN_GUIDS, CATALOG_DATASET_GUID_ATTR));
     private static final String ENTITY_AUDITS_INDEX = "entity_audits";
     private static final String NIOFS_MIGRATION_MARKER_ID = "entity_audits_niofs_migrated";
     private static final int DLQ_POLL_TIMEOUT_SECONDS = 5;
@@ -484,7 +485,15 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
                     for (Map.Entry<String, Object> entry: attributes.entrySet()) {
                         if (ALLOWED_LINKED_ATTRIBUTES.contains(entry.getKey())) {
-                            List<String> guids = (List<String>) entry.getValue();
+                            Object attrValue = entry.getValue();
+                            List<String> guids = new ArrayList<>();
+
+                            // Handle both single GUID and list of GUIDs
+                            if (attrValue instanceof List) {
+                                guids = (List<String>) attrValue;
+                            } else if (attrValue instanceof String) {
+                                guids.add((String) attrValue);
+                            }
 
                             if (guids != null && !guids.isEmpty()){
                                 for (String guid: guids){

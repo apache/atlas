@@ -47,6 +47,9 @@ public class PreProcessorUtils {
     public static final String GLOSSARY_CATEGORY_REL_TYPE = "AtlasGlossaryCategoryAnchor";
     public static final String INIT_LEXORANK_OFFSET = "0|100000:";
 
+    //Dataset constants
+    public static final Set<String> VALID_DATASET_TYPES = new HashSet<>(Arrays.asList("Raw", "Refined", "Aggregated"));
+
     //DataMesh models constants
     public static final String PARENT_DOMAIN_REL_TYPE = "parentDomain";
     public static final String SUB_DOMAIN_REL_TYPE = "subDomains";

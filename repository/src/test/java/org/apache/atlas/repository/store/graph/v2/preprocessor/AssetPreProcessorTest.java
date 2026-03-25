@@ -403,4 +403,272 @@ public class AssetPreProcessorTest {
             assertTrue(e.getMessage().contains("SSI tags are not allowed"));
         }
     }
+
+    // =====================================================================================
+    // Dataset Linking Tests
+    // =====================================================================================
+
+    @Test
+    public void testDatasetLinkAttribute_emptyGuidSkipsValidation() throws AtlasBaseException {
+        AtlasEntity entity = new AtlasEntity("Table");
+        entity.setAttribute(QUALIFIED_NAME, "test-table");
+        entity.setAttribute("catalogDatasetGuid", ""); // Empty string
+
+        // Should not throw exception - empty GUID is ignored
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+
+        assertEquals("", entity.getAttribute("catalogDatasetGuid"));
+    }
+
+    @Test
+    public void testDatasetLinkAttribute_nullGuidSkipsValidation() throws AtlasBaseException {
+        AtlasEntity entity = new AtlasEntity("Table");
+        entity.setAttribute(QUALIFIED_NAME, "test-table");
+        entity.setAttribute("catalogDatasetGuid", null); // Null value
+
+        // Should not throw exception - null GUID is ignored
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+
+        assertNull(entity.getAttribute("catalogDatasetGuid"));
+    }
+
+    @Test
+    public void testDatasetLinkAttribute_missingAttributeSkipsValidation() throws AtlasBaseException {
+        AtlasEntity entity = new AtlasEntity("Table");
+        entity.setAttribute(QUALIFIED_NAME, "test-table");
+        // Don't set catalogDatasetGuid at all
+
+        // Should not throw exception - missing attribute is ignored
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+
+        assertNull(entity.getAttribute("catalogDatasetGuid"));
+    }
+
+    @Test
+    public void testDatasetLinkAttribute_wrongEntityTypeThrows() throws AtlasBaseException {
+        AtlasEntity entity = new AtlasEntity("Table");
+        entity.setAttribute(QUALIFIED_NAME, "test-table");
+        entity.setAttribute("catalogDatasetGuid", "wrong-type-guid");
+
+        // Mock entityRetriever to return a DataDomain vertex instead of Dataset
+        org.apache.atlas.repository.graphdb.AtlasVertex wrongTypeVertex =
+            mock(org.apache.atlas.repository.graphdb.AtlasVertex.class);
+        when(wrongTypeVertex.getProperty("__typeName", String.class)).thenReturn("DataDomain");
+        when(entityRetriever.getEntityVertex("wrong-type-guid")).thenReturn(wrongTypeVertex);
+
+        try {
+            preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+            fail("Should have thrown exception for catalogDatasetGuid pointing to wrong entity type");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_PARAMETERS);
+            assertTrue(e.getMessage().contains("Asset can be linked to only a Dataset entity"),
+                    "Expected message about Dataset linking, got: " + e.getMessage());
+        }
+    }
+
+    @Test
+    public void testDatasetLinkAttribute_nonExistentGuidThrows() throws AtlasBaseException {
+        AtlasEntity entity = new AtlasEntity("Table");
+        entity.setAttribute(QUALIFIED_NAME, "test-table");
+        entity.setAttribute("catalogDatasetGuid", "non-existent-guid");
+
+        // Mock entityRetriever to return null (entity not found)
+        when(entityRetriever.getEntityVertex("non-existent-guid")).thenReturn(null);
+
+        try {
+            preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+            fail("Should have thrown exception for non-existent catalogDatasetGuid");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
+        }
+    }
+
+    @Test
+    public void testDatasetLinkAttribute_excludedTypesCannotSetGuid_DataProduct() {
+        AtlasEntity entity = new AtlasEntity("DataProduct");
+        entity.setAttribute(QUALIFIED_NAME, "test-product");
+        entity.setAttribute("catalogDatasetGuid", "some-dataset-guid");
+
+        try {
+            preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+            fail("DataProduct should not be allowed to link to Dataset");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_PARAMETERS);
+            assertTrue(e.getMessage().contains("DataProduct is not allowed to link with Dataset"));
+        }
+    }
+
+    @Test
+    public void testDatasetLinkAttribute_excludedTypesCannotSetGuid_DataDomain() {
+        AtlasEntity entity = new AtlasEntity("DataDomain");
+        entity.setAttribute(QUALIFIED_NAME, "test-domain");
+        entity.setAttribute("catalogDatasetGuid", "some-dataset-guid");
+
+        try {
+            preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+            fail("DataDomain should not be allowed to link to Dataset");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_PARAMETERS);
+            assertTrue(e.getMessage().contains("DataDomain is not allowed to link with Dataset"));
+        }
+    }
+
+    @Test
+    public void testDatasetLinkAttribute_excludedTypesCannotSetGuid_DatasetSelfLink() {
+        AtlasEntity entity = new AtlasEntity("DataMeshDataset");
+        entity.setAttribute(QUALIFIED_NAME, "test-dataset");
+        entity.setAttribute("catalogDatasetGuid", "another-dataset-guid");
+
+        try {
+            preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+            fail("Dataset should not be allowed to link to another Dataset");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_PARAMETERS);
+            assertTrue(e.getMessage().contains("Dataset is not allowed to link with Dataset"));
+        }
+    }
+
+    @Test
+    public void testDatasetLinkAttribute_excludedTypesCannotSetGuid_GlossaryTerm() {
+        AtlasEntity entity = new AtlasEntity("AtlasGlossaryTerm");
+        entity.setAttribute(QUALIFIED_NAME, "test-term");
+        entity.setAttribute("catalogDatasetGuid", "some-dataset-guid");
+
+        try {
+            preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+            fail("AtlasGlossaryTerm should not be allowed to link to Dataset");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_PARAMETERS);
+            assertTrue(e.getMessage().contains("AtlasGlossaryTerm is not allowed to link with Dataset"));
+        }
+    }
+
+    @Test
+    public void testDatasetLinkAttribute_excludedTypesCannotSetGuid_GlossaryCategory() {
+        AtlasEntity entity = new AtlasEntity("AtlasGlossaryCategory");
+        entity.setAttribute(QUALIFIED_NAME, "test-category");
+        entity.setAttribute("catalogDatasetGuid", "some-dataset-guid");
+
+        try {
+            preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+            fail("AtlasGlossaryCategory should not be allowed to link to Dataset");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_PARAMETERS);
+            assertTrue(e.getMessage().contains("AtlasGlossaryCategory is not allowed to link with Dataset"));
+        }
+    }
+
+    @Test
+    public void testDatasetLinkAttribute_excludedTypesCannotSetGuid_Glossary() {
+        AtlasEntity entity = new AtlasEntity("AtlasGlossary");
+        entity.setAttribute(QUALIFIED_NAME, "test-glossary");
+        entity.setAttribute("catalogDatasetGuid", "some-dataset-guid");
+
+        try {
+            preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+            fail("AtlasGlossary should not be allowed to link to Dataset");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_PARAMETERS);
+            assertTrue(e.getMessage().contains("AtlasGlossary is not allowed to link with Dataset"));
+        }
+    }
+
+    @Test
+    public void testDatasetLinkAttribute_validGuidPasses() throws AtlasBaseException {
+        AtlasEntity entity = new AtlasEntity("Table");
+        entity.setAttribute(QUALIFIED_NAME, "test-table");
+        entity.setAttribute("catalogDatasetGuid", "valid-dataset-guid");
+
+        // Mock entityRetriever to return a valid Dataset vertex
+        org.apache.atlas.repository.graphdb.AtlasVertex datasetVertex =
+            mock(org.apache.atlas.repository.graphdb.AtlasVertex.class);
+        when(datasetVertex.getProperty("__typeName", String.class)).thenReturn("DataMeshDataset");
+        when(entityRetriever.getEntityVertex("valid-dataset-guid")).thenReturn(datasetVertex);
+
+        // Should not throw exception - valid Dataset GUID
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+
+        assertEquals("valid-dataset-guid", entity.getAttribute("catalogDatasetGuid"));
+    }
+
+    @Test
+    public void testValidateLinkedEntity_refactoredDomainValidationRegression() throws AtlasBaseException {
+        // Test that the refactored validateLinkedEntity method still works for domain linking
+        AtlasEntity entity = new AtlasEntity("Table");
+        entity.setAttribute(QUALIFIED_NAME, "test-table");
+        entity.setAttribute("__AtlasDomainGuids", Arrays.asList("valid-domain-guid"));
+
+        // Mock entityRetriever to return a valid DataDomain vertex
+        org.apache.atlas.repository.graphdb.AtlasVertex domainVertex =
+            mock(org.apache.atlas.repository.graphdb.AtlasVertex.class);
+        when(domainVertex.getProperty("__typeName", String.class)).thenReturn("DataDomain");
+        when(entityRetriever.getEntityVertex("valid-domain-guid")).thenReturn(domainVertex);
+
+        // Should not throw exception - the refactored method should still work for domains
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.CREATE);
+
+        assertTrue(((List<?>) entity.getAttribute("__AtlasDomainGuids")).contains("valid-domain-guid"));
+    }
+
+    @Test
+    public void testDatasetLinkAttribute_onUpdateOperation() throws AtlasBaseException {
+        AtlasEntity entity = new AtlasEntity("Table");
+        entity.setGuid("table-guid-123");
+        entity.setAttribute(QUALIFIED_NAME, "test-table");
+        entity.setAttribute("catalogDatasetGuid", "valid-dataset-guid");
+
+        // Mock the asset vertex
+        org.apache.atlas.repository.graphdb.AtlasVertex assetVertex =
+            mock(org.apache.atlas.repository.graphdb.AtlasVertex.class);
+        when(assetVertex.getProperty("__typeName", String.class)).thenReturn("Table");
+        when(context.getVertex(entity.getGuid())).thenReturn(assetVertex);
+
+        // Mock entityRetriever to return a valid Dataset vertex
+        org.apache.atlas.repository.graphdb.AtlasVertex datasetVertex =
+            mock(org.apache.atlas.repository.graphdb.AtlasVertex.class);
+        when(datasetVertex.getProperty("__typeName", String.class)).thenReturn("DataMeshDataset");
+        when(entityRetriever.getEntityVertex("valid-dataset-guid")).thenReturn(datasetVertex);
+
+        // Mock retrieverNoRelation to return an entity header for authorization check (UPDATE path)
+        org.apache.atlas.model.instance.AtlasEntityHeader mockHeader =
+            new org.apache.atlas.model.instance.AtlasEntityHeader("Table");
+        mockHeader.setGuid("table-guid-123");
+        mockHeader.setAttribute("name", "test-table");
+        mockHeader.setAttribute(QUALIFIED_NAME, "test-table");
+        when(retrieverNoRelation.toAtlasEntityHeaderWithClassifications(assetVertex))
+            .thenReturn(mockHeader);
+
+        // Should work for UPDATE operation as well
+        preProcessor.processAttributes(entity, context, EntityMutations.EntityOperation.UPDATE);
+
+        assertEquals("valid-dataset-guid", entity.getAttribute("catalogDatasetGuid"));
+    }
+
+    @Test
+    public void testDatasetLinkAttribute_multipleDifferentAssetsCanLinkToSameDataset() throws AtlasBaseException {
+        // Test that multiple assets can link to the same dataset (N:1 relationship)
+        String sharedDatasetGuid = "shared-dataset-guid";
+
+        // Mock entityRetriever to return a valid Dataset vertex
+        org.apache.atlas.repository.graphdb.AtlasVertex datasetVertex =
+            mock(org.apache.atlas.repository.graphdb.AtlasVertex.class);
+        when(datasetVertex.getProperty("__typeName", String.class)).thenReturn("DataMeshDataset");
+        when(entityRetriever.getEntityVertex(sharedDatasetGuid)).thenReturn(datasetVertex);
+
+        // First asset
+        AtlasEntity asset1 = new AtlasEntity("Table");
+        asset1.setAttribute(QUALIFIED_NAME, "test-table-1");
+        asset1.setAttribute("catalogDatasetGuid", sharedDatasetGuid);
+        preProcessor.processAttributes(asset1, context, EntityMutations.EntityOperation.CREATE);
+
+        // Second asset
+        AtlasEntity asset2 = new AtlasEntity("Table");
+        asset2.setAttribute(QUALIFIED_NAME, "test-table-2");
+        asset2.setAttribute("catalogDatasetGuid", sharedDatasetGuid);
+        preProcessor.processAttributes(asset2, context, EntityMutations.EntityOperation.CREATE);
+
+        // Both should succeed
+        assertEquals(sharedDatasetGuid, asset1.getAttribute("catalogDatasetGuid"));
+        assertEquals(sharedDatasetGuid, asset2.getAttribute("catalogDatasetGuid"));
+    }
 }
