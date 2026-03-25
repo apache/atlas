@@ -19,11 +19,14 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -38,6 +41,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,12 +59,9 @@ import static org.apache.atlas.authorizer.AtlasAuthorizationUtils.getCurrentUser
 import static org.apache.atlas.authorizer.AtlasAuthorizationUtils.verifyAccess;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CREATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
-import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_ADMIN;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.Constants.STAKEHOLDER_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
+import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class AuthPolicyPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AuthPolicyPreProcessor.class);
@@ -70,6 +71,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
     private IndexAliasStore aliasStore;
+    private EntityDiscoveryService discovery;
 
     public AuthPolicyPreProcessor(AtlasGraph graph,
                                   AtlasTypeRegistry typeRegistry,
@@ -79,6 +81,12 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         this.entityRetriever = entityRetriever;
 
         aliasStore = new ESAliasStore(graph, entityRetriever);
+
+        try {
+            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null, entityRetriever);
+        } catch (AtlasException e) {
+            LOG.error("Failed to initialize EntityDiscoveryService", e);
+        }
     }
 
     @Override
@@ -120,6 +128,10 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
         AuthPolicyValidator validator = new AuthPolicyValidator(entityRetriever);
         if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
+            if (parentEntity != null) {
+                validateDuplicatePolicyName(policy, parentEntity);
+            }
+
             String policySubCategory = getPolicySubCategory(policy);
 
             if (!POLICY_SUB_CATEGORY_DOMAIN.equals(policySubCategory)) {
@@ -252,6 +264,49 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    void validateDuplicatePolicyName(AtlasEntity policy, AtlasEntity parentEntity) throws AtlasBaseException {
+        String policyName = getEntityName(policy);
+
+        if (StringUtils.isEmpty(policyName)) {
+            return;
+        }
+
+        if (discovery == null) {
+            LOG.warn("EntityDiscoveryService not initialized - skipping duplicate policy name validation for policy: {}", policyName);
+            return;
+        }
+
+        String parentQN = getEntityQualifiedName(parentEntity);
+
+        IndexSearchParams indexSearchParams = new IndexSearchParams();
+
+        List<Map<String, Object>> filterClauseList = new ArrayList<>();
+        filterClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
+        filterClauseList.add(mapOf("term", mapOf("__typeName.keyword", POLICY_ENTITY_TYPE)));
+        filterClauseList.add(mapOf("term", mapOf("policyCategory", POLICY_CATEGORY_PERSONA)));
+        filterClauseList.add(mapOf("term", mapOf("name.keyword", policyName)));
+        filterClauseList.add(mapOf("prefix", mapOf(QUALIFIED_NAME, parentQN)));
+
+        Map<String, Object> dsl = new HashMap<>();
+        dsl.put("size", 1);
+        dsl.put("query", mapOf("bool", mapOf("filter", filterClauseList)));
+
+        indexSearchParams.setDsl(dsl);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Validating duplicate policy name. Query: {}, PolicyName: {}, ParentQN: {}",
+                dsl, policyName, parentQN);
+        }
+
+        List<AtlasVertex> results = discovery.directVerticesIndexSearch(indexSearchParams);
+
+        if (CollectionUtils.isNotEmpty(results)) {
+            throw new AtlasBaseException(BAD_REQUEST,
+                String.format("Policy with name '%s' already exists in %s '%s'",
+                    policyName, parentEntity.getTypeName(), getEntityName(parentEntity)));
+        }
     }
 
     @Override
