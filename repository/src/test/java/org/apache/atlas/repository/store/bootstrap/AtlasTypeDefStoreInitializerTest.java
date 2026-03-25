@@ -929,7 +929,7 @@ public class AtlasTypeDefStoreInitializerTest {
 
     @Test
     public void testUpdateAttributeMetadataHandlerComprehensive() throws Exception {
-        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry);
+        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph);
 
         Object patch = createMockTypeDefPatch("UPDATE_ATTRIBUTE_METADATA", "TestEntity", "1.0", "2.0");
 
@@ -954,7 +954,7 @@ public class AtlasTypeDefStoreInitializerTest {
 
     @Test
     public void testUpdateAttributeMetadataHandlerForStructDef() throws Exception {
-        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry);
+        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph);
 
         Object patch = createMockTypeDefPatch("UPDATE_ATTRIBUTE_METADATA", "TestStruct", "1.0", "2.0");
 
@@ -976,7 +976,7 @@ public class AtlasTypeDefStoreInitializerTest {
 
     @Test
     public void testUpdateAttributeMetadataHandlerWithInvalidType() throws Exception {
-        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry);
+        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph);
 
         Object patch = createMockTypeDefPatch("UPDATE_ATTRIBUTE_METADATA", "TestEnum", "1.0", "2.0");
 
@@ -1140,7 +1140,7 @@ public class AtlasTypeDefStoreInitializerTest {
 
     @Test
     public void testUpdateAttributeMetadataHandlerSearchWeightValidation() throws Exception {
-        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry);
+        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph);
 
         Object patch = createMockTypeDefPatch("UPDATE_ATTRIBUTE_METADATA", "TestEntity", "1.0", "2.0");
 
@@ -1166,7 +1166,7 @@ public class AtlasTypeDefStoreInitializerTest {
 
     @Test
     public void testUpdateAttributeMetadataHandlerSearchWeightSuccess() throws Exception {
-        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry);
+        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph);
 
         Object patch = createMockTypeDefPatch("UPDATE_ATTRIBUTE_METADATA", "TestEntity", "1.0", "2.0");
 
@@ -1192,7 +1192,7 @@ public class AtlasTypeDefStoreInitializerTest {
 
     @Test
     public void testUpdateAttributeMetadataHandlerIndexTypeValidation() throws Exception {
-        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry);
+        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph);
 
         Object patch = createMockTypeDefPatch("UPDATE_ATTRIBUTE_METADATA", "TestEntity", "1.0", "2.0");
 
@@ -1213,7 +1213,7 @@ public class AtlasTypeDefStoreInitializerTest {
 
     @Test
     public void testUpdateAttributeMetadataHandlerIndexTypeSuccess() throws Exception {
-        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry);
+        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph);
 
         Object patch = createMockTypeDefPatch("UPDATE_ATTRIBUTE_METADATA", "TestEntity", "1.0", "2.0");
 
@@ -1235,7 +1235,7 @@ public class AtlasTypeDefStoreInitializerTest {
 
     @Test
     public void testUpdateAttributeMetadataHandlerEmptyIndexType() throws Exception {
-        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry);
+        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph);
 
         Object patch = createMockTypeDefPatch("UPDATE_ATTRIBUTE_METADATA", "TestEntity", "1.0", "2.0");
 
@@ -1258,7 +1258,7 @@ public class AtlasTypeDefStoreInitializerTest {
 
     @Test
     public void testUpdateAttributeMetadataHandlerUnknownProperty() throws Exception {
-        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry);
+        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph);
 
         Object patch = createMockTypeDefPatch("UPDATE_ATTRIBUTE_METADATA", "TestEntity", "1.0", "2.0");
 
@@ -1280,7 +1280,7 @@ public class AtlasTypeDefStoreInitializerTest {
 
     @Test
     public void testUpdateAttributeMetadataHandlerExceptionHandling() throws Exception {
-        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry);
+        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph);
         Object patch = createMockTypeDefPatch("UPDATE_ATTRIBUTE_METADATA", "TestEntity", "1.0", "2.0");
 
         AtlasEntityDef entityDef = new AtlasEntityDef("TestEntity", "desc", "1.0");
@@ -1301,7 +1301,7 @@ public class AtlasTypeDefStoreInitializerTest {
 
     @Test
     public void testUpdateAttributeMetadataHandlerEmptyParams() throws Exception {
-        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry);
+        AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph);
 
         Object patch = createMockTypeDefPatch("UPDATE_ATTRIBUTE_METADATA", "TestEntity", "1.0", "2.0");
 
