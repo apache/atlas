@@ -22,7 +22,12 @@ data:
         "autodetect-bearer-only": true,
         "credentials": {
           "secret": "KEYCLOAK_CLIENT_SECRET"
-        }
+        },
+        "connection-pool-size": 20,
+        "connection-timeout-millis": 3000,
+        "socket-timeout-millis": 5000,
+        "min-time-between-jwks-requests": 300,
+        "public-key-cache-ttl": 86400
     }
     EOF
     sed -i "s|KEYCLOAK_REALM|$KEYCLOAK_REALM|g" "/opt/apache-atlas/conf/keycloak.json"

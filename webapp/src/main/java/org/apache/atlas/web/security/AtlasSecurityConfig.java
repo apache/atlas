@@ -39,6 +39,7 @@ import org.keycloak.adapters.springsecurity.management.HttpSessionManager;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.lang.reflect.Field;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -322,7 +323,76 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         }
 
         factoryBean.afterPropertiesSet();
-        return factoryBean.getObject();
+        AdapterDeploymentContext context = factoryBean.getObject();
+        forceInternalKeycloakUrls(context);
+        return context;
+    }
+
+    /**
+     * Forces the Keycloak adapter to use internal K8s service URLs for JWKS and realm info,
+     * instead of the external domain URLs returned by Keycloak's OIDC discovery endpoint.
+     *
+     * Background: Keycloak's OIDC discovery document returns endpoint URLs using the configured
+     * Frontend URL (e.g., https://tenant.atlan.com/auth/...). When the Keycloak adapter fetches
+     * JWKS public keys, it uses these external URLs, causing outbound HTTPS calls from Atlas pods
+     * to the internet-facing load balancer and back (NAT hairpin). If the external endpoint is
+     * temporarily unreachable (TLS cert rotation, ALB failover), the outbound call blocks the
+     * Jetty thread for ~14 minutes (OS TCP timeout default), causing thread pool starvation.
+     *
+     * This method rewrites the JWKS and realm info URLs to use the internal Keycloak service URL
+     * (from auth-server-url in keycloak.json), eliminating the external dependency entirely.
+     *
+     * See: RCA southstatebank outage 2026-03-19 (MS-864)
+     */
+    private void forceInternalKeycloakUrls(AdapterDeploymentContext context) {
+        try {
+            // Extract the KeycloakDeployment from the context
+            Field deploymentField = AdapterDeploymentContext.class.getDeclaredField("deployment");
+            deploymentField.setAccessible(true);
+            KeycloakDeployment deployment = (KeycloakDeployment) deploymentField.get(context);
+
+            if (deployment == null) {
+                LOG.warn("KeycloakDeployment is null, skipping internal URL override");
+                return;
+            }
+
+            String authServerBaseUrl = deployment.getAuthServerBaseUrl();
+            if (StringUtils.isEmpty(authServerBaseUrl)) {
+                LOG.warn("auth-server-url is empty, skipping internal URL override");
+                return;
+            }
+
+            String realm = deployment.getRealm();
+            String internalRealmUrl = authServerBaseUrl + "/realms/" + realm;
+            String internalJwksUrl = internalRealmUrl + "/protocol/openid-connect/certs";
+
+            // Trigger resolveUrls() so the fields are populated (they're lazily initialized)
+            // This makes the first OIDC discovery call at startup time, not at first request
+            try {
+                deployment.getJwksUrl();
+            } catch (Exception e) {
+                LOG.warn("Initial JWKS URL resolution failed (external endpoint may be unreachable), " +
+                         "will set internal URLs directly: {}", e.getMessage());
+            }
+
+            String currentJwksUrl = null;
+            // Override the resolved URLs with internal equivalents
+            Field realmInfoUrlField = KeycloakDeployment.class.getDeclaredField("realmInfoUrl");
+            realmInfoUrlField.setAccessible(true);
+            realmInfoUrlField.set(deployment, internalRealmUrl);
+
+            Field jwksUrlField = KeycloakDeployment.class.getDeclaredField("jwksUrl");
+            jwksUrlField.setAccessible(true);
+            currentJwksUrl = (String) jwksUrlField.get(deployment);
+            jwksUrlField.set(deployment, internalJwksUrl);
+
+            LOG.info("Keycloak JWKS URL overridden: {} -> {}", currentJwksUrl, internalJwksUrl);
+            LOG.info("Keycloak realm info URL overridden to: {}", internalRealmUrl);
+
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            LOG.error("Failed to override Keycloak URLs to internal service. " +
+                      "JWKS calls may still go through the external domain. Error: {}", e.getMessage());
+        }
     }
 
     @Bean
@@ -356,3 +426,4 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         return filter;
     }
 }
+
