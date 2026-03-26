@@ -116,6 +116,7 @@ public abstract class ClassificationTask extends AbstractTask {
         }
 
         RequestContext.get().setUser(userName, null);
+        RequestContext.get().addRequestContextHeader("taskId", getTaskGuid());
 
         try {
             // Record task start
