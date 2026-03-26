@@ -36,7 +36,6 @@ import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes;
-import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -45,11 +44,10 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES;
@@ -329,14 +327,18 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         checkBusinessMetadataRef(businessMetadataDef, identifier);
     }
 
-    private boolean hasNonIndexableAttribute(AtlasBusinessMetadataDef bmDef) {
-        if (bmDef == null || CollectionUtils.isEmpty(bmDef.getAttributeDefs())) {
-            return false;
+    private boolean hasNonIndexableAttribute(AtlasBusinessMetadataDef businessMetadataDef) {
+        AtlasBusinessMetadataType bmType = typeRegistry.getBusinessMetadataTypeByName(businessMetadataDef.getName());
+
+        if (bmType != null && bmType.hasNonIndexableAttributes()) {
+            return true;
         }
 
-        for (AtlasStructDef.AtlasAttributeDef attributeDef : bmDef.getAttributeDefs()) {
-            if (!Boolean.TRUE.equals(attributeDef.getIsIndexable())) {
-                return true;
+        if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
+            for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
+                if (!Boolean.TRUE.equals(attributeDef.getIsIndexable())) {
+                    return true;
+                }
             }
         }
 
@@ -408,21 +410,26 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
             return;
         }
 
-        Map<String, Set<String>> expandedTypeCache = new HashMap<>();
+        AtlasBusinessMetadataType bmType = typeRegistry.getBusinessMetadataTypeByName(businessMetadataDef.getName());
 
         for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
-            String applicableTypesStr = attributeDef.getOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES);
-            Set<String> applicableTypes = StringUtils.isBlank(applicableTypesStr) ? null : AtlasJson.fromJson(applicableTypesStr, Set.class);
+            Set<String> allApplicableTypes;
 
-            if (CollectionUtils.isEmpty(applicableTypes)) {
-                continue;
+            if (bmType != null) {
+                AtlasBusinessMetadataType.AtlasBusinessAttribute bmAttr =
+                        (AtlasBusinessMetadataType.AtlasBusinessAttribute) bmType.getAttribute(attributeDef.getName());
+                Set<String> cachedTypes = bmAttr != null ? bmAttr.getApplicableEntityTypeNamesWithSubTypes() : Collections.emptySet();
+
+                allApplicableTypes = CollectionUtils.isNotEmpty(cachedTypes) ? cachedTypes : getApplicableTypesWithSubTypes(attributeDef);
+            } else {
+                allApplicableTypes = getApplicableTypesWithSubTypes(attributeDef);
             }
 
-            Set<String> allApplicableTypes = expandedTypeCache.get(applicableTypesStr);
+            LOG.info("REF-CHECK [ApplicableTypes] BM='{}' attr='{}' types={}",
+                    businessMetadataDef.getName(), attributeDef.getName(), allApplicableTypes);
 
-            if (allApplicableTypes == null) {
-                allApplicableTypes = getApplicableTypesWithSubTypes(applicableTypes);
-                expandedTypeCache.put(applicableTypesStr, allApplicableTypes);
+            if (CollectionUtils.isEmpty(allApplicableTypes)) {
+                continue;
             }
 
             validateAttributeReferences(businessMetadataDef, attributeDef, allApplicableTypes, identifier);
@@ -451,24 +458,22 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         try {
             List<String> typesList = new ArrayList<>(allApplicableTypes);
 
-            // 1. To Check if the BM property exists on a vertex where the direct type matches
-            Iterable<AtlasVertex> verticesDirect = graph.query()
-                    .has(vertexPropertyName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, (Object) null)
-                    .in(Constants.ENTITY_TYPE_PROPERTY_KEY, typesList)
-                    .vertices(1);
+            // Single combined query
+            AtlasGraphQuery query = graph.query()
+                    .has(vertexPropertyName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, (Object) null);
 
-            if (verticesDirect != null && verticesDirect.iterator().hasNext()) {
-                return true;
-            }
-
-            // 2. To Check if the BM property exists on a vertex where it inherits from one of parent Types
+            List<AtlasGraphQuery> orConditions = new ArrayList<>();
+            // Arm 1: direct type match (vertex's __typeName is in the applicable set)
+            orConditions.add(query.createChildQuery().in(Constants.ENTITY_TYPE_PROPERTY_KEY, typesList));
+            // Arm 2: inherited type match — catches child entities whose super-type is in the applicable set
             // This is crucial for Case 6 (Parent -> Child)
-            Iterable<AtlasVertex> verticesInherited = graph.query()
-                    .has(vertexPropertyName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, (Object) null)
-                    .in(Constants.SUPER_TYPES_PROPERTY_KEY, typesList)
-                    .vertices(1);
+            orConditions.add(query.createChildQuery().in(Constants.SUPER_TYPES_PROPERTY_KEY, typesList));
 
-            if (verticesInherited != null && verticesInherited.iterator().hasNext()) {
+            query.or(orConditions);
+
+            Iterable<AtlasVertex> vertices = query.vertices(1);
+
+            if (vertices != null && vertices.iterator().hasNext()) {
                 return true;
             }
         } catch (Exception e) {
@@ -482,20 +487,23 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
      * Expands configured applicable entity types to include all concrete sub-types.
      * Without this expansion, deletion checks can miss references present only on inherited child entity types.
      */
-    private Set<String> getApplicableTypesWithSubTypes(Set<String> applicableTypes) throws AtlasBaseException {
-        Set<String> allTypes = new HashSet<>();
+    private Set<String> getApplicableTypesWithSubTypes(AtlasStructDef.AtlasAttributeDef attributeDef) {
+        String      applicableTypesJson = attributeDef.getOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES);
+        Set<String> applicableTypeNames = StringUtils.isBlank(applicableTypesJson) ? null : AtlasType.fromJson(applicableTypesJson, Set.class);
 
-        for (String typeName : applicableTypes) {
-            AtlasType type = typeRegistry.getType(typeName);
+        if (CollectionUtils.isEmpty(applicableTypeNames)) {
+            return Collections.emptySet();
+        }
 
-            if (type instanceof AtlasEntityType) {
-                AtlasEntityType entityType = (AtlasEntityType) type;
-                allTypes.add(entityType.getTypeName());
-                allTypes.addAll(entityType.getAllSubTypes());
-            } else {
-                allTypes.add(typeName);
+        Set<String> result = new HashSet<>(applicableTypeNames);
+
+        for (String typeName : applicableTypeNames) {
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+            if (entityType != null) {
+                result.addAll(entityType.getAllSubTypes());
             }
         }
-        return allTypes;
+        return result;
     }
 }
