@@ -3699,11 +3699,32 @@ public class EntityGraphMapper {
 
 
     private AtlasEntityHeader constructHeader(AtlasEntity entity, AtlasVertex vertex, AtlasEntityType entityType) throws AtlasBaseException {
-        Set<String> writtenAttrs = getWrittenAttributeNames(entity, entityType);
+        // MS-710: Read all primitive/enum attributes from the vertex (not just writtenAttrs).
+        // This ensures the entity cached in RequestContext includes attributes like
+        // connectorName — even if they weren't in the update request payload.
+        // Only primitive and enum types are fetched to keep the read lightweight.
+        Set<String> primitiveAttrs = new HashSet<>();
+        for (Map.Entry<String, AtlasAttribute> entry : entityType.getAllAttributes().entrySet()) {
+            TypeCategory typeCategory = entry.getValue().getAttributeType().getTypeCategory();
+            if (typeCategory == PRIMITIVE || typeCategory == TypeCategory.ENUM) {
+                primitiveAttrs.add(entry.getKey());
+            }
+        }
 
-        AtlasEntityHeader header = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex, writtenAttrs);
+        AtlasEntityHeader header = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex, primitiveAttrs);
+
         if (entity.getClassifications() == null) {
             entity.setClassifications(header.getClassifications());
+        }
+
+        // Merge persisted vertex attrs into entity so reqContext.cache(entity) is complete.
+        // Payload attrs take precedence — they are freshly written.
+        if (MapUtils.isNotEmpty(header.getAttributes())) {
+            Map<String, Object> merged = new HashMap<>(header.getAttributes());
+            if (MapUtils.isNotEmpty(entity.getAttributes())) {
+                merged.putAll(entity.getAttributes());
+            }
+            entity.setAttributes(merged);
         }
 
         return header;
