@@ -242,8 +242,9 @@ public class ConnectionPreProcessor implements PreProcessor {
 
             boolean connectionIsDeleted = AtlasEntity.Status.DELETED.equals(connection.getStatus());
 
-            if (connectionIsDeleted && DeleteType.HARD.equals(RequestContext.get().getDeleteType())) {
-                LOG.warn("Connection {} is SOFT DELETED! Can't HARD DELETE connection role and policies", connection.getAttribute(QUALIFIED_NAME));
+            DeleteType deleteType = RequestContext.get().getDeleteType();
+            if (connectionIsDeleted && (DeleteType.HARD.equals(deleteType) || DeleteType.PURGE.equals(deleteType))) {
+                LOG.warn("Connection {} is SOFT DELETED! Skipping role and policies cleanup during {} delete", connection.getAttribute(QUALIFIED_NAME), deleteType);
                 return;
             }
 
