@@ -194,7 +194,7 @@ public enum AtlasConfiguration {
     MIN_EDGES_SUPER_VERTEX("atlas.jg.super.vertex.min.edge.count", 100),
 
     // Task resource management configuration
-    TASK_MEMORY_THRESHOLD_PERCENT("atlas.tasks.memory.threshold.percent", 75),
+    TASK_MEMORY_THRESHOLD_PERCENT("atlas.tasks.memory.threshold.percent", 85),
     TASK_HIGH_MEMORY_PAUSE_MS("atlas.tasks.high.memory.pause.ms", 2000),
     TASK_MAX_RETRY_ATTEMPTS("atlas.tasks.max.retry.attempts", 3),
 
