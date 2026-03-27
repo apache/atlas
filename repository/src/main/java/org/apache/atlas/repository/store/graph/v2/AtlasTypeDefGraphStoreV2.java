@@ -73,14 +73,11 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
 
     protected final AtlasGraph atlasGraph;
 
-    private final EntityDiscoveryService entityDiscoveryService;
-
     @Inject
     public AtlasTypeDefGraphStoreV2(AtlasTypeRegistry typeRegistry, List<TypeDefChangeListener> typeDefChangeListeners, AtlasGraph atlasGraph, EntityDiscoveryService entityDiscoveryService) {
         super(typeRegistry, typeDefChangeListeners);
 
-        this.atlasGraph             = atlasGraph;
-        this.entityDiscoveryService = entityDiscoveryService;
+        this.atlasGraph = atlasGraph;
 
         LOG.debug("<== AtlasTypeDefGraphStoreV1()");
     }
@@ -177,7 +174,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
 
     @Override
     protected AtlasDefStore<AtlasBusinessMetadataDef> getBusinessMetadataDefStore(AtlasTypeRegistry typeRegistry) {
-        return new AtlasBusinessMetadataDefStoreV2(this, typeRegistry, this.entityDiscoveryService);
+        return new AtlasBusinessMetadataDefStoreV2(this, typeRegistry, this.atlasGraph);
     }
 
     @Override

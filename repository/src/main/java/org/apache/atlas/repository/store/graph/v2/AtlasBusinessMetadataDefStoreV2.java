@@ -21,23 +21,21 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
-import org.apache.atlas.discovery.EntityDiscoveryService;
-import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
-import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasBusinessMetadataType;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes;
-import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -47,6 +45,7 @@ import javax.inject.Inject;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -56,13 +55,13 @@ import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.ATTR_OPTIO
 public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasBusinessMetadataDef> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasBusinessMetadataDefStoreV2.class);
 
-    private final EntityDiscoveryService entityDiscoveryService;
+    private final AtlasGraph graph;
 
     @Inject
-    public AtlasBusinessMetadataDefStoreV2(AtlasTypeDefGraphStoreV2 typeDefStore, AtlasTypeRegistry typeRegistry, EntityDiscoveryService entityDiscoveryService) {
+    public AtlasBusinessMetadataDefStoreV2(AtlasTypeDefGraphStoreV2 typeDefStore, AtlasTypeRegistry typeRegistry, AtlasGraph graph) {
         super(typeDefStore, typeRegistry);
 
-        this.entityDiscoveryService = entityDiscoveryService;
+        this.graph = graph;
     }
 
     @Override
@@ -258,8 +257,14 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         return ret;
     }
 
+    @Override
     public AtlasVertex preDeleteByName(String name) throws AtlasBaseException {
-        LOG.debug("==> AtlasBusinessMetadataDefStoreV2.preDeleteByName({})", name);
+        return preDeleteByName(name, false);
+    }
+
+    @Override
+    public AtlasVertex preDeleteByName(String name, boolean forceDelete) throws AtlasBaseException {
+        LOG.debug("==> AtlasBusinessMetadataDefStoreV2.preDeleteByName({}, {})", name, forceDelete);
 
         AtlasBusinessMetadataDef existingDef = typeRegistry.getBusinessMetadataDefByName(name);
 
@@ -271,15 +276,21 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
         }
 
-        checkBusinessMetadataRef(existingDef.getName());
+        validateDeletion(existingDef, forceDelete, name);
 
-        LOG.debug("<== AtlasBusinessMetadataDefStoreV2.preDeleteByName({}): {}", name, ret);
+        LOG.debug("<== AtlasBusinessMetadataDefStoreV2.preDeleteByName({}, {}): {}", name, forceDelete, ret);
 
         return ret;
     }
 
+    @Override
     public AtlasVertex preDeleteByGuid(String guid) throws AtlasBaseException {
-        LOG.debug("==> AtlasBusinessMetadataDefStoreV2.preDeleteByGuid({})", guid);
+        return preDeleteByGuid(guid, false);
+    }
+
+    @Override
+    public AtlasVertex preDeleteByGuid(String guid, boolean forceDelete) throws AtlasBaseException {
+        LOG.debug("==> AtlasBusinessMetadataDefStoreV2.preDeleteByGuid({}, {})", guid, forceDelete);
 
         AtlasBusinessMetadataDef existingDef = typeRegistry.getBusinessMetadataDefByGuid(guid);
 
@@ -291,13 +302,47 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
 
-        if (existingDef != null) {
-            checkBusinessMetadataRef(existingDef.getName());
-        }
+        validateDeletion(existingDef, forceDelete, guid);
 
-        LOG.debug("<== AtlasBusinessMetadataDefStoreV2.preDeleteByGuid({}): ret={}", guid, ret);
+        LOG.debug("<== AtlasBusinessMetadataDefStoreV2.preDeleteByGuid({}, {}): ret={}", guid, forceDelete, ret);
 
         return ret;
+    }
+
+    private void validateDeletion(AtlasBusinessMetadataDef businessMetadataDef, boolean forceDelete, String identifier) throws AtlasBaseException {
+        if (businessMetadataDef == null) {
+            return;
+        }
+
+        if (forceDelete) {
+            LOG.warn("Force-deleting BusinessMetadata '{}'. Skipping validation - orphaned references may remain.", businessMetadataDef.getName());
+            return;
+        }
+
+        if (hasNonIndexableAttribute(businessMetadataDef)) {
+            LOG.warn("Deletion blocked for non-indexable Business Metadata '{}' without force-delete flag", businessMetadataDef.getName());
+            throw new AtlasBaseException(AtlasErrorCode.NON_INDEXABLE_BM_DELETE_NOT_ALLOWED, businessMetadataDef.getName());
+        }
+
+        checkBusinessMetadataRef(businessMetadataDef, identifier);
+    }
+
+    private boolean hasNonIndexableAttribute(AtlasBusinessMetadataDef businessMetadataDef) {
+        AtlasBusinessMetadataType bmType = typeRegistry.getBusinessMetadataTypeByName(businessMetadataDef.getName());
+
+        if (bmType != null && bmType.hasNonIndexableAttributes()) {
+            return true;
+        }
+
+        if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
+            for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
+                if (!Boolean.TRUE.equals(attributeDef.getIsIndexable())) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     @Override
@@ -360,47 +405,104 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         return ret;
     }
 
-    private void checkBusinessMetadataRef(String typeName) throws AtlasBaseException {
-        AtlasBusinessMetadataDef businessMetadataDef = typeRegistry.getBusinessMetadataDefByName(typeName);
+    private void checkBusinessMetadataRef(AtlasBusinessMetadataDef businessMetadataDef, String identifier) throws AtlasBaseException {
+        if (businessMetadataDef == null || CollectionUtils.isEmpty(businessMetadataDef.getAttributeDefs())) {
+            return;
+        }
 
-        if (businessMetadataDef != null) {
-            List<AtlasStructDef.AtlasAttributeDef> attributeDefs = businessMetadataDef.getAttributeDefs();
+        AtlasBusinessMetadataType bmType = typeRegistry.getBusinessMetadataTypeByName(businessMetadataDef.getName());
 
-            for (AtlasStructDef.AtlasAttributeDef attributeDef : attributeDefs) {
-                String      qualifiedName      = AtlasStructType.AtlasAttribute.getQualifiedAttributeName(businessMetadataDef, attributeDef.getName());
-                String      vertexPropertyName = AtlasStructType.AtlasAttribute.generateVertexPropertyName(businessMetadataDef, attributeDef, qualifiedName);
-                Set<String> applicableTypes    = AtlasJson.fromJson(attributeDef.getOption(AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES), Set.class);
+        for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
+            Set<String> allApplicableTypes;
 
-                if (CollectionUtils.isNotEmpty(applicableTypes) && isBusinessAttributePresent(vertexPropertyName, applicableTypes)) {
-                    throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, typeName);
-                }
+            if (bmType != null) {
+                AtlasBusinessMetadataType.AtlasBusinessAttribute bmAttr =
+                        (AtlasBusinessMetadataType.AtlasBusinessAttribute) bmType.getAttribute(attributeDef.getName());
+                Set<String> cachedTypes = bmAttr != null ? bmAttr.getApplicableEntityTypeNamesWithSubTypes() : Collections.emptySet();
+
+                allApplicableTypes = CollectionUtils.isNotEmpty(cachedTypes) ? cachedTypes : getApplicableTypesWithSubTypes(attributeDef);
+            } else {
+                allApplicableTypes = getApplicableTypesWithSubTypes(attributeDef);
             }
+
+            LOG.info("REF-CHECK [ApplicableTypes] BM='{}' attr='{}' types={}",
+                    businessMetadataDef.getName(), attributeDef.getName(), allApplicableTypes);
+
+            if (CollectionUtils.isEmpty(allApplicableTypes)) {
+                continue;
+            }
+
+            validateAttributeReferences(businessMetadataDef, attributeDef, allApplicableTypes, identifier);
         }
     }
 
-    private boolean isBusinessAttributePresent(String attrName, Set<String> applicableTypes) throws AtlasBaseException {
-        SearchParameters.FilterCriteria criteria = new SearchParameters.FilterCriteria();
+    private void validateAttributeReferences(AtlasBusinessMetadataDef bmDef, AtlasStructDef.AtlasAttributeDef attributeDef,
+                                             Set<String> allApplicableTypes, String identifier) throws AtlasBaseException {
+        String qualifiedName      = AtlasStructType.AtlasAttribute.getQualifiedAttributeName(bmDef, attributeDef.getName());
+        String vertexPropertyName = AtlasStructType.AtlasAttribute.generateVertexPropertyName(bmDef, attributeDef, qualifiedName);
+        boolean isPresent         = isBusinessAttributePresentInGraph(vertexPropertyName, allApplicableTypes);
 
-        criteria.setAttributeName(attrName);
-        criteria.setOperator(SearchParameters.Operator.NOT_EMPTY);
+        if (isPresent) {
+            LOG.error("Cannot delete BusinessMetadata '{}' (request='{}') - attribute '{}' (vertex property: '{}') has references in entity types: {}",
+                    bmDef.getName(), identifier, attributeDef.getName(), vertexPropertyName, allApplicableTypes);
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, bmDef.getName());
+        }
+    }
 
-        SearchParameters.FilterCriteria entityFilters = new SearchParameters.FilterCriteria();
+    private boolean isBusinessAttributePresentInGraph(String vertexPropertyName, Set<String> allApplicableTypes) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(allApplicableTypes)) {
+            return false;
+        }
 
-        entityFilters.setCondition(SearchParameters.FilterCriteria.Condition.OR);
-        entityFilters.setCriterion(Collections.singletonList(criteria));
+        try {
+            List<String> typesList = new ArrayList<>(allApplicableTypes);
 
-        SearchParameters searchParameters = new SearchParameters();
+            // Single combined query
+            AtlasGraphQuery query = graph.query()
+                    .has(vertexPropertyName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, (Object) null);
 
-        searchParameters.setTypeName(String.join(SearchContext.TYPENAME_DELIMITER, applicableTypes));
-        searchParameters.setExcludeDeletedEntities(true);
-        searchParameters.setIncludeSubClassifications(false);
-        searchParameters.setEntityFilters(entityFilters);
-        searchParameters.setAttributes(Collections.singleton(attrName));
-        searchParameters.setOffset(0);
-        searchParameters.setLimit(1);
+            List<AtlasGraphQuery> orConditions = new ArrayList<>();
+            // Arm 1: direct type match (vertex's __typeName is in the applicable set)
+            orConditions.add(query.createChildQuery().in(Constants.ENTITY_TYPE_PROPERTY_KEY, typesList));
+            // Arm 2: inherited type match — catches child entities whose super-type is in the applicable set
+            // This is crucial for Case 6 (Parent -> Child)
+            orConditions.add(query.createChildQuery().in(Constants.SUPER_TYPES_PROPERTY_KEY, typesList));
 
-        AtlasSearchResult atlasSearchResult = entityDiscoveryService.searchWithParameters(searchParameters);
+            query.or(orConditions);
 
-        return CollectionUtils.isNotEmpty(atlasSearchResult.getEntities());
+            Iterable<AtlasVertex> vertices = query.vertices(1);
+
+            if (vertices != null && vertices.iterator().hasNext()) {
+                return true;
+            }
+        } catch (Exception e) {
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR,
+                    e, String.format("failed to validate BusinessMetadata references for property %s", vertexPropertyName));
+        }
+        return false;
+    }
+
+    /**
+     * Expands configured applicable entity types to include all concrete sub-types.
+     * Without this expansion, deletion checks can miss references present only on inherited child entity types.
+     */
+    private Set<String> getApplicableTypesWithSubTypes(AtlasStructDef.AtlasAttributeDef attributeDef) {
+        String      applicableTypesJson = attributeDef.getOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES);
+        Set<String> applicableTypeNames = StringUtils.isBlank(applicableTypesJson) ? null : AtlasType.fromJson(applicableTypesJson, Set.class);
+
+        if (CollectionUtils.isEmpty(applicableTypeNames)) {
+            return Collections.emptySet();
+        }
+
+        Set<String> result = new HashSet<>(applicableTypeNames);
+
+        for (String typeName : applicableTypeNames) {
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+            if (entityType != null) {
+                result.addAll(entityType.getAllSubTypes());
+            }
+        }
+        return result;
     }
 }
