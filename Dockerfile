@@ -80,5 +80,4 @@ USER atlas
 
 RUN cd /opt/atlas/bin \
     && ./atlas_start.py -setup || true
-
-VOLUME ["/opt/atlas/conf", "/opt/atlas/logs"]
+    
