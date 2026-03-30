@@ -91,8 +91,10 @@ define(['require',
                             referredEntities: that.entityObject.referredEntities
                         });
 
-                        var columns = collectionJSON.relationshipAttributes.columns || collectionJSON.attributes.columns,
-                            db = collectionJSON.relationshipAttributes.db || collectionJSON.attributes.db
+                        var relAttrs = collectionJSON.relationshipAttributes || {},
+                            attrs = collectionJSON.attributes || {},
+                            columns = relAttrs.columns || attrs.columns,
+                            db = relAttrs.db || attrs.db;
 
                         that.renderTableLayoutView();
                         if (that.entityDetail) {
