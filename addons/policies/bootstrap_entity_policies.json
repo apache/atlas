@@ -3937,6 +3937,37 @@
                     "entity-read"
                 ]
             }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
+                "name": "CUD_ASSET_GROUPING_STRATEGY_ENRICHMENT_STUDIO",
+                "qualifiedName": "CUD_ASSET_GROUPING_STRATEGY_ENRICHMENT_STUDIO",
+                "description": "Allows admins to create, update and delete AssetGroupingStrategy entities under default/critical_assets/*",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "isPolicyEnabled": true,
+                "policyResources": [
+                    "entity-type:AssetGroupingStrategy",
+                    "entity-classification:*",
+                    "entity:default/critical_assets/strategy/user/*"
+                ],
+                "policyActions": [
+                    "entity-create",
+                    "entity-update",
+                    "entity-delete"
+                ]
+            }
         }
     ]
 }
