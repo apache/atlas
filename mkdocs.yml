@@ -1,0 +1,67 @@
+site_name: Atlas Metastore API Documentation
+site_description: API reference and developer guides for Atlas Metastore
+repo_url: https://github.com/atlanhq/atlas-metastore
+repo_name: atlanhq/atlas-metastore
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+markdown_extensions:
+  - tables
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+
+exclude_docs: |
+  README.md
+  target/
+  cohort-release/
+  ms-546/
+  no-graph-system/
+  rca/
+  grafana-dashboards/
+  helm/
+  tests/
+  adjacency-list-architecture.md
+  batch-lineage-write-optimization.md
+  consistency-improvements-analysis.md
+  idempotent-retry-cassandra-commit.md
+  integration-testing-approaches.md
+  leangraph-*.md
+  linear-tickets-to-create.md
+  migration-*.md
+  remaining-gaps-*.md
+  startup-metrics.md
+  zero-graph-*.md
+
+nav:
+  - Home: index.md
+  - API Reference:
+    - Entity Bulk (Create/Update): api/entity-bulk.md
+    - IndexSearch (Search): api/search-indexsearch.md
+    - Repair Endpoints: api/repair-endpoints.md

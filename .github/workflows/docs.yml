@@ -1,0 +1,71 @@
+name: Build Docs and Push to Kryptonite
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches:
+      - master
+      - beta
+      - staging
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+  push:
+    branches:
+      - master
+      - beta
+      - staging
+      - api-docs
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Git Checkout
+        uses: actions/checkout@v4
+
+      - name: Get branch name
+        id: get_branch
+        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_OUTPUT
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: pip install mkdocs mkdocs-material
+
+      - name: Build Docs
+        run: mkdocs build
+
+      - name: Setup AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ap-south-1
+          role-to-assume: arn:aws:iam::733936409301:role/kryptonite-store_FullAccess
+
+      - name: Upload Docs to Kryptonite
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            BRANCH="${{ github.head_ref }}"
+          else
+            BRANCH="${{ steps.get_branch.outputs.branch }}"
+          fi
+          aws s3 sync ./site s3://kryptonite-store/metastore/${BRANCH} --delete
+
+      - name: Comment Kryptonite URL on PR
+        if: github.event_name == 'pull_request'
+        uses: mshick/add-pr-comment@v2
+        with:
+          message-id: 'docs'
+          message: |
+            📝 Docs preview available at https://k.atlan.dev/metastore/${{ github.head_ref }}
