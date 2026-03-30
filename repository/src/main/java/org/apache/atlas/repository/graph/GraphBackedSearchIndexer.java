@@ -42,6 +42,7 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.metrics.IndexHealthMetricService;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -104,6 +105,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
     private boolean     recomputeIndexedKeys = true;
     private Set<String> vertexIndexKeys      = new HashSet<>();
+    private IndexHealthMetricService indexHealthMetricService;
 
     public static boolean isValidSearchWeight(int searchWeight) {
         if (searchWeight != -1 ) {
@@ -211,6 +213,9 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         } catch (RepositoryException | IndexException e) {
             LOG.error("Failed to update indexes for changed typedefs", e);
             attemptRollback(changedTypeDefs, management);
+        } finally {
+            // Always audit — even if commit failed or rollback re-threw
+            runIndexHealthAudit();
         }
 
         notifyChangeListeners(changedTypeDefs);
@@ -243,7 +248,51 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         } catch (RepositoryException | IndexException e) {
             LOG.error("Failed to update indexes for changed typedefs", e);
             attemptRollback(changedTypeDefs, management);
+        } finally {
+            // Always audit — even if commit failed or rollback re-threw.
+            // Reports the actual schema state so the dashboard never shows a false positive.
+            runIndexHealthAudit();
         }
+    }
+
+    /**
+     * Runs a read-only audit of the JanusGraph mixed index schema and publishes
+     * Prometheus metrics reporting expected, indexed, and missing property keys.
+     *
+     * Opens a separate management transaction (rolled back in finally — no mutations).
+     * Uses a singleton IndexHealthMetricService so that Micrometer gauge references
+     * remain stable across invocations.
+     *
+     * Called from finally blocks in onLoadCompletion() and onChange() to ensure
+     * metrics always reflect the actual schema state, even after commit failures.
+     *
+     * Safe to call repeatedly — gauges are registered once and values are updated
+     * on each call. If the audit itself fails, it logs a warning and does not
+     * affect typedef loading or Atlas startup.
+     */
+    private void runIndexHealthAudit() {
+        Thread auditThread = new Thread(() -> {
+            AtlasGraphManagement auditMgmt = null;
+            try {
+                if (indexHealthMetricService == null) {
+                    indexHealthMetricService = new IndexHealthMetricService(typeRegistry);
+                }
+                auditMgmt = provider.get().getManagementSystem();
+                indexHealthMetricService.auditIndexHealth(auditMgmt);
+            } catch (Exception e) {
+                LOG.warn("Index health audit failed — metrics will not be available", e);
+            } finally {
+                if (auditMgmt != null) {
+                    try {
+                        auditMgmt.rollback();  // Read-only — always rollback
+                    } catch (Exception e) {
+                        LOG.warn("Failed to rollback audit management transaction", e);
+                    }
+                }
+            }
+        }, "index-health-audit");
+        auditThread.setDaemon(true);
+        auditThread.start();
     }
 
     public Set<String> getVertexIndexKeys() {
