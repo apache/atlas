@@ -16,6 +16,7 @@ import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
@@ -25,8 +26,11 @@ import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
@@ -37,6 +41,7 @@ import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.STAKEHOLDER_TITLE_ENTITY_TYPE;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.getUUID;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.verifyDuplicateAssetByName;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_PERSONA_USERS;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class StakeholderTitlePreProcessor implements PreProcessor {
@@ -56,17 +61,23 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
     protected EntityDiscoveryService discovery;
+    protected AtlasEntityStore entityStore;
 
     public StakeholderTitlePreProcessor(AtlasGraph graph,
                                        AtlasTypeRegistry typeRegistry,
-                                       EntityGraphRetriever entityRetriever) {
+                                       EntityGraphRetriever entityRetriever,
+                                       AtlasEntityStore entityStore) {
         this.typeRegistry = typeRegistry;
         this.entityRetriever = entityRetriever;
+        this.entityStore = entityStore;
 
-        try {
-            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null, entityRetriever);
-        } catch (AtlasException e) {
-            e.printStackTrace();
+        // Only initialize discovery service if graph is available
+        if (graph != null) {
+            try {
+                this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null, entityRetriever);
+            } catch (AtlasException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -187,20 +198,24 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
         try {
             AtlasEntity titleEntity = entityRetriever.toAtlasEntity(vertex);
 
-            List<AtlasRelatedObjectId> stakeholders = null;
-            Object stakeholdersAsObject = titleEntity.getRelationshipAttribute(REL_ATTR_STAKEHOLDERS);
-            if (stakeholdersAsObject != null) {
-                stakeholders = (List<AtlasRelatedObjectId>) stakeholdersAsObject;
-            }
+            List<AtlasRelatedObjectId> stakeholders = getActiveStakeholders(titleEntity);
 
             if (CollectionUtils.isNotEmpty(stakeholders)) {
-                Optional activeStakeholder = stakeholders.stream().filter(x -> x.getRelationshipStatus() == AtlasRelationship.Status.ACTIVE).findFirst();
-                if (activeStakeholder.isPresent()) {
-                    throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not delete StakeholderTitle as it has reference to Active Stakeholder");
+                // Partition stakeholders by user status
+                PartitionedStakeholders partitioned = partitionStakeholdersByUserStatus(stakeholders);
+
+                // Block deletion if any stakeholder has users
+                if (CollectionUtils.isNotEmpty(partitioned.stakeholdersWithUsers)) {
+                    throw new AtlasBaseException(OPERATION_NOT_SUPPORTED,
+                            "Can not delete StakeholderTitle as it has reference to Active Stakeholder with users");
+                }
+
+                // Auto-delete empty stakeholders
+                if (CollectionUtils.isNotEmpty(partitioned.emptyStakeholders)) {
+                    autoDeleteEmptyStakeholders(partitioned.emptyStakeholders, titleEntity);
                 }
 
                 List<String> domainQualifiedNames = vertex.getMultiValuedProperty(ATTR_DOMAIN_QUALIFIED_NAMES, String.class);
-
                 authorizeDomainAccess(domainQualifiedNames);
             }
         } finally {
@@ -225,9 +240,119 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
         }
     }
 
+    private List<AtlasRelatedObjectId> getActiveStakeholders(AtlasEntity titleEntity) {
+        Object stakeholdersAsObject = titleEntity.getRelationshipAttribute(REL_ATTR_STAKEHOLDERS);
+        if (stakeholdersAsObject == null) {
+            return Collections.emptyList();
+        }
+
+        List<AtlasRelatedObjectId> allStakeholders = (List<AtlasRelatedObjectId>) stakeholdersAsObject;
+
+        return allStakeholders.stream()
+                .filter(x -> x.getRelationshipStatus() == AtlasRelationship.Status.ACTIVE
+                        && x.getEntityStatus() == AtlasEntity.Status.ACTIVE)
+                .collect(Collectors.toList());
+    }
+
+    private PartitionedStakeholders partitionStakeholdersByUserStatus(List<AtlasRelatedObjectId> activeStakeholders) {
+
+        PartitionedStakeholders result = new PartitionedStakeholders();
+
+        for (AtlasRelatedObjectId stakeholder : activeStakeholders) {
+            try {
+                AtlasVertex stakeholderVertex = entityRetriever.getEntityVertex(stakeholder.getGuid());
+                AtlasEntity stakeholderEntity = entityRetriever.toAtlasEntity(stakeholderVertex);
+
+                String qualifiedName = (String) stakeholderEntity.getAttribute(QUALIFIED_NAME);
+                List<String> users = stakeholderVertex.getMultiValuedProperty(ATTR_PERSONA_USERS, String.class);
+
+                StakeholderInfo info = new StakeholderInfo(stakeholder.getGuid(), qualifiedName);
+
+                if (CollectionUtils.isNotEmpty(users)) {
+                    result.stakeholdersWithUsers.add(info);
+                } else {
+                    result.emptyStakeholders.add(info);
+                }
+
+            } catch (AtlasBaseException e) {
+                LOG.error("Error fetching stakeholder entity for guid: {}", stakeholder.getGuid(), e);
+                // Safe default: treat as "with users" to block deletion
+                result.stakeholdersWithUsers.add(new StakeholderInfo(
+                        stakeholder.getGuid(), "unknown"
+                ));
+            }
+        }
+
+        return result;
+    }
+
+    private void autoDeleteEmptyStakeholders(
+            List<StakeholderInfo> emptyStakeholders,
+            AtlasEntity titleEntity) throws AtlasBaseException {
+
+        String titleName = titleEntity.getAttribute(NAME) != null ?
+                (String) titleEntity.getAttribute(NAME) : "unknown";
+
+        LOG.info("Auto-deleting {} empty Stakeholders for StakeholderTitle '{}' (guid: {}): [{}]",
+                emptyStakeholders.size(),
+                titleName,
+                titleEntity.getGuid(),
+                emptyStakeholders.stream()
+                        .map(s -> s.guid + "(" + s.qualifiedName + ")")
+                        .collect(Collectors.joining(", "))
+        );
+
+        boolean originalSkipAuthCheck = RequestContext.get().isSkipAuthorizationCheck();
+
+        try {
+            // Authorization bypass is necessary here because:
+            // 1. User has already been authorized at domain-level for StakeholderTitle deletion
+            // 2. Auto-deletion of empty Stakeholders is a system-level cascade operation, not direct user action
+            // 3. This pattern follows existing code in QueryCollectionPreProcessor for policy cleanup
+            // The bypass is safely restored in the finally block regardless of success/failure
+            RequestContext.get().setSkipAuthorizationCheck(true);
+
+            // Bulk delete all empty stakeholders at once
+            List<String> stakeholderGuids = emptyStakeholders.stream()
+                    .map(s -> s.guid)
+                    .collect(Collectors.toList());
+
+            entityStore.deleteByIds(stakeholderGuids);
+
+            LOG.info("Successfully auto-deleted {} empty Stakeholders", emptyStakeholders.size());
+
+        } catch (AtlasBaseException e) {
+            LOG.error("Failed to auto-delete empty Stakeholders", e);
+            throw new AtlasBaseException(
+                    AtlasErrorCode.INTERNAL_ERROR,
+                    e,
+                    format("Failed to auto-delete empty Stakeholders for StakeholderTitle '%s' (%s): %s",
+                            titleName, titleEntity.getGuid(), e.getMessage())
+            );
+        } finally {
+            RequestContext.get().setSkipAuthorizationCheck(originalSkipAuthCheck);
+        }
+    }
+
     private void validateRelations(AtlasEntity entity) throws AtlasBaseException {
         if (entity.hasRelationshipAttribute(REL_ATTR_STAKEHOLDERS)) {
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Managing Stakeholders while creating/updating StakeholderTitle");
+        }
+    }
+
+    // Helper classes for stakeholder partitioning
+    private static class PartitionedStakeholders {
+        List<StakeholderInfo> stakeholdersWithUsers = new ArrayList<>();
+        List<StakeholderInfo> emptyStakeholders = new ArrayList<>();
+    }
+
+    private static class StakeholderInfo {
+        String guid;
+        String qualifiedName;
+
+        StakeholderInfo(String guid, String qualifiedName) {
+            this.guid = guid;
+            this.qualifiedName = qualifiedName;
         }
     }
 }
