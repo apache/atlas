@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.notification;
 
+import io.micrometer.core.instrument.Counter;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.notification.EntityNotification;
@@ -30,10 +31,24 @@ import java.util.List;
 
 import static org.apache.atlas.notification.NotificationInterface.NotificationType.ENTITIES;
 import static org.apache.atlas.notification.NotificationInterface.NotificationType.RELATIONSHIPS;
+import static org.apache.atlas.service.metrics.MetricUtils.getMeterRegistry;
 
 
 public class EntityNotificationSender<T> {
     private static final Logger LOG = LoggerFactory.getLogger(EntityNotificationSender.class);
+
+    private static final int    MAX_RETRY_COUNT = 3;
+    private static final long   RETRY_INTERVAL_MS = 1000;
+
+    private static final Counter NOTIFICATIONS_SENT     = Counter.builder("atlas_notifications_sent_total")
+            .description("Total entity/relationship notifications successfully sent to Kafka")
+            .register(getMeterRegistry());
+    private static final Counter NOTIFICATIONS_DROPPED  = Counter.builder("atlas_notifications_dropped_total")
+            .description("Notifications dropped because the transaction was not committed (isSuccess=false)")
+            .register(getMeterRegistry());
+    private static final Counter NOTIFICATIONS_FAILED   = Counter.builder("atlas_notifications_failed_total")
+            .description("Notifications that failed to send to Kafka after transaction commit")
+            .register(getMeterRegistry());
 
     private final static boolean NOTIFY_POST_COMMIT_DEFAULT = true;
 
@@ -128,21 +143,53 @@ public class EntityNotificationSender<T> {
             public void onComplete(boolean isSuccess) {
                 postCommitNotificationHooks.remove();
 
+                int entityCount       = notifications.size();
+                int relationshipCount = relationshipNotifications.size();
+
                 if (CollectionUtils.isNotEmpty(notifications) || CollectionUtils.isNotEmpty(relationshipNotifications)) {
                     if (isSuccess) {
-                        try {
-                            notificationInterface.send(ENTITIES, notifications);
-                            notificationInterface.send(RELATIONSHIPS, relationshipNotifications);
-                        } catch (NotificationException excp) {
-                            LOG.error("failed to send entity notifications", excp);
-                        }
+                        sendWithRetry(entityCount, relationshipCount);
                     } else {
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug("Transaction not committed. Not sending {} notifications: {}", notifications.size(), notifications);
+                        NOTIFICATIONS_DROPPED.increment(entityCount + relationshipCount);
+                        LOG.warn("Transaction not committed (isSuccess=false). Dropping {} entity and {} relationship notifications.",
+                                entityCount, relationshipCount);
+                    }
+                }
+            }
+
+            private void sendWithRetry(int entityCount, int relationshipCount) {
+                NotificationException lastException = null;
+
+                for (int attempt = 1; attempt <= MAX_RETRY_COUNT; attempt++) {
+                    try {
+                        notificationInterface.send(ENTITIES, notifications);
+                        notificationInterface.send(RELATIONSHIPS, relationshipNotifications);
+                        NOTIFICATIONS_SENT.increment(entityCount + relationshipCount);
+
+                        if (attempt > 1) {
+                            LOG.info("Notification send succeeded on attempt {}/{} for {} entity and {} relationship notifications",
+                                    attempt, MAX_RETRY_COUNT, entityCount, relationshipCount);
+                        }
+                        return;
+                    } catch (NotificationException excp) {
+                        lastException = excp;
+                        LOG.warn("Notification send failed on attempt {}/{} for {} entity and {} relationship notifications: {}",
+                                attempt, MAX_RETRY_COUNT, entityCount, relationshipCount, excp.getMessage());
+
+                        if (attempt < MAX_RETRY_COUNT) {
+                            try {
+                                Thread.sleep(RETRY_INTERVAL_MS * attempt);
+                            } catch (InterruptedException ie) {
+                                Thread.currentThread().interrupt();
+                                break;
+                            }
                         }
                     }
                 }
 
+                NOTIFICATIONS_FAILED.increment(entityCount + relationshipCount);
+                LOG.error("Failed to send {} entity and {} relationship notifications after {} attempts",
+                        entityCount, relationshipCount, MAX_RETRY_COUNT, lastException);
             }
         }
     }
