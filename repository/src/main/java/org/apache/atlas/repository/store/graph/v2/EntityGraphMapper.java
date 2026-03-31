@@ -535,6 +535,12 @@ public class EntityGraphMapper {
                         deleteDelegate.getHandler().resetHasLineageOnInputOutputDelete(removedEdges, null);
                     }
 
+                    // MS-903: Use the vertex's concrete typeName, not the request typeName.
+                    // When a client sends a supertype (e.g. "SQL") the request entity carries that supertype,
+                    // but the vertex stores the concrete type (e.g. "Table"). Without this correction,
+                    // the cached entity poisons downstream notifications and audits with the wrong typeName.
+                    updatedEntity.setTypeName(getTypeName(vertex));
+
                     reqContext.cache(updatedEntity);
 
                     if (DEFERRED_ACTION_ENABLED) {

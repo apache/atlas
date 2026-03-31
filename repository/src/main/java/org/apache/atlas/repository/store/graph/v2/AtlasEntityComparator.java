@@ -71,8 +71,15 @@ public class AtlasEntityComparator {
     private AtlasEntityDiffResult getDiffResult(AtlasEntity updatedEntity, AtlasEntity storedEntity, AtlasVertex storedVertex, boolean findOnlyFirstDiff) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getDiffResult");
         try{
-        AtlasEntity                              diffEntity                       = new AtlasEntity(updatedEntity.getTypeName());
-        AtlasEntityType                          entityType                       = typeRegistry.getEntityTypeByName(updatedEntity.getTypeName());
+        // MS-903: Use the vertex's concrete typeName for the diff entity, not the request typeName.
+        // When a client sends a supertype (e.g. "SQL"), the diff entity and audit must still
+        // carry the concrete type (e.g. "Table") so downstream consumers see the correct type.
+        String concreteTypeName = storedVertex != null
+                ? GraphHelper.getTypeName(storedVertex)
+                : (storedEntity != null ? storedEntity.getTypeName() : updatedEntity.getTypeName());
+
+        AtlasEntity                              diffEntity                       = new AtlasEntity(concreteTypeName);
+        AtlasEntityType                          entityType                       = typeRegistry.getEntityTypeByName(concreteTypeName);
         Map<String, AtlasAttribute>              entityTypeAttributes             = entityType.getAllAttributes();
         Map<String, Map<String, AtlasAttribute>> entityTypeRelationshipAttributes = entityType.getRelationshipAttributes();
 
