@@ -16,8 +16,15 @@
  */
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getDetailPageData } from "../../api/apiMethods/detailpageApiMethod";
+import {
+  getDetailPageData,
+  getEntityHeader
+} from "../../api/apiMethods/detailpageApiMethod";
 import { cloneDeep } from "@utils/Helper";
+import {
+  mapHeaderMeaningsToRelationshipMeanings,
+  shouldMergeMeaningsFromEntityHeader
+} from "@utils/entityDetailMeaningsUtils";
 
 export const fetchDetailPageData = createAsyncThunk(
   "detailPage/fetchDetailPageData",
@@ -26,6 +33,21 @@ export const fetchDetailPageData = createAsyncThunk(
       const response = await getDetailPageData(guid, { minExtInfo: true });
       const { data = {} } = response || {};
       const responseData = cloneDeep(data);
+      const entity = responseData.entity;
+      if (entity && shouldMergeMeaningsFromEntityHeader(entity)) {
+        try {
+          const headerResp = await getEntityHeader(guid);
+          const header = headerResp?.data;
+          const headerMeanings = header?.meanings;
+          if (Array.isArray(headerMeanings) && headerMeanings.length > 0) {
+            entity.relationshipAttributes = entity.relationshipAttributes || {};
+            entity.relationshipAttributes.meanings =
+              mapHeaderMeaningsToRelationshipMeanings(headerMeanings);
+          }
+        } catch {
+          // Terms are optional; detail page still loads without header.
+        }
+      }
       return responseData;
     } catch (error) {
       return rejectWithValue(error);

@@ -180,6 +180,9 @@ define([
                     if (forceRefresh) {
                         this.relationshipCardsViewInstance.cardData = {};
                         this.relationshipCardsViewInstance.cardCounts = {};
+                        this.relationshipCardsViewInstance.pageLimitByName = {};
+                        this.relationshipCardsViewInstance.exhaustedByName = {};
+                        this.relationshipCardsViewInstance._lastCardCountSnapshot = {};
                         this.relationshipCardsViewInstance.fetchInitialCards();
                     } else {
                         var hasData = _.keys(this.relationshipCardsViewInstance.cardData || {}).length > 0;
