@@ -101,9 +101,19 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
     };
 
   const structureAttributes = (list: any) => {
-    let obj: any = {};
-    list.map((o: any) => {
-      obj[o.key] = o.value;
+    const obj: Record<string, string> = {};
+    if (!Array.isArray(list)) {
+      return obj;
+    }
+    list.forEach((o: { key: string; value: string }) => {
+      const key =
+        typeof o?.key === "string"
+          ? o.key.trim()
+          : String(o?.key ?? "").trim();
+      if (key === "") {
+        return;
+      }
+      obj[key] = o?.value ?? "";
     });
     return obj;
   };
@@ -218,11 +228,15 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
                             variant="outlined"
                             color="success"
                             size="small"
-                            onClick={(e: { stopPropagation: () => void }) => {
-                              e.stopPropagation();
-                              setAddLabel(true);
-                              reset({ customAttributes: [defaultField] });
-                            }}
+                          onClick={(e: { stopPropagation: () => void }) => {
+                            e.stopPropagation();
+                            setAddLabel(true);
+                            reset({
+                              customAttributes: !isEmpty(defaultFieldValues)
+                                ? defaultFieldValues
+                                : [defaultField]
+                            });
+                          }}
                           >
                             Cancel
                           </CustomButton>

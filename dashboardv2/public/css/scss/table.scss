@@ -68,6 +68,10 @@ tr.empty {
     }
 }
 
+.detail-page #tab-details .entity-detail-table {
+    min-height: 0;
+}
+
 .type-node-details {
     .header {
         .pretty.p-switch .state:before {

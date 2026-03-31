@@ -45,8 +45,30 @@ define([
             this.sortByName = {};
             this.showDeletedByName = {};
             this.pageLimitByName = {};
+            /** Previous approximate counts per card — used to grow page limit when totals increase (e.g. new term). */
+            this._lastCardCountSnapshot = {};
             this.isInitialLoading = false;
             this.hasApiError = false;
+        },
+        adjustPageLimitWhenTotalGrew: function(name, previousTotal, newTotal) {
+            if (!_.isNumber(previousTotal) || !_.isNumber(newTotal) || newTotal <= previousTotal) {
+                return false;
+            }
+            var cur = this.pageLimitByName[name];
+            var minL = newTotal <= 1 ? 1 : 2;
+            var defLimit = Math.max(minL, 100);
+            if (_.isNumber(cur) && cur === previousTotal && previousTotal > 0) {
+                this.pageLimitByName[name] = defLimit;
+                return true;
+            }
+            return false;
+        },
+        getMinPageLimitForTotal: function(totalCount) {
+            var c = _.isNumber(totalCount) ? totalCount : parseInt(totalCount, 10);
+            if (!_.isFinite(c) || c <= 0) {
+                return 1;
+            }
+            return c <= 1 ? 1 : 2;
         },
         onRender: function() {
             this.fetchInitialCards();
@@ -93,15 +115,16 @@ define([
         },
         getPageLimit: function(relationName, totalCount) {
             var count = _.isNumber(totalCount) ? totalCount : parseInt(totalCount, 10);
-            var defaultLimit = _.isFinite(count) && count < 100 ? count : 100;
+            var defaultLimit = 100;
+            var minL = this.getMinPageLimitForTotal(totalCount);
             var currentLimit = this.pageLimitByName[relationName];
             if (!_.isNumber(currentLimit)) {
-                return defaultLimit;
+                return Math.max(minL, defaultLimit);
             }
             if (_.isFinite(count) && currentLimit > count) {
                 return count;
             }
-            return currentLimit;
+            return Math.max(minL, currentLimit);
         },
         getRelationshipParams: function(relationName, offset, totalCount, overrides) {
             var isSorted = _.isBoolean(overrides && overrides.isSorted)
@@ -110,9 +133,21 @@ define([
             var showDeleted = _.isBoolean(overrides && overrides.showDeleted)
                 ? overrides.showDeleted
                 : !!this.showDeletedByName[relationName];
-            var limit = _.isNumber(overrides && overrides.limit)
-                ? overrides.limit
-                : this.getPageLimit(relationName, totalCount);
+            var count = _.isNumber(totalCount) ? totalCount : parseInt(totalCount, 10);
+            var minForTotal = this.getMinPageLimitForTotal(totalCount);
+            var ignoreStored = overrides && overrides.ignoreStoredLimit;
+            var limit;
+            if (_.isNumber(overrides && overrides.limit)) {
+                limit = overrides.limit;
+                if (_.isFinite(count) && count > 0) {
+                    var maxL = count < 100 ? count : 100;
+                    limit = Math.min(maxL, Math.max(minForTotal, limit));
+                }
+            } else if (ignoreStored) {
+                limit = Math.max(minForTotal, 100);
+            } else {
+                limit = this.getPageLimit(relationName, totalCount);
+            }
             return {
                 limit: limit,
                 offset: offset,
@@ -192,7 +227,7 @@ define([
                     that.cardCounts[name] = 0;
                     if (_.isUndefined(that.sortByName[name])) { that.sortByName[name] = false; }
                     if (_.isUndefined(that.showDeletedByName[name])) { that.showDeletedByName[name] = true; }
-                    that.pageLimitByName[name] = that.getPageLimit(name, 0);
+                    that._lastCardCountSnapshot[name] = 0;
                     return;
                 }
                 var entities = response.entities ? response.entities : [];
@@ -213,8 +248,24 @@ define([
                 if (_.isUndefined(that.showDeletedByName[name])) {
                     that.showDeletedByName[name] = true;
                 }
-                if (_.isUndefined(that.pageLimitByName[name])) {
-                    that.pageLimitByName[name] = that.getPageLimit(name, that.cardCounts[name]);
+                var prevSnap = that._lastCardCountSnapshot[name];
+                var didBump = that.adjustPageLimitWhenTotalGrew(name, prevSnap, that.cardCounts[name]);
+                that._lastCardCountSnapshot[name] = that.cardCounts[name];
+                var listLen = (that.cardData[name] || []).length;
+                var totalN = that.cardCounts[name];
+                if (didBump && _.isNumber(totalN) && listLen < totalN) {
+                    that.exhaustedByName[name] = false;
+                    _.defer(function() {
+                        if (that.resettingByName[name] || that.loadingByName[name]) {
+                            return;
+                        }
+                        that.resetRelationshipData(name);
+                    });
+                    return;
+                }
+                var minClamp = that.getMinPageLimitForTotal(that.cardCounts[name]);
+                if (_.isNumber(that.pageLimitByName[name]) && that.pageLimitByName[name] < minClamp) {
+                    that.pageLimitByName[name] = minClamp;
                 }
                 var updatedCount = that.getTotalCountForName(name, that.cardData[name].length);
                 if (updatedCount <= that.cardData[name].length) {
@@ -354,6 +405,13 @@ define([
                 } else if (!_.isUndefined(response.totalCount)) {
                     that.cardCounts[relationName] = response.totalCount;
                 }
+                var prevSnapR = that._lastCardCountSnapshot[relationName];
+                that.adjustPageLimitWhenTotalGrew(relationName, prevSnapR, that.cardCounts[relationName]);
+                that._lastCardCountSnapshot[relationName] = that.cardCounts[relationName];
+                var minAfterReset = that.getMinPageLimitForTotal(that.cardCounts[relationName]);
+                if (_.isNumber(that.pageLimitByName[relationName]) && that.pageLimitByName[relationName] < minAfterReset) {
+                    that.pageLimitByName[relationName] = minAfterReset;
+                }
                 that.exhaustedByName[relationName] = false;
             }).fail(function(error) {
                 Utils.notifyError({
@@ -416,9 +474,15 @@ define([
                 ? (visibleRows * rowHeight + bodyPadding)
                 : 0;
             var isZeroOrOneRecord = list.length <= 1;
-            var scrollStyle = isZeroOrOneRecord
-                ? "style='min-height:72px;overflow-y:auto;'"
-                : "style='max-height:" + scrollHeight + "px; overflow-y: auto;'";
+            var scrollStyle;
+            if (isZeroOrOneRecord && !canLoadMore) {
+                scrollStyle = "style='min-height:72px;overflow-y:auto;'";
+            } else if (canLoadMore && isZeroOrOneRecord) {
+                var capPx = Math.max(72, Math.min(2 * rowHeight + bodyPadding, maxVisibleRows * rowHeight + bodyPadding));
+                scrollStyle = "style='max-height:" + capPx + "px;min-height:72px;overflow-y:auto;'";
+            } else {
+                scrollStyle = "style='max-height:" + scrollHeight + "px; overflow-y: auto;'";
+            }
             var emptyClass = list.length ? "" : " relationship-card--empty";
             var noMatchHtml = "<div class='relationship-card-no-match' style='display:none'></div>";
             var loadMoreHtml = canLoadMore
@@ -446,12 +510,13 @@ define([
                 "<span>Show deleted</span></label>" +
                 "</div>";
             var pageLimit = this.getPageLimit(name, count);
+            var minPageLimit = this.getMinPageLimitForTotal(count);
             var footerHtml = "<div class='relationship-card-footer'>" +
                 "<div class='relationship-card-footer-row'>" +
                 "<span class='relationship-card-count'>Showing " + list.length + " of " + count + "</span>" +
                 "<div class='relationship-card-page-limit'>" +
                 "<label for='page-limit-" + _.escape(name) + "'>Limit</label>" +
-                "<input id='page-limit-" + _.escape(name) + "' class='relationship-card-page-limit-input' type='number' min='1' max='" + count + "' data-name='" + _.escape(name) + "' value='" + pageLimit + "' />" +
+                "<input id='page-limit-" + _.escape(name) + "' class='relationship-card-page-limit-input' type='number' min='" + minPageLimit + "' data-name='" + _.escape(name) + "' value='" + pageLimit + "' />" +
                 "</div>" +
                 "</div>" +
                 "</div>";
@@ -655,14 +720,17 @@ define([
                     return;
                 }
                 var count = that.getTotalCountForName(name, 0);
-                var defaultLimit = count < 100 ? count : 100;
-                var currentLimit = that.pageLimitByName[name];
-                var nextLimit = currentLimit;
-                if (!_.isFinite(nextLimit) || nextLimit <= 0) {
-                    nextLimit = defaultLimit;
-                }
-                if (count > 0 && nextLimit > count) {
-                    nextLimit = count;
+                var minL = that.getMinPageLimitForTotal(count);
+                var rawValue = $(e.currentTarget).val();
+                var parsed = parseInt(String(rawValue).trim(), 10);
+                var nextLimit = _.isFinite(parsed) && parsed > 0 ? parsed : 100;
+                if (count > 0) {
+                    nextLimit = Math.max(minL, nextLimit);
+                    if (nextLimit > count) {
+                        nextLimit = count;
+                    }
+                } else {
+                    nextLimit = Math.max(1, nextLimit);
                 }
                 that.pageLimitByName[name] = nextLimit;
                 that.resetRelationshipData(name, { limit: nextLimit });
