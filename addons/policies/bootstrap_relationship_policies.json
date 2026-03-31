@@ -919,6 +919,45 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
+                "name": "LINK_AI_MODEL_TO_AI_MODEL_VERSION",
+                "qualifiedName": "LINK_AI_MODEL_TO_AI_MODEL_VERSION",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "RELATIONSHIP",
+                "policyResources":
+                [
+                    "end-one-entity-classification:*",
+                    "end-two-entity-classification:*",
+                    "end-one-entity:*",
+                    "end-two-entity:*",
+                    "end-one-entity-type:AIModel",
+                    "end-two-entity-type:AIModelVersion",
+                    "relationship-type:*"
+                ],
+                "policyActions":
+                [
+                    "add-relationship",
+                    "update-relationship",
+                    "remove-relationship"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
                 "name": "LINK_AI_MODEL_TO_AI_APPLICATION",
                 "qualifiedName": "LINK_AI_MODEL_TO_AI_APPLICATION",
                 "policyCategory": "bootstrap",

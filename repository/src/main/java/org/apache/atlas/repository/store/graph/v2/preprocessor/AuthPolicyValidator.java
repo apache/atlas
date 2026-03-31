@@ -110,7 +110,17 @@ public class AuthPolicyValidator {
         add("persona-ai-model-add-terms");
         add("persona-ai-model-remove-terms");
         add("persona-ai-model-add-classification");
-        add("persona-ai-model-remove-classification"); 
+        add("persona-ai-model-remove-classification");
+
+        add("persona-ai-modelversion-read");
+        add("persona-ai-modelversion-create");
+        add("persona-ai-modelversion-update");
+        add("persona-ai-modelversion-delete");
+        add("persona-ai-modelversion-business-update-metadata");
+        add("persona-ai-modelversion-add-terms");
+        add("persona-ai-modelversion-remove-terms");
+        add("persona-ai-modelversion-add-classification");
+        add("persona-ai-modelversion-remove-classification");
     }};
 
     private static final Set<String> PERSONA_METADATA_ABAC_POLICY_ACTIONS = new HashSet<>(){{
