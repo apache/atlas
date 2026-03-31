@@ -641,7 +641,7 @@ public class QuickStartV2 {
                 "DB",
                 "DB where name=%22Reporting%22",
                 "DB where name=%22encode_db_name%22",
-                "Table where name=%2522sales_fact%2522",
+                "Table where name=%22sales_fact%22",
                 "DB where name=\"Reporting\"",
                 "DB where DB.name=\"Reporting\"",
                 "DB name = \"Reporting\"",
