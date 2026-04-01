@@ -127,6 +127,60 @@ public interface AtlasGraph<V, E> {
     Set<AtlasVertex> getVertices(String... vertexIds);
 
     /**
+     * Bulk fetch all edges for multiple vertices concurrently.
+     * Default implementation falls back to sequential per-vertex calls.
+     */
+    @SuppressWarnings("unchecked")
+    default java.util.Map<String, java.util.List<AtlasEdge<V, E>>> getEdgesForVertices(
+            java.util.Collection<String> vertexIds) {
+        java.util.Map<String, java.util.List<AtlasEdge<V, E>>> result = new java.util.LinkedHashMap<>();
+        for (String vertexId : vertexIds) {
+            AtlasVertex<V, E> vertex = getVertex(vertexId);
+            if (vertex != null) {
+                java.util.List<AtlasEdge<V, E>> edges = new java.util.ArrayList<>();
+                for (AtlasEdge<V, E> edge : vertex.getEdges(AtlasEdgeDirection.BOTH)) {
+                    edges.add(edge);
+                }
+                result.put(vertexId, edges);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Bulk fetch edges for multiple vertices, filtered by specific edge labels.
+     */
+    @SuppressWarnings("unchecked")
+    default java.util.Map<String, java.util.List<AtlasEdge<V, E>>> getEdgesForVertices(
+            java.util.Collection<String> vertexIds, java.util.Set<String> edgeLabels) {
+        if (edgeLabels == null || edgeLabels.isEmpty()) {
+            return getEdgesForVertices(vertexIds);
+        }
+        java.util.Map<String, java.util.List<AtlasEdge<V, E>>> allEdges = getEdgesForVertices(vertexIds);
+        java.util.Map<String, java.util.List<AtlasEdge<V, E>>> result = new java.util.LinkedHashMap<>();
+        for (java.util.Map.Entry<String, java.util.List<AtlasEdge<V, E>>> entry : allEdges.entrySet()) {
+            java.util.List<AtlasEdge<V, E>> filtered = new java.util.ArrayList<>();
+            for (AtlasEdge<V, E> edge : entry.getValue()) {
+                if (edgeLabels.contains(edge.getLabel())) {
+                    filtered.add(edge);
+                }
+            }
+            result.put(entry.getKey(), filtered);
+        }
+        return result;
+    }
+
+    /**
+     * Bulk fetch edges for multiple vertices, filtered by specific edge labels,
+     * with a per-label limit to avoid fetching high-cardinality relationships in full.
+     */
+    @SuppressWarnings("unchecked")
+    default java.util.Map<String, java.util.List<AtlasEdge<V, E>>> getEdgesForVertices(
+            java.util.Collection<String> vertexIds, java.util.Set<String> edgeLabels, int limitPerLabel) {
+        return getEdgesForVertices(vertexIds, edgeLabels);
+    }
+
+    /**
      * Gets the names of the indexes on edges
      * type.
      *

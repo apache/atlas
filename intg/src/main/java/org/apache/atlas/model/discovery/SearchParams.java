@@ -29,6 +29,16 @@ public class SearchParams {
 
     boolean showSearchMetadata;
 
+    boolean includeSourceInResults;
+
+    public boolean isIncludeSourceInResults() {
+        return includeSourceInResults;
+    }
+
+    public void setIncludeSourceInResults(boolean includeSourceInResults) {
+        this.includeSourceInResults = includeSourceInResults;
+    }
+
     public String getQuery() {
         return getQuery();
     }

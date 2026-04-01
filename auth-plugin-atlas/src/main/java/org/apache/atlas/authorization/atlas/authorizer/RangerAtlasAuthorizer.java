@@ -775,9 +775,9 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         RangerBasePlugin plugin = atlasPlugin;
 
         if (plugin != null) {
-            
+
             groupUtil.setUserStore(atlasPlugin.getUserStore());
-            
+
             request.setUserGroups(groupUtil.getContainedGroups(userName));
 
             if (LOG.isDebugEnabled()) {
@@ -793,19 +793,24 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
             LOG.warn("RangerAtlasPlugin not initialized. Access blocked!!!");
         }
 
+        if (result == null) {
+            LOG.warn("checkAccess(): policy engine returned null result for user=" + userName + ". Defaulting to DENY.");
+            result = new AtlasAccessResult(false);
+        }
+
         return result;
     }
 
     private AtlasAccessResult checkAccess(RangerAccessRequestImpl request, RangerAtlasAuditHandler auditHandler) {
         AtlasAccessResult result = null;
-        
+
         RangerBasePlugin plugin = atlasPlugin;
         String userName = request.getUser();
 
         if (plugin != null) {
-            
+
             groupUtil.setUserStore(atlasPlugin.getUserStore());
-            
+
             request.setUserGroups(groupUtil.getContainedGroups(userName));
 
             if (LOG.isDebugEnabled()) {
@@ -816,9 +821,14 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
             if (rangerResult != null) {
                 result = new AtlasAccessResult(rangerResult.getIsAllowed(), rangerResult.getPolicyId(), rangerResult.getPolicyPriority());
             }
-        
+
         } else {
             LOG.warn("RangerAtlasPlugin not initialized. Access blocked!!!");
+        }
+
+        if (result == null) {
+            LOG.warn("checkAccess(): policy engine returned null result for user=" + userName + ". Defaulting to DENY.");
+            result = new AtlasAccessResult(false);
         }
 
         return result;

@@ -54,7 +54,7 @@ import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
-import org.janusgraph.util.encoding.LongEncoding;
+import org.apache.atlas.repository.store.graph.v2.LongEncodingUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -87,7 +87,7 @@ public class TaskRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(TaskRegistry.class);
     public static final int TASK_FETCH_BATCH_SIZE = 100;
     public static final List<Map<String, Object>> SORT_ARRAY = Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc")));
-    public static final String JANUSGRAPH_VERTEX_INDEX = "janusgraph_vertex_index";
+    public static final String JANUSGRAPH_VERTEX_INDEX = Constants.VERTEX_INDEX_NAME;
     public static final String TASK_MISMATCH_TAG = "mismatchTask";
 
     private AtlasGraph graph;
@@ -469,7 +469,7 @@ public class TaskRegistry {
                                         atlasTask.getGuid(), atlasTask.getStatus());
                                 mismatches++;
                                 try {
-                                    String docId = LongEncoding.encode(Long.parseLong(vertex.getIdForDisplay()));
+                                    String docId = LongEncodingUtil.vertexIdToDocId(vertex.getIdForDisplay());
                                     repairMismatchedTask(atlasTask, docId);
                                 }
                                 catch (Exception e){

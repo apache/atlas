@@ -19,6 +19,7 @@ package org.apache.atlas.web.integration;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClientV2;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 import org.slf4j.Logger;
@@ -76,10 +77,17 @@ public abstract class AtlasInProcessBaseIT {
         // Must be set before any testcontainers Docker client initialization (Docker 29+ requires API >= 1.44)
         System.setProperty("api.version", "1.44");
 
-        cassandra = new CassandraContainer<>(DockerImageName.parse("cassandra:2.1"))
+        cassandra = new CassandraContainer<>(DockerImageName.parse("cassandra:3.11"))
                 .withStartupTimeout(Duration.ofMinutes(3))
                 .withEnv("CASSANDRA_CLUSTER_NAME", "atlas-test-cluster")
-                .withEnv("CASSANDRA_DC", "datacenter1");
+                .withEnv("CASSANDRA_DC", "datacenter1")
+                // TypeDef vertices (e.g. Asset) can have 30-60KB properties JSON.
+                // Raise batch_size_fail_threshold from default 50KB to 200KB to match
+                // typical production Cassandra configuration.
+                .withCreateContainerCmdModifier(cmd -> cmd.withEntrypoint(
+                        "/bin/bash", "-c",
+                        "sed -i 's/batch_size_fail_threshold_in_kb:.*/batch_size_fail_threshold_in_kb: 200/' /etc/cassandra/cassandra.yaml && " +
+                        "exec /docker-entrypoint.sh cassandra -f"));
 
         elasticsearch = new ElasticsearchContainer(
                 DockerImageName.parse("elasticsearch:7.17.27"))
@@ -107,6 +115,14 @@ public abstract class AtlasInProcessBaseIT {
     private static Path tempDir;
     private static volatile boolean serverStarted = false;
 
+    /**
+     * Returns true if the system property {@code atlas.graphdb.backend} is set to {@code cassandra}.
+     * Maven forwards this via {@code -Datlas.graphdb.backend=cassandra} and surefire's systemProperties.
+     */
+    protected static boolean isCassandraGraphBackend() {
+        return "cassandra".equalsIgnoreCase(System.getProperty("atlas.graphdb.backend"));
+    }
+
     @BeforeAll
     void startAtlas() throws Exception {
         startContainers();
@@ -128,6 +144,7 @@ public abstract class AtlasInProcessBaseIT {
         startServer();
         waitForAtlasReady();
         createClient();
+        verifyBootstrapTypeDefs();
 
         // Register shutdown hook so the server is stopped when the JVM exits
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -206,6 +223,58 @@ public abstract class AtlasInProcessBaseIT {
             throw new IOException("Failed to create ES index template (HTTP " + responseCode + "): " + error);
         }
         conn.disconnect();
+
+        // Create a second template for CassandraGraph's atlas_graph_* index pattern.
+        // CassandraGraph maps each entity property directly to an ES field (unlike JanusGraph
+        // which encodes properties into a small number of fields). With 952+ entity types
+        // from minimal.json, field mappings easily exceed ES's default 2000 limit.
+        if (isCassandraGraphBackend()) {
+            // Raise the field limit from 2000 to 10000 for CassandraGraph
+            String cassSettings = settings.replace("\"limit\" : \"2000\"", "\"limit\" : \"10000\"");
+            String cassandraTemplateBody = String.format(
+                    "{\"index_patterns\":[\"atlas_graph_*\"],\"settings\":%s,\"mappings\":%s}",
+                    cassSettings, mappings);
+
+            URL cassUrl = new URL("http://" + esAddress + "/_template/atlas-graph-template");
+            HttpURLConnection cassConn = (HttpURLConnection) cassUrl.openConnection();
+            cassConn.setRequestMethod("PUT");
+            cassConn.setRequestProperty("Content-Type", "application/json");
+            cassConn.setDoOutput(true);
+
+            try (OutputStream cassOs = cassConn.getOutputStream()) {
+                cassOs.write(cassandraTemplateBody.getBytes(StandardCharsets.UTF_8));
+            }
+
+            int cassResponseCode = cassConn.getResponseCode();
+            if (cassResponseCode == 200) {
+                LOG.info("ES index template 'atlas-graph-template' created successfully for CassandraGraph");
+            } else {
+                InputStream cassErrorStream = cassConn.getErrorStream();
+                String cassError = cassErrorStream != null
+                        ? new String(cassErrorStream.readAllBytes(), StandardCharsets.UTF_8)
+                        : "(no error body)";
+                throw new IOException("Failed to create ES index template 'atlas-graph-template' (HTTP " + cassResponseCode + "): " + cassError);
+            }
+            cassConn.disconnect();
+
+            // Pre-create the atlas_graph_vertex_index so CassandraGraphManagement can add
+            // field mappings (__timestamp, __modificationTimestamp, __typeName, etc.) at startup.
+            // Without this, the index doesn't exist until the first _bulk write, and all field
+            // mapping PUTs fail with 404.
+            // The template (atlas-graph-template) applies settings+mappings automatically.
+            URL createIndexUrl = new URL("http://" + esAddress + "/atlas_graph_vertex_index");
+            HttpURLConnection createConn = (HttpURLConnection) createIndexUrl.openConnection();
+            createConn.setRequestMethod("PUT");
+            createConn.setRequestProperty("Content-Type", "application/json");
+            createConn.setDoOutput(true);
+            try (OutputStream createOs = createConn.getOutputStream()) {
+                createOs.write("{}".getBytes(StandardCharsets.UTF_8));
+            }
+            int createCode = createConn.getResponseCode();
+            LOG.info("Pre-created atlas_graph_vertex_index: HTTP {}", createCode);
+            createConn.disconnect();
+
+        }
     }
 
     private static void setupConfiguration() throws Exception {
@@ -281,6 +350,18 @@ public abstract class AtlasInProcessBaseIT {
             w.println("atlas.graph.index.search.elasticsearch.client-only=true");
             w.println("atlas.graph.index.search.elasticsearch.retry_on_conflict=5");
             w.println("atlas.rebuild.index=true");
+
+            // Cassandra graph backend (only active when atlas.graphdb.backend=cassandra)
+            if (isCassandraGraphBackend()) {
+                w.println("atlas.graphdb.backend=cassandra");
+                w.println("atlas.cassandra.graph.hostname=localhost");
+                w.println("atlas.cassandra.graph.port=" + cassandraPort);
+                w.println("atlas.cassandra.graph.keyspace=atlas_graph");
+                w.println("atlas.cassandra.graph.datacenter=datacenter1");
+                w.println("atlas.graph.id.strategy=deterministic");
+                w.println("atlas.graph.claim.enabled=false");
+                w.println("atlas.graph.index.search.es.prefix=atlas_graph_");
+            }
 
             // Notification - External Kafka container
             String kafkaBootstrap = kafka.getBootstrapServers();
@@ -417,6 +498,38 @@ public abstract class AtlasInProcessBaseIT {
                 new String[]{"admin", "admin"}
         );
         LOG.info("AtlasClientV2 created (http://localhost:{})", atlasPort);
+    }
+
+    /**
+     * Diagnostic: verify that TypeDefs were loaded during bootstrap.
+     * Logs counts of each TypeDef category so GHA logs show whether
+     * the bootstrap succeeded or silently failed.
+     */
+    private static void verifyBootstrapTypeDefs() {
+        try {
+            AtlasTypesDef allTypes = atlasClient.getAllTypeDefs(new org.apache.atlas.model.SearchFilter());
+            int entityCount  = allTypes.getEntityDefs()         != null ? allTypes.getEntityDefs().size()         : 0;
+            int enumCount    = allTypes.getEnumDefs()           != null ? allTypes.getEnumDefs().size()           : 0;
+            int structCount  = allTypes.getStructDefs()         != null ? allTypes.getStructDefs().size()         : 0;
+            int classCount   = allTypes.getClassificationDefs() != null ? allTypes.getClassificationDefs().size() : 0;
+            int relCount     = allTypes.getRelationshipDefs()   != null ? allTypes.getRelationshipDefs().size()   : 0;
+
+            System.out.println("=== TypeDef Bootstrap Verification ===");
+            System.out.println("  Entity defs:         " + entityCount);
+            System.out.println("  Enum defs:           " + enumCount);
+            System.out.println("  Struct defs:         " + structCount);
+            System.out.println("  Classification defs: " + classCount);
+            System.out.println("  Relationship defs:   " + relCount);
+            System.out.println("  Backend:             " + (isCassandraGraphBackend() ? "cassandra" : "janus"));
+            System.out.println("======================================");
+
+            if (entityCount == 0) {
+                System.out.println("WARNING: Zero entity defs after bootstrap! TypeDef initialization likely failed.");
+            }
+        } catch (Exception e) {
+            System.out.println("Failed to verify bootstrap TypeDefs: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private static String resolveDeployDir() {

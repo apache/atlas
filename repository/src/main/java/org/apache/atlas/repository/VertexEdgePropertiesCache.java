@@ -87,6 +87,10 @@ public class VertexEdgePropertiesCache {
             if (clazz.isInstance(value)) {
                 return clazz.cast(value);
             } else {
+                Tp coerced = coerceNumeric(value, clazz);
+                if (coerced != null) {
+                    return coerced;
+                }
                 throw new IllegalArgumentException("Property value is not of type " + clazz.getName());
             }
         } else {
@@ -97,9 +101,73 @@ public class VertexEdgePropertiesCache {
             if (clazz.isInstance(value)) {
                 return clazz.cast(value);
             } else {
+                Tp coerced = coerceNumeric(value, clazz);
+                if (coerced != null) {
+                    return coerced;
+                }
                 throw new IllegalArgumentException("Property value is not of type " + clazz.getName());
             }
         }
+    }
+
+    /**
+     * Coerce a value to the requested numeric type.
+     * JSON round-trip through Cassandra can cause type mismatches:
+     * - Long ↔ Integer (when the value fits in 32 bits)
+     * - Float/Double stored as String (e.g., "0.5") after JSON text column round-trip
+     * - BigDecimal from Jackson's USE_BIG_DECIMAL_FOR_FLOATS deserialization
+     * - Boolean where Integer 0/1 is expected
+     */
+    @SuppressWarnings("unchecked")
+    private <Tp> Tp coerceNumeric(Object value, Class<Tp> clazz) {
+        // Handle String values that represent numbers (from JSON text column round-trip)
+        if (value instanceof String) {
+            String str = (String) value;
+            if (str.isEmpty()) {
+                return null;
+            }
+            try {
+                // Parse as Double first (handles both integer and decimal strings)
+                Number num = Double.valueOf(str);
+                return coerceNumber(num, clazz);
+            } catch (NumberFormatException e) {
+                // Handle boolean strings for numeric types
+                if ("true".equalsIgnoreCase(str)) {
+                    return coerceNumber(1, clazz);
+                } else if ("false".equalsIgnoreCase(str)) {
+                    return coerceNumber(0, clazz);
+                }
+                return null;
+            }
+        }
+
+        // Handle Boolean where a numeric type is expected
+        if (value instanceof Boolean) {
+            return coerceNumber(((Boolean) value) ? 1 : 0, clazz);
+        }
+
+        if (!(value instanceof Number)) {
+            return null;
+        }
+        return coerceNumber((Number) value, clazz);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <Tp> Tp coerceNumber(Number num, Class<Tp> clazz) {
+        if (clazz == Long.class || clazz == long.class) {
+            return (Tp) Long.valueOf(num.longValue());
+        } else if (clazz == Integer.class || clazz == int.class) {
+            return (Tp) Integer.valueOf(num.intValue());
+        } else if (clazz == Double.class || clazz == double.class) {
+            return (Tp) Double.valueOf(num.doubleValue());
+        } else if (clazz == Float.class || clazz == float.class) {
+            return (Tp) Float.valueOf(num.floatValue());
+        } else if (clazz == Short.class || clazz == short.class) {
+            return (Tp) Short.valueOf(num.shortValue());
+        } else if (clazz == Byte.class || clazz == byte.class) {
+            return (Tp) Byte.valueOf(num.byteValue());
+        }
+        return null;
     }
 
     public String getGuid(String vertexId) {

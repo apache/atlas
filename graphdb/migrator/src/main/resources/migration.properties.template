@@ -1,0 +1,86 @@
+# =============================================================================
+# JanusGraph → Cassandra+ES Migrator Configuration
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Source: JanusGraph Configuration
+# Path to the JanusGraph properties file (same as Atlas uses).
+# Required for schema resolution (PropertyKey names, EdgeLabel names, custom serializers).
+# The migrator opens JanusGraph in read-only mode for type resolution only.
+# -----------------------------------------------------------------------------
+source.janusgraph.config=/path/to/atlas-application.properties
+
+# -----------------------------------------------------------------------------
+# Source: Cassandra (where JanusGraph's edgestore lives)
+# The migrator reads directly from the edgestore CQL table, bypassing JanusGraph's
+# TinkerPop layer for maximum throughput.
+# -----------------------------------------------------------------------------
+source.cassandra.hostname=localhost
+source.cassandra.port=9042
+source.cassandra.keyspace=atlas_janus
+source.cassandra.datacenter=datacenter1
+source.cassandra.username=
+source.cassandra.password=
+source.cassandra.edgestore.table=edgestore
+
+# -----------------------------------------------------------------------------
+# Target: New Cassandra Schema (atlas_graph)
+# The migrator creates tables if they don't exist and writes decoded data here.
+# Can be the same Cassandra cluster (different keyspace) or a different cluster.
+# -----------------------------------------------------------------------------
+target.cassandra.hostname=localhost
+target.cassandra.port=9042
+target.cassandra.keyspace=atlas_graph
+target.cassandra.datacenter=datacenter1
+target.cassandra.username=
+target.cassandra.password=
+
+# Replication strategy for the target keyspace (created if it doesn't exist).
+# For multi-node deployments use NetworkTopologyStrategy (default).
+# For local/dev use SimpleStrategy.
+target.cassandra.replication.strategy=NetworkTopologyStrategy
+target.cassandra.replication.factor=3
+
+# -----------------------------------------------------------------------------
+# Target: Elasticsearch
+# After vertex migration, the migrator bulk-indexes all vertices into ES.
+# Uses vertex_id (JG long ID as string) as the ES document ID.
+# -----------------------------------------------------------------------------
+target.elasticsearch.hostname=localhost
+target.elasticsearch.port=9200
+target.elasticsearch.protocol=http
+target.elasticsearch.index=janusgraph_vertex_index
+target.elasticsearch.username=
+target.elasticsearch.password=
+
+# -----------------------------------------------------------------------------
+# Migration Tuning
+# -----------------------------------------------------------------------------
+
+# Number of parallel CQL scanner threads (each scans a token range).
+# Recommended: 2x the number of Cassandra nodes for good parallelism.
+# Higher values = faster reads but more pressure on source Cassandra.
+migration.scanner.threads=32
+
+# Number of writer threads that process decoded vertices and write to target.
+# These consume from a bounded queue fed by scanner threads.
+migration.writer.threads=8
+
+# Batch size: how many vertices a writer thread accumulates before writing.
+# Larger batches reduce round-trips but increase memory per writer.
+migration.writer.batch.size=500
+
+# ES bulk size: documents per bulk request to Elasticsearch.
+migration.es.bulk.size=1000
+
+# CQL page/fetch size for the edgestore scan.
+# Larger = fewer round-trips, more memory.
+migration.scan.fetch.size=5000
+
+# Bounded queue capacity between scanner and writer threads.
+# Provides backpressure: scanners block when queue is full.
+migration.queue.capacity=10000
+
+# Resume: if true, skip token ranges already completed in previous runs.
+# Set to false for a fresh start (or use --fresh flag).
+migration.resume=true

@@ -43,7 +43,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.graphdb.janus.JanusUtils;
+import org.apache.atlas.repository.store.graph.v2.LongEncodingUtil;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.type.AtlasEntityType;
@@ -977,7 +977,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                         return esDocIdMapping;
                     }
 
-                    final String docId = JanusUtils.toLongEncoding(relationshipEndToVertexIdMap.get(atlasObjectId));
+                    final String docId = LongEncodingUtil.vertexIdToDocId(String.valueOf(relationshipEndToVertexIdMap.get(atlasObjectId)));
                     String guid = atlasObjectId.getGuid();
                     AtlasObjectId end1 = r.getEnd1();
                     AtlasObjectId end2 = r.getEnd2();

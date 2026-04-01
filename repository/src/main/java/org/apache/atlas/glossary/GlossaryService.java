@@ -32,8 +32,11 @@ import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.cassandra.CassandraGraph;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
@@ -58,6 +61,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -793,6 +797,12 @@ public class GlossaryService {
         List<AtlasRelatedTermHeader> ret = new ArrayList<>();
         AtlasGraph<Object, Object> graph = AtlasGraphProvider.getGraphInstance();
 
+        if (CassandraGraph.class.isInstance(graph)) {
+            List<AtlasVertex> termVertices = getActiveNeighbours(categoryGuid, Constants.CATEGORY_TERMS_EDGE_LABEL, AtlasEdgeDirection.OUT);
+            runPaginatedTermsQueryViaAtlasApi(offset, limit, sortOrder, ret, termVertices, includeAttributes);
+            return ret;
+        }
+
         GraphTraversal query = graph.V().has(Constants.GUID_PROPERTY_KEY, categoryGuid)
                 .has(Constants.STATE_PROPERTY_KEY, Constants.ACTIVE_STATE_VALUE)
                 .out(Constants.CATEGORY_TERMS_EDGE_LABEL)
@@ -815,6 +825,17 @@ public class GlossaryService {
 
         List<AtlasRelatedTermHeader> ret = new ArrayList<>();
         AtlasGraph<Object, Object> graph = AtlasGraphProvider.getGraphInstance();
+
+        if (CassandraGraph.class.isInstance(graph)) {
+            List<AtlasVertex> termVertices = getActiveNeighbours(glossaryGuid, Constants.GLOSSARY_TERMS_EDGE_LABEL, AtlasEdgeDirection.OUT);
+            if (isRoot) {
+                termVertices = termVertices.stream()
+                        .filter(v -> !hasActiveEdge(v, Constants.CATEGORY_TERMS_EDGE_LABEL, AtlasEdgeDirection.IN))
+                        .collect(Collectors.toList());
+            }
+            runPaginatedTermsQueryViaAtlasApi(offset, limit, sortOrder, ret, termVertices, null);
+            return ret;
+        }
 
         GraphTraversal query = graph.V().has(Constants.GUID_PROPERTY_KEY, glossaryGuid)
                 .has(Constants.STATE_PROPERTY_KEY, Constants.ACTIVE_STATE_VALUE)
@@ -867,6 +888,10 @@ public class GlossaryService {
 
         List<AtlasRelatedCategoryHeader> ret = new ArrayList<>();
         AtlasGraph<Object, Object> graph = AtlasGraphProvider.getGraphInstance();
+
+        if (CassandraGraph.class.isInstance(graph)) {
+            return getGlossaryCategoriesHeadersFullViaAtlasApi(glossaryGuid, offset, limit, sortOrder);
+        }
 
         GraphTraversal query = graph.V()
                 .has(Constants.GUID_PROPERTY_KEY, glossaryGuid)
@@ -1391,5 +1416,116 @@ public class GlossaryService {
         if (CollectionUtils.isEmpty(bulkImportResponse.getSuccessImportInfoList())) {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_IMPORT_FAILED);
         }
+    }
+
+    // --- Atlas API-based helpers for non-JanusGraph backends ---
+
+    private List<AtlasVertex> getActiveNeighbours(String guid, String edgeLabel, AtlasEdgeDirection direction) {
+        List<AtlasVertex> ret = new ArrayList<>();
+
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(guid);
+        if (vertex == null) {
+            return ret;
+        }
+
+        String state = vertex.getProperty(Constants.STATE_PROPERTY_KEY, String.class);
+        if (!Constants.ACTIVE_STATE_VALUE.equals(state)) {
+            return ret;
+        }
+
+        Iterable<AtlasEdge> edges = vertex.getEdges(direction, edgeLabel);
+        for (AtlasEdge edge : edges) {
+            AtlasVertex neighbour = (direction == AtlasEdgeDirection.OUT) ? edge.getInVertex() : edge.getOutVertex();
+            if (neighbour != null) {
+                String neighbourState = neighbour.getProperty(Constants.STATE_PROPERTY_KEY, String.class);
+                if (Constants.ACTIVE_STATE_VALUE.equals(neighbourState)) {
+                    ret.add(neighbour);
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    private boolean hasActiveEdge(AtlasVertex vertex, String edgeLabel, AtlasEdgeDirection direction) {
+        Iterable<AtlasEdge> edges = vertex.getEdges(direction, edgeLabel);
+        for (AtlasEdge edge : edges) {
+            AtlasVertex neighbour = (direction == AtlasEdgeDirection.OUT) ? edge.getInVertex() : edge.getOutVertex();
+            if (neighbour != null) {
+                String state = neighbour.getProperty(Constants.STATE_PROPERTY_KEY, String.class);
+                if (Constants.ACTIVE_STATE_VALUE.equals(state)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void runPaginatedTermsQueryViaAtlasApi(int offset, int limit, SortOrder sortOrder,
+                                                    List<AtlasRelatedTermHeader> ret,
+                                                    List<AtlasVertex> vertices, List<String> attributes) {
+        if (sortOrder != null) {
+            Comparator<AtlasVertex> comparator = Comparator.comparing(
+                    v -> v.getProperty(NAME, String.class) != null ? v.getProperty(NAME, String.class) : "");
+            if (sortOrder == SortOrder.DESCENDING) {
+                comparator = comparator.reversed();
+            }
+            vertices.sort(comparator);
+        }
+
+        int end = Math.min(offset + limit, vertices.size());
+        List<AtlasVertex> page = (offset < vertices.size()) ? vertices.subList(offset, end) : Collections.emptyList();
+
+        for (AtlasVertex v : page) {
+            AtlasRelatedTermHeader header = new AtlasRelatedTermHeader();
+            header.setTermGuid(v.getProperty(Constants.GUID_PROPERTY_KEY, String.class));
+            header.setDisplayText(v.getProperty(NAME, String.class));
+
+            if (CollectionUtils.isNotEmpty(attributes)) {
+                Map<String, List<String>> attrMap = new HashMap<>();
+                for (String attr : (List<String>) attributes) {
+                    String val = v.getProperty(attr, String.class);
+                    if (val != null) {
+                        attrMap.put(attr, Collections.singletonList(val));
+                    }
+                }
+                header.setAttributes(attrMap, attributes);
+            }
+
+            ret.add(header);
+        }
+    }
+
+    private List<AtlasRelatedCategoryHeader> getGlossaryCategoriesHeadersFullViaAtlasApi(
+            String glossaryGuid, int offset, int limit, SortOrder sortOrder) {
+        List<AtlasVertex> categoryVertices = getActiveNeighbours(glossaryGuid, Constants.GLOSSARY_CATEGORY_EDGE_LABEL, AtlasEdgeDirection.OUT);
+
+        if (sortOrder != null) {
+            Comparator<AtlasVertex> comparator = Comparator.comparing(
+                    v -> v.getProperty(NAME, String.class) != null ? v.getProperty(NAME, String.class) : "");
+            if (sortOrder == SortOrder.DESCENDING) {
+                comparator = comparator.reversed();
+            }
+            categoryVertices.sort(comparator);
+        }
+
+        int end = Math.min(offset + limit, categoryVertices.size());
+        List<AtlasVertex> page = (offset < categoryVertices.size()) ? categoryVertices.subList(offset, end) : Collections.emptyList();
+
+        List<AtlasRelatedCategoryHeader> ret = new ArrayList<>();
+        for (AtlasVertex catVertex : page) {
+            AtlasRelatedCategoryHeader header = new AtlasRelatedCategoryHeader();
+            header.setCategoryGuid(catVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class));
+            header.setDisplayText(catVertex.getProperty(NAME, String.class));
+
+            List<AtlasVertex> parents = getActiveNeighbours(header.getCategoryGuid(), Constants.CATEGORY_PARENT_EDGE_LABEL, AtlasEdgeDirection.IN);
+            if (!parents.isEmpty()) {
+                header.setParentCategoryGuid(parents.get(0).getProperty(Constants.GUID_PROPERTY_KEY, String.class));
+            }
+
+            ret.add(header);
+        }
+        return ret;
     }
 }

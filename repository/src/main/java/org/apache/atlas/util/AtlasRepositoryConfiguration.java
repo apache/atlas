@@ -48,6 +48,7 @@ public class AtlasRepositoryConfiguration {
 
     private static final Integer DEFAULT_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS = Integer.valueOf(5);
     private static final String  CONFIG_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS  = "atlas.server.type.update.lock.max.wait.time.seconds";
+    private static final String  CASSANDRA_GRAPH_DATABASE_IMPLEMENTATION_CLASS     = "org.apache.atlas.repository.graphdb.cassandra.CassandraGraphDatabase";
     private static final String  JANUS_GRAPH_DATABASE_IMPLEMENTATION_CLASS         = "org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase";
     private static final String  DEFAULT_GRAPH_DATABASE_IMPLEMENTATION_CLASS       = JANUS_GRAPH_DATABASE_IMPLEMENTATION_CLASS;
 
@@ -155,7 +156,9 @@ public class AtlasRepositoryConfiguration {
             Configuration                        config            = ApplicationProperties.get();
             String                               graphDatabaseImpl = config.getString(ApplicationProperties.GRAPHDB_BACKEND_CONF);
 
-            if (StringUtils.equals(graphDatabaseImpl, ApplicationProperties.GRAPHBD_BACKEND_JANUS)) {
+            if (StringUtils.equals(graphDatabaseImpl, ApplicationProperties.GRAPHDB_BACKEND_CASSANDRA)) {
+                ret = ApplicationProperties.getClass(CASSANDRA_GRAPH_DATABASE_IMPLEMENTATION_CLASS, GraphDatabase.class);
+            } else if (StringUtils.equals(graphDatabaseImpl, ApplicationProperties.GRAPHDB_BACKEND_JANUS)) {
                 ret = ApplicationProperties.getClass(JANUS_GRAPH_DATABASE_IMPLEMENTATION_CLASS, GraphDatabase.class);
             } else {
                 ret = ApplicationProperties.getClass(graphDatabaseImpl, GraphDatabase.class);

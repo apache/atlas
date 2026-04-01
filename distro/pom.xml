@@ -147,6 +147,14 @@ atlas.graph.storage.hbase.regions-per-server=1
                 <targetPath>bin</targetPath>
             </resource>
             <resource>
+                <directory>../tools</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>atlas_migrate.sh</include>
+                </includes>
+                <targetPath>bin</targetPath>
+            </resource>
+            <resource>
                 <directory>src/conf</directory>
                 <filtering>true</filtering>
                 <targetPath>conf</targetPath>

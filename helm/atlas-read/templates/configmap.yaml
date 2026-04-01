@@ -30,10 +30,23 @@ data:
 
     #########  Graph Database Configs  #########
 
-    # Graph Database
-
-    #Configures the graph database to use.  Defaults to JanusGraph
-    #atlas.graphdb.backend=org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase
+    # Graph backend: "janus" (default) or "cassandra" (Cassandra+ES direct, no JanusGraph)
+    atlas.graphdb.backend={{ .Values.global.graphBackend | default "janus" }}
+    {{- if eq (.Values.global.graphBackend | default "janus") "cassandra" }}
+    # Cassandra mode uses atlas_graph_ prefix for ES indexes (instead of janusgraph_)
+    atlas.graph.index.search.es.prefix=atlas_graph_
+    # Cassandra graph backend connection (separate from JanusGraph's atlas.graph.storage.* props)
+    {{ if or (eq .Values.global.svcIsolation.enabled true) (eq .Values.global.globalSvcIsolation.enabled true) }}
+    atlas.cassandra.graph.hostname=atlas-cassandra-online-dc
+    {{ else }}
+    atlas.cassandra.graph.hostname=atlas-cassandra
+    {{ end }}
+    atlas.cassandra.graph.port={{ .Values.cassandra.config.ports.cql }}
+    atlas.cassandra.graph.keyspace=atlas_graph
+    atlas.cassandra.graph.datacenter=datacenter1
+    atlas.graph.id.strategy={{ .Values.global.graphIdStrategy | default "legacy" }}
+    atlas.graph.claim.enabled={{ .Values.global.graphClaimEnabled | default false }}
+    {{- end }}
 
     # Graph Storage
     # Set atlas.graph.storage.backend to the correct value for your desired storage

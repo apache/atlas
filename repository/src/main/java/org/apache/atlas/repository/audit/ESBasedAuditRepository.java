@@ -97,7 +97,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final Logger LOG = LoggerFactory.getLogger(ESBasedAuditRepository.class);
     public static final String INDEX_WRITE_BACKEND_CONF = "atlas.graph.index.search.write.hostname";
     private static final String TOTAL_FIELD_LIMIT = "atlas.index.audit.elasticsearch.total_field_limit";
-    public static final String INDEX_NAME = "entity_audits";
+    private static final String AUDIT_INDEX_NAME_PROPERTY = "atlas.audit.elasticsearch.index";
+    public static final String INDEX_NAME;
     private static final String ENTITYID = "entityId";
     private static final String TYPE_NAME = "typeName";
     private static final String ENTITY_QUALIFIED_NAME = "entityQualifiedName";
@@ -108,9 +109,9 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final String USER = "user";
     private static final String DETAIL = "detail";
     private static final String ENTITY = "entity";
-    private static final String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
+    private static final String bulkMetadata;
     private static final Set<String> ALLOWED_LINKED_ATTRIBUTES = new HashSet<>(Arrays.asList(DOMAIN_GUIDS, CATALOG_DATASET_GUID_ATTR));
-    private static final String ENTITY_AUDITS_INDEX = "entity_audits";
+    private static final String ENTITY_AUDITS_INDEX;
     private static final String NIOFS_MIGRATION_MARKER_ID = "entity_audits_niofs_migrated";
     private static final int DLQ_POLL_TIMEOUT_SECONDS = 5;
 
@@ -132,6 +133,19 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             ENTITYID, ACTION, DETAIL, USER, CREATED, TIMESTAMP,
             TYPE_NAME, ENTITY_QUALIFIED_NAME, EVENT_KEY, "headers"
     );
+
+    static {
+        String auditIndex = "entity_audits";
+        try {
+            auditIndex = ApplicationProperties.get().getString(AUDIT_INDEX_NAME_PROPERTY, "entity_audits");
+        } catch (Exception e) {
+            LOG.warn("Failed to read audit index name from config, using default: {}", auditIndex);
+        }
+        INDEX_NAME = auditIndex;
+        ENTITY_AUDITS_INDEX = auditIndex;
+        bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
+        LOG.info("ES audit index name: '{}'", INDEX_NAME);
+    }
 
     /*
     *    created   → event creation time

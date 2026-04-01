@@ -37,6 +37,8 @@
         <module>common</module>
         <module>graphdb-impls</module>
         <module>janus</module>
+        <module>cassandra</module>
+        <module>migrator</module>
     </modules>
 
     <dependencies>

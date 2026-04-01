@@ -28,6 +28,12 @@ global:
     dedicated:
       enabled: false  # Creates dedicated Cassandra and Elasticsearch StatefulSets
       active: false   # Uses dedicated resources in configmap
+  # Graph backend mode: "janus" (default, JanusGraph) or "cassandra" (Cassandra+ES direct)
+  graphBackend: "janus"
+  # CassandraGraph ID strategy: "legacy" (UUID) or "deterministic" (SHA-256 of type+QN)
+  graphIdStrategy: "legacy"
+  # CassandraGraph entity claim dedup via LWT (requires cassandra backend)
+  graphClaimEnabled: false
     
 Namespace: atlas
 sentry_flag: disable

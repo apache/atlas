@@ -2020,6 +2020,79 @@ public class EntityREST {
         }
     }
 
+    /**
+     * Starts an async repair job that scans ALL Cassandra vertices, finds entities
+     * matching the given connectionQualifiedName prefix, and reindexes them to ES.
+     * Returns immediately with the job status. Poll GET /repairindex/connection/status
+     * for progress.
+     */
+    @POST
+    @Path("/repairindex/connection")
+    public Map<String, Object> repairIndexByConnection(
+            @QueryParam("connectionQualifiedName") String connectionQualifiedName,
+            @QueryParam("fetchSize") @DefaultValue("1000") int fetchSize,
+            @QueryParam("batchSize") @DefaultValue("500") int batchSize) throws AtlasBaseException {
+
+        Servlets.validateQueryParamLength("connectionQualifiedName", connectionQualifiedName);
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairIndexByConnection");
+            }
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_REPAIR_INDEX), "Admin Repair Index by Connection");
+
+            if (connectionQualifiedName == null || connectionQualifiedName.isEmpty()) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "connectionQualifiedName is required");
+            }
+
+            LOG.info("Starting async ES repair for connection: {} (fetchSize={}, batchSize={})",
+                    connectionQualifiedName, fetchSize, batchSize);
+
+            return repairIndex.startReindexByQualifiedNamePrefix(connectionQualifiedName, fetchSize, batchSize);
+
+        } catch (Exception e) {
+            LOG.error("Exception while repairIndexByConnection for '{}'", connectionQualifiedName, e);
+            throw new AtlasBaseException(e);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Returns the status of the current/last connection repair job.
+     */
+    @GET
+    @Path("/repairindex/connection/status")
+    public Map<String, Object> repairIndexByConnectionStatus() throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairIndexByConnectionStatus");
+            }
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_REPAIR_INDEX), "Admin Repair Index Status");
+
+            Map<String, Object> status = repairIndex.getRepairConnectionJobStatus();
+            if (status == null) {
+                Map<String, Object> noJob = new LinkedHashMap<>();
+                noJob.put("status", "NO_JOB");
+                noJob.put("message", "No connection repair job has been started");
+                return noJob;
+            }
+            return status;
+
+        } catch (Exception e) {
+            LOG.error("Exception while checking repairIndexByConnection status", e);
+            throw new AtlasBaseException(e);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
     @POST
     @Path("/repairAllClassifications")
     public void repairAllClassifications(@QueryParam("delay") @DefaultValue("0") int delay, @QueryParam("batchSize") @DefaultValue("1000") int batchSize, @QueryParam("fetchSize") @DefaultValue("5000") int fetchSize) throws AtlasBaseException {

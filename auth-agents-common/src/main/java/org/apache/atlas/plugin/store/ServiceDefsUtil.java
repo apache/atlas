@@ -75,7 +75,7 @@ public class ServiceDefsUtil {
 
 		RangerServiceDef ret = null;
 
-		String resource = "/service-defs/ranger-servicedef-" + serviceType + ".json";
+		String resource = "/service-defs/atlas-servicedef-" + serviceType + ".json";
 
 		try (InputStream inStream = getClass().getResourceAsStream(resource)) {
 

@@ -18,6 +18,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.Tag;
 import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.repository.graphdb.cassandra.CassandraSessionProvider;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -91,6 +92,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     }
 
     private final CqlSession cassSession;
+    private final boolean ownsSession; // false if using shared session from CassandraSessionProvider
 
     // Prepared Statements for 'tags_by_id' table
     private final PreparedStatement findAllTagsForAssetStmt;
@@ -120,21 +122,42 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             String hostname = ApplicationProperties.get().getString(CASSANDRA_HOSTNAME_PROPERTY, DEFAULT_HOST);
             Map<String, String> replicationConfig = Map.of("class", "SimpleStrategy", "replication_factor", ApplicationProperties.get().getString(CASSANDRA_REPLICATION_FACTOR_PROPERTY, "3"));
 
-            DriverConfigLoader configLoader = DriverConfigLoader.programmaticBuilder()
-                    //.withDuration(DefaultDriverOption.REQUEST_TIMEOUT, REQUEST_TIMEOUT)
-                    .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, CONNECTION_TIMEOUT)
-                    .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, CONNECTION_TIMEOUT)
-                    .withDuration(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, CONNECTION_TIMEOUT)
-                    .withInt(DefaultDriverOption.CONNECTION_POOL_LOCAL_SIZE, calculateOptimalLocalPoolSize())
-                    .withInt(DefaultDriverOption.CONNECTION_POOL_REMOTE_SIZE, calculateOptimalRemotePoolSize())
-                    .withDuration(DefaultDriverOption.HEARTBEAT_INTERVAL, HEARTBEAT_INTERVAL)
-                    .build();
+            // Reuse the shared Cassandra session from the graph provider to avoid creating
+            // a separate connection pool (saves ~0.2s startup and reduces resource usage).
+            // TagDAO already uses fully-qualified table names (keyspace.table), so no keyspace binding needed.
+            CqlSession sharedSession = null;
+            try {
+                String backend = ApplicationProperties.get().getString(
+                        ApplicationProperties.GRAPHDB_BACKEND_CONF, ApplicationProperties.DEFAULT_GRAPHDB_BACKEND);
+                if (ApplicationProperties.GRAPHDB_BACKEND_CASSANDRA.equalsIgnoreCase(backend)) {
+                    sharedSession = CassandraSessionProvider.getSharedSession(hostname, CASSANDRA_PORT, DATACENTER);
+                    LOG.info("TagDAO: Reusing shared Cassandra session from CassandraSessionProvider");
+                }
+            } catch (Exception e) {
+                LOG.warn("TagDAO: Failed to get shared Cassandra session, creating own session", e);
+            }
 
-            cassSession = CqlSession.builder()
-                    .addContactPoint(new InetSocketAddress(hostname, CASSANDRA_PORT))
-                    .withConfigLoader(configLoader)
-                    .withLocalDatacenter(DATACENTER)
-                    .build();
+            if (sharedSession != null) {
+                cassSession = sharedSession;
+                ownsSession = false;
+            } else {
+                DriverConfigLoader configLoader = DriverConfigLoader.programmaticBuilder()
+                        //.withDuration(DefaultDriverOption.REQUEST_TIMEOUT, REQUEST_TIMEOUT)
+                        .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, CONNECTION_TIMEOUT)
+                        .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, CONNECTION_TIMEOUT)
+                        .withDuration(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, CONNECTION_TIMEOUT)
+                        .withInt(DefaultDriverOption.CONNECTION_POOL_LOCAL_SIZE, calculateOptimalLocalPoolSize())
+                        .withInt(DefaultDriverOption.CONNECTION_POOL_REMOTE_SIZE, calculateOptimalRemotePoolSize())
+                        .withDuration(DefaultDriverOption.HEARTBEAT_INTERVAL, HEARTBEAT_INTERVAL)
+                        .build();
+
+                cassSession = CqlSession.builder()
+                        .addContactPoint(new InetSocketAddress(hostname, CASSANDRA_PORT))
+                        .withConfigLoader(configLoader)
+                        .withLocalDatacenter(DATACENTER)
+                        .build();
+                ownsSession = true;
+            }
 
             initializeSchema(replicationConfig);
 
@@ -845,7 +868,12 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
     public static int calculateBucket(String vertexId) {
         int numBuckets = 2 << BUCKET_POWER; // 2 * 2^5 = 64
-        return (int) (Long.parseLong(vertexId) % numBuckets);
+        try {
+            return (int) (Long.parseLong(vertexId) % numBuckets);
+        } catch (NumberFormatException e) {
+            // Non-numeric vertex IDs (e.g., UUID strings from CassandraGraph)
+            return Math.abs(vertexId.hashCode() % numBuckets);
+        }
     }
 
     public static AtlasClassification convertToAtlasClassification(String tagMetaJson) throws AtlasBaseException {
@@ -919,7 +947,8 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
     @Override
     public void close() {
-        if (cassSession != null && !cassSession.isClosed()) {
+        // Only close the session if we own it (not shared from CassandraSessionProvider)
+        if (ownsSession && cassSession != null && !cassSession.isClosed()) {
             cassSession.close();
         }
     }

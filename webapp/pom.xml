@@ -772,6 +772,9 @@
                         <user.dir>${project.basedir}</user.dir>
                         <projectBaseDir>${project.basedir}/..</projectBaseDir>
                     </systemProperties>
+                    <systemPropertyVariables>
+                        <atlas.graphdb.backend>${atlas.graphdb.backend}</atlas.graphdb.backend>
+                    </systemPropertyVariables>
                     <forkCount>1</forkCount> <!--Default-->
                     <reuseForks>true</reuseForks> <!--Default-->
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>

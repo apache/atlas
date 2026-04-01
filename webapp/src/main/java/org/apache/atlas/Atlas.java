@@ -336,50 +336,74 @@ public final class Atlas {
 
     private static void initElasticsearch() throws IOException {
         RestHighLevelClient esClient = AtlasElasticsearchDatabase.getClient();
-        IndexTemplatesExistRequest indexTemplateExistsRequest = new IndexTemplatesExistRequest("atlan-template");
-        boolean exists = false;
-        try {
-            exists = esClient.indices().existsTemplate(indexTemplateExistsRequest, RequestOptions.DEFAULT);
-            if (exists) {
-                LOG.info("atlan-template es index template exists!");
-            } else {
-                LOG.info("atlan-template es index template does not exists!");
-            }
-        } catch (Exception es) {
-            LOG.error("Caught exception: ", es.toString());
-        }
+
+        String atlasHomeDir  = System.getProperty("atlas.home");
+        String elasticsearchSettingsFilePath = (org.apache.commons.lang3.StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "elasticsearch" + File.separator + "es-settings.json";
+        File elasticsearchSettingsFile  = new File(elasticsearchSettingsFilePath);
+        String settingsJson  = new String(Files.readAllBytes(elasticsearchSettingsFile.toPath()), StandardCharsets.UTF_8);
+
+        String elasticsearchMappingsFilePath = (org.apache.commons.lang3.StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "elasticsearch" + File.separator + "es-mappings.json";
+        File elasticsearchMappingsFile  = new File(elasticsearchMappingsFilePath);
+        String mappingsJson  = new String(Files.readAllBytes(elasticsearchMappingsFile.toPath()), StandardCharsets.UTF_8);
+
+        // Create the primary template for the configured index prefix (e.g., janusgraph_vertex_index).
+        // This MUST succeed — Atlas cannot start without correct ES mappings/analyzers.
         String vertexIndex = INDEX_PREFIX + VERTEX_INDEX;
-        if (!exists) {
-            PutIndexTemplateRequest request = new PutIndexTemplateRequest("atlan-template");
-            request.patterns(Arrays.asList(vertexIndex));
-            String atlasHomeDir  = System.getProperty("atlas.home");
-            String elasticsearchSettingsFilePath = (org.apache.commons.lang3.StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "elasticsearch" + File.separator + "es-settings.json";
-            File elasticsearchSettingsFile  = new File(elasticsearchSettingsFilePath);
-            String jsonString  = new String(Files.readAllBytes(elasticsearchSettingsFile.toPath()), StandardCharsets.UTF_8);
-            request.settings(jsonString, XContentType.JSON);
+        createESTemplateIfNotExists(esClient, "atlan-template", Arrays.asList(vertexIndex), settingsJson, mappingsJson, true);
 
-            String elasticsearchMappingsFilePath = (org.apache.commons.lang3.StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "elasticsearch" + File.separator + "es-mappings.json";
-            File elasticsearchMappingsFile  = new File(elasticsearchMappingsFilePath);
-            String mappingsJsonString  = new String(Files.readAllBytes(elasticsearchMappingsFile.toPath()), StandardCharsets.UTF_8);
-            request.mapping(mappingsJsonString, XContentType.JSON);
-
-            try {
-                AcknowledgedResponse putTemplateResponse = esClient.indices().putTemplate(request, RequestOptions.DEFAULT);
-                if (putTemplateResponse.isAcknowledged()) {
-                    LOG.info("Atlan index template created.");
-                } else {
-                    LOG.error("error creating atlan index template");
-                }
-            } catch (Exception e) {
-                LOG.error("Caught exception: ", e.toString());
-                throw e;
-            }
+        // Also create a template for atlas_graph_* pattern so the Cassandra graph backend
+        // gets the same analyzers, normalizers, and dynamic templates when its index is created.
+        // This is best-effort — failure does not block startup.
+        if (!INDEX_PREFIX.equals("atlas_graph_")) {
+            createESTemplateIfNotExists(esClient, "atlas-graph-template",
+                    Arrays.asList("atlas_graph_*"), settingsJson, mappingsJson, false);
         }
 
         // Create a unified alias "atlas_vertex_index" pointing to the actual vertex index.
         // This allows consumers to use a stable alias regardless of the backend-specific index name.
         // Best-effort — failure does not block startup.
         createVertexIndexAliasIfNotExists(esClient, vertexIndex);
+    }
+
+    private static void createESTemplateIfNotExists(RestHighLevelClient esClient, String templateName,
+                                                     List<String> patterns, String settingsJson,
+                                                     String mappingsJson, boolean failOnError) throws IOException {
+        boolean exists = false;
+        try {
+            IndexTemplatesExistRequest existsRequest = new IndexTemplatesExistRequest(templateName);
+            exists = esClient.indices().existsTemplate(existsRequest, RequestOptions.DEFAULT);
+            if (exists) {
+                LOG.info("{} es index template exists!", templateName);
+            } else {
+                LOG.info("{} es index template does not exist, creating...", templateName);
+            }
+        } catch (Exception e) {
+            LOG.error("Error checking template {}: {}", templateName, e.toString());
+            if (failOnError) {
+                throw (e instanceof IOException) ? (IOException) e : new IOException("Failed to check ES template: " + templateName, e);
+            }
+        }
+
+        if (!exists) {
+            PutIndexTemplateRequest request = new PutIndexTemplateRequest(templateName);
+            request.patterns(patterns);
+            request.settings(settingsJson, XContentType.JSON);
+            request.mapping(mappingsJson, XContentType.JSON);
+
+            try {
+                AcknowledgedResponse putTemplateResponse = esClient.indices().putTemplate(request, RequestOptions.DEFAULT);
+                if (putTemplateResponse.isAcknowledged()) {
+                    LOG.info("{} index template created with patterns: {}", templateName, patterns);
+                } else {
+                    LOG.error("Error creating {} index template", templateName);
+                }
+            } catch (Exception e) {
+                LOG.error("Failed to create {} index template: {}", templateName, e.toString());
+                if (failOnError) {
+                    throw (e instanceof IOException) ? (IOException) e : new IOException("Failed to create ES template: " + templateName, e);
+                }
+            }
+        }
     }
 
     private static final String VERTEX_INDEX_ALIAS = "atlas_vertex_index";

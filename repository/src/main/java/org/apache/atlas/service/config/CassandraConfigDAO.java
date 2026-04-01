@@ -13,7 +13,9 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.exceptions.WriteTimeoutException;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.repository.graphdb.cassandra.CassandraSessionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +61,7 @@ public class CassandraConfigDAO implements AutoCloseable {
     private static volatile Exception initializationException = null;
 
     private final CqlSession session;
+    private final boolean ownsSession; // false if using shared session from CassandraSessionProvider
     private final String keyspace;
     private final String table;
     private final String appName;
@@ -129,20 +132,42 @@ public class CassandraConfigDAO implements AutoCloseable {
             LOG.info("Initializing CassandraConfigDAO - hostname: {}, keyspace: {}, table: {}, consistencyLevel: {}",
                     config.getHostname(), keyspace, table, consistencyLevel);
 
-            DriverConfigLoader configLoader = DriverConfigLoader.programmaticBuilder()
-                    .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, CONNECTION_TIMEOUT)
-                    .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, CONNECTION_TIMEOUT)
-                    .withDuration(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, CONNECTION_TIMEOUT)
-                    .withInt(DefaultDriverOption.CONNECTION_POOL_LOCAL_SIZE, 4)
-                    .withInt(DefaultDriverOption.CONNECTION_POOL_REMOTE_SIZE, 2)
-                    .withDuration(DefaultDriverOption.HEARTBEAT_INTERVAL, HEARTBEAT_INTERVAL)
-                    .build();
+            // Try to reuse the shared Cassandra session from the graph provider to avoid creating
+            // a separate connection pool (saves ~0.2s startup and reduces resource usage).
+            // ConfigDAO already uses fully-qualified table names (keyspace.table), so no keyspace binding needed.
+            CqlSession sharedSession = null;
+            try {
+                String backend = ApplicationProperties.get().getString(
+                        ApplicationProperties.GRAPHDB_BACKEND_CONF, ApplicationProperties.DEFAULT_GRAPHDB_BACKEND);
+                if (ApplicationProperties.GRAPHDB_BACKEND_CASSANDRA.equalsIgnoreCase(backend)) {
+                    sharedSession = CassandraSessionProvider.getSharedSession(
+                            config.getHostname(), config.getCassandraPort(), config.getDatacenter());
+                    LOG.info("CassandraConfigDAO: Reusing shared Cassandra session from CassandraSessionProvider");
+                }
+            } catch (Exception e) {
+                LOG.warn("CassandraConfigDAO: Failed to get shared Cassandra session, creating own session", e);
+            }
 
-            session = CqlSession.builder()
-                    .addContactPoint(new InetSocketAddress(config.getHostname(), config.getCassandraPort()))
-                    .withConfigLoader(configLoader)
-                    .withLocalDatacenter(config.getDatacenter())
-                    .build();
+            if (sharedSession != null) {
+                session = sharedSession;
+                ownsSession = false;
+            } else {
+                DriverConfigLoader configLoader = DriverConfigLoader.programmaticBuilder()
+                        .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, CONNECTION_TIMEOUT)
+                        .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, CONNECTION_TIMEOUT)
+                        .withDuration(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, CONNECTION_TIMEOUT)
+                        .withInt(DefaultDriverOption.CONNECTION_POOL_LOCAL_SIZE, 4)
+                        .withInt(DefaultDriverOption.CONNECTION_POOL_REMOTE_SIZE, 2)
+                        .withDuration(DefaultDriverOption.HEARTBEAT_INTERVAL, HEARTBEAT_INTERVAL)
+                        .build();
+
+                session = CqlSession.builder()
+                        .addContactPoint(new InetSocketAddress(config.getHostname(), config.getCassandraPort()))
+                        .withConfigLoader(configLoader)
+                        .withLocalDatacenter(config.getDatacenter())
+                        .build();
+                ownsSession = true;
+            }
 
             // Initialize schema
             initializeSchema(config.getReplicationFactor());
@@ -384,7 +409,8 @@ public class CassandraConfigDAO implements AutoCloseable {
 
     @Override
     public void close() {
-        if (session != null && !session.isClosed()) {
+        // Only close the session if we own it (not shared from CassandraSessionProvider)
+        if (ownsSession && session != null && !session.isClosed()) {
             session.close();
             LOG.info("CassandraConfigDAO session closed");
         }
