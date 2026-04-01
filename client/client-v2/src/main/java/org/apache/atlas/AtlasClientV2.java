@@ -349,7 +349,18 @@ public class AtlasClientV2 extends AtlasBaseClient {
      * @param typesDef A composite object that captures all types to be deleted
      */
     public void deleteAtlasTypeDefs(AtlasTypesDef typesDef) throws AtlasServiceException {
-        callAPI(API_V2.DELETE_TYPE_DEFS, (Class<?>) null, AtlasType.toJson(typesDef));
+        deleteAtlasTypeDefs(typesDef, false);
+    }
+
+    public void deleteAtlasTypeDefs(AtlasTypesDef typesDef, boolean forceDelete) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = null;
+
+        if (forceDelete) {
+            queryParams = new MultivaluedMapImpl();
+            queryParams.add("force", "true");
+        }
+
+        callAPI(API_V2.DELETE_TYPE_DEFS, (Class<?>) null, AtlasType.toJson(typesDef), queryParams);
     }
 
     public void deleteTypeByName(String typeName) throws AtlasServiceException {

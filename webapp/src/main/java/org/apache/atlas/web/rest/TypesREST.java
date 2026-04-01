@@ -407,19 +407,24 @@ public class TypesREST {
      * @HTTP 204 On successful deletion of the requested type definitions
      * @HTTP 400 On validation failure for any type definitions
      */
+    public void deleteAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
+        deleteAtlasTypeDefs(typesDef, false);
+    }
+
     @DELETE
     @Path("/typedefs")
     @Experimental
     @Timed
-    public void deleteAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
+    public void deleteAtlasTypeDefs(final AtlasTypesDef typesDef,
+                                    @QueryParam("force") @DefaultValue("false") final boolean forceDelete) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeDefs(" + AtlasTypeUtil.toDebugString(typesDef) + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeDefs(" + AtlasTypeUtil.toDebugString(typesDef) + ", force=" + forceDelete + ")");
             }
 
-            typeDefStore.deleteTypesDef(typesDef);
+            typeDefStore.deleteTypesDef(typesDef, forceDelete);
         } finally {
             AtlasPerfTracer.log(perf);
         }

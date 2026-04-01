@@ -425,7 +425,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
                 allApplicableTypes = getApplicableTypesWithSubTypes(attributeDef);
             }
 
-            LOG.info("REF-CHECK [ApplicableTypes] BM='{}' attr='{}' types={}",
+            LOG.debug("REF-CHECK [ApplicableTypes] BM='{}' attr='{}' types={}",
                     businessMetadataDef.getName(), attributeDef.getName(), allApplicableTypes);
 
             if (CollectionUtils.isEmpty(allApplicableTypes)) {
@@ -443,7 +443,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         boolean isPresent         = isBusinessAttributePresentInGraph(vertexPropertyName, allApplicableTypes);
 
         if (isPresent) {
-            LOG.error("Cannot delete BusinessMetadata '{}' (request='{}') - attribute '{}' (vertex property: '{}') has references in entity types: {}",
+            LOG.warn("Cannot delete BusinessMetadata '{}' (request='{}') - attribute '{}' (vertex property: '{}') has references in entity types: {}",
                     bmDef.getName(), identifier, attributeDef.getName(), vertexPropertyName, allApplicableTypes);
             throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, bmDef.getName());
         }
@@ -457,15 +457,11 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         try {
             List<String> typesList = new ArrayList<>(allApplicableTypes);
 
-            // Single combined query
             AtlasGraphQuery query = graph.query()
                     .has(vertexPropertyName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, (Object) null);
 
             List<AtlasGraphQuery> orConditions = new ArrayList<>();
-            // Arm 1: direct type match (vertex's __typeName is in the applicable set)
             orConditions.add(query.createChildQuery().in(Constants.ENTITY_TYPE_PROPERTY_KEY, typesList));
-            // Arm 2: inherited type match — catches child entities whose super-type is in the applicable set
-            // This is crucial for Case 6 (Parent -> Child)
             orConditions.add(query.createChildQuery().in(Constants.SUPER_TYPES_PROPERTY_KEY, typesList));
 
             query.or(orConditions);

@@ -82,6 +82,7 @@ import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -808,6 +809,7 @@ public class AtlasClientV2Test {
         private Object mockResponse;
         private Class<?> expectedReturnType;
         private boolean shouldThrowException;
+        private javax.ws.rs.core.MultivaluedMap<String, String> lastQueryParams;
 
         public TestableAtlasClientV2() {
             super(mock(WebResource.class), mock(Configuration.class));
@@ -823,8 +825,13 @@ public class AtlasClientV2Test {
             this.shouldThrowException = shouldThrow;
         }
 
+        public javax.ws.rs.core.MultivaluedMap<String, String> getLastQueryParams() {
+            return lastQueryParams;
+        }
+
         @Override
         public <T> T callAPI(API api, Class<T> responseType, Object requestObject, String... params) throws AtlasServiceException {
+            lastQueryParams = null;
             return handleCallAPI(responseType);
         }
 
@@ -838,11 +845,13 @@ public class AtlasClientV2Test {
 
         @Override
         public <T> T callAPI(API api, Class<T> responseType, javax.ws.rs.core.MultivaluedMap<String, String> queryParams, String... params) throws AtlasServiceException {
+            lastQueryParams = queryParams;
             return handleCallAPI(responseType);
         }
 
         @Override
         public <T> T callAPI(API api, Class<T> responseType, Object requestObject, javax.ws.rs.core.MultivaluedMap<String, String> queryParams, String... params) throws AtlasServiceException {
+            lastQueryParams = queryParams;
             return handleCallAPI(responseType);
         }
 
@@ -1053,6 +1062,19 @@ public class AtlasClientV2Test {
         // Should not throw exception
         client.deleteAtlasTypeDefs(input);
         assertTrue(true);
+        assertNull(client.getLastQueryParams());
+    }
+
+    @Test
+    public void testDeleteAtlasTypeDefsRealExecutionWithForceDelete() throws Exception {
+        TestableAtlasClientV2 client = new TestableAtlasClientV2();
+        client.setMockResponse(null, Object.class);
+
+        AtlasTypesDef input = new AtlasTypesDef();
+        client.deleteAtlasTypeDefs(input, true);
+
+        assertNotNull(client.getLastQueryParams());
+        assertEquals(client.getLastQueryParams().getFirst("force"), "true");
     }
 
     @Test

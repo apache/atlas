@@ -21,7 +21,6 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
-import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
@@ -64,7 +63,7 @@ import static org.apache.atlas.repository.Constants.VERTEX_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.VERTEX_TYPE;
 
 /**
- * Graph persistence store for TypeDef - v1
+ * Graph persistence store for TypeDef - v2
  */
 @Singleton
 @Component
@@ -74,12 +73,12 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
     protected final AtlasGraph atlasGraph;
 
     @Inject
-    public AtlasTypeDefGraphStoreV2(AtlasTypeRegistry typeRegistry, List<TypeDefChangeListener> typeDefChangeListeners, AtlasGraph atlasGraph, EntityDiscoveryService entityDiscoveryService) {
+    public AtlasTypeDefGraphStoreV2(AtlasTypeRegistry typeRegistry, List<TypeDefChangeListener> typeDefChangeListeners, AtlasGraph atlasGraph) {
         super(typeRegistry, typeDefChangeListeners);
 
         this.atlasGraph = atlasGraph;
 
-        LOG.debug("<== AtlasTypeDefGraphStoreV1()");
+        LOG.debug("<== AtlasTypeDefGraphStoreV2()");
     }
 
     public static String getCurrentUser() {

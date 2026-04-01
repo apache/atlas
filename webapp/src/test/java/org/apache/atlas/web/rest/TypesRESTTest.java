@@ -532,7 +532,7 @@ public class TypesRESTTest {
     @Test
     public void testDeleteAtlasTypeDefs_Success() throws AtlasBaseException {
         // Setup
-        doNothing().when(typeDefStore).deleteTypesDef(mockTypesDef);
+        doNothing().when(typeDefStore).deleteTypesDef(mockTypesDef, false);
 
         try (MockedStatic<AtlasPerfTracer> mockedPerfTracer = mockStatic(AtlasPerfTracer.class);
                 MockedStatic<AtlasTypeUtil> mockedAtlasTypeUtil = mockStatic(AtlasTypeUtil.class)) {
@@ -543,14 +543,14 @@ public class TypesRESTTest {
             typesREST.deleteAtlasTypeDefs(mockTypesDef);
 
             // Verify
-            verify(typeDefStore).deleteTypesDef(mockTypesDef);
+            verify(typeDefStore).deleteTypesDef(mockTypesDef, false);
         }
     }
 
     @Test
     public void testDeleteAtlasTypeDefs_WithPerfTracerEnabled() throws AtlasBaseException {
         // Setup
-        doNothing().when(typeDefStore).deleteTypesDef(mockTypesDef);
+        doNothing().when(typeDefStore).deleteTypesDef(mockTypesDef, false);
 
         try (MockedStatic<AtlasPerfTracer> mockedPerfTracer = mockStatic(AtlasPerfTracer.class);
                 MockedStatic<AtlasTypeUtil> mockedAtlasTypeUtil = mockStatic(AtlasTypeUtil.class)) {
@@ -562,7 +562,7 @@ public class TypesRESTTest {
             typesREST.deleteAtlasTypeDefs(mockTypesDef);
 
             // Verify
-            verify(typeDefStore).deleteTypesDef(mockTypesDef);
+            verify(typeDefStore).deleteTypesDef(mockTypesDef, false);
             mockedPerfTracer.verify(() -> AtlasPerfTracer.isPerfTraceEnabled(any()));
             mockedPerfTracer.verify(() -> AtlasPerfTracer.getPerfTracer(any(), anyString()));
         }
@@ -572,7 +572,7 @@ public class TypesRESTTest {
     public void testDeleteAtlasTypeDefs_WithException() throws AtlasBaseException {
         // Setup
         AtlasBaseException exception = new AtlasBaseException("Delete failed");
-        doThrow(exception).when(typeDefStore).deleteTypesDef(mockTypesDef);
+        doThrow(exception).when(typeDefStore).deleteTypesDef(mockTypesDef, false);
 
         try (MockedStatic<AtlasPerfTracer> mockedPerfTracer = mockStatic(AtlasPerfTracer.class);
                 MockedStatic<AtlasTypeUtil> mockedAtlasTypeUtil = mockStatic(AtlasTypeUtil.class)) {
@@ -585,7 +585,25 @@ public class TypesRESTTest {
             });
 
             assertEquals(thrownException.getMessage(), "Delete failed");
-            verify(typeDefStore).deleteTypesDef(mockTypesDef);
+            verify(typeDefStore).deleteTypesDef(mockTypesDef, false);
+        }
+    }
+
+    @Test
+    public void testDeleteAtlasTypeDefs_WithForceDelete() throws AtlasBaseException {
+        // Setup
+        doNothing().when(typeDefStore).deleteTypesDef(mockTypesDef, true);
+
+        try (MockedStatic<AtlasPerfTracer> mockedPerfTracer = mockStatic(AtlasPerfTracer.class);
+                MockedStatic<AtlasTypeUtil> mockedAtlasTypeUtil = mockStatic(AtlasTypeUtil.class)) {
+            mockedPerfTracer.when(() -> AtlasPerfTracer.isPerfTraceEnabled(any())).thenReturn(false);
+            mockedAtlasTypeUtil.when(() -> AtlasTypeUtil.toDebugString(mockTypesDef)).thenReturn("debug_string");
+
+            // Execute
+            typesREST.deleteAtlasTypeDefs(mockTypesDef, true);
+
+            // Verify
+            verify(typeDefStore).deleteTypesDef(mockTypesDef, true);
         }
     }
 
