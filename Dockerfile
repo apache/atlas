@@ -59,7 +59,7 @@ RUN apt-get update \
         net-tools \
         curl \
     && cd / \
-    && export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-arm64" \
+    && export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-$(dpkg --print-architecture)" \
     && apt-get clean 
 
 RUN ln -s /usr/bin/python3 /usr/bin/python
