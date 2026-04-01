@@ -239,13 +239,6 @@
             <artifactId>curator-recipes</artifactId>
         </dependency>
 
-        <!-- AWS library -->
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-aws</artifactId>
-            <version>${hadoop.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
