@@ -166,9 +166,37 @@ public abstract class DeleteHandlerV1 {
             for (GraphHelper.VertexInfo vertexInfo : getOwnedVertices(instanceVertex)) {
                 AtlasEntityHeader entityHeader = vertexInfo.getEntity();
 
-                if (requestContext.isPurgeRequested()) {
-                    entityHeader.setClassifications(
-                            entityRetriever.handleGetAllClassifications(vertexInfo.getVertex()));
+                // MS-903 / LH-969: Enrich the ENTITY_DELETE notification with classification and BM data
+                // so downstream consumers can cascade-delete derived state from a single event.
+                // Data is loaded into BOTH the entity header (for the notification entity fields)
+                // AND the diff entity (for mutatedDetails), ensuring consumers have access via
+                // either path. All loads are wrapped in try-catch — a notification missing enrichment
+                // data is acceptable; a blocked delete is not.
+                try {
+                    List<AtlasClassification> classifications =
+                            entityRetriever.handleGetAllClassifications(vertexInfo.getVertex());
+                    if (CollectionUtils.isNotEmpty(classifications)) {
+                        entityHeader.setClassifications(classifications);
+
+                        // Also store in diff entity for mutatedDetails
+                        AtlasEntity diffEntity = entityRetriever.getOrInitializeDiffEntity(vertexInfo.getVertex());
+                        diffEntity.setClassifications(classifications);
+                    }
+                } catch (Exception e) {
+                    LOG.warn("Failed to load classifications for entity {} during delete — notification will lack classification data",
+                            entityHeader.getGuid(), e);
+                }
+
+                try {
+                    Map<String, Map<String, Object>> businessMetadata =
+                            entityRetriever.getBusinessMetadata(vertexInfo.getVertex());
+                    if (MapUtils.isNotEmpty(businessMetadata)) {
+                        AtlasEntity diffEntity = entityRetriever.getOrInitializeDiffEntity(vertexInfo.getVertex());
+                        diffEntity.setBusinessAttributes(businessMetadata);
+                    }
+                } catch (Exception e) {
+                    LOG.warn("Failed to load business metadata for entity {} during delete — notification will lack BM data",
+                            entityHeader.getGuid(), e);
                 }
 
                 requestContext.recordEntityDelete(entityHeader);

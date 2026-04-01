@@ -522,6 +522,23 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
             for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
                 listener.onBusinessAttributesUpdated(entity, updatedBusinessAttributes);
             }
+
+            // MS-903 / LH-968: Also emit ENTITY_UPDATE so downstream consumers (Lakehouse, Automation Engine)
+            // that derive updateTime/updatedBy from ENTITY_UPDATE events see the updated timestamps.
+            // Without this, standalone BM updates only fire BUSINESS_ATTRIBUTE_UPDATE, leaving updateTime stale.
+            //
+            // Guard: skip if the entity is already tracked as updated in this transaction (bulk entity
+            // create/update path) — onEntitiesMutated() will emit ENTITY_UPDATE for it. Only emit here
+            // for the standalone BM API path and bulk-update-with-only-BM-change path where the entity
+            // is in entitiesToSkipUpdate and onEntitiesMutated() would NOT emit ENTITY_UPDATE.
+            if (!RequestContext.get().isUpdatedEntity(entityGuid)) {
+                AtlasEntityHeader entityHeader = new AtlasEntityHeader(entity.getTypeName(), entityGuid, entity.getAttributes());
+                entityHeader.setStatus(entity.getStatus());
+                entityHeader.setUpdatedBy(entity.getUpdatedBy());
+                entityHeader.setUpdateTime(entity.getUpdateTime());
+
+                notifyListeners(Collections.singletonList(entityHeader), EntityOperation.UPDATE, false);
+            }
         }
     }
 
