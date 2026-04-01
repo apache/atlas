@@ -3705,19 +3705,7 @@ public class EntityGraphMapper {
 
 
     private AtlasEntityHeader constructHeader(AtlasEntity entity, AtlasVertex vertex, AtlasEntityType entityType) throws AtlasBaseException {
-        // MS-710: Read all primitive/enum attributes from the vertex (not just writtenAttrs).
-        // This ensures the entity cached in RequestContext includes attributes like
-        // connectorName — even if they weren't in the update request payload.
-        // Only primitive and enum types are fetched to keep the read lightweight.
-        Set<String> primitiveAttrs = new HashSet<>();
-        for (Map.Entry<String, AtlasAttribute> entry : entityType.getAllAttributes().entrySet()) {
-            TypeCategory typeCategory = entry.getValue().getAttributeType().getTypeCategory();
-            if (typeCategory == PRIMITIVE || typeCategory == TypeCategory.ENUM) {
-                primitiveAttrs.add(entry.getKey());
-            }
-        }
-
-        AtlasEntityHeader header = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex, primitiveAttrs);
+        AtlasEntityHeader header = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex, getAttrsToLoad(entityType));
 
         if (entity.getClassifications() == null) {
             entity.setClassifications(header.getClassifications());
@@ -3734,6 +3722,31 @@ public class EntityGraphMapper {
         }
 
         return header;
+    }
+
+    /**
+     * Returns the set of attribute names to load from the vertex during entity cache construction.
+     * Includes: primitive/enum types (lightweight reads) + attributes marked with
+     * includeInNotification or isUnique (required for CDC notification completeness, MS-695).
+     */
+    private Set<String> getAttrsToLoad(AtlasEntityType entityType) {
+        Set<String> ret = new HashSet<>();
+
+        for (Map.Entry<String, AtlasAttribute> entry : entityType.getAllAttributes().entrySet()) {
+            TypeCategory typeCategory = entry.getValue().getAttributeType().getTypeCategory();
+
+            if (typeCategory == PRIMITIVE || typeCategory == TypeCategory.ENUM) {
+                ret.add(entry.getKey());
+            }
+
+            AtlasAttributeDef attrDef = entry.getValue().getAttributeDef();
+
+            if (attrDef.getIncludeInNotification() || attrDef.getIsUnique()) {
+                ret.add(entry.getKey());
+            }
+        }
+
+        return ret;
     }
 
     private Set<String> getWrittenAttributeNames(AtlasEntity entity, AtlasEntityType entityType) {
