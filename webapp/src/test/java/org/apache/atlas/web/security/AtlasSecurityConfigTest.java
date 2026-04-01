@@ -499,6 +499,7 @@ public class AtlasSecurityConfigTest {
         ExpressionUrlAuthorizationConfigurer<HttpSecurity>.ExpressionInterceptUrlRegistry mockAuthRequests = mock(ExpressionUrlAuthorizationConfigurer.ExpressionInterceptUrlRegistry.class);
         ExpressionUrlAuthorizationConfigurer<HttpSecurity>.AuthorizedUrl mockAuthorizedUrl = mock(ExpressionUrlAuthorizationConfigurer.AuthorizedUrl.class);
         HeadersConfigurer<HttpSecurity> mockHeadersConfigurer = mock(HeadersConfigurer.class);
+        HeadersConfigurer<HttpSecurity>.XXssConfig mockXssConfigurer = mock(HeadersConfigurer.XXssConfig.class);
         ServletApiConfigurer<HttpSecurity> mockServletApiConfigurer = mock(ServletApiConfigurer.class);
         CsrfConfigurer<HttpSecurity> mockCsrfConfigurer = mock(CsrfConfigurer.class);
         SessionManagementConfigurer<HttpSecurity> mockSessionConfigurer = mock(SessionManagementConfigurer.class);
@@ -514,6 +515,8 @@ public class AtlasSecurityConfigTest {
         when(mockAuthRequests.and()).thenReturn(httpSecurity);
 
         when(httpSecurity.headers()).thenReturn(mockHeadersConfigurer);
+        when(mockHeadersConfigurer.xssProtection()).thenReturn(mockXssConfigurer);
+        when(mockXssConfigurer.disable()).thenReturn(mockHeadersConfigurer);
         when(mockHeadersConfigurer.addHeaderWriter(any(StaticHeadersWriter.class))).thenReturn(mockHeadersConfigurer);
         when(mockHeadersConfigurer.and()).thenReturn(httpSecurity);
 
@@ -857,6 +860,7 @@ public class AtlasSecurityConfigTest {
         ExpressionUrlAuthorizationConfigurer<HttpSecurity>.ExpressionInterceptUrlRegistry mockAuthRequests = mock(ExpressionUrlAuthorizationConfigurer.ExpressionInterceptUrlRegistry.class);
         ExpressionUrlAuthorizationConfigurer<HttpSecurity>.AuthorizedUrl mockAuthorizedUrl = mock(ExpressionUrlAuthorizationConfigurer.AuthorizedUrl.class);
         HeadersConfigurer<HttpSecurity> mockHeadersConfigurer = mock(HeadersConfigurer.class);
+        HeadersConfigurer<HttpSecurity>.XXssConfig mockXssConfigurer = mock(HeadersConfigurer.XXssConfig.class);
         ServletApiConfigurer<HttpSecurity> mockServletApiConfigurer = mock(ServletApiConfigurer.class);
         CsrfConfigurer<HttpSecurity> mockCsrfConfigurer = mock(CsrfConfigurer.class);
         SessionManagementConfigurer<HttpSecurity> mockSessionConfigurer = mock(SessionManagementConfigurer.class);
@@ -872,6 +876,8 @@ public class AtlasSecurityConfigTest {
         when(mockAuthRequests.and()).thenReturn(mockHttpSecurity);
 
         when(mockHttpSecurity.headers()).thenReturn(mockHeadersConfigurer);
+        when(mockHeadersConfigurer.xssProtection()).thenReturn(mockXssConfigurer);
+        when(mockXssConfigurer.disable()).thenReturn(mockHeadersConfigurer);
         when(mockHeadersConfigurer.addHeaderWriter(any(StaticHeadersWriter.class))).thenReturn(mockHeadersConfigurer);
         when(mockHeadersConfigurer.and()).thenReturn(mockHttpSecurity);
 
