@@ -21,7 +21,7 @@
 	</description>
 
 	<property name="release-dir"  value="target" />
-	<property name="incubationstr" value="-incubating" />
+	<property name="incubationstr" value="" />
 	<property name="release-name" value="apache-atlas-${atlas-release-version}${incubationstr}" />
 
 	<property name="build-release-tar-file" value="${release-name}-sources.tar.gz" />
@@ -66,6 +66,24 @@
 
 		<exec executable="gpg" output="${release-dir}/${build-release-tar-file}.mds">
 			<arg value="--print-mds" />
+			<arg value="${release-dir}/${build-release-tar-file}" />
+		</exec>
+
+		<exec executable="gpg" output="${release-dir}/${build-release-tar-file}.md5">
+			<arg value="--print-md" />
+			<arg value="MD5" />
+			<arg value="${release-dir}/${build-release-tar-file}" />
+		</exec>
+
+		<exec executable="gpg" output="${release-dir}/${build-release-tar-file}.sha256">
+			<arg value="--print-md" />
+			<arg value="SHA256" />
+			<arg value="${release-dir}/${build-release-tar-file}" />
+		</exec>
+
+		<exec executable="gpg" output="${release-dir}/${build-release-tar-file}.sha512">
+			<arg value="--print-md" />
+			<arg value="SHA512" />
 			<arg value="${release-dir}/${build-release-tar-file}" />
 		</exec>
 	</target>
