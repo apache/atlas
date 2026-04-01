@@ -98,6 +98,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -566,7 +567,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             if (endEntityType == null) {
                 if (StringUtils.isEmpty(endEntityTypeName)) {
                     // No edges with this label exist on the entity
-                    throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_LABEL_NOT_FOUND, relation, entityTypeName, guid);
+                    LOG.warn("No edges found for relation '{}' on entity '{}' (guid={}), returning empty result",
+                            relation, entityTypeName, guid);
+                    ret.setEntities(Collections.emptyList());
+                    ret.setApproximateCount(0L);
+                    return ret;
                 } else {
                     // Edges exist but entity type not in registry
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_LABEL, relation, endEntityTypeName);

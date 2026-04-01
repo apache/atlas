@@ -210,7 +210,6 @@ public enum AtlasErrorCode {
     NO_TYPE_NAME_ON_VERTEX(404, "ATLAS-404-00-015", "No typename found for given entity with guid: {0}"),
     NO_LINEAGE_CONSTRAINTS_FOR_GUID(404, "ATLAS-404-00-016", "No lineage constraints found for requested entity with guid : {0}"),
     IMPORT_NOT_FOUND(404, "ATLAS-404-00-017", "Import id {0} is not found"),
-    RELATIONSHIP_LABEL_NOT_FOUND(404, "ATLAS-404-00-018", "No edges found with relationship label ''{0}'' on entity {1} (guid: {2}). Either the relationship does not exist or the entity has no relationships of this type."),
 
     METHOD_NOT_ALLOWED(405, "ATLAS-405-00-001", "Error 405 - The request method {0} is inappropriate for the URL: {1}"),
 
