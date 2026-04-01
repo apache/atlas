@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.web.rest;
 
-import java.util.concurrent.CompletableFuture;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
@@ -250,13 +249,11 @@ public class DiscoveryREST {
             if (enableSearchLogging && parameters.isSaveSearchLog() && !shouldSkipSearchLog(parameters)) {
                 final AtlasSearchResult logResult = result;
                 final long duration = endTime - startTime;
-                CompletableFuture.runAsync(() -> {
-                    try {
-                        logSearchLog(parameters, logResult, servletRequest, duration);
-                    } catch (Exception e) {
-                        LOG.warn("Async search log failed", e);
-                    }
-                });
+                try {
+                    logSearchLog(parameters, logResult, servletRequest, duration);
+                } catch (Exception e) {
+                    LOG.warn("Async search log failed", e);
+                }
             }
 
             return result;
