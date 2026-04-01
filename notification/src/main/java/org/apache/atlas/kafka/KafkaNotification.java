@@ -269,19 +269,32 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public void sendInternal(NotificationType notificationType, List<String> messages) throws NotificationException {
         KafkaProducer producer = getOrCreateProducer(notificationType);
 
-        sendInternalToProducer(producer, notificationType, messages);
+        sendInternalToProducer(producer, notificationType, messages, null);
+    }
+
+    @Override
+    public void sendInternal(NotificationType notificationType, List<String> messages, List<String> partitionKeys) throws NotificationException {
+        KafkaProducer producer = getOrCreateProducer(notificationType);
+
+        sendInternalToProducer(producer, notificationType, messages, partitionKeys);
     }
 
     @VisibleForTesting
-    void sendInternalToProducer(Producer p, NotificationType notificationType, List<String> messages) throws NotificationException {
+    void sendInternalToProducer(Producer p, NotificationType notificationType, List<String> messages, List<String> partitionKeys) throws NotificationException {
         String               topic           = PRODUCER_TOPIC_MAP.get(notificationType);
         List<MessageContext> messageContexts = new ArrayList<>();
 
-        for (String message : messages) {
-            ProducerRecord record = new ProducerRecord(topic, message);
+        for (int i = 0; i < messages.size(); i++) {
+            String message = messages.get(i);
+            // MS-903 / LH-1262: use entity GUID as partition key to guarantee per-entity ordering
+            String key     = (partitionKeys != null && i < partitionKeys.size()) ? partitionKeys.get(i) : null;
+
+            ProducerRecord record = (key != null)
+                    ? new ProducerRecord(topic, key, message)
+                    : new ProducerRecord(topic, message);
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Sending message for topic {}: {}", topic, message);
+                LOG.debug("Sending message for topic {}, key {}: {}", topic, key, message);
             }
 
             Future future = p.send(record);

@@ -3237,6 +3237,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
               continue;
           }
 
+          // MS-903 / LH-1262: skip lineage recalculation for deleted entities.
+          // When an entity is deleted, its lineage edges are removed, triggering a distributed
+          // hasLineage recalculation task. But emitting an ENTITY_UPDATE for a deleted entity
+          // causes consumers to resurrect it. Check vertex state and skip if deleted.
+          if (GraphHelper.getStatus(entityVertex) == Status.DELETED) {
+              LOG.info("repairHasLineageByIdsWithTypes: Skipping deleted entity for vertexId: {}", vertexId);
+              continue;
+          }
+
           AtlasEntityType type = typeRegistry.getEntityTypeByName(providedTypeName);
           if (type == null) {
               LOG.warn("repairHasLineageByIdsWithTypes: Provided typeName {} not found for id {}", providedTypeName, vertexId);

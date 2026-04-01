@@ -23,7 +23,9 @@ import org.apache.atlas.model.notification.AtlasNotificationBaseMessage;
 import org.apache.atlas.model.notification.AtlasNotificationMessage;
 import org.apache.atlas.model.notification.AtlasNotificationStringMessage;
 import org.apache.atlas.model.notification.AtlasNotificationBaseMessage.CompressionKind;
+import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2;
 import org.apache.atlas.model.notification.MessageSource;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.model.notification.MessageVersion;
 import org.apache.commons.configuration.Configuration;
@@ -90,13 +92,23 @@ public abstract class AbstractNotification implements NotificationInterface {
 
     @Override
     public <T> void send(NotificationType type, List<T> messages, MessageSource source) throws NotificationException {
-        List<String> strMessages = new ArrayList<>(messages.size());
+        List<String> strMessages   = new ArrayList<>(messages.size());
+        List<String> partitionKeys = new ArrayList<>(messages.size());
 
         for (int index = 0; index < messages.size(); index++) {
+            String key        = extractPartitionKey(messages.get(index));
+            int    sizeBefore = strMessages.size();
+
             createNotificationMessages(messages.get(index), strMessages, source);
+
+            // MS-903 / LH-1262: replicate the partition key for each string message produced
+            // (a single notification can be split into multiple Kafka messages for large payloads)
+            for (int i = sizeBefore; i < strMessages.size(); i++) {
+                partitionKeys.add(key);
+            }
         }
 
-        sendInternal(type, strMessages);
+        sendInternal(type, strMessages, partitionKeys);
     }
 
     @Override
@@ -120,8 +132,38 @@ public abstract class AbstractNotification implements NotificationInterface {
      */
     public abstract void sendInternal(NotificationType type, List<String> messages) throws NotificationException;
 
+    /**
+     * Send the given messages with partition keys.
+     * Default implementation ignores keys and delegates to sendInternal(type, messages).
+     * Subclasses (e.g., KafkaNotification) can override to use keys for partitioning.
+     *
+     * @param type           the message type
+     * @param messages       the serialized messages to send
+     * @param partitionKeys  partition keys (one per message, may contain nulls)
+     */
+    public void sendInternal(NotificationType type, List<String> messages, List<String> partitionKeys) throws NotificationException {
+        sendInternal(type, messages);
+    }
+
 
     // ----- utility methods -------------------------------------------------
+
+    /**
+     * MS-903 / LH-1262: Extract a partition key from a notification message object.
+     * For entity notifications, returns the entity GUID so all messages for the same
+     * entity land in the same Kafka partition (preserving per-entity ordering).
+     * Returns null for non-entity messages (Kafka will use round-robin).
+     */
+    private static String extractPartitionKey(Object message) {
+        if (message instanceof EntityNotificationV2) {
+            EntityNotificationV2 notification = (EntityNotificationV2) message;
+            AtlasEntityHeader entity = notification.getEntity();
+            if (entity != null && entity.getGuid() != null) {
+                return entity.getGuid();
+            }
+        }
+        return null;
+    }
 
     public static String getMessageJson(Object message) {
         AtlasNotificationMessage<?> notificationMsg = new AtlasNotificationMessage<>(CURRENT_MESSAGE_VERSION, message);

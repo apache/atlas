@@ -90,7 +90,7 @@ public class KafkaNotificationMockTest {
         when(producer.send(expectedRecord)).thenReturn(returnValue);
 
         kafkaNotification.sendInternalToProducer(producer,
-                NotificationInterface.NotificationType.HOOK, Arrays.asList(new String[]{message}));
+                NotificationInterface.NotificationType.HOOK, Arrays.asList(new String[]{message}), null);
 
         verify(producer).send(expectedRecord);
     }
@@ -112,7 +112,7 @@ public class KafkaNotificationMockTest {
 
         try {
             kafkaNotification.sendInternalToProducer(producer,
-                NotificationInterface.NotificationType.HOOK, Arrays.asList(new String[]{message}));
+                NotificationInterface.NotificationType.HOOK, Arrays.asList(new String[]{message}), null);
             fail("Should have thrown NotificationException");
         } catch (NotificationException e) {
             assertEquals(e.getFailedMessages().size(), 1);
@@ -142,7 +142,7 @@ public class KafkaNotificationMockTest {
 
         try {
             kafkaNotification.sendInternalToProducer(producer,
-                    NotificationInterface.NotificationType.HOOK, Arrays.asList(new String[]{message1, message2}));
+                    NotificationInterface.NotificationType.HOOK, Arrays.asList(new String[]{message1, message2}), null);
             fail("Should have thrown NotificationException");
         } catch (NotificationException e) {
             assertEquals(e.getFailedMessages().size(), 2);

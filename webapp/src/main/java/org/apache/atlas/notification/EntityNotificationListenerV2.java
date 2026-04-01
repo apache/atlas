@@ -159,6 +159,19 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         Map<String,AtlasEntity> differentialEntities  = RequestContext.get().getDifferentialEntitiesMap();
         Map<String, String>     requestContextHeaders = RequestContext.get().getRequestContextHeaders();
 
+        // MS-903 / LH-1262: collect GUIDs of entities being deleted in this transaction
+        // so we can suppress contradictory ENTITY_UPDATE notifications for them
+        Set<String> deletedGuids = null;
+        if (operationType == ENTITY_UPDATE) {
+            Collection<AtlasEntityHeader> deletedEntities = RequestContext.get().getDeletedEntities();
+            if (CollectionUtils.isNotEmpty(deletedEntities)) {
+                deletedGuids = new HashSet<>();
+                for (AtlasEntityHeader deleted : deletedEntities) {
+                    deletedGuids.add(deleted.getGuid());
+                }
+            }
+        }
+
         List<EntityNotificationV2> messages = new ArrayList<>();
 
         for (AtlasEntity entity : entities) {
@@ -166,6 +179,16 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                 continue;
             }
              String entityGuid = entity.getGuid();
+
+             // MS-903 / LH-1262: skip ENTITY_UPDATE for entities being deleted in this transaction.
+             // Lineage recalculation can produce UPDATE notifications for entities that are
+             // simultaneously being deleted, causing consumers to resurrect deleted entities.
+             if (deletedGuids != null && deletedGuids.contains(entityGuid)) {
+                 if (LOG.isDebugEnabled()) {
+                     LOG.debug("Suppressing ENTITY_UPDATE notification for entity {} — entity is being deleted in this transaction", entityGuid);
+                 }
+                 continue;
+             }
 
              if(differentialEntities != null){
                  if (differentialEntities.containsKey(entityGuid)) {
