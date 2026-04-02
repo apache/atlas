@@ -1852,6 +1852,16 @@ public class EntityGraphMapper {
             }
 
             String      guid            = getGuid(ctx.getValue());
+
+            // Resolve temporary GUID to assigned GUID (mirrors mapSoftRefValue pattern)
+            if (AtlasTypeUtil.isUnAssignedGuid(guid) && context.getGuidAssignments() != null) {
+                String assignedGuid = context.getGuidAssignments().get(guid);
+
+                if (assignedGuid != null) {
+                    guid = assignedGuid;
+                }
+            }
+
             AtlasVertex attributeVertex = context.getDiscoveryContext().getResolvedEntityVertex(guid);
             AtlasVertex entityVertex    = ctx.getReferringVertex();
             AtlasEdge   ret;
