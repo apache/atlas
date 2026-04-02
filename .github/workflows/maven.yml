@@ -33,6 +33,7 @@ on:
       - ms-664-fix-audit-search
       - hotfix-reindex-refresh
       - ms-864-keycloak-jwks-internal-url
+      - ms-610-ranges-policy-cache
     paths-ignore:
       - '.claude/**'
       - '.cursor/**'

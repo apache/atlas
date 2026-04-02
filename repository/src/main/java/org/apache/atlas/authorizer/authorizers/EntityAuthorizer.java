@@ -80,6 +80,10 @@ public class EntityAuthorizer {
     private static AtlasAccessResult evaluateABACPoliciesInMemory(List<RangerPolicy> abacPolicies, AtlasEntityHeader entity, String action) {
         AtlasAccessResult result = new AtlasAccessResult(false);
 
+        if (CollectionUtils.isEmpty(abacPolicies)) {
+            return result;
+        }
+
         // don't need to fetch vertex for indexsearch response scrubbing as it already has the required attributes
         // setting vertex to null here as usage is already with a check for null possibility
         AtlasVertex vertex =  entity.getDocId() == null || !ACTION_READ.equals(action) ? AtlasGraphUtilsV2.findByGuid(entity.getGuid()) : null;
