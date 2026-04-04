@@ -1102,7 +1102,7 @@ public class EntityGraphMapper {
                         attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
                     }
                     if (attrValue!= null && !attrValue.equals(attrOldValue)) {
-                        addValuesToAutoUpdateAttributesList(attribute, userAutoUpdateAttributes, timestampAutoUpdateAttributes);
+                        addValuesToAutoUpdateAttributesList(attribute, struct, userAutoUpdateAttributes, timestampAutoUpdateAttributes);
                     }
 
                     mapAttribute(attribute, attrValue, vertex, op, context);
@@ -1142,7 +1142,7 @@ public class EntityGraphMapper {
                         }
 
                         if (attrValue != null && !attrValue.equals(attrOldValue)) {
-                            addValuesToAutoUpdateAttributesList(attribute, userAutoUpdateAttributes, timestampAutoUpdateAttributes);
+                            addValuesToAutoUpdateAttributesList(attribute, struct, userAutoUpdateAttributes, timestampAutoUpdateAttributes);
                         }
 
                         mapAttribute(attribute, attrValue, vertex, op, context);
@@ -1181,18 +1181,38 @@ public class EntityGraphMapper {
                 && !attributeDef.getIsDefaultValueNull();
     }
 
-    private void addValuesToAutoUpdateAttributesList(AtlasAttribute attribute, List<String> userAutoUpdateAttributes, List<String> timestampAutoUpdateAttributes) {
-        HashMap<String, ArrayList> autoUpdateAttributes =  attribute.getAttributeDef().getAutoUpdateAttributes();
+    /**
+     * Collects auto-update target attributes (user / timestamp) for the given trigger attribute,
+     * skipping any target that the caller already supplied an explicit non-null value for.
+     * This lets connector payloads (e.g. Tableau's {@code certifierDisplayName → certificateUpdatedBy})
+     * take precedence over the default "stamp with API caller" behaviour.
+     */
+    private void addValuesToAutoUpdateAttributesList(AtlasAttribute attribute, AtlasStruct struct,
+                                                     List<String> userAutoUpdateAttributes,
+                                                     List<String> timestampAutoUpdateAttributes) {
+        HashMap<String, ArrayList> autoUpdateAttributes = attribute.getAttributeDef().getAutoUpdateAttributes();
         if (autoUpdateAttributes != null) {
             List<String> userAttributes = autoUpdateAttributes.get("user");
-            if (userAttributes != null && userAttributes.size() > 0) {
-                userAutoUpdateAttributes.addAll(userAttributes);
+            if (userAttributes != null) {
+                for (String target : userAttributes) {
+                    if (!hasExplicitValue(struct, target)) {
+                        userAutoUpdateAttributes.add(target);
+                    }
+                }
             }
             List<String> timestampAttributes = autoUpdateAttributes.get("timestamp");
-            if (timestampAttributes != null && timestampAttributes.size() > 0) {
-                timestampAutoUpdateAttributes.addAll(timestampAttributes);
+            if (timestampAttributes != null) {
+                for (String target : timestampAttributes) {
+                    if (!hasExplicitValue(struct, target)) {
+                        timestampAutoUpdateAttributes.add(target);
+                    }
+                }
             }
         }
+    }
+
+    private static boolean hasExplicitValue(AtlasStruct struct, String attrName) {
+        return struct != null && struct.hasAttribute(attrName) && struct.getAttribute(attrName) != null;
     }
 
     private void mapRelationshipAttributes(AtlasEntity entity, AtlasEntityType entityType, AtlasVertex vertex, EntityOperation op,

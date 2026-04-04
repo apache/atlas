@@ -2812,13 +2812,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
             }
 
-//            for (String attrName : entityType.getAllAttributes().keySet()) {
-//                if (ATTR_STARRED_BY.equals(attrName) || ATTR_STARRED_COUNT.equals(attrName) || ATTR_STARRED_DETAILS_LIST.equals(attrName)) {
-//                    flushAttributes.add(attrName);
-//                }
-//            }
-
-            flushAttributes.forEach(entity::removeAttribute);
+            for (String attrName : flushAttributes) {
+                if (!entity.hasAttribute(attrName) || entity.getAttribute(attrName) == null) {
+                    entity.removeAttribute(attrName);
+                }
+            }
         }
     }
 
