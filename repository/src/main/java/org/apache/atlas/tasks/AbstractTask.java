@@ -43,6 +43,8 @@ public abstract class AbstractTask {
 
             task.setErrorMessage(exception.getMessage());
 
+            task.incrementAttemptCount();
+
             throw exception;
         } finally {
             task.end();

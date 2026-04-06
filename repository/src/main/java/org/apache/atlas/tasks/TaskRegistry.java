@@ -273,12 +273,10 @@ public class TaskRegistry {
         RequestContext.get().setCurrentTask(task);
 
         task.setStartTime(new Date());
-        task.incrementAttemptCount();
 
         setEncodedProperty(taskVertex, Constants.TASK_START_TIME, task.getStartTime());
         setEncodedProperty(taskVertex, TASK_STATUS, AtlasTask.Status.IN_PROGRESS);
         setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
-        setEncodedProperty(taskVertex, Constants.TASK_ATTEMPT_COUNT, task.getAttemptCount());
         graph.commit();
     }
 
