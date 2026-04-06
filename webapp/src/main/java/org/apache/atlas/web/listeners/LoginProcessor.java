@@ -49,7 +49,7 @@ public class LoginProcessor {
         // first, let's see if we're running in a hadoop cluster and have the env configured
         boolean                                        isHadoopCluster = isHadoopCluster();
         Configuration                                  hadoopConfig    = isHadoopCluster ? getHadoopConfiguration() : new Configuration(false);
-        org.apache.commons.configuration.Configuration configuration   = getApplicationConfiguration();
+        org.apache.commons.configuration2.Configuration configuration   = getApplicationConfiguration();
 
         if (!isHadoopCluster) {
             // need to read the configured authentication choice and create the UGI configuration
@@ -59,7 +59,7 @@ public class LoginProcessor {
         doServiceLogin(hadoopConfig, configuration);
     }
 
-    protected void doServiceLogin(Configuration hadoopConfig, org.apache.commons.configuration.Configuration configuration) {
+    protected void doServiceLogin(Configuration hadoopConfig, org.apache.commons.configuration2.Configuration configuration) {
         UserGroupInformation.setConfiguration(hadoopConfig);
 
         UserGroupInformation.AuthenticationMethod authenticationMethod = SecurityUtil.getAuthenticationMethod(hadoopConfig);
@@ -78,7 +78,7 @@ public class LoginProcessor {
         }
     }
 
-    protected void setupHadoopConfiguration(Configuration hadoopConfig, org.apache.commons.configuration.Configuration configuration) {
+    protected void setupHadoopConfiguration(Configuration hadoopConfig, org.apache.commons.configuration2.Configuration configuration) {
         String authMethod           = "";
         String kerberosAuthNEnabled = configuration != null ? configuration.getString(AUTHENTICATION_KERBEROS_METHOD) : null;
 
@@ -108,7 +108,7 @@ public class LoginProcessor {
      *
      * @return the metadata configuration.
      */
-    protected org.apache.commons.configuration.Configuration getApplicationConfiguration() {
+    protected org.apache.commons.configuration2.Configuration getApplicationConfiguration() {
         try {
             return ApplicationProperties.get();
         } catch (AtlasException e) {
@@ -135,7 +135,7 @@ public class LoginProcessor {
         return isHadoopCluster;
     }
 
-    private String getHostname(org.apache.commons.configuration.Configuration configuration) {
+    private String getHostname(org.apache.commons.configuration2.Configuration configuration) {
         String bindAddress = configuration.getString(SecurityProperties.BIND_ADDRESS);
 
         if (bindAddress == null) {

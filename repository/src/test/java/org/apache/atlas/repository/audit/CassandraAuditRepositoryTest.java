@@ -20,8 +20,8 @@ package org.apache.atlas.repository.audit;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.MapConfiguration;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;

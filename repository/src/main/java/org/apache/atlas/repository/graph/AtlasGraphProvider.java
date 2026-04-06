@@ -44,7 +44,7 @@ public class AtlasGraphProvider implements IAtlasGraphProvider {
     private static final Long    RETRY_SLEEP_TIME_MS              = getRetrySleepTime();
 
     private static volatile GraphDatabase<?, ?>                            graphDb;
-    private static          org.apache.commons.configuration.Configuration applicationProperties;
+    private static          org.apache.commons.configuration2.Configuration applicationProperties;
 
     public static <V, E> AtlasGraph<V, E> getGraphInstance() {
         GraphDatabase<?, ?> db    = getGraphDatabase();
