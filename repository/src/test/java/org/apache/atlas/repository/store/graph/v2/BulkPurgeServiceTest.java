@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v2;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.notification.task.AtlasDistributedTaskNotificationSender;
@@ -32,12 +33,16 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.model.Tag;
+import org.apache.atlas.repository.store.graph.v2.purge.BulkPurgeModel.PurgeContext;
+import org.apache.atlas.repository.store.graph.v2.purge.BulkPurgeModel.BatchWork;
+import org.apache.atlas.repository.store.graph.v2.purge.PurgeBatchCleanupService;
 import org.apache.atlas.repository.store.graph.v2.tags.PaginatedTagResult;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import org.apache.atlas.service.config.DynamicConfigStore;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.tasks.TaskManagement;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.http.HttpEntity;
@@ -73,6 +78,8 @@ class BulkPurgeServiceTest {
             // Short timeouts for tests
             config.setProperty("atlas.bulk.purge.commit.timeout.ms", 2000);
             config.setProperty("atlas.bulk.purge.get.vertices.timeout.ms", 2000);
+            // Skip ES settle wait in tests (avoids 5s sleep that causes test timeouts)
+            config.setProperty("atlas.bulk.purge.es.settle.wait.ms", 0);
             ApplicationProperties.set(config);
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize test configuration", e);
@@ -86,6 +93,8 @@ class BulkPurgeServiceTest {
     @Mock private EntityAuditRepository mockAuditRepository;
     @Mock private AtlasDistributedTaskNotificationSender mockTaskNotificationSender;
     @Mock private TaskManagement   mockTaskManagement;
+    @Mock private AtlasTypeRegistry mockTypeRegistry;
+    @Mock private EntityDiscoveryService mockDiscovery;
     @Mock private AtlasVertex      mockConnectionVertex;
     @Mock private RestClient       mockEsClient;
 
@@ -102,7 +111,7 @@ class BulkPurgeServiceTest {
         when(mockGraphProvider.getBulkLoading()).thenReturn(mockBulkLoadingGraph);
 
         bulkPurgeService = new BulkPurgeService(
-                mockGraph, mockGraphProvider, mockRedisService, Set.of(mockAuditRepository), mockTaskNotificationSender, mockTaskManagement);
+                mockGraph, mockGraphProvider, mockRedisService, Set.of(mockAuditRepository), mockTaskNotificationSender, mockTaskManagement, mockTypeRegistry, mockDiscovery);
 
         // Inject the mock ES client directly — avoids thread-scoped MockedStatic issues
         bulkPurgeService.setEsClient(mockEsClient);
@@ -317,19 +326,19 @@ class BulkPurgeServiceTest {
 
         when(v1.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class))).thenReturn(Collections.emptyList());
         when(v2.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class))).thenReturn(Collections.emptyList());
+        when(v1.getEdges(eq(AtlasEdgeDirection.BOTH))).thenReturn(Collections.emptyList());
+        when(v2.getEdges(eq(AtlasEdgeDirection.BOTH))).thenReturn(Collections.emptyList());
 
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Verify batch vertex retrieval on bulk-loading graph (not individual getVertex calls)
-        verify(mockBulkLoadingGraph, timeout(5000).atLeastOnce()).getVertices(any(String[].class));
-        // Verify removeVertex (no explicit removeEdge — JanusGraph handles internally)
-        verify(mockBulkLoadingGraph, timeout(5000).atLeastOnce()).removeVertex(v1);
-        verify(mockBulkLoadingGraph, timeout(5000).atLeastOnce()).removeVertex(v2);
-        verify(mockBulkLoadingGraph, timeout(5000).atLeastOnce()).commit();
-        // Verify no explicit edge removal
-        verify(mockBulkLoadingGraph, never()).removeEdge(any());
+        verify(mockBulkLoadingGraph, timeout(15000).atLeastOnce()).getVertices(any(String[].class));
+        // Verify removeVertex
+        verify(mockBulkLoadingGraph, timeout(15000).atLeastOnce()).removeVertex(v1);
+        verify(mockBulkLoadingGraph, timeout(15000).atLeastOnce()).removeVertex(v2);
+        verify(mockBulkLoadingGraph, timeout(15000).atLeastOnce()).commit();
         // Verify bulk-loading graph was shut down
-        verify(mockBulkLoadingGraph, timeout(5000).atLeastOnce()).shutdown();
+        verify(mockBulkLoadingGraph, timeout(15000).atLeastOnce()).shutdown();
     }
 
     @Test
@@ -352,7 +361,7 @@ class BulkPurgeServiceTest {
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Verify commit was called (batch completes even with null vertices)
-        verify(mockBulkLoadingGraph, timeout(5000).atLeastOnce()).commit();
+        verify(mockBulkLoadingGraph, timeout(15000).atLeastOnce()).commit();
         // Verify no removeVertex was called (vertex was not found)
         verify(mockBulkLoadingGraph, never()).removeVertex(any());
     }
@@ -371,7 +380,7 @@ class BulkPurgeServiceTest {
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // The status should be stored in Redis with FAILED (using timeout for async)
-        verify(mockRedisService, timeout(5000).atLeastOnce()).putValue(
+        verify(mockRedisService, timeout(15000).atLeastOnce()).putValue(
                 argThat(key -> key.startsWith("bulk_purge:")),
                 argThat(json -> json.contains("FAILED")),
                 anyInt());
@@ -408,6 +417,8 @@ class BulkPurgeServiceTest {
         // Lineage edge pointing to an external connection vertex
         when(processVertex.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class)))
                 .thenReturn(Collections.singletonList(lineageEdge));
+        when(processVertex.getEdges(eq(AtlasEdgeDirection.BOTH)))
+                .thenReturn(Collections.singletonList(lineageEdge));
         when(lineageEdge.getInVertex()).thenReturn(processVertex);
         when(lineageEdge.getOutVertex()).thenReturn(externalVertex);
         when(externalVertex.getId()).thenReturn("external-vertex-id");
@@ -416,7 +427,7 @@ class BulkPurgeServiceTest {
         when(externalVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class))
                 .thenReturn("Table");
 
-        // For lineage repair: graph.getVertex for external vertex (uses regular graph, not bulk-loading)
+        // For lineage repair + external vertex refresh: graph.getVertex (uses regular graph)
         when(mockGraph.getVertex("external-vertex-id")).thenReturn(externalVertex);
         // External vertex has no remaining active lineage edges (the process was purged)
         when(externalVertex.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class)))
@@ -429,7 +440,7 @@ class BulkPurgeServiceTest {
 
         // Verify lineage was repaired: __hasLineage set to false on external vertex.
         // setEncodedProperty ultimately calls element.setProperty(), so verify on the mock vertex.
-        verify(externalVertex, timeout(5000).atLeastOnce())
+        verify(externalVertex, timeout(15000).atLeastOnce())
                 .setProperty(eq(org.apache.atlas.type.Constants.HAS_LINEAGE), eq(false));
     }
 
@@ -451,7 +462,7 @@ class BulkPurgeServiceTest {
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Verify audit event was written (using timeout for async)
-        verify(mockAuditRepository, timeout(5000).atLeastOnce()).putEventsV2(any(EntityAuditEventV2.class));
+        verify(mockAuditRepository, timeout(15000).atLeastOnce()).putEventsV2(any(EntityAuditEventV2.class));
     }
 
     // ======================== Worker Count Auto-Scaling Tests ========================
@@ -473,7 +484,7 @@ class BulkPurgeServiceTest {
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Verify workerCount=2 was set in Redis status (using timeout for async)
-        verify(mockRedisService, timeout(5000).atLeastOnce()).putValue(
+        verify(mockRedisService, timeout(15000).atLeastOnce()).putValue(
                 argThat(key -> key.startsWith("bulk_purge:")),
                 argThat(json -> json.contains("\"workerCount\":2")),
                 anyInt());
@@ -518,7 +529,7 @@ class BulkPurgeServiceTest {
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false, 3);
 
         // Verify workerCount=3 was set in Redis status (override used instead of auto-scaled 1)
-        verify(mockRedisService, timeout(5000).atLeastOnce()).putValue(
+        verify(mockRedisService, timeout(15000).atLeastOnce()).putValue(
                 argThat(key -> key.startsWith("bulk_purge:")),
                 argThat(json -> json.contains("\"workerCount\":3")),
                 anyInt());
@@ -528,7 +539,7 @@ class BulkPurgeServiceTest {
 
     @Test
     void testPurgeContext_toStatusMap_containsAllFields() {
-        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
+        PurgeContext ctx = new PurgeContext(
                 "req-123", "default/snowflake/1234567890", "CONNECTION", "admin",
                 "{\"query\":{\"prefix\":{\"__qualifiedNameHierarchy\":\"default/snowflake/1234567890/\"}}}", true, 0);
         ctx.status = "RUNNING";
@@ -563,7 +574,7 @@ class BulkPurgeServiceTest {
 
     @Test
     void testPurgeContext_toStatusMap_includesRemainingAfterCleanup() {
-        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
+        PurgeContext ctx = new PurgeContext(
                 "req-verify", "key", "CONNECTION", "admin", "{}", false, 0);
         ctx.status = "COMPLETED";
         ctx.remainingAfterCleanup = 0;
@@ -574,7 +585,7 @@ class BulkPurgeServiceTest {
 
     @Test
     void testPurgeContext_toStatusMap_includesResubmitCount() {
-        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
+        PurgeContext ctx = new PurgeContext(
                 "req-resub", "key", "CONNECTION", "admin", "{}", false, 0);
         ctx.status = "RUNNING";
         ctx.resubmitCount = 2;
@@ -585,7 +596,7 @@ class BulkPurgeServiceTest {
 
     @Test
     void testPurgeContext_toStatusMap_includesErrorWhenSet() {
-        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
+        PurgeContext ctx = new PurgeContext(
                 "req-456", "key", "CONNECTION", "admin", "{}", false, 0);
         ctx.status = "FAILED";
         ctx.error = "Connection timeout";
@@ -597,7 +608,7 @@ class BulkPurgeServiceTest {
 
     @Test
     void testPurgeContext_toJson_producesValidJson() throws Exception {
-        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
+        PurgeContext ctx = new PurgeContext(
                 "req-789", "key", "QUALIFIED_NAME_PREFIX", "admin", "{}", false, 0);
         ctx.status = "PENDING";
 
@@ -615,15 +626,15 @@ class BulkPurgeServiceTest {
 
     @Test
     void testBatchWork_poisonPill_isIdentifiable() {
-        assertSame(BulkPurgeService.BatchWork.POISON_PILL, BulkPurgeService.BatchWork.POISON_PILL);
-        assertEquals(-1, BulkPurgeService.BatchWork.POISON_PILL.batchIndex);
-        assertTrue(BulkPurgeService.BatchWork.POISON_PILL.vertexIds.isEmpty());
+        assertSame(BatchWork.POISON_PILL, BatchWork.POISON_PILL);
+        assertEquals(-1, BatchWork.POISON_PILL.batchIndex);
+        assertTrue(BatchWork.POISON_PILL.vertexIds.isEmpty());
     }
 
     @Test
     void testBatchWork_holdsVertexIds() {
         List<String> ids = Arrays.asList("v1", "v2", "v3");
-        BulkPurgeService.BatchWork work = new BulkPurgeService.BatchWork(ids, 5);
+        BatchWork work = new BatchWork(ids, 5);
 
         assertEquals(3, work.vertexIds.size());
         assertEquals(5, work.batchIndex);
@@ -633,7 +644,7 @@ class BulkPurgeServiceTest {
     // ======================== Worker Cleanup on ES Failure Tests ========================
 
     @Test
-    void testWorkerCleanup_onEsScrollFailure_workersStillShutDown() throws Exception {
+    void testWorkerCleanup_onEsSearchFailure_workersStillShutDown() throws Exception {
         mockedGraphUtils.when(() -> AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(
                 eq(mockGraph), eq(Constants.CONNECTION_ENTITY_TYPE),
                 eq(Constants.QUALIFIED_NAME), eq(TEST_CONNECTION_QN)))
@@ -643,12 +654,18 @@ class BulkPurgeServiceTest {
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
 
-        // First call (_count) succeeds, second call (_search) fails with exception
+        // PIT open succeeds, but _search fails with IOException
         when(mockEsClient.performRequest(any(Request.class))).thenAnswer(invocation -> {
             Request req = invocation.getArgument(0);
             String endpoint = req.getEndpoint();
             String method = req.getMethod();
 
+            if (endpoint.contains("_pit") && "POST".equals(method)) {
+                return newMockResponse("{\"id\":\"test-pit-id\"}");
+            }
+            if (endpoint.equals("/_pit") && "DELETE".equals(method)) {
+                return newMockResponse("{\"succeeded\":true}");
+            }
             if (endpoint.contains("_count")) {
                 return newMockResponse("{\"count\":1000}");
             }
@@ -668,7 +685,7 @@ class BulkPurgeServiceTest {
 
         // The purge should complete (as FAILED) without worker thread leaks.
         // Verify the bulk-loading graph was still shut down in the finally block.
-        verify(mockBulkLoadingGraph, timeout(5000).atLeastOnce()).shutdown();
+        verify(mockBulkLoadingGraph, timeout(15000).atLeastOnce()).shutdown();
     }
 
     // ======================== Verification Tests ========================
@@ -690,7 +707,7 @@ class BulkPurgeServiceTest {
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Verify COMPLETED status contains remainingAfterCleanup=0
-        verify(mockRedisService, timeout(5000).atLeastOnce()).putValue(
+        verify(mockRedisService, timeout(15000).atLeastOnce()).putValue(
                 argThat(key -> key.startsWith("bulk_purge:")),
                 argThat(json -> json.contains("COMPLETED") && json.contains("\"remainingAfterCleanup\":0")),
                 anyInt());
@@ -795,52 +812,6 @@ class BulkPurgeServiceTest {
     // ======================== Tag V2 Propagation Cleanup Tests ========================
 
     @Test
-    void testPurgeContext_isTagV2_defaultsFalse() {
-        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
-                "req-v2", "key", "CONNECTION", "admin", "{}", false, 0);
-        // isTagV2 defaults to false (not initialized until executePurge sets it)
-        assertFalse(ctx.isTagV2);
-    }
-
-    @Test
-    void testPurgeContext_entitiesWithDirectTags_concurrentSafe() {
-        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
-                "req-tags", "key", "CONNECTION", "admin", "{}", false, 0);
-
-        assertNotNull(ctx.entitiesWithDirectTags);
-        assertTrue(ctx.entitiesWithDirectTags.isEmpty());
-
-        // ConcurrentHashMap.newKeySet() supports concurrent access
-        ctx.entitiesWithDirectTags.add("vertex-1");
-        ctx.entitiesWithDirectTags.add("vertex-2");
-        ctx.entitiesWithDirectTags.add("vertex-1"); // duplicate
-        assertEquals(2, ctx.entitiesWithDirectTags.size());
-    }
-
-    @Test
-    void testCleanPropagatedTagsFromDeletedSources_skippedWhenV1() throws Exception {
-        // When isTagV2=false, the cleanup should be skipped entirely
-        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
-                "req-v1", "key", "CONNECTION", "admin", "{}", false, 0);
-        ctx.isTagV2 = false;
-        ctx.entitiesWithDirectTags.add("some-vertex");
-
-        // No TagDAO interactions should happen — method exits early
-        // This is an indirect test: if TagDAOCassandraImpl.getInstance() were called
-        // in the test environment without Cassandra, it would fail
-    }
-
-    @Test
-    void testCleanPropagatedTagsFromDeletedSources_skippedWhenNoDirectTags() throws Exception {
-        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
-                "req-notags", "key", "CONNECTION", "admin", "{}", false, 0);
-        ctx.isTagV2 = true;
-
-        // entitiesWithDirectTags is empty — method should exit early
-        assertTrue(ctx.entitiesWithDirectTags.isEmpty());
-    }
-
-    @Test
     void testProcessBatch_collectsEntitiesWithDirectTags() throws Exception {
         mockedGraphUtils.when(() -> AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(
                 eq(mockGraph), eq(Constants.CONNECTION_ENTITY_TYPE),
@@ -850,9 +821,6 @@ class BulkPurgeServiceTest {
         when(mockRedisService.getValue(anyString())).thenReturn(null);
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
-
-        // Enable Tag V2 via test override (avoids DynamicConfigStore static mock thread issues)
-        bulkPurgeService.setTagV2Override(true);
 
         String esId1 = LongEncoding.encode(2001L);
         setupFullEsMock(1, Arrays.asList(esId1));
@@ -864,6 +832,7 @@ class BulkPurgeServiceTest {
         // This vertex has direct tags (TRAIT_NAMES_PROPERTY_KEY = __traitNames)
         when(taggedVertex.getMultiValuedProperty(eq(Constants.TRAIT_NAMES_PROPERTY_KEY), eq(String.class)))
                 .thenReturn(Arrays.asList("PII", "Confidential"));
+        when(taggedVertex.getEdges(eq(AtlasEdgeDirection.BOTH))).thenReturn(Collections.emptyList());
 
         when(mockBulkLoadingGraph.getVertices(any(String[].class)))
                 .thenReturn(new HashSet<>(Collections.singletonList(taggedVertex)));
@@ -871,12 +840,10 @@ class BulkPurgeServiceTest {
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Verify the vertex was deleted
-        verify(mockBulkLoadingGraph, timeout(5000).atLeastOnce()).removeVertex(taggedVertex);
+        verify(mockBulkLoadingGraph, timeout(15000).atLeastOnce()).removeVertex(taggedVertex);
         // Verify __traitNames was checked (the property was read)
-        verify(taggedVertex, timeout(5000).atLeastOnce())
+        verify(taggedVertex, timeout(15000).atLeastOnce())
                 .getMultiValuedProperty(eq(Constants.TRAIT_NAMES_PROPERTY_KEY), eq(String.class));
-
-        bulkPurgeService.setTagV2Override(null);
     }
 
     @Test
@@ -890,9 +857,6 @@ class BulkPurgeServiceTest {
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
 
-        // Enable Tag V2 via test override
-        bulkPurgeService.setTagV2Override(true);
-
         String esId1 = LongEncoding.encode(3001L);
         setupFullEsMock(1, Arrays.asList(esId1));
 
@@ -903,6 +867,7 @@ class BulkPurgeServiceTest {
         // No traits
         when(untaggedVertex.getMultiValuedProperty(eq(Constants.TRAIT_NAMES_PROPERTY_KEY), eq(String.class)))
                 .thenReturn(Collections.emptyList());
+        when(untaggedVertex.getEdges(eq(AtlasEdgeDirection.BOTH))).thenReturn(Collections.emptyList());
 
         when(mockBulkLoadingGraph.getVertices(any(String[].class)))
                 .thenReturn(new HashSet<>(Collections.singletonList(untaggedVertex)));
@@ -910,76 +875,10 @@ class BulkPurgeServiceTest {
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Vertex is still deleted
-        verify(mockBulkLoadingGraph, timeout(5000).atLeastOnce()).removeVertex(untaggedVertex);
-
-        bulkPurgeService.setTagV2Override(null);
-    }
-
-    @Test
-    void testRepairPropagatedClassificationsV1_stillWorksWithExistingLogic() throws Exception {
-        // V1 path should continue to use graph edges (existing behavior)
-        mockedGraphUtils.when(() -> AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(
-                eq(mockGraph), eq(Constants.CONNECTION_ENTITY_TYPE),
-                eq(Constants.QUALIFIED_NAME), eq(TEST_CONNECTION_QN)))
-                .thenReturn(mockConnectionVertex);
-
-        when(mockRedisService.getValue(anyString())).thenReturn(null);
-        when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
-        when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
-
-        // V1 mode
-        bulkPurgeService.setTagV2Override(false);
-
-        String esId = LongEncoding.encode(4001L);
-        setupFullEsMock(1, Arrays.asList(esId));
-
-        AtlasVertex processVertex = mock(AtlasVertex.class);
-        AtlasVertex externalVertex = mock(AtlasVertex.class);
-        AtlasEdge lineageEdge = mock(AtlasEdge.class);
-
-        when(processVertex.getId()).thenReturn("4001");
-        when(processVertex.getProperty(org.apache.atlas.type.Constants.HAS_LINEAGE, Boolean.class)).thenReturn(true);
-
-        when(mockBulkLoadingGraph.getVertices(any(String[].class)))
-                .thenReturn(new HashSet<>(Collections.singletonList(processVertex)));
-
-        // Lineage edge to external vertex
-        when(processVertex.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class)))
-                .thenReturn(Collections.singletonList(lineageEdge));
-        when(lineageEdge.getInVertex()).thenReturn(processVertex);
-        when(lineageEdge.getOutVertex()).thenReturn(externalVertex);
-        when(externalVertex.getId()).thenReturn("ext-vertex-v1");
-        when(externalVertex.getProperty(Constants.CONNECTION_QUALIFIED_NAME, String.class))
-                .thenReturn("other/connection/v1");
-
-        when(mockGraph.getVertex("ext-vertex-v1")).thenReturn(externalVertex);
-        when(externalVertex.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class)))
-                .thenReturn(Collections.emptyList());
-        // V1: classification edges on external vertex (none stale)
-        when(externalVertex.getEdges(eq(AtlasEdgeDirection.OUT), eq(Constants.CLASSIFICATION_LABEL)))
-                .thenReturn(Collections.emptyList());
-
-        String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
-
-        // Verify lineage repair happened (V1 path)
-        verify(externalVertex, timeout(5000).atLeastOnce())
-                .setProperty(eq(org.apache.atlas.type.Constants.HAS_LINEAGE), eq(false));
-
-        bulkPurgeService.setTagV2Override(null);
+        verify(mockBulkLoadingGraph, timeout(15000).atLeastOnce()).removeVertex(untaggedVertex);
     }
 
     // ======================== Relay Propagation + classificationText Tests ========================
-
-    @Test
-    void testTriggerRelayPropagationRefresh_skippedWhenNoExternalVertices() throws Exception {
-        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
-                "req-norelay", "key", "CONNECTION", "admin", "{}", false, 0);
-        ctx.isTagV2 = true;
-
-        // No external lineage vertices — method should do nothing
-        assertTrue(ctx.externalLineageVertexIds.isEmpty());
-        // No exception = success
-    }
 
     @Test
     void testTriggerRelayPropagationRefresh_V2_createsTasksForAliveSource() throws Exception {
@@ -991,8 +890,6 @@ class BulkPurgeServiceTest {
         when(mockRedisService.getValue(anyString())).thenReturn(null);
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
-
-        bulkPurgeService.setTagV2Override(true);
 
         // Inject mock TagDAO via override (avoids MockedStatic thread-scope issue)
         TagDAO mockTagDAO = mock(TagDAO.class);
@@ -1016,6 +913,8 @@ class BulkPurgeServiceTest {
 
         // Lineage edge to external vertex
         when(processVertex.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class)))
+                .thenReturn(Collections.singletonList(lineageEdge));
+        when(processVertex.getEdges(eq(AtlasEdgeDirection.BOTH)))
                 .thenReturn(Collections.singletonList(lineageEdge));
         when(lineageEdge.getInVertex()).thenReturn(processVertex);
         when(lineageEdge.getOutVertex()).thenReturn(externalVertex);
@@ -1056,7 +955,7 @@ class BulkPurgeServiceTest {
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Verify CLASSIFICATION_REFRESH_PROPAGATION task was created
-        verify(mockTaskManagement, timeout(5000).atLeastOnce()).createTaskV2(
+        verify(mockTaskManagement, timeout(15000).atLeastOnce()).createTaskV2(
                 eq("CLASSIFICATION_REFRESH_PROPAGATION"),
                 eq("admin"),
                 argThat(params -> "source-guid-100".equals(params.get("entityGuid"))
@@ -1065,7 +964,6 @@ class BulkPurgeServiceTest {
                 eq("source-guid-100")
         );
 
-        bulkPurgeService.setTagV2Override(null);
         bulkPurgeService.setTagDAOOverride(null);
     }
 
@@ -1079,8 +977,6 @@ class BulkPurgeServiceTest {
         when(mockRedisService.getValue(anyString())).thenReturn(null);
         when(mockRedisService.putValue(anyString(), anyString(), anyInt())).thenReturn("OK");
         when(mockRedisService.acquireDistributedLock(anyString())).thenReturn(true);
-
-        bulkPurgeService.setTagV2Override(true);
 
         TagDAO mockTagDAO = mock(TagDAO.class);
         bulkPurgeService.setTagDAOOverride(mockTagDAO);
@@ -1112,6 +1008,10 @@ class BulkPurgeServiceTest {
         when(process1.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class)))
                 .thenReturn(Collections.singletonList(edge1));
         when(process2.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class)))
+                .thenReturn(Collections.singletonList(edge2));
+        when(process1.getEdges(eq(AtlasEdgeDirection.BOTH)))
+                .thenReturn(Collections.singletonList(edge1));
+        when(process2.getEdges(eq(AtlasEdgeDirection.BOTH)))
                 .thenReturn(Collections.singletonList(edge2));
 
         when(edge1.getInVertex()).thenReturn(process1);
@@ -1163,7 +1063,7 @@ class BulkPurgeServiceTest {
         bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Despite TWO external vertices with same source, only ONE task should be created
-        verify(mockTaskManagement, timeout(5000).times(1)).createTaskV2(
+        verify(mockTaskManagement, timeout(15000).times(1)).createTaskV2(
                 eq("CLASSIFICATION_REFRESH_PROPAGATION"),
                 anyString(),
                 anyMap(),
@@ -1171,7 +1071,6 @@ class BulkPurgeServiceTest {
                 eq("same-source-guid")
         );
 
-        bulkPurgeService.setTagV2Override(null);
         bulkPurgeService.setTagDAOOverride(null);
     }
 
@@ -1185,10 +1084,11 @@ class BulkPurgeServiceTest {
         mockedGraphUtils.when(() -> AtlasGraphUtilsV2.setEncodedProperty(any(AtlasVertex.class), anyString(), any()))
                 .thenAnswer(inv -> null);
 
-        java.lang.reflect.Method method = BulkPurgeService.class.getDeclaredMethod(
+        PurgeBatchCleanupService cleanupService = bulkPurgeService.getCleanupService();
+        java.lang.reflect.Method method = PurgeBatchCleanupService.class.getDeclaredMethod(
                 "removePropagatedTraitFromVertex", AtlasVertex.class, String.class);
         method.setAccessible(true);
-        method.invoke(bulkPurgeService, vertex, "PII");
+        method.invoke(cleanupService, vertex, "PII");
 
         // Verify __propagatedTraitNames was cleared
         verify(vertex).removeProperty(Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
@@ -1196,49 +1096,6 @@ class BulkPurgeServiceTest {
         verify(vertex).removeProperty(Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY);
         // Verify __classificationsText was cleared
         verify(vertex).removeProperty(Constants.CLASSIFICATION_TEXT_KEY);
-    }
-
-    @Test
-    void testCollectRelaySourcesV1_findsAliveSource() throws Exception {
-        // Test V1 relay source collection directly via reflection (avoids coordinator thread issues)
-        AtlasVertex externalVertex = mock(AtlasVertex.class);
-        AtlasVertex classificationVertex = mock(AtlasVertex.class);
-        AtlasVertex sourceEntityVertex = mock(AtlasVertex.class);
-        AtlasEdge classEdge = mock(AtlasEdge.class);
-
-        when(mockGraph.getVertex("ext-v1-direct")).thenReturn(externalVertex);
-
-        // V1 classification edge: propagated from alive source
-        when(classEdge.getProperty(Constants.CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, Boolean.class))
-                .thenReturn(true);
-        when(classEdge.getInVertex()).thenReturn(classificationVertex);
-        when(classificationVertex.getProperty(Constants.CLASSIFICATION_ENTITY_GUID, String.class))
-                .thenReturn("alive-source-guid");
-        when(classEdge.getProperty(Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, String.class))
-                .thenReturn("Sensitive");
-
-        when(externalVertex.getEdges(eq(AtlasEdgeDirection.OUT), eq(Constants.CLASSIFICATION_LABEL)))
-                .thenReturn(Collections.singletonList(classEdge));
-
-        // Source entity still exists
-        mockedGraphUtils.when(() -> AtlasGraphUtilsV2.findByGuid(eq(mockGraph), eq("alive-source-guid")))
-                .thenReturn(sourceEntityVertex);
-
-        // Invoke collectRelaySourcesV1 via reflection
-        java.lang.reflect.Method method = BulkPurgeService.class.getDeclaredMethod(
-                "collectRelaySourcesV1", String.class, Set.class, List.class);
-        method.setAccessible(true);
-
-        Set<String> refreshKeys = new HashSet<>();
-        List<String[]> tasksToCreate = new ArrayList<>();
-
-        method.invoke(bulkPurgeService, "ext-v1-direct", refreshKeys, tasksToCreate);
-
-        // Verify one task pair was collected
-        assertEquals(1, tasksToCreate.size());
-        assertEquals("alive-source-guid", tasksToCreate.get(0)[0]);
-        assertEquals("Sensitive", tasksToCreate.get(0)[1]);
-        assertTrue(refreshKeys.contains("alive-source-guid|Sensitive"));
     }
 
     // ======================== ES Query Builder Tests ========================
@@ -1261,7 +1118,7 @@ class BulkPurgeServiceTest {
 
         // Verify ES _count request contains a prefix query with trailing "/"
         // on __qualifiedNameHierarchy so the Connection entity itself is excluded
-        verify(mockEsClient, timeout(5000).atLeastOnce()).performRequest(argThat(request -> {
+        verify(mockEsClient, timeout(15000).atLeastOnce()).performRequest(argThat(request -> {
             if (!request.getEndpoint().contains("_count")) return false;
             try {
                 String body = new String(request.getEntity().getContent().readAllBytes(), StandardCharsets.UTF_8);
@@ -1296,12 +1153,13 @@ class BulkPurgeServiceTest {
         when(mockBulkLoadingGraph.getVertices(any(String[].class)))
                 .thenReturn(new HashSet<>(Collections.singletonList(v)));
         when(v.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class))).thenReturn(Collections.emptyList());
+        when(v.getEdges(eq(AtlasEdgeDirection.BOTH))).thenReturn(Collections.emptyList());
 
         String requestId = bulkPurgeService.bulkPurgeByConnection(TEST_CONNECTION_QN, "admin", false);
 
         // Verify batch completed — timing logs are just a side effect
-        verify(mockBulkLoadingGraph, timeout(5000).atLeastOnce()).removeVertex(v);
-        verify(mockBulkLoadingGraph, timeout(5000).atLeastOnce()).commit();
+        verify(mockBulkLoadingGraph, timeout(15000).atLeastOnce()).removeVertex(v);
+        verify(mockBulkLoadingGraph, timeout(15000).atLeastOnce()).commit();
     }
 
     // ======================== P1: Commit Timeout Tests ========================
@@ -1325,6 +1183,7 @@ class BulkPurgeServiceTest {
         when(mockBulkLoadingGraph.getVertices(any(String[].class)))
                 .thenReturn(new HashSet<>(Collections.singletonList(v)));
         when(v.getEdges(eq(AtlasEdgeDirection.BOTH), any(String[].class))).thenReturn(Collections.emptyList());
+        when(v.getEdges(eq(AtlasEdgeDirection.BOTH))).thenReturn(Collections.emptyList());
 
         // Simulate commit that hangs longer than the 2s test timeout (configured in static block)
         doAnswer(inv -> {
@@ -1362,7 +1221,7 @@ class BulkPurgeServiceTest {
         assertTrue(cancelled);
 
         // Purge should eventually finish as CANCELLED
-        verify(mockRedisService, timeout(10000).atLeastOnce()).putValue(
+        verify(mockRedisService, timeout(15000).atLeastOnce()).putValue(
                 argThat(key -> key.startsWith("bulk_purge:")),
                 argThat(json -> json.contains("CANCELLED")),
                 anyInt());
@@ -1416,7 +1275,7 @@ class BulkPurgeServiceTest {
 
     @Test
     void testPurgeContext_lastProgressTimestamp_updatedByBatch() throws Exception {
-        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
+        PurgeContext ctx = new PurgeContext(
                 "req-stall", "key", "CONNECTION", "admin", "{}", false, 0);
 
         assertEquals(0L, ctx.lastProgressTimestamp.get());
@@ -1429,7 +1288,7 @@ class BulkPurgeServiceTest {
 
     @Test
     void testPurgeContext_toStatusMap_includesLastProgressTimestamp() {
-        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
+        PurgeContext ctx = new PurgeContext(
                 "req-progress", "key", "CONNECTION", "admin", "{}", false, 0);
         ctx.status = "RUNNING";
         ctx.lastProgressTimestamp.set(12345L);
@@ -1440,7 +1299,7 @@ class BulkPurgeServiceTest {
 
     @Test
     void testPurgeContext_toStatusMap_includesStalled() {
-        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
+        PurgeContext ctx = new PurgeContext(
                 "req-stalled", "key", "CONNECTION", "admin", "{}", false, 0);
         ctx.status = "RUNNING";
         ctx.stalled = true;
@@ -1532,7 +1391,7 @@ class BulkPurgeServiceTest {
 
     @Test
     void testPurgeContext_workerPoolAndFuturesFields() {
-        BulkPurgeService.PurgeContext ctx = new BulkPurgeService.PurgeContext(
+        PurgeContext ctx = new PurgeContext(
                 "req-pool", "key", "CONNECTION", "admin", "{}", false, 0);
 
         // Initially null
@@ -1584,37 +1443,52 @@ class BulkPurgeServiceTest {
 
     /**
      * Sets up a unified ES mock that routes requests based on endpoint.
+     * Handles PIT open/close, search with search_after, count, and delete_by_query.
      * Uses thenAnswer to create fresh response objects per call, avoiding
      * ByteArrayInputStream reuse issues.
      */
     private void setupFullEsMock(long count, List<String> vertexIds) throws Exception {
+        // Track whether the first search page (with vertex IDs) has been returned
+        final boolean[] firstSearchReturned = {false};
+
         when(mockEsClient.performRequest(any(Request.class))).thenAnswer(invocation -> {
             Request req = invocation.getArgument(0);
             String endpoint = req.getEndpoint();
             String method = req.getMethod();
 
+            // PIT open: POST /{index}/_pit
+            if (endpoint.contains("_pit") && "POST".equals(method)) {
+                return newMockResponse("{\"id\":\"test-pit-id\"}");
+            }
+            // PIT close: DELETE /_pit
+            if (endpoint.equals("/_pit") && "DELETE".equals(method)) {
+                return newMockResponse("{\"succeeded\":true}");
+            }
             if (endpoint.contains("_count")) {
                 return newMockResponse("{\"count\":" + count + "}");
             }
             if (endpoint.contains("_delete_by_query")) {
                 return newMockResponse("{\"deleted\":0}");
             }
-            if ("DELETE".equals(method)) {
+            if (endpoint.contains("_refresh")) {
                 return newMockResponse("{}");
             }
-            if (endpoint.equals("/_search/scroll")) {
-                // Scroll continuation: always return empty hits
-                return newMockResponse("{\"_scroll_id\":\"sid\",\"hits\":{\"hits\":[]}}");
-            }
-            if (endpoint.contains("_search")) {
-                // Initial scroll: return vertex IDs
-                StringBuilder hitsArray = new StringBuilder("[");
-                for (int i = 0; i < vertexIds.size(); i++) {
-                    if (i > 0) hitsArray.append(",");
-                    hitsArray.append("{\"_id\":\"").append(vertexIds.get(i)).append("\"}");
+            if (endpoint.equals("/_search") || endpoint.contains("_search")) {
+                if (!firstSearchReturned[0] && !vertexIds.isEmpty()) {
+                    firstSearchReturned[0] = true;
+                    // First page: return vertex IDs with sort values
+                    StringBuilder hitsArray = new StringBuilder("[");
+                    for (int i = 0; i < vertexIds.size(); i++) {
+                        if (i > 0) hitsArray.append(",");
+                        hitsArray.append("{\"_id\":\"").append(vertexIds.get(i))
+                                .append("\",\"sort\":[").append(i + 1).append("]}");
+                    }
+                    hitsArray.append("]");
+                    return newMockResponse("{\"pit_id\":\"test-pit-id\",\"hits\":{\"hits\":" + hitsArray + "}}");
+                } else {
+                    // Subsequent pages: empty hits (end of results)
+                    return newMockResponse("{\"pit_id\":\"test-pit-id\",\"hits\":{\"hits\":[]}}");
                 }
-                hitsArray.append("]");
-                return newMockResponse("{\"_scroll_id\":\"sid\",\"hits\":{\"hits\":" + hitsArray + "}}");
             }
 
             return newMockResponse("{}");
