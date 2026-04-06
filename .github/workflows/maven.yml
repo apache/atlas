@@ -28,6 +28,7 @@ on:
       - switchable-graph-provider
       - ring-*
       - ms-635
+      - ms-884-observability-master
       - sgp-consistency-improvements
       - switchable_graph_bug_fixes
       - ms-664-fix-audit-search

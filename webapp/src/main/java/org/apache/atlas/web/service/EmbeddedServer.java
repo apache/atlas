@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.service;
 
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.binder.jetty.JettyConnectionMetrics;
 import io.micrometer.core.instrument.binder.jetty.JettyServerThreadPoolMetrics;
 import org.apache.atlas.AtlasConfiguration;
@@ -55,24 +56,58 @@ public class EmbeddedServer {
     protected final Server server;
 
     public EmbeddedServer(String host, int port, String path) throws IOException {
-        int                           queueSize     = AtlasConfiguration.WEBSERVER_QUEUE_SIZE.getInt();
-        LinkedBlockingQueue<Runnable> queue         = new LinkedBlockingQueue<>(queueSize);
-        int                           minThreads    = AtlasConfiguration.WEBSERVER_MIN_THREADS.getInt();
-        int                           maxThreads    = AtlasConfiguration.WEBSERVER_MAX_THREADS.getInt();
-        int                           reservedThreads    = AtlasConfiguration.WEBSERVER_RESERVED_THREADS.getInt();
-        long                          keepAliveTime = AtlasConfiguration.WEBSERVER_KEEPALIVE_SECONDS.getLong();
-        ThreadPoolExecutor            executor      = new ThreadPoolExecutor(maxThreads, maxThreads, keepAliveTime, TimeUnit.SECONDS, queue);
-        ExecutorThreadPool            pool          = new ExecutorThreadPool(executor, reservedThreads);
+        int                           queueSize       = AtlasConfiguration.WEBSERVER_QUEUE_SIZE.getInt();
+        LinkedBlockingQueue<Runnable> queue           = new LinkedBlockingQueue<>(queueSize);
+        int                           minThreads      = AtlasConfiguration.WEBSERVER_MIN_THREADS.getInt();
+        int                           maxThreads      = AtlasConfiguration.WEBSERVER_MAX_THREADS.getInt();
+        int                           reservedThreads = AtlasConfiguration.WEBSERVER_RESERVED_THREADS.getInt();
+        long                          keepAliveTime   = AtlasConfiguration.WEBSERVER_KEEPALIVE_SECONDS.getLong();
+        ThreadPoolExecutor            executor        = new ThreadPoolExecutor(minThreads, maxThreads, keepAliveTime, TimeUnit.SECONDS, queue);
+        executor.allowCoreThreadTimeOut(true);
+        ExecutorThreadPool            pool            = new ExecutorThreadPool(executor, reservedThreads);
 
         server = new Server(pool);
 
         Connector connector = getConnector(host, port);
         connector.addBean(new JettyConnectionMetrics(getMeterRegistry()));
         new JettyServerThreadPoolMetrics(pool, Collections.emptyList()).bindTo(getMeterRegistry());
+        registerQueueMetrics(queue, queueSize, executor);
         server.addConnector(connector);
 
         WebAppContext application = getWebAppContext(path);
         server.setHandler(application);
+
+        LOG.info("Jetty configured: minThreads={}, maxThreads={}, reservedThreads={}, queueSize={}, keepAlive={}s, idleTimeout={}ms",
+                minThreads, maxThreads, reservedThreads, queueSize, keepAliveTime,
+                AtlasConfiguration.WEBSERVER_IDLE_TIMEOUT_MS.getLong());
+    }
+
+    private void registerQueueMetrics(LinkedBlockingQueue<Runnable> queue, int queueCapacity, ThreadPoolExecutor executor) {
+        Gauge.builder("jetty.threads.queue.size", queue, LinkedBlockingQueue::size)
+                .description("Number of requests queued waiting for a thread")
+                .register(getMeterRegistry());
+
+        Gauge.builder("jetty.threads.queue.capacity", () -> queueCapacity)
+                .description("Maximum queue capacity")
+                .register(getMeterRegistry());
+
+        Gauge.builder("jetty.threads.queue.utilization", queue, q -> {
+            int size = q.size();
+            return queueCapacity > 0 ? (double) size / queueCapacity : 0;
+        }).description("Queue utilization ratio (0.0 to 1.0)")
+                .register(getMeterRegistry());
+
+        Gauge.builder("jetty.threads.active", executor, ThreadPoolExecutor::getActiveCount)
+                .description("Number of threads actively executing tasks")
+                .register(getMeterRegistry());
+
+        Gauge.builder("jetty.threads.pool.size", executor, ThreadPoolExecutor::getPoolSize)
+                .description("Current number of threads in the pool")
+                .register(getMeterRegistry());
+
+        Gauge.builder("jetty.threads.completed.total", executor, e -> (double) e.getCompletedTaskCount())
+                .description("Total number of tasks that have completed execution")
+                .register(getMeterRegistry());
     }
 
     protected WebAppContext getWebAppContext(String path) {
@@ -103,6 +138,7 @@ public class EmbeddedServer {
         ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(http_config));
         connector.setPort(port);
         connector.setHost(host);
+        connector.setIdleTimeout(AtlasConfiguration.WEBSERVER_IDLE_TIMEOUT_MS.getLong());
         return connector;
     }
 
