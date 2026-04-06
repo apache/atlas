@@ -82,9 +82,10 @@ import org.apache.atlas.web.service.AtlasDebugMetricsSink;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.io.FileHandler;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -307,7 +308,9 @@ public class AdminResource {
 
         if (version == null) {
             try {
-                PropertiesConfiguration configProperties = new PropertiesConfiguration("atlas-buildinfo.properties");
+                PropertiesConfiguration configProperties = new PropertiesConfiguration();
+                FileHandler fileHandler = new FileHandler(configProperties);
+                fileHandler.load("atlas-buildinfo.properties");
 
                 Map<String, Object> response = new HashMap<>();
 

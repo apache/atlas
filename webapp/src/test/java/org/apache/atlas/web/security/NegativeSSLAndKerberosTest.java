@@ -21,8 +21,9 @@ package org.apache.atlas.web.security;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.web.TestUtils;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.io.FileHandler;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
 import org.testng.annotations.Test;
@@ -70,7 +71,9 @@ public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
         } else {
             url = new File(confLocation, ApplicationProperties.APPLICATION_PROPERTIES).toURI().toURL();
         }
-        configuration.load(url);
+
+        FileHandler fileHandler = new FileHandler(configuration);
+        fileHandler.load(url);
 
         configuration.setProperty(TLS_ENABLED, true);
         configuration.setProperty("atlas.authentication.method.kerberos", "true");

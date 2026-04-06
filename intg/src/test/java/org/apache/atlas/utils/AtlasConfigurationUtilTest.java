@@ -17,8 +17,8 @@
  */
 package org.apache.atlas.utils;
 
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.BaseConfiguration;
+import org.apache.commons.configuration2.Configuration;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Constructor;

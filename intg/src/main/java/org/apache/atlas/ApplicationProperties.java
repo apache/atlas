@@ -18,10 +18,12 @@
 package org.apache.atlas;
 
 import org.apache.atlas.security.SecurityUtil;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationConverter;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.ConfigurationConverter;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.io.FileHandler;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +86,10 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     private static volatile Configuration instance;
 
     private ApplicationProperties(URL url) throws ConfigurationException {
-        super(url);
+        super();
+        setListDelimiterHandler(new DefaultListDelimiterHandler(','));
+        FileHandler fileHandler = new FileHandler(this);
+        fileHandler.load(url);
     }
 
     public static void forceReload() {
