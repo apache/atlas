@@ -125,9 +125,9 @@
                                             <version>1.26.2</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>commons-configuration</groupId>
-                                            <artifactId>commons-configuration</artifactId>
-                                            <version>${commons-conf.version}</version>
+                                            <groupId>org.apache.commons</groupId>
+                                            <artifactId>commons-configuration2</artifactId>
+                                            <version>${commons-conf2.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>commons-logging</groupId>

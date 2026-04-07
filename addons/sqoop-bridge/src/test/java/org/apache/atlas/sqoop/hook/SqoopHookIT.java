@@ -26,7 +26,7 @@ import org.apache.atlas.sqoop.model.SqoopDataTypes;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.v1.model.instance.Referenceable;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.sqoop.SqoopJobDataPublisher;
 import org.slf4j.Logger;
 import org.testng.annotations.BeforeClass;

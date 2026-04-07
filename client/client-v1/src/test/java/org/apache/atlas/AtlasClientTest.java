@@ -24,7 +24,7 @@ import com.sun.jersey.api.client.WebResource;
 import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.v1.model.instance.Referenceable;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.mockito.Matchers;
 import org.mockito.Mock;

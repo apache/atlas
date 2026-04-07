@@ -60,6 +60,10 @@
                     <artifactId>amqp-client</artifactId>
                 </exclusion>
                 <exclusion>
+                    <groupId>commons-configuration</groupId>
+                    <artifactId>commons-configuration</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.noggit</groupId>
                     <artifactId>noggit</artifactId>
                 </exclusion>
