@@ -35,6 +35,7 @@
     <properties>
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
         <checkstyle.skip>false</checkstyle.skip>
+        <commons-lang.version>2.6</commons-lang.version>
     </properties>
 
     <dependencies>
@@ -424,6 +425,11 @@
                                             <version>${commons-logging.version}</version>
                                         </artifactItem>
                                         <artifactItem>
+                                            <groupId>commons-lang</groupId>
+                                            <artifactId>commons-lang</artifactId>
+                                            <version>${commons-lang.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
                                             <groupId>org.apache.commons</groupId>
                                             <artifactId>commons-lang3</artifactId>
                                             <version>${commons-lang3.version}</version>
@@ -497,6 +503,11 @@
                                             <groupId>com.googlecode.json-simple</groupId>
                                             <artifactId>json-simple</artifactId>
                                             <version>${json-simple.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.hadoop</groupId>
+                                            <artifactId>hadoop-common</artifactId>
+                                            <version>${hadoop.version}</version>
                                         </artifactItem>
                                     </artifactItems>
                                 </configuration>

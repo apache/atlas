@@ -69,22 +69,22 @@
 			<arg value="${release-dir}/${build-release-tar-file}" />
 		</exec>
 
-		<exec executable="gpg" output="${release-dir}/${build-release-tar-file}.md5">
+		<exec executable="gpg" output="${release-dir}/${build-release-tar-file}.md5" dir="${release-dir}">
 			<arg value="--print-md" />
 			<arg value="MD5" />
-			<arg value="${release-dir}/${build-release-tar-file}" />
+			<arg value="${build-release-tar-file}" />
 		</exec>
 
-		<exec executable="gpg" output="${release-dir}/${build-release-tar-file}.sha256">
+		<exec executable="gpg" output="${release-dir}/${build-release-tar-file}.sha256" dir="${release-dir}">
 			<arg value="--print-md" />
 			<arg value="SHA256" />
-			<arg value="${release-dir}/${build-release-tar-file}" />
+			<arg value="${build-release-tar-file}" />
 		</exec>
 
-		<exec executable="gpg" output="${release-dir}/${build-release-tar-file}.sha512">
+		<exec executable="gpg" output="${release-dir}/${build-release-tar-file}.sha512" dir="${release-dir}">
 			<arg value="--print-md" />
 			<arg value="SHA512" />
-			<arg value="${release-dir}/${build-release-tar-file}" />
+			<arg value="${build-release-tar-file}" />
 		</exec>
 	</target>
 </project>
