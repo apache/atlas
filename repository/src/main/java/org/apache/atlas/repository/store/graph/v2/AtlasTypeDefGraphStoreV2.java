@@ -21,7 +21,6 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
-import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
@@ -64,7 +63,7 @@ import static org.apache.atlas.repository.Constants.VERTEX_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.VERTEX_TYPE;
 
 /**
- * Graph persistence store for TypeDef - v1
+ * Graph persistence store for TypeDef - v2
  */
 @Singleton
 @Component
@@ -73,16 +72,13 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
 
     protected final AtlasGraph atlasGraph;
 
-    private final EntityDiscoveryService entityDiscoveryService;
-
     @Inject
-    public AtlasTypeDefGraphStoreV2(AtlasTypeRegistry typeRegistry, List<TypeDefChangeListener> typeDefChangeListeners, AtlasGraph atlasGraph, EntityDiscoveryService entityDiscoveryService) {
+    public AtlasTypeDefGraphStoreV2(AtlasTypeRegistry typeRegistry, List<TypeDefChangeListener> typeDefChangeListeners, AtlasGraph atlasGraph) {
         super(typeRegistry, typeDefChangeListeners);
 
-        this.atlasGraph             = atlasGraph;
-        this.entityDiscoveryService = entityDiscoveryService;
+        this.atlasGraph = atlasGraph;
 
-        LOG.debug("<== AtlasTypeDefGraphStoreV1()");
+        LOG.debug("<== AtlasTypeDefGraphStoreV2()");
     }
 
     public static String getCurrentUser() {
@@ -177,17 +173,17 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
 
     @Override
     protected AtlasDefStore<AtlasBusinessMetadataDef> getBusinessMetadataDefStore(AtlasTypeRegistry typeRegistry) {
-        return new AtlasBusinessMetadataDefStoreV2(this, typeRegistry, this.entityDiscoveryService);
+        return new AtlasBusinessMetadataDefStoreV2(this, typeRegistry, this.atlasGraph);
     }
 
     @Override
     @GraphTransaction
     public void init() throws AtlasBaseException {
-        LOG.info("==> AtlasTypeDefGraphStoreV1.init()");
+        LOG.info("==> AtlasTypeDefGraphStoreV2.init()");
 
         super.init();
 
-        LOG.info("<== AtlasTypeDefGraphStoreV1.init()");
+        LOG.info("<== AtlasTypeDefGraphStoreV2.init()");
     }
 
     AtlasGraph getAtlasGraph() {
