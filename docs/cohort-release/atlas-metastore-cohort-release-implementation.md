@@ -9,7 +9,7 @@ The cohort release system allows developers to deploy changes to a limited set o
 1. Feature branch merged to `ring-*` branch
 2. PR opened from `ring-*` to `master`
 3. Docker image built on push to `ring-*`
-4. Cohort label added to PR (e.g., `cohort:github:path:internal-level-1`)
+4. Cohort label added to PR (e.g., `cohort:github:path:atlas-ring-1-tiny`)
 5. GitHub Action triggers a Temporal workflow and exits immediately (fire-and-forget for cost optimization)
 6. Temporal patches ArgoCD Application manifests per tenant to override the image
 7. Temporal waits for ArgoCD sync, then verifies StatefulSet rollout on tenant cluster
@@ -70,19 +70,20 @@ Therefore, all workflow logic from the four reusable workflows is **inlined** di
 
 | File | Change |
 |------|--------|
-| `.github/workflows/maven.yml` | Added `ring-*` to build trigger branches; skip `helm-publish` on ring branches |
-| `.github/workflows/pr-label-release.yml` | New — triggers Temporal and exits (fire-and-forget for cost optimization) |
+| `.github/workflows/maven.yml` | Added `ring-*` to build trigger branches; skip `helm-publish` on ring branches; detect new branches (zero `event.before`) and force full build to bypass `dorny/paths-filter`; has `paths-ignore: '.github/**'` |
+| `.github/workflows/pr-label-release.yml` | New — triggers Temporal and exits (fire-and-forget for cost optimization); validates build and integration test runs match both commit SHA **and** branch name |
 | `.github/workflows/pr-close-release.yml` | New — auto-cleanup on close-without-merge only |
-| `.github/workflows/manual-cohort-cleanup.yml` | New — manual cleanup via workflow_dispatch |
+| `.github/workflows/manual-cohort-cleanup.yml` | New — manual cleanup via workflow_dispatch; auto-detects all `cohort:github:path:*` labels and cleans up each via matrix strategy; supports `allow_open_pr` for selective rollback on open PRs; auto-defaults `source` to `github` when `path` is provided |
+| `.github/workflows/integration-tests.yml` | Added `integration-tests-status` rollup job to consolidate matrix job outcomes into a single check for branch protection and `pr-label-release` |
 
 ### Changes in `platform-temporal-workflows`
 
 | File | Change |
 |------|--------|
 | `service-release/types.go` | Added `ServiceImageValuePath` map, `GetServiceImagePath()`, `ResultSkipped` status, `SkippedReleases` metric, `SkippedTenants` field |
-| `service-release/activities.go` | Updated patch operations; updated `AggregateResultsActivity` to handle skipped tenants; added skipped count to Slack/GitHub notifications |
-| `service-release/argocd_activities.go` | Updated `validateImageConfiguration` to traverse nested paths; added `WaitForArgoCDSyncActivity`; added `HasAutoSyncEnabled()` helper |
-| `service-release/app_workflow.go` | Added atlas-specific gates: auto-sync check, ArgoCD sync wait, StatefulSet rollout verification (routed to tenant worker) |
+| `service-release/activities.go` | Updated patch operations; updated `AggregateResultsActivity` to handle skipped tenants; added skipped count to Slack/GitHub notifications; `GetTenantNamesActivity` prioritizes state file (`existingRelease`) tenants over cohort file |
+| `service-release/argocd_activities.go` | Updated `validateImageConfiguration` to traverse nested paths and fail if a different image repo is already overridden; added `WaitForArgoCDSyncActivity`; added `HasAutoSyncEnabled()` using string search (not YAML parsing — see deadlock fix below) |
+| `service-release/app_workflow.go` | Added atlas-specific gates: auto-sync check (skip if disabled), `ValidateManifestForReleaseActivity` (fail if different image already overridden), ArgoCD sync wait, StatefulSet rollout verification (routed to tenant worker) |
 | `service-release/statefulset_rollout_activity.go` | New — verifies StatefulSet rollout on tenant cluster with dynamic timeout (15 min/pod) |
 | `ring-branch-sync/activities.go` | Added `"atlanhq/atlas-metastore": "master"` to `RingBranchSyncRepos` |
 | `cmd/tenants-worker/main.go` | Registered `WaitForStatefulSetRolloutActivity` for tenant workers |
@@ -94,9 +95,12 @@ Therefore, all workflow logic from the four reusable workflows is **inlined** di
 |------|--------|
 | `.github/workflows/check-ring-release-conditions.yml` | Added `build_workflow_id` input parameter (default: `main.yml`) |
 | `.github/workflows/trigger-temporal-release.yml` | Added `service_name` input parameter; decoupled from `imageRepo` |
-| `cohorts/atlas-dummy-1.json` | New — test cohort for atlas-metastore |
+| `.github/workflows/redistribute-rings.yml` | New — quarterly automated ring redistribution; deletes remote branch if it already exists to handle re-runs |
+| `scripts/redistribute_rings.py` | New — fetches tenant data from Horizon/Vitally, filters by release channel (`MAIN-BASE`, `GOLDEN-MAIN-BASE`), distributes tenants into rings by asset count, updates cohort files and Grafana dashboard |
+| `cohorts/atlas-ring-*.json` | Ring cohort files (Ring 0–5) with tenant lists and counts |
+| `atlas-ring-release-health-updated.json` | Grafana dashboard with ring health panels; `tenant` variable uses `query_result()` with `image_filter` interpolation |
 
-Note: The atlan-releases changes are for potential future use by other private service repos. Atlas-metastore does not use these reusable workflows due to the public/private restriction.
+Note: The reusable workflow changes (`check-ring-release-conditions.yml`, `trigger-temporal-release.yml`) are for potential future use by other private service repos. Atlas-metastore does not use these reusable workflows due to the public/private restriction.
 
 ---
 
@@ -129,6 +133,8 @@ Control-Plane Worker (platform cluster)
 ├── ServiceReleaseWorkflow (parent)
 ├── ServiceReleasePatchWorkflow (per tenant)
 ├── GetArgoCDAppManifestActivity
+├── HasAutoSyncEnabled (inline check)
+├── ValidateManifestForReleaseActivity
 ├── CreateImagePatchActivity
 ├── ApplyKubectlPatchActivity
 ├── WaitForArgoCDSyncActivity
@@ -170,6 +176,10 @@ If a tenant doesn't have auto-sync enabled:
 - The tenant would be left in a "pending" state indefinitely
 - The release would eventually timeout waiting for sync
 
+### Implementation: String Search (Deadlock Fix)
+
+`HasAutoSyncEnabled()` uses simple string search (`strings.Index` + `strings.Contains`) instead of full YAML parsing. YAML parsing of large ArgoCD manifests (~300KB+) can take >1s, which triggers Temporal's deadlock detector. The string-based approach looks for `syncPolicy:` followed by `automated:` within a 300-char window, which is sufficient and avoids the deadlock.
+
 ### Behavior
 
 | Auto-Sync Status | Result |
@@ -181,6 +191,12 @@ Skipped tenants are:
 - Reported separately in PR comments and Slack
 - **Not counted as failures** — the release is `success` if all non-skipped tenants succeed
 - Listed in the release info JSON under `skippedTenants`
+
+## Image Override Validation
+
+Before patching, `ValidateManifestForReleaseActivity` checks if the tenant's ArgoCD manifest already has a different image repository configured. If the existing override is from a different ring branch (e.g., `atlas-metastore-ring-A` when trying to deploy `atlas-metastore-ring-B`), the deployment **fails** for that tenant with: `image already overridden for service atlas: found .../ring-A, want .../ring-B`.
+
+This prevents accidental overwrites when a tenant is in multiple cohorts or multiple ring releases target overlapping tenants.
 
 ---
 
@@ -259,6 +275,24 @@ For `workflow_run` events, `context.ref` resolves to `refs/heads/master` (the de
 
 **Fix:** For `workflow_run` events, use `context.payload.workflow_run.head_branch` to get the actual ring branch name.
 
+### 4. Branch validation — premature release from cross-branch build
+
+When two ring branches had the same commit SHA (e.g., cherry-picked commits), `pr-label-release.yml` matched a build from the wrong branch. For example, `ring-B` could match a build from `ring-A` if both shared the same HEAD SHA.
+
+**Fix:** Added branch validation to `pr-label-release.yml`. After finding a workflow run matching the SHA, it now verifies `workflowRun.head_branch === expectedBranch` for both Maven and integration test runs. If the branch doesn't match, the release is blocked.
+
+### 5. New branch build skipped — `dorny/paths-filter` on first push
+
+When a new `ring-*` branch is created and pushed for the first time, `github.event.before` is all zeros (`0000000000000000000000000000000000000000`). The `dorny/paths-filter` action cannot compute a diff against this non-existent base, causing it to report no changes, which skips the build entirely.
+
+**Fix:** Added a `new_branch` detection step to `maven.yml`. If `github.event.before` is all zeros or `github.event.created` is true, it forces `non_helm=true` and `helm=true` directly, bypassing `dorny/paths-filter` to ensure a full build.
+
+### 6. HasAutoSyncEnabled deadlock — YAML parsing timeout
+
+`HasAutoSyncEnabled()` originally used `yaml.Unmarshal` to parse the full ArgoCD application manifest. For large manifests (~300KB+), parsing took >1s, triggering Temporal's deadlock detector which aborted the workflow.
+
+**Fix:** Replaced YAML parsing with simple string search (`strings.Index` for `syncPolicy:`, then `strings.Contains` for `automated:` within a 300-char window). This is fast enough to avoid the deadlock detector while being sufficient for the check.
+
 ---
 
 ## GA Rollback Race Condition
@@ -316,11 +350,11 @@ The cohort release only overrides the Docker **image**. The **chart version** re
 
 **Mitigation:** Design features to be backward-compatible with master chart templates (e.g., use runtime feature flags rather than helm-injected env vars).
 
-### Edge Case 3: Two ring branches targeting the same cohort
+### Edge Case 3: Tenant in multiple cohorts or rings
 
-If two ring branches try to release to the same cohort, the second one fails with: `image already overridden for service atlas: found .../ring-A, want .../ring-B`
+If a tenant appears in two cohort files that are released from different ring branches, `ValidateManifestForReleaseActivity` fails the second release for that tenant with: `image already overridden for service atlas: found .../ring-A, want .../ring-B`
 
-**Workaround:** Use different cohorts for different ring branches, or merge both features into the same ring branch.
+**Workaround:** Remove the tenant from one cohort file and its state file, then re-trigger. Or use a single ring branch for all cohorts that share tenants.
 
 ### Edge Case 4: Cohort label accidentally removed from PR
 
@@ -398,16 +432,22 @@ This PR is your **control surface** — labels on it control where the image is 
 Add a label to the PR to specify which tenants to release to:
 
 ```
-cohort:github:path:internal-level-1
+cohort:github:path:atlas-ring-1-tiny
 ```
 
-Label format: `cohort:<source>:<key>:<value>`
+Label format: `cohort:<source>:<key>:<value>` — the `cohort:github:path:` prefix is required for everything to work (release, cleanup, and auto-detection).
 
 Available cohorts (defined in `atlan-releases/cohorts/`):
-- `internal-level-1` — Internal low-risk tenants
-- `internal-level-2` — Internal broader set
-- `partner-level-1` — Partner tenants
-- `enterprise-level-1` — Enterprise tenants (use with caution)
+
+| Label Value | Ring | Tenant Size |
+|-------------|------|-------------|
+| `atlas-ring-0-empty` | Ring 0 | 0 assets |
+| `atlas-ring-1-tiny` | Ring 1 | 1 – 100K assets (~124 tenants) |
+| `atlas-ring-2-small` | Ring 2 | 100K – 1M assets (~217 tenants) |
+| `atlas-ring-3-medium` | Ring 3 | 1M – 10M assets (~163 tenants) |
+| `atlas-ring-4-large` | Ring 4 | 10M – 50M assets |
+| `atlas-ring-5-very-large` | Ring 5 | 50M+ assets |
+| `atlas-custom-*` | Custom | Custom tenant lists for targeted rollouts |
 
 You can add the label before or after the build completes. The release only proceeds once the build succeeds.
 
@@ -429,7 +469,7 @@ The cohort tenants are now running your ring image. Verify your feature works as
 If the initial cohort looks good, add more labels:
 
 ```
-cohort:github:path:partner-level-1
+cohort:github:path:atlas-ring-2-small
 ```
 
 Each new label triggers a release to that cohort. Existing cohort overrides remain untouched.
@@ -458,7 +498,8 @@ When you're confident the feature is ready:
 
 1. **Merge the ring PR to `master`** — this starts the normal GA flow (master build → chart update → ArgoCD sync to all tenants)
 2. **Wait for the GA chart to roll out** — check the `atlan` repo for the chart update PR, ensure it's merged and ArgoCD has synced
-3. **Clean up overrides** — go to the atlas-metastore repo Actions tab, run `Manual Cohort Cleanup` workflow with the PR number
+3. **Clean up overrides** — go to the atlas-metastore repo Actions tab, run `Manual Cohort Cleanup` workflow with the PR number. Leave `source` and `path` empty — it auto-detects all `cohort:github:path:*` labels and cleans up each one
+4. **Delete the ring branch** and the state file(s) in `atlan-releases/` (named `atlas-ring-<branch-name>.json`)
 
 > **Why manual cleanup?** If overrides were auto-removed on merge, cohort tenants would briefly revert to the old master image during the ~30 min gap before the new GA build completes. Manual cleanup avoids this rollback.
 
@@ -467,9 +508,19 @@ When you're confident the feature is ready:
 If you decide not to proceed with the feature:
 
 1. **Close the PR without merging**
-2. Overrides are automatically removed from all cohort tenants
+2. `pr-close-release.yml` triggers automatically, reads the state file, and removes overrides from all previously released tenants
 3. Tenants revert to the current master image
 4. Delete the ring branch
+
+#### 11. Rollback a Specific Cohort (PR Still Open)
+
+If you need to roll back one cohort while keeping others active:
+
+1. Go to Actions → `Manual Cohort Cleanup`
+2. Enter the PR number
+3. Set `path` to the cohort file (e.g., `cohorts/atlas-ring-3-medium.json`) — `source` auto-defaults to `github`
+4. Check `allow_open_pr` = true
+5. Temporal reads the cohort file and removes overrides from those tenants only
 
 ### Quick Reference
 
@@ -480,16 +531,19 @@ If you decide not to proceed with the feature:
 | Push new commit to ring | Rebuild + re-release to all labeled cohorts |
 | Add another cohort label | Release to new cohort (existing ones untouched) |
 | Merge ring PR | GA flow starts, overrides stay until manual cleanup |
-| Close ring PR without merge | Auto-cleanup, tenants revert to master |
-| Run Manual Cohort Cleanup | Removes overrides from specified ring's tenants |
+| Close ring PR without merge | Auto-cleanup via `pr-close-release.yml`, reads state file, tenants revert to master |
+| Manual Cleanup (no path/source) | Auto-detects all `cohort:github:path:*` labels, cleans up each cohort — used for GA |
+| Manual Cleanup (with path) | Cleans up specific cohort only — used for selective rollback (`allow_open_pr` required if PR is open) |
+| Manual Cleanup (source=custom + tenant_names) | Cleans up specific tenants by name |
 
 ### Things to Know
 
 - **Build time is ~30 min.** Plan accordingly. Don't expect instant releases.
 - **Only the Docker image is overridden.** Helm template changes, config changes, new env vars in your ring branch won't reach cohort tenants. Design features to be backward-compatible with master chart templates.
-- **One ring per cohort.** If another ring is already deployed to a cohort, your release to that cohort will fail. Use a different cohort or coordinate with the other developer.
+- **Changes to `.github/` only won't trigger a build.** `maven.yml` has `paths-ignore: '.github/**'`. If you push only workflow file changes, include a dummy change to a source file (e.g., a comment in `build.sh`) to trigger a build for the new HEAD.
+- **One image per tenant.** If a tenant already has a different ring's image override, `ValidateManifestForReleaseActivity` fails for that tenant. Remove the tenant from the other cohort/state file first, or use a different cohort.
 - **Ring branches auto-sync with master.** The `RingBranchSyncWorkflow` periodically merges master into ring branches (using `-X ours` strategy — your ring changes win on conflicts).
-- **Max 20 tenants per cohort.** The Temporal workflow caps cohort size to keep releases manageable.
+- **Parallelism limit is 10.** The Temporal workflow processes up to 10 tenants in parallel (configurable via `maxParallelReleases`). There is no cap on cohort size — rings can have 100+ tenants.
 - **`atlas-read` is not overridden.** Currently only the `atlas` chart image is patched. If your feature affects the read path, be aware that `atlas-read` will still run the master image.
 - **Tenants without auto-sync are skipped.** If a tenant's ArgoCD app doesn't have auto-sync enabled, it will be skipped (not failed). Check the PR comment for skipped tenants.
 - **Only main-branch tenants are included.** Tenants on STAGING-BASE, PREPROD-BASE, or BETA-BASE release channels are excluded from ring cohorts.

@@ -41,11 +41,11 @@ Add a label to deploy to specific tenants:
 
 | Label | Ring | Tenants | Asset Range |
 |-------|------|---------|-------------|
-| `cohort:github:path:atlas-ring-0-empty` | Ring 0 | ~43 | 0 assets |
-| `cohort:github:path:atlas-ring-1-tiny` | Ring 1 | ~131 | 1 - 100K |
-| `cohort:github:path:atlas-ring-2-small` | Ring 2 | ~215 | 100K - 1M |
-| `cohort:github:path:atlas-ring-3-medium` | Ring 3 | ~161 | 1M - 10M |
-| `cohort:github:path:atlas-ring-4-large` | Ring 4 | ~27 | 10M - 50M |
+| `cohort:github:path:atlas-ring-0-empty` | Ring 0 | ~44 | 0 assets |
+| `cohort:github:path:atlas-ring-1-tiny` | Ring 1 | ~124 | 1 - 100K |
+| `cohort:github:path:atlas-ring-2-small` | Ring 2 | ~217 | 100K - 1M |
+| `cohort:github:path:atlas-ring-3-medium` | Ring 3 | ~163 | 1M - 10M |
+| `cohort:github:path:atlas-ring-4-large` | Ring 4 | ~28 | 10M - 50M |
 | `cohort:github:path:atlas-ring-5-very-large` | Ring 5 | ~4 | 50M+ |
 
 > **Note:** Tenant counts are approximate. Rings are dynamically redistributed quarterly based on asset counts from Vitally/Snowflake. See [atlan-releases/cohorts](https://github.com/atlanhq/atlan-releases/tree/main/cohorts) for current counts.
@@ -98,20 +98,49 @@ When confident:
    - You don't need to wait for full sync/rollout to all tenants
    - Just ensure ArgoCD has picked up the new chart version
    - Check: ArgoCD app shows the new image tag as "desired" state
-3. **Remove the label** from the (now merged) PR
-4. **Run cleanup** (Actions → Manual Cohort Cleanup → enter PR number)
+3. **Run cleanup** (Actions → Manual Cohort Cleanup → enter PR number)
 
 > **Why wait?** Cleanup removes overrides. If you cleanup before ArgoCD recognizes the GA image, ring tenants briefly revert to the old master image until ArgoCD catches up.
 
+**What cleanup does:**
+- Auto-detects all `cohort:github:path:*` labels on the PR
+- Triggers a separate Temporal cleanup workflow per cohort
+- Temporal reads the state file to find which tenants were actually released
+- Removes the image overrides from each tenant's ArgoCD manifest
+- Tenants then pick up the GA master image via normal ArgoCD sync
+
 ---
 
-### 8. Abandon Ring (If Needed)
+### 8. Abandon Ring (Close PR Without Merging)
 
 If you decide not to proceed:
 
 1. **Close PR without merging**
-2. Overrides are **auto-removed** — tenants revert to master
-3. Delete the ring branch
+2. `pr-close-release.yml` auto-triggers cleanup
+3. Temporal reads the state file → reverts ALL tenants across ALL cohorts
+4. Tenants revert to master image
+5. Delete the ring branch
+
+> **Note:** This is fully automatic. No manual action needed beyond closing the PR.
+
+---
+
+### 9. Rollback a Specific Cohort (PR Still Open)
+
+If something goes wrong with one ring but you want to keep the PR open for other rings:
+
+1. Go to **Actions → Manual Cohort Cleanup**
+2. Fill in:
+   - `pr_number`: Your PR number
+   - `path`: `cohorts/atlas-ring-3-medium.json` (the specific cohort to revert)
+   - `allow_open_pr`: ✓ checked
+3. Only the specified cohort is reverted; other rings are untouched
+
+**To rollback specific tenants only:**
+1. Same workflow, but use:
+   - `source`: `custom`
+   - `tenant_names`: `tenant1, tenant2, tenant3`
+   - `allow_open_pr`: ✓ checked
 
 ---
 
@@ -123,9 +152,11 @@ If you decide not to proceed:
 | Add cohort label | Deploys to those tenants (after build completes) |
 | Push fix to ring branch | Rebuilds + re-deploys to all labeled cohorts |
 | Add another label | Deploys to additional cohort |
-| Merge ring PR | Starts GA flow; wait ~15-30 min for ArgoCD to recognize, then cleanup |
-| Close PR without merge | Auto-cleanup, tenants revert |
-| Manual Cohort Cleanup | Removes overrides for specified PR |
+| Merge ring PR | Starts GA flow; wait ~15-30 min for ArgoCD to recognize, then run Manual Cohort Cleanup |
+| Close PR without merge | Auto-cleanup triggers, ALL tenants across ALL cohorts revert to master |
+| Manual Cohort Cleanup (no path) | Detects all cohort labels on PR, cleans up each one (GA flow) |
+| Manual Cohort Cleanup (with path) | Reverts only the specified cohort (selective rollback) |
+| Manual Cohort Cleanup (custom) | Reverts only the specified tenants (surgical rollback) |
 
 ---
 
@@ -135,12 +166,15 @@ If you decide not to proceed:
 |-------|----------|
 | **Build takes ~30 min** | Plan ahead. Don't expect instant releases. |
 | **Only Docker image is overridden** | Helm/config changes won't reach ring tenants. Use feature flags. |
-| **Another ring already on same cohort** | Release fails. Use different cohort or coordinate. |
+| **Tenant has different image override** | `ValidateManifestForReleaseActivity` fails if tenant's ArgoCD manifest already has a different ring image. Remove the override first or coordinate with the other ring owner. |
 | **`atlas-read` not overridden** | Only `atlas` (write path) is patched. Read path stays on master. |
 | **ArgoCD sync slow/stuck** | Release may timeout. Check tenant's ArgoCD app health. |
 | **Large cohorts (>100 tenants)** | Temporal processes 100 tenants in parallel. Larger cohorts are batched. |
 | **Tenant skipped (auto-sync disabled)** | Tenants without ArgoCD auto-sync are skipped, not failed. Check PR comment for skipped list. |
 | **Tenant not in ring** | Only tenants on MAIN-BASE/GOLDEN-MAIN-BASE release channels are included. Beta/staging tenants are excluded. |
+| **Tenant in multiple cohorts** | Tenant can exist in both a custom and standard ring. The `ValidateManifestForReleaseActivity` prevents accidental overwrites — whichever ring deploys first "locks" the tenant. Remove from the other cohort file + state file to avoid confusion. |
+| **Changes to `.github/` only** | `maven.yml` has `paths-ignore: '.github/**'`. Workflow-only changes won't trigger a build. Include a dummy change to a source file if you need a new build on the same commit. |
+| **First push to new ring branch** | Build should trigger automatically. If it doesn't, check if the `paths-filter` detected changes correctly. |
 
 ---
 
@@ -249,11 +283,13 @@ Once your ring release is complete (merged to GA or abandoned):
 
 Before a ring release proceeds, these are checked:
 
-- [ ] Docker build succeeded for current commit
-- [ ] Integration tests passed
-- [ ] At least 1 PR approval (on latest commit)
+- [ ] Docker build succeeded for current commit SHA **and** branch
+- [ ] Integration tests passed for current commit SHA **and** branch
+- [ ] At least 1 PR approval on current HEAD SHA (stale approvals from previous commits don't count)
 
 If any gate fails, the release is blocked with a PR comment explaining why.
+
+> **Note:** The build and test gates validate both SHA and branch name. This prevents a build from a different branch with the same commit SHA from being accepted.
 
 ---
 
@@ -277,19 +313,36 @@ The "Service Release Result" PR comment shows one of these statuses:
 
 If something goes wrong after deploying to a ring:
 
-**Option A: Quick rollback**
+**Option A: Rollback ALL cohorts (close PR)**
 ```
-Run: Actions → Manual Cohort Cleanup → PR number
+Close the ring PR without merging → auto-cleanup triggers for all cohorts
 ```
-This removes overrides immediately. Tenants revert to master image.
 
-**Option B: Fix forward**
+**Option B: Rollback a SPECIFIC cohort (keep PR open)**
+```
+Actions → Manual Cohort Cleanup → PR number + path + allow_open_pr ✓
+```
+Only the specified cohort is reverted. Other rings stay deployed.
+
+**Option C: Rollback SPECIFIC tenants**
+```
+Actions → Manual Cohort Cleanup → PR number + source=custom + tenant_names + allow_open_pr ✓
+```
+
+**Option D: Fix forward**
 ```bash
 git checkout ring-<name>
 # fix the issue
 git push origin ring-<name>
 ```
 New build triggers, then auto-deploys fix to all labeled cohorts.
+
+| Rollback Method | Speed | Scope | PR State |
+|----------------|-------|-------|----------|
+| Close PR | ~30 min | All cohorts | Closed |
+| Manual cleanup (path) | ~30 min | One cohort | Open or Closed |
+| Manual cleanup (custom) | ~15 min | Specific tenants | Open or Closed |
+| Fix forward | ~45 min (build + deploy) | All labeled cohorts | Open |
 
 ---
 

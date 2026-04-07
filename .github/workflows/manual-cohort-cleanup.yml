@@ -22,6 +22,11 @@ on:
         required: false
         type: string
         default: ''
+      allow_open_pr:
+        description: 'Allow cleanup on open PRs (for rolling back a specific cohort without closing the PR)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   detect-cohorts:
@@ -33,6 +38,7 @@ jobs:
       ring_name: ${{ steps.detect.outputs.ring_name }}
       pull_request_url: ${{ steps.detect.outputs.pull_request_url }}
       use_manual_config: ${{ steps.detect.outputs.use_manual_config }}
+      resolved_source: ${{ steps.detect.outputs.resolved_source }}
     steps:
       - name: Detect cohorts from PR labels
         id: detect
@@ -51,9 +57,13 @@ jobs:
               pull_number: prNumber
             });
 
-            if (pr.state !== 'closed') {
-              core.setFailed(`PR #${prNumber} is not closed. Current state: ${pr.state}. Only closed PRs can be cleaned up manually.`);
+            const allowOpenPR = '${{ inputs.allow_open_pr }}' === 'true';
+            if (pr.state !== 'closed' && !allowOpenPR) {
+              core.setFailed(`PR #${prNumber} is still open. Set 'allow_open_pr' to true to force cleanup on an open PR.`);
               return;
+            }
+            if (pr.state !== 'closed' && allowOpenPR) {
+              console.log(`⚠️ PR #${prNumber} is open. Proceeding with cleanup as allow_open_pr is set.`);
             }
 
             const repoName = context.repo.repo;
@@ -69,6 +79,12 @@ jobs:
             // If manual path or tenant_names provided, use manual config
             if (manualPath || (manualSource === 'custom' && tenantNames)) {
               console.log('Using manual configuration (path or tenant_names provided)');
+              // Default source to 'github' when path is provided without explicit source
+              if (manualPath && !manualSource) {
+                core.setOutput('resolved_source', 'github');
+              } else {
+                core.setOutput('resolved_source', manualSource);
+              }
               core.setOutput('use_manual_config', 'true');
               core.setOutput('cohort_paths', JSON.stringify([]));
               return;
@@ -129,7 +145,7 @@ jobs:
             --arg service_name "${{ needs.detect-cohorts.outputs.service_name }}" \
             --arg image_tag "" \
             --arg image_repo "${{ needs.detect-cohorts.outputs.image_repo }}" \
-            --arg source "${{ inputs.source }}" \
+            --arg source "${{ needs.detect-cohorts.outputs.resolved_source }}" \
             --arg tenant_names "${{ inputs.tenant_names }}" \
             --arg pull_request_url "${{ needs.detect-cohorts.outputs.pull_request_url }}" \
             --arg path "${{ inputs.path }}" \
