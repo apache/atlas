@@ -401,16 +401,20 @@ public class TypesREST {
     }
 
     /**
-     * Bulk delete API for all types
-     * @param typesDef A composite object that captures all types to be deleted
+     * Bulk delete API for all types.
+     *
+     * @param typesDef A composite object that captures all types to be deleted.
+     * @param forceDelete If true, bypasses pre-delete validation checks and forcefully removes type definitions.
+     *                    For BusinessMetadata types:
+     *                    - If isIndexable=true and force=false: performs normal graph scan validation
+     *                    - If isIndexable=false and force=false: blocks deletion (requires force=true)
+     *                    - If force=true: skips all validation and deletes the type
+     *                    Defaults to false for backward compatibility.
      * @throws AtlasBaseException
      * @HTTP 204 On successful deletion of the requested type definitions
-     * @HTTP 400 On validation failure for any type definitions
+     * @HTTP 400 On validation failure for any type definitions or when attempting to delete
+     *           non-indexable BusinessMetadata without force-delete parameter
      */
-    public void deleteAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
-        deleteAtlasTypeDefs(typesDef, false);
-    }
-
     @DELETE
     @Path("/typedefs")
     @Experimental

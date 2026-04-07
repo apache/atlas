@@ -183,6 +183,7 @@ public enum AtlasErrorCode {
     BLANK_NAME_ATTRIBUTE(400, "ATLAS-400-00-104", "Name Attribute can't be empty!"),
     BLANK_VALUE_ATTRIBUTE(400, "ATLAS-400-00-105", "Value Attribute can't be empty!"),
     INVALID_RELATIONSHIP_LABEL(400, "ATLAS-400-00-106", "Invalid relationship label {0}. The referenced entity type {1} could not be resolved from the type registry."),
+    NON_INDEXABLE_BM_DELETE_NOT_ALLOWED(400, "ATLAS-400-00-107", "Deletion not allowed for non-indexable Business Metadata ''{0}'' without force=true. Non-indexable attributes cannot be validated efficiently for references; use force=true to skip validation and delete (warning: orphaned references may remain)."),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
@@ -259,9 +260,7 @@ public enum AtlasErrorCode {
     IMPORT_REGISTRATION_FAILED(500, "ATLAS-500-00-020", "Failed to register import request"),
     IMPORT_FAILED(500, "ATLAS-500-00-021", "Import with id {0} failed"),
     ABORT_IMPORT_FAILED(500, "ATLAS-500-00-022", "Failed to abort import with id {0}"),
-    IMPORT_QUEUEING_FAILED(500, "ATLAS-500-00-023", "Failed to add import with id {0} to request queue, please try again later"),
-
-    NON_INDEXABLE_BM_DELETE_NOT_ALLOWED(400, "ATLAS-400-00-106", "Deletion not allowed for non-indexable Business Metadata ''{0}'' without force=true. Non-indexable attributes cannot be validated efficiently for references; use force=true to skip validation and delete (warning: orphaned references may remain).");
+    IMPORT_QUEUEING_FAILED(500, "ATLAS-500-00-023", "Failed to add import with id {0} to request queue, please try again later");
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasErrorCode.class);
     private final        String errorCode;

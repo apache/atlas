@@ -179,11 +179,11 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
     @Override
     @GraphTransaction
     public void init() throws AtlasBaseException {
-        LOG.info("==> AtlasTypeDefGraphStoreV1.init()");
+        LOG.info("==> AtlasTypeDefGraphStoreV2.init()");
 
         super.init();
 
-        LOG.info("<== AtlasTypeDefGraphStoreV1.init()");
+        LOG.info("<== AtlasTypeDefGraphStoreV2.init()");
     }
 
     AtlasGraph getAtlasGraph() {

@@ -540,7 +540,7 @@ public class TypesRESTTest {
             mockedAtlasTypeUtil.when(() -> AtlasTypeUtil.toDebugString(mockTypesDef)).thenReturn("debug_string");
 
             // Execute
-            typesREST.deleteAtlasTypeDefs(mockTypesDef);
+            typesREST.deleteAtlasTypeDefs(mockTypesDef, false);
 
             // Verify
             verify(typeDefStore).deleteTypesDef(mockTypesDef, false);
@@ -559,7 +559,7 @@ public class TypesRESTTest {
             mockedAtlasTypeUtil.when(() -> AtlasTypeUtil.toDebugString(mockTypesDef)).thenReturn("debug_string");
 
             // Execute
-            typesREST.deleteAtlasTypeDefs(mockTypesDef);
+            typesREST.deleteAtlasTypeDefs(mockTypesDef, false);
 
             // Verify
             verify(typeDefStore).deleteTypesDef(mockTypesDef, false);
@@ -581,7 +581,7 @@ public class TypesRESTTest {
 
             // Execute & Verify
             AtlasBaseException thrownException = expectThrows(AtlasBaseException.class, () -> {
-                typesREST.deleteAtlasTypeDefs(mockTypesDef);
+                typesREST.deleteAtlasTypeDefs(mockTypesDef, false);
             });
 
             assertEquals(thrownException.getMessage(), "Delete failed");
