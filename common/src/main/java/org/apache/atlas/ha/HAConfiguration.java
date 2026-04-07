@@ -105,7 +105,7 @@ public final class HAConfiguration {
         if (configuration.containsKey(HA_ZOOKEEPER_CONNECT)) {
             zkServers = configuration.getStringArray(HA_ZOOKEEPER_CONNECT);
         } else {
-            zkServers = configuration.getStringArray("atlas.kafka." + ZOOKEEPER_PREFIX + "connect");
+            zkServers = new String[0];
         }
 
         String zkRoot                 = configuration.getString(ATLAS_SERVER_HA_ZK_ROOT_KEY, ATLAS_SERVER_ZK_ROOT_DEFAULT);
