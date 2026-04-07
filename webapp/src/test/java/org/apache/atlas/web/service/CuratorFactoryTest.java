@@ -135,6 +135,9 @@ public class CuratorFactoryTest {
 
     @Test
     public void testClientInstance() {
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, true)).thenReturn(true);
+
         CuratorFactory curatorFactory = new CuratorFactory(configuration) {
             @Override
             protected void initializeCuratorFramework() {
@@ -154,6 +157,9 @@ public class CuratorFactoryTest {
 
     @Test
     public void testLeaderLatchInstance() {
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, true)).thenReturn(true);
+
         CuratorFactory curatorFactory = new CuratorFactory(configuration) {
             @Override
             protected void initializeCuratorFramework() {
@@ -176,6 +182,9 @@ public class CuratorFactoryTest {
 
     @Test
     public void testLockInstance() {
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, true)).thenReturn(true);
+
         CuratorFactory curatorFactory = new CuratorFactory(configuration) {
             @Override
             protected void initializeCuratorFramework() {
@@ -197,6 +206,9 @@ public class CuratorFactoryTest {
 
     @Test
     public void testClose() {
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, true)).thenReturn(true);
+
         CuratorFactory curatorFactory = new CuratorFactory(configuration) {
             @Override
             protected void initializeCuratorFramework() {
@@ -213,6 +225,56 @@ public class CuratorFactoryTest {
         doNothing().when(curatorFramework).close();
         curatorFactory.close();
         verify(curatorFramework).close();
+    }
+
+    @Test
+    public void testConstructorDoesNotInitializeWhenHAKeyIsMissing() {
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(false);
+
+        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
+            @Override
+            protected void initializeCuratorFramework() {
+                throw new AssertionError("initializeCuratorFramework() should not be called when HA key is missing");
+            }
+        };
+
+        assertNull(curatorFactory.clientInstance());
+    }
+
+    @Test
+    public void testConstructorDoesNotInitializeWhenHAIsDisabled() {
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, true)).thenReturn(false);
+
+        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
+            @Override
+            protected void initializeCuratorFramework() {
+                throw new AssertionError("initializeCuratorFramework() should not be called when HA is disabled");
+            }
+        };
+
+        assertNull(curatorFactory.clientInstance());
+    }
+
+    @Test
+    public void testConstructorInitializesWhenHAIsEnabled() {
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, true)).thenReturn(true);
+
+        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
+            @Override
+            protected void initializeCuratorFramework() {
+                try {
+                    Field field = CuratorFactory.class.getDeclaredField("curatorFramework");
+                    field.setAccessible(true);
+                    field.set(this, curatorFramework);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
+
+        assertEquals(curatorFactory.clientInstance(), curatorFramework);
     }
 
     @Test

@@ -75,7 +75,9 @@ public class CuratorFactory {
     public CuratorFactory(Configuration configuration) {
         this.configuration = configuration;
 
-        initializeCuratorFramework();
+        if (configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY) && configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, true)) {
+            initializeCuratorFramework();
+        }
     }
 
     /**
