@@ -1551,6 +1551,24 @@ public class EntityGraphMapper {
                     }
                 }
             }
+        } else if (attrValue instanceof String && StringUtils.isEmpty((String) attrValue)) {
+            if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE) {
+                Object normalizedValue = attrType.getNormalizedValue(attrValue);
+                if (normalizedValue == null) {
+                    AtlasAttributeDef attributeDef = attribute.getAttributeDef();
+                    if (attributeDef.getDefaultValue() != null) {
+                        attrValue = attrType.createDefaultValue(attributeDef.getDefaultValue());
+                    } else {
+                        if (attributeDef.getIsOptional()) {
+                            attrValue = attrType.createOptionalDefaultValue();
+                        } else {
+                            attrValue = attrType.createDefaultValue();
+                        }
+                    }
+                } else {
+                    attrValue = normalizedValue;
+                }
+            }
         }
 
         if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE || attrType.getTypeCategory() == TypeCategory.ENUM) {
