@@ -80,7 +80,7 @@ public class GlossaryPreProcessor implements PreProcessor {
 
     private void processCreateGlossary(AtlasStruct entity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateGlossary");
-        String glossaryName = (String) entity.getAttribute(NAME);
+        String glossaryName = trimEntityName(entity);
 
         if (StringUtils.isEmpty(glossaryName) || isNameInvalid(glossaryName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
@@ -104,7 +104,7 @@ public class GlossaryPreProcessor implements PreProcessor {
 
     private void processUpdateGlossary(AtlasStruct entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateGlossary");
-        String glossaryName = (String) entity.getAttribute(NAME);
+        String glossaryName = trimEntityName(entity);
         String vertexName = vertex.getProperty(NAME, String.class);
         if (!vertexName.equals(glossaryName) && glossaryExists(glossaryName)) {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_ALREADY_EXISTS,glossaryName);

@@ -8,6 +8,7 @@ import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -121,6 +122,15 @@ public class PreProcessorUtils {
 
     public static boolean isNameInvalid(String name) {
         return StringUtils.containsAny(name, invalidNameChars);
+    }
+
+    public static String trimEntityName(AtlasStruct entity) {
+        String name = (String) entity.getAttribute(NAME);
+        if (StringUtils.isNotEmpty(name)) {
+            name = name.trim();
+            entity.setAttribute(NAME, name);
+        }
+        return name;
     }
 
     public static String getCollectionPropertyName(AtlasVertex parentVertex) {
