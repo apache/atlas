@@ -201,6 +201,30 @@ public abstract class DeleteHandlerV1 {
 
                 requestContext.recordEntityDelete(entityHeader);
                 deletionCandidateVertices.add(vertexInfo.getVertex());
+
+                // MS-903 / LH-1263: Record parent entities as updated when a child is deleted.
+                // For soft delete, SoftDeleteHandlerV1.deleteTypeVertex() just marks the vertex
+                // state as DELETED without processing edges — so deleteRelationships() is never
+                // called and parent entities never get an ENTITY_UPDATE notification.
+                // MS-701 (PR #6381) fixed this for outgoing edges in deleteEdgeReference(), but
+                // that path is only reached during hard delete edge processing.
+                // Fix: find parent vertices via incoming relationship edges and record them now,
+                // before the vertex is marked as deleted.
+                try {
+                    Iterable<AtlasEdge> inEdges = vertexInfo.getVertex().getEdges(AtlasEdgeDirection.IN);
+                    for (AtlasEdge inEdge : inEdges) {
+                        if (isRelationshipEdge(inEdge) && ACTIVE.equals(getStatus(inEdge))) {
+                            AtlasVertex parentVertex = inEdge.getOutVertex();
+                            if (parentVertex != null && !requestContext.isDeletedEntity(GraphHelper.getGuid(parentVertex))) {
+                                requestContext.recordEntityUpdateForRelationshipChange(
+                                        entityRetriever.toAtlasEntityHeader(parentVertex));
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    LOG.warn("Failed to record parent entity updates for deleted entity {}",
+                            entityHeader.getGuid(), e);
+                }
             }
         }
 
@@ -263,7 +287,8 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasBaseException
      */
     public void deleteRelationships(Collection<AtlasEdge> edges, final boolean forceDelete) throws AtlasBaseException {
-        final boolean isPurgeRequested = RequestContext.get().isPurgeRequested();
+        final boolean      isPurgeRequested = RequestContext.get().isPurgeRequested();
+        final RequestContext requestContext  = RequestContext.get();
 
         for (AtlasEdge edge : edges) {
             boolean isInternal = isInternalType(edge.getInVertex()) && isInternalType(edge.getOutVertex());
@@ -275,7 +300,28 @@ public abstract class DeleteHandlerV1 {
                 }
                 continue;
             }
+
+            // MS-903 / LH-1263: Capture vertices BEFORE deleteEdge — for hard delete the edge
+            // reference may not survive the delete call.
+            AtlasVertex outVertex = edge.getOutVertex();
+            AtlasVertex inVertex  = edge.getInVertex();
+
             deleteEdge(edge, isInternal || forceDelete || isCustomRelationship(edge));
+
+            // MS-903 / LH-1263: Record parent entity updates for both ends of the relationship.
+            // Without this, when a sub-asset is deleted, the parent entity does NOT receive an
+            // ENTITY_UPDATE notification with removedRelationshipAttributes — breaking downstream
+            // consumers (Lakehouse DQ, Automation Engine) that track relationship changes.
+            // MS-701 fixed this for outgoing edges (deleteEdgeReference), but missed the incoming
+            // edge path which goes through deleteRelationships().
+            if (outVertex != null && !isDeletedEntity(outVertex)) {
+                requestContext.recordEntityUpdateForRelationshipChange(
+                        entityRetriever.toAtlasEntityHeader(outVertex));
+            }
+            if (inVertex != null && !isDeletedEntity(inVertex)) {
+                requestContext.recordEntityUpdateForRelationshipChange(
+                        entityRetriever.toAtlasEntityHeader(inVertex));
+            }
         }
     }
 
@@ -1275,7 +1321,11 @@ public abstract class DeleteHandlerV1 {
                 AtlasGraphUtilsV2.setEncodedProperty(outVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());
                 AtlasGraphUtilsV2.setEncodedProperty(outVertex, MODIFIED_BY_KEY, requestContext.getUser());
 
-                requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(outVertex));
+                // MS-903 / LH-1263: Use recordEntityUpdateForRelationshipChange instead of
+                // recordEntityUpdate — the latter checks entitiesToSkipUpdate and may suppress
+                // the update for entities with no attribute changes. Relationship edge deletion
+                // IS a material change that must produce an ENTITY_UPDATE notification.
+                requestContext.recordEntityUpdateForRelationshipChange(entityRetriever.toAtlasEntityHeader(outVertex));
             }
         }
     }

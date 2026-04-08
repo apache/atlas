@@ -203,6 +203,177 @@ public class SubAssetAddParentUpdateNotificationTest extends AtlasInProcessBaseI
         consumer.close();
     }
 
+    @Test
+    @Order(3)
+    void testDeleteSubAsset_ParentShouldReceiveUpdateNotification() throws Exception {
+        LOG.info("=== Step 3: LH-1263 - Sub-asset soft delete should trigger parent UPDATE ===");
+        assertNotNull(tableGuid, "Table must exist from previous test");
+
+        // Create a new Process linked to the Table (the previous one may have been modified)
+        AtlasEntity process = new AtlasEntity("Process");
+        String processQN = "test://lh1263/delete-process/" + testId;
+        process.setAttribute("name", "lh1263-delete-process-" + testId);
+        process.setAttribute("qualifiedName", processQN);
+        process.setAttribute("inputs",
+                Collections.singletonList(new AtlasObjectId(tableGuid, "Table")));
+
+        AtlasEntitiesWithExtInfo bulkEntities = new AtlasEntitiesWithExtInfo();
+        bulkEntities.addEntity(process);
+
+        EntityMutationResponse createResponse = atlasClient.createEntities(bulkEntities);
+        AtlasEntityHeader createdProcess = createResponse.getFirstEntityCreated();
+        assertNotNull(createdProcess, "Process should be created");
+        String processGuid = createdProcess.getGuid();
+        LOG.info("Created Process for deletion test, GUID: {}", processGuid);
+
+        // Wait for creation notifications to flush
+        Thread.sleep(2000);
+
+        // Create Kafka consumer BEFORE the delete to capture notifications
+        KafkaConsumer<String, String> consumer = createEntityNotificationConsumer();
+        long operationStartTime = System.currentTimeMillis();
+
+        // Soft-delete the Process (sub-asset)
+        LOG.info("Soft-deleting Process {}", processGuid);
+        EntityMutationResponse deleteResponse = atlasClient.deleteEntityByGuid(processGuid);
+
+        assertNotNull(deleteResponse, "Delete response should not be null");
+
+        // ===== REST Response Assertions =====
+
+        // Process should be in DELETED entities
+        List<AtlasEntityHeader> deletedEntities = deleteResponse.getDeletedEntities();
+        assertNotNull(deletedEntities, "Should have deleted entities");
+        boolean processDeleted = deletedEntities.stream()
+                .anyMatch(h -> processGuid.equals(h.getGuid()));
+        assertTrue(processDeleted, "Process should appear in deleted entities");
+
+        // Table should be in UPDATED entities (relationship removed)
+        Set<String> updatedGuids = new HashSet<>();
+        List<AtlasEntityHeader> updatedEntities = deleteResponse.getUpdatedEntities();
+        if (updatedEntities != null) {
+            for (AtlasEntityHeader header : updatedEntities) {
+                updatedGuids.add(header.getGuid());
+                LOG.info("UPDATED entity in delete response: {} ({})", header.getTypeName(), header.getGuid());
+            }
+        }
+
+        // KEY ASSERTION 1: Table should appear as UPDATED in REST response
+        assertTrue(updatedGuids.contains(tableGuid),
+                "LH-1263 BUG: Table should appear as UPDATED in REST response when a " +
+                "sub-asset (Process) is soft-deleted, because the relationship was removed. " +
+                "Table GUID: " + tableGuid + ", Updated GUIDs: " + updatedGuids);
+
+        LOG.info("REST assertion passed: Table correctly appears as UPDATED after sub-asset delete");
+
+        // ===== Kafka Notification Assertions =====
+
+        Thread.sleep(3000);
+
+        List<JsonNode> tableUpdateNotifications = collectEntityUpdateNotifications(
+                consumer, tableGuid, operationStartTime, KAFKA_POLL_TIMEOUT_MS);
+
+        LOG.info("Kafka ENTITY_UPDATE notifications for Table after sub-asset delete: {}",
+                tableUpdateNotifications.size());
+
+        // KEY ASSERTION 2: Table should receive ENTITY_UPDATE Kafka notification
+        assertFalse(tableUpdateNotifications.isEmpty(),
+                "LH-1263 BUG: Table should receive ENTITY_UPDATE Kafka notification when a " +
+                "sub-asset (Process) is soft-deleted. The parent must be notified of the " +
+                "relationship removal. Table GUID: " + tableGuid);
+
+        LOG.info("=== TEST PASSED: Parent Table receives ENTITY_UPDATE after sub-asset soft delete ===");
+        consumer.close();
+    }
+
+    @Test
+    @Order(4)
+    void testDeleteParentAndChildTogether_NoSpuriousParentUpdate() throws Exception {
+        LOG.info("=== Step 4: Edge case - Delete parent AND child together ===");
+
+        // Create a fresh parent + child pair
+        AtlasEntity dataset = new AtlasEntity("Table");
+        String dsQN = "test://lh1263/bulk-delete-parent/" + testId;
+        dataset.setAttribute("name", "lh1263-bulk-parent-" + testId);
+        dataset.setAttribute("qualifiedName", dsQN);
+
+        EntityMutationResponse dsResponse = atlasClient.createEntity(new AtlasEntityWithExtInfo(dataset));
+        String dsGuid = dsResponse.getFirstEntityCreated().getGuid();
+        LOG.info("Created bulk-delete parent, GUID: {}", dsGuid);
+
+        AtlasEntity proc = new AtlasEntity("Process");
+        proc.setAttribute("name", "lh1263-bulk-child-" + testId);
+        proc.setAttribute("qualifiedName", "test://lh1263/bulk-delete-child/" + testId);
+        proc.setAttribute("inputs", Collections.singletonList(new AtlasObjectId(dsGuid, "Table")));
+
+        AtlasEntitiesWithExtInfo bulk = new AtlasEntitiesWithExtInfo();
+        bulk.addEntity(proc);
+        EntityMutationResponse procResponse = atlasClient.createEntities(bulk);
+        String procGuid = procResponse.getFirstEntityCreated().getGuid();
+        LOG.info("Created bulk-delete child, GUID: {}", procGuid);
+
+        Thread.sleep(2000);
+
+        // Delete BOTH parent and child in one call
+        LOG.info("Deleting both parent {} and child {} together", dsGuid, procGuid);
+        EntityMutationResponse deleteResponse = atlasClient.deleteEntitiesByGuids(
+                new ArrayList<>(List.of(dsGuid, procGuid)));
+
+        assertNotNull(deleteResponse, "Delete response should not be null");
+
+        // Both should be in deleted entities
+        Set<String> deletedGuids = new HashSet<>();
+        if (deleteResponse.getDeletedEntities() != null) {
+            deleteResponse.getDeletedEntities().forEach(h -> deletedGuids.add(h.getGuid()));
+        }
+
+        assertTrue(deletedGuids.contains(dsGuid), "Parent should be deleted");
+        assertTrue(deletedGuids.contains(procGuid), "Child should be deleted");
+
+        // Parent should NOT appear in updated entities — it's being deleted, not updated
+        Set<String> updatedGuids = new HashSet<>();
+        if (deleteResponse.getUpdatedEntities() != null) {
+            deleteResponse.getUpdatedEntities().forEach(h -> updatedGuids.add(h.getGuid()));
+        }
+
+        assertFalse(updatedGuids.contains(dsGuid),
+                "Parent should NOT appear as UPDATED when it is also being deleted in the same " +
+                "batch. The isDeletedEntity guard should prevent spurious updates. " +
+                "Parent GUID: " + dsGuid);
+
+        LOG.info("=== TEST PASSED: No spurious parent ENTITY_UPDATE when both are deleted ===");
+    }
+
+    @Test
+    @Order(5)
+    void testDeleteEntityWithNoRelationships_NoError() throws Exception {
+        LOG.info("=== Step 5: Edge case - Delete entity with no incoming relationships ===");
+
+        // Create a standalone entity with no relationships
+        AtlasEntity standalone = new AtlasEntity("Table");
+        standalone.setAttribute("name", "lh1263-standalone-" + testId);
+        standalone.setAttribute("qualifiedName", "test://lh1263/standalone/" + testId);
+
+        EntityMutationResponse createResponse = atlasClient.createEntity(new AtlasEntityWithExtInfo(standalone));
+        String standaloneGuid = createResponse.getFirstEntityCreated().getGuid();
+        LOG.info("Created standalone entity, GUID: {}", standaloneGuid);
+
+        // Delete it — should succeed without errors (no incoming edges to process)
+        EntityMutationResponse deleteResponse = atlasClient.deleteEntityByGuid(standaloneGuid);
+
+        assertNotNull(deleteResponse, "Delete response should not be null");
+
+        Set<String> deletedGuids = new HashSet<>();
+        if (deleteResponse.getDeletedEntities() != null) {
+            deleteResponse.getDeletedEntities().forEach(h -> deletedGuids.add(h.getGuid()));
+        }
+
+        assertTrue(deletedGuids.contains(standaloneGuid),
+                "Standalone entity should be deleted without errors");
+
+        LOG.info("=== TEST PASSED: Entity with no relationships deletes cleanly ===");
+    }
+
     // ==================== Kafka Helper Methods ====================
 
     /**
