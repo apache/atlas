@@ -1411,8 +1411,7 @@ public abstract class DeleteHandlerV1 {
                     .filter(Tag::getRemovePropagationsOnEntityDelete)
                     .forEach(t -> createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_DELETE, deletionCandidateVertex, null, t.getTagTypeName()));
 
-            if (RequestContext.get().getDeleteType() == DeleteType.HARD || RequestContext.get().getDeleteType() == DeleteType.PURGE)
-                tagDAO.deleteTags(tags);
+            tagDAO.deleteTags(tags);
 
             deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
 
