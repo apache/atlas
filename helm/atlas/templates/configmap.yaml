@@ -354,8 +354,10 @@ data:
     atlas.webserver.maxthreads=400
     # Keepalive time in secs for the thread pool of the atlas web server
     atlas.webserver.keepalivetimesecs=30
-    # Queue size for the requests(when max threads are busy) for the atlas web server
-    atlas.webserver.queuesize=200
+    # Queue size for the requests(when all core threads are busy) for the atlas web server
+    # Small queue (10) ensures the pool expands quickly toward maxThreads under load,
+    # rather than queuing 200 requests before creating new threads.
+    atlas.webserver.queuesize=10
     #########  CSRF Configs  #########
     atlas.rest-csrf.enabled=false
     #atlas.rest-csrf.browser-useragents-regex=^Mozilla.*,^Opera.*,^Chrome.*
