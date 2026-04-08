@@ -67,7 +67,7 @@ public class ZipFileResourceTestUtils {
         return ZipFileResourceTestUtils.getFileInputStream(fileName);
     }
 
-    public static void verifyImportedEntities(List<String> creationOrder, List<String> processedEntities) {
+    public static void verifyImportedEntities(List<String> creationOrder, Set<String> processedEntities) {
         Set<String> lhs        = com.google.common.collect.Sets.newHashSet(creationOrder);
         Set<String> rhs        = com.google.common.collect.Sets.newHashSet(processedEntities);
         Set<String> difference = Sets.difference(lhs, rhs);
