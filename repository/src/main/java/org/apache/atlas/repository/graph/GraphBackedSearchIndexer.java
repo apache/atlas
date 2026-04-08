@@ -110,6 +110,14 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     private Set<String> vertexIndexKeys      = new HashSet<>();
     private IndexHealthMetricService indexHealthMetricService;
 
+    // Self-healing guard: only auto-repair missing property keys on established schemas.
+    // On a fresh environment, null property keys are normal — they haven't been created yet.
+    // The self-healing createVertexIndex() adds schema mutations to the management commit
+    // which can overwhelm ES on small environments.
+    // Production tenants with Cedar models loaded have 2000+ field keys.
+    // Fresh/test environments have 30-50 during initial setup.
+    private static final int MIN_FIELD_KEYS_FOR_SELF_HEALING = 100;
+
     public static boolean isValidSearchWeight(int searchWeight) {
         if (searchWeight != -1 ) {
             if (searchWeight < 1 || searchWeight > 10) {
@@ -260,8 +268,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             LOG.error("Failed to update indexes for changed typedefs", e);
             attemptRollback(changedTypeDefs, management);
         } finally {
-            // Always audit — even if commit failed or rollback re-threw.
-            // Reports the actual schema state so the dashboard never shows a false positive.
             runIndexHealthAudit();
         }
     }
@@ -269,6 +275,9 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     /**
      * Runs a read-only audit of the JanusGraph mixed index schema and publishes
      * Prometheus metrics reporting expected, indexed, and missing property keys.
+     *
+     * Runs asynchronously as a daemon thread so it does not affect startup time
+     * or typedef change processing time.
      *
      * Opens a separate management transaction (rolled back in finally — no mutations).
      * Uses a singleton IndexHealthMetricService so that Micrometer gauge references
@@ -584,6 +593,93 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                             LOG.debug("Property {} is mapped to index field name {}", attribute.getQualifiedName(), attribute.getIndexFieldName());
                         }
                     } else {
+                        // SELF-HEALING: property key is missing from the mixed index.
+                        // This happens when typedef seeding (Cedar push) partially fails —
+                        // the typedef is persisted but the property key was never registered.
+                        // createVertexIndex() is idempotent: it checks getPropertyKey() first,
+                        // creates only if missing, and checks getFieldKeys().contains() before
+                        // adding to the mixed index.
+                        //
+                        // Guard: only self-heal on established schemas where null property key
+                        // indicates a Cedar push failure, not fresh typedef loading.
+                        AtlasGraphIndex vertexIdx = managementSystem.getGraphIndex(Constants.VERTEX_INDEX);
+                        int fieldKeyCount = (vertexIdx != null) ? vertexIdx.getFieldKeys().size() : 0;
+
+                        if (fieldKeyCount < MIN_FIELD_KEYS_FOR_SELF_HEALING) {
+                            LOG.warn("resolveIndexFieldName(attribute={}): propertyKey is null for vertexPropertyName={}. "
+                                    + "Skipping self-healing (schema has {} field keys, threshold: {})",
+                                    attribute.getQualifiedName(), attribute.getVertexPropertyName(),
+                                    fieldKeyCount, MIN_FIELD_KEYS_FOR_SELF_HEALING);
+                        } else {
+                        LOG.warn("resolveIndexFieldName(attribute={}): propertyKey is null — "
+                                + "attempting auto-repair for vertexPropertyName={}",
+                                attribute.getQualifiedName(), attribute.getVertexPropertyName());
+                        try {
+                            Class primitiveClass = getPrimitiveClass(attribute.getTypeName());
+                            AtlasCardinality cardinality = toAtlasCardinality(attribute.getAttributeDef().getCardinality());
+                            // Match createIndexForAttribute logic: isStringField only true
+                            // when the primitive class IS String AND indexType is STRING
+                            boolean repairIsStringField = (primitiveClass == String.class) && isStringField;
+
+                            String indexFieldName = createVertexIndex(
+                                    managementSystem,
+                                    attribute.getVertexPropertyName(),
+                                    UniqueKind.NONE,
+                                    primitiveClass,
+                                    cardinality,
+                                    attribute.getAttributeDef().getIsIndexable(),
+                                    false,
+                                    repairIsStringField,
+                                    attribute.getAttributeDef().getIndexTypeESConfig(),
+                                    attribute.getAttributeDef().getIndexTypeESFields()
+                            );
+
+                            if (indexFieldName != null) {
+                                attribute.setIndexFieldName(indexFieldName);
+
+                                if (baseInstance != null) {
+                                    baseInstance.setIndexFieldName(indexFieldName);
+                                }
+
+                                typeRegistry.addIndexFieldName(attribute.getVertexPropertyName(), indexFieldName);
+
+                                // Resolve all entity types that inherit this attribute
+                                String definedInTypeName = attribute.getDefinedInType() != null
+                                        ? attribute.getDefinedInType().getTypeName() : "unknown";
+                                // Use vertex property name for matching to avoid false positives
+                                // from unqualified short names (e.g., "score" matching across unrelated types)
+                                String repairedVertexPropertyName = attribute.getVertexPropertyName();
+                                Set<String> affectedEntityTypes = new HashSet<>();
+                                for (AtlasEntityType entityType : typeRegistry.getAllEntityTypes()) {
+                                    for (AtlasAttribute entityAttr : entityType.getAllAttributes().values()) {
+                                        if (repairedVertexPropertyName.equals(entityAttr.getVertexPropertyName())) {
+                                            affectedEntityTypes.add(entityType.getTypeName());
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                LOG.warn("INDEX AUTO-REPAIR: Repaired missing property key for attribute={}, "
+                                        + "vertexPropertyName={}, indexFieldName={}, definedInType={}, "
+                                        + "affectedEntityTypes={}, repairTimestamp={}. "
+                                        + "Future writes will include this field in ES. "
+                                        + "Existing entities need manual repairIndex (Phase 2b).",
+                                        attribute.getQualifiedName(),
+                                        attribute.getVertexPropertyName(),
+                                        indexFieldName,
+                                        definedInTypeName,
+                                        affectedEntityTypes,
+                                        System.currentTimeMillis());
+                            } else {
+                                LOG.error("CRITICAL: Failed to auto-repair index for attribute={}. "
+                                        + "ES sync WILL BE BROKEN for this field.",
+                                        attribute.getQualifiedName());
+                            }
+                        } catch (Exception repairEx) {
+                            LOG.error("CRITICAL: Auto-repair threw exception for attribute={}",
+                                    attribute.getQualifiedName(), repairEx);
+                        }
+                        } // end self-healing guard
                         if (loggedNullPropertyKeyWarnings.add(attribute.getVertexPropertyName())) {
                             LOG.warn("resolveIndexFieldName(attribute={}): propertyKey is null for vertextPropertyName={}", attribute.getQualifiedName(), attribute.getVertexPropertyName());
                         }
