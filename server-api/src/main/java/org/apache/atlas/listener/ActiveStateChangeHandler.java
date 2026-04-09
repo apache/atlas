@@ -35,7 +35,8 @@ public interface ActiveStateChangeHandler {
         NOTIFICATION_HOOK_CONSUMER(5),
         TASK_MANAGEMENT(6),
         INDEX_RECOVERY(7),
-        AUTH_POLICIES_INITIALIZER(8);
+        AUTH_POLICIES_INITIALIZER(8),
+        INDEX_REPAIR_CONSUMER(9);
 
         private final int order;
 

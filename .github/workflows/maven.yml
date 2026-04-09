@@ -27,15 +27,6 @@ on:
       - lite_master
       - switchable-graph-provider
       - ring-*
-      - ms-635
-      - ms-884-observability-master
-      - sgp-consistency-improvements
-      - switchable_graph_bug_fixes
-      - ms-664-fix-audit-search
-      - hotfix-reindex-refresh
-      - ms-864-keycloak-jwks-internal-url
-      - promethus_master_self_heal
-      - ms-610-ranges-policy-cache
     paths-ignore:
       - '.claude/**'
       - '.cursor/**'

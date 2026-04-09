@@ -177,6 +177,7 @@ data:
     
     atlas.kafka.auto.commit.interval.ms=1000
     atlas.kafka.hook.group.id=atlas
+    atlas.kafka.atlas_distributed_tasks.group.id=atlas_distributed_tasks
     atlas.kafka.enable.auto.commit=false
     atlas.kafka.auto.offset.reset=earliest
     atlas.kafka.session.timeout.ms=30000
