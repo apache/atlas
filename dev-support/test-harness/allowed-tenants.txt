@@ -1,0 +1,7 @@
+# Allowed tenants for the test harness.
+# Only tenants listed here (one per line) can be targeted.
+# Lines starting with '#' are comments.
+# "local" is always allowed and does not need to be listed.
+
+staging
+preprod
