@@ -33,8 +33,13 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
+import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
 import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -66,10 +71,17 @@ import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 public class AuthPolicyPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AuthPolicyPreProcessor.class);
     public static final String ENTITY_DEFAULT_DOMAIN_SUPER = "entity:default/domain/*/super";
+    // Relationship type name for the AccessControl → AuthPolicy "policies" edge.
+    // Key into the inner map returned by AtlasEntityType.getRelationshipAttributes().get("policies").
+    private static final String POLICIES_REL_TYPE = "access_control_policies";
 
     private final AtlasGraph graph;
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
+    // Retriever configured to skip relationship-attribute mapping entirely.
+    // Used in getAccessControlEntity to load the Persona and its child policies as
+    // scalar-only entities — ESAliasStore only needs scalar attrs (policyActions, policyAssets…).
+    private final EntityGraphRetriever noRelAttrRetriever;
     private IndexAliasStore aliasStore;
     private EntityDiscoveryService discovery;
 
@@ -79,6 +91,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         this.graph = graph;
         this.typeRegistry = typeRegistry;
         this.entityRetriever = entityRetriever;
+        this.noRelAttrRetriever = new EntityGraphRetriever(entityRetriever, true);
 
         aliasStore = new ESAliasStore(graph, entityRetriever);
 
@@ -373,6 +386,28 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         }
     }
 
+    /**
+     * Loads the parent access-control entity (Persona or Purpose) together with all of its
+     * child policies, using the minimum number of JanusGraph reads.
+     *
+     * <h3>Why the original code was slow (MS-752)</h3>
+     * The original implementation called
+     * {@code entityRetriever.toAtlasEntityWithExtInfo(personaId)}, which triggers
+     * {@code mapRelationshipAttributes} for <em>every relationship on the Persona</em>.
+     * For a Persona with 500 child policies this produced ~10 000 JanusGraph + Cassandra reads
+     * (500 policies × ~20 relationship attributes each), causing 15–30 s latency.
+     *
+     * <h3>Optimisation</h3>
+     * <ol>
+     *   <li>Load the Persona vertex and map only its <em>scalar</em> attributes
+     *       ({@code noRelAttrRetriever}, ignoreRelationshipAttr = true).  Cost: O(1).</li>
+     *   <li>Traverse the {@code policies} edge label directly in the graph to obtain the set
+     *       of policy vertices.  Cost: O(K) edge reads, no attribute mapping.</li>
+     *   <li>Load each policy as a scalar-only entity.  Cost: O(K) — ESAliasStore only reads
+     *       scalar attributes (policyActions, policyAssets, policyServiceName …).</li>
+     * </ol>
+     * Total graph reads: O(K) instead of O(K × attrs).  For K=500 this is ~500 vs ~10 000.
+     */
     private AtlasEntityWithExtInfo getAccessControlEntity(AtlasEntity entity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("AuthPolicyPreProcessor.getAccessControl");
         AtlasEntityWithExtInfo ret = null;
@@ -380,21 +415,65 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         AtlasObjectId objectId = (AtlasObjectId) entity.getRelationshipAttribute(REL_ATTR_ACCESS_CONTROL);
         if (objectId != null) {
             try {
-                ret = entityRetriever.toAtlasEntityWithExtInfo(objectId);
+                // Step 1: load the Persona/Purpose as a scalar entity — skips mapRelationshipAttributes
+                // and its O(K × attrs) cascade of vertex reads.
+                AtlasVertex parentVertex = entityRetriever.getEntityVertex(objectId);
+                AtlasEntity parentEntity = noRelAttrRetriever.toAtlasEntity(parentVertex);
+                ret = new AtlasEntityWithExtInfo(parentEntity);
+
+                // Step 2: traverse the graph edges for the 'policies' relationship to get policy
+                // vertices without triggering full relationship-attribute mapping.
+                AtlasEntityType parentType = typeRegistry.getEntityTypeByName(parentEntity.getTypeName());
+                Map<String, AtlasAttribute> policiesAttrMap = parentType != null
+                        ? parentType.getRelationshipAttributes().get(REL_ATTR_POLICIES)
+                        : null;
+                // Use the specific relationship type name as the key — avoids picking an arbitrary
+                // entry if multiple relationship types ever define the same attribute name.
+                AtlasAttribute policiesAttr = (policiesAttrMap != null)
+                        ? policiesAttrMap.get(POLICIES_REL_TYPE)
+                        : null;
+
+                // Step 3: for each policy edge, load the policy as a scalar entity and register it
+                // in referredEntities so that ESAliasStore.getPolicies() continues to work.
+                if (policiesAttr != null) {
+                    List<AtlasObjectId> policyObjectIds = new ArrayList<>();
+                    List<AtlasEdge> policyEdges = GraphHelper.getActiveCollectionElementsUsingRelationship(
+                            parentVertex, policiesAttr, policiesAttr.getRelationshipEdgeLabel());
+                    // Use the declared edge direction from the relationship definition instead of
+                    // comparing vertex IDs — matches the pattern in EntityGraphRetriever and handles
+                    // BOTH-direction edges correctly.
+                    AtlasRelationshipEdgeDirection dir = policiesAttr.getRelationshipEdgeDirection();
+                    for (AtlasEdge edge : policyEdges) {
+                        AtlasVertex policyVertex;
+                        if (dir == AtlasRelationshipEdgeDirection.OUT) {
+                            policyVertex = edge.getInVertex();
+                        } else if (dir == AtlasRelationshipEdgeDirection.IN) {
+                            policyVertex = edge.getOutVertex();
+                        } else { // BOTH
+                            policyVertex = StringUtils.equals(GraphHelper.getGuid(parentVertex), GraphHelper.getGuid(edge.getOutVertex()))
+                                    ? edge.getInVertex() : edge.getOutVertex();
+                        }
+                        AtlasEntity policyEntity = noRelAttrRetriever.toAtlasEntity(policyVertex);
+                        ret.addReferredEntity(policyEntity);
+                        policyObjectIds.add(new AtlasObjectId(policyEntity.getGuid(), policyEntity.getTypeName()));
+                    }
+                    // Populate REL_ATTR_POLICIES on the parent entity so that getPolicies() in
+                    // ESAliasStore (which reads this relationship attribute) continues to work unchanged.
+                    // NOTE: only set when policiesAttr is non-null; setting an empty list when the type
+                    // is unknown would wipe all K existing policy filter clauses from the ES alias.
+                    parentEntity.setRelationshipAttribute(REL_ATTR_POLICIES, policyObjectIds);
+                } else {
+                    LOG.warn("getAccessControlEntity: could not resolve '{}' relationship attribute for type '{}' " +
+                             "— ES alias may be incomplete if this is not a cold-start transient",
+                             REL_ATTR_POLICIES, parentEntity.getTypeName());
+                }
+
             } catch (AtlasBaseException abe) {
                 AtlasErrorCode code = abe.getAtlasErrorCode();
 
                 if (INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND != code && INSTANCE_GUID_NOT_FOUND != code) {
                     throw abe;
                 }
-            }
-        }
-
-        if (ret != null) {
-            List<AtlasObjectId> policies = (List<AtlasObjectId>) ret.getEntity().getRelationshipAttribute(REL_ATTR_POLICIES);
-
-            for (AtlasObjectId policy : policies) {
-                ret.addReferredEntity(entityRetriever.toAtlasEntity(policy));
             }
         }
 
@@ -408,3 +487,4 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         }
     }
 }
+

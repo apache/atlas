@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -330,7 +331,8 @@ public final class AccessControlUtils {
     public static List<AtlasEntity> objectToEntityList(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, List<AtlasObjectId> policies) {
         List<AtlasEntity> ret = new ArrayList<>();
 
-        Set<String> referredGuids =  entityWithExtInfo.getReferredEntities().keySet();
+        Map<String, AtlasEntity> referredEntitiesMap = entityWithExtInfo.getReferredEntities();
+        Set<String> referredGuids = referredEntitiesMap != null ? referredEntitiesMap.keySet() : Collections.emptySet();
         if (policies != null) {
             ret = policies.stream()
                     .filter(x -> referredGuids.contains(x.getGuid()))
