@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,31 +17,33 @@
  */
 package org.apache.atlas.model.typedef;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
 import java.util.Objects;
 
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * The relationshipEndDef represents an end of the relationship. The end of the relationship is defined by a type, an
  * attribute name, cardinality and whether it  is the container end of the relationship.
  */
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasRelationshipEndDef implements Serializable {
     private static final long serialVersionUID = 1L;
+
     /**
      * The type associated with the end.
      */
@@ -60,9 +62,13 @@ public class AtlasRelationshipEndDef implements Serializable {
      */
     private Cardinality cardinality;
     /**
-     * When set this indicates that this end is is a legacy attribute
+     * When set this indicates that this end is a legacy attribute
      */
     private boolean isLegacyAttribute;
+    /**
+     * Description of the end
+     */
+    private String description;
 
     /**
      * Base constructor
@@ -99,12 +105,45 @@ public class AtlasRelationshipEndDef implements Serializable {
         this(typeName, name, cardinality, isContainer, false);
     }
 
+    /**
+     *
+     * @param typeName
+     *   - The name of an entityDef type
+     * @param name
+     *   - The name of the new attribute that the entity instance will pick up.
+     * @param cardinality
+     *   - whether the end is SINGLE (1) or SET (many)
+     * @param isContainer
+     *   - whether the end is a container or not
+     * @param isLegacyAttribute
+     *   - whether this is a legacy attribute
+     */
     public AtlasRelationshipEndDef(String typeName, String name, Cardinality cardinality, boolean isContainer, boolean isLegacyAttribute) {
+        this(typeName, name, cardinality, isContainer, isLegacyAttribute, null);
+    }
+
+    /**
+     *
+     * @param typeName
+     *   - The name of an entityDef type
+     * @param name
+     *   - The name of the new attribute that the entity instance will pick up.
+     * @param cardinality
+     *   - whether the end is SINGLE (1) or SET (many)
+     * @param isContainer
+     *   - whether the end is a container or not
+     * @param isLegacyAttribute
+     *   - whether this is a legacy attribute
+     * @param description
+     *   - The description of this end of the relationship.
+     */
+    public AtlasRelationshipEndDef(String typeName, String name, Cardinality cardinality, boolean isContainer, boolean isLegacyAttribute, String description) {
         setType(typeName);
         setName(name);
         setCardinality(cardinality);
         setIsContainer(isContainer);
         setIsLegacyAttribute(isLegacyAttribute);
+        setDescription(description);
     }
 
     /**
@@ -118,15 +157,24 @@ public class AtlasRelationshipEndDef implements Serializable {
             setIsContainer(other.getIsContainer());
             setCardinality(other.getCardinality());
             setIsLegacyAttribute(other.isLegacyAttribute);
+            setDescription(other.description);
         }
     }
 
-    public void setType(String type) {
-        this.type = type;
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getType() {
         return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getName() {
@@ -137,24 +185,16 @@ public class AtlasRelationshipEndDef implements Serializable {
         this.name = name;
     }
 
+    public boolean getIsContainer() {
+        return isContainer;
+    }
+
     /**
      * set whether this end is a container or not.
      * @param isContainer
      */
     public void setIsContainer(boolean isContainer) {
         this.isContainer = isContainer;
-    }
-
-    public boolean getIsContainer() {
-        return isContainer;
-    }
-
-    /**
-     * set the cardinality SINGLE or SET on the end.
-     * @param cardinality
-     */
-    public void setCardinality(AtlasStructDef.AtlasAttributeDef.Cardinality cardinality) {
-        this.cardinality = cardinality;
     }
 
     /**
@@ -165,9 +205,21 @@ public class AtlasRelationshipEndDef implements Serializable {
         return this.cardinality;
     }
 
-    public boolean getIsLegacyAttribute() { return isLegacyAttribute; }
+    /**
+     * set the cardinality SINGLE or SET on the end.
+     * @param cardinality
+     */
+    public void setCardinality(AtlasStructDef.AtlasAttributeDef.Cardinality cardinality) {
+        this.cardinality = cardinality;
+    }
 
-    public void setIsLegacyAttribute(boolean legacyAttribute) { isLegacyAttribute = legacyAttribute; }
+    public boolean getIsLegacyAttribute() {
+        return isLegacyAttribute;
+    }
+
+    public void setIsLegacyAttribute(boolean legacyAttribute) {
+        isLegacyAttribute = legacyAttribute;
+    }
 
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
@@ -177,6 +229,7 @@ public class AtlasRelationshipEndDef implements Serializable {
         sb.append("AtlasRelationshipEndDef{");
         sb.append("type='").append(type).append('\'');
         sb.append(", name==>'").append(name).append('\'');
+        sb.append(", description==>'").append(description).append('\'');
         sb.append(", isContainer==>'").append(isContainer).append('\'');
         sb.append(", cardinality==>'").append(cardinality).append('\'');
         sb.append(", isLegacyAttribute==>'").append(isLegacyAttribute).append('\'');
@@ -186,23 +239,26 @@ public class AtlasRelationshipEndDef implements Serializable {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        AtlasRelationshipEndDef that = (AtlasRelationshipEndDef) o;
-
-        return Objects.equals(type, that.type) &&
-               Objects.equals(name, that.name) &&
-               isContainer == that.isContainer &&
-               cardinality == that.cardinality &&
-               isLegacyAttribute == that.isLegacyAttribute;
+    public int hashCode() {
+        return Objects.hash(type, getName(), description, isContainer, cardinality, isLegacyAttribute);
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(type, getName(), isContainer, cardinality, isLegacyAttribute);
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        AtlasRelationshipEndDef that = (AtlasRelationshipEndDef) o;
+
+        return Objects.equals(type, that.type) &&
+                Objects.equals(name, that.name) &&
+                Objects.equals(description, that.description) &&
+                isContainer == that.isContainer &&
+                cardinality == that.cardinality &&
+                isLegacyAttribute == that.isLegacyAttribute;
     }
 
     @Override

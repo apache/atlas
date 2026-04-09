@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.SkipException;
 
 import java.io.File;
 import java.util.UUID;
@@ -29,33 +30,52 @@ import java.util.UUID;
 public class GraphSandboxUtil {
     private static final Logger LOG = LoggerFactory.getLogger(GraphSandboxUtil.class);
 
+    private GraphSandboxUtil() {
+        // to block instantiation
+    }
+
     public static void create(String sandboxName) {
         Configuration configuration;
+
         try {
             configuration = ApplicationProperties.get();
 
-            String newStorageDir = System.getProperty("atlas.data") +
-                    File.separatorChar + "storage" +
-                    File.separatorChar + sandboxName;
+            configuration.setProperty("atlas.graph.storage.directory", getStorageDir(sandboxName, "storage"));
+            configuration.setProperty("atlas.graph.index.search.directory", getStorageDir(sandboxName, "index"));
 
-            configuration.setProperty("atlas.graph.storage.directory", newStorageDir);
-
-
-            String newIndexerDir = System.getProperty("atlas.data") +
-                    File.separatorChar + "index" +
-                    File.separatorChar + sandboxName;
-
-            configuration.setProperty("atlas.graph.index.search.directory", newIndexerDir);
-
-
-            LOG.debug("New Storage dir : {}", newStorageDir);
-            LOG.debug("New Indexer dir : {}", newIndexerDir);
-        } catch (AtlasException ignored) {}
+            LOG.debug("New Storage dir : {}", configuration.getProperty("atlas.graph.storage.directory"));
+            LOG.debug("New Indexer dir : {}", configuration.getProperty("atlas.graph.index.search.directory"));
+        } catch (AtlasException ignored) {
+            throw new SkipException("Failure to setup Sandbox: " + sandboxName);
+        }
     }
 
     public static void create() {
-        // Append a suffix to isolate the database for each instance
         UUID uuid = UUID.randomUUID();
+
         create(uuid.toString());
+    }
+
+    public static boolean useLocalSolr() {
+        boolean ret = false;
+
+        try {
+            Configuration conf     = ApplicationProperties.get();
+            Object        property = conf.getProperty("atlas.graph.index.search.solr.embedded");
+
+            if (property instanceof String) {
+                ret = Boolean.parseBoolean((String) property);
+            }
+        } catch (AtlasException excp) {
+            throw new SkipException("useLocalSolr: failed! ", excp);
+        }
+
+        return ret;
+    }
+
+    private static String getStorageDir(String sandboxName, String directory) {
+        return System.getProperty("atlas.data") +
+                File.separatorChar + sandboxName +
+                File.separatorChar + directory;
     }
 }

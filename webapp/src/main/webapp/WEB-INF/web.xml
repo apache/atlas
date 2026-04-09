@@ -17,10 +17,11 @@
   ~ limitations under the License.
   -->
 
-<!DOCTYPE web-app PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
-        "http://java.sun.com/dtd/web-app_2_3.dtd">
-
-<web-app>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+         version="2.5"
+>
     <display-name>Apache Atlas</display-name>
     <description>Metadata Management and Data Governance Platform over Hadoop</description>
 
@@ -35,6 +36,26 @@
         </init-param>
         <load-on-startup>1</load-on-startup>
     </servlet>
+
+    <servlet>
+         <servlet-name>LoginServlet</servlet-name>
+         <servlet-class>org.apache.atlas.web.servlets.AtlasLoginServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+         <servlet-name>LoginServlet</servlet-name>
+         <url-pattern>/login.jsp</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+         <servlet-name>ErrorServlet</servlet-name>
+         <servlet-class>org.apache.atlas.web.servlets.AtlasErrorServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+         <servlet-name>ErrorServlet</servlet-name>
+         <url-pattern>/error.jsp</url-pattern>
+    </servlet-mapping>
 
     <servlet-mapping>
         <servlet-name>jersey-servlet</servlet-name>
@@ -61,9 +82,20 @@
         <url-pattern>/*</url-pattern>
     </filter-mapping>
 
-    <listener>
-        <listener-class>org.springframework.web.util.Log4jConfigListener</listener-class>
-    </listener>
+    <filter>
+        <filter-name>HeaderFilter</filter-name>
+        <filter-class>org.apache.atlas.web.filters.AtlasHeaderFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>HeaderFilter</filter-name>
+        <url-pattern>/api/atlas/admin/metrics</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>HeaderFilter</filter-name>
+        <url-pattern>/api/atlas/admin/status</url-pattern>
+    </filter-mapping>
 
     <listener>
         <listener-class>org.springframework.web.context.request.RequestContextListener</listener-class>

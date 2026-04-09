@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,6 +17,8 @@
  */
 
 package org.apache.atlas.repository.graphdb;
+
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 
 import java.util.Iterator;
 
@@ -27,13 +29,20 @@ import java.util.Iterator;
  * @param <E> edge class used by the graph
  */
 public interface AtlasIndexQuery<V, E> {
-
     /**
      * Gets the query results.
      *
      * @return
      */
     Iterator<Result<V, E>> vertices();
+
+    /**
+     * Gets the sorted query results
+     * @param offset starting offset
+     * @param limit max number of results
+     * @return
+     */
+    Iterator<Result<V, E>> vertices(int offset, int limit, String sortBy, Order sortOrder);
 
     /**
      * Gets the query results
@@ -44,24 +53,63 @@ public interface AtlasIndexQuery<V, E> {
     Iterator<Result<V, E>> vertices(int offset, int limit);
 
     /**
+     * Gets the total count of query results
+     * @return
+     */
+    Long vertexTotals();
+
+    /**
+     * Gets the query results.
+     *
+     * @return
+     */
+    Iterator<Result<V, E>> edges();
+
+    /**
+     * Gets the sorted query results
+     * @param offset starting offset
+     * @param limit max number of results
+     * @param sortBy sort attribute
+     * @param sortOrder sorting order asc, desc
+     * @return
+     */
+    Iterator<Result<V, E>> edges(int offset, int limit, String sortBy, Order sortOrder);
+
+    /**
+     * Gets the query results
+     * @param offset starting offset
+     * @param limit max number of results
+     * @return
+     */
+    Iterator<Result<V, E>> edges(int offset, int limit);
+
+    /**
+     * Gets the total count of query results
+     * @return
+     */
+    Long edgeTotals();
+
+    /**
      * Query result from an index query.
      *
      * @param <V>
      * @param <E>
      */
     interface Result<V, E> {
-
         /**
          * Gets the vertex for this result.
          */
         AtlasVertex<V, E> getVertex();
 
         /**
+         * Gets the edge for this result.
+         */
+        AtlasEdge<V, E> getEdge();
+
+        /**
          * Gets the score for this result.
          *
          */
         double getScore();
-
     }
-
 }

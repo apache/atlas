@@ -21,7 +21,9 @@ define(['require',
     'modules/Modal',
     'utils/Utils',
     'hbs!tmpl/search/SearchQuery_tmpl',
-], function(require, Backbone, Modal, Utils, SearchQuery_Tmpl) {
+    'utils/Globals',
+    'utils/Enums'
+], function(require, Backbone, Modal, Utils, SearchQuery_Tmpl, Globals, Enums) {
 
     var SearchQueryView = Backbone.Marionette.LayoutView.extend(
         /** @lends SearchQueryView */
@@ -50,25 +52,28 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'classificationDefCollection', 'tag'));
+                _.extend(this, _.pick(options, 'value', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'classificationDefCollection', 'businessMetadataDefCollection', 'tag', 'searchTableFilters', 'relationshipDefCollection', 'relationship'));
                 this.bindEvents();
                 var that = this;
                 this.modal = new Modal({
                     title: 'Attribute Filter',
                     content: this,
                     allowCancel: true,
+                    mainClass: 'modal-lg',
                     okCloses: false,
-                    width: '50%',
                     buttons: [{
+                            text: 'Cancel',
+                            btnClass: "cancel btn-action",
+                            title: 'Cancel'
+                        }, {
                             text: 'Apply',
-                            btnClass: "ok"
+                            btnClass: "ok btn-atlas",
+                            title: "Apply the filters and close popup (won't perform search)"
                         },
                         {
-                            text: 'Apply & Search',
-                            btnClass: "ok search"
-                        }, {
-                            text: 'Cancel',
-                            btnClass: "cancel"
+                            text: 'Search',
+                            btnClass: "ok search btn-atlas",
+                            title: 'Apply the filters and do search'
                         }
                     ]
                 }).open();
@@ -77,13 +82,15 @@ define(['require',
                 });
             },
             onRender: function() {
-                this.$('.fontLoader').show();
                 var obj = {
                     value: this.value,
                     searchVent: this.searchVent,
                     entityDefCollection: this.entityDefCollection,
                     enumDefCollection: this.enumDefCollection,
-                    classificationDefCollection: this.classificationDefCollection
+                    classificationDefCollection: this.classificationDefCollection,
+                    businessMetadataDefCollection: this.businessMetadataDefCollection,
+                    searchTableFilters: this.searchTableFilters,
+                    typeHeaders: this.typeHeaders
                 }
 
                 if (this.tag) {
@@ -96,6 +103,19 @@ define(['require',
                             attrMerge: true,
                         });
                     }
+                    if (Globals[this.value.tag] || Globals[Enums.addOnClassification[0]]) {
+                        obj['systemAttrArr'] = (Globals[this.value.tag] || Globals[Enums.addOnClassification[0]]).attributeDefs;
+                    }
+                } else if (this.relationship) {
+                    obj['relationship'] = true;
+                    obj['attrObj'] = this.relationshipDefCollection.fullCollection.find({ name: this.value.relationshipName });
+                    if(obj.attrObj){
+                        obj.attrObj = Utils.getNestedSuperTypeObj({
+                            data: obj.attrObj.toJSON(),
+                            collection: this.relationshipDefCollection,
+                            attrMerge: true,
+                        });
+                    }
                 } else {
                     obj['type'] = true;
                     obj['attrObj'] = this.entityDefCollection.fullCollection.find({ name: this.value.type });
@@ -105,6 +125,9 @@ define(['require',
                             collection: this.entityDefCollection,
                             attrMerge: true
                         });
+                    }
+                    if (Globals[this.value.type] || Globals[Enums.addOnEntities[0]]) {
+                        obj['systemAttrArr'] = (Globals[this.value.type] || Globals[Enums.addOnEntities[0]]).attributeDefs;
                     }
                 }
                 this.renderQueryBuilder(obj);

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,84 +17,41 @@
  */
 package org.apache.atlas.notification;
 
-import com.google.gson.reflect.TypeToken;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.notification.entity.EntityMessageDeserializer;
-import org.apache.atlas.notification.entity.EntityNotification;
 import org.apache.atlas.notification.hook.HookMessageDeserializer;
-import org.apache.atlas.notification.hook.HookNotification;
 
-import java.lang.reflect.Type;
 import java.util.List;
 
 /**
- * Interface to the Atlas notification framework.  Use this interface to create consumers and to send messages of a
- * given notification type.
- *
- * 1. Atlas sends entity notifications
- * 2. Hooks send notifications to create/update types/entities. Atlas reads these messages
+ * Interface to the Atlas notification framework.
+ * <p>
+ * Use this interface to create consumers and to send messages of a given notification type.
+ * <ol>
+ *   <li>Atlas sends entity notifications
+ *   <li>Hooks send notifications to create/update types/entities. Atlas reads these messages
+ * </ol>
  */
 public interface NotificationInterface {
-
     /**
      * Prefix for Atlas notification related configuration properties.
      */
     String PROPERTY_PREFIX = "atlas.notification";
 
     /**
-     * Notification message class types.
+     *
+     * @param source: Name of the source
+     * @param failedMessagesLogger: Logger for failed messages
+     * @return
      */
-    Class<HookNotification.HookNotificationMessage> HOOK_NOTIFICATION_CLASS =
-        HookNotification.HookNotificationMessage.class;
-
-    Class<EntityNotification> ENTITY_NOTIFICATION_CLASS = EntityNotification.class;
+    void init(String source, Object failedMessagesLogger);
 
     /**
-     * Versioned notification message class types.
+     *
+     * @param user Name of the user under which the processes is running
      */
-    Type HOOK_VERSIONED_MESSAGE_TYPE =
-        new TypeToken<VersionedMessage<HookNotification.HookNotificationMessage>>(){}.getType();
-
-    Type ENTITY_VERSIONED_MESSAGE_TYPE = new TypeToken<VersionedMessage<EntityNotification>>(){}.getType();
-
-    /**
-     * Atlas notification types.
-     */
-    enum NotificationType {
-
-        // Notifications from the Atlas integration hooks.
-        HOOK(HOOK_NOTIFICATION_CLASS, new HookMessageDeserializer()),
-
-        // Notifications to entity change consumers.
-        ENTITIES(ENTITY_NOTIFICATION_CLASS, new EntityMessageDeserializer());
-
-
-        /**
-         * The notification class associated with this type.
-         */
-        private final Class classType;
-
-        /**
-         * The message deserializer for this type.
-         */
-        private final MessageDeserializer deserializer;
-
-
-        NotificationType(Class classType, MessageDeserializer<?> deserializer) {
-            this.classType = classType;
-            this.deserializer = deserializer;
-        }
-
-
-        // ----- accessors ---------------------------------------------------
-
-        public Class getClassType() {
-            return classType;
-        }
-
-        public MessageDeserializer getDeserializer() {
-            return deserializer;
-        }
-    }
+    void setCurrentUser(String user);
 
     /**
      * Create notification consumers for the given notification type.
@@ -132,5 +89,84 @@ public interface NotificationInterface {
     /**
      * Shutdown any notification producers and consumers associated with this interface instance.
      */
+    <T> void send(NotificationType type, List<T> messages, MessageSource source) throws NotificationException;
+
     void close();
+
+    /**
+     *  Check if underlying notification mechanism is ready for use.
+     *
+     * @param type tye message type
+     * @return true if available, false otherwise
+     *
+     */
+    boolean isReady(NotificationType type);
+
+    /**
+     * Abstract notification wiring for async import messages
+     * @param topic async import topic to publish
+     * @param messages messages to send
+     * @param source source of the message
+     */
+    default <T> void send(String topic, List<T> messages, MessageSource source) throws NotificationException {}
+
+    /**
+     * Associates the specified topic with the given notification type.
+     *
+     * @param notificationType The type of notification to which the topic should be added.
+     * @param topic The name of the topic to be associated with the notification type.
+     */
+    default void addTopicToNotificationType(NotificationType notificationType, String topic) throws AtlasBaseException {}
+
+    /**
+     * Closes the producer associated with the specified notification type and topic.
+     *
+     * @param notificationType The type of notification for which the producer is to be closed.
+     * @param topic The name of the topic associated with the producer.
+     */
+    default void closeProducer(NotificationType notificationType, String topic) {}
+
+    /**
+     * Deletes the specified topic associated with the given notification type.
+     *
+     * @param notificationType The type of notification related to the topic.
+     * @param topicName The name of the topic to be deleted.
+     */
+    default void deleteTopic(NotificationType notificationType, String topicName) {}
+
+    /**
+     * Closes the consumer associated with the specified notification type.
+     *
+     * @param notificationType The type of notification for which the consumer is to be closed.
+     * @param topic The consumer to close with assignment.
+     *
+     */
+    default void closeConsumer(NotificationType notificationType, String topic) {}
+
+    /**
+     * Atlas notification types.
+     */
+    enum NotificationType {
+        // Notifications from the Atlas integration hooks.
+        HOOK(new HookMessageDeserializer()),
+
+        // Notifications from the Atlas integration hooks - unsorted.
+        HOOK_UNSORTED(new HookMessageDeserializer()),
+
+        // Notifications to entity change consumers.
+        ENTITIES(new EntityMessageDeserializer()),
+
+        // Notifications from Atlas async importer
+        ASYNC_IMPORT(new HookMessageDeserializer());
+
+        private final AtlasNotificationMessageDeserializer deserializer;
+
+        NotificationType(AtlasNotificationMessageDeserializer deserializer) {
+            this.deserializer = deserializer;
+        }
+
+        public AtlasNotificationMessageDeserializer getDeserializer() {
+            return deserializer;
+        }
+    }
 }

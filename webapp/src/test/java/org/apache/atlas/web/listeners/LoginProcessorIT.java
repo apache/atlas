@@ -21,16 +21,18 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.File;
+
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 /**
  *
  */
 public class LoginProcessorIT extends BaseSecurityTest {
-
     protected static final String kerberosRule = "RULE:[1:$1@$0](.*@EXAMPLE.COM)s/@.*//\nDEFAULT";
 
     @Test
@@ -41,11 +43,12 @@ public class LoginProcessorIT extends BaseSecurityTest {
                 return new PropertiesConfiguration();
             }
         };
+
         processor.login();
 
-        Assert.assertNotNull(UserGroupInformation.getCurrentUser());
-        Assert.assertFalse(UserGroupInformation.isLoginKeytabBased());
-        Assert.assertFalse(UserGroupInformation.isSecurityEnabled());
+        assertNotNull(UserGroupInformation.getCurrentUser());
+        assertFalse(UserGroupInformation.isLoginKeytabBased());
+        assertFalse(UserGroupInformation.isSecurityEnabled());
     }
 
     @Test
@@ -54,21 +57,23 @@ public class LoginProcessorIT extends BaseSecurityTest {
 
         LoginProcessor processor = new LoginProcessor() {
             @Override
-            protected org.apache.commons.configuration.Configuration getApplicationConfiguration() {
-                PropertiesConfiguration config = new PropertiesConfiguration();
-                config.setProperty("atlas.authentication.method", "kerberos");
-                config.setProperty("atlas.authentication.principal", "dgi@EXAMPLE.COM");
-                config.setProperty("atlas.authentication.keytab", keytab.getAbsolutePath());
-                return config;
-            }
-
-            @Override
             protected Configuration getHadoopConfiguration() {
                 Configuration config = new Configuration(false);
+
                 config.set(CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION, "kerberos");
                 config.setBoolean(CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHORIZATION, true);
                 config.set(CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTH_TO_LOCAL, kerberosRule);
 
+                return config;
+            }
+
+            @Override
+            protected org.apache.commons.configuration.Configuration getApplicationConfiguration() {
+                PropertiesConfiguration config = new PropertiesConfiguration();
+
+                config.setProperty("atlas.authentication.method", "kerberos");
+                config.setProperty("atlas.authentication.principal", "dgi@EXAMPLE.COM");
+                config.setProperty("atlas.authentication.keytab", keytab.getAbsolutePath());
                 return config;
             }
 
@@ -79,24 +84,20 @@ public class LoginProcessorIT extends BaseSecurityTest {
         };
         processor.login();
 
-        Assert.assertTrue(UserGroupInformation.getLoginUser().getShortUserName().endsWith("dgi"));
-        Assert.assertNotNull(UserGroupInformation.getCurrentUser());
-        Assert.assertTrue(UserGroupInformation.isLoginKeytabBased());
-        Assert.assertTrue(UserGroupInformation.isSecurityEnabled());
+        assertTrue(UserGroupInformation.getLoginUser().getShortUserName().endsWith("dgi"));
+        assertNotNull(UserGroupInformation.getCurrentUser());
+        assertTrue(UserGroupInformation.isLoginKeytabBased());
+        assertTrue(UserGroupInformation.isSecurityEnabled());
 
         kdc.stop();
-
     }
 
     private File setupKDCAndPrincipals() throws Exception {
         // set up the KDC
         File kdcWorkDir = startKDC();
 
-        Assert.assertNotNull(kdc.getRealm());
+        assertNotNull(kdc.getRealm());
 
-        File keytabFile = createKeytab(kdc, kdcWorkDir, "dgi", "dgi.keytab");
-
-        return keytabFile;
+        return createKeytab(kdc, kdcWorkDir, "dgi", "dgi.keytab");
     }
-
 }

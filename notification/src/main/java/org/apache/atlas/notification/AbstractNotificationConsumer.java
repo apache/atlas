@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,30 +16,18 @@
  * limitations under the License.
  */
 package org.apache.atlas.notification;
+
 import org.apache.kafka.common.TopicPartition;
 
 /**
  * Abstract notification consumer.
  */
 public abstract class AbstractNotificationConsumer<T> implements NotificationConsumer<T> {
+    protected final AtlasNotificationMessageDeserializer<T> deserializer;
 
-    /**
-     * Deserializer used to deserialize notification messages for this consumer.
-     */
-    protected final MessageDeserializer<T> deserializer;
-
-
-
-    /**
-     * Construct an AbstractNotificationConsumer.
-     *
-     * @param deserializer  the message deserializer used by this consumer
-     */
-    public AbstractNotificationConsumer(MessageDeserializer<T> deserializer) {
+    protected AbstractNotificationConsumer(AtlasNotificationMessageDeserializer<T> deserializer) {
         this.deserializer = deserializer;
     }
-
-
 
     public abstract void commit(TopicPartition partition, long offset);
 }

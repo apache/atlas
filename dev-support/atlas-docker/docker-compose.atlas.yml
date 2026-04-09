@@ -1,0 +1,59 @@
+services:
+  atlas:
+    build:
+      context: .
+      dockerfile: Dockerfile.atlas
+      args:
+        - ATLAS_BACKEND=${ATLAS_BACKEND}
+        - ATLAS_SERVER_JAVA_VERSION=${ATLAS_SERVER_JAVA_VERSION}
+        - ATLAS_VERSION=${ATLAS_VERSION}
+    image: atlas:latest
+    container_name: atlas
+    hostname: atlas.example.com
+    stdin_open: true
+    tty: true
+    networks:
+      - atlas
+    volumes:
+      - ./data:/home/atlas/data
+    ports:
+      - "21000:21000"
+    depends_on:
+      atlas-backend:
+        condition: service_healthy
+      atlas-kafka:
+        condition: service_started
+      atlas-solr:
+        condition: service_started
+      atlas-zk:
+        condition: service_started
+    environment:
+      - ATLAS_BACKEND
+      - ATLAS_SERVER_JAVA_VERSION
+      - ATLAS_VERSION
+    command:
+      - /home/atlas/scripts/atlas.sh
+
+  atlas-backend:
+    extends:
+      service: ${ATLAS_BACKEND}
+      file: docker-compose.atlas-backend.yml
+
+  atlas-kafka:
+    extends:
+      service: atlas-kafka
+      file: docker-compose.atlas-common.yml
+
+  atlas-solr:
+    extends:
+      service: atlas-solr
+      file: docker-compose.atlas-common.yml
+
+  atlas-zk:
+    extends:
+      service: atlas-zk
+      file: docker-compose.atlas-common.yml
+
+networks:
+  atlas:
+    name: atlasnw

@@ -1,0 +1,23 @@
+{
+  "classificationDefs": [
+    {
+      "category": "CLASSIFICATION",
+      "guid": "2e135e9f-e703-447a-b23b-0b831dc8a933",
+      "createdBy": "admin",
+      "updatedBy": "admin",
+      "createTime": 1711991058474,
+      "updateTime": 1711991058474,
+      "version": 1,
+      "name": "T2",
+      "description": "T2",
+      "typeVersion": "1.0",
+      "attributeDefs": [],
+      "superTypes": [],
+      "entityTypes": [],
+      "subTypes": []
+    }
+  ],
+  "entityDefs": [],
+  "enumDefs": [],
+  "structDefs": []
+}

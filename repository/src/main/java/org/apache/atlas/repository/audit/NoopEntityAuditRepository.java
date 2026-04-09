@@ -18,14 +18,17 @@
 
 package org.apache.atlas.repository.audit;
 
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
+import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Singleton;
+
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Implementation that completely disables the audit repository.
@@ -34,30 +37,63 @@ import java.util.List;
 @Component
 @ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl")
 public class NoopEntityAuditRepository implements EntityAuditRepository {
-
     @Override
-    public void putEvents(EntityAuditEvent... events) throws AtlasException {
+    public void putEventsV1(EntityAuditEvent... events) {
         //do nothing
     }
 
     @Override
-    public synchronized void putEvents(List<EntityAuditEvent> events) throws AtlasException {
+    public synchronized void putEventsV1(List<EntityAuditEvent> events) {
         //do nothing
     }
 
     @Override
-    public List<EntityAuditEvent> listEvents(String entityId, String startKey, short maxResults)
-            throws AtlasException {
+    public List<EntityAuditEvent> listEventsV1(String entityId, String startKey, short maxResults) {
         return Collections.emptyList();
     }
 
     @Override
-    public long repositoryMaxSize() throws AtlasException {
+    public void putEventsV2(EntityAuditEventV2... events) {
+        //do nothing
+    }
+
+    @Override
+    public void putEventsV2(List<EntityAuditEventV2> events) {
+        //do nothing
+    }
+
+    @Override
+    public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String startKey, short maxResultCount) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<EntityAuditEventV2> deleteEventsV2(String entityId, Set<EntityAuditEventV2.EntityAuditActionV2> entityAuditActions, short auditCount, int ttlInDays, boolean createEventsAgeoutAllowed, AtlasAuditAgingType auditAgingType) {
+        return null;
+    }
+
+    @Override
+    public Set<String> getEntitiesWithTagChanges(long fromTimestamp, long toTimestamp) {
+        return Collections.emptySet();
+    }
+
+    @Override
+    public List<Object> listEvents(String entityId, String startKey, short n) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public long repositoryMaxSize() {
         return -1;
     }
 
     @Override
-    public List<String> getAuditExcludeAttributes(String entityType) throws AtlasException {
+    public List<String> getAuditExcludeAttributes(String entityType) {
         return null;
     }
 }

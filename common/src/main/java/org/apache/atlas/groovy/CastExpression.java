@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,22 +25,22 @@ import java.util.List;
  * Groovy expression that represents a cast.
  */
 public class CastExpression extends AbstractGroovyExpression {
-
-    private GroovyExpression expr;
-    private String className;
+    private final GroovyExpression expr;
+    private final String           className;
 
     public CastExpression(GroovyExpression expr, String className) {
-        this.expr = expr;
-        this.className  = className;
+        this.expr      = expr;
+        this.className = className;
     }
 
     @Override
     public void generateGroovy(GroovyGenerationContext context) {
-
         context.append("((");
         context.append(className);
         context.append(")");
+
         expr.generateGroovy(context);
+
         context.append(")");
     }
 
@@ -48,9 +48,9 @@ public class CastExpression extends AbstractGroovyExpression {
     public List<GroovyExpression> getChildren() {
         return Collections.singletonList(expr);
     }
+
     @Override
     public GroovyExpression copy(List<GroovyExpression> newChildren) {
-        assert newChildren.size() == 1;
         return new CastExpression(newChildren.get(0), className);
     }
 }

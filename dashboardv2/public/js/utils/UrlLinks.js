@@ -16,12 +16,15 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Enums'], function(require, Enums) {
+define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require, Enums, Utils) {
     'use strict';
 
     var UrlLinks = {
-        baseUrl: 'api/atlas',
-        baseUrlV2: 'api/atlas/v2',
+        apiBaseUrl: Utils.getBaseUrl(window.location.pathname)
+    };
+    _.extend(UrlLinks, {
+        baseUrl: UrlLinks.apiBaseUrl + '/api/atlas',
+        baseUrlV2: UrlLinks.apiBaseUrl + '/api/atlas/v2',
         typedefsUrl: function() {
             return {
                 defs: this.baseUrlV2 + '/types/typedefs',
@@ -34,32 +37,99 @@ define(['require', 'utils/Enums'], function(require, Enums) {
         classificationDefApiUrl: function(name) {
             return this.getDefApiUrl('classification', name);
         },
+        businessMetadataDefApiUrl: function(name) {
+            return this.getDefApiUrl('business_metadata', name);
+        },
         enumDefApiUrl: function(name) {
             return this.getDefApiUrl('enum', name);
         },
+        relationshipDefApiUrl: function() {
+            return this.getDefApiUrl('relationship', name);
+        },
+        metricsApiUrl: function() {
+            return this.baseUrl + '/admin/metrics'
+        },
+        metricsAllCollectionTimeApiUrl: function() {
+            return this.baseUrl + '/admin/metricsstats'
+        },
+        metricsCollectionTimeApiUrl: function() {
+            return this.baseUrl + '/admin/metricsstat/'
+        },
+        metricsGraphUrl: function() {
+            return this.baseUrl + '/admin/metricsstats/charts'
+        },
+        pendingTaskApiUrl: function() {
+            return this.baseUrl + '/admin/tasks'
+        },
+        debugMetricsApiUrl: function() {
+            return this.baseUrl + '/admin/debug/metrics'
+        },
+        migrationStatusApiUrl: function() {
+            return this.baseUrl + '/admin/status'
+        },
+        rootEntityDefUrl: function(name) {
+            return this.baseUrlV2 + '/types/entitydef/name/' + name;
+        },
+        rootClassificationDefUrl: function(name) {
+            return this.baseUrlV2 + '/types/classificationdef/name/' + name;
+        },
         getDefApiUrl: function(type, name) {
-            var defApiUrl = this.typedefsUrl();
+            var defApiUrl = this.typedefsUrl(),
+                defUrl;
             if (name) {
-                return defApiUrl.def + '/name/' + name + '?type=' + type;
+                defUrl = defApiUrl.def + '/name/' + name;
             } else {
-                return defApiUrl.defs + '?type=' + type;
+                defUrl = defApiUrl.defs;
+            }
+            if (type) {
+                return defUrl += '?type=' + type;
+            } else {
+                return defUrl;
             }
         },
-        taxonomiesApiUrl: function() {
-            return this.baseUrl + '/v1/taxonomies';
-        },
-        taxonomiesTermsApiUrl: function(name) {
-            return this.baseUrl + '/v1/taxonomies' + '/' + name + '/terms';
-        },
-        entitiesApiUrl: function(guid, name) {
+        entitiesApiUrl: function(options) {
             var entitiesUrl = this.baseUrlV2 + '/entity';
-            if (guid && name) {
-                return entitiesUrl + '/guid/' + guid + '/classification/' + name;
-            } else if (guid && !name) {
-                return entitiesUrl + '/guid/' + guid;
-            } else {
-                return entitiesUrl;
+            if (options) {
+                var guid = options.guid,
+                    associatedGuid = options.associatedGuid,
+                    name = options.name,
+                    minExtInfo = options.minExtInfo;
+                if (guid && name && associatedGuid) {
+                    return entitiesUrl + '/guid/' + guid + '/classification/' + name + '?associatedEntityGuid=' + associatedGuid + '&ignoreRelationships=true';
+                } else if (guid && name) {
+                    return entitiesUrl + '/guid/' + guid + '/classification/' + name + '?ignoreRelationships=true';
+                } else if (guid && !name) {
+                    entitiesUrl += '/guid/' + guid;
+                }
             }
+
+            if (entitiesUrl.indexOf('/guid/') !== -1) {
+                var queryParams = ['ignoreRelationships=true'];
+                if (options && options.minExtInfo !== undefined && options.minExtInfo !== false) {
+                    queryParams.unshift('minExtInfo=' + options.minExtInfo);
+                }
+                return entitiesUrl + '?' + queryParams.join('&');
+            }
+            if (options && options.minExtInfo) {
+                return entitiesUrl + '?minExtInfo=' + (options.minExtInfo);
+            }
+            return entitiesUrl;
+        },
+        relationApiUrl: function(options) {
+            var relationsUrl = this.baseUrlV2 + '/relationship';
+            if (options) {
+                var guid = options.guid,
+                    name = options.name;
+                if (guid)
+                    relationsUrl += '/guid/' + guid;
+            }
+            return relationsUrl;
+        },
+        entityLabelsAPIUrl: function(guid) {
+            return this.baseUrlV2 + '/entity/guid/' + guid + '/labels';
+        },
+        entityHeaderApiUrl: function(guid) {
+            return this.baseUrlV2 + '/entity/guid/' + guid + '/header';
         },
         entitiesTraitsApiUrl: function(token) {
             if (token) {
@@ -69,8 +139,36 @@ define(['require', 'utils/Enums'], function(require, Enums) {
                 return this.baseUrlV2 + '/entity/bulk/classification';
             }
         },
+        entitiesBusinessMetadataApiUrl: function(guid) {
+            if (guid) {
+                return this.baseUrlV2 + '/entity/guid/' + guid + '/businessmetadata?isOverwrite=true';
+            }
+        },
         entityCollectionaudit: function(guid) {
-            return this.baseUrl + '/entities/' + guid + '/audit';
+            return this.baseUrlV2 + '/entity/' + guid + '/audit';
+        },
+        expimpAudit: function(options) {
+            var url = this.baseUrl + '/admin/expimp/audit',
+                queryParam = [];
+            if (options) {
+                var serverName = options.serverName,
+                    limit = options.limit,
+                    offset = options.offset;
+            }
+
+            if (serverName) {
+                queryParam.push("serverName=" + serverName);
+            }
+            if (limit) {
+                queryParam.push("limit=" + limit);
+            }
+            if (offset) {
+                queryParam.push("offset=" + offset);
+            }
+            if (queryParam.length > 0) {
+                url = url + "?" + queryParam.join("&");
+            }
+            return url;
         },
         classicationApiUrl: function(name, guid) {
             var typeUrl = this.typedefsUrl();
@@ -81,7 +179,7 @@ define(['require', 'utils/Enums'], function(require, Enums) {
             }
         },
         typesApiUrl: function() {
-            return this.typedefsUrl().defs + '/headers'
+            return this.typedefsUrl().defs + '/headers?excludeInternalTypesAndReferences=true'
         },
         lineageApiUrl: function(guid) {
             var lineageUrl = this.baseUrlV2 + '/lineage';
@@ -90,6 +188,23 @@ define(['require', 'utils/Enums'], function(require, Enums) {
             } else {
                 return lineageUrl
             }
+        },
+        relationshipApiUrl: function(guid) {
+            var relationshipUrl = this.baseUrlV2 + '/relationship';
+            if (guid) {
+                return relationshipUrl + '/guid/' + guid + '?extendedInfo=true';
+            } else {
+                return relationshipUrl
+            }
+        },
+        relationshipSearchV2ApiUrl: function() {
+            return this.baseUrlV2 + '/search/relationship';
+        },
+        relationshipSearchApiUrl: function() {
+            return this.baseUrlV2 + '/search/relations';
+        },
+        relationshipAttributesApiUrl: function(guid) {
+            return this.entitiesApiUrl() + '/guid/' + guid + '/relationshipAttributes';
         },
         schemaApiUrl: function(guid) {
             var lineageUrl = this.baseUrl + '/lineage';
@@ -107,14 +222,96 @@ define(['require', 'utils/Enums'], function(require, Enums) {
                 return searchUrl;
             }
         },
+        saveSearchApiUrl: function(saveSearchType) {
+            var saveSearchUrl = this.searchApiUrl() + "/saved";
+            if (saveSearchType) {
+                return saveSearchUrl + '/' + saveSearchType;
+            } else {
+                return saveSearchUrl;
+            }
+        },
+        glossaryApiUrl: function(options) {
+            var guid = options && options.guid,
+                glossaryUrl = this.baseUrlV2 + '/glossary';
+            if (guid) {
+                return glossaryUrl + '/' + guid;
+            } else {
+                return glossaryUrl;
+            }
+        },
+        glossaryImportTempUrl: function() {
+            return this.glossaryApiUrl() + '/import/template';
+        },
+        glossaryImportUrl: function() {
+            return this.glossaryApiUrl() + '/import';
+        },
+        businessMetadataImportTempUrl: function() {
+            return this.entitiesApiUrl() + '/businessmetadata/import/template';
+        },
+        businessMetadataImportUrl: function() {
+            return this.entitiesApiUrl() + '/businessmetadata/import';
+        },
+        apiDocUrl: function() {
+            return this.apiBaseUrl + '/apidocs/index.html';
+        },
+        categoryApiUrl: function(options) {
+            var guid = options && options.guid,
+                list = options && options.list,
+                related = options && options.related,
+                categoryUrl = this.glossaryApiUrl() + '/' + (list ? 'categories' : 'category');
+            if (guid) {
+                if (related) {
+                    return categoryUrl + '/' + guid + "/related";
+                } else {
+                    return categoryUrl + '/' + guid;
+                }
+            } else {
+                return categoryUrl;
+            }
+        },
+        termApiUrl: function(options) {
+            var guid = options && options.guid,
+                list = options && options.list,
+                related = options && options.related,
+                termUrl = this.glossaryApiUrl() + '/' + (list ? 'terms' : 'term');
+            if (guid) {
+                if (related) {
+                    return termUrl + '/' + guid + "/related";
+                } else {
+                    return termUrl + '/' + guid;
+                }
+            } else {
+                return termUrl;
+            }
+        },
+        termToEntityApiUrl: function(guid) {
+            var termUrl = this.termApiUrl({ list: true });
+            if (guid) {
+                return termUrl + '/' + guid + '/assignedEntities';
+            }
+        },
         versionApiUrl: function() {
             return this.baseUrl + '/admin/version';
         },
         sessionApiUrl: function() {
             return this.baseUrl + '/admin/session';
+        },
+        adminApiUrl: function() {
+            return this.baseUrl + '/admin/audits';
+        },
+        downloadBasicSearchResultsCSV: function() {
+            return this.baseUrlV2 + '/search/basic/download/create_file';
+        },
+        downloadAdvanceSearchResultsCSV: function() {
+            return this.baseUrlV2 + '/search/dsl/download/create_file';
+        },
+        getDownloadsList: function() {
+            return this.baseUrlV2 + '/search/download/status';
+        },
+        downloadSearchResultsFileUrl: function(fileName) {
+            return this.baseUrlV2 + '/search/download/' + fileName;
         }
-
-    };
+    });
 
     return UrlLinks;
 });

@@ -15,26 +15,56 @@
  * limitations under the License.
  */
 
-/* latin */
+
+/* source-sans-pro-regular - latin */
+
 @font-face {
-  font-family: 'Source Sans Pro';
-  font-style: normal;
-  font-weight: 400;
-  src: local('Source Sans Pro'), local('SourceSansPro-Regular'), url(../js/external_lib/fonts/ODelI1aHBYDBqgeIAH2zlNV_2ngZ8dMf8fLgjYEouxg.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+    font-family: 'Source Sans Pro';
+    font-style: normal;
+    font-weight: 400;
+    src: url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-regular.eot');
+    /* IE9 Compat Modes */
+    src: local('Source Sans Pro Regular'), local('SourceSansPro-Regular'),
+    url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+    url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
+    url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-regular.woff') format('woff'), /* Modern Browsers */
+    url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
+    url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-regular.svg#SourceSansPro') format('svg');
+    /* Legacy iOS */
 }
-/* latin */
+
+
+/* source-sans-pro-600 - latin */
+
 @font-face {
-  font-family: 'Source Sans Pro';
-  font-style: normal;
-  font-weight: 600;
-  src: local('Source Sans Pro Semibold'), local('SourceSansPro-Semibold'), url(../js/external_lib/fonts/toadOcfmlt9b38dHJxOBGCOFnW3Jk0f09zW_Yln67Ac.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+    font-family: 'Source Sans Pro';
+    font-style: normal;
+    font-weight: 600;
+    src: url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-600.eot');
+    /* IE9 Compat Modes */
+    src: local('Source Sans Pro SemiBold'), local('SourceSansPro-SemiBold'),
+    url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-600.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+    url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-600.woff2') format('woff2'), /* Super Modern Browsers */
+    url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-600.woff') format('woff'), /* Modern Browsers */
+    url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-600.ttf') format('truetype'), /* Safari, Android, iOS */
+    url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-600.svg#SourceSansPro') format('svg');
+    /* Legacy iOS */
 }
+
+
+/* source-sans-pro-700 - latin */
+
 @font-face {
-  font-family: 'Source Sans Pro';
-  font-style: normal;
-  font-weight: 700;
-  src: local('Source Sans Pro Bold'), local('SourceSansPro-Bold'), url(../js/external_lib/fonts/toadOcfmlt9b38dHJxOBGEo0As1BFRXtCDhS66znb_k.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+    font-family: 'Source Sans Pro';
+    font-style: normal;
+    font-weight: 700;
+    src: url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-700.eot');
+    /* IE9 Compat Modes */
+    src: local('Source Sans Pro Bold'), local('SourceSansPro-Bold'),
+    url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-700.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+    url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-700.woff2') format('woff2'), /* Super Modern Browsers */
+    url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-700.woff') format('woff'), /* Modern Browsers */
+    url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-700.ttf') format('truetype'), /* Safari, Android, iOS */
+    url('../js/external_lib/fonts/source-sans-pro/source-sans-pro-v10-latin-700.svg#SourceSansPro') format('svg');
+    /* Legacy iOS */
 }

@@ -40,8 +40,8 @@ define(['require',
         /*************************
          * Non - CRUD operations
          *************************/
-        deleteAssociation: function(guid, name, options) {
-            var url = UrlLinks.entitiesApiUrl(guid, name);
+        deleteAssociation: function(guid, name, associatedGuid, options) {
+            var url = UrlLinks.entitiesApiUrl({ guid: guid, name: name, associatedGuid: associatedGuid });
             options = _.extend({
                 contentType: 'application/json',
                 dataType: 'json'
@@ -49,11 +49,7 @@ define(['require',
             return this.constructor.nonCrudOperation.call(this, url, 'DELETE', options);
         },
         deleteTag: function(options) {
-            var url = UrlLinks.classificationDefApiUrl();
-            options = _.extend({
-                contentType: 'application/json',
-                dataType: 'json'
-            }, options);
+            var url = UrlLinks.getDefApiUrl(null, options.typeName);
             return this.constructor.nonCrudOperation.call(this, url, 'DELETE', options);
         },
         saveTagAttribute: function(options) {

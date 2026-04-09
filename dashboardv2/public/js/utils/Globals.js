@@ -16,10 +16,13 @@
  * limitations under the License.
  */
 
-define(['require'], function(require) {
-    'use strict';
+define(["require", "underscore"], function(require, _) {
+    "use strict";
 
     var Globals = {};
+    //We have assigned underscore object to the window object, So that we don't have to import,
+    // it in every file where underscore functions are used because of the version update.
+    window._ = _;
     Globals.settings = {};
     Globals.settings.PAGE_SIZE = 25;
     Globals.saveApplicationState = {
@@ -27,14 +30,38 @@ define(['require'], function(require) {
         tabState: {
             stateChanged: false,
             tagUrl: "#!/tag",
-            taxonomyUrl: "#!/taxonomy",
-            searchUrl: "#!/search"
+            searchUrl: "#!/search",
+            glossaryUrl: "#!/glossary",
+            administratorUrl: "#!/administrator",
+            debugMetricsUrl: "#!/debugMetrics",
+            relationUrl: '#!/relationship'
         },
         detailPageState: {}
     };
     Globals.userLogedIn = {
         status: false,
         response: {}
-    }
+    };
+    Globals.serviceTypeMap = {};
+    Globals.entityImgPath = "/img/entity-icon/";
+    Globals.DEFAULT_UI = "v2";
+
+    // Date Format
+    Globals.dateTimeFormat = "MM/DD/YYYY hh:mm:ss A";
+    Globals.dateFormat = "MM/DD/YYYY";
+    Globals.needToValidateDate = false;
+    Globals.isTimezoneFormatEnabled = true;
+
+    Globals.isDebugMetricsEnabled = false;
+    Globals.isTasksEnabled = false;
+    Globals.isUiTasksTabEnabled = false;
+    Globals.idealTimeoutSeconds = 900;
+    Globals.isFullScreenView = false;
+    Globals.isLineageOnDemandEnabled = false;
+    Globals.lineageNodeCount = 3;
+    Globals.lineageDepth = 3;
+    Globals.fromRelationshipSearch = false;
+    Globals.isRelationshipSearchEnabled = false;
+
     return Globals;
 });

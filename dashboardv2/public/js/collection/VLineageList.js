@@ -42,7 +42,11 @@ define(['require',
                     dataType: 'json'
                 }, options);
 
-                return this.constructor.nonCrudOperation.call(this, url, 'GET', options);
+                if (options.compactLineageEnabled) {
+                    return this.constructor.nonCrudOperation.call(this, url, 'POST', options);
+                } else {
+                    return this.constructor.nonCrudOperation.call(this, url, 'GET', options);
+                }
             }
         },
         //Static Class Members

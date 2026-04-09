@@ -1,0 +1,35 @@
+<!--
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<div id="downloads-panel" class="downloads-panel">
+    <div id="download-header" class="download-header">
+        <span data-id="downloadtitle">Downloads</span>
+        <div class="download-header-actions">
+            <div class="pretty p-switch p-fill" style="margin-right: 20px">
+                <input type="checkbox" data-id="toggleDownloads" title="" />
+                <div class="state p-primary">
+                    <label></label>
+                </div>
+            </div><button data-id="refreshDownloads" class="btn btn-action btn-sm"><i class="fa fa-refresh" aria-hidden="true"></i></button>&nbsp;<button data-id="closeDownloads" class="btn btn-action btn-sm"><i class="fa fa-times" aria-hidden="true"></i></button>
+        </div>
+    </div>
+    <div id="download-body" class="download-body">
+        <ul id="download-list-wrapper" data-id="downloadListContainer"></ul>
+    </div>
+    <div class="downloadListLoader" data-id="downloadListLoader">
+        <i class="fa fa-refresh fa-spin-custom"></i>
+    </div>
+</div>

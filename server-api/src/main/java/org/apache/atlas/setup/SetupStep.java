@@ -17,7 +17,6 @@
  */
 
 package org.apache.atlas.setup;
-
 /**
  * Represents a step that initializes some dependency of Atlas.
  *

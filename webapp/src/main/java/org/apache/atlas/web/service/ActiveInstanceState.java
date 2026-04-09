@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,19 +24,22 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import scala.actors.threadpool.Arrays;
 
 import javax.inject.Inject;
-import java.nio.charset.Charset;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -48,13 +51,12 @@ import java.util.List;
  */
 @Component
 public class ActiveInstanceState {
-
-    private final Configuration configuration;
-    private final CuratorFactory curatorFactory;
+    private static final Logger LOG = LoggerFactory.getLogger(ActiveInstanceState.class);
 
     public static final String APACHE_ATLAS_ACTIVE_SERVER_INFO = "/active_server_info";
 
-    private static final Logger LOG = LoggerFactory.getLogger(ActiveInstanceState.class);
+    private final Configuration  configuration;
+    private final CuratorFactory curatorFactory;
 
     /**
      * Create a new instance of {@link ActiveInstanceState}.
@@ -70,10 +72,9 @@ public class ActiveInstanceState {
      * Create a new instance of {@link ActiveInstanceState}.
      * @param configuration an instance of {@link Configuration} created from Atlas configuration
      * @param curatorFactory an instance of {@link CuratorFactory} to get the {@link InterProcessReadWriteLock}
-     * @throws AtlasException
      */
     public ActiveInstanceState(Configuration configuration, CuratorFactory curatorFactory) {
-        this.configuration = configuration;
+        this.configuration  = configuration;
         this.curatorFactory = curatorFactory;
     }
 
@@ -82,34 +83,43 @@ public class ActiveInstanceState {
      *
      * This method writes this instance's Server Address to a shared node in Zookeeper.
      * This information is used by other passive instances to locate the current active server.
-     * @throws Exception
+     * @throws AtlasBaseException
      * @param serverId ID of this server instance
      */
     public void update(String serverId) throws AtlasBaseException {
         try {
             CuratorFramework client = curatorFactory.clientInstance();
-            HAConfiguration.ZookeeperProperties zookeeperProperties =
-                    HAConfiguration.getZookeeperProperties(configuration);
+
+            HAConfiguration.ZookeeperProperties zookeeperProperties = HAConfiguration.getZookeeperProperties(configuration);
+
             String atlasServerAddress = HAConfiguration.getBoundAddressForId(configuration, serverId);
-            List<ACL> acls = Arrays.asList(
-                    new ACL[]{AtlasZookeeperSecurityProperties.parseAcl(zookeeperProperties.getAcl(),
-                            ZooDefs.Ids.OPEN_ACL_UNSAFE.get(0))});
-            Stat serverInfo = client.checkExists().forPath(getZnodePath(zookeeperProperties));
-            if (serverInfo == null) {
-                client.create().
-                        withMode(CreateMode.EPHEMERAL).
-                        withACL(acls).
-                        forPath(getZnodePath(zookeeperProperties));
+
+            List<ACL> acls = new ArrayList<>();
+
+            ACL parsedACL = AtlasZookeeperSecurityProperties.parseAcl(zookeeperProperties.getAcl(), ZooDefs.Ids.OPEN_ACL_UNSAFE.get(0));
+
+            acls.add(parsedACL);
+
+            //adding world read permission
+            if (StringUtils.isNotEmpty(zookeeperProperties.getAcl())) {
+                ACL worldReadPermissionACL = new ACL(ZooDefs.Perms.READ, new Id("world", "anyone"));
+
+                acls.add(worldReadPermissionACL);
             }
-            client.setData().forPath(getZnodePath(zookeeperProperties),
-                    atlasServerAddress.getBytes(Charset.forName("UTF-8")));
+
+            Stat serverInfo = client.checkExists().forPath(getZnodePath(zookeeperProperties));
+
+            if (serverInfo == null) {
+                client.create()
+                        .withMode(CreateMode.EPHEMERAL)
+                        .withACL(acls)
+                        .forPath(getZnodePath(zookeeperProperties));
+            }
+
+            client.setData().forPath(getZnodePath(zookeeperProperties), atlasServerAddress.getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
             throw new AtlasBaseException(AtlasErrorCode.CURATOR_FRAMEWORK_UPDATE, e, "forPath: getZnodePath");
         }
-    }
-
-    private String getZnodePath(HAConfiguration.ZookeeperProperties zookeeperProperties) {
-        return zookeeperProperties.getZkRoot()+APACHE_ATLAS_ACTIVE_SERVER_INFO;
     }
 
     /**
@@ -119,17 +129,23 @@ public class ActiveInstanceState {
      * @return the active server's address and port of form http://host-or-ip:port
      */
     public String getActiveServerAddress() {
-        CuratorFramework client = curatorFactory.clientInstance();
-        String serverAddress = null;
+        CuratorFramework client        = curatorFactory.clientInstance();
+        String           serverAddress = null;
+
         try {
-            HAConfiguration.ZookeeperProperties zookeeperProperties =
-                    HAConfiguration.getZookeeperProperties(configuration);
+            HAConfiguration.ZookeeperProperties zookeeperProperties = HAConfiguration.getZookeeperProperties(configuration);
+
             byte[] bytes = client.getData().forPath(getZnodePath(zookeeperProperties));
-            serverAddress = new String(bytes, Charset.forName("UTF-8"));
+
+            serverAddress = new String(bytes, StandardCharsets.UTF_8);
         } catch (Exception e) {
             LOG.error("Error getting active server address", e);
         }
+
         return serverAddress;
     }
 
+    private String getZnodePath(HAConfiguration.ZookeeperProperties zookeeperProperties) {
+        return zookeeperProperties.getZkRoot() + APACHE_ATLAS_ACTIVE_SERVER_INFO;
+    }
 }

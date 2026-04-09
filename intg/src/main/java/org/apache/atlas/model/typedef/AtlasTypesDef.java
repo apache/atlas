@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,41 +17,43 @@
  */
 package org.apache.atlas.model.typedef;
 
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import org.apache.commons.collections.CollectionUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasTypesDef {
-    private List<AtlasEnumDef>           enumDefs;
-    private List<AtlasStructDef>         structDefs;
-    private List<AtlasClassificationDef> classificationDefs;
-    private List<AtlasEntityDef>         entityDefs;
-    private List<AtlasRelationshipDef>   relationshipDefs;
+    private List<AtlasEnumDef>             enumDefs;
+    private List<AtlasStructDef>           structDefs;
+    private List<AtlasClassificationDef>   classificationDefs;
+    private List<AtlasEntityDef>           entityDefs;
+    private List<AtlasRelationshipDef>     relationshipDefs;
+    private List<AtlasBusinessMetadataDef> businessMetadataDefs;
 
     public AtlasTypesDef() {
-        enumDefs           = new ArrayList<>();
-        structDefs         = new ArrayList<>();
-        classificationDefs = new ArrayList<>();
-        entityDefs         = new ArrayList<>();
-        relationshipDefs   = new ArrayList<>();
+        enumDefs             = new ArrayList<>();
+        structDefs           = new ArrayList<>();
+        classificationDefs   = new ArrayList<>();
+        entityDefs           = new ArrayList<>();
+        relationshipDefs     = new ArrayList<>();
+        businessMetadataDefs = new ArrayList<>();
     }
 
     /**
@@ -63,9 +65,10 @@ public class AtlasTypesDef {
      * @param entityDefs
      */
     public AtlasTypesDef(List<AtlasEnumDef> enumDefs, List<AtlasStructDef> structDefs,
-                         List<AtlasClassificationDef> classificationDefs, List<AtlasEntityDef> entityDefs) {
-       this(enumDefs, structDefs, classificationDefs, entityDefs,new ArrayList<AtlasRelationshipDef>());
+            List<AtlasClassificationDef> classificationDefs, List<AtlasEntityDef> entityDefs) {
+        this(enumDefs, structDefs, classificationDefs, entityDefs, new ArrayList<>(), new ArrayList<>());
     }
+
     /**
      * Create the TypesDef. This created definitions for each of the types.
      * @param enumDefs
@@ -74,20 +77,32 @@ public class AtlasTypesDef {
      * @param entityDefs
      * @param relationshipDefs
      */
-    public AtlasTypesDef(List<AtlasEnumDef>           enumDefs,
-                         List<AtlasStructDef>         structDefs,
-                         List<AtlasClassificationDef> classificationDefs,
-                         List<AtlasEntityDef>         entityDefs,
-                         List<AtlasRelationshipDef>   relationshipDefs) {
-        this.enumDefs           = enumDefs;
-        this.structDefs         = structDefs;
-        this.classificationDefs = classificationDefs;
-        this.entityDefs         = entityDefs;
-        this.relationshipDefs   = relationshipDefs;
+    public AtlasTypesDef(List<AtlasEnumDef> enumDefs,
+            List<AtlasStructDef> structDefs,
+            List<AtlasClassificationDef> classificationDefs,
+            List<AtlasEntityDef> entityDefs,
+            List<AtlasRelationshipDef> relationshipDefs) {
+        this(enumDefs, structDefs, classificationDefs, entityDefs, relationshipDefs, new ArrayList<>());
     }
+
+    public AtlasTypesDef(List<AtlasEnumDef> enumDefs,
+            List<AtlasStructDef> structDefs,
+            List<AtlasClassificationDef> classificationDefs,
+            List<AtlasEntityDef> entityDefs,
+            List<AtlasRelationshipDef> relationshipDefs,
+            List<AtlasBusinessMetadataDef> businessMetadataDefs) {
+        this.enumDefs             = enumDefs;
+        this.structDefs           = structDefs;
+        this.classificationDefs   = classificationDefs;
+        this.entityDefs           = entityDefs;
+        this.relationshipDefs     = relationshipDefs;
+        this.businessMetadataDefs = businessMetadataDefs;
+    }
+
     public List<AtlasEnumDef> getEnumDefs() {
         return enumDefs;
     }
+
     public void setEnumDefs(List<AtlasEnumDef> enumDefs) {
         this.enumDefs = enumDefs;
     }
@@ -104,6 +119,10 @@ public class AtlasTypesDef {
         return classificationDefs;
     }
 
+    public void setClassificationDefs(List<AtlasClassificationDef> classificationDefs) {
+        this.classificationDefs = classificationDefs;
+    }
+
     public List<AtlasEntityDef> getEntityDefs() {
         return entityDefs;
     }
@@ -112,15 +131,20 @@ public class AtlasTypesDef {
         this.entityDefs = entityDefs;
     }
 
-    public void setClassificationDefs(List<AtlasClassificationDef> classificationDefs) {
-        this.classificationDefs = classificationDefs;
-    }
     public List<AtlasRelationshipDef> getRelationshipDefs() {
         return relationshipDefs;
     }
 
     public void setRelationshipDefs(List<AtlasRelationshipDef> relationshipDefs) {
         this.relationshipDefs = relationshipDefs;
+    }
+
+    public List<AtlasBusinessMetadataDef> getBusinessMetadataDefs() {
+        return businessMetadataDefs;
+    }
+
+    public void setBusinessMetadataDefs(List<AtlasBusinessMetadataDef> businessMetadataDefs) {
+        this.businessMetadataDefs = businessMetadataDefs;
     }
 
     public boolean hasClassificationDef(String name) {
@@ -138,21 +162,13 @@ public class AtlasTypesDef {
     public boolean hasEntityDef(String name) {
         return hasTypeDef(entityDefs, name);
     }
+
     public boolean hasRelationshipDef(String name) {
         return hasTypeDef(relationshipDefs, name);
     }
 
-
-    private <T extends AtlasBaseTypeDef> boolean hasTypeDef(Collection<T> typeDefs, String name) {
-        if (CollectionUtils.isNotEmpty(typeDefs)) {
-            for (T typeDef : typeDefs) {
-                if (typeDef.getName().equals(name)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+    public boolean hasBusinessMetadataDef(String name) {
+        return hasTypeDef(businessMetadataDefs, name);
     }
 
     @JsonIgnore
@@ -161,7 +177,8 @@ public class AtlasTypesDef {
                 CollectionUtils.isEmpty(structDefs) &&
                 CollectionUtils.isEmpty(classificationDefs) &&
                 CollectionUtils.isEmpty(entityDefs) &&
-                CollectionUtils.isEmpty(relationshipDefs);
+                CollectionUtils.isEmpty(relationshipDefs) &&
+                CollectionUtils.isEmpty(businessMetadataDefs);
     }
 
     public void clear() {
@@ -183,7 +200,12 @@ public class AtlasTypesDef {
         if (relationshipDefs != null) {
             relationshipDefs.clear();
         }
+
+        if (businessMetadataDefs != null) {
+            businessMetadataDefs.clear();
+        }
     }
+
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
             sb = new StringBuilder();
@@ -204,6 +226,8 @@ public class AtlasTypesDef {
         sb.append("}");
         sb.append("relationshipDefs={");
         AtlasBaseTypeDef.dumpObjects(relationshipDefs, sb);
+        sb.append("businessMetadataDefs={");
+        AtlasBaseTypeDef.dumpObjects(businessMetadataDefs, sb);
         sb.append("}");
 
         return sb;
@@ -212,5 +236,17 @@ public class AtlasTypesDef {
     @Override
     public String toString() {
         return toString(new StringBuilder()).toString();
+    }
+
+    private <T extends AtlasBaseTypeDef> boolean hasTypeDef(Collection<T> typeDefs, String name) {
+        if (CollectionUtils.isNotEmpty(typeDefs)) {
+            for (T typeDef : typeDefs) {
+                if (typeDef.getName().equals(name)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

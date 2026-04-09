@@ -16,25 +16,38 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.buttons', 'pnotify.confirm'], function(require, Globals, pnotify, Messages) {
+define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 'moment', 'store', 'modules/Modal', 'DOMPurify', 'moment-timezone', 'pnotify.buttons', 'pnotify.confirm', 'trumbowyg'], function(require, Globals, pnotify, Messages, Enums, moment, store, Modal, DOMPurify) {
     'use strict';
 
     var Utils = {};
     var prevNetworkErrorTime = 0;
 
-    Utils.escapeHtml = function(string) {
-        var entityMap = {
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': '&quot;',
-            "'": '&#39;',
-            "/": '&#x2F;'
-        };
-        return String(string).replace(/[&<>"'\/]/g, function(s) {
-            return entityMap[s];
-        });
+    Utils.generatePopover = function(options) {
+        if (options.el) {
+            var defaultObj = {
+                placement: 'auto bottom',
+                html: true,
+                animation: false,
+                container: 'body',
+                sanitize: false
+            };
+            if (options.viewFixedPopover || options.contentClass) {
+                defaultObj.template = '<div class="popover ' + (options.viewFixedPopover ? 'fixed-popover' : '') + ' fade bottom"><div class="arrow"></div><h3 class="popover-title"></h3><div class="' + (options.contentClass ? options.contentClass : '') + ' popover-content"></div></div>';
+            }
+            return options.el.popover(_.extend(defaultObj, options.popoverOptions));
+        }
     }
+
+    Utils.getNumberSuffix = function(options) {
+        if (options && options.number) {
+            var n = options.number,
+                s = ["th", "st", "nd", "rd"],
+                v = n % 100,
+                suffix = (s[(v - 20) % 10] || s[v] || s[0]);
+            return n + (options.sup ? '<sup>' + suffix + '</sup>' : suffix);
+        }
+    }
+
     Utils.generateUUID = function() {
         var d = new Date().getTime();
         if (window.performance && typeof window.performance.now === "function") {
@@ -47,7 +60,60 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
         });
         return uuid;
     };
+    Utils.getBaseUrl = function(url) {
+        return url.replace(/\/[\w-]+.(jsp|html)|\/+$/ig, '');
+    };
+    Utils.getEntityIconPath = function(options) {
+        var entityData = options && options.entityData,
+            serviceType,
+            status,
+            typeName,
+            iconBasePath = Utils.getBaseUrl(window.location.pathname) + Globals.entityImgPath;
+        if (entityData) {
+            typeName = entityData.typeName;
+            serviceType = entityData && entityData.serviceType;
+            status = entityData && entityData.status;
+        }
 
+        function getImgPath(imageName) {
+            return iconBasePath + (Enums.entityStateReadOnly[status] ? "disabled/" + imageName : imageName);
+        }
+
+        function getDefaultImgPath() {
+            if (entityData.isProcess) {
+                if (Enums.entityStateReadOnly[status]) {
+                    return iconBasePath + 'disabled/process.png';
+                } else {
+                    return iconBasePath + 'process.png';
+                }
+            } else {
+                if (Enums.entityStateReadOnly[status]) {
+                    return iconBasePath + 'disabled/table.png';
+                } else {
+                    return iconBasePath + 'table.png';
+                }
+            }
+        }
+
+        if (entityData) {
+            if (options.errorUrl) {
+                var isErrorInTypeName = (options.errorUrl && options.errorUrl.match("entity-icon/" + typeName + ".png|disabled/" + typeName + ".png") ? true : false);
+                if (serviceType && isErrorInTypeName) {
+                    var imageName = serviceType + ".png";
+                    return getImgPath(imageName);
+                } else {
+                    return getDefaultImgPath();
+                }
+            } else if (entityData.typeName) {
+                var imageName = entityData.typeName + ".png";
+                return getImgPath(imageName);
+            } else {
+                return getDefaultImgPath();
+            }
+        }
+    }
+
+    pnotify.prototype.options.styling = "fontawesome";
     var notify = function(options) {
         return new pnotify(_.extend({
             icon: true,
@@ -95,14 +161,45 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
         var modal = {};
         if (options && options.modal) {
             var myStack = { "dir1": "down", "dir2": "right", "push": "top", 'modal': true };
-            modal['addclass'] = 'stack-modal';
+            modal['addclass'] = 'stack-modal ' + (options.modalClass ? modalClass : 'width-500');
             modal['stack'] = myStack;
         }
         notify(_.extend({
             title: 'Confirmation',
             hide: false,
             confirm: {
-                confirm: true
+                confirm: true,
+                buttons: [{
+                        text: options.cancelText || 'Cancel',
+                        addClass: 'btn-action btn-md cancel',
+                        click: function(notice) {
+                            options.cancel(notice);
+                            notice.remove();
+                        }
+                    },
+                    {
+                        text: options.okText || 'Ok',
+                        addClass: 'btn-atlas btn-md ok',
+                        click: function(notice) {
+                            if (options.ok) {
+                                options.ok($.extend({}, notice, {
+                                    hideButtonLoader: function() {
+                                        notice.container.find("button.ok").hideButtonLoader();
+                                    },
+                                    showButtonLoader: function() {
+                                        notice.container.find("button.ok").showButtonLoader();
+                                    }
+                                }));
+                            }
+                            if (options.okShowLoader) {
+                                notice.container.find("button.ok").showButtonLoader();
+                            }
+                            if (options.okCloses !== false) {
+                                notice.remove();
+                            }
+                        }
+                    }
+                ]
             },
             buttons: {
                 closer: false,
@@ -122,22 +219,24 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
             }
         });
     }
-    Utils.defaultErrorHandler = function(model, error) {
+    Utils.defaultErrorHandler = function(model, error, options) {
+        var skipDefaultError = null,
+            defaultErrorMessage = null;
+        if (options) {
+            skipDefaultError = options.skipDefaultError;
+            defaultErrorMessage = options.defaultErrorMessage;
+        }
+        var redirectToLoginPage = function() {
+            Utils.localStorage.setValue("last_ui_load", "v1");
+            window.location = 'login.jsp';
+        }
         if (error && error.status) {
             if (error.status == 401) {
-                window.location = 'login.jsp'
+                redirectToLoginPage();
             } else if (error.status == 419) {
-                window.location = 'login.jsp'
+                redirectToLoginPage();
             } else if (error.status == 403) {
-                var message = "You are not authorized";
-                if (error.statusText) {
-                    try {
-                        message = JSON.parse(error.statusText).AuthorizationError;
-                    } catch (err) {}
-                    Utils.notifyError({
-                        content: message
-                    });
-                }
+                Utils.serverErrorHandler(error, "You are not authorized");
             } else if (error.status == "0" && error.statusText != "abort") {
                 var diffTime = (new Date().getTime() - prevNetworkErrorTime);
                 if (diffTime > 3000) {
@@ -147,22 +246,23 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
                             "It seems you are not connected to the internet. Please check your internet connection and try again"
                     });
                 }
-            } else {
-                Utils.serverErrorHandler(model, error)
+            } else if (skipDefaultError !== true) {
+                Utils.serverErrorHandler(error, defaultErrorMessage);
             }
-        } else {
-            Utils.serverErrorHandler(model, error)
+        } else if (skipDefaultError !== true) {
+            Utils.serverErrorHandler(error, defaultErrorMessage);
         }
     };
-    Utils.serverErrorHandler = function(model, response) {
-        var responseJSON = response ? response.responseJSON : response;
-        if (response && responseJSON && (responseJSON.errorMessage || responseJSON.message || responseJSON.error)) {
+    Utils.serverErrorHandler = function(response, defaultErrorMessage) {
+        var responseJSON = response ? response.responseJSON : response,
+            message = defaultErrorMessage ? defaultErrorMessage : Messages.defaultErrorMessage
+        if (response && responseJSON) {
+            message = responseJSON.errorMessage || responseJSON.message || responseJSON.error || message
+        }
+        var existingError = $(".ui-pnotify-container.alert-danger .ui-pnotify-text").text();
+        if (existingError !== message) {
             Utils.notifyError({
-                content: responseJSON.errorMessage || responseJSON.message || responseJSON.error
-            });
-        } else {
-            Utils.notifyError({
-                content: Messages.defaultErrorMessage
+                content: message
             });
         }
     };
@@ -205,7 +305,6 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
         }
         if (typeof(Storage) === "undefined") {
             _.extend(this, Utils.cookie);
-            console.log('Sorry! No Web Storage support');
         }
     }
     Utils.localStorage = new Utils.localStorage();
@@ -228,10 +327,25 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
                 });
                 urlParams = urlParams.slice(0, -1);
                 options.url += urlParams;
-
             }
             if (options.updateTabState) {
-                $.extend(Globals.saveApplicationState.tabState, options.updateTabState());
+                var urlUpdate = {
+                    stateChanged: true
+                };
+                if (Utils.getUrlState.isTagTab(options.url)) {
+                    urlUpdate['tagUrl'] = options.url;
+                } else if (Utils.getUrlState.isSearchTab(options.url)) {
+                    urlUpdate['searchUrl'] = options.url;
+                } else if (Utils.getUrlState.isGlossaryTab(options.url)) {
+                    urlUpdate['glossaryUrl'] = options.url;
+                } else if (Utils.getUrlState.isAdministratorTab(options.url)) {
+                    urlUpdate['administratorUrl'] = options.url;
+                } else if (Utils.getUrlState.isDebugMetricsTab(options.url)) {
+                    urlUpdate['debugMetricsUrl'] = options.url;
+                } else if (Utils.getUrlState.isRelationTab(options.url)) {
+                    urlUpdate['relationUrl'] = options.url;
+                }
+                $.extend(Globals.saveApplicationState.tabState, urlUpdate);
             }
             Backbone.history.navigate(options.url, { trigger: options.trigger != undefined ? options.trigger : true });
         }
@@ -250,20 +364,66 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
                 lastValue: hashValue.split('/')[hashValue.split('/').length - 1]
             }
         },
+        checkTabUrl: function(options) {
+            var url = options && options.url,
+                matchString = options && options.matchString,
+                quey = this.getQueryUrl(url);
+            return quey.firstValue == matchString || quey.queyParams[0] == "#!/" + matchString;
+        },
         isInitial: function() {
-            return this.getQueryUrl().firstValue == undefined ? true : false;
+            return this.getQueryUrl().firstValue == undefined;
         },
-        isTagTab: function() {
-            return this.getQueryUrl().firstValue == "tag" ? true : false;
+        isTagTab: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "tag"
+            });
         },
-        isTaxonomyTab: function() {
-            return this.getQueryUrl().firstValue == "taxonomy" ? true : false;
+        isBSDetail: function(url) {
+            var quey = this.getQueryUrl(url);
+            return (quey.queyParams[0].indexOf("administrator/businessMetadata")) > -1 ? true : false;
         },
-        isSearchTab: function() {
-            return this.getQueryUrl().firstValue == "search" ? true : false;
+        isSearchTab: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "search"
+            });
         },
-        isDetailPage: function() {
-            return this.getQueryUrl().firstValue == "detailPage" ? true : false;
+        isRelationTab: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "relationship"
+            });
+        },
+        isAdministratorTab: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "administrator"
+            });
+        },
+        isDebugMetricsTab: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "debugMetrics"
+            });
+        },
+        isGlossaryTab: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "glossary"
+            });
+        },
+        isDetailPage: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "detailPage"
+            });
+        },
+        isRelationshipDetailPage: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "relationshipDetailPage"
+            });
         },
         getLastValue: function() {
             return this.getQueryUrl().lastValue;
@@ -299,63 +459,6 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
             }
         }
     }
-    Utils.checkTagOrTerm = function(value, isTermView) {
-        if (value && _.isString(value) && isTermView) {
-            // For string break
-            if (value == "TaxonomyTerm") {
-                return {}
-            }
-            var name = _.escape(value).split('.');
-            return {
-                term: true,
-                tag: false,
-                name: name[name.length - 1],
-                fullName: value
-            }
-        }
-        if (value && _.isString(value)) {
-            value = {
-                typeName: value
-            }
-        }
-        if (_.isObject(value)) {
-            var name = "";
-            if (value && value.$typeName$) {
-                name = value.$typeName$;
-            } else if (value && value.typeName) {
-                name = value.typeName;
-            }
-            if (name === "TaxonomyTerm") {
-                return {}
-            }
-            name = _.escape(name).split('.');
-
-            var trem = false;
-            if (value['taxonomy.namespace']) {
-                trem = true;
-            } else if (value.values && value.values['taxonomy.namespace']) {
-                trem = true;
-            } else if (name.length > 1) {
-                trem = true; // Temp fix
-            }
-
-            if (trem) {
-                return {
-                    term: true,
-                    tag: false,
-                    name: name[name.length - 1],
-                    fullName: name.join('.')
-                }
-            } else {
-                return {
-                    term: false,
-                    tag: true,
-                    name: name[name.length - 1],
-                    fullName: name.join('.')
-                }
-            }
-        }
-    }
     Utils.getName = function() {
         return Utils.extractKeyValueFromEntity.apply(this, arguments).name;
     }
@@ -364,12 +467,13 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
     }
     Utils.extractKeyValueFromEntity = function() {
         var collectionJSON = arguments[0],
-            priorityAttribute = arguments[1];
-        var returnObj = {
-            name: '-',
-            found: true,
-            key: null
-        }
+            priorityAttribute = arguments[1],
+            skipAttribute = arguments[2],
+            returnObj = {
+                name: '-',
+                found: true,
+                key: null
+            }
         if (collectionJSON) {
             if (collectionJSON.attributes && collectionJSON.attributes[priorityAttribute]) {
                 returnObj.name = _.escape(collectionJSON.attributes[priorityAttribute]);
@@ -387,9 +491,24 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
                     returnObj.key = 'name';
                     return returnObj;
                 }
+                if (collectionJSON.attributes.displayName) {
+                    returnObj.name = _.escape(collectionJSON.attributes.displayName);
+                    returnObj.key = 'displayName';
+                    return returnObj;
+                }
                 if (collectionJSON.attributes.qualifiedName) {
                     returnObj.name = _.escape(collectionJSON.attributes.qualifiedName);
                     returnObj.key = 'qualifiedName';
+                    return returnObj;
+                }
+                if (collectionJSON.attributes.displayText) {
+                    returnObj.name = _.escape(collectionJSON.attributes.displayText);
+                    returnObj.key = 'displayText';
+                    return returnObj;
+                }
+                if (collectionJSON.attributes.guid) {
+                    returnObj.name = _.escape(collectionJSON.attributes.guid);
+                    returnObj.key = 'guid';
                     return returnObj;
                 }
                 if (collectionJSON.attributes.id) {
@@ -407,6 +526,11 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
             if (collectionJSON.name) {
                 returnObj.name = _.escape(collectionJSON.name);
                 returnObj.key = 'name';
+                return returnObj;
+            }
+            if (collectionJSON.displayName) {
+                returnObj.name = _.escape(collectionJSON.displayName);
+                returnObj.key = 'displayName';
                 return returnObj;
             }
             if (collectionJSON.qualifiedName) {
@@ -437,76 +561,346 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
             }
         }
         returnObj.found = false;
-        return returnObj;
+        if (skipAttribute && returnObj.key == skipAttribute) {
+            return {
+                name: '-',
+                found: true,
+                key: null
+            }
+        } else {
+            return returnObj;
+        }
+
     }
+
+    Utils.backButtonClick = function() {
+        var queryParams = Utils.getUrlState.getQueryParams(),
+            urlPath = "searchUrl";
+        if (queryParams && queryParams.from) {
+            if (queryParams.from == "classification") {
+                urlPath = "tagUrl";
+            } else if (queryParams.from == "glossary") {
+                urlPath = "glossaryUrl";
+            } else if (queryParams.from == "bm") {
+                urlPath = "administratorUrl";
+            }
+        }
+        if (Globals.fromRelationshipSearch) {
+            urlPath = 'relationUrl';
+        }
+        Utils.setUrl({
+            url: Globals.saveApplicationState.tabState[urlPath],
+            mergeBrowserUrl: false,
+            trigger: true,
+            updateTabState: true
+        });
+    }
+
     Utils.showTitleLoader = function(loaderEl, titleBoxEl) {
-        loaderEl.css({
+        loaderEl.css ? loaderEl.css({
             'display': 'block',
             'position': 'relative',
             'height': '85px',
             'marginTop': '85px',
             'marginLeft': '50%',
             'left': '0%'
-        });
-        titleBoxEl.hide();
+        }) : null;
+        titleBoxEl.hide ? titleBoxEl.hide() : null;
     }
     Utils.hideTitleLoader = function(loaderEl, titleBoxEl) {
-        loaderEl.hide();
-        titleBoxEl.fadeIn();
+        loaderEl.hide ? loaderEl.hide() : null;
+        titleBoxEl.fadeIn ? titleBoxEl.fadeIn() : null;
     }
-    Utils.findAndMergeRefEntity = function(attributeObject, referredEntities) {
+    Utils.findAndMergeRefEntity = function(options) {
+        var attributeObject = options.attributeObject,
+            referredEntities = options.referredEntities
+        var mergeObject = function(obj) {
+            if (obj) {
+                if (obj.attributes) {
+                    Utils.findAndMergeRefEntity({
+                        "attributeObject": obj.attributes,
+                        "referredEntities": referredEntities
+                    });
+                } else if (referredEntities[obj.guid]) {
+                    _.extend(obj, referredEntities[obj.guid]);
+                }
+            }
+        }
         if (attributeObject && referredEntities) {
             _.each(attributeObject, function(obj, key) {
                 if (_.isObject(obj)) {
                     if (_.isArray(obj)) {
                         _.each(obj, function(value) {
-                            _.extend(value, referredEntities[value.guid]);
+                            mergeObject(value);
                         });
                     } else {
-                        _.extend(obj, referredEntities[obj.guid]);
+                        mergeObject(obj);
                     }
                 }
             });
         }
     }
+
+    Utils.findAndMergeRelationShipEntity = function(options) {
+        var attributeObject = options.attributeObject,
+            relationshipAttributes = options.relationshipAttributes;
+        _.each(attributeObject, function(val, key) {
+            var attributVal = val;
+            if (relationshipAttributes && relationshipAttributes[key]) {
+                var relationShipVal = relationshipAttributes[key];
+                if (_.isObject(val)) {
+                    if (_.isArray(val)) {
+                        _.each(val, function(attr) {
+                            if (attr && attr.attributes === undefined) {
+                                var entityFound = _.find(relationShipVal, { guid: attr.guid });
+                                if (entityFound) {
+                                    attr.attributes = _.omit(entityFound, 'typeName', 'guid', 'entityStatus');
+                                    attr.status = entityFound.entityStatus;
+                                }
+                            }
+                        });
+                    } else if (relationShipVal && val.attributes === undefined) {
+                        val.attributes = _.omit(relationShipVal, 'typeName', 'guid', 'entityStatus');
+                        val.status = relationShipVal.entityStatus;
+                    }
+                }
+            }
+        })
+    }
+
+    Utils.getNestedSuperTypes = function(options) {
+        var data = options.data,
+            collection = options.collection,
+            superTypes = [];
+
+        var getData = function(data, collection) {
+            if (data) {
+                superTypes = superTypes.concat(data.superTypes);
+                if (data.superTypes && data.superTypes.length) {
+                    _.each(data.superTypes, function(superTypeName) {
+                        if (collection.fullCollection) {
+                            var collectionData = collection.fullCollection.findWhere({ name: superTypeName }).toJSON();
+                        } else {
+                            var collectionData = collection.findWhere({ name: superTypeName }).toJSON();
+                        }
+                        getData(collectionData, collection);
+                    });
+                }
+            }
+        }
+        getData(data, collection);
+        return _.uniq(superTypes);
+    }
     Utils.getNestedSuperTypeObj = function(options) {
-        var flag = 0,
-            data = options.data,
-            collection = options.collection;
-        if (options.attrMerge) {
-            var attributeDefs = [];
-        } else {
-            var attributeDefs = {};
+        var mainData = options.data,
+            collection = options.collection,
+            attrMerge = options.attrMerge,
+            seperateRelatioshipAttr = options.seperateRelatioshipAttr || false,
+            mergeRelationAttributes = options.mergeRelationAttributes || (seperateRelatioshipAttr ? false : true);
+
+        if (mergeRelationAttributes && seperateRelatioshipAttr) {
+            throw "Both mergeRelationAttributes & seperateRelatioshipAttr cannot be true!"
+        }
+        var attributeDefs = {};
+        if (attrMerge && !seperateRelatioshipAttr) {
+            attributeDefs = [];
+        } else if (options.attrMerge && seperateRelatioshipAttr) {
+            attributeDefs = {
+                attributeDefs: [],
+                relationshipAttributeDefs: []
+            }
+        }
+        var getRelationshipAttributeDef = function(data) {
+            return _.filter(
+                data.relationshipAttributeDefs,
+                function(obj, key) {
+                    return obj;
+                })
         }
         var getData = function(data, collection) {
             if (options.attrMerge) {
-                attributeDefs = attributeDefs.concat(data.attributeDefs);
+                if (seperateRelatioshipAttr) {
+                    attributeDefs.attributeDefs = attributeDefs.attributeDefs.concat(data.attributeDefs);
+                    attributeDefs.relationshipAttributeDefs = attributeDefs.relationshipAttributeDefs.concat(getRelationshipAttributeDef(data));
+                } else {
+                    attributeDefs = attributeDefs.concat(data.attributeDefs);
+                    if (mergeRelationAttributes) {
+                        attributeDefs = attributeDefs.concat(getRelationshipAttributeDef(data));
+                    }
+                }
             } else {
                 if (attributeDefs[data.name]) {
-                    if (_.isArray(attributeDefs[data.name])) {
-                        attributeDefs[data.name] = attributeDefs[data.name].concat(data.attributeDefs);
-                    } else {
-                        _.extend(attributeDefs[data.name], data.attributeDefs);
-                    }
-
+                    attributeDefs[data.name] = _.toArrayifObject(attributeDefs[data.name]).concat(data.attributeDefs);
                 } else {
-                    attributeDefs[data.name] = data.attributeDefs;
+                    if (seperateRelatioshipAttr) {
+                        attributeDefs[data.name] = {
+                            attributeDefs: data.attributeDefs,
+                            relationshipAttributeDefs: data.relationshipAttributeDefs
+                        };
+                    } else {
+                        attributeDefs[data.name] = data.attributeDefs;
+                        if (mergeRelationAttributes) {
+                            attributeDefs[data.name] = _.toArrayifObject(attributeDefs[data.name]).concat(getRelationshipAttributeDef(data));
+                        }
+                    }
                 }
             }
             if (data.superTypes && data.superTypes.length) {
                 _.each(data.superTypes, function(superTypeName) {
                     if (collection.fullCollection) {
-                        var collectionData = collection.fullCollection.findWhere({ name: superTypeName }).toJSON();
+                        var collectionData = collection.fullCollection.findWhere({ name: superTypeName });
                     } else {
-                        var collectionData = collection.findWhere({ name: superTypeName }).toJSON();
+                        var collectionData = collection.findWhere({ name: superTypeName });
                     }
-                    return getData(collectionData, collection);
+                    collectionData = collectionData && collectionData.toJSON ? collectionData.toJSON() : collectionData;
+                    if (collectionData) {
+                        return getData(collectionData, collection);
+                    } else {
+                        return;
+                    }
                 });
             }
         }
-        getData(data, collection);
-        return attributeDefs
+        getData(mainData, collection);
+        if (attrMerge) {
+            if (seperateRelatioshipAttr) {
+                attributeDefs = {
+                    attributeDefs: _.uniq(_.sortBy(attributeDefs.attributeDefs, 'name'), true, function(obj) {
+                        return obj.name
+                    }),
+                    relationshipAttributeDefs: _.uniq(_.sortBy(attributeDefs.relationshipAttributeDefs, 'name'), true, function(obj) {
+                        return (obj.name + obj.relationshipTypeName)
+                    })
+                }
+            } else {
+                attributeDefs = _.uniq(_.sortBy(attributeDefs, 'name'), true, function(obj) {
+                    if (obj.relationshipTypeName) {
+                        return (obj.name + obj.relationshipTypeName)
+                    } else {
+                        return (obj.name)
+                    }
+                });
+            }
+        }
+        return attributeDefs;
     }
+
+    Utils.getProfileTabType = function(profileData, skipData) {
+        var parseData = profileData.distributionData;
+        if (_.isString(parseData)) {
+            parseData = JSON.parse(parseData);
+        }
+        var createData = function(type) {
+            var orderValue = [],
+                sort = false;
+            if (type === "date") {
+                var dateObj = {};
+                _.keys(parseData).map(function(key) {
+                    var splitValue = key.split(":");
+                    if (!dateObj[splitValue[0]]) {
+                        dateObj[splitValue[0]] = {
+                            value: splitValue[0],
+                            monthlyCounts: {},
+                            totalCount: 0 // use when count is null
+                        }
+                    }
+                    if (dateObj[splitValue[0]] && splitValue[1] == "count") {
+                        dateObj[splitValue[0]].count = parseData[key];
+                    }
+                    if (dateObj[splitValue[0]] && splitValue[1] !== "count") {
+                        dateObj[splitValue[0]].monthlyCounts[splitValue[1]] = parseData[key];
+                        if (!dateObj[splitValue[0]].count) {
+                            dateObj[splitValue[0]].totalCount += parseData[key]
+                        }
+                    }
+                });
+                return _.toArray(dateObj).map(function(obj) {
+                    if (!obj.count && obj.totalCount) {
+                        obj.count = obj.totalCount
+                    }
+                    return obj
+                });
+            } else {
+                var data = [];
+                if (profileData.distributionKeyOrder) {
+                    orderValue = profileData.distributionKeyOrder;
+                } else {
+                    sort = true;
+                    orderValue = _.keys(parseData);
+                }
+                _.each(orderValue, function(key) {
+                    if (parseData[key]) {
+                        data.push({
+                            value: key,
+                            count: parseData[key]
+                        });
+                    }
+                });
+                if (sort) {
+                    data = _.sortBy(data, function(o) {
+                        return o.value.toLowerCase()
+                    });
+                }
+                return data;
+            }
+        }
+        if (profileData && profileData.distributionType) {
+            if (profileData.distributionType === "count-frequency") {
+                return {
+                    type: "string",
+                    label: Enums.profileTabType[profileData.distributionType],
+                    actualObj: !skipData ? createData("string") : null,
+                    xAxisLabel: "FREQUENCY",
+                    yAxisLabel: "COUNT"
+                }
+            } else if (profileData.distributionType === "decile-frequency") {
+                return {
+                    label: Enums.profileTabType[profileData.distributionType],
+                    type: "numeric",
+                    xAxisLabel: "DECILE RANGE",
+                    actualObj: !skipData ? createData("numeric") : null,
+                    yAxisLabel: "FREQUENCY"
+                }
+            } else if (profileData.distributionType === "annual") {
+                return {
+                    label: Enums.profileTabType[profileData.distributionType],
+                    type: "date",
+                    xAxisLabel: "",
+                    actualObj: !skipData ? createData("date") : null,
+                    yAxisLabel: "COUNT"
+                }
+            }
+        }
+    }
+
+    Utils.isUrl = function(url) {
+        var regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
+        return regexp.test(url);
+    }
+
+    Utils.JSONPrettyPrint = function(obj, getValue) {
+        var replacer = function(match, pIndent, pKey, pVal, pEnd) {
+                var key = '<span class=json-key>';
+                var val = '<span class=json-value>';
+                var str = '<span class=json-string>';
+                var r = pIndent || '';
+                if (pKey)
+                    r = r + key + pKey.replace(/[": ]/g, '') + '</span>: ';
+                if (pVal)
+                    r = r + (pVal[0] == '"' ? str : val) + getValue(pVal) + '</span>';
+                return r + (pEnd || '');
+            },
+            jsonLine = /^( *)("[\w]+": )?("[^"]*"|[\w.+-]*)?([,[{])?$/mg;
+        if (obj && _.isObject(obj)) {
+            return JSON.stringify(obj, null, 3)
+                .replace(/&/g, '&amp;').replace(/\\"/g, '&quot;')
+                .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(jsonLine, replacer);
+        } else {
+            return {};
+        }
+    };
+
     $.fn.toggleAttribute = function(attributeName, firstString, secondString) {
         if (this.attr(attributeName) == firstString) {
             this.attr(attributeName, secondString);
@@ -514,44 +908,438 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
             this.attr(attributeName, firstString);
         }
     }
-    $('body').on('click', '.expand_collapse_panel', function() {
-        var icon = $(this).find('i'),
-            panel = $(this).parents('.panel').first(),
-            panelBody = panel.find('.panel-body');
-        icon.toggleClass('fa-chevron-up fa-chevron-down');
-        $(this).toggleAttribute('title', 'Collapse', 'Expand');
-        panelBody.toggle();
-        $(this).trigger('expand_collapse_panel', [$(this).parents('.panel')]);
-    });
-    $('body').on('click', '.fullscreen_panel', function() {
-        var icon = $(this).find('i'),
-            panel = $(this).parents('.panel').first(),
-            panelBody = panel.find('.panel-body');
-        icon.toggleClass('fa-expand fa-compress');
-        $(this).toggleAttribute('title', 'Fullscreen', 'Exit Fullscreen');
-        panel.toggleClass('panel-fullscreen');
-        panel.find('.expand_collapse_panel').toggle();
-        // Condition if user clicks on fullscree button and body is in collapse mode.
-        if (panel.hasClass('panel-fullscreen')) {
-            $('body').css("position", "fixed");
-            if (!panelBody.is(':visible')) {
-                panelBody.show();
-                panelBody.addClass('full-visible');
-            }
-            //first show body to get width and height for postion then trigger the event.
-            $(this).trigger('fullscreen_done', [$(this).parents('.panel')]);
-        } else if (panelBody.hasClass('full-visible')) {
-            $('body').removeAttr("style");
-            $(this).trigger('fullscreen_done', [$(this).parents('.panel')]);
-            //first trigger the event to getwidth and height for postion then hide body.
-            panelBody.hide();
-            panelBody.removeClass('full-visible');
+
+    Utils.millisecondsToTime = function(duration) {
+        var milliseconds = parseInt((duration % 1000) / 100),
+            seconds = parseInt((duration / 1000) % 60),
+            minutes = parseInt((duration / (1000 * 60)) % 60),
+            hours = parseInt((duration / (1000 * 60 * 60)) % 24);
+
+        hours = (hours < 10) ? "0" + hours : hours;
+        minutes = (minutes < 10) ? "0" + minutes : minutes;
+        seconds = (seconds < 10) ? "0" + seconds : seconds;
+
+        return hours + ":" + minutes + ":" + seconds + "." + milliseconds;
+    }
+    Utils.togglePropertyRelationshipTableEmptyValues = function(object) {
+        var inputSelector = object.inputType,
+            tableEl = object.tableEl;
+        if (inputSelector.prop('checked') == true) {
+            tableEl.removeClass('hide-empty-value');
         } else {
-            $('body').removeAttr("style");
-            $(this).trigger('fullscreen_done', [$(this).parents('.panel')]);
+            tableEl.addClass('hide-empty-value');
         }
+    }
+    $.fn.showButtonLoader = function() {
+        $(this).attr("disabled", "true").addClass('button-loader');
+        $(this).siblings("button.cancel").prop("disabled", true);
+    }
+    $.fn.hideButtonLoader = function() {
+        $(this).removeClass('button-loader').removeAttr("disabled");
+        $(this).siblings("button.cancel").prop("disabled", false);
+    }
+    Utils.convertToValidDate = function(dateValue) {
+        var value = dateValue.split(" "),
+            dateSplit = (value[0].indexOf("-") == -1) ? value[0].split("/") : value[0].split("-");
+        if (value.length > 1) {
+            var time = value[1].split(":");
+            return new Date(dateSplit[2], (new Number(dateSplit[1]) - 1), dateSplit[0], time[0], time[1], time[2]);
+        } else {
+            return new Date(dateSplit[2], (new Number(dateSplit[1]) - 1), dateSplit[0]);
+        }
+    }
+    Utils.formatDate = function(options) {
+        var dateValue = null,
+            dateFormat = Globals.dateTimeFormat,
+            isValidDate = false;
+
+        if (options && !options.date) {
+            return null;
+        }
+        else  {
+            dateValue = options.date;
+            if (dateValue !== "-") {
+                dateValue = parseInt(dateValue);
+                if (_.isNaN(dateValue)) {
+                    dateValue = options.date;
+                }
+                dateValue = moment(dateValue);
+                if (dateValue.isValid) {
+                    isValidDate = true;
+                    dateValue = dateValue.format(dateFormat);
+                }
+            }
+        }
+        if (dateValue !== "-") {
+            if (isValidDate === false && options && options.defaultDate !== false) {
+                dateValue = moment().format(dateFormat);
+            }
+            if (Globals.isTimezoneFormatEnabled) {
+                if (!options || options && options.zone !== false) {
+                    dateValue += " (" + moment.tz(moment.tz.guess()).zoneAbbr() + ")";
+                }
+            }
+        }
+        return dateValue;
+    }
+
+    //------------------------------------------------idleTimeout-----------------------------
+    $.fn.idleTimeout = function(userRuntimeConfig) {
+
+        //##############################
+        //## Public Configuration Variables
+        //##############################
+        var defaultConfig = {
+                redirectUrl: Utils.getBaseUrl(window.location.pathname) + '/index.html?action=timeout', // redirect to this url on logout. Set to "redirectUrl: false" to disable redirect
+
+                // idle settings
+                idleTimeLimit: Globals.idealTimeoutSeconds, // 'No activity' time limit in seconds. 1200 = 20 Minutes
+                idleCheckHeartbeat: 2, // Frequency to check for idle timeouts in seconds
+
+                // optional custom callback to perform before logout
+                customCallback: false, // set to false for no customCallback
+                // customCallback:    function () {    // define optional custom js function
+                // perform custom action before logout
+                // },
+
+                // configure which activity events to detect
+                // http://www.quirksmode.org/dom/events/
+                // https://developer.mozilla.org/en-US/docs/Web/Reference/Events
+                activityEvents: 'click keypress scroll wheel mousewheel mousemove', // separate each event with a space
+
+                // warning dialog box configuration
+                enableDialog: true, // set to false for logout without warning dialog
+                dialogDisplayLimit: 10, // Time to display the warning dialog before logout (and optional callback) in seconds. 180 = 3 Minutes
+                dialogTitle: 'Your session is about to expire!', // also displays on browser title bar
+                dialogText: 'Your session is about to expire.',
+                dialogTimeRemaining: 'You will be logged out in ',
+                dialogStayLoggedInButton: 'Stay Logged In',
+                dialogLogOutNowButton: 'Logout',
+
+                // error message if https://github.com/marcuswestin/store.js not enabled
+                errorAlertMessage: 'Please disable "Private Mode", or upgrade to a modern browser. Or perhaps a dependent file missing. Please see: https://github.com/marcuswestin/store.js',
+
+                // server-side session keep-alive timer
+                sessionKeepAliveTimer: 600, // ping the server at this interval in seconds. 600 = 10 Minutes. Set to false to disable pings
+                sessionKeepAliveUrl: window.location.href // set URL to ping - does not apply if sessionKeepAliveTimer: false
+            },
+
+            //##############################
+            //## Private Variables
+            //##############################
+            currentConfig = $.extend(defaultConfig, userRuntimeConfig), // merge default and user runtime configuration
+            origTitle = document.title, // save original browser title
+            activityDetector,
+            startKeepSessionAlive, stopKeepSessionAlive, keepSession, keepAlivePing, // session keep alive
+            idleTimer, remainingTimer, checkIdleTimeout, checkIdleTimeoutLoop, startIdleTimer, stopIdleTimer, // idle timer
+            openWarningDialog, dialogTimer, checkDialogTimeout, startDialogTimer, stopDialogTimer, isDialogOpen, destroyWarningDialog, countdownDisplay, // warning dialog
+            logoutUser;
+
+        //##############################
+        //## Public Functions
+        //##############################
+        // trigger a manual user logout
+        // use this code snippet on your site's Logout button: $.fn.idleTimeout().logout();
+        this.logout = function() {
+            store.set('idleTimerLoggedOut', true);
+        };
+
+        //##############################
+        //## Private Functions
+        //##############################
+
+        //----------- KEEP SESSION ALIVE FUNCTIONS --------------//
+        startKeepSessionAlive = function() {
+
+            keepSession = function() {
+                $.get(currentConfig.sessionKeepAliveUrl);
+                startKeepSessionAlive();
+            };
+
+            keepAlivePing = setTimeout(keepSession, (currentConfig.sessionKeepAliveTimer * 1000));
+        };
+
+        stopKeepSessionAlive = function() {
+            clearTimeout(keepAlivePing);
+        };
+
+        //----------- ACTIVITY DETECTION FUNCTION --------------//
+        activityDetector = function() {
+
+            $('body').on(currentConfig.activityEvents, function() {
+
+                if (!currentConfig.enableDialog || (currentConfig.enableDialog && isDialogOpen() !== true)) {
+                    startIdleTimer();
+                    $('#activity').effect('shake'); // added for demonstration page
+                }
+            });
+        };
+
+        //----------- IDLE TIMER FUNCTIONS --------------//
+        checkIdleTimeout = function() {
+
+            var timeIdleTimeout = (store.get('idleTimerLastActivity') + (currentConfig.idleTimeLimit * 1000));
+
+            if ($.now() > timeIdleTimeout) {
+
+                if (!currentConfig.enableDialog) { // warning dialog is disabled
+                    logoutUser(); // immediately log out user when user is idle for idleTimeLimit
+                } else if (currentConfig.enableDialog && isDialogOpen() !== true) {
+                    openWarningDialog();
+                    startDialogTimer(); // start timing the warning dialog
+                }
+            } else if (store.get('idleTimerLoggedOut') === true) { //a 'manual' user logout?
+                logoutUser();
+            } else {
+
+                if (currentConfig.enableDialog && isDialogOpen() === true) {
+                    destroyWarningDialog();
+                    stopDialogTimer();
+                }
+            }
+        };
+
+        startIdleTimer = function() {
+            stopIdleTimer();
+            store.set('idleTimerLastActivity', $.now());
+            checkIdleTimeoutLoop();
+        };
+
+        checkIdleTimeoutLoop = function() {
+            checkIdleTimeout();
+            idleTimer = setTimeout(checkIdleTimeoutLoop, (currentConfig.idleCheckHeartbeat * 1000));
+        };
+
+        stopIdleTimer = function() {
+            clearTimeout(idleTimer);
+        };
+
+        //----------- WARNING DIALOG FUNCTIONS --------------//
+        openWarningDialog = function() {
 
 
-    });
+            var dialogContent = "<div id='idletimer_warning_dialog'><p>" + currentConfig.dialogText + "</p><p style='display:inline'>" + currentConfig.dialogTimeRemaining + ": <div style='display:inline' id='countdownDisplay'></div> secs.</p></div>";
+
+            var that = this,
+                modalObj = {
+                    title: currentConfig.dialogTitle,
+                    htmlContent: dialogContent,
+                    okText: "Stay Signed-in",
+                    cancelText: 'Logout',
+                    mainClass: 'modal-lg',
+                    allowCancel: true,
+                    okCloses: false,
+                    escape: false,
+                    cancellable: true,
+                    width: "500px",
+                    mainClass: "ideal-timeout"
+                };
+            var modal = new Modal(modalObj);
+            modal.open();
+            modal.on('ok', function() {
+                if (userRuntimeConfig && userRuntimeConfig.onModalKeepAlive) {
+                    userRuntimeConfig.onModalKeepAlive(); //hit session API
+                }
+                destroyWarningDialog();
+                modal.close();
+                stopDialogTimer();
+                startIdleTimer();
+                CommonViewFunction.userDataFetch({
+                    url: UrlLinks.sessionApiUrl()
+                })
+
+            });
+            modal.on('closeModal', function() {
+                logoutUser();
+            });
+
+            countdownDisplay();
+
+            // document.title = currentConfig.dialogTitle;
+
+            if (currentConfig.sessionKeepAliveTimer) {
+                stopKeepSessionAlive();
+            }
+        };
+
+        checkDialogTimeout = function() {
+            var timeDialogTimeout = (store.get('idleTimerLastActivity') + (currentConfig.idleTimeLimit * 1000) + (currentConfig.dialogDisplayLimit * 1000));
+
+            if (($.now() > timeDialogTimeout) || (store.get('idleTimerLoggedOut') === true)) {
+                logoutUser();
+            }
+        };
+
+        startDialogTimer = function() {
+            dialogTimer = setInterval(checkDialogTimeout, (currentConfig.idleCheckHeartbeat * 1000));
+        };
+
+        stopDialogTimer = function() {
+            clearInterval(dialogTimer);
+            clearInterval(remainingTimer);
+        };
+
+        isDialogOpen = function() {
+            var dialogOpen = $("#idletimer_warning_dialog").is(":visible");
+
+            if (dialogOpen === true) {
+                return true;
+            }
+            return false;
+        };
+
+        destroyWarningDialog = function() {
+            if (currentConfig.sessionKeepAliveTimer) {
+                startKeepSessionAlive();
+            }
+        };
+
+        countdownDisplay = function() {
+            var dialogDisplaySeconds = currentConfig.dialogDisplayLimit,
+                mins, secs;
+
+            remainingTimer = setInterval(function() {
+                mins = Math.floor(dialogDisplaySeconds / 60); // minutes
+                if (mins < 10) { mins = '0' + mins; }
+                secs = dialogDisplaySeconds - (mins * 60); // seconds
+                if (secs < 10) { secs = '0' + secs; }
+                $('#countdownDisplay').html(mins + ':' + secs);
+                dialogDisplaySeconds -= 1;
+            }, 1000);
+        };
+
+        //----------- LOGOUT USER FUNCTION --------------//
+        logoutUser = function() {
+            store.set('idleTimerLoggedOut', true);
+
+            if (currentConfig.sessionKeepAliveTimer) {
+                stopKeepSessionAlive();
+            }
+
+            if (currentConfig.customCallback) {
+                currentConfig.customCallback();
+            }
+
+            if (currentConfig.redirectUrl) {
+                window.location.href = currentConfig.redirectUrl;
+            }
+        };
+
+        //###############################
+        // Build & Return the instance of the item as a plugin
+        // This is your construct.
+        //###############################
+        return this.each(function() {
+
+            if (store.enabled) {
+
+                store.set('idleTimerLastActivity', $.now());
+                store.set('idleTimerLoggedOut', false);
+
+                activityDetector();
+
+                if (currentConfig.sessionKeepAliveTimer) {
+                    startKeepSessionAlive();
+                }
+
+                startIdleTimer();
+
+            } else {
+                alert(currentConfig.errorAlertMessage);
+            }
+
+        });
+    };
+    //------------------------------------------------
+
+    //--------------------------------------Custom Text Editor-----------------------------------//
+    Utils.addCustomTextEditor = function(options) {
+        var selector = options.selector ? options.selector : ".customTextEditor",
+            defaultBtns = [
+                ['formatting'],
+                ['strong', 'em', 'underline', 'del'],
+                ['link'],
+                ['unorderedList', 'orderedList'],
+                ['viewHTML']
+            ],
+            smallTextEditorBtn = [
+                ['strong', 'em', 'underline', 'del'],
+                ['link'],
+                ['unorderedList', 'orderedList'],
+            ],
+            customBtnDefs = {
+                formatting: {
+                    dropdown: ['p', 'h1', 'h2', 'h3', 'h4'],
+                    ico: 'p'
+                }
+            },
+            $btnPane, $parent;
+        $(selector).trumbowyg({
+            btns: options.small ? smallTextEditorBtn : defaultBtns,
+            autogrow: true,
+            removeformatPasted: true,
+            urlProtocol: true,
+            defaultLinkTarget: '_blank',
+            btnsDef: options.small ? {} : customBtnDefs
+        }).on('tbwinit', function() {
+            $btnPane = $(this).parent().find('.trumbowyg-button-pane');
+            $parent = $(this).parent();
+            if (options.small) {
+                $parent.addClass('small-texteditor');
+            }
+            if (!options.initialHide) {
+                $btnPane.addClass('trumbowyg-button-pane-hidden');
+                $parent.css('border', '1px solid #e8e9ee');
+            }
+        }).on('tbwblur', function(e) {
+            $btnPane.addClass('trumbowyg-button-pane-hidden');
+            $parent.css('border', '1px solid #e8e9ee');
+        }).on('tbwfocus', function(e) {
+            $btnPane.removeClass('trumbowyg-button-pane-hidden');
+            $parent.css('border', '1px solid #8fa5b1');
+        }).on('tbwchange', function(e) {
+            options.callback ? options.callback(e) : null;
+            e.target.value = Utils.sanitizeHtmlContent({ data: e.target.value });
+        }).on('tbwmodalopen', function(e) {
+            $('input[name="title"], input[name="target"]').parent().css('display', 'none');
+        });
+    }
+
+    Utils.sanitizeHtmlContent = function(options) {
+        var editorContent, cleanedContent,
+            config = {
+                ALLOWED_TAGS: ['b', 'em', 'strong', 'u', 'a', 'ul', 'ol', 'li', 'p', 'strike', 'h1', 'h2', 'h3', 'h4'],
+                ALLOWED_ATTR: ['href'],
+                FORBID_TAGS: ['script', 'img', 'iframe', 'svg', 'title'],
+                FORBID_ATTR: ['onmouseover', 'onload', 'onclick', 'onerror']
+            };
+        editorContent = options.selector ? $(options.selector).trumbowyg('html') : options.data;
+        if (options && editorContent) {
+            cleanedContent = DOMPurify.sanitize(editorContent, config);
+        }
+        return cleanedContent || "";
+    }
+    //-----------------------------------------END---------------------//
+
+    Utils.updateInternalTabState = function() {
+        var tabActive = "",
+            paramObj = Utils.getUrlState.getQueryParams();
+        if (Utils.getUrlState.isSearchTab()) {
+            tabActive = "basic-search";
+        }
+        if (Utils.getUrlState.isDetailPage() && paramObj && paramObj.from === "relationshipSearch") {
+            tabActive = "relationship-search";
+        }
+        $('.nav.nav-tabs').find('[role="' + tabActive + '"]').addClass('active').siblings().removeClass('active');
+        $('.tab-content').find('[role="' + tabActive + '"]').addClass('active').siblings().removeClass('active');
+    }
+
+    Utils.disableRefreshButton = function(el, that) {
+        var that = that;
+        el.attr('disabled', true);
+        setTimeout(function() {
+            el.attr('disabled', false);
+        }, 1000);
+    }
     return Utils;
 });

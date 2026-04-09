@@ -19,7 +19,6 @@ package org.apache.atlas.web.security;
 import org.springframework.security.core.AuthenticationException;
 
 public class AtlasAuthenticationException extends AuthenticationException {
-
     public AtlasAuthenticationException(String message) {
         super(message);
     }
@@ -27,5 +26,4 @@ public class AtlasAuthenticationException extends AuthenticationException {
     public AtlasAuthenticationException(String message, Throwable cause) {
         super(message, cause);
     }
-
 }

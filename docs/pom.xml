@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!--
   ~ Licensed to the Apache Software Foundation (ASF) under one
   ~ or more contributor license agreements.  See the NOTICE file
@@ -17,23 +16,26 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>org.apache.atlas</groupId>
         <artifactId>apache-atlas</artifactId>
-        <version>0.9-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
     </parent>
+
     <artifactId>atlas-docs</artifactId>
-    <description>Apache Atlas Documentation</description>
+
     <name>Apache Atlas Documentation</name>
+    <description>Apache Atlas Documentation</description>
 
     <properties>
-        <skipTests>true</skipTests>
         <skipSite>false</skipSite>
+        <skipTests>true</skipTests>
     </properties>
-
-    <reporting>
+    <!-- TODO -->
+    <!-- <reporting>
         <excludeDefaults>true</excludeDefaults>
         <outputDirectory>${project.build.directory}/site</outputDirectory>
         <plugins>
@@ -47,7 +49,7 @@
                     <dependencyLocationsEnabled>false</dependencyLocationsEnabled>
                     <webAccessUrl>https://github.com/apache/atlas.git</webAccessUrl>
                     <anonymousConnection>scm:git://git.apache.org/atlas.git</anonymousConnection>
-                    <developerConnection>scm:https://git-wip-us.apache.org/repos/asf/atlas.git</developerConnection>
+                    <developerConnection>scm:https://gitbox.apache.org/repos/asf/atlas.git</developerConnection>
                 </configuration>
                 <reportSets>
                     <reportSet>
@@ -63,26 +65,90 @@
                 </reportSets>
             </plugin>
         </plugins>
-    </reporting>
-
+    </reporting> -->
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>com.github.eirslett</groupId>
+                    <artifactId>frontend-maven-plugin</artifactId>
+                    <configuration>
+                        <phase>validate</phase>
+                        <workingDirectory>${project.build.directory}</workingDirectory>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.maven.doxia</groupId>
-                        <artifactId>doxia-module-twiki</artifactId>
-                        <version>1.6</version>
-                    </dependency>
-                </dependencies>
+                <configuration>
+                    <port>8080</port>
+                    <tempWebappDirectory>${basedir}/target/site</tempWebappDirectory>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.7</version>
                 <executions>
                     <execution>
+                        <id>copy-resources</id>
                         <goals>
-                            <goal>site</goal>
+                            <goal>copy-resources</goal>
                         </goals>
-                        <phase>prepare-package</phase>
+                        <phase>validate</phase>
+                        <configuration>
+                            <outputDirectory>${basedir}/target</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}</directory>
+                                    <excludes>
+                                        <exclude>.docz/**</exclude>
+                                        <exclude>node_modules/**</exclude>
+                                        <exclude>target/**</exclude>
+                                    </excludes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>install node and npm</id>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                        <phase>pre-site</phase>
+                        <configuration>
+                            <nodeVersion>${node-for-v2.version}</nodeVersion>
+                            <npmVersion>${npm-for-v2.version}</npmVersion>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm install</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>pre-site</phase>
+                        <configuration>
+                            <arguments>install</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm build</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>site</phase>
+                        <configuration>
+                            <arguments>run build</arguments>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

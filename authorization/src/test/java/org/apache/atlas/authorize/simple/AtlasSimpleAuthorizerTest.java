@@ -1,0 +1,369 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.atlas.authorize.simple;
+
+import org.apache.atlas.authorize.AtlasAccessRequest;
+import org.apache.atlas.authorize.AtlasAuthorizationException;
+import org.apache.atlas.authorize.AtlasAuthorizer;
+import org.apache.atlas.authorize.AtlasAuthorizerFactory;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.AssertJUnit;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+public class AtlasSimpleAuthorizerTest {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasSimpleAuthorizerTest.class);
+
+    private static final String USER_ADMIN            = "admin";
+    private static final String USER_DATA_SCIENTIST   = "dataScientist";
+    private static final String USER_DATA_STEWARD     = "dataSteward";
+    private static final String USER_DATA_STEWARD_EX  = "dataStewardEx";
+    private static final String USER_FINANCE          = "finance";
+    private static final String USER_FINANCE_PII      = "financePII";
+    private static final String USER_IN_ADMIN_GROUP   = "admin-group-user";
+    private static final String USER_IN_UNKNOWN_GROUP = "unknown-group-user";
+
+    private static final Map<String, Set<String>> USER_GROUPS       = new HashMap<>();
+    private static final List<AtlasPrivilege>     ENTITY_PRIVILEGES = new ArrayList<>();
+    private static final List<AtlasPrivilege>     LABEL_PRIVILEGES  = new ArrayList<>();
+
+    private String          originalConf;
+    private AtlasAuthorizer authorizer;
+
+    @BeforeMethod
+    public void setup1() {
+        originalConf = System.getProperty("atlas.conf");
+
+        System.setProperty("atlas.conf", "src/test/resources");
+
+        try {
+            authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
+        } catch (Exception e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest setup failed", e);
+        }
+    }
+
+    @AfterClass
+    public void tearDown() throws Exception {
+        if (originalConf != null) {
+            System.setProperty("atlas.conf", originalConf);
+        }
+
+        authorizer = null;
+    }
+
+    @Test
+    public void testAllAllowedForAdminUser() {
+        try {
+            for (AtlasPrivilege privilege : AtlasPrivilege.values()) {
+                AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, privilege);
+
+                setUser(request, USER_ADMIN);
+
+                boolean isAccessAllowed = authorizer.isAccessAllowed(request);
+
+                AssertJUnit.assertTrue(privilege.name() + " should have been allowed for user " + USER_DATA_SCIENTIST, isAccessAllowed);
+            }
+        } catch (Exception e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
+    @Test
+    public void testAddPIIForStewardExUser() {
+        try {
+            AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, null, new AtlasClassification("PII"));
+
+            setUser(request, USER_DATA_STEWARD_EX);
+
+            boolean isAccessAllowed = authorizer.isAccessAllowed(request);
+
+            AssertJUnit.assertTrue("user " + USER_DATA_STEWARD_EX + " should have been allowed to add PII", isAccessAllowed);
+        } catch (Exception e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
+    @Test
+    public void testAddClassificationOnEntityWithClassificationForStewardExUser() {
+        try {
+            AtlasEntityHeader entityHeader = new AtlasEntityHeader();
+
+            entityHeader.setClassifications(Arrays.asList(new AtlasClassification("PII_1"), new AtlasClassification("PII_2")));
+
+            AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, entityHeader, new AtlasClassification("PII"));
+
+            setUser(request, USER_DATA_STEWARD_EX);
+
+            boolean isAccessAllowed = authorizer.isAccessAllowed(request);
+
+            AssertJUnit.assertTrue("user " + USER_DATA_STEWARD_EX + " should have been allowed to add PII", isAccessAllowed);
+        } catch (Exception e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
+    @Test
+    public void testAddClassificationOnEntityWithClassificationForStewardExUserShouldFail() {
+        try {
+            AtlasEntityHeader entityHeader = new AtlasEntityHeader();
+
+            entityHeader.setClassificationNames(Arrays.asList("TAG1", "TAG2"));
+
+            AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, entityHeader, new AtlasClassification("PII"));
+
+            setUser(request, USER_DATA_STEWARD_EX);
+
+            boolean isAccessAllowed = authorizer.isAccessAllowed(request);
+
+            AssertJUnit.assertFalse("user " + USER_DATA_STEWARD_EX + " should have not been allowed to add PII on entity with TAG1,TAG2 classification ", isAccessAllowed);
+        } catch (Exception e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
+    @Test
+    public void testAddPIIForStewardUser() {
+        try {
+            AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, null, new AtlasClassification("PII"));
+
+            setUser(request, USER_DATA_STEWARD);
+
+            boolean isAccessAllowed = authorizer.isAccessAllowed(request);
+
+            AssertJUnit.assertFalse("user " + USER_DATA_STEWARD + " should not have been allowed to add PII", isAccessAllowed);
+        } catch (Exception e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
+    @Test
+    public void testFinancePIIEntityAccessForFinancePIIUser() {
+        try {
+            AtlasEntityHeader entity = new AtlasEntityHeader();
+
+            entity.setClassifications(Arrays.asList(new AtlasClassification("FINANCE"), new AtlasClassification("PII")));
+
+            for (AtlasPrivilege privilege : ENTITY_PRIVILEGES) {
+                AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, privilege, entity, new AtlasClassification("PII"));
+
+                setUser(request, USER_FINANCE_PII);
+
+                boolean isAccessAllowed = authorizer.isAccessAllowed(request);
+
+                AssertJUnit.assertTrue("user " + USER_FINANCE_PII + " should have been allowed " + privilege + " on entity with FINANCE & PII", isAccessAllowed);
+            }
+        } catch (Exception e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
+    @Test
+    public void testFinancePIIEntityAccessForFinanceUser() {
+        try {
+            AtlasEntityHeader entity = new AtlasEntityHeader();
+
+            entity.setClassificationNames(Arrays.asList("FINANCE", "PII"));
+
+            for (AtlasPrivilege privilege : ENTITY_PRIVILEGES) {
+                AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, privilege, entity, new AtlasClassification("PII"));
+
+                setUser(request, USER_FINANCE);
+
+                boolean isAccessAllowed = authorizer.isAccessAllowed(request);
+
+                AssertJUnit.assertFalse("user " + USER_FINANCE + " should not have been allowed " + privilege + " on entity with FINANCE & PII", isAccessAllowed);
+            }
+        } catch (Exception e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
+    @Test
+    public void testFinanceEntityAccess() {
+        try {
+            AtlasEntityHeader entity = new AtlasEntityHeader();
+
+            entity.setClassifications(Collections.singletonList(new AtlasClassification("FINANCE")));
+
+            for (String userName : Arrays.asList(USER_FINANCE_PII, USER_FINANCE)) {
+                for (AtlasPrivilege privilege : ENTITY_PRIVILEGES) {
+                    AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, privilege, entity, new AtlasClassification("FINANCE"));
+
+                    setUser(request, userName);
+
+                    boolean isAccessAllowed = authorizer.isAccessAllowed(request);
+
+                    AssertJUnit.assertTrue("user " + userName + " should have been allowed " + privilege + " on entity with FINANCE", isAccessAllowed);
+                }
+            }
+        } catch (Exception e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
+    @Test
+    public void testAccessForUserInAdminGroup() {
+        try {
+            AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, AtlasPrivilege.ENTITY_UPDATE);
+
+            setUser(request, USER_IN_ADMIN_GROUP);
+
+            boolean isAccessAllowed = authorizer.isAccessAllowed(request);
+
+            AssertJUnit.assertTrue("user " + USER_IN_ADMIN_GROUP + " should have been allowed " + AtlasPrivilege.ENTITY_UPDATE, isAccessAllowed);
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
+    @Test
+    public void testAccessForUserInUnknownGroup() {
+        try {
+            AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, AtlasPrivilege.ENTITY_UPDATE);
+
+            setUser(request, USER_IN_UNKNOWN_GROUP);
+
+            boolean isAccessAllowed = authorizer.isAccessAllowed(request);
+
+            AssertJUnit.assertFalse("user " + USER_IN_UNKNOWN_GROUP + " should not have been allowed " + AtlasPrivilege.ENTITY_UPDATE, isAccessAllowed);
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
+    @Test
+    public void testLabels() {
+        try {
+            for (AtlasPrivilege privilege : LABEL_PRIVILEGES) {
+                for (String userName : Arrays.asList(USER_DATA_SCIENTIST, USER_DATA_STEWARD)) {
+                    AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, privilege);
+
+                    setUser(request, userName);
+
+                    boolean isAccessAllowed = authorizer.isAccessAllowed(request);
+
+                    AssertJUnit.assertFalse("user " + userName + " should not have been allowed " + privilege, isAccessAllowed);
+                }
+
+                AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, privilege);
+
+                setUser(request, USER_DATA_STEWARD_EX);
+
+                boolean isAccessAllowed = authorizer.isAccessAllowed(request);
+
+                AssertJUnit.assertTrue("user " + USER_DATA_STEWARD_EX + " should have been allowed " + privilege, isAccessAllowed);
+            }
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
+    @Test
+    public void testBusinessMetadata() {
+        try {
+            for (String userName : Arrays.asList(USER_DATA_SCIENTIST, USER_DATA_STEWARD)) {
+                AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA);
+
+                setUser(request, userName);
+
+                boolean isAccessAllowed = authorizer.isAccessAllowed(request);
+
+                AssertJUnit.assertFalse("user " + userName + " should not have been allowed " + AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA, isAccessAllowed);
+            }
+
+            AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA);
+
+            setUser(request, USER_DATA_STEWARD_EX);
+
+            boolean isAccessAllowed = authorizer.isAccessAllowed(request);
+
+            AssertJUnit.assertTrue("user " + USER_DATA_STEWARD_EX + " should have been allowed " + AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA, isAccessAllowed);
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
+    private void setUser(AtlasAccessRequest request, String userName) {
+        Set<String> userGroups = USER_GROUPS.get(userName);
+
+        request.setUser(userName, userGroups != null ? userGroups : Collections.emptySet());
+    }
+
+    static {
+        USER_GROUPS.put(USER_ADMIN, Collections.singleton("ROLE_ADMIN"));
+        USER_GROUPS.put(USER_DATA_STEWARD, Collections.emptySet());
+        USER_GROUPS.put(USER_DATA_SCIENTIST, Collections.emptySet());
+        USER_GROUPS.put(USER_DATA_STEWARD_EX, Collections.singleton("DATA_STEWARD_EX"));
+        USER_GROUPS.put(USER_FINANCE, Collections.singleton("FINANCE"));
+        USER_GROUPS.put(USER_FINANCE_PII, Collections.singleton("FINANCE_PII"));
+        USER_GROUPS.put(USER_IN_ADMIN_GROUP, Collections.singleton("ROLE_ADMIN"));
+        USER_GROUPS.put(USER_IN_UNKNOWN_GROUP, Collections.singleton("UNKNOWN_GROUP"));
+
+        ENTITY_PRIVILEGES.add(AtlasPrivilege.ENTITY_CREATE);
+        ENTITY_PRIVILEGES.add(AtlasPrivilege.ENTITY_UPDATE);
+        ENTITY_PRIVILEGES.add(AtlasPrivilege.ENTITY_READ);
+        ENTITY_PRIVILEGES.add(AtlasPrivilege.ENTITY_ADD_CLASSIFICATION);
+        ENTITY_PRIVILEGES.add(AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION);
+        ENTITY_PRIVILEGES.add(AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION);
+        ENTITY_PRIVILEGES.add(AtlasPrivilege.ENTITY_READ_CLASSIFICATION);
+        ENTITY_PRIVILEGES.add(AtlasPrivilege.ENTITY_ADD_LABEL);
+        ENTITY_PRIVILEGES.add(AtlasPrivilege.ENTITY_REMOVE_LABEL);
+        ENTITY_PRIVILEGES.add(AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA);
+
+        LABEL_PRIVILEGES.add(AtlasPrivilege.ENTITY_ADD_LABEL);
+        LABEL_PRIVILEGES.add(AtlasPrivilege.ENTITY_REMOVE_LABEL);
+    }
+}

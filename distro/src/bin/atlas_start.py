@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,8 +24,8 @@ import atlas_config as mc
 ATLAS_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=%s.log"
 ATLAS_COMMAND_OPTS="-Datlas.home=%s"
 ATLAS_CONFIG_OPTS="-Datlas.conf=%s"
-DEFAULT_JVM_HEAP_OPTS="-Xmx1024m -XX:MaxPermSize=512m"
-DEFAULT_JVM_OPTS="-Dlog4j.configuration=atlas-log4j.xml -Djava.net.preferIPv4Stack=true -server"
+DEFAULT_JVM_HEAP_OPTS="-Xmx1024m"
+DEFAULT_JVM_OPTS="-Dlogback.configurationFile=atlas-logback.xml -Djava.net.preferIPv4Stack=true -server"
 
 def main():
 
@@ -98,39 +98,65 @@ def main():
 
     if os.path.isfile(atlas_pid_file):
        #Check if process listed in atlas.pid file is still running
-       pf = file(atlas_pid_file, 'r')
+       pf = open(atlas_pid_file, 'r')
        pid = pf.read().strip()
        pf.close()
-
-       if mc.exist_pid((int)(pid)):
-           if is_setup:
-               print "Cannot run setup when server is running."
-           mc.server_already_running(pid)
-       else:
-           mc.server_pid_not_running(pid)
+       if pid != "":
+           if mc.exist_pid((int)(pid)):
+               if is_setup:
+                   print("Cannot run setup when server is running.")
+               mc.server_already_running(pid)
+           else:
+               mc.server_pid_not_running(pid)
 
     if is_hbase and mc.is_hbase_local(confdir):
-        print "configured for local hbase."
+        print("\nConfigured for local HBase.")
         mc.configure_hbase(atlas_home)
+
+        print("Starting local HBase...")
         mc.run_hbase_action(mc.hbaseBinDir(atlas_home), "start", hbase_conf_dir, logdir)
-        print "hbase started."
+
+        print("Local HBase started!")
 
     #solr setup
     if mc.is_solr_local(confdir):
-        print "configured for local solr."
-        mc.run_solr(mc.solrBinDir(atlas_home), "start", mc.get_solr_zk_url(confdir), mc.solrPort(), logdir)
-        print "solr started."
+        print("\nConfigured for local Solr.")
 
-        print "setting up solr collections..."
+        if mc.is_cassandra_local(confdir):
+            print("Cassandra embedded configured.")
+            mc.configure_cassandra(atlas_home)
+
+        if mc.is_zookeeper_local(confdir):
+            mc.configure_zookeeper(atlas_home)
+            mc.run_zookeeper(mc.zookeeperBinDir(atlas_home), "start", logdir)
+            print("zookeeper started.")
+
+        print("Starting local Solr...")
+        mc.run_solr(mc.solrBinDir(atlas_home), "start", mc.get_solr_zk_url(confdir), mc.solrPort(), logdir, True, mc.solrHomeDir(atlas_home))
+
+        print("Local Solr started!")
+
+        print("\nCreating Solr collections for Atlas using config: " + mc.solrConfDir(atlas_home))
+
         mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "vertex_index", logdir)
+
         mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "edge_index", logdir)
+
         mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "fulltext_index", logdir)
+
+    #elasticsearch setup
+    if mc.is_elasticsearch_local():
+        print("configured for local elasticsearch.")
+        mc.start_elasticsearch(mc.elasticsearchBinDir(atlas_home), logdir)
+        print("elasticsearch started.")
 
     web_app_path = os.path.join(web_app_dir, "atlas")
     if (mc.isCygwin()):
         web_app_path = mc.convertCygwinPath(web_app_path)
     if not is_setup:
         start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path)
+        mc.wait_for_startup(confdir, 300)
+        print("Apache Atlas Server started!!!\n")
     else:
         process = mc.java("org.apache.atlas.web.setup.AtlasSetup", [], atlas_classpath, jvm_opts_list, jvm_logdir)
         return process.wait()
@@ -141,15 +167,13 @@ def start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_lis
     args.extend(sys.argv[1:])
     process = mc.java("org.apache.atlas.Atlas", args, atlas_classpath, jvm_opts_list, jvm_logdir)
     mc.writePid(atlas_pid_file, process)
-    print "Apache Atlas Server started!!!\n"
-
 
 if __name__ == '__main__':
     try:
         returncode = main()
     except Exception as e:
-        print "Exception: %s " % str(e)
-        print traceback.format_exc()
+        print("Exception: %s " % str(e))
+        print(traceback.format_exc())
         returncode = -1
 
     sys.exit(returncode)

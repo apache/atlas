@@ -1,0 +1,58 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.graph-custom-tooltip {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  padding: 8px;
+  position: absolute;
+  z-index: 1000;
+}
+
+.entity-stats-accordion {
+  width: 100%;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: none;
+}
+
+.graph-custom-tooltip-title {
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.graph-custom-tooltip-icon {
+  padding: "4px";
+  border-bottom: none;
+  width: 10px;
+}
+
+.graph-custom-tooltip-total {
+  padding: 4px !important;
+  border-bottom: none !important;
+  font-weight: bold !important;
+  color: rgba(0, 0, 0, 0.87) !important;
+}
+
+.graph-custom-tooltip-total-value {
+  padding: 4px !important;
+  border-bottom: none !important;
+  text-align: right !important;
+  font-weight: bold !important;
+  color: rgba(0, 0, 0, 0.87) !important;
+}

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
@@ -15,7 +15,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
+
 import sys
 
 import atlas_config as mc
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     try:
         returncode = main()
     except Exception as e:
-        print "Exception: %s " % str(e)
+        print("Exception: %s " % str(e))
         returncode = -1
 
     sys.exit(returncode)

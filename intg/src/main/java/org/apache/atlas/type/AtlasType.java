@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,52 +17,74 @@
  */
 package org.apache.atlas.type;
 
-
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.codehaus.jackson.map.DeserializationConfig;
-import org.codehaus.jackson.map.ObjectMapper;
+import org.apache.atlas.utils.AtlasJson;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.List;
-
-
-
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * base class that declares interface for all Atlas types.
  */
 
 public abstract class AtlasType {
-
-    private static final ObjectMapper mapper = new ObjectMapper()
-                                            .configure(DeserializationConfig.Feature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasType.class);
 
     private final String       typeName;
     private final TypeCategory typeCategory;
+    private final String       serviceType;
 
     protected AtlasType(AtlasBaseTypeDef typeDef) {
-        this(typeDef.getName(), typeDef.getCategory());
+        this(typeDef.getName(), typeDef.getCategory(), typeDef.getServiceType());
     }
 
-    protected AtlasType(String typeName, TypeCategory typeCategory) {
+    protected AtlasType(String typeName, TypeCategory typeCategory, String serviceType) {
         this.typeName     = typeName;
         this.typeCategory = typeCategory;
+        this.serviceType  = serviceType;
     }
 
-    public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    public static String toJson(Object obj) {
+        return AtlasJson.toJson(obj);
     }
 
-    public void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    public static <T> T fromJson(String jsonStr, Class<T> type) {
+        return AtlasJson.fromJson(jsonStr, type);
     }
 
-    public void resolveReferencesPhase3(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    public static <T> T fromLinkedHashMap(Object obj, Class<T> type) {
+        return AtlasJson.fromLinkedHashMap(obj, type);
     }
 
-    public String getTypeName() { return typeName; }
+    public static String toV1Json(Object obj) {
+        return AtlasJson.toV1Json(obj);
+    }
 
-    public TypeCategory getTypeCategory() { return typeCategory; }
+    public static <T> T fromV1Json(String jsonStr, Class<T> type) {
+        return AtlasJson.fromV1Json(jsonStr, type);
+    }
+
+    public static <T> T fromV1Json(String jsonStr, TypeReference<T> type) {
+        return AtlasJson.fromV1Json(jsonStr, type);
+    }
+
+    public String getTypeName() {
+        return typeName;
+    }
+
+    public TypeCategory getTypeCategory() {
+        return typeCategory;
+    }
+
+    public String getServiceType() {
+        return serviceType;
+    }
 
     public abstract Object createDefaultValue();
 
@@ -70,11 +92,37 @@ public abstract class AtlasType {
         return createDefaultValue();
     }
 
-    public Object createDefaultValue(Object val){
+    public Object createDefaultValue(Object val) {
         return val == null ? createDefaultValue() : getNormalizedValue(val);
     }
 
     public abstract boolean isValidValue(Object obj);
+
+    public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
+        final boolean ret;
+
+        if (val1 == null) {
+            ret = val2 == null;
+        } else if (val2 == null) {
+            ret = false;
+        } else {
+            Object normalizedVal1 = getNormalizedValue(val1);
+
+            if (normalizedVal1 == null) {
+                ret = false;
+            } else {
+                Object normalizedVal2 = getNormalizedValue(val2);
+
+                if (normalizedVal2 == null) {
+                    ret = false;
+                } else {
+                    ret = Objects.equals(normalizedVal1, normalizedVal2);
+                }
+            }
+        }
+
+        return ret;
+    }
 
     public abstract Object getNormalizedValue(Object obj);
 
@@ -88,9 +136,13 @@ public abstract class AtlasType {
         return ret;
     }
 
-    public boolean isValidValueForUpdate(Object obj) { return isValidValue(obj); }
+    public boolean isValidValueForUpdate(Object obj) {
+        return isValidValue(obj);
+    }
 
-    public Object getNormalizedValueForUpdate(Object obj) { return getNormalizedValue(obj); }
+    public Object getNormalizedValueForUpdate(Object obj) {
+        return getNormalizedValue(obj);
+    }
 
     public boolean validateValueForUpdate(Object obj, String objName, List<String> messages) {
         return validateValue(obj, objName, messages);
@@ -104,23 +156,12 @@ public abstract class AtlasType {
         return this;
     }
 
-    public static String toJson(Object obj) {
-        String ret;
-        try {
-            ret = mapper.writeValueAsString(obj);
-        }catch (IOException e){
-            ret = null;
-        }
-        return ret;
+    void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
     }
 
-    public static <T> T fromJson(String jsonStr, Class<T> type) {
-        T ret;
-        try {
-            ret =  mapper.readValue(jsonStr, type);
-        }catch (IOException e){
-            ret = null;
-        }
-        return ret;
+    void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    }
+
+    void resolveReferencesPhase3(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
     }
 }

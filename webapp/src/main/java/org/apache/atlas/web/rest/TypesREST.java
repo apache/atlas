@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,9 +17,19 @@
  */
 package org.apache.atlas.web.rest;
 
+import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
-import org.apache.atlas.model.typedef.*;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -31,8 +41,17 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+
 import java.util.List;
 import java.util.Set;
 
@@ -42,6 +61,8 @@ import java.util.Set;
 @Path("v2/types")
 @Singleton
 @Service
+@Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
+@Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class TypesREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TypesREST");
 
@@ -62,11 +83,11 @@ public class TypesREST {
      */
     @GET
     @Path("/typedef/name/{name}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasBaseTypeDef getTypeDefByName(@PathParam("name") String name) throws AtlasBaseException {
-        AtlasBaseTypeDef ret = typeDefStore.getByName(name);
+        Servlets.validateQueryParamLength("name", name);
 
-        return ret;
+        return typeDefStore.getByName(name);
     }
 
     /**
@@ -78,11 +99,11 @@ public class TypesREST {
      */
     @GET
     @Path("/typedef/guid/{guid}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasBaseTypeDef getTypeDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
-        AtlasBaseTypeDef ret = typeDefStore.getByGuid(guid);
+        Servlets.validateQueryParamLength("guid", guid);
 
-        return ret;
+        return typeDefStore.getByGuid(guid);
     }
 
     /**
@@ -94,7 +115,7 @@ public class TypesREST {
      */
     @GET
     @Path("/typedefs/headers")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public List<AtlasTypeDefHeader> getTypeDefHeaders(@Context HttpServletRequest httpServletRequest) throws AtlasBaseException {
         SearchFilter searchFilter = getSearchFilter(httpServletRequest);
 
@@ -106,18 +127,16 @@ public class TypesREST {
     /**
      * Bulk retrieval API for retrieving all type definitions in Atlas
      * @return A composite wrapper object with lists of all type definitions
-     * @throws Exception
+     * @throws AtlasBaseException
      * @HTTP 200 {@link AtlasTypesDef} with type definitions matching the search criteria or else returns empty list of type definitions
      */
     @GET
     @Path("/typedefs")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasTypesDef getAllTypeDefs(@Context HttpServletRequest httpServletRequest) throws AtlasBaseException {
         SearchFilter searchFilter = getSearchFilter(httpServletRequest);
 
-        AtlasTypesDef typesDef = typeDefStore.searchTypesDef(searchFilter);
-
-        return typesDef;
+        return typeDefStore.searchTypesDef(searchFilter);
     }
 
     /**
@@ -130,11 +149,11 @@ public class TypesREST {
      */
     @GET
     @Path("/enumdef/name/{name}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasEnumDef getEnumDefByName(@PathParam("name") String name) throws AtlasBaseException {
-        AtlasEnumDef ret = typeDefStore.getEnumDefByName(name);
+        Servlets.validateQueryParamLength("name", name);
 
-        return ret;
+        return typeDefStore.getEnumDefByName(name);
     }
 
     /**
@@ -147,13 +166,12 @@ public class TypesREST {
      */
     @GET
     @Path("/enumdef/guid/{guid}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasEnumDef getEnumDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
-        AtlasEnumDef ret = typeDefStore.getEnumDefByGuid(guid);
+        Servlets.validateQueryParamLength("guid", guid);
 
-        return ret;
+        return typeDefStore.getEnumDefByGuid(guid);
     }
-
 
     /**
      * Get the struct definition by it's name (unique)
@@ -165,11 +183,11 @@ public class TypesREST {
      */
     @GET
     @Path("/structdef/name/{name}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasStructDef getStructDefByName(@PathParam("name") String name) throws AtlasBaseException {
-        AtlasStructDef ret = typeDefStore.getStructDefByName(name);
+        Servlets.validateQueryParamLength("name", name);
 
-        return ret;
+        return typeDefStore.getStructDefByName(name);
     }
 
     /**
@@ -182,11 +200,11 @@ public class TypesREST {
      */
     @GET
     @Path("/structdef/guid/{guid}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasStructDef getStructDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
-        AtlasStructDef ret = typeDefStore.getStructDefByGuid(guid);
+        Servlets.validateQueryParamLength("guid", guid);
 
-        return ret;
+        return typeDefStore.getStructDefByGuid(guid);
     }
 
     /**
@@ -199,11 +217,11 @@ public class TypesREST {
      */
     @GET
     @Path("/classificationdef/name/{name}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasClassificationDef getClassificationDefByName(@PathParam("name") String name) throws AtlasBaseException {
-        AtlasClassificationDef ret = typeDefStore.getClassificationDefByName(name);
+        Servlets.validateQueryParamLength("name", name);
 
-        return ret;
+        return typeDefStore.getClassificationDefByName(name);
     }
 
     /**
@@ -216,11 +234,11 @@ public class TypesREST {
      */
     @GET
     @Path("/classificationdef/guid/{guid}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasClassificationDef getClassificationDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
-        AtlasClassificationDef ret = typeDefStore.getClassificationDefByGuid(guid);
+        Servlets.validateQueryParamLength("guid", guid);
 
-        return ret;
+        return typeDefStore.getClassificationDefByGuid(guid);
     }
 
     /**
@@ -233,11 +251,11 @@ public class TypesREST {
      */
     @GET
     @Path("/entitydef/name/{name}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasEntityDef getEntityDefByName(@PathParam("name") String name) throws AtlasBaseException {
-        AtlasEntityDef ret = typeDefStore.getEntityDefByName(name);
+        Servlets.validateQueryParamLength("name", name);
 
-        return ret;
+        return typeDefStore.getEntityDefByName(name);
     }
 
     /**
@@ -250,12 +268,13 @@ public class TypesREST {
      */
     @GET
     @Path("/entitydef/guid/{guid}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasEntityDef getEntityDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
-        AtlasEntityDef ret = typeDefStore.getEntityDefByGuid(guid);
+        Servlets.validateQueryParamLength("guid", guid);
 
-        return ret;
+        return typeDefStore.getEntityDefByGuid(guid);
     }
+
     /**
      * Get the relationship definition by it's name (unique)
      * @param name relationship name
@@ -266,11 +285,11 @@ public class TypesREST {
      */
     @GET
     @Path("/relationshipdef/name/{name}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasRelationshipDef getRelationshipDefByName(@PathParam("name") String name) throws AtlasBaseException {
-        AtlasRelationshipDef ret = typeDefStore.getRelationshipDefByName(name);
+        Servlets.validateQueryParamLength("name", name);
 
-        return ret;
+        return typeDefStore.getRelationshipDefByName(name);
     }
 
     /**
@@ -283,12 +302,47 @@ public class TypesREST {
      */
     @GET
     @Path("/relationshipdef/guid/{guid}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasRelationshipDef getRelationshipDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
-        AtlasRelationshipDef ret = typeDefStore.getRelationshipDefByGuid(guid);
+        Servlets.validateQueryParamLength("guid", guid);
 
-        return ret;
+        return typeDefStore.getRelationshipDefByGuid(guid);
     }
+
+    /**
+     * Get the businessMetadata definition for the given guid
+     * @param guid businessMetadata guid
+     * @return businessMetadata definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the businessMetadata definition by it's guid
+     * @HTTP 404 On Failed lookup for the given guid
+     */
+    @GET
+    @Path("/businessmetadatadef/guid/{guid}")
+    @Timed
+    public AtlasBusinessMetadataDef getBusinessMetadataDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
+        return typeDefStore.getBusinessMetadataDefByGuid(guid);
+    }
+
+    /**
+     * Get the businessMetadata definition by it's name (unique)
+     * @param name businessMetadata name
+     * @return businessMetadata definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the businessMetadata definition by it's name
+     * @HTTP 404 On Failed lookup for the given name
+     */
+    @GET
+    @Path("/businessmetadatadef/name/{name}")
+    @Timed
+    public AtlasBusinessMetadataDef getBusinessMetadataDefByName(@PathParam("name") String name) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("name", name);
+
+        return typeDefStore.getBusinessMetadataDefByName(name);
+    }
+
     /* Bulk API operation */
 
     /**
@@ -297,21 +351,19 @@ public class TypesREST {
      * @param typesDef A composite wrapper object with corresponding lists of the type definition
      * @return A composite wrapper object with lists of type definitions that were successfully
      * created
-     * @throws Exception
+     * @throws AtlasBaseException
      * @HTTP 200 On successful update of requested type definitions
      * @HTTP 400 On validation failure for any type definitions
      */
     @POST
     @Path("/typedefs")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasTypesDef createAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.createAtlasTypeDefs(" +
-                                                               AtlasTypeUtil.toDebugString(typesDef) + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.createAtlasTypeDefs(" + AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
 
             return typeDefStore.createTypesDef(typesDef);
@@ -324,22 +376,20 @@ public class TypesREST {
      * Bulk update API for all types, changes detected in the type definitions would be persisted
      * @param typesDef A composite object that captures all type definition changes
      * @return A composite object with lists of type definitions that were updated
-     * @throws Exception
+     * @throws AtlasBaseException
      * @HTTP 200 On successful update of requested type definitions
      * @HTTP 400 On validation failure for any type definitions
      */
     @PUT
     @Path("/typedefs")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     @Experimental
+    @Timed
     public AtlasTypesDef updateAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.updateAtlasTypeDefs(" +
-                                                               AtlasTypeUtil.toDebugString(typesDef) + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.updateAtlasTypeDefs(" + AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
 
             return typeDefStore.updateTypesDef(typesDef);
@@ -351,25 +401,47 @@ public class TypesREST {
     /**
      * Bulk delete API for all types
      * @param typesDef A composite object that captures all types to be deleted
-     * @throws Exception
+     * @throws AtlasBaseException
      * @HTTP 204 On successful deletion of the requested type definitions
      * @HTTP 400 On validation failure for any type definitions
      */
     @DELETE
     @Path("/typedefs")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     @Experimental
+    @Timed
     public void deleteAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeDefs(" +
-                                                               AtlasTypeUtil.toDebugString(typesDef) + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeDefs(" + AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
 
             typeDefStore.deleteTypesDef(typesDef);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Delete API for type identified by its name.
+     * @param typeName Name of the type to be deleted.
+     * @throws AtlasBaseException
+     * @HTTP 204 On successful deletion of the requested type definitions
+     * @HTTP 400 On validation failure for any type definitions
+     */
+    @DELETE
+    @Path("/typedef/name/{typeName}")
+    @Timed
+    public void deleteAtlasTypeByName(@PathParam("typeName") final String typeName) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeByName(" + typeName + ")");
+            }
+
+            typeDefStore.deleteTypeByName(typeName);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -380,10 +452,18 @@ public class TypesREST {
      * @return
      */
     private SearchFilter getSearchFilter(HttpServletRequest httpServletRequest) {
-        SearchFilter ret = new SearchFilter();
-        Set<String> keySet = httpServletRequest.getParameterMap().keySet();
-        for (String key : keySet) {
-            ret.setParam(String.valueOf(key), String.valueOf(httpServletRequest.getParameter(key)));
+        SearchFilter ret    = new SearchFilter();
+        Set<String>  keySet = httpServletRequest.getParameterMap().keySet();
+
+        for (String k : keySet) {
+            String key   = String.valueOf(k);
+            String value = String.valueOf(httpServletRequest.getParameter(k));
+
+            if (key.equalsIgnoreCase("excludeInternalTypesAndReferences") && value.equalsIgnoreCase("true")) {
+                FilterUtil.addParamsToHideInternalType(ret);
+            } else {
+                ret.setParam(key, value);
+            }
         }
 
         return ret;

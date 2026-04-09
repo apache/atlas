@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,11 +17,14 @@
  */
 package org.apache.atlas.repository.converters;
 
-
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AtlasAbstractFormatConverter implements AtlasFormatConverter {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasAbstractFormatConverter.class);
 
     protected final AtlasFormatConverters converterRegistry;
     protected final AtlasTypeRegistry     typeRegistry;
@@ -34,8 +37,16 @@ public abstract class AtlasAbstractFormatConverter implements AtlasFormatConvert
     }
 
     @Override
+    public boolean isValidValueV1(Object v1Obj, AtlasType type) {
+        boolean ret = type.isValidValue(v1Obj);
+
+        LOG.debug("AtlasAbstractFormatConverter.isValidValueV1(type={}, value={}): {}", (v1Obj != null ? v1Obj.getClass().getCanonicalName() : null), v1Obj, ret);
+
+        return ret;
+    }
+
+    @Override
     public TypeCategory getTypeCategory() {
         return typeCategory;
     }
 }
-

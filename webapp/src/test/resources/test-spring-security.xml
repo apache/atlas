@@ -50,7 +50,6 @@
         <http-basic />
         <headers disabled="true"/>
         <csrf disabled="true"/>
-        <security:custom-filter position="LAST" ref="atlasAuthorizationFilter"/>
     </security:http>
 
     <beans:bean id="userDAO" class="org.apache.atlas.web.dao.UserDao" init-method="init"/>
@@ -63,11 +62,13 @@
     </beans:bean>
     <beans:bean id="atlasADProvider" class="org.apache.atlas.web.security.AtlasADAuthenticationProvider"/>
     <beans:bean id="atlasPamProvider" class="org.apache.atlas.web.security.AtlasPamAuthenticationProvider"/>
+    <beans:bean id="atlasKeycloakProvider" class="org.apache.atlas.web.security.AtlasKeycloakAuthenticationProvider"/>
     <beans:bean id="atlasAuthenticationProvider" class="org.apache.atlas.web.security.AtlasAuthenticationProvider">
         <beans:constructor-arg index="0" ref="atlasLDAPProvider"/>
         <beans:constructor-arg index="1" ref="atlasFileProvider"/>
         <beans:constructor-arg index="2" ref="atlasADProvider"/>
         <beans:constructor-arg index="3" ref="atlasPamProvider"/>
+        <beans:constructor-arg index="4" ref="atlasKeycloakProvider" />
     </beans:bean>
 
     <beans:bean id="krbAuthenticationFilter" class="org.apache.atlas.web.filters.AtlasAuthenticationFilter">
@@ -113,6 +114,4 @@
     </security:authentication-manager>
 
     <security:global-method-security pre-post-annotations="enabled" />
-
-    <beans:bean id = "atlasAuthorizationFilter" class="org.apache.atlas.web.filters.AtlasAuthorizationFilter"/>
 </beans:beans>

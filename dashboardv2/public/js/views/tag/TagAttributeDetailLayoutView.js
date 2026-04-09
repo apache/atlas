@@ -24,8 +24,9 @@ define(['require',
     'collection/VTagList',
     'models/VTag',
     'utils/Messages',
-    'utils/UrlLinks'
-], function(require, Backbone, TagAttributeDetailLayoutViewTmpl, Utils, AddTagAttributeView, VTagList, VTag, Messages, UrlLinks) {
+    'utils/UrlLinks',
+    'utils/Globals'
+], function(require, Backbone, TagAttributeDetailLayoutViewTmpl, Utils, AddTagAttributeView, VTagList, VTag, Messages, UrlLinks, Globals) {
     'use strict';
 
     var TagAttributeDetailLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -41,18 +42,23 @@ define(['require',
                 editBox: '[data-id="editBox"]',
                 saveButton: "[data-id='saveButton']",
                 showAttribute: "[data-id='showAttribute']",
-                addTagListBtn: '[data-id="addTagListBtn"]',
-                addTagPlus: '[data-id="addTagPlus"]',
-                addTagBtn: '[data-id="addTagBtn"]',
+                addAttribute: '[data-id="addAttribute"]',
                 description: '[data-id="description"]',
                 publishButton: '[data-id="publishButton"]',
-                showSuperType: "[data-id='showSuperType']"
+                superType: "[data-id='superType']",
+                subType: "[data-id='subType']",
+                entityType: "[data-id='entityType']",
+                textType: '[name="textType"]'
             },
             /** ui events hash */
             events: function() {
                 var events = {};
-                events["click " + this.ui.addTagListBtn] = 'onClickAddTagAttributeBtn';
+                events["click " + this.ui.addAttribute] = 'onClickAddTagAttributeBtn';
                 events["click " + this.ui.editButton] = 'onEditButton';
+                events["change " + this.ui.textType] = function(e) {
+                    this.isTextTypeChecked = !this.isTextTypeChecked;
+                    this.isTextTypeChecked ? this.ui.description.text(this.sanitizedDescription) : this.ui.description.html(this.sanitizedDescription);
+                };
                 return events;
             },
             /**
@@ -60,7 +66,9 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tag', 'collection'));
+                _.extend(this, _.pick(options, 'tag', 'collection', 'enumDefCollection'));
+                this.isTextTypeChecked = false;
+                this.sanitizedDescription = "";
             },
             bindEvents: function() {
                 this.listenTo(this.collection, 'reset', function() {
@@ -92,6 +100,9 @@ define(['require',
             onRender: function() {
                 Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.tagDetail'));
                 if (this.collection.models.length && !this.model) {
+                    if (Globals[this.tag]) {
+                        this.collection.fullCollection.push(Globals[this.tag]);
+                    }
                     this.model = this.collection.fullCollection.findWhere({ name: this.tag });
                     this.renderTagDetail();
                 }
@@ -100,30 +111,43 @@ define(['require',
                 this.ui.publishButton.prop('disabled', true);
             },
             renderTagDetail: function() {
-                var attributeData = "",
-                    supertypeData = "",
+                var that = this,
+                    attributeData = "",
                     attributeDefs = this.model.get("attributeDefs"),
-                    superTypeArr = this.model.get('superTypes');
+                    genrateType = function(options) {
+                        var data = options.data;
+                        _.each(data, function(value, key) {
+                            var str = "",
+                                el = that.ui[key];
+                            _.each(value, function(name) {
+                                el.parents("." + key).show();
+                                str += ' <a class="btn btn-action btn-sm" href="' + (key === "entityType" ? "javascript:void(0)" : "#!/tag/tagAttribute/" + name) + '">' + name + '</a>';
+                            });
+                            el.html(str);
+                        });
+                    }
                 this.ui.title.html('<span>' + (Utils.getName(this.model.toJSON())) + '</span>');
                 if (this.model.get("description")) {
-                    this.ui.description.text(this.model.get("description"));
+                    this.sanitizedDescription = Utils.sanitizeHtmlContent({data: this.model.get("description")});
+                    this.isTextTypeChecked ? this.ui.description.text(this.sanitizedDescription) : this.ui.description.html(this.sanitizedDescription);
                 }
                 if (attributeDefs) {
                     if (!_.isArray(attributeDefs)) {
                         attributeDefs = [attributeDefs];
                     }
                     _.each(attributeDefs, function(value, key) {
-                        attributeData += '<span class="inputAttribute">' + (Utils.getName(value)) + '</span>';
+                        attributeData += '<button class="btn btn-action btn-disabled btn-sm">' + (Utils.getName(value)) + '</button>';
                     });
                     this.ui.showAttribute.html(attributeData);
                 }
-                if (superTypeArr.length > 0) {
-                    this.$(".superType").show();
-                    _.each(superTypeArr, function(value, key) {
-                        supertypeData += ' <a class="inputAttribute" href="#!/tag/tagAttribute/' + value + '">' + value + '</a>';
-                    });
-                    this.ui.showSuperType.html(supertypeData);
-                }
+
+                genrateType({
+                    data: {
+                        superType: this.model.get('superTypes'),
+                        subType: this.model.get('subTypes'),
+                        entityType: this.model.get('entityTypes'),
+                    }
+                });
                 Utils.hideTitleLoader(this.$('.fontLoader'), this.$('.tagDetail'));
             },
             onSaveButton: function(saveObject, message) {
@@ -131,7 +155,7 @@ define(['require',
                 var validate = true;
 
                 this.modal.$el.find(".attributeInput").each(function() {
-                    if ($(this).val() === "") {
+                    if ($(this).val().trim() === "") {
                         $(this).css('borderColor', "red")
                         validate = false;
                     }
@@ -176,7 +200,9 @@ define(['require',
                         'modules/Modal'
                     ],
                     function(AddTagAttributeView, Modal) {
-                        var view = new AddTagAttributeView();
+                        var view = new AddTagAttributeView({
+                            "enumDefCollection": that.enumDefCollection
+                        });
                         that.modal = new Modal({
                             title: 'Add Attribute',
                             content: view,
@@ -210,7 +236,7 @@ define(['require',
                                     return activeTagObj.name.toLowerCase() === obj.name.toLowerCase();
                                 });
                                 if (duplicateCheck) {
-                                    duplicateAttributeList.push(obj.name);
+                                    duplicateAttributeList.push(_.escape(obj.name));
                                 } else {
                                     saveObj.attributeDefs.push(obj);
                                 }
@@ -221,7 +247,7 @@ define(['require',
                                     confirm: true,
                                     buttons: [{
                                             text: 'Ok',
-                                            addClass: 'btn-primary',
+                                            addClass: 'btn-atlas btn-md',
                                             click: function(notice) {
                                                 notice.remove();
                                             }
@@ -231,7 +257,7 @@ define(['require',
                                 }
                             }
                             if (saveObj && !duplicateAttributeList.length) {
-                                that.onSaveButton(saveObj, Messages.addAttributeSuccessMessage);
+                                that.onSaveButton(saveObj, Messages.tag.addAttributeSuccessMessage);
                             } else {
                                 if (duplicateAttributeList.length < 2) {
                                     var text = "Attribute <b>" + duplicateAttributeList.join(",") + "</b> is duplicate !"
@@ -240,7 +266,7 @@ define(['require',
                                         var text = "Attributes: <b>" + duplicateAttributeList.join(",") + "</b> are duplicate ! Do you want to continue with other attributes ?"
                                         notifyObj = {
                                             ok: function(argument) {
-                                                that.onSaveButton(saveObj, Messages.addAttributeSuccessMessage);
+                                                that.onSaveButton(saveObj, Messages.tag.addAttributeSuccessMessage);
                                             },
                                             cancel: function(argument) {}
                                         }
@@ -258,15 +284,15 @@ define(['require',
                     });
             },
             textAreaChangeEvent: function(view) {
-                if (this.model.get('description') === view.ui.description.val()) {
+                if (this.model.get('description') === view.ui.description.val() || view.ui.description.val().length == 0 || view.ui.description.val().trim().length === 0) {
                     this.modal.$el.find('button.ok').prop('disabled', true);
                 } else {
                     this.modal.$el.find('button.ok').prop('disabled', false);
                 }
             },
             onPublishClick: function(view) {
-                var saveObj = _.extend(this.model.toJSON(), { 'description': view.ui.description.val() });
-                this.onSaveButton(saveObj, Messages.updateTagDescriptionMessage);
+                var saveObj = _.extend(this.model.toJSON(), { 'description': view.ui.description.val().trim() });
+                this.onSaveButton(saveObj, Messages.tag.updateTagDescriptionMessage);
                 this.ui.description.show();
             },
             onEditButton: function(e) {
@@ -276,16 +302,18 @@ define(['require',
                     'views/tag/CreateTagLayoutView',
                     'modules/Modal'
                 ], function(CreateTagLayoutView, Modal) {
-                    var view = new CreateTagLayoutView({ 'tagCollection': that.collection, 'model': that.model, 'tag': that.tag });
+                    var view = new CreateTagLayoutView({ 'tagCollection': that.collection, 'model': that.model, 'tag': that.tag, 'enumDefCollection': enumDefCollection });
                     that.modal = new Modal({
-                        title: 'Edit Tag',
+                        title: 'Edit Classification',
                         content: view,
                         cancelText: "Cancel",
                         okText: 'Save',
                         allowCancel: true,
                     }).open();
-                    view.ui.description.on('keyup', function(e) {
+                    view.ui.description.on('keyup input', function(e) {
+                        $(this).val($(this).val().replace(/\s+/g, ' '));
                         that.textAreaChangeEvent(view);
+                        e.stopPropagation();
                     });
                     that.modal.$el.find('button.ok').prop('disabled', true);
                     that.modal.on('ok', function() {

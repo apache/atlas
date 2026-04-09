@@ -18,7 +18,6 @@
 
 package org.apache.atlas.storm.hook;
 
-
 import org.apache.atlas.plugin.classloader.AtlasPluginClassLoader;
 import org.apache.storm.ISubmitterHook;
 import org.apache.storm.generated.StormTopology;
@@ -33,14 +32,11 @@ import java.util.Map;
  */
 public class StormAtlasHook implements ISubmitterHook {
     private static final Logger LOG = LoggerFactory.getLogger(StormAtlasHook.class);
-
-
     private static final String ATLAS_PLUGIN_TYPE = "storm";
     private static final String ATLAS_STORM_HOOK_IMPL_CLASSNAME = "org.apache.atlas.storm.hook.StormAtlasHook";
 
-    private AtlasPluginClassLoader atlasPluginClassLoader = null;
-    private ISubmitterHook stormHook = null;
-
+    private AtlasPluginClassLoader atlasPluginClassLoader;
+    private ISubmitterHook stormHook;
 
     public StormAtlasHook() {
         this.initialize();
@@ -48,11 +44,10 @@ public class StormAtlasHook implements ISubmitterHook {
 
     @Override
     public void notify(TopologyInfo topologyInfo, Map stormConf, StormTopology stormTopology)
-        throws IllegalAccessException {
+            throws IllegalAccessException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> StormAtlasHook.notify({}, {}, {})", topologyInfo, stormConf, stormTopology);
         }
-
         try {
             activatePluginClassLoader();
             stormHook.notify(topologyInfo, stormConf, stormTopology);

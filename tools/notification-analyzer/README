@@ -1,0 +1,119 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+Introduction
+  This utility analyzes hook notification messages stored in JSON format
+  in a file, and reports following details:
+    - number of notifications per notification type
+    - number of entities created/updated
+    - number of entity references in notifications per entity type
+    - number of entity operations performed
+    - number of entity operations performed per entity type
+
+Setup
+  - All libraries necessary to run the utility are packaged in following file:
+      distro/target/apache-atlas-<version>-notification-analyzer.zip
+
+  - Unzip the file in the directory where the tool needs to be installed.
+
+  - Update log configurations in atlas-log4j.xml
+
+
+Running the utility
+  - Execute following command to start the utility:
+     ./notification-analyzer.sh -m message_file.json [-o output_file]
+
+  - Progress will be printed in the following format in the output file (if specified) or on stdout:
+     PROGRESS #1: analyzed 1000 notifications, 1071 messages
+     PROGRESS #2: analyzed 2000 notifications, 2131 messages
+     PROGRESS #3: analyzed 3000 notifications, 3194 messages
+     ...
+     Completed analyzing 114755 notification, 120816 messages. Time taken: 234 seconds
+
+  - Note that the number of notifications might be less than the number
+    of messages in the file in case some notifications were split into
+    multiple messages due to their size.
+
+  - Logs will be printed in file /tmp/atlas-notification-analyzer.log. The location of
+    the log file can be configured using following environment variables:
+      LOGFILE_DIR
+      LOGFILE_NAME
+
+Sample Result:
+  The utility will print the result of analysis in the following format:
+    {
+      "notifications":                 114755,
+      "notificationLengthAvg":          74331,
+      "notificationLengthMax":      101148684,
+      "splitNotifications":               453,
+      "splitNotificationLengthAvg":  13901446,
+      "splitNotificationLengthMax": 101148684,
+      "entities":                      598435,
+      "notificationEntities":         2575347,
+      "notificationByType": {
+	"ENTITY_CREATE_V2":         49428,
+	"ENTITY_FULL_UPDATE_V2":     1597,
+	"ENTITY_PARTIAL_UPDATE_V2": 36561,
+	"ENTITY_DELETE_V2":         27169
+      },
+      "notificationEntityByType": {
+	"hdfs_path":             16417,
+	"hive_db":               20471,
+	"hive_table":            57143,
+	"hive_storagedesc":      30018,
+	"hive_column":          685384,
+	"hive_process":          41512
+	"hive_column_lineage": 1724402,
+      },
+      "entityOperations": {
+	"CREATE":         598435,
+	"UPDATE":        1913182
+	"PARTIAL_UPDATE":  36561,
+	"DELETE":          27169
+      },
+      "entityOperationsByType": {
+	"CREATE": {
+	  "hdfs_path":            10940,
+	  "hive_db":                224,
+	  "hive_table":           22154,
+	  "hive_storagedesc":     15280,
+	  "hive_column":         332332,
+	  "hive_process":         23462,
+	  "hive_column_lineage": 194043
+	},
+	"UPDATE" {
+	  "hdfs_path":              5477,
+	  "hive_column":          319559,
+	  "hive_column_lineage": 1530359,
+	  "hive_db":               20203,
+	  "hive_process":          18050,
+	  "hive_storagedesc":      13204,
+	  "hive_table":             6330
+	},
+       "PARTIAL_UPDATE": {
+	 "hive_column":      33493,
+	 "hive_storagedesc":  1534,
+	 "hive_table":        1534
+	},
+	"DELETE": {
+	  "hive_db":       44,
+	  "hive_table": 27125
+	}
+      }
+    }
+

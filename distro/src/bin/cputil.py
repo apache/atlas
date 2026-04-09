@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     try:
         returncode = main()
     except Exception as e:
-        print "Exception: %s " % str(e)
+        print("Exception: %s " % str(e))
         returncode = -1
 
     sys.exit(returncode)

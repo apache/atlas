@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,6 @@ import java.util.Collection;
  * Utilities for checking parameters.
  */
 public final class ParamChecker {
-
     private ParamChecker() {
     }
 
@@ -39,6 +38,7 @@ public final class ParamChecker {
         if (obj == null) {
             throw new IllegalArgumentException(name + " cannot be null");
         }
+
         return obj;
     }
 
@@ -50,9 +50,11 @@ public final class ParamChecker {
      */
     public static <T> Collection<T> notNullElements(Collection<T> list, String name) {
         notEmpty(list, name);
+
         for (T ele : list) {
             notNull(ele, String.format("Collection %s element %s", name, ele));
         }
+
         return list;
     }
 
@@ -64,9 +66,11 @@ public final class ParamChecker {
      */
     public static <T> T[] notNullElements(T[] array, String name) {
         notEmpty(Arrays.asList(array), name);
+
         for (T ele : array) {
             notNull(ele, String.format("Collection %s element %s", name, ele));
         }
+
         return array;
     }
 
@@ -77,9 +81,11 @@ public final class ParamChecker {
      */
     public static <T> Collection<T> notEmpty(Collection<T> list, String name) {
         notNull(list, name);
+
         if (list.isEmpty()) {
             throw new IllegalArgumentException(String.format("Collection %s is empty", name));
         }
+
         return list;
     }
 
@@ -117,9 +123,10 @@ public final class ParamChecker {
             return value;
         }
 
-        if (value.trim().length() == 0) {
+        if (value.trim().isEmpty()) {
             throw new IllegalArgumentException(name + " cannot be empty" + (info == null ? "" : ", " + info));
         }
+
         return value.trim();
     }
 
@@ -135,6 +142,7 @@ public final class ParamChecker {
         if (value == null) {
             throw new IllegalArgumentException(name + " cannot be null" + (info == null ? "" : ", " + info));
         }
+
         return notEmptyIfNotNull(value, name, info);
     }
 
@@ -148,6 +156,7 @@ public final class ParamChecker {
         if (value <= 0) {
             throw new IllegalArgumentException(name + " should be > 0, current value " + value);
         }
+
         if (value > maxValue) {
             throw new IllegalArgumentException(name + " should be <= " + maxValue + ", current value " + value);
         }

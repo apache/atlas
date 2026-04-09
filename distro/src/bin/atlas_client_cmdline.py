@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,7 +21,7 @@ import atlas_config as mc
 
 ATLAS_COMMAND_OPTS="-Datlas.home=%s"
 ATLAS_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=%s"
-DEFAULT_JVM_OPTS="-Xmx1024m -Dlog4j.configuration=atlas-log4j.xml"
+DEFAULT_JVM_OPTS="-Xmx1024m -Dlogback.configurationFile=atlas-logback.xml"
 
 def setup_conf_dir():
     atlas_home = mc.atlasDir()

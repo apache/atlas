@@ -41,4 +41,8 @@
     <name>hbase.regionserver.port</name>
     <value>61520</value>
   </property>
+  <property>
+    <name>hbase.unsafe.stream.capability.enforce</name>
+    <value>false</value>
+  </property>
 </configuration>

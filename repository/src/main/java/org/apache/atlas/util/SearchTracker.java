@@ -26,10 +26,9 @@ import java.util.Set;
 
 @AtlasService
 public class SearchTracker {
-    private Map<String, SearchContext> activeSearches = new HashMap<>();
+    private final Map<String, SearchContext> activeSearches = new HashMap<>();
 
     /**
-     *
      * @param context
      */
     public String add(SearchContext context) {
@@ -41,7 +40,6 @@ public class SearchTracker {
     }
 
     /**
-     *
      * @param searchId
      * @return
      */
@@ -64,7 +62,6 @@ public class SearchTracker {
     }
 
     /**
-     *
      * @return
      */
     public Set<String> getActiveSearches() {

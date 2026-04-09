@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,9 +21,8 @@ package org.apache.atlas.groovy;
  * Base class for all expression that can have a caller.
  */
 public abstract class AbstractFunctionExpression extends AbstractGroovyExpression {
-
     // null for global functions
-    private GroovyExpression caller;
+    private GroovyExpression  caller;
     private TraversalStepType type = TraversalStepType.NONE;
 
     public AbstractFunctionExpression(GroovyExpression target) {
@@ -32,10 +31,10 @@ public abstract class AbstractFunctionExpression extends AbstractGroovyExpressio
 
     public AbstractFunctionExpression(TraversalStepType type, GroovyExpression target) {
         this.caller = target;
-        this.type = type;
+        this.type   = type;
     }
 
-    public  GroovyExpression getCaller() {
+    public GroovyExpression getCaller() {
         return caller;
     }
 
@@ -43,15 +42,12 @@ public abstract class AbstractFunctionExpression extends AbstractGroovyExpressio
         caller = expr;
     }
 
-
-    public void setType(TraversalStepType type) {
-        this.type = type;
-    }
-
     @Override
     public TraversalStepType getType() {
         return type;
     }
 
-
+    public void setType(TraversalStepType type) {
+        this.type = type;
+    }
 }

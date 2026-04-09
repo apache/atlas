@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~ Licensed to the Apache Software Foundation (ASF) under one
   ~ or more contributor license agreements.  See the NOTICE file
@@ -16,838 +16,614 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
-        <version>17</version>
+        <version>23</version>
     </parent>
 
-    <modelVersion>4.0.0</modelVersion>
     <groupId>org.apache.atlas</groupId>
     <artifactId>apache-atlas</artifactId>
-    <version>0.9-SNAPSHOT</version>
-    <description>Metadata Management and Data Governance Platform over Hadoop</description>
-    <name>apache-atlas</name>
+    <version>3.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <url>http://atlas.apache.org</url>
 
-    <prerequisites>
-        <maven>3.0.4</maven>
-    </prerequisites>
-
-    <licenses>
-        <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        </license>
-    </licenses>
-
-    <organization>
-        <name>Apache Software Foundation</name>
-        <url>http://www.apache.org</url>
-    </organization>
-
-    <issueManagement>
-        <system>JIRA</system>
-        <url>https://issues.apache.org/jira/browse/ATLAS</url>
-    </issueManagement>
-
-    <ciManagement>
-        <system>Jenkins</system>
-        <url>https://builds.apache.org/job/atlas</url>
-    </ciManagement>
-
-    <inceptionYear>2015</inceptionYear>
-
-    <mailingLists>
-        <mailingList>
-            <name>atlas-dev</name>
-            <subscribe>dev-subscribe@atlas.apache.org</subscribe>
-            <unsubscribe>dev-unsubscribe@atlas.apache.org</unsubscribe>
-            <post>dev@atlas.apache.org</post>
-            <archive>http://mail-archives.apache.org/mod_mbox/atlas-dev/</archive>
-        </mailingList>
-        <mailingList>
-            <name>atlas-user</name>
-            <subscribe>user-subscribe@atlas.apache.org</subscribe>
-            <unsubscribe>user-unsubscribe@atlas.apache.org</unsubscribe>
-            <post>user@atlas.apache.org</post>
-            <archive>http://mail-archives.apache.org/mod_mbox/atlas-user/</archive>
-        </mailingList>
-        <mailingList>
-            <name>atlas-commits</name>
-            <subscribe>commits-subscribe@atlas.apache.org</subscribe>
-            <unsubscribe>commits-unsubscribe@atlas.apache.org</unsubscribe>
-            <post>commits@atlas.apache.org</post>
-            <archive>http://mail-archives.apache.org/mod_mbox/atlas-commits/</archive>
-        </mailingList>
-    </mailingLists>
-
-    <scm>
-        <connection>scm:git:git://git.apache.org/atlas.git</connection>
-        <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/atlas.git</developerConnection>
-        <tag>HEAD</tag>
-        <url>https://github.com/apache/atlas.git</url>
-    </scm>
-
-    <developers>
-        <developer>
-            <id>adossett</id>
-            <name>Aaron Dossett</name>
-            <email>adossett@target.com</email>
-            <timezone>America/Denver</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Target Inc.</organization>
-            <!--<organizationUrl>http://www.target.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>AAhn</id>
-            <name>Andrew Ahn</name>
-            <email>aa@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization></organization>
-        </developer>
-        <developer>
-            <id>apoorvnaik</id>
-            <name>Apoorv Naik</name>
-            <email>apoorvnaik@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>acmurthy</id>
-            <name>Arun C.Murthy</name>
-            <email>acmurthy@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>ayubpathan</id>
-            <name>Ayub Pathan</name>
-            <email>ayubpathan@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>amestry</id>
-            <name>Ashutosh Mestry</name>
-            <email>amestry@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>bstortz</id>
-            <name>Barbara Stortz</name>
-            <email>bstortz@sap.com</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>SAP Inc.</organization>
-            <!--<organizationUrl>http://www.sap.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>chyzer</id>
-            <name>Chris Hyzer</name>
-            <email>chyzer@aetna.com</email>
-            <timezone>America/New_York</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Aetna Inc.</organization>
-            <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>dmarkwat</id>
-            <name>Daniel Markwat</name>
-            <email>dmarkwat@aetna.com</email>
-            <timezone>America/New_York</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Aetna Inc.</organization>
-            <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>darshankumar</id>
-            <name>Darshan Kumar</name>
-            <email>darshankumar@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>MPR</organization>
-        </developer>
-        <developer>
-            <id>dkantor</id>
-            <name>Dave Kantor</name>
-            <email>dkantor@apache.org</email>
-            <timezone>America/New_York</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>IBM Corporation</organization>
-            <!--<organizationUrl>http://www.ibm.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>dkaspar</id>
-            <name>David Kaspar</name>
-            <email>dkaspar@merck.com</email>
-            <timezone>Europe/Berlin</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Merck &amp; Co Inc.</organization>
-            <!--<organizationUrl>http://www.merck.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>dfusaro</id>
-            <name>Dennis Fusaro</name>
-            <email>dfusaro@aetna.com</email>
-            <timezone>America/New_York</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Aetna Inc.</organization>
-            <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>gsenia</id>
-            <name>Greg Senia</name>
-            <email>gsenia@aetna.com</email>
-            <timezone>America/New_York</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Aetna Inc.</organization>
-            <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>rhbutani</id>
-            <name>Harish Butani</name>
-            <email>rhbutani@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization/>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>yhemanth</id>
-            <name>Hemanth Yamijala</name>
-            <email>yhemanth@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>ilasek</id>
-            <name>Ivo Lasek</name>
-            <email>ilasek@merck.com</email>
-            <timezone>Europe/Berlin</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Merck &amp; Co Inc.</organization>
-            <!--<organizationUrl>http://www.merck.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>jnhagelberg</id>
-            <name>Jeffrey Hagelberg</name>
-            <email>jnhagelberg@apache.org</email>
-            <timezone>America/New_York</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>IBM Corporation</organization>
-            <!--<organizationUrl>http://www.ibm.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>jitendra</id>
-            <name>Jitendra Pandey</name>
-            <email>jitendra@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>jmaron</id>
-            <name>Jon Maron</name>
-            <email>jmaron@apache.org</email>
-            <timezone>America/New_York</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization></organization>
-        </developer>
-        <developer>
-            <id>kalyanikashikar</id>
-            <name>Kalyani Kashikar</name>
-            <email>kalyanikashikar@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Freestone Infotech</organization>
-        </developer>
-        <developer>
-            <id>kbhatt</id>
-            <name>Keval Bhatt</name>
-            <email>kbhatt@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Freestone Infotech</organization>
-        </developer>
-        <developer>
-            <id>madhan</id>
-            <name>Madhan Neethiraj</name>
-            <email>madhan@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>mschussler</id>
-            <name>Mitch Schussler</name>
-            <email>mschussler@apache.org</email>
-            <timezone>America/New_York</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>JPMC</organization>
-            <!--<organizationUrl>http://</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>guptaneeru</id>
-            <name>Neeru Gupta</name>
-            <email>guptaneeru@us.ibm.com</email>
-            <timezone>America/New_York</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>IBM Corporation</organization>
-            <!--<organizationUrl>http://www.ibm.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>nixon</id>
-            <name>Nixon Rodrigues</name>
-            <email>nixon@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Freestone Infotech</organization>
-        </developer>
-        <developer>
-            <id>sarath</id>
-            <name>Sarath Subramanian</name>
-            <email>sarath@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>shwethags</id>
-            <name>Shwetha GS</name>
-            <email>shwethags@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>sriksun</id>
-            <name>Srikanth Sundarrajan</name>
-            <email>sriksun@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>InMobi</organization>
-            <!--<organizationUrl>http://www.inmobi.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>sumasai</id>
-            <name>Suma Shivaprasad</name>
-            <email>sumasai@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>ssuresh</id>
-            <name>Suresh Srinivas</name>
-            <email>ssuresh@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>tbeerbower</id>
-            <name>Tom Beerbower</name>
-            <email>tbeerbower@apache.org</email>
-            <timezone>America/New_York</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization></organization>
-        </developer>
-        <developer>
-            <id>vranganathan</id>
-            <name>Venkat Ranganathan</name>
-            <email>venkatrangan@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>venkatesh</id>
-            <name>Venkatesh Seetharam</name>
-            <email>venkatesh@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization></organization>
-        </developer>
-        <developer>
-            <id>svimal2106</id>
-            <name>Vimal Sharma</name>
-            <email>svimal2106@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-    </developers>
-
-    <properties>
-        <!-- platform encoding override -->
-        <skipTests>false</skipTests>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <node.version>v0.10.30</node.version>
-        <node-for-v2.version>v4.4.2</node-for-v2.version>
-        <slf4j.version>1.7.21</slf4j.version>
-        <jetty.version>9.2.12.v20150709</jetty.version>
-        <jersey.version>1.19</jersey.version>
-        <tinkerpop.version>2.6.0</tinkerpop.version>
-        <titan.version>0.5.4</titan.version>
-        <hadoop.version>2.7.1</hadoop.version>
-        <hbase.version>1.1.2</hbase.version>
-        <solr.version>5.5.1</solr.version>
-        <kafka.version>0.10.0.0</kafka.version>
-        <curator.version>2.11.0</curator.version>
-        <zookeeper.version>3.4.6</zookeeper.version>
-
-        <!-- scala versions -->
-        <scala.version>2.11.8</scala.version>
-        <scala.binary.version>2.11</scala.binary.version>
-        <scala.macros.version>2.0.1</scala.macros.version>
-        <json.version>3.2.11</json.version>
-        <log4j.version>1.2.17</log4j.version>
-        <akka.version>2.3.7</akka.version>
-        <spray.version>1.3.1</spray.version>
-        <gson.version>2.5</gson.version>
-        <fastutil.version>6.5.16</fastutil.version>
-        <guice.version>4.1.0</guice.version>
-        <spring.version>4.3.8.RELEASE</spring.version>
-        <spring.security.version>4.2.2.RELEASE</spring.security.version>
-        <spring-ldap-core.version>2.3.1.RELEASE</spring-ldap-core.version>
-        <javax.servlet.version>3.1.0</javax.servlet.version>
-        <guava.version>19.0</guava.version>
-
-        <!-- Needed for hooks -->
-        <aopalliance.version>1.0</aopalliance.version>
-        <codehaus.jackson.version>1.9.13</codehaus.jackson.version>
-        <commons-conf.version>1.10</commons-conf.version>
-        <commons-collections.version>3.2.2</commons-collections.version>
-        <commons-logging.version>1.1.3</commons-logging.version>
-        <commons-lang.version>2.6</commons-lang.version>
-        <javax-inject.version>1</javax-inject.version>
-        <jettison.version>1.3.7</jettison.version>
-        <paranamer.version>2.7</paranamer.version>
-        <zkclient.version>0.8</zkclient.version>
-
-        <PermGen>64m</PermGen>
-        <MaxPermGen>512m</MaxPermGen>
-
-        <!-- skips checkstyle and find bugs -->
-        <skipCheck>false</skipCheck>
-        <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
-        <skipUTs>false</skipUTs>
-        <skipITs>false</skipITs>
-        <skipDocs>true</skipDocs>
-        <skipSite>true</skipSite>
-        <skipEnunciate>true</skipEnunciate>
-        <projectBaseDir>${project.basedir}</projectBaseDir>
-        <jetty-maven-plugin.stopWait>10</jetty-maven-plugin.stopWait>
-
-        <titan.storage.backend>berkeleyje</titan.storage.backend>
-        <titan.index.backend>elasticsearch</titan.index.backend>
-        <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
-        <graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase</graphdb.backend.impl>
-        <atlas.surefire.options></atlas.surefire.options>
-
-        <aspectj.runtime.version>1.8.7</aspectj.runtime.version>
-    </properties>
-
-    <profiles>
-        <!-- Turning on this profile affects only tests and does not affect packaging -->
-        <profile>
-            <id>distributed</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <titan.storage.backend>hbase</titan.storage.backend>
-                <titan.index.backend>solr</titan.index.backend>
-                <solr.zk.address>localhost:9983</solr.zk.address>
-                <titan.storage.hostname>localhost</titan.storage.hostname>
-                <entity.repository.impl>org.apache.atlas.repository.audit.HBaseBasedAuditRepository
-                </entity.repository.impl>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>dist</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <skipDocs>false</skipDocs>
-            </properties>
-        </profile>
-        <profile>
-            <id>titan1</id>
-            <properties>
-                <graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan1.Titan1GraphDatabase
-                </graphdb.backend.impl>
-            </properties>
-            <dependencyManagement>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.atlas</groupId>
-                        <artifactId>atlas-graphdb-impls</artifactId>
-                        <version>${project.version}</version>
-                        <type>pom</type>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>org.apache.atlas</groupId>
-                                <artifactId>atlas-graphdb-titan0</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                </dependencies>
-            </dependencyManagement>
-        </profile>
-    </profiles>
+    <name>apache-atlas</name>
+    <description>Metadata Management and Data Governance Platform over Hadoop</description>
 
     <modules>
-        <module>intg</module>
-        <module>common</module>
-        <module>typesystem</module>
-        <module>server-api</module>
-        <module>notification</module>
-        <module>client</module>
-        <module>graphdb</module>
-        <module>shaded/hbase-client-shaded</module>
-        <module>shaded/hbase-server-shaded</module>
-        <module>repository</module>
-        <module>authorization</module>
-        <module>catalog</module>
-        <module>dashboardv2</module>
-        <module>webapp</module>
-        <module>docs</module>
+        <module>addons/couchbase-bridge</module>
+        <module>addons/falcon-bridge</module>
+        <module>addons/falcon-bridge-shim</module>
+        <module>addons/hbase-bridge</module>
+        <module>addons/hbase-bridge-shim</module>
+        <module>addons/hbase-testing-util</module>
 
         <module>addons/hdfs-model</module>
-        <module>plugin-classloader</module>
-        <module>addons/hive-bridge-shim</module>
         <module>addons/hive-bridge</module>
-        <module>addons/falcon-bridge-shim</module>
-        <module>addons/falcon-bridge</module>
-        <module>addons/sqoop-bridge-shim</module>
+        <module>addons/hive-bridge-shim</module>
+        <module>addons/impala-bridge</module>
+        <module>addons/impala-bridge-shim</module>
+        <module>addons/impala-hook-api</module>
+        <module>addons/kafka-bridge</module>
         <module>addons/sqoop-bridge</module>
-        <module>addons/storm-bridge-shim</module>
+        <module>addons/sqoop-bridge-shim</module>
         <module>addons/storm-bridge</module>
+        <module>addons/storm-bridge-shim</module>
+        <module>addons/trino-extractor</module>
+        <module>atlas-examples</module>
+        <module>authorization</module>
+        <module>build-tools</module>
+        <module>client</module>
+        <module>common</module>
+        <module>dashboard</module>
+        <module>dashboardv2</module>
 
         <module>distro</module>
-        <module>build-tools</module>
+        <module>docs</module>
+        <module>graphdb</module>
+
+        <module>hbase-shaded-client-fixed</module>
+        <module>intg</module>
+        <module>notification</module>
+        <module>plugin-classloader</module>
+        <module>repository</module>
+        <module>server-api</module>
+        <module>test-tools</module>
+        <module>tools/atlas-index-repair</module>
+        <module>tools/classification-updater</module>
+        <module>tools/notification-analyzer</module>
+        <module>webapp</module>
     </modules>
 
-    <repositories>
-        <repository>
-            <id>central</id>
-            <url>http://repo1.maven.org/maven2</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>hortonworks.repo</id>
-            <url>http://repo.hortonworks.com/content/repositories/releases</url>
-            <name>Hortonworks Repo</name>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>apache.snapshots.repo</id>
-            <url>https://repository.apache.org/content/groups/snapshots</url>
-            <name>Apache Snapshots Repository</name>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>apache-staging</id>
-            <url>https://repository.apache.org/content/groups/staging/</url>
-        </repository>
-        <repository>
-            <id>default</id>
-            <url>https://repository.apache.org/content/groups/public/</url>
-        </repository>
-        <repository>
-            <id>java.net-Public</id>
-            <name>Maven Java Net Snapshots and Releases</name>
-            <url>https://maven.java.net/content/groups/public/</url>
-        </repository>
-        <repository>
-            <id>repository.jboss.org-public</id>
-            <name>JBoss repository</name>
-            <url>https://repository.jboss.org/nexus/content/groups/public</url>
-        </repository>
-        <repository>
-            <id>typesafe</id>
-            <name>Typesafe Repository</name>
-            <url>http://repo.typesafe.com/typesafe/releases/</url>
-        </repository>
-    </repositories>
+    <properties>
+        <MaxPermGen>512m</MaxPermGen>
+        <PermGen>64m</PermGen>
+        <akka.version>2.3.7</akka.version>
+        <antlr4.plugin.version>4.5</antlr4.plugin.version>
+        <antlr4.version>4.7</antlr4.version>
+        <aopalliance.version>1.0</aopalliance.version>
+        <aspectj.runtime.version>1.8.7</aspectj.runtime.version>
+        <atlas.surefire.options />
+        <avro.version>1.7.5</avro.version>
+        <calcite.version>1.16.0</calcite.version>
+        <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
+        <checkstyle.plugin.version>3.1.0</checkstyle.plugin.version>
+        <checkstyle.skip>true</checkstyle.skip>
+        <checkstyle.version>8.29</checkstyle.version>
+        <codehaus.woodstox.stax2-api.version>3.1.4</codehaus.woodstox.stax2-api.version>
+        <commons-cli.version>1.4</commons-cli.version>
+        <commons-codec.version>1.14</commons-codec.version>
+        <commons-collections.version>3.2.2</commons-collections.version>
+        <commons-collections4.version>4.4</commons-collections4.version>
+        <commons-conf.version>1.10</commons-conf.version>
+        <commons-conf2.version>2.10.1</commons-conf2.version>
+        <commons-el.version>1.0</commons-el.version>
+        <commons-io.version>2.17.0</commons-io.version>
+        <commons-lang3.version>3.20.0</commons-lang3.version>
+        <commons-logging.version>1.1.3</commons-logging.version>
+        <commons-text.version>1.10.0</commons-text.version>
+        <commons-validator.version>1.10.0</commons-validator.version>
+        <curator.version>4.3.0</curator.version>
+        <doxia.version>1.8</doxia.version>
+        <dropwizard-metrics>3.2.2</dropwizard-metrics>
+        <eclipse.jpa.version>2.7.15</eclipse.jpa.version>
+        <elasticsearch.version>7.17.8</elasticsearch.version>
+        <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
+        <enunciate-maven-plugin.version>2.13.2</enunciate-maven-plugin.version>
+        <failsafe.version>2.18.1</failsafe.version>
+        <falcon.version>0.8</falcon.version>
+        <fastutil.version>6.5.16</fastutil.version>
+        <graph.index.backend>solr</graph.index.backend>
+        <graph.storage.backend>berkeleyje</graph.storage.backend>
+        <gson.version>2.9.0</gson.version>
+        <guava.version>25.1-jre</guava.version>
+        <guice.version>4.1.0</guice.version>
+        <hadoop.hdfs-client.version>${hadoop.version}</hadoop.hdfs-client.version>
+        <hadoop.version>3.4.2</hadoop.version>
+        <hbase.version>2.6.4</hbase.version>
+        <hive.version>3.1.3</hive.version>
+        <hppc.version>0.8.1</hppc.version>
+        <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
+        <httpcomponents-httpcore.version>4.4.13</httpcomponents-httpcore.version>
+        <ivy.version>2.5.2</ivy.version>
+        <jackson.databind.version>2.12.7</jackson.databind.version>
+        <jackson.version>2.12.7</jackson.version>
+        <jacoco.version>0.8.13</jacoco.version>
+        <janusgraph.cassandra.version>0.5.3</janusgraph.cassandra.version>
+        <janusgraph.version>1.1.0</janusgraph.version>
+        <java.version.required>1.8</java.version.required>
+        <javac.source.version>1.8</javac.source.version>
+        <javac.target.version>1.8</javac.target.version>
+        <javax-inject.version>1</javax-inject.version>
+        <javax.persistence.version>2.2.1</javax.persistence.version>
+        <javax.servlet.version>3.1.0</javax.servlet.version>
+        <jaxb.api.version>2.3.1</jaxb.api.version>
+        <jersey-spring.version>1.19.4</jersey-spring.version>
+        <jersey.version>1.19</jersey.version>
+        <jettison.version>1.5.4</jettison.version>
+        <jetty-maven-plugin.stopWait>10</jetty-maven-plugin.stopWait>
+        <jetty.version>9.4.56.v20240826</jetty.version>
+        <joda-time.version>2.10.6</joda-time.version>
+        <json-simple.version>1.1.1</json-simple.version>
+        <json.version>3.2.11</json.version>
+        <jsr.version>1.1</jsr.version>
+        <junit.version>4.13.2</junit.version>
+        <kafka.scala.binary.version>2.12</kafka.scala.binary.version>
+        <kafka.version>2.8.2</kafka.version>
+        <keycloak.version>6.0.1</keycloak.version>
+        <logback.version>1.3.15</logback.version>
+        <lucene-solr.version>8.11.3</lucene-solr.version>
+        <maven-plugin-sortpom.version>3.0.1</maven-plugin-sortpom.version>
+        <maven-site-plugin.version>3.7</maven-site-plugin.version>
+        <netty.version>4.1.125.Final</netty.version>
+        <node-for-v1.version>v22.14.0</node-for-v1.version>
+        <node-for-v2.version>v12.16.0</node-for-v2.version>
+        <npm-for-v1.version>10.9.2</npm-for-v1.version>
+        <npm-for-v2.version>6.13.7</npm-for-v2.version>
+        <okio.version>3.4.0</okio.version>
+        <opencsv.version>5.0</opencsv.version>
+        <paranamer.version>2.7</paranamer.version>
+        <poi-ooxml.version>5.4.0</poi-ooxml.version>
+        <poi.version>5.4.0</poi.version>
+        <postgresql.version>42.7.7</postgresql.version>
+        <project.build.dashboard.gruntBuild>run build</project.build.dashboard.gruntBuild>
+        <project.build.dashboardv2.gruntBuild>build-minify</project.build.dashboardv2.gruntBuild>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <projectBaseDir>${project.basedir}</projectBaseDir>
+        <protobuf-java.version>3.25.5</protobuf-java.version>
+        <skipCheck>false</skipCheck>
+        <skipDocs>true</skipDocs>
+        <skipEnunciate>false</skipEnunciate>
+        <skipITs>false</skipITs>
+        <skipSite>true</skipSite>
+        <skipTests>false</skipTests>
+        <skipUTs>false</skipUTs>
+        <slf4j.version>2.0.16</slf4j.version>
+        <solr-test-framework.version>8.11.3</solr-test-framework.version>
+        <solr.version>8.11.3</solr.version>
+        <spray.version>1.3.1</spray.version>
+        <spring-ldap-core.version>2.4.4</spring-ldap-core.version>
+        <spring.security.version>5.8.15</spring.security.version>
+        <spring.version>5.3.39</spring.version>
+        <sqoop.classifier>hadoop260</sqoop.classifier>
+        <sqoop.version>1.4.7</sqoop.version>
+        <storm.version>2.4.0</storm.version>
+        <surefire.forkCount>2C</surefire.forkCount>
+        <surefire.version>3.0.0-M5</surefire.version>
+        <testng.version>7.0.0</testng.version>
+        <tinkerpop.version>3.7.5</tinkerpop.version>
+        <woodstox-core.version>5.0.3</woodstox-core.version>
+        <zookeeper.version>3.9.2</zookeeper.version>
+    </properties>
 
     <dependencyManagement>
         <dependencies>
+
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-framework-bom</artifactId>
+                <version>${spring.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-bom</artifactId>
+                <version>${spring.security.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>${guava.version}</version>
             </dependency>
+
             <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-jsp</artifactId>
-                <version>${jetty.version}</version>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>${protobuf-java.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.googlecode.json-simple</groupId>
+                <artifactId>json-simple</artifactId>
+                <version>1.1.1</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>javax.servlet</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.glassfish</groupId>
-                        <artifactId>javax.el</artifactId>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
 
             <dependency>
-                <groupId>org.glassfish</groupId>
-                <artifactId>javax.el</artifactId>
-                <version>3.0.0</version>
+                <groupId>com.squareup.okio</groupId>
+                <artifactId>okio</artifactId>
+                <version>${okio.version}</version>
             </dependency>
 
-            <!-- Logging -->
+            <!-- Jersey -->
             <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-log4j12</artifactId>
-                <version>${slf4j.version}</version>
+                <groupId>com.sun.jersey</groupId>
+                <artifactId>jersey-client</artifactId>
+                <version>${jersey.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>jul-to-slf4j</artifactId>
-                <version>${slf4j.version}</version>
+                <groupId>com.sun.jersey</groupId>
+                <artifactId>jersey-core</artifactId>
+                <version>${jersey.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>log4j</groupId>
-                <artifactId>log4j</artifactId>
-                <version>1.2.17</version>
-                <scope>compile</scope>
+                <groupId>com.sun.jersey</groupId>
+                <artifactId>jersey-server</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.sun.jersey</groupId>
+                <artifactId>jersey-servlet</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.sun.jersey.contribs</groupId>
+                <artifactId>jersey-multipart</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+
+            <!-- Jersey + Spring -->
+            <dependency>
+                <groupId>com.sun.jersey.contribs</groupId>
+                <artifactId>jersey-spring</artifactId>
+                <version>${jersey-spring.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>com.sun.jdmk</groupId>
-                        <artifactId>jmxtools</artifactId>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>com.sun.jmx</groupId>
-                        <artifactId>jmxri</artifactId>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-beans</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>javax.mail</groupId>
-                        <artifactId>mail</artifactId>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-context</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>javax.jms</groupId>
-                        <artifactId>jmx</artifactId>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-core</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>javax.jms</groupId>
-                        <artifactId>jms</artifactId>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-web</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
 
-            <!-- hadoop -->
+            <!-- API documentation  -->
+            <dependency>
+                <groupId>com.webcohesion.enunciate</groupId>
+                <artifactId>enunciate-core-annotations</artifactId>
+                <version>${enunciate-maven-plugin.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-cli</groupId>
+                <artifactId>commons-cli</artifactId>
+                <version>${commons-cli.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-collections</groupId>
+                <artifactId>commons-collections</artifactId>
+                <version>${commons-collections.version}</version>
+            </dependency>
+
+            <!-- commons -->
+            <dependency>
+                <groupId>commons-configuration</groupId>
+                <artifactId>commons-configuration</artifactId>
+                <version>${commons-conf.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-el</groupId>
+                <artifactId>commons-el</artifactId>
+                <version>${commons-el.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
+            </dependency>
+
+            <!--Javax inject-->
+            <dependency>
+                <groupId>javax.inject</groupId>
+                <artifactId>javax.inject</artifactId>
+                <version>${javax-inject.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>javax.servlet</groupId>
+                <artifactId>javax.servlet-api</artifactId>
+                <version>${javax.servlet.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>javax.xml.bind</groupId>
+                <artifactId>jaxb-api</artifactId>
+                <version>${jaxb.api.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>joda-time</groupId>
+                <artifactId>joda-time</artifactId>
+                <version>${joda-time.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.sourceforge.findbugs</groupId>
+                <artifactId>annotations</artifactId>
+                <version>1.3.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-runtime</artifactId>
+                <version>${antlr4.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-buildtools</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-client</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-client-v1</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-client-v2</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-dashboard</artifactId>
+                <version>${project.version}</version>
+                <type>war</type>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-dashboardv2</artifactId>
+                <version>${project.version}</version>
+                <type>war</type>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-graphdb-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-graphdb-impls</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+            </dependency>
+
+            <!--  atlas modules -->
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-intg</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-notification</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-plugin-classloader</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-repository</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-server-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-webapp</artifactId>
+                <version>${project.version}</version>
+                <type>war</type>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>couchbase-bridge</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>falcon-bridge</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>falcon-bridge-shim</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>hbase-bridge</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>hbase-bridge-shim</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>hive-bridge</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>hive-bridge-shim</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>impala-bridge</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>impala-bridge-shim</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>impala-hook-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>kafka-bridge</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>sqoop-bridge</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>sqoop-bridge-shim</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>storm-bridge</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>storm-bridge-shim</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-collections4</artifactId>
+                <version>${commons-collections4.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-client</artifactId>
+                <version>${curator.version}</version>
+            </dependency>
+
+            <!-- Zookeeper, curator -->
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-framework</artifactId>
+                <version>${curator.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-recipes</artifactId>
+                <version>${curator.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-common</artifactId>
+                <artifactId>hadoop-annotations</artifactId>
                 <version>${hadoop.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>javax.servlet</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>tomcat</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.mortbay.jetty</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.codehaus.jackson</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.htrace</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>commons-httpclient</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.google.guava</groupId>
-                        <artifactId>guava</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-hdfs</artifactId>
-                <version>${hadoop.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>javax.servlet</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>tomcat</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.mortbay.jetty</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.google.guava</groupId>
-                        <artifactId>guava</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
 
             <dependency>
@@ -868,294 +644,80 @@
                 </exclusions>
             </dependency>
 
+            <!-- hadoop -->
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-annotations</artifactId>
+                <artifactId>hadoop-common</artifactId>
                 <version>${hadoop.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-minikdc</artifactId>
-                <version>${hadoop.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <!-- Zookeeper, curator -->
-            <dependency>
-                <groupId>org.apache.curator</groupId>
-                <artifactId>curator-framework</artifactId>
-                <version>${curator.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.curator</groupId>
-                <artifactId>curator-client</artifactId>
-                <version>${curator.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.curator</groupId>
-                <artifactId>curator-recipes</artifactId>
-                <version>${curator.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.zookeeper</groupId>
-                <artifactId>zookeeper</artifactId>
-                <version>${zookeeper.version}</version>
-            </dependency>
-            <!-- commons -->
-            <dependency>
-                <groupId>commons-configuration</groupId>
-                <artifactId>commons-configuration</artifactId>
-                <version>${commons-conf.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>commons-cli</groupId>
-                <artifactId>commons-cli</artifactId>
-                <version>1.2</version>
-            </dependency>
-
-            <dependency>
-                <groupId>commons-el</groupId>
-                <artifactId>commons-el</artifactId>
-                <version>1.0</version>
-            </dependency>
-
-            <dependency>
-                <groupId>commons-io</groupId>
-                <artifactId>commons-io</artifactId>
-                <version>2.4</version>
-            </dependency>
-
-            <dependency>
-                <groupId>commons-collections</groupId>
-                <artifactId>commons-collections</artifactId>
-                <version>${commons-collections.version}</version>
-            </dependency>
-
-            <!--Javax inject-->
-            <dependency>
-                <groupId>javax.inject</groupId>
-                <artifactId>javax.inject</artifactId>
-                <version>${javax-inject.version}</version>
-            </dependency>
-            <!-- utilities -->
-            <dependency>
-                <groupId>org.skyscreamer</groupId>
-                <artifactId>jsonassert</artifactId>
-                <version>1.2.0</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>joda-time</groupId>
-                <artifactId>joda-time</artifactId>
-                <version>2.5</version>
-            </dependency>
-
-            <!-- Jersey -->
-            <dependency>
-                <groupId>com.sun.jersey</groupId>
-                <artifactId>jersey-client</artifactId>
-                <version>${jersey.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.sun.jersey</groupId>
-                <artifactId>jersey-json</artifactId>
-                <version>${jersey.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>javax.xml.stream</groupId>
+                        <groupId>com.fasterxml.jackson.core</groupId>
                         <artifactId>*</artifactId>
                     </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>com.sun.jersey</groupId>
-                <artifactId>jersey-server</artifactId>
-                <version>${jersey.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.sun.jersey</groupId>
-                <artifactId>jersey-core</artifactId>
-                <version>${jersey.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.sun.jersey</groupId>
-                <artifactId>jersey-servlet</artifactId>
-                <version>${jersey.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.sun.jersey.contribs</groupId>
-                <artifactId>jersey-multipart</artifactId>
-                <version>${jersey.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>javax.servlet.jsp</groupId>
-                <artifactId>jsp-api</artifactId>
-                <version>2.0</version>
-            </dependency>
-
-            <!-- JSON -->
-            <dependency>
-                <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-core-asl</artifactId>
-                <version>${codehaus.jackson.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-mapper-asl</artifactId>
-                <version>${codehaus.jackson.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.codehaus.jettison</groupId>
-                <artifactId>jettison</artifactId>
-                <version>${jettison.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.googlecode.json-simple</groupId>
-                <artifactId>json-simple</artifactId>
-                <version>1.1.1</version>
-                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.guava</groupId>
+                        <artifactId>guava</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-httpclient</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.servlet</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>junit</groupId>
                         <artifactId>junit</artifactId>
                     </exclusion>
-                </exclusions>
-            </dependency>
-
-            <!-- Jetty -->
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-server</artifactId>
-                <version>${jetty.version}</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-webapp</artifactId>
-                <version>${jetty.version}</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>net.sourceforge.findbugs</groupId>
-                <artifactId>annotations</artifactId>
-                <version>1.3.2</version>
-            </dependency>
-
-            <!-- Graph DB -->
-            <dependency>
-                <groupId>com.tinkerpop.blueprints</groupId>
-                <artifactId>blueprints-core</artifactId>
-                <version>${tinkerpop.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.thinkaurelius.titan</groupId>
-                <artifactId>titan-core</artifactId>
-                <version>${titan.version}</version>
-                <exclusions>
-                    <!-- rexster does not work with servlet-api -->
                     <exclusion>
-                        <groupId>com.tinkerpop.rexster</groupId>
-                        <artifactId>rexster-core</artifactId>
+                        <groupId>org.apache.commons</groupId>
+                        <artifactId>commons-configuration2</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>com.tinkerpop.rexster</groupId>
-                        <artifactId>rexster-server</artifactId>
-                    </exclusion>
-                    <!-- asm 4.0 does not work with jersey asm 3.1 -->
-                    <exclusion>
-                        <groupId>com.tinkerpop</groupId>
-                        <artifactId>frames</artifactId>
+                        <groupId>org.apache.commons</groupId>
+                        <artifactId>commons-text</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>com.esotericsoftware.reflectasm</groupId>
-                        <artifactId>reflectasm</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm</artifactId>
-                    </exclusion>
-                    <exclusion> <!-- GPL license imported from ganglia -->
-                        <groupId>org.acplt</groupId>
-                        <artifactId>oncrpc</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>com.thinkaurelius.titan</groupId>
-                <artifactId>titan-berkeleyje</artifactId>
-                <version>${titan.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.thinkaurelius.titan</groupId>
-                <artifactId>titan-lucene</artifactId>
-                <version>${titan.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.thinkaurelius.titan</groupId>
-                <artifactId>titan-hbase</artifactId>
-                <version>${titan.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-client</artifactId>
-                <version>${hbase.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <artifactId>avro</artifactId>
-                        <groupId>org.apache.avro</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>jruby-complete</artifactId>
-                        <groupId>org.jruby</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>asm</artifactId>
-                        <groupId>asm</groupId>
-                    </exclusion>
-                    <exclusion>
+                        <groupId>org.codehaus.jackson</groupId>
                         <artifactId>*</artifactId>
-                        <groupId>org.apache.hadoop</groupId>
                     </exclusion>
                     <exclusion>
+                        <groupId>org.htrace</groupId>
                         <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-reload4j</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>tomcat</groupId>
+                        <artifactId>*</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
 
             <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-server</artifactId>
-                <version>${hbase.version}</version>
-                <classifier>tests</classifier>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-server</artifactId>
-                <version>${hbase.version}</version>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-hdfs</artifactId>
+                <version>${hadoop.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>com.google.guava</groupId>
+                        <artifactId>guava</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.servlet</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.codehaus.jackson</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>org.mortbay.jetty</groupId>
                         <artifactId>*</artifactId>
@@ -1168,149 +730,217 @@
             </dependency>
 
             <dependency>
-                <groupId>com.vividsolutions</groupId>
-                <artifactId>jts</artifactId>
-                <version>1.13</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.solr</groupId>
-                <artifactId>solr-core</artifactId>
-                <version>${solr.version}</version>
+                <groupId>org.apache.hbase</groupId>
+                <artifactId>hbase-client</artifactId>
+                <version>${hbase.version}</version>
                 <exclusions>
                     <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.eclipse.jetty</groupId>
+                        <groupId>asm</groupId>
+                        <artifactId>asm</artifactId>
                     </exclusion>
                     <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.eclipse.jetty.orbit</groupId>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
                     </exclusion>
                     <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.restlet.jee</groupId>
+                        <groupId>org.apache.avro</groupId>
+                        <artifactId>avro</artifactId>
                     </exclusion>
                     <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.ow2.asm</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.apache.lucene</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
                         <groupId>org.apache.hadoop</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.codehaus.jackson</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.jruby</groupId>
+                        <artifactId>jruby-complete</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>*</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
 
             <dependency>
-                <groupId>org.apache.solr</groupId>
-                <artifactId>solr-solrj</artifactId>
-                <version>${solr.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>javax.servlet</groupId>
-                <artifactId>javax.servlet-api</artifactId>
-                <version>${javax.servlet.version}</version>
-            </dependency>
-
-            <!-- Spring -->
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-core</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-web</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-webmvc</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-core</artifactId>
-                <version>${spring.security.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-web</artifactId>
-                <version>${spring.security.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-config</artifactId>
-                <version>${spring.security.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-ldap</artifactId>
-                <version>${spring.security.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ldap</groupId>
-                <artifactId>spring-ldap-core</artifactId>
-                <version>${spring-ldap-core.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-aop</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-test</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-
-            <!--  atlas modules -->
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-intg</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-intg</artifactId>
-                <version>${project.version}</version>
+                <groupId>org.apache.hbase</groupId>
+                <artifactId>hbase-server</artifactId>
+                <version>${hbase.version}</version>
                 <classifier>tests</classifier>
-                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <!-- supports simple auth handler -->
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpcomponents-httpclient.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-typesystem</artifactId>
-                <version>${project.version}</version>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>${httpcomponents-httpcore.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-typesystem</artifactId>
-                <version>${project.version}</version>
-                <classifier>tests</classifier>
-                <scope>test</scope>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpmime</artifactId>
+                <version>4.4.1</version>
             </dependency>
 
             <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-graphdb-api</artifactId>
-                <version>${project.version}</version>
+                <groupId>org.apache.ivy</groupId>
+                <artifactId>ivy</artifactId>
+                <version>${ivy.version}</version>
+            </dependency>
+
+            <!-- kafka -->
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-clients</artifactId>
+                <version>${kafka.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka_${kafka.scala.binary.version}</artifactId>
+                <version>${kafka.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper</artifactId>
+                <version>${zookeeper.version}</version>
+            </dependency>
+
+            <!-- JSON -->
+            <dependency>
+                <groupId>org.codehaus.jettison</groupId>
+                <artifactId>jettison</artifactId>
+                <version>${jettison.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-http</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-io</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-security</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+
+            <!-- Jetty -->
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-server</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-servlet</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-util</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-util-ajax</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-webapp</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.glassfish</groupId>
+                <artifactId>javax.el</artifactId>
+                <version>3.0.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>jul-to-slf4j</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+
+            <!-- Logging -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-log4j12</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+
+            <!-- Fix for cassandra-all tranitive dependency CVE-2017-18640 : https://nvd.nist.gov/vuln/detail/CVE-2017-18640 -->
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>1.33</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.hbase</groupId>
+                <artifactId>hbase-server</artifactId>
+                <version>${hbase.version}</version>
+                <scope>provided</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>tomcat</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
@@ -1323,14 +953,10 @@
 
             <dependency>
                 <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-server-api</artifactId>
+                <artifactId>atlas-intg</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-repository</artifactId>
-                <version>${project.version}</version>
+                <classifier>tests</classifier>
+                <scope>test</scope>
             </dependency>
 
             <dependency>
@@ -1342,266 +968,16 @@
             </dependency>
 
             <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-notification</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-common</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-dashboardv2</artifactId>
-                <version>${project.version}</version>
-                <type>war</type>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-webapp</artifactId>
-                <version>${project.version}</version>
-                <type>war</type>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-hbase-client-shaded</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-hbase-server-shaded</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-buildtools</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <!-- use titan 0.5.4 by default -->
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-graphdb-impls</artifactId>
-                <version>${project.version}</version>
-                <type>pom</type>
-                <!-- exclusions for all of the non-titan0 implementations -->
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-minikdc</artifactId>
+                <version>${hadoop.version}</version>
+                <scope>test</scope>
                 <exclusions>
                     <exclusion>
-                        <groupId>org.apache.atlas</groupId>
-                        <artifactId>atlas-graphdb-titan1</artifactId>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>hive-bridge</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>storm-bridge</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>hdfs-model</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>falcon-bridge</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>sqoop-bridge</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-catalog</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>hive-bridge-shim</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>storm-bridge-shim</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>falcon-bridge-shim</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>sqoop-bridge-shim</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <!--Scala dependencies-->
-            <dependency>
-                <groupId>org.scala-lang</groupId>
-                <artifactId>scala-compiler</artifactId>
-                <version>${scala.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.scala-lang</groupId>
-                <artifactId>scala-reflect</artifactId>
-                <version>${scala.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.scala-lang</groupId>
-                <artifactId>scala-library</artifactId>
-                <version>${scala.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.scala-lang</groupId>
-                <artifactId>scala-actors</artifactId>
-                <version>${scala.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.scala-lang</groupId>
-                <artifactId>scalap</artifactId>
-                <version>${scala.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.json4s</groupId>
-                <artifactId>json4s-native_${scala.binary.version}</artifactId>
-                <version>${json.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.github.nscala-time</groupId>
-                <artifactId>nscala-time_${scala.binary.version}</artifactId>
-                <version>1.6.0</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.typesafe</groupId>
-                <artifactId>config</artifactId>
-                <version>1.2.1</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-actor_${scala.binary.version}</artifactId>
-                <version>${akka.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-testkit_${scala.binary.version}</artifactId>
-                <version>${akka.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-slf4j_${scala.binary.version}</artifactId>
-                <version>${akka.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.spray</groupId>
-                <artifactId>spray-routing</artifactId>
-                <version>${spray.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.spray</groupId>
-                <artifactId>spray-can</artifactId>
-                <version>${spray.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.spray</groupId>
-                <artifactId>spray-httpx</artifactId>
-                <version>${spray.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.spray</groupId>
-                <artifactId>spray-testkit</artifactId>
-                <version>${spray.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.code.gson</groupId>
-                <artifactId>gson</artifactId>
-                <version>${gson.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>it.unimi.dsi</groupId>
-                <artifactId>fastutil</artifactId>
-                <version>${fastutil.version}</version>
-            </dependency>
-
-            <!-- API documentation  -->
-            <dependency>
-                <groupId>com.webcohesion.enunciate</groupId>
-                <artifactId>enunciate-core-annotations</artifactId>
-                <version>2.8.0</version>
-            </dependency>
-
-
-            <!-- supports simple auth handler -->
-            <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpclient</artifactId>
-                <version>4.4.1</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpcore</artifactId>
-                <version>4.4.1</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpmime</artifactId>
-                <version>4.4.1</version>
-            </dependency>
-
-            <!--Test dependencies-->
-            <dependency>
-                <groupId>org.testng</groupId>
-                <artifactId>testng</artifactId>
-                <version>6.1.1</version>
-                <scope>test</scope>
             </dependency>
 
             <dependency>
@@ -1618,86 +994,58 @@
                 <scope>test</scope>
             </dependency>
 
+            <!-- utilities -->
             <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>3.4</version>
+                <groupId>org.skyscreamer</groupId>
+                <artifactId>jsonassert</artifactId>
+                <version>1.2.0</version>
+                <scope>test</scope>
             </dependency>
 
-            <dependency>
-                <groupId>commons-lang</groupId>
-                <artifactId>commons-lang</artifactId>
-                <version>${commons-lang.version}</version>
-            </dependency>
-
-            <!-- kafka -->
-            <dependency>
-                <groupId>org.apache.kafka</groupId>
-                <artifactId>kafka-clients</artifactId>
-                <version>${kafka.version}</version>
-            </dependency>
+            <!--Test dependencies-->
 
             <dependency>
-                <groupId>org.apache.kafka</groupId>
-                <artifactId>kafka_${scala.binary.version}</artifactId>
-                <version>${kafka.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>junit</groupId>
-                        <artifactId>junit</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-plugin-classloader</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.101tec</groupId>
-                <artifactId>zkclient</artifactId>
-                <version>${zkclient.version}</version>
+                <groupId>org.testng</groupId>
+                <artifactId>testng</artifactId>
+                <version>${testng.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
 
     <dependencies>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
 
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
+            <groupId>cglib</groupId>
+            <artifactId>cglib</artifactId>
+            <version>3.3.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jul-to-slf4j</artifactId>
         </dependency>
+
         <dependency>
-            <groupId>cglib</groupId>
-            <artifactId>cglib</artifactId>
-            <version>2.2.2</version>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
         </dependency>
+
     </dependencies>
 
     <build>
         <directory>target</directory>
-        <outputDirectory>target/classes</outputDirectory>
         <finalName>${project.artifactId}-${project.version}</finalName>
+        <outputDirectory>target/classes</outputDirectory>
         <testOutputDirectory>target/test-classes</testOutputDirectory>
         <resources>
             <resource>
-                <directory>src/main/resources</directory>
                 <filtering>true</filtering>
+                <directory>src/main/resources</directory>
             </resource>
             <resource>
-                <directory>..</directory>
                 <targetPath>META-INF</targetPath>
+                <directory>..</directory>
                 <includes>
                     <include>LICENSE</include>
                     <include>NOTICE</include>
@@ -1706,17 +1054,45 @@
         </resources>
         <testResources>
             <testResource>
+                <filtering>true</filtering>
                 <directory>src/test/resources</directory>
-                <filtering>true</filtering>
-            </testResource>
-            <testResource>
-                <directory>typesystem/src/test/resources</directory>
-                <filtering>true</filtering>
             </testResource>
         </testResources>
 
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>com.github.ekryd.sortpom</groupId>
+                    <artifactId>sortpom-maven-plugin</artifactId>
+                    <version>${maven-plugin-sortpom.version}</version>
+                </plugin>
+                <!-- support for enforcement of maven & Java versions -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>3.0.0-M1</version>
+                    <inherited>true</inherited>
+                </plugin>
+                <plugin>
+                    <groupId>org.antlr</groupId>
+                    <artifactId>antlr4-maven-plugin</artifactId>
+                    <version>${antlr4.plugin.version}</version>
+                    <configuration>
+                        <listener>false</listener>
+                        <visitor>true</visitor>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>antlr4</goal>
+                            </goals>
+                            <phase>generate-sources</phase>
+                            <configuration>
+                                <outputDirectory>src/main/java</outputDirectory>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>buildnumber-maven-plugin</artifactId>
@@ -1726,7 +1102,11 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>2.3.2</version>
+                    <version>3.7.0</version>
+                    <configuration>
+                        <source>1.8</source>
+                        <target>1.8</target>
+                    </configuration>
                 </plugin>
 
                 <plugin>
@@ -1744,19 +1124,19 @@
                 <plugin>
                     <groupId>com.github.eirslett</groupId>
                     <artifactId>frontend-maven-plugin</artifactId>
-                    <version>1.0</version>
+                    <version>1.12.1</version>
                 </plugin>
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.16</version>
+                    <version>${surefire.version}</version>
                 </plugin>
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>2.18.1</version>
+                    <version>${failsafe.version}</version>
                 </plugin>
 
                 <plugin>
@@ -1768,31 +1148,25 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-war-plugin</artifactId>
-                    <version>2.6</version>
+                    <version>3.4.0</version>
                 </plugin>
 
                 <plugin>
                     <groupId>org.apache.rat</groupId>
                     <artifactId>apache-rat-plugin</artifactId>
-                    <version>0.7</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>2.9.1</version>
+                    <version>0.13</version>
                 </plugin>
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-site-plugin</artifactId>
-                    <version>3.4</version>
+                    <version>${maven-site-plugin.version}</version>
                 </plugin>
 
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>findbugs-maven-plugin</artifactId>
-                    <version>3.0.1</version>
+                    <version>3.0.5</version>
                 </plugin>
 
                 <!-- Source code metrics: mvn javancss:report or mvn site -->
@@ -1805,7 +1179,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>
-                    <version>2.10</version>
+                    <version>3.1.0</version>
                 </plugin>
 
                 <plugin>
@@ -1814,6 +1188,10 @@
                     <version>2.7</version>
                     <configuration>
                         <encoding>UTF-8</encoding>
+                        <nonFilteredFileExtensions>
+                            <nonFilteredFileExtension>zip</nonFilteredFileExtension>
+                            <nonFilteredFileExtension>json</nonFilteredFileExtension>
+                        </nonFilteredFileExtensions>
                     </configuration>
                 </plugin>
 
@@ -1829,7 +1207,7 @@
                 <plugin>
                     <groupId>com.webcohesion.enunciate</groupId>
                     <artifactId>enunciate-maven-plugin</artifactId>
-                    <version>2.8.0</version>
+                    <version>${enunciate-maven-plugin.version}</version>
                     <executions>
                         <execution>
                             <goals>
@@ -1844,63 +1222,113 @@
 
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
+                <groupId>com.github.ekryd.sortpom</groupId>
+                <artifactId>sortpom-maven-plugin</artifactId>
+                <version>${maven-plugin-sortpom.version}</version>
+                <configuration>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                    <expandEmptyElements>false</expandEmptyElements>
+                    <keepBlankLines>true</keepBlankLines>
+                    <nrOfIndentSpace>4</nrOfIndentSpace>
+                    <predefinedSortOrder>custom_1</predefinedSortOrder>
+                    <sortDependencies>scope,groupId,artifactId</sortDependencies>
+                    <sortDependencyExclusions>groupId,artifactId</sortDependencyExclusions>
+                    <sortModules>true</sortModules>
+                    <sortProperties>true</sortProperties>
+                    <spaceBeforeCloseEmptyElement>true</spaceBeforeCloseEmptyElement>
+                    <verifyFail>Stop</verifyFail>
+                    <verifyFailOn>Strict</verifyFailOn>
+                </configuration>
                 <executions>
                     <execution>
-                        <id>attach-sources</id>
-                        <phase>verify</phase>
                         <goals>
-                            <goal>jar-no-fork</goal>
-                            <goal>test-jar-no-fork</goal>
+                            <goal>verify</goal>
                         </goals>
+                        <phase>validate</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- enforcement of maven version 3.5.0 or above & Java 8 (151) or above -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-versions</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>[3.5.0,)</version>
+                                    <message>** MAVEN VERSION ERROR ** Maven 3.5.0 or above is required. See https://maven.apache.org/install.html</message>
+                                </requireMavenVersion>
+                                <requireJavaVersion>
+                                    <level>ERROR</level>
+                                    <version>[1.8.0-151,)</version>
+                                    <message>** JAVA VERSION ERROR ** Java 8 (Update 151) or above is required.</message>
+                                </requireJavaVersion>
+                                <requireJavaVersion>
+                                    <level>WARN</level>
+                                    <version>(,1.9]</version>
+                                    <message>** JAVA VERSION WARNING ** Java 9 and above has not been tested with Atlas.</message>
+                                </requireJavaVersion>
+                            </rules>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
-                <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                    <optimize>true</optimize>
-                </configuration>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                            <goal>test-jar-no-fork</goal>
+                        </goals>
+                        <phase>verify</phase>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <version>2.5.4</version>
-                <inherited>true</inherited>
                 <extensions>true</extensions>
+                <inherited>true</inherited>
             </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.18.1</version>
+                <version>${surefire.version}</version>
                 <configuration>
                     <systemProperties>
                         <user.dir>${project.basedir}</user.dir>
                         <atlas.data>${project.build.directory}/data</atlas.data>
-                        <log4j.configuration>atlas-log4j.xml</log4j.configuration>
+                        <atlas.log.dir>${project.build.directory}/logs</atlas.log.dir>
+                        <atlas.log.file>application.log</atlas.log.file>
+                        <logback.configurationFile>atlas-logback.xml</logback.configurationFile>
+                        <embedded.solr.directory>${project.basedir}/target</embedded.solr.directory>
                     </systemProperties>
                     <skipTests>${skipTests}</skipTests>
-                    <forkCount>2C</forkCount>
+                    <forkCount>${surefire.forkCount}</forkCount>
                     <reuseForks>false</reuseForks>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
+                    <argLine>${argLine} -Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir="${project.build.directory}/tmp-hadoop-${user.name}"
-                        -Xmx1024m -XX:MaxPermSize=512m -Djava.net.preferIPv4Stack=true ${atlas.surefire.options}
-                    </argLine>
+                        -Xmx1024m -Djava.net.preferIPv4Stack=true ${atlas.surefire.options}</argLine>
                     <skip>${skipUTs}</skip>
                 </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>org.apache.maven.surefire</groupId>
                         <artifactId>surefire-testng</artifactId>
-                        <version>2.18.1</version>
+                        <version>${surefire.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -1908,18 +1336,20 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.19.1</version>
+                <version>${failsafe.version}</version>
                 <configuration>
                     <systemPropertyVariables>
                         <projectBaseDir>${projectBaseDir}</projectBaseDir>
                         <atlas.data>${project.build.directory}/data</atlas.data>
-                        <log4j.configuration>atlas-log4j.xml</log4j.configuration>
+                        <atlas.log.dir>${project.build.directory}/logs</atlas.log.dir>
+                        <atlas.log.file>application.log</atlas.log.file>
+                        <logback.configurationFile>atlas-logback.xml</logback.configurationFile>
+                        <embedded.solr.directory>${project.basedir}/target</embedded.solr.directory>
                     </systemPropertyVariables>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir="${project.build.directory}/tmp-hadoop-${user.name}"
-                        -Xmx1024m -XX:MaxPermSize=512m ${atlas.surefire.options}
-                    </argLine>
+                        -Xmx1024m ${atlas.surefire.options}</argLine>
                     <skip>${skipITs}</skip>
                     <reuseForks>false</reuseForks>
                     <!-- Don't fork the IT until there's sandbox capability for IT env -->
@@ -1958,27 +1388,21 @@
             </plugin>
 
             <plugin>
-                <groupId>net.alchim31.maven</groupId>
-                <artifactId>scala-maven-plugin</artifactId>
-                <version>3.2.0</version>
-            </plugin>
-
-            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>buildnumber-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>create</goal>
-                        </goals>
-                    </execution>
-                </executions>
                 <configuration>
                     <revisionOnScmFailure>release</revisionOnScmFailure>
                     <doCheck>false</doCheck>
                     <doUpdate>false</doUpdate>
                 </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>create</goal>
+                        </goals>
+                        <phase>validate</phase>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -1991,6 +1415,7 @@
                     <useEclipseDefaultExcludes>true</useEclipseDefaultExcludes>
                     <excludeSubProjects>true</excludeSubProjects>
                     <excludes>
+                        <exclude>**/antlr4/**</exclude>
                         <exclude>**/dependency-reduced-pom.xml</exclude>
                         <exclude>**/javax.script.ScriptEngineFactory</exclude>
                         <exclude>.reviewboardrc</exclude>
@@ -1999,15 +1424,17 @@
                         <exclude>**/.cache-main</exclude>
                         <exclude>**/.cache-tests</exclude>
                         <exclude>**/.checkstyle</exclude>
-                        <exclude>*.txt</exclude>
+                        <exclude>**/*.txt</exclude>
                         <exclude>**/*.json</exclude>
                         <exclude>.pc/**</exclude>
                         <exclude>debian/**</exclude>
                         <exclude>.svn/**</exclude>
                         <exclude>.git/**</exclude>
+                        <exclude>.github/pull_request_template.md</exclude>
                         <exclude>.gitignore</exclude>
                         <exclude>**/.idea/**</exclude>
                         <exclude>**/*.twiki</exclude>
+                        <exclude>**/*.md</exclude>
                         <exclude>**/*.iml</exclude>
                         <exclude>**/*.json</exclude>
                         <exclude>**/*.log</exclude>
@@ -2044,6 +1471,13 @@
                         <exclude>**/policy-store.txt</exclude>
                         <exclude>**/*rebel*.xml</exclude>
                         <exclude>**/*rebel*.xml.bak</exclude>
+                        <exclude>**/test/resources/**</exclude>
+
+                        <!-- atlas doc directory -->
+                        <exclude>**/docz-lib/**</exclude>
+                        <exclude>**/.docz/**</exclude>
+                        <exclude>**/*.svg</exclude>
+
                     </excludes>
                 </configuration>
                 <executions>
@@ -2052,7 +1486,7 @@
                         <goals>
                             <goal>check</goal>
                         </goals>
-                        <phase>verify</phase>
+                        <phase>validate</phase>
                     </execution>
                 </executions>
             </plugin>
@@ -2060,7 +1494,13 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${checkstyle.plugin.version}</version>
                 <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>${checkstyle.version}</version>
+                    </dependency>
                     <dependency>
                         <groupId>org.apache.atlas</groupId>
                         <artifactId>atlas-buildtools</artifactId>
@@ -2075,10 +1515,11 @@
                         </goals>
                         <phase>verify</phase>
                         <configuration>
-                            <skip>${skipCheck}</skip>
-                            <consoleOutput>false</consoleOutput>
+                            <consoleOutput>true</consoleOutput>
                             <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                            <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
+                            <configLocation>./dev-support/checkstyle.xml</configLocation>
+                            <suppressionsLocation>./dev-support/checkstyle-suppressions.xml</suppressionsLocation>
+                            <skip>${checkstyle.skip}</skip>
                             <failOnViolation>${checkstyle.failOnViolation}</failOnViolation>
                         </configuration>
                     </execution>
@@ -2112,6 +1553,27 @@
             </plugin>
 
             <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>jacoco-initialize</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-site</id>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <artifactId>maven-clean-plugin</artifactId>
                 <configuration>
                     <filesets>
@@ -2131,6 +1593,18 @@
                 <configuration>
                     <skip>${skipSite}</skip>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.doxia</groupId>
+                        <artifactId>doxia-core</artifactId>
+                        <version>${doxia.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.maven.doxia</groupId>
+                        <artifactId>doxia-module-twiki</artifactId>
+                        <version>${doxia.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
 
             <plugin>
@@ -2153,10 +1627,10 @@
                     </execution>
                     <execution>
                         <id>aggregate</id>
-                        <inherited>false</inherited>
                         <goals>
                             <goal>aggregate</goal>
                         </goals>
+                        <inherited>false</inherited>
                     </execution>
                 </executions>
             </plugin>
@@ -2178,4 +1652,729 @@
             </plugin>
         </plugins>
     </build>
+    <url>https://atlas.apache.org</url>
+
+    <inceptionYear>2015</inceptionYear>
+
+    <organization>
+        <name>Apache Software Foundation</name>
+        <url>https://www.apache.org</url>
+    </organization>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>adossett</id>
+            <name>Aaron Dossett</name>
+            <email>adossett@target.com</email>
+            <organization>Target Inc.</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/Denver</timezone>
+            <!--<organizationUrl>https://www.target.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>AAhn</id>
+            <name>Andrew Ahn</name>
+            <email>aa@apache.org</email>
+            <organization />
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/Los_Angeles</timezone>
+        </developer>
+        <developer>
+            <id>apoorvnaik</id>
+            <name>Apoorv Naik</name>
+            <email>apoorvnaik@apache.org</email>
+            <organization />
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/Los_Angeles</timezone>
+            <!--<organizationUrl></organizationUrl>-->
+        </developer>
+        <developer>
+            <id>acmurthy</id>
+            <name>Arun C.Murthy</name>
+            <email>acmurthy@apache.org</email>
+            <organization>Cloudera Inc.</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/Los_Angeles</timezone>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>ayubpathan</id>
+            <name>Ayub Pathan</name>
+            <email>ayubpathan@apache.org</email>
+            <organization>Cloudera Inc.</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>amestry</id>
+            <name>Ashutosh Mestry</name>
+            <email>amestry@apache.org</email>
+            <organization>Cloudera Inc.</organization>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <timezone>America/Los_Angeles</timezone>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>bstortz</id>
+            <name>Barbara Stortz</name>
+            <email>barbara.stortz@gmail.com</email>
+            <organization>Microsoft</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/Los_Angeles</timezone>
+            <!--<organizationUrl>https://www.microsoft.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>chyzer</id>
+            <name>Chris Hyzer</name>
+            <email>tjbchris@apache.org</email>
+            <organization>Travelers Inc.</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+            <!--<organizationUrl>http://www.travelers.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>darshankumar</id>
+            <name>Darshan Kumar</name>
+            <email>darshankumar@apache.org</email>
+            <organization>MPR</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
+        </developer>
+        <developer>
+            <id>dmarkwat</id>
+            <name>Daniel Markwat</name>
+            <email>dmarkwat@aetna.com</email>
+            <organization>Aetna Inc.</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+            <!--<organizationUrl>https://www.aetna.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>davidrad</id>
+            <name>David Radley</name>
+            <email>davidrad@apache.org</email>
+            <organization>IBM Corporation</organization>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <timezone>Europe/London</timezone>
+            <!--<organizationUrl>https://www.ibm.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>dkantor</id>
+            <name>Dave Kantor</name>
+            <email>dkantor@apache.org</email>
+            <organization>IBM Corporation</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+            <!--<organizationUrl>https://www.ibm.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>dkaspar</id>
+            <name>David Kaspar</name>
+            <email>dkaspar@merck.com</email>
+            <organization>Merck &amp; Co Inc.</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>Europe/Berlin</timezone>
+            <!--<organizationUrl>https://www.merck.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>dfusaro</id>
+            <name>Dennis Fusaro</name>
+            <email>dfusaro@aetna.com</email>
+            <organization>Aetna Inc.</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+            <!--<organizationUrl>https://www.aetna.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>grahamwallis</id>
+            <name>Graham Wallis</name>
+            <email>grahamwallis@apache.org</email>
+            <organization>IBM Corporation</organization>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <timezone>Europe/London</timezone>
+            <!--<organizationUrl>https://www.ibm.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>gsenia</id>
+            <name>Greg Senia</name>
+            <email>gsenia@apache.org</email>
+            <organization>New York Life Insurance</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+            <!--<organizationUrl>http://www.newyorklife.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>rhbutani</id>
+            <name>Harish Butani</name>
+            <email>rhbutani@apache.org</email>
+            <organization />
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/Los_Angeles</timezone>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>yhemanth</id>
+            <name>Hemanth Yamijala</name>
+            <email>yhemanth@apache.org</email>
+            <organization>Cloudera Inc.</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>ilasek</id>
+            <name>Ivo Lasek</name>
+            <email>ilasek@merck.com</email>
+            <organization>Merck &amp; Co Inc.</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>Europe/Berlin</timezone>
+            <!--<organizationUrl>https://www.merck.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>jnhagelberg</id>
+            <name>Jeffrey Hagelberg</name>
+            <email>jnhagelberg@apache.org</email>
+            <organization>IBM Corporation</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+            <!--<organizationUrl>https://www.ibm.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>jitendra</id>
+            <name>Jitendra Pandey</name>
+            <email>jitendra@apache.org</email>
+            <organization>Cloudera Inc.</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/Los_Angeles</timezone>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>jmaron</id>
+            <name>Jon Maron</name>
+            <email>jmaron@apache.org</email>
+            <organization />
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+        </developer>
+        <developer>
+            <id>kalyanikashikar</id>
+            <name>Kalyani Kashikar</name>
+            <email>kalyanikashikar@apache.org</email>
+            <organization>Freestone Infotech</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
+        </developer>
+        <developer>
+            <id>kbhatt</id>
+            <name>Keval Bhatt</name>
+            <email>kbhatt@apache.org</email>
+            <organization>Freestone Infotech</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
+        </developer>
+        <developer>
+            <id>madhan</id>
+            <name>Madhan Neethiraj</name>
+            <email>madhan@apache.org</email>
+            <organization>Privacera Inc</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/Los_Angeles</timezone>
+            <!--<organizationUrl>https://www.privacera.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>mandarambawane</id>
+            <name>Mandar Ambawane</name>
+            <email>mandarambawane@apache.org</email>
+            <organization>Freestone Infotech</organization>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
+        </developer>
+        <developer>
+            <id>mandy</id>
+            <name>Mandy Chessell</name>
+            <email>mandy@apache.org</email>
+            <organization>IBM Corporation</organization>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <timezone>Europe/London</timezone>
+            <!--<organizationUrl>https://www.ibm.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>mschussler</id>
+            <name>Mitch Schussler</name>
+            <email>mschussler@apache.org</email>
+            <organization>JPMC</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+            <!--<organizationUrl>https://</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>guptaneeru</id>
+            <name>Neeru Gupta</name>
+            <email>guptaneeru@us.ibm.com</email>
+            <organization>IBM Corporation</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+            <!--<organizationUrl>https://www.ibm.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>nbonte</id>
+            <name>Nikhil Bonte</name>
+            <email>nbonte@apache.org</email>
+            <organization>Freestone Infotech</organization>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
+        </developer>
+        <developer>
+            <id>nixon</id>
+            <name>Nixon Rodrigues</name>
+            <email>nixon@apache.org</email>
+            <organization>Freestone Infotech</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
+        </developer>
+        <developer>
+            <id>pinal</id>
+            <name>Pinal Shah</name>
+            <email>pinal@apache.org</email>
+            <organization>Freestone Infotech</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
+        </developer>
+        <developer>
+            <id>ppawar</id>
+            <name>Prasad Pawar</name>
+            <email>ppawar@apache.org</email>
+            <organization>Freestone Infotech</organization>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
+        </developer>
+        <developer>
+            <id>chaitalithombare</id>
+            <name>Chaitali Borole</name>
+            <email>chaitalithombare@apache.org</email>
+            <organization>Freestone Infotech</organization>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
+        </developer>
+        <developer>
+            <id>radhikakundam</id>
+            <name>Radhika Kundam</name>
+            <email>radhikakundam@apache.org</email>
+            <organization>Cloudera Inc.</organization>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <timezone>America/Los_Angeles</timezone>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>rmani</id>
+            <name>Ramesh Mani</name>
+            <email>rmani@apache.org</email>
+            <organization>Cloudera Inc.</organization>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <timezone>America/Los_Angeles</timezone>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>sarath</id>
+            <name>Sarath Subramanian</name>
+            <email>sarath@apache.org</email>
+            <organization>Cloudera Inc.</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/Los_Angeles</timezone>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>shwethags</id>
+            <name>Shwetha GS</name>
+            <email>shwethags@apache.org</email>
+            <organization>Cloudera Inc.</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>sidmishra</id>
+            <name>Sidharth Mishra</name>
+            <email>sidmishra@apache.org</email>
+            <organization>Cloudera Inc.</organization>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <timezone>America/Los_Angeles</timezone>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>sriksun</id>
+            <name>Srikanth Sundarrajan</name>
+            <email>sriksun@apache.org</email>
+            <organization>InMobi</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
+            <!--<organizationUrl>https://www.inmobi.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>sumasai</id>
+            <name>Suma Shivaprasad</name>
+            <email>sumasai@apache.org</email>
+            <organization>Cloudera Inc.</organization>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/Los_Angeles</timezone>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>ssuresh</id>
+            <name>Suresh Srinivas</name>
+            <email>ssuresh@apache.org</email>
+            <organization />
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/Los_Angeles</timezone>
+            <!--<organizationUrl></organizationUrl>-->
+        </developer>
+        <developer>
+            <id>tbeerbower</id>
+            <name>Tom Beerbower</name>
+            <email>tbeerbower@apache.org</email>
+            <organization />
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+        </developer>
+        <developer>
+            <id>vranganathan</id>
+            <name>Venkat Ranganathan</name>
+            <email>venkatrangan@apache.org</email>
+            <organization />
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/Los_Angeles</timezone>
+            <!--<organizationUrl></organizationUrl>-->
+        </developer>
+        <developer>
+            <id>venkatesh</id>
+            <name>Venkatesh Seetharam</name>
+            <email>venkatesh@apache.org</email>
+            <organization />
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>America/Los_Angeles</timezone>
+        </developer>
+        <developer>
+            <id>svimal2106</id>
+            <name>Vimal Sharma</name>
+            <email>svimal2106@apache.org</email>
+            <organization />
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
+            <!--<organizationUrl></organizationUrl>-->
+        </developer>
+    </developers>
+
+    <mailingLists>
+        <mailingList>
+            <name>atlas-dev</name>
+            <subscribe>dev-subscribe@atlas.apache.org</subscribe>
+            <unsubscribe>dev-unsubscribe@atlas.apache.org</unsubscribe>
+            <post>dev@atlas.apache.org</post>
+            <archive>https://mail-archives.apache.org/mod_mbox/atlas-dev/</archive>
+        </mailingList>
+        <mailingList>
+            <name>atlas-user</name>
+            <subscribe>user-subscribe@atlas.apache.org</subscribe>
+            <unsubscribe>user-unsubscribe@atlas.apache.org</unsubscribe>
+            <post>user@atlas.apache.org</post>
+            <archive>https://mail-archives.apache.org/mod_mbox/atlas-user/</archive>
+        </mailingList>
+        <mailingList>
+            <name>atlas-commits</name>
+            <subscribe>commits-subscribe@atlas.apache.org</subscribe>
+            <unsubscribe>commits-unsubscribe@atlas.apache.org</unsubscribe>
+            <post>commits@atlas.apache.org</post>
+            <archive>https://mail-archives.apache.org/mod_mbox/atlas-commits/</archive>
+        </mailingList>
+    </mailingLists>
+
+    <scm>
+        <connection>scm:git:git://git.apache.org/atlas.git</connection>
+        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/atlas.git</developerConnection>
+        <url>https://github.com/apache/atlas.git</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <issueManagement>
+        <system>JIRA</system>
+        <url>https://issues.apache.org/jira/browse/ATLAS</url>
+    </issueManagement>
+
+    <ciManagement>
+        <system>Jenkins</system>
+        <url>https://builds.apache.org/job/atlas</url>
+    </ciManagement>
+
+    <repositories>
+        <repository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>central</id>
+            <url>https://repo1.maven.org/maven2</url>
+        </repository>
+        <repository>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <id>apache.snapshots.repo</id>
+            <name>Apache Snapshots Repository</name>
+            <url>https://repository.apache.org/content/groups/snapshots</url>
+        </repository>
+        <repository>
+            <id>apache-staging</id>
+            <url>https://repository.apache.org/content/groups/staging/</url>
+        </repository>
+        <repository>
+            <id>default</id>
+            <url>https://repository.apache.org/content/groups/public/</url>
+        </repository>
+        <repository>
+            <id>java.net-Public</id>
+            <name>Maven Java Net Snapshots and Releases</name>
+            <url>https://maven.java.net/content/groups/public/</url>
+        </repository>
+        <repository>
+            <id>repository.jboss.org-public</id>
+            <name>JBoss repository</name>
+            <url>https://repository.jboss.org/nexus/content/groups/public</url>
+        </repository>
+        <repository>
+            <id>typesafe</id>
+            <name>Typesafe Repository</name>
+            <url>https://repo.typesafe.com/typesafe/releases/</url>
+        </repository>
+        <repository>
+            <id>maven-restlet</id>
+            <name>Public online Restlet repository</name>
+            <url>https://maven.restlet.talend.com/</url>
+        </repository>
+    </repositories>
+
+    <profiles>
+        <profile>
+            <id>embedded-cassandra-solr</id>
+            <properties>
+                <guava.version>${guava.version}</guava.version>
+            </properties>
+        </profile>
+
+        <!-- Turning on this profile affects only tests and does not affect packaging -->
+        <profile>
+            <id>distributed</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <entity.repository.impl>org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.impl>
+                <graph.index.backend>solr</graph.index.backend>
+                <graph.storage.backend>hbase</graph.storage.backend>
+                <graph.storage.hostname>localhost</graph.storage.hostname>
+                <solr.zk.address>localhost:9983</solr.zk.address>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>dist</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <skipDocs>false</skipDocs>
+            </properties>
+        </profile>
+
+        <!-- Graph provider selection profiles
+        The following profiles are used to select the graph provider.
+        These profiles are mutually exclusive and should be activated by setting the system
+        property GRAPH-PROVIDER.
+        This can be optionally specified when invoking mvn:
+           e.g. mvn clean install -DGRAPH-PROVIDER=janus
+        The settings for GRAPH-PROVIDER have the following effects:
+        * If GRAPH-PROVIDER is not specified, the graph-provider-default profile (janus) is activated.
+        * If GRAPH-PROVIDER is set to anything else, the build will fail.
+        Do not activate the graph-provider selection profiles using -P.
+        -->
+
+        <profile>
+            <!-- Default profile, i.e. GRAPH-PROVIDER not set -->
+            <id>graph-provider-default</id>
+            <activation>
+                <property>
+                    <name>!GRAPH-PROVIDER</name>
+                </property>
+            </activation>
+            <properties>
+                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/solr-test-framework-*.jar, WEB-INF/lib/jts-*.jar,WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/ant-*.jar</distro.exclude.packages>
+                <graph.index.backend>solr</graph.index.backend>
+                <graphArtifact>atlas-graphdb-janus</graphArtifact>
+                <graphGroup>org.apache.atlas</graphGroup>
+                <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
+                <skipDocs>false</skipDocs>
+                <tests.solr.embedded>true</tests.solr.embedded>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>graph-provider-janus</id>
+            <activation>
+                <property>
+                    <name>GRAPH-PROVIDER</name>
+                    <value>janus</value>
+                </property>
+            </activation>
+            <properties>
+                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/solr-test-framework-*.jar, WEB-INF/lib/jts-*.jar,WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/ant-*.jar</distro.exclude.packages>
+                <graph.index.backend>solr</graph.index.backend>
+                <graphArtifact>atlas-graphdb-janus</graphArtifact>
+                <graphGroup>org.apache.atlas</graphGroup>
+                <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
+                <skipDocs>false</skipDocs>
+                <tests.solr.embedded>true</tests.solr.embedded>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>skipMinify</id>
+            <properties>
+                <project.build.dashboardv2.gruntBuild>build</project.build.dashboardv2.gruntBuild>
+            </properties>
+        </profile>
+
+    </profiles>
 </project>

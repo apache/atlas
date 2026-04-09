@@ -26,10 +26,8 @@ import java.util.Collections;
 import java.util.Set;
 
 public class UserAuthorityGranter implements AuthorityGranter {
-
     @Override
     public Set<String> grant(Principal principal) {
-        Collections.singleton("DATA_SCIENTIST");
-        return null;
+        return Collections.singleton("DATA_SCIENTIST");
     }
 }

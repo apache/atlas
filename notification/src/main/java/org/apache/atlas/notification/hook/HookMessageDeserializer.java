@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,43 +18,39 @@
 
 package org.apache.atlas.notification.hook;
 
-import com.google.gson.JsonDeserializer;
+import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.atlas.model.notification.AtlasNotificationMessage;
+import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.notification.AbstractMessageDeserializer;
 import org.apache.atlas.notification.AbstractNotification;
-import org.apache.atlas.notification.NotificationInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * Hook notification message deserializer.
  */
-public class HookMessageDeserializer extends AbstractMessageDeserializer<HookNotification.HookNotificationMessage> {
-
+public class HookMessageDeserializer extends AbstractMessageDeserializer<HookNotification> {
     /**
      * Logger for hook notification messages.
      */
     private static final Logger NOTIFICATION_LOGGER = LoggerFactory.getLogger(HookMessageDeserializer.class);
 
-
     // ----- Constructors ----------------------------------------------------
-
     /**
      * Create a hook notification message deserializer.
      */
     public HookMessageDeserializer() {
-        super(NotificationInterface.HOOK_VERSIONED_MESSAGE_TYPE,
-            AbstractNotification.CURRENT_MESSAGE_VERSION, getDeserializerMap(), NOTIFICATION_LOGGER);
+        super(new TypeReference<HookNotification>() {}, new TypeReference<AtlasNotificationMessage<HookNotification>>() {}, AbstractNotification.CURRENT_MESSAGE_VERSION, NOTIFICATION_LOGGER);
     }
 
+    @Override
+    public HookNotification deserialize(String messageJson) {
+        final HookNotification ret = super.deserialize(messageJson);
 
-    // ----- helper methods --------------------------------------------------
+        if (ret != null) {
+            ret.normalize();
+        }
 
-    private static Map<Type, JsonDeserializer> getDeserializerMap() {
-        return Collections.<Type, JsonDeserializer>singletonMap(
-            NotificationInterface.HOOK_NOTIFICATION_CLASS, new HookNotification());
+        return ret;
     }
 }

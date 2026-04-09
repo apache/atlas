@@ -22,11 +22,9 @@ package org.apache.atlas.sqoop.model;
  * Hive Data Types for model and bridge.
  */
 public enum SqoopDataTypes {
-
     // Classes
     SQOOP_DBDATASTORE,
-    SQOOP_PROCESS,
-    ;
+    SQOOP_PROCESS;
 
     public String getName() {
         return name().toLowerCase();

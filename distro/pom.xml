@@ -16,46 +16,207 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>0.9-SNAPSHOT</version>
+        <artifactId>apache-atlas</artifactId>
+        <version>3.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
+
     <artifactId>atlas-distro</artifactId>
-    <description>Apache Atlas Distribution</description>
+
     <name>Apache Atlas Distribution</name>
+    <description>Apache Atlas Distribution</description>
 
     <!-- by default configure hbase and solr with the distribution -->
     <properties>
-
-        <titan.storage.backend>hbase</titan.storage.backend>
-        <titan.storage.properties>#Hbase
-#For standalone mode , specify localhost
-#for distributed mode, specify zookeeper quorum here - For more information refer http://s3.thinkaurelius.com/docs/titan/current/hbase.html#_remote_server_mode_2
-atlas.graph.storage.hostname=
-atlas.graph.storage.hbase.regions-per-server=1
-atlas.graph.storage.lock.wait-time=10000
-        </titan.storage.properties>
-        <titan.index.backend>solr5</titan.index.backend>
-        <titan.index.properties>#Solr
+        <cassandra.embedded>false</cassandra.embedded>
+        <elasticsearch.managed>false</elasticsearch.managed>
+        <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.properties>
+        <graph.index.backend>solr</graph.index.backend>
+        <graph.index.properties>#Solr
 #Solr cloud mode properties
 atlas.graph.index.search.solr.mode=cloud
 atlas.graph.index.search.solr.zookeeper-url=
 atlas.graph.index.search.solr.zookeeper-connect-timeout=60000
 atlas.graph.index.search.solr.zookeeper-session-timeout=60000
+atlas.graph.index.search.solr.wait-searcher=false
 
 #Solr http mode properties
 #atlas.graph.index.search.solr.mode=http
 #atlas.graph.index.search.solr.http-urls=http://localhost:8983/solr
-        </titan.index.properties>
+
+# ElasticSearch support (Tech Preview)
+# Comment out above solr configuration, and uncomment the following two lines. Additionally, make sure the
+# hostname field is set to a comma delimited set of elasticsearch master nodes, or an ELB that fronts the masters.
+#
+# Elasticsearch does not provide authentication out of the box, but does provide an option with the X-Pack product
+# https://www.elastic.co/products/x-pack/security
+#
+# Alternatively, the JanusGraph documentation provides some tips on how to secure Elasticsearch without additional
+# plugins: https://docs.janusgraph.org/latest/elasticsearch.html
+#atlas.graph.index.search.hostname=localhost
+#atlas.graph.index.search.elasticsearch.client-only=true</graph.index.properties>
+        <graph.storage.backend>hbase2</graph.storage.backend>
+        <graph.storage.properties>#Hbase
+#For standalone mode , specify localhost
+#for distributed mode, specify zookeeper quorum here
+atlas.graph.storage.hostname=
+atlas.graph.storage.hbase.regions-per-server=1
+
+#In order to use Cassandra as a backend, comment out the hbase specific properties above, and uncomment the
+#the following properties
+#atlas.graph.storage.clustername=
+#atlas.graph.storage.port=</graph.storage.properties>
         <hbase.embedded>false</hbase.embedded>
         <solr.embedded>false</solr.embedded>
-	<entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.properties>
     </properties>
+
+    <!--Add a dependency here to ensure this module is the final one built-->
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-classification-updater</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-index-repair-tool</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-notification-analyzer</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-server-api</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>couchbase-bridge</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>falcon-bridge</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>hbase-bridge</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>hive-bridge</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>impala-bridge</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>kafka-bridge</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>sqoop-bridge</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>storm-bridge</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <outputDirectory>target</outputDirectory>
+        <resources>
+            <resource>
+                <targetPath>bin</targetPath>
+                <filtering>true</filtering>
+                <directory>src/bin</directory>
+                <includes>
+                    <include>**/*.py</include>
+                </includes>
+            </resource>
+            <resource>
+                <targetPath>conf</targetPath>
+                <filtering>true</filtering>
+                <directory>src/conf</directory>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <inherited>false</inherited>
+                <executions>
+                    <execution>
+                        <id>python-test</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>test</phase>
+                        <configuration>
+                            <skip>${skipTests}</skip>
+                            <executable>python3</executable>
+                            <workingDirectory>src/test/python</workingDirectory>
+                            <arguments>
+                                <argument>unitTests.py</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <PYTHONPATH>${python.path.l}</PYTHONPATH>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.7</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <profiles>
         <profile>
@@ -66,9 +227,7 @@ atlas.graph.index.search.solr.zookeeper-session-timeout=60000
                 </os>
             </activation>
             <properties>
-                <python.path.l>
-                    ${project.basedir}\src\bin;${project.basedir}\src\test\python\scripts;${project.basedir}\src\test\mock
-                </python.path.l>
+                <python.path.l>${project.basedir}\src\bin;${project.basedir}\src\test\python\scripts;${project.basedir}\src\test\mock</python.path.l>
             </properties>
         </profile>
 
@@ -80,9 +239,7 @@ atlas.graph.index.search.solr.zookeeper-session-timeout=60000
                 </os>
             </activation>
             <properties>
-                <python.path.l>
-                    ${project.basedir}/src/bin:${project.basedir}/src/test/mock:${project.basedir}/src/test/python/scripts
-                </python.path.l>
+                <python.path.l>${project.basedir}/src/bin:${project.basedir}/src/test/mock:${project.basedir}/src/test/python/scripts</python.path.l>
             </properties>
         </profile>
 
@@ -104,8 +261,22 @@ atlas.graph.index.search.solr.zookeeper-session-timeout=60000
                                 <configuration>
                                     <skipAssembly>false</skipAssembly>
                                     <descriptors>
+                                        <descriptor>src/main/assemblies/atlas-hbase-hook-package.xml</descriptor>
+                                        <descriptor>src/main/assemblies/atlas-hive-hook-package.xml</descriptor>
+                                        <descriptor>src/main/assemblies/atlas-impala-hook-package.xml</descriptor>
+                                        <descriptor>src/main/assemblies/atlas-falcon-hook-package.xml</descriptor>
+                                        <descriptor>src/main/assemblies/atlas-sqoop-hook-package.xml</descriptor>
+                                        <descriptor>src/main/assemblies/atlas-storm-hook-package.xml</descriptor>
+                                        <descriptor>src/main/assemblies/atlas-kafka-hook-package.xml</descriptor>
+                                        <descriptor>src/main/assemblies/atlas-couchbase-hook-package.xml</descriptor>
+                                        <descriptor>src/main/assemblies/atlas-server-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/standalone-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/src-package.xml</descriptor>
+                                        <descriptor>src/main/assemblies/atlas-repair-index-package.xml</descriptor>
+                                        <!--<descriptor>src/main/assemblies/migration-exporter.xml</descriptor>-->
+                                        <descriptor>src/main/assemblies/classification-updater.xml</descriptor>
+                                        <descriptor>src/main/assemblies/notification-analyzer.xml</descriptor>
+                                        <descriptor>src/main/assemblies/atlas-trino-extractor.xml</descriptor>
                                     </descriptors>
                                     <finalName>apache-atlas-${project.version}</finalName>
                                     <tarLongFileMode>gnu</tarLongFileMode>
@@ -116,6 +287,98 @@ atlas.graph.index.search.solr.zookeeper-session-timeout=60000
                 </plugins>
             </build>
         </profile>
+
+        <!-- profile to configure berkeley and solr with the distribution -->
+        <profile>
+            <id>berkeley-solr</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <cassandra.embedded>false</cassandra.embedded>
+                <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.NoopEntityAuditRepository</entity.repository.properties>
+                <graph.index.backend>solr</graph.index.backend>
+                <graph.index.properties>#Solr
+#Solr cloud mode properties
+atlas.graph.index.search.solr.mode=cloud
+atlas.graph.index.search.solr.zookeeper-url=localhost:2181
+atlas.graph.index.search.solr.zookeeper-connect-timeout=60000
+atlas.graph.index.search.solr.zookeeper-session-timeout=60000
+atlas.graph.index.search.solr.wait-searcher=false
+
+#Solr http mode properties
+#atlas.graph.index.search.solr.mode=http
+#atlas.graph.index.search.solr.http-urls=http://localhost:8983/solr</graph.index.properties>
+                <graph.storage.backend>berkeleyje</graph.storage.backend>
+                <graph.storage.properties>#Berkeley
+atlas.graph.storage.directory=${sys:atlas.home}/data/berkeley
+atlas.graph.storage.lock.clean-expired=true
+atlas.graph.storage.lock.expiry-time=500
+atlas.graph.storage.lock.wait-time=300</graph.storage.properties>
+                <hbase.embedded>false</hbase.embedded>
+                <solr.dir>${project.build.directory}/solr</solr.dir>
+                <solr.embedded>true</solr.embedded>
+                <solr.folder>solr-${solr.version}</solr.folder>
+                <solr.tar>https://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
+                <zk.dir>${project.build.directory}/zk</zk.dir>
+                <zk.folder>apache-zookeeper-${zookeeper.version}-bin</zk.folder>
+                <zk.tar>https://archive.apache.org/dist/zookeeper/zookeeper-${zookeeper.version}/apache-zookeeper-${zookeeper.version}-bin.tar.gz</zk.tar>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <executions>
+                            <!-- package solr -->
+                            <execution>
+                                <id>solr</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>generate-resources</phase>
+                                <configuration>
+                                    <target name="Download SOLR">
+                                        <mkdir dir="${solr.dir}" />
+                                        <mkdir dir="${project.basedir}/solr" />
+                                        <get dest="${project.basedir}/solr/${solr.folder}.tgz" skipexisting="true" src="${solr.tar}" usetimestamp="true" verbose="true" />
+                                        <untar compression="gzip" dest="${project.build.directory}/solr.temp" src="${project.basedir}/solr/${solr.folder}.tgz" />
+                                        <copy todir="${solr.dir}">
+                                            <fileset dir="${project.build.directory}/solr.temp/${solr.folder}">
+                                                <include name="**/*" />
+                                            </fileset>
+                                        </copy>
+                                    </target>
+                                </configuration>
+                            </execution>
+                            <!-- package zookeeper -->
+                            <execution>
+                                <id>zk</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>generate-resources</phase>
+                                <configuration>
+                                    <target name="Download zookeeper">
+                                        <mkdir dir="${zk.dir}" />
+                                        <mkdir dir="${project.basedir}/zk" />
+                                        <get dest="${project.basedir}/zk/${zk.folder}.tgz" skipexisting="true" src="${zk.tar}" usetimestamp="true" verbose="true" />
+                                        <untar compression="gzip" dest="${project.build.directory}/zk.temp" src="${project.basedir}/zk/${zk.folder}.tgz" />
+                                        <copy todir="${zk.dir}">
+                                            <fileset dir="${project.build.directory}/zk.temp/${zk.folder}">
+                                                <include name="**/*" />
+                                            </fileset>
+                                        </copy>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <!-- profile to configure berkeley and elasticsearch with the distribution -->
         <profile>
             <id>berkeley-elasticsearch</id>
@@ -123,25 +386,114 @@ atlas.graph.index.search.solr.zookeeper-session-timeout=60000
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <titan.storage.backend>berkeleyje</titan.storage.backend>
-                <titan.storage.properties>#Berkeley
-atlas.graph.storage.directory=${sys:atlas.home}/data/berkley
+                <cassandra.embedded>false</cassandra.embedded>
+                <elasticsearch.dir>${project.build.directory}/elasticsearch</elasticsearch.dir>
+                <elasticsearch.folder>elasticsearch-${elasticsearch.version}</elasticsearch.folder>
+                <elasticsearch.managed>true</elasticsearch.managed>
+                <elasticsearch.tar>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.version}-linux-x86_64.tar.gz</elasticsearch.tar>
+                <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.NoopEntityAuditRepository</entity.repository.properties>
+                <graph.index.backend>elasticsearch</graph.index.backend>
+                <graph.index.properties>#ElasticSearch
+atlas.graph.index.search.hostname=localhost
+atlas.graph.index.search.elasticsearch.client-only=true</graph.index.properties>
+                <graph.storage.backend>berkeleyje</graph.storage.backend>
+                <graph.storage.properties>#Berkeley
+atlas.graph.storage.directory=${sys:atlas.home}/data/berkeley
 atlas.graph.storage.lock.clean-expired=true
 atlas.graph.storage.lock.expiry-time=500
-atlas.graph.storage.lock.wait-time=300
-                </titan.storage.properties>
-                <titan.index.backend>elasticsearch</titan.index.backend>
-                <titan.index.properties>#ElasticSearch
-atlas.graph.index.search.directory=${sys:atlas.home}/data/es
-atlas.graph.index.search.elasticsearch.client-only=false
-atlas.graph.index.search.elasticsearch.local-mode=true
-atlas.graph.index.search.elasticsearch.create.sleep=2000
-                </titan.index.properties>
-		<entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.NoopEntityAuditRepository</entity.repository.properties>
+atlas.graph.storage.lock.wait-time=300</graph.storage.properties>
             </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <executions>
+                            <!-- package elasticsearch -->
+                            <execution>
+                                <id>elasticsearch</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>generate-resources</phase>
+                                <configuration>
+                                    <target name="Download Elasticsearch">
+                                        <mkdir dir="${elasticsearch.dir}" />
+                                        <mkdir dir="${project.basedir}/elasticsearch" />
+                                        <get dest="${project.basedir}/elasticsearch/${elasticsearch.folder}.tar.gz" skipexisting="true" src="${elasticsearch.tar}" usetimestamp="true" verbose="true" />
+                                        <untar compression="gzip" dest="${project.build.directory}/elasticsearch.temp" src="${project.basedir}/elasticsearch/${elasticsearch.folder}.tar.gz" />
+                                        <copy todir="${elasticsearch.dir}">
+                                            <fileset dir="${project.build.directory}/elasticsearch.temp/${elasticsearch.folder}">
+                                                <include name="**/*" />
+                                            </fileset>
+                                        </copy>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
-        <!-- profile to configure berkeley and elasticsearch with the distribution -->
+        <!-- profile to configure cassandra and elasticsearch with the distribution -->
+        <profile>
+            <id>cassandra-elasticsearch</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <cassandra.embedded>true</cassandra.embedded>
+                <elasticsearch.dir>${project.build.directory}/elasticsearch</elasticsearch.dir>
+                <elasticsearch.folder>elasticsearch-${elasticsearch.version}</elasticsearch.folder>
+                <elasticsearch.managed>true</elasticsearch.managed>
+                <elasticsearch.tar>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.version}-linux-x86_64.tar.gz</elasticsearch.tar>
+                <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.CassandraBasedAuditRepository</entity.repository.properties>
+                <graph.index.backend>elasticsearch</graph.index.backend>
+                <graph.index.properties>#ElasticSearch
+atlas.graph.index.search.hostname=localhost
+atlas.graph.index.search.elasticsearch.client-only=true</graph.index.properties>
+                <graph.storage.backend>embeddedcassandra</graph.storage.backend>
+                <graph.storage.properties>#Cassandra
+atlas.graph.storage.conf-file=${sys:atlas.home}/conf/cassandra.yml</graph.storage.properties>
+                <hbase.embedded>false</hbase.embedded>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <executions>
+                            <!-- package elasticsearch -->
+                            <execution>
+                                <id>elasticsearch</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>generate-resources</phase>
+                                <configuration>
+                                    <target name="Download Elasticsearch">
+                                        <mkdir dir="${elasticsearch.dir}" />
+                                        <mkdir dir="${project.basedir}/elasticsearch" />
+                                        <get dest="${project.basedir}/elasticsearch/${elasticsearch.folder}.tar.gz" skipexisting="true" src="${elasticsearch.tar}" usetimestamp="true" verbose="true" />
+                                        <untar compression="gzip" dest="${project.build.directory}/elasticsearch.temp" src="${project.basedir}/elasticsearch/${elasticsearch.folder}.tar.gz" />
+                                        <copy todir="${elasticsearch.dir}">
+                                            <fileset dir="${project.build.directory}/elasticsearch.temp/${elasticsearch.folder}">
+                                                <include name="**/*" />
+                                            </fileset>
+                                        </copy>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- profile to configure external hbase and solr  with the distribution -->
         <profile>
             <id>external-hbase-solr</id>
             <activation>
@@ -156,35 +508,31 @@ atlas.graph.index.search.elasticsearch.create.sleep=2000
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <titan.storage.properties>#Hbase
-#For standalone mode , specify localhost
-#for distributed mode, specify zookeeper quorum here - For more information refer http://s3.thinkaurelius.com/docs/titan/current/hbase.html#_remote_server_mode_2
-atlas.graph.storage.hostname=localhost
-atlas.graph.storage.hbase.regions-per-server=1
-atlas.graph.storage.lock.wait-time=10000
-                </titan.storage.properties>
-                <titan.index.properties>#Solr
+                <cassandra.embedded>false</cassandra.embedded>
+                <graph.index.properties>#Solr
 #Solr cloud mode properties
 atlas.graph.index.search.solr.mode=cloud
 atlas.graph.index.search.solr.zookeeper-url=localhost:2181
 atlas.graph.index.search.solr.zookeeper-connect-timeout=60000
 atlas.graph.index.search.solr.zookeeper-session-timeout=60000
+atlas.graph.index.search.solr.wait-searcher=false
 
 #Solr http mode properties
 #atlas.graph.index.search.solr.mode=http
-#atlas.graph.index.search.solr.http-urls=http://localhost:8983/solr
-                </titan.index.properties>
-
-                <hbase.embedded>true</hbase.embedded>
-                <solr.embedded>true</solr.embedded>
-
+#atlas.graph.index.search.solr.http-urls=http://localhost:8983/solr</graph.index.properties>
+                <graph.storage.properties>#Hbase
+#For standalone mode , specify localhost
+#for distributed mode, specify zookeeper quorum here
+atlas.graph.storage.hostname=localhost
+atlas.graph.storage.hbase.regions-per-server=1</graph.storage.properties>
                 <hbase.dir>${project.build.directory}/hbase</hbase.dir>
-                <hbase.tar>http://archive.apache.org/dist/hbase/${hbase.version}/hbase-${hbase.version}-bin.tar.gz</hbase.tar>
+                <hbase.embedded>true</hbase.embedded>
                 <hbase.folder>hbase-${hbase.version}</hbase.folder>
-
+                <hbase.tar>https://archive.apache.org/dist/hbase/${hbase.version}/hbase-${hbase.version}-bin.tar.gz</hbase.tar>
                 <solr.dir>${project.build.directory}/solr</solr.dir>
-                <solr.tar>http://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
+                <solr.embedded>true</solr.embedded>
                 <solr.folder>solr-${solr.version}</solr.folder>
+                <solr.tar>https://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
             </properties>
             <build>
                 <plugins>
@@ -196,16 +544,16 @@ atlas.graph.index.search.solr.zookeeper-session-timeout=60000
                             <!-- package hbase -->
                             <execution>
                                 <id>hbase</id>
-                                <phase>generate-resources</phase>
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
+                                <phase>generate-resources</phase>
                                 <configuration>
                                     <target name="Download HBase">
                                         <mkdir dir="${hbase.dir}" />
                                         <mkdir dir="${project.basedir}/hbase" />
-                                        <get src="${hbase.tar}" dest="${project.basedir}/hbase/${hbase.folder}.tar.gz" usetimestamp="true" verbose="true" skipexisting="true" />
-                                        <untar src="${project.basedir}/hbase/${hbase.folder}.tar.gz" dest="${project.build.directory}/hbase.temp" compression="gzip" />
+                                        <get dest="${project.basedir}/hbase/${hbase.folder}.tar.gz" skipexisting="true" src="${hbase.tar}" usetimestamp="true" verbose="true" />
+                                        <untar compression="gzip" dest="${project.build.directory}/hbase.temp" src="${project.basedir}/hbase/${hbase.folder}.tar.gz" />
                                         <copy todir="${hbase.dir}">
                                             <fileset dir="${project.build.directory}/hbase.temp/${hbase.folder}">
                                                 <include name="**/*" />
@@ -217,16 +565,16 @@ atlas.graph.index.search.solr.zookeeper-session-timeout=60000
                             <!-- package solr -->
                             <execution>
                                 <id>solr</id>
-                                <phase>generate-resources</phase>
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
+                                <phase>generate-resources</phase>
                                 <configuration>
                                     <target name="Download SOLR">
                                         <mkdir dir="${solr.dir}" />
                                         <mkdir dir="${project.basedir}/solr" />
-                                        <get src="${solr.tar}" dest="${project.basedir}/solr/${solr.folder}.tgz" usetimestamp="true" verbose="true" skipexisting="true" />
-                                        <untar src="${project.basedir}/solr/${solr.folder}.tgz" dest="${project.build.directory}/solr.temp" compression="gzip" />
+                                        <get dest="${project.basedir}/solr/${solr.folder}.tgz" skipexisting="true" src="${solr.tar}" usetimestamp="true" verbose="true" />
+                                        <untar compression="gzip" dest="${project.build.directory}/solr.temp" src="${project.basedir}/solr/${solr.folder}.tgz" />
                                         <copy todir="${solr.dir}">
                                             <fileset dir="${project.build.directory}/solr.temp/${solr.folder}">
                                                 <include name="**/*" />
@@ -240,60 +588,91 @@ atlas.graph.index.search.solr.zookeeper-session-timeout=60000
                 </plugins>
             </build>
         </profile>
+        <!-- profile to package and configure embedded cassandra and solr with the distribution -->
+        <profile>
+            <id>embedded-cassandra-solr</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <cassandra.embedded>true</cassandra.embedded>
+                <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.CassandraBasedAuditRepository</entity.repository.properties>
+                <graph.index.properties>#Solr
+#Solr cloud mode properties
+atlas.graph.index.search.solr.mode=cloud
+atlas.graph.index.search.solr.zookeeper-url=localhost:2181
+atlas.graph.index.search.solr.zookeeper-connect-timeout=60000
+atlas.graph.index.search.solr.zookeeper-session-timeout=60000
+atlas.graph.index.search.solr.wait-searcher=false
+
+#Solr http mode properties
+#atlas.graph.index.search.solr.mode=http
+#atlas.graph.index.search.solr.http-urls=http://localhost:8983/solr</graph.index.properties>
+                <graph.storage.backend>embeddedcassandra</graph.storage.backend>
+                <graph.storage.properties>#Cassandra
+atlas.graph.storage.conf-file=${sys:atlas.home}/conf/cassandra.yml</graph.storage.properties>
+                <hbase.embedded>false</hbase.embedded>
+                <solr.dir>${project.build.directory}/solr</solr.dir>
+                <solr.embedded>true</solr.embedded>
+                <solr.folder>solr-${solr.version}</solr.folder>
+                <solr.tar>https://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
+                <zk.dir>${project.build.directory}/zk</zk.dir>
+                <zk.folder>apache-zookeeper-${zookeeper.version}-bin</zk.folder>
+                <zk.tar>https://archive.apache.org/dist/zookeeper/zookeeper-${zookeeper.version}/apache-zookeeper-${zookeeper.version}-bin.tar.gz</zk.tar>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <executions>
+                            <!-- package solr -->
+                            <execution>
+                                <id>solr</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>generate-resources</phase>
+                                <configuration>
+                                    <target name="Download SOLR">
+                                        <mkdir dir="${solr.dir}" />
+                                        <mkdir dir="${project.basedir}/solr" />
+                                        <get dest="${project.basedir}/solr/${solr.folder}.tgz" skipexisting="true" src="${solr.tar}" usetimestamp="true" verbose="true" />
+                                        <untar compression="gzip" dest="${project.build.directory}/solr.temp" src="${project.basedir}/solr/${solr.folder}.tgz" />
+                                        <copy todir="${solr.dir}">
+                                            <fileset dir="${project.build.directory}/solr.temp/${solr.folder}">
+                                                <include name="**/*" />
+                                            </fileset>
+                                        </copy>
+                                    </target>
+                                </configuration>
+                            </execution>
+                            <!-- package zookeeper -->
+                            <execution>
+                                <id>zk</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>generate-resources</phase>
+                                <configuration>
+                                    <target name="Download zookeeper">
+                                        <mkdir dir="${zk.dir}" />
+                                        <mkdir dir="${project.basedir}/zk" />
+                                        <get dest="${project.basedir}/zk/${zk.folder}.tgz" skipexisting="true" src="${zk.tar}" usetimestamp="true" verbose="true" />
+                                        <untar compression="gzip" dest="${project.build.directory}/zk.temp" src="${project.basedir}/zk/${zk.folder}.tgz" />
+                                        <copy todir="${zk.dir}">
+                                            <fileset dir="${project.build.directory}/zk.temp/${zk.folder}">
+                                                <include name="**/*" />
+                                            </fileset>
+                                        </copy>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
-
-    <build>
-        <outputDirectory>target</outputDirectory>
-        <resources>
-            <resource>
-                <directory>src/bin</directory>
-                <filtering>true</filtering>
-                <includes>
-                    <include>**/*.py</include>
-                </includes>
-                <targetPath>bin</targetPath>
-            </resource>
-            <resource>
-                <directory>src/conf</directory>
-                <filtering>true</filtering>
-                <targetPath>conf</targetPath>
-            </resource>
-        </resources>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.2.1</version>
-                <inherited>false</inherited>
-                <executions>
-                    <execution>
-                        <configuration>
-                            <skip>${skipTests}</skip>
-                            <executable>python</executable>
-                            <workingDirectory>src/test/python</workingDirectory>
-                            <arguments>
-                                <argument>unitTests.py</argument>
-                            </arguments>
-                            <environmentVariables>
-                                <PYTHONPATH>${python.path.l}</PYTHONPATH>
-                            </environmentVariables>
-                        </configuration>
-                        <id>python-test</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
-
-    <!--Add a dependency here to ensure this module is the final one built-->
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>storm-bridge</artifactId>
-        </dependency>
-    </dependencies>
 </project>

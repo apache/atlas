@@ -22,7 +22,7 @@
 
     <clusters>
         <cluster name="testcluster">
-            <validity end="2012-04-22T00:00Z" start="2012-04-21T00:00Z"/>
+            <validity end="2012-04-22T00:00Z" start="2012-04-21T00:00Z" />
         </cluster>
     </clusters>
 
@@ -32,22 +32,22 @@
     <timezone>UTC</timezone>
 
     <inputs>
-        <input end="today(0,0)" start="today(0,0)" feed="testinput" name="input"/>
+        <input end="today(0,0)" start="today(0,0)" feed="testinput" name="input" />
     </inputs>
 
     <outputs>
-        <output instance="now(0,0)" feed="testoutput" name="output"/>
+        <output instance="now(0,0)" feed="testoutput" name="output" />
     </outputs>
 
     <properties>
-        <property name="blah" value="blah"/>
+        <property name="blah" value="blah" />
     </properties>
 
-    <workflow engine="hive" path="/falcon/test/apps/hive/script.hql"/>
+    <workflow engine="hive" path="/falcon/test/apps/hive/script.hql" />
 
-    <retry policy="periodic" delay="minutes(10)" attempts="3"/>
+    <retry policy="periodic" delay="minutes(10)" attempts="3" />
 
     <late-process policy="exp-backoff" delay="hours(2)">
-        <late-input input="input" workflow-path="/falcon/test/workflow"/>
+        <late-input input="input" workflow-path="/falcon/test/workflow" />
     </late-process>
 </process>

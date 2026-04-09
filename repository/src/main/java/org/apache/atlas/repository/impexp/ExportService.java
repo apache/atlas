@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,80 +17,82 @@
  */
 package org.apache.atlas.repository.impexp;
 
-import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.AtlasServiceException;
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.glossary.GlossaryService;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
-import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
-import org.apache.atlas.type.AtlasArrayType;
-import org.apache.atlas.type.AtlasClassificationType;
-import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasEnumType;
-import org.apache.atlas.type.AtlasMapType;
-import org.apache.atlas.type.AtlasStructType;
-import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
-import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.util.UniqueList;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
-import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import javax.script.ScriptEngine;
-import javax.script.ScriptException;
+
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.model.impexp.AtlasExportRequest.*;
+import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_CONNECTED;
+import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_FULL;
+import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_INCREMENTAL;
+import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 
 @Component
 public class ExportService {
     private static final Logger LOG = LoggerFactory.getLogger(ExportService.class);
 
-    private final AtlasTypeRegistry         typeRegistry;
-    private final AtlasGraph                atlasGraph;
-    private final EntityGraphRetriever      entityGraphRetriever;
-    private final AtlasGremlinQueryProvider gremlinQueryProvider;
+    private final AtlasTypeRegistry               typeRegistry;
+    private final StartEntityFetchByExportRequest startEntityFetchByExportRequest;
+    private final EntitiesExtractor               entitiesExtractor;
+    private final EntityGraphRetriever            entityGraphRetriever;
+    private final HdfsPathEntityCreator           hdfsPathEntityCreator;
+    private final GlossaryService                 glossaryService;
+    private final AuditsWriter                    auditsWriter;
+    private       ExportTypeProcessor             exportTypeProcessor;
+    private static final String                   ATLAS_TYPE_HIVE_DB = "hive_db";
 
     @Inject
-    public ExportService(final AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph) throws AtlasBaseException {
-        this.typeRegistry         = typeRegistry;
-        this.entityGraphRetriever = new EntityGraphRetriever(this.typeRegistry);
-        this.atlasGraph           = atlasGraph;
-        this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
+    public ExportService(final AtlasTypeRegistry typeRegistry, AtlasGraph graph, AuditsWriter auditsWriter, HdfsPathEntityCreator hdfsPathEntityCreator, GlossaryService glossaryService) {
+        this.typeRegistry                    = typeRegistry;
+        this.entityGraphRetriever            = new EntityGraphRetriever(graph, this.typeRegistry);
+        this.auditsWriter                    = auditsWriter;
+        this.hdfsPathEntityCreator           = hdfsPathEntityCreator;
+        this.glossaryService                 = glossaryService;
+        this.startEntityFetchByExportRequest = new StartEntityFetchByExportRequest(graph, typeRegistry, AtlasGremlinQueryProvider.getInstance());
+        this.entitiesExtractor               = new EntitiesExtractor(graph, typeRegistry);
     }
 
-    public AtlasExportResult run(ZipSink exportSink, AtlasExportRequest request, String userName, String hostName,
-                                 String requestingIP) throws AtlasBaseException {
+    public AtlasExportResult run(ZipSink exportSink, AtlasExportRequest request, String userName, String hostName, String requestingIP) throws AtlasBaseException {
         long              startTime = System.currentTimeMillis();
-        AtlasExportResult result    = new AtlasExportResult(request, userName, requestingIP, hostName, startTime);
+        AtlasExportResult result    = new AtlasExportResult(request, userName, requestingIP, hostName, startTime, getCurrentChangeMarker());
         ExportContext     context   = new ExportContext(result, exportSink);
+
+        exportTypeProcessor = new ExportTypeProcessor(typeRegistry, glossaryService);
 
         try {
             LOG.info("==> export(user={}, from={})", userName, requestingIP);
@@ -98,12 +100,17 @@ public class ExportService {
             AtlasExportResult.OperationStatus[] statuses = processItems(request, context);
 
             processTypesDef(context);
-            updateSinkWithOperationMetrics(context, statuses, getOperationDuration(startTime));
-        } catch(Exception ex) {
+
+            long endTime = System.currentTimeMillis();
+
+            updateSinkWithOperationMetrics(userName, context, statuses, startTime, endTime);
+        } catch (Exception ex) {
             LOG.error("Operation failed: ", ex);
         } finally {
-            atlasGraph.releaseGremlinScriptEngine(context.scriptEngine);
-            LOG.info("<== export(user={}, from={}): status {}", userName, requestingIP, context.result.getOperationStatus());
+            entitiesExtractor.close();
+
+            LOG.info("<== export(user={}, from={}): status {}: changeMarker: {}", userName, requestingIP, context.result.getOperationStatus(), context.result.getChangeMarker());
+
             context.clear();
             result.clear();
         }
@@ -111,22 +118,65 @@ public class ExportService {
         return context.result;
     }
 
-    private void updateSinkWithOperationMetrics(ExportContext context, AtlasExportResult.OperationStatus[] statuses, int duration) throws AtlasBaseException {
-        context.result.getData().getEntityCreationOrder().addAll(context.lineageProcessed);
-        context.sink.setExportOrder(context.result.getData().getEntityCreationOrder());
+    public void processEntity(AtlasEntityWithExtInfo entityWithExtInfo, ExportContext context) throws AtlasBaseException {
+        exportTypeProcessor.addTypes(entityWithExtInfo.getEntity(), context);
+
+        if (MapUtils.isNotEmpty(context.termsGlossary)) {
+            addGlossaryEntities(context);
+        }
+
+        addEntity(entityWithExtInfo, context);
+
+        context.guidsProcessed.add(entityWithExtInfo.getEntity().getGuid());
+
+        entitiesExtractor.get(entityWithExtInfo.getEntity(), context);
+
+        if (entityWithExtInfo.getReferredEntities() != null) {
+            for (AtlasEntity e : entityWithExtInfo.getReferredEntities().values()) {
+                exportTypeProcessor.addTypes(e, context);
+                entitiesExtractor.get(e, context);
+            }
+
+            context.guidsProcessed.addAll(entityWithExtInfo.getReferredEntities().keySet());
+        }
+    }
+
+    @VisibleForTesting
+    AtlasExportResult.OperationStatus getOverallOperationStatus(AtlasExportResult.OperationStatus... statuses) {
+        AtlasExportResult.OperationStatus overall = (statuses.length == 0) ? AtlasExportResult.OperationStatus.FAIL : statuses[0];
+
+        for (AtlasExportResult.OperationStatus s : statuses) {
+            if (overall != s) {
+                overall = AtlasExportResult.OperationStatus.PARTIAL_SUCCESS;
+            }
+        }
+
+        return overall;
+    }
+
+    private long getCurrentChangeMarker() {
+        return RequestContext.earliestActiveRequestTime();
+    }
+
+    private void updateSinkWithOperationMetrics(String userName, ExportContext context, AtlasExportResult.OperationStatus[] statuses, long startTime, long endTime) throws AtlasBaseException {
+        int duration = getOperationDuration(startTime, endTime);
+
+        context.result.setSourceClusterName(AuditsWriter.getCurrentClusterName());
+
+        context.sink.setExportOrder(context.entityCreationOrder.getList());
         context.sink.setTypesDef(context.result.getData().getTypesDef());
-        clearContextData(context);
+
         context.result.setOperationStatus(getOverallOperationStatus(statuses));
         context.result.incrementMeticsCounter("duration", duration);
+
+        auditsWriter.write(userName, context.result, startTime, endTime, context.entityCreationOrder.getList());
+
+        context.result.setData(null);
         context.sink.setResult(context.result);
     }
 
-    private void clearContextData(ExportContext context) {
-        context.result.setData(null);
-    }
-
-    private int getOperationDuration(long startTime) {
-        return (int) (System.currentTimeMillis() - startTime);
+    private int getOperationDuration(long startTime, long endTime) {
+        return (int) (endTime - startTime);
     }
 
     private void processTypesDef(ExportContext context) {
@@ -155,50 +205,57 @@ public class ExportService {
 
             typesDef.getEnumDefs().add(enumDef);
         }
+
+        for (String relationshipType : context.relationshipTypes) {
+            AtlasRelationshipDef relationshipDef = typeRegistry.getRelationshipDefByName(relationshipType);
+
+            typesDef.getRelationshipDefs().add(relationshipDef);
+        }
+
+        for (String bm : context.businessMetadataTypes) {
+            AtlasBusinessMetadataDef bmDef = typeRegistry.getBusinessMetadataDefByName(bm);
+
+            typesDef.getBusinessMetadataDefs().add(bmDef);
+        }
     }
 
-    private AtlasExportResult.OperationStatus[] processItems(AtlasExportRequest request, ExportContext context) throws AtlasServiceException, AtlasException, AtlasBaseException {
-        AtlasExportResult.OperationStatus statuses[] = new AtlasExportResult.OperationStatus[request.getItemsToExport().size()];
-        List<AtlasObjectId> itemsToExport = request.getItemsToExport();
+    private AtlasExportResult.OperationStatus[] processItems(AtlasExportRequest request, ExportContext context) {
+        AtlasExportResult.OperationStatus[] statuses      = new AtlasExportResult.OperationStatus[request.getItemsToExport().size()];
+        List<AtlasObjectId>                 itemsToExport = request.getItemsToExport();
+
         for (int i = 0; i < itemsToExport.size(); i++) {
             AtlasObjectId item = itemsToExport.get(i);
+
             statuses[i] = processObjectId(item, context);
         }
+
         return statuses;
     }
 
-    private AtlasExportResult.OperationStatus getOverallOperationStatus(AtlasExportResult.OperationStatus... statuses) {
-        AtlasExportResult.OperationStatus overall = (statuses.length == 0) ?
-                AtlasExportResult.OperationStatus.FAIL : statuses[0];
-
-        for (AtlasExportResult.OperationStatus s : statuses) {
-            if (overall != s) {
-                overall = AtlasExportResult.OperationStatus.PARTIAL_SUCCESS;
-            }
-        }
-
-        return overall;
-    }
-
-    private AtlasExportResult.OperationStatus processObjectId(AtlasObjectId item, ExportContext context) throws AtlasServiceException, AtlasException, AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> processObjectId({})", item);
-        }
+    private AtlasExportResult.OperationStatus processObjectId(AtlasObjectId item, ExportContext context) {
+        LOG.debug("==> processObjectId({})", item);
 
         try {
-            List<AtlasEntityWithExtInfo> entities = getStartingEntity(item, context);
-            if(entities.size() == 0) {
+            List<String> entityGuids = getStartingEntity(item, context);
+
+            if (entityGuids.isEmpty()) {
                 return AtlasExportResult.OperationStatus.FAIL;
             }
 
-            for (AtlasEntityWithExtInfo entityWithExtInfo : entities) {
-                processEntity(entityWithExtInfo.getEntity().getGuid(), context);
+            entitiesExtractor.setExtractor(typeRegistry.getEntityDefByName(item.getTypeName()));
+
+            for (String guid : entityGuids) {
+                AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(guid);
+                String typeName = GraphHelper.getTypeName(vertex);
+                context.startingEntityType = typeName;
+                processEntityGuid(guid, context);
             }
 
             while (!context.guidsToProcess.isEmpty()) {
                 while (!context.guidsToProcess.isEmpty()) {
                     String guid = context.guidsToProcess.remove(0);
-                    processEntity(guid, context);
+
+                    processEntityGuid(guid, context);
                 }
 
                 if (!context.lineageToProcess.isEmpty()) {
@@ -206,400 +263,175 @@ public class ExportService {
                     context.lineageProcessed.addAll(context.lineageToProcess.getList());
                     context.lineageToProcess.clear();
                 }
+
+                context.isSkipConnectedFetch = false;
             }
         } catch (AtlasBaseException excp) {
             LOG.error("Fetching entity failed for: {}", item, excp);
+
             return AtlasExportResult.OperationStatus.FAIL;
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== processObjectId({})", item);
-        }
+        LOG.debug("<== processObjectId({})", item);
 
         return AtlasExportResult.OperationStatus.SUCCESS;
     }
 
-    private List<AtlasEntityWithExtInfo> getStartingEntity(AtlasObjectId item, ExportContext context) throws AtlasBaseException {
-        List<AtlasEntityWithExtInfo> ret = new ArrayList<>();
+    private List<String> getStartingEntity(AtlasObjectId item, ExportContext context) throws AtlasBaseException {
+        if (item.getTypeName().equalsIgnoreCase(HdfsPathEntityCreator.HDFS_PATH_TYPE)) {
+            hdfsPathEntityCreator.getCreateEntity(item);
+        }
 
-        if (StringUtils.isNotEmpty(item.getGuid())) {
-            AtlasEntityWithExtInfo entity = entityGraphRetriever.toAtlasEntityWithExtInfo(item);
+        return startEntityFetchByExportRequest.get(context.result.getRequest(), item);
+    }
 
-            if (entity != null) {
-                ret = Collections.singletonList(entity);
-            }
-        } else if (StringUtils.isNotEmpty(item.getTypeName()) && MapUtils.isNotEmpty(item.getUniqueAttributes())) {
-            String          typeName   = item.getTypeName();
-            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+    private void processEntityGuid(String guid, ExportContext context) throws AtlasBaseException {
+        LOG.debug("==> processEntityGuid({})", guid);
 
-            if (entityType == null) {
-                throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, typeName);
-            }
+        if (context.guidsProcessed.contains(guid)) {
+            return;
+        }
 
-            final String queryTemplate;
-            if (StringUtils.equalsIgnoreCase(context.matchType, MATCH_TYPE_STARTS_WITH)) {
-                queryTemplate = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_TYPE_STARTS_WITH);
-            } else if (StringUtils.equalsIgnoreCase(context.matchType, MATCH_TYPE_ENDS_WITH)) {
-                queryTemplate = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_TYPE_ENDS_WITH);
-            } else if (StringUtils.equalsIgnoreCase(context.matchType, MATCH_TYPE_CONTAINS)) {
-                queryTemplate = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_TYPE_CONTAINS);
-            } else if (StringUtils.equalsIgnoreCase(context.matchType, MATCH_TYPE_MATCHES)) {
-                queryTemplate = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_TYPE_MATCHES);
-            } else { // default
-                queryTemplate = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_TYPE_DEFAULT);
-            }
+        if (context.fetchType == ExportFetchType.INCREMENTAL && context.startingEntityType.equals(ATLAS_TYPE_HIVE_DB) && !context.skipLineage) {
+            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(guid);
 
-            for (Map.Entry<String, Object> e : item.getUniqueAttributes().entrySet()) {
-                String attrName  = e.getKey();
-                Object attrValue = e.getValue();
+            processVertex(context, vertex, guid);
+        } else {
+            AtlasEntityWithExtInfo entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid);
 
-                AtlasAttribute attribute = entityType.getAttribute(attrName);
+            processEntity(entityWithExtInfo, context);
+        }
 
-                if (attribute == null || attrValue == null) {
-                    continue;
-                }
+        LOG.debug("<== processEntityGuid({})", guid);
+    }
 
-                context.bindings.clear();
-                context.bindings.put("typeName", typeName);
-                context.bindings.put("attrName", attribute.getQualifiedName());
-                context.bindings.put("attrValue", attrValue);
+    public void processVertex(ExportContext context, AtlasVertex vertex, String guid) throws AtlasBaseException {
+        if (MapUtils.isNotEmpty(context.termsGlossary)) {
+            addGlossaryEntities(context);
+        }
 
-                List<String> guids = executeGremlinQueryForGuids(queryTemplate, context);
+        addVertex(vertex, guid, context);
 
-                if (CollectionUtils.isNotEmpty(guids)) {
-                    for (String guid : guids) {
-                        AtlasEntityWithExtInfo entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid);
+        context.guidsProcessed.add(guid);
 
-                        if (entityWithExtInfo == null) {
-                            continue;
-                        }
+        extractConnectedVertices(vertex, context);
+    }
 
-                        ret.add(entityWithExtInfo);
+    public void extractConnectedVertices(AtlasVertex vertex, ExportContext context) {
+        List<AtlasVertex> connectedVertices = entityGraphRetriever.findAllConnectedVertices(vertex);
+
+        if (CollectionUtils.isNotEmpty(connectedVertices)) {
+            for (AtlasVertex e : connectedVertices) {
+                String typeName = GraphHelper.getTypeName(e);
+
+                if (typeRegistry.getEntityTypeByName(typeName) != null) {
+                    String guid = AtlasGraphUtilsV2.getEncodedProperty(e, GUID_PROPERTY_KEY, String.class);
+
+                    if (!context.guidsProcessed.contains(guid)) {
+                        context.guidsToProcess.add(guid);
                     }
                 }
-
-                break;
             }
-
-            LOG.info("export(item={}; matchType={}, fetchType={}): found {} entities", item, context.matchType, context.fetchType, ret.size());
         }
-
-        return ret;
     }
 
-    private void processEntity(String guid, ExportContext context) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> processEntity({})", guid);
+    private void addVertex(AtlasVertex vertex, String guid, ExportContext context) throws AtlasBaseException {
+        if (context.sink.hasEntity(guid)) {
+            return;
         }
 
-        if (!context.guidsProcessed.contains(guid)) {
-            TraversalDirection      direction         = context.guidDirection.get(guid);
-            AtlasEntityWithExtInfo  entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid);
+        LOG.info("export: Guid in process: {}", guid);
+        if (context.doesTimestampQualify(vertex)) {
+            AtlasEntityWithExtInfo entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid);
+            exportTypeProcessor.addTypes(entityWithExtInfo.getEntity(), context);
+            context.addToSink(entityWithExtInfo);
 
-            if(!context.lineageProcessed.contains(guid)) {
-                context.result.getData().getEntityCreationOrder().add(entityWithExtInfo.getEntity().getGuid());
-            }
-
-            addEntity(entityWithExtInfo, context);
-            addTypes(entityWithExtInfo.getEntity(), context);
-
-            context.guidsProcessed.add(entityWithExtInfo.getEntity().getGuid());
-            getConntedEntitiesBasedOnOption(entityWithExtInfo.getEntity(), context, direction);
-
-            if(entityWithExtInfo.getReferredEntities() != null) {
+            context.result.incrementMeticsCounter(String.format("entity:%s", entityWithExtInfo.getEntity().getTypeName()));
+            if (entityWithExtInfo.getReferredEntities() != null) {
                 for (AtlasEntity e : entityWithExtInfo.getReferredEntities().values()) {
-                    addTypes(e, context);
-                    getConntedEntitiesBasedOnOption(e, context, direction);
+                    context.result.incrementMeticsCounter(String.format("entity:%s", e.getTypeName()));
                 }
-
-                context.guidsProcessed.addAll(entityWithExtInfo.getReferredEntities().keySet());
             }
-        }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== processEntity({})", guid);
+            context.result.incrementMeticsCounter("entity:withExtInfo");
+        }
+        context.reportProgress();
+    }
+
+    private void addGlossaryEntities(ExportContext context) {
+        try {
+            for (String termGuid : context.termsGlossary.keySet()) {
+                try {
+                    String glossaryGuid = context.termsGlossary.get(termGuid);
+
+                    if (!context.sink.hasEntity(glossaryGuid)) {
+                        AtlasEntity glossary = entityGraphRetriever.toAtlasEntity(glossaryGuid);
+
+                        addEntity(new AtlasEntityWithExtInfo(glossary), context);
+                    }
+
+                    if (!context.sink.hasEntity(termGuid)) {
+                        AtlasEntity term = entityGraphRetriever.toAtlasEntity(termGuid);
+
+                        addEntity(new AtlasEntityWithExtInfo(term), context);
+                    }
+                } catch (AtlasBaseException exception) {
+                    LOG.error("Error fetching Glossary for term: {}", termGuid);
+                }
+            }
+        } finally {
+            context.clearTerms();
         }
     }
 
-    private void getConntedEntitiesBasedOnOption(AtlasEntity entity, ExportContext context, TraversalDirection direction) throws AtlasBaseException {
-        switch (context.fetchType) {
-            case CONNECTED:
-                getEntityGuidsForConnectedFetch(entity, context, direction);
-                break;
-
-            case FULL:
-            default:
-                getEntityGuidsForFullFetch(entity, context);
+    private void addEntity(AtlasEntityWithExtInfo entityWithExtInfo, ExportContext context) throws AtlasBaseException {
+        if (context.sink.hasEntity(entityWithExtInfo.getEntity().getGuid())) {
+            return;
         }
-    }
 
-    private void getEntityGuidsForConnectedFetch(AtlasEntity entity, ExportContext context, TraversalDirection direction) throws AtlasBaseException {
-        if (direction == null || direction == TraversalDirection.UNKNOWN) {
-            getConnectedEntityGuids(entity, context, TraversalDirection.OUTWARD, TraversalDirection.INWARD);
+        if (context.doesTimestampQualify(entityWithExtInfo.getEntity())) {
+            context.addToSink(entityWithExtInfo);
+
+            context.result.incrementMeticsCounter(String.format("entity:%s", entityWithExtInfo.getEntity().getTypeName()));
+
+            if (entityWithExtInfo.getReferredEntities() != null) {
+                for (AtlasEntity e : entityWithExtInfo.getReferredEntities().values()) {
+                    context.result.incrementMeticsCounter(String.format("entity:%s", e.getTypeName()));
+                }
+            }
+
+            context.result.incrementMeticsCounter("entity:withExtInfo");
         } else {
-            if (isProcessEntity(entity)) {
-                direction = TraversalDirection.OUTWARD;
-            }
+            List<AtlasEntity> entities = context.getEntitiesWithModifiedTimestamp(entityWithExtInfo);
 
-            getConnectedEntityGuids(entity, context, direction);
-        }
-    }
-
-    private boolean isProcessEntity(AtlasEntity entity) throws AtlasBaseException {
-        String          typeName   = entity.getTypeName();
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
-
-        return entityType.isSubTypeOf(AtlasBaseTypeDef.ATLAS_TYPE_PROCESS);
-    }
-
-    private void getConnectedEntityGuids(AtlasEntity entity, ExportContext context, TraversalDirection... directions) {
-        if(directions == null) {
-            return;
-        }
-
-        for (TraversalDirection direction : directions) {
-            String query = getQueryForTraversalDirection(direction);
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("==> getConnectedEntityGuids({}): guidsToProcess {} query {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size(), query);
-            }
-
-            context.bindings.clear();
-            context.bindings.put("startGuid", entity.getGuid());
-
-            List<HashMap<String, Object>> result = executeGremlinQuery(query, context);
-
-            if (CollectionUtils.isEmpty(result)) {
-                continue;
-            }
-
-            for (HashMap<String, Object> hashMap : result) {
-                String             guid             = (String) hashMap.get("__guid");
-                TraversalDirection currentDirection = context.guidDirection.get(guid);
-                boolean            isLineage        = (boolean) hashMap.get("isProcess");
-
-                if (currentDirection == null) {
-                    context.addToBeProcessed(isLineage, guid, direction);
-
-                } else if (currentDirection == TraversalDirection.OUTWARD && direction == TraversalDirection.INWARD) {
-                    // the entity should be reprocessed to get inward entities
-                    context.guidsProcessed.remove(guid);
-                    context.addToBeProcessed(isLineage, guid, direction);
-                }
-            }
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("<== getConnectedEntityGuids({}): found {} guids; guidsToProcess {}", entity.getGuid(), result.size(), context.guidsToProcess.size());
-            }
-        }
-    }
-
-    private String getQueryForTraversalDirection(TraversalDirection direction) {
-        switch (direction) {
-            case INWARD:
-                return this.gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_BY_GUID_CONNECTED_IN_EDGE);
-
-            default:
-            case OUTWARD:
-                return this.gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_BY_GUID_CONNECTED_OUT_EDGE);
-        }
-    }
-
-    private void getEntityGuidsForFullFetch(AtlasEntity entity, ExportContext context) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> getEntityGuidsForFullFetch({}): guidsToProcess {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size());
-        }
-
-        String query = this.gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_BY_GUID_FULL);
-
-        context.bindings.clear();
-        context.bindings.put("startGuid", entity.getGuid());
-
-        List<HashMap<String, Object>> result = executeGremlinQuery(query, context);
-
-        if (CollectionUtils.isEmpty(result)) {
-            return;
-        }
-
-        for (HashMap<String, Object> hashMap : result) {
-            String  guid      = (String) hashMap.get("__guid");
-            boolean isLineage = (boolean) hashMap.get("isProcess");
-
-            if (!context.guidsProcessed.contains(guid)) {
-                context.addToBeProcessed(isLineage, guid, TraversalDirection.BOTH);
-            }
-        }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== getEntityGuidsForFullFetch({}): found {} guids; guidsToProcess {}", entity.getGuid(), result.size(), context.guidsToProcess.size());
-        }
-    }
-
-    private void addEntity(AtlasEntityWithExtInfo entity, ExportContext context) throws AtlasBaseException {
-        if(context.sink.hasEntity(entity.getEntity().getGuid())) {
-            return;
-        }
-
-        context.sink.add(entity);
-
-        context.result.incrementMeticsCounter(String.format("entity:%s", entity.getEntity().getTypeName()));
-        if(entity.getReferredEntities() != null) {
-            for (AtlasEntity e: entity.getReferredEntities().values()) {
+            for (AtlasEntity e : entities) {
+                context.addToSink(new AtlasEntityWithExtInfo(e));
                 context.result.incrementMeticsCounter(String.format("entity:%s", e.getTypeName()));
             }
         }
 
-        context.result.incrementMeticsCounter("entity:withExtInfo");
         context.reportProgress();
     }
 
-    private void addTypes(AtlasEntity entity, ExportContext context) {
-        addEntityType(entity.getTypeName(), context);
-
-        if(CollectionUtils.isNotEmpty(entity.getClassifications())) {
-            for (AtlasClassification c : entity.getClassifications()) {
-                addClassificationType(c.getTypeName(), context);
-            }
-        }
-    }
-
-    private void addType(String typeName, ExportContext context) {
-        AtlasType type = null;
-
-        try {
-            type = typeRegistry.getType(typeName);
-
-            addType(type, context);
-        } catch (AtlasBaseException excp) {
-            LOG.error("unknown type {}", typeName);
-        }
-    }
-
-    private void addEntityType(String typeName, ExportContext context) {
-        if (!context.entityTypes.contains(typeName)) {
-            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
-
-            addEntityType(entityType, context);
-        }
-    }
-
-    private void addClassificationType(String typeName, ExportContext context) {
-        if (!context.classificationTypes.contains(typeName)) {
-            AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(typeName);
-
-            addClassificationType(classificationType, context);
-        }
-    }
-
-    private void addType(AtlasType type, ExportContext context) {
-        if (type.getTypeCategory() == TypeCategory.PRIMITIVE) {
-            return;
-        }
-
-        if (type instanceof AtlasArrayType) {
-            AtlasArrayType arrayType = (AtlasArrayType)type;
-
-            addType(arrayType.getElementType(), context);
-        } else if (type instanceof AtlasMapType) {
-            AtlasMapType mapType = (AtlasMapType)type;
-
-            addType(mapType.getKeyType(), context);
-            addType(mapType.getValueType(), context);
-        } else if (type instanceof AtlasEntityType) {
-            addEntityType((AtlasEntityType)type, context);
-        } else if (type instanceof AtlasClassificationType) {
-            addClassificationType((AtlasClassificationType)type, context);
-        } else if (type instanceof AtlasStructType) {
-            addStructType((AtlasStructType)type, context);
-        } else if (type instanceof AtlasEnumType) {
-            addEnumType((AtlasEnumType)type, context);
-        }
-    }
-
-    private void addEntityType(AtlasEntityType entityType, ExportContext context) {
-        if (!context.entityTypes.contains(entityType.getTypeName())) {
-            context.entityTypes.add(entityType.getTypeName());
-
-            addAttributeTypes(entityType, context);
-
-            if (CollectionUtils.isNotEmpty(entityType.getAllSuperTypes())) {
-                for (String superType : entityType.getAllSuperTypes()) {
-                    addEntityType(superType, context);
-                }
-            }
-        }
-    }
-
-    private void addClassificationType(AtlasClassificationType classificationType, ExportContext context) {
-        if (!context.classificationTypes.contains(classificationType.getTypeName())) {
-            context.classificationTypes.add(classificationType.getTypeName());
-
-            addAttributeTypes(classificationType, context);
-
-            if (CollectionUtils.isNotEmpty(classificationType.getAllSuperTypes())) {
-                for (String superType : classificationType.getAllSuperTypes()) {
-                    addClassificationType(superType, context);
-                }
-            }
-        }
-    }
-
-    private void addStructType(AtlasStructType structType, ExportContext context) {
-        if (!context.structTypes.contains(structType.getTypeName())) {
-            context.structTypes.add(structType.getTypeName());
-
-            addAttributeTypes(structType, context);
-        }
-    }
-
-    private void addEnumType(AtlasEnumType enumType, ExportContext context) {
-        if (!context.enumTypes.contains(enumType.getTypeName())) {
-            context.enumTypes.add(enumType.getTypeName());
-        }
-    }
-
-    private void addAttributeTypes(AtlasStructType structType, ExportContext context) {
-        for (AtlasAttributeDef attributeDef : structType.getStructDef().getAttributeDefs()) {
-            addType(attributeDef.getTypeName(), context);
-        }
-    }
-
-    private List<HashMap<String, Object>> executeGremlinQuery(String query, ExportContext context) {
-        try {
-            return (List<HashMap<String, Object>>) atlasGraph.executeGremlinScript(context.scriptEngine, context.bindings, query, false);
-        } catch (ScriptException e) {
-            LOG.error("Script execution failed for query: ", query, e);
-            return null;
-        }
-    }
-
-    private List<String> executeGremlinQueryForGuids(String query, ExportContext context) {
-        try {
-            return (List<String>) atlasGraph.executeGremlinScript(context.scriptEngine, context.bindings, query, false);
-        } catch (ScriptException e) {
-            LOG.error("Script execution failed for query: ", query, e);
-            return null;
-        }
-    }
-
-    private enum TraversalDirection {
+    public enum TraversalDirection {
         UNKNOWN,
         INWARD,
         OUTWARD,
-        BOTH;
+        BOTH
     }
-
 
     public enum ExportFetchType {
         FULL(FETCH_TYPE_FULL),
-        CONNECTED(FETCH_TYPE_CONNECTED);
+        CONNECTED(FETCH_TYPE_CONNECTED),
+        INCREMENTAL(FETCH_TYPE_INCREMENTAL);
 
         final String str;
+
         ExportFetchType(String s) {
             this.str = s;
         }
 
-        public static final ExportFetchType from(String s) {
+        public static ExportFetchType from(String s) {
             for (ExportFetchType b : ExportFetchType.values()) {
                 if (b.str.equalsIgnoreCase(s)) {
                     return b;
@@ -610,136 +442,159 @@ public class ExportService {
         }
     }
 
-    public static class UniqueList<T> {
-        private final List<T>   list = new ArrayList<>();
-        private final Set<T>    set = new HashSet<>();
+    static class ExportContext {
+        private static final int    REPORTING_THREASHOLD  = 1000;
+        private static final String ATLAS_TYPE_HIVE_DB    = "hive_db";
+        private static final String ATLAS_TYPE_HIVE_TABLE = "hive_table";
 
-        public void add(T e) {
-            if(set.contains(e)) {
-                return;
-            }
-
-            list.add(e);
-            set.add(e);
-        }
-
-        public void addAll(UniqueList<T> uniqueList) {
-            for (T item : uniqueList.list) {
-                if(set.contains(item)) continue;
-
-                set.add(item);
-                list.add(item);
-            }
-        }
-
-        public T remove(int index) {
-            T e = list.remove(index);
-            set.remove(e);
-            return e;
-        }
-
-        public boolean contains(T e) {
-            return set.contains(e);
-        }
-
-        public int size() {
-            return list.size();
-        }
-
-        public boolean isEmpty() {
-            return list.isEmpty();
-        }
-
-        public void clear() {
-            list.clear();
-            set.clear();
-        }
-
-        public List<T> getList() {
-            return list;
-        }
-    }
-
-
-    private class ExportContext {
-        final Set<String>                     guidsProcessed = new HashSet<>();
-        final UniqueList<String>              guidsToProcess = new UniqueList<>();
-        final UniqueList<String>              lineageToProcess = new UniqueList<>();
-        final Set<String>                     lineageProcessed = new HashSet<>();
-        final Map<String, TraversalDirection> guidDirection  = new HashMap<>();
-        final Set<String>                     entityTypes         = new HashSet<>();
-        final Set<String>                     classificationTypes = new HashSet<>();
-        final Set<String>                     structTypes         = new HashSet<>();
-        final Set<String>                     enumTypes           = new HashSet<>();
+        final UniqueList<String>              entityCreationOrder   = new UniqueList<>();
+        final Set<String>                     guidsProcessed        = new HashSet<>();
+        final UniqueList<String>              guidsToProcess        = new UniqueList<>();
+        final UniqueList<String>              lineageToProcess      = new UniqueList<>();
+        final Set<String>                     lineageProcessed      = new HashSet<>();
+        final Map<String, TraversalDirection> guidDirection         = new HashMap<>();
+        final Set<String>                     entityTypes           = new HashSet<>();
+        final Set<String>                     classificationTypes   = new HashSet<>();
+        final Set<String>                     structTypes           = new HashSet<>();
+        final Set<String>                     enumTypes             = new HashSet<>();
+        final Set<String>                     relationshipTypes     = new HashSet<>();
+        final Set<String>                     businessMetadataTypes = new HashSet<>();
+        final Map<String, String>             termsGlossary         = new HashMap<>();
         final AtlasExportResult               result;
-        final ZipSink                         sink;
+        final ExportFetchType                 fetchType;
+        final boolean                         skipLineage;
+        final long                            changeMarker;
 
-        private final ScriptEngine        scriptEngine;
-        private final Map<String, Object> bindings;
-        private final ExportFetchType     fetchType;
-        private final String              matchType;
+        private final ZipSink sink;
+        private final boolean isHiveDBIncremental;
+        private final boolean isHiveTableIncremental;
 
-        private       int                 progressReportCount = 0;
+        boolean isSkipConnectedFetch;
+        private int progressReportCount;
+        public String startingEntityType;
 
-        ExportContext(AtlasExportResult result, ZipSink sink) throws AtlasBaseException {
+        ExportContext(AtlasExportResult result, ZipSink sink) {
             this.result = result;
             this.sink   = sink;
 
-            scriptEngine = atlasGraph.getGremlinScriptEngine();
-            bindings     = new HashMap<>();
-            fetchType    = getFetchType(result.getRequest());
-            matchType    = getMatchType(result.getRequest());
+            fetchType                   = ExportFetchType.from(result.getRequest().getFetchTypeOptionValue());
+            skipLineage                 = result.getRequest().getSkipLineageOptionValue();
+            this.changeMarker           = result.getRequest().getChangeTokenFromOptions();
+            this.isHiveDBIncremental    = checkHiveDBIncrementalSkipLineage(result.getRequest());
+            this.isHiveTableIncremental = checkHiveTableIncremental(result.getRequest());
+            this.isSkipConnectedFetch   = false;
         }
 
-        private ExportFetchType getFetchType(AtlasExportRequest request) {
-            Object fetchOption = request.getOptions() != null ? request.getOptions().get(OPTION_FETCH_TYPE) : null;
-
-            if (fetchOption instanceof String) {
-                return ExportFetchType.from((String) fetchOption);
-            } else if (fetchOption instanceof ExportFetchType) {
-                return (ExportFetchType) fetchOption;
+        public List<AtlasEntity> getEntitiesWithModifiedTimestamp(AtlasEntityWithExtInfo entityWithExtInfo) {
+            if (fetchType != ExportFetchType.INCREMENTAL) {
+                return new ArrayList<>();
             }
 
-            return ExportFetchType.FULL;
-        }
+            List<AtlasEntity> ret = new ArrayList<>();
+            if (doesTimestampQualify(entityWithExtInfo.getEntity())) {
+                ret.add(entityWithExtInfo.getEntity());
+                return ret;
+            }
 
-        private String getMatchType(AtlasExportRequest request) {
-            String matchType = null;
-
-            if (MapUtils.isNotEmpty(request.getOptions())) {
-                if (request.getOptions().get(OPTION_ATTR_MATCH_TYPE) != null) {
-                    matchType = request.getOptions().get(OPTION_ATTR_MATCH_TYPE).toString();
+            if (entityWithExtInfo.getReferredEntities() != null) {
+                for (AtlasEntity entity : entityWithExtInfo.getReferredEntities().values()) {
+                    if ((doesTimestampQualify(entity))) {
+                        ret.add(entity);
+                    }
                 }
             }
 
-            return matchType;
+            return ret;
         }
 
         public void clear() {
             guidsToProcess.clear();
             guidsProcessed.clear();
             guidDirection.clear();
+            startingEntityType = null;
         }
 
         public void addToBeProcessed(boolean isSuperTypeProcess, String guid, TraversalDirection direction) {
-            if(!isSuperTypeProcess) {
-                guidsToProcess.add(guid);
-            }
-
-            if(isSuperTypeProcess) {
+            if (isSuperTypeProcess) {
                 lineageToProcess.add(guid);
+            } else {
+                guidsToProcess.add(guid);
             }
 
             guidDirection.put(guid, direction);
         }
 
         public void reportProgress() {
-
-            if ((guidsProcessed.size() - progressReportCount) > 1000) {
+            if ((guidsProcessed.size() - progressReportCount) > REPORTING_THREASHOLD) {
                 progressReportCount = guidsProcessed.size();
 
                 LOG.info("export(): in progress.. number of entities exported: {}", this.guidsProcessed.size());
             }
+        }
+
+        public boolean doesTimestampQualify(AtlasEntity entity) {
+            if (fetchType != ExportFetchType.INCREMENTAL) {
+                return true;
+            }
+
+            return changeMarker <= entity.getUpdateTime().getTime();
+        }
+
+        public boolean doesTimestampQualify(AtlasVertex vertex) {
+            if (fetchType != ExportFetchType.INCREMENTAL) {
+                return true;
+            }
+
+            Long updatedTime = AtlasGraphUtilsV2.getEncodedProperty(vertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+            return changeMarker <= updatedTime;
+        }
+
+        public boolean getSkipLineage() {
+            return skipLineage;
+        }
+
+        public void addToSink(AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+            addToEntityCreationOrder(entityWithExtInfo.getEntity().getGuid());
+            sink.add(entityWithExtInfo);
+        }
+
+        public boolean isHiveDBIncrementalSkipLineage() {
+            return isHiveDBIncremental;
+        }
+
+        public boolean isHiveTableIncrementalSkipLineage() {
+            return isHiveTableIncremental;
+        }
+
+        public boolean isHiveTableIncremental() {
+            return isHiveTableIncremental;
+        }
+
+        public void addToEntityCreationOrder(String guid) {
+            entityCreationOrder.add(guid);
+        }
+
+        public void clearTerms() {
+            termsGlossary.clear();
+        }
+
+        private boolean checkHiveDBIncrementalSkipLineage(AtlasExportRequest request) {
+            if (CollectionUtils.isEmpty(request.getItemsToExport())) {
+                return false;
+            }
+
+            return request.getItemsToExport().get(0).getTypeName().equalsIgnoreCase(ATLAS_TYPE_HIVE_DB) &&
+                    request.getFetchTypeOptionValue().equalsIgnoreCase(AtlasExportRequest.FETCH_TYPE_INCREMENTAL) &&
+                    request.getSkipLineageOptionValue();
+        }
+
+        private boolean checkHiveTableIncremental(AtlasExportRequest request) {
+            if (CollectionUtils.isEmpty(request.getItemsToExport())) {
+                return false;
+            }
+
+            return request.getItemsToExport().get(0).getTypeName().equalsIgnoreCase(ATLAS_TYPE_HIVE_TABLE) &&
+                    request.getFetchTypeOptionValue().equalsIgnoreCase(AtlasExportRequest.FETCH_TYPE_INCREMENTAL);
         }
     }
 }

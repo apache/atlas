@@ -18,27 +18,26 @@
 
 package org.apache.atlas.storm.hook;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.storm.model.StormDataTypes;
-import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.utils.AuthenticationUtil;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.commons.configuration.Configuration;
 import org.apache.storm.ILocalCluster;
 import org.apache.storm.generated.StormTopology;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import static org.testng.Assert.assertNotNull;
+
 @Test
 public class StormAtlasHookIT {
-
     public static final Logger LOG = LoggerFactory.getLogger(StormAtlasHookIT.class);
 
     private static final String ATLAS_URL = "http://localhost:21000/";
@@ -55,12 +54,11 @@ public class StormAtlasHookIT {
 
         Configuration configuration = ApplicationProperties.get();
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            atlasClient = new AtlasClient(configuration.getStringArray(HiveMetaStoreBridge.ATLAS_ENDPOINT), new String[]{"admin", "admin"});
+            atlasClient = new AtlasClient(configuration.getStringArray(HiveMetaStoreBridge.ATLAS_ENDPOINT), new String[] {"admin", "admin"});
         } else {
             atlasClient = new AtlasClient(configuration.getStringArray(HiveMetaStoreBridge.ATLAS_ENDPOINT));
         }
     }
-
 
     @AfterClass
     public void tearDown() throws Exception {
@@ -70,6 +68,7 @@ public class StormAtlasHookIT {
         atlasClient = null;
     }
 
+    @Test
     public void testAddEntities() throws Exception {
         StormTopology stormTopology = StormTestUtil.createTestTopology();
         StormTestUtil.submitTopology(stormCluster, TOPOLOGY_NAME, stormTopology);
@@ -77,11 +76,11 @@ public class StormAtlasHookIT {
 
         // todo: test if topology metadata is registered in atlas
         String guid = getTopologyGUID();
-        Assert.assertNotNull(guid);
+        assertNotNull(guid);
         LOG.info("GUID is {}", guid);
 
         Referenceable topologyReferenceable = atlasClient.getEntity(guid);
-        Assert.assertNotNull(topologyReferenceable);
+        assertNotNull(topologyReferenceable);
     }
 
     private String getTopologyGUID() throws Exception {
@@ -89,9 +88,9 @@ public class StormAtlasHookIT {
         String query = String.format("from %s where name = \"%s\"",
                 StormDataTypes.STORM_TOPOLOGY.getName(), TOPOLOGY_NAME);
 
-        JSONArray results = atlasClient.search(query, 10, 0);
-        JSONObject row = results.getJSONObject(0);
+        JsonNode results = atlasClient.search(query, 10, 0);
+        JsonNode  row    = results.get(0);
 
-        return row.has("$id$") ? row.getJSONObject("$id$").getString("id"): null;
+        return row.has("$id$") ? row.get("$id$").get("id").asText() : null;
     }
 }

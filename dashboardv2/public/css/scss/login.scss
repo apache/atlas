@@ -16,81 +16,128 @@
  * limitations under the License.
  */
 
+@import "__variable.scss";
 
-/* login.scss */
-
-//colors
-.errorBox {
-    position: absolute;
-    right: 36px;
-    display: none;
-    top: 26px;
-    width: 251px;
-    .alert {
-        //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
-        box-shadow: 4px 3px 8px -2px $gray;
-    }
+body {
+    font-family: $font_0, $font_1;
+    background-color: $color_white_lilac_approx;
+    color: $color_dark_grey_approx;
+    font-size: 14px;
+    line-height: 1.42857143;
 }
 
-.close {
-    padding: 6px;
-    font-size: 15px;
-}
+.login-body {
+    height: 100vh;
+    padding-top: calc(50vh - 206px);
 
-.login-pane {
-    top: 25%;
-    width: 40%;
-    left: 30%;
-    position: fixed;
-    padding: 15px;
-    background: $color_tuna_approx;
-    color: $color_gallery_approx;
-    padding: 15px;
-    //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
-    border-radius: 5px;
-    h2 {
-        margin-bottom: 40px;
-    }
-    .input-group {
-        margin: 20px 0;
-    }
-    .form-control {
-        background-color: transparent;
-        //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
-        border-radius: 0;
-        border-left: none;
-        color: $color_gallery_approx;
-        &:focus {
-            border-color: $color_celeste_approx;
-            + .input-group-addon {
-                border-color: $color_cornflower_blue_approx;
+    .login-form {
+        padding: 60px;
+        width: 500px;
+        margin: 0 auto;
+        background: $white;
+        box-shadow: 0px 0px 3px 0px rgba(128, 128, 128, 0.2);
+
+        h4 {
+            font-size: 16px;
+            margin-bottom: 24px;
+        }
+
+        img {
+            height: 65px;
+            padding: 6px;
+            margin-bottom: 28px;
+        }
+
+        .icon-group {
+            position: relative;
+            margin-bottom: 24px;
+
+            &.user:after {
+                content: "\f007";
+            }
+
+            &.password:after {
+                content: "\f023";
+            }
+
+            .show-password,
+            &:after {
+                position: absolute;
+                left: 4px;
+                bottom: 4px;
+                font-family: FontAwesome;
+                font-size: 16px;
+                background: transparent;
+                height: 34px;
+                width: 38px;
+                line-height: 34px;
+                text-align: center;
+                border-top-left-radius: 4px;
+                border-bottom-left-radius: 4px;
+                border-right: 1px solid #ccc;
+            }
+
+            &.text {
+                .show-password {
+                    color: $color_jungle_green_approx;
+                }
+            }
+
+            .show-password {
+                right: 4px;
+                border: none;
+                left: auto;
+                cursor: pointer;
+            }
+
+            input {
+                height: auto;
+                padding: 10px 12px 10px 52px;
+                background: transparent;
+                border-radius: 0px;
+                border-width: 1px;
+
+                &#password {
+                    padding-right: 37px
+                }
+
+                &:focus {
+                    border-image-source: #38bb9b;
+                    border-width: 2px;
+                    border-image-slice: 5;
+                    border-image-source: -moz-linear-gradient(-45deg, #38bb9b 0%, #4a90e2 100%);
+                    border-image-source: -webkit-linear-gradient(-45deg, #38bb9b 0%, #4a90e2 100%);
+                    border-image-source: linear-gradient(135deg, #38bb9b 0%, #4a90e2 100%);
+                    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#38bb9b', endColorstr='#4a90e2', GradientType=1);
+                    box-shadow: none;
+                    -webkit-box-shadow: none;
+                }
+            }
+        }
+
+        button.btn-login {
+            padding: 10px 12px;
+            background: #38bb9b;
+            background: -moz-linear-gradient(-45deg, #38bb9b 0%, #4a90e2 100%);
+            background: -webkit-linear-gradient(-45deg, #38bb9b 0%, #4a90e2 100%);
+            background: linear-gradient(135deg, #38bb9b 0%, #4a90e2 100%);
+            filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#38bb9b', endColorstr='#4a90e2', GradientType=1);
+            color: #fff;
+            margin-top: 32px;
+            border: none;
+
+            &:focus,
+            &:hover,
+            &:active,
+            &:active:focus,
+            &:active:hover {
+                background: #38bb9b;
+                background: -moz-linear-gradient(-45deg, #38bb9b 0%, #4a90e2 100%);
+                background: -webkit-linear-gradient(-45deg, #38bb9b 0%, #4a90e2 100%);
+                background: linear-gradient(135deg, #38bb9b 0%, #4a90e2 100%);
+                filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#38bb9b', endColorstr='#4a90e2', GradientType=1);
+                color: #fff;
             }
         }
     }
-    .input-group-addon {
-        background-color: transparent;
-        //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
-        border-radius: 0;
-        border-right: none;
-        color: $color_celeste_approx;
-    }
-    .btn-atlas {
-        padding: 10px 20px;
-        background-color: $color_keppel_approx;
-        color: $white;
-        border: 1px $color_keppel_approx solid;
-        //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
-        border-radius: 4px;
-        //Instead of the line below you could use @include transition($transition-1, $transition-2, $transition-3, $transition-4, $transition-5, $transition-6, $transition-7, $transition-8, $transition-9, $transition-10)
-        transition: all .3s ease;
-    }
-}
-
-button:focus {
-    outline: none !important;
-}
-
-.form-control:focus {
-    //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
-    box-shadow: none;
 }

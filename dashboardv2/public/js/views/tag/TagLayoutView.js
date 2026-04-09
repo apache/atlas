@@ -23,8 +23,8 @@ define(['require',
     'utils/Messages',
     'utils/Globals',
     'utils/UrlLinks',
-    'models/VTag'
-], function(require, Backbone, TagLayoutViewTmpl, Utils, Messages, Globals, UrlLinks, VTag) {
+    'collection/VTagList'
+], function(require, Backbone, TagLayoutViewTmpl, Utils, Messages, Globals, UrlLinks, VTagList) {
     'use strict';
 
     var TagLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -40,10 +40,17 @@ define(['require',
             /** ui selector cache */
             ui: {
                 tagsParent: "[data-id='tagsParent']",
+                tagsList: "[data-id='tagsList']",
                 createTag: "[data-id='createTag']",
                 tags: "[data-id='tags']",
                 offLineSearchTag: "[data-id='offlineSearchTag']",
-                refreshTag: '[data-id="refreshTag"]'
+                treeLov: "[data-id='treeLov']",
+                refreshTag: '[data-id="refreshTag"]',
+                tagView: 'input[name="tagView"]',
+                expandArrow: '[data-id="expandArrow"]',
+                tagTreeLoader: '[data-id="tagTreeLoader"]',
+                tagTreeTextLoader: '[data-id="tagTreeTextLoader"]',
+                tagTreeView: '[data-id="tagTreeView"]'
             },
             /** ui events hash */
             events: function() {
@@ -51,7 +58,10 @@ define(['require',
                 events["click " + this.ui.createTag] = 'onClickCreateTag';
                 events["click " + this.ui.tags] = 'onTagList';
                 events["keyup " + this.ui.offLineSearchTag] = 'offlineSearchTag';
+                events["change " + this.ui.treeLov] = 'onTreeSelect';
                 events['click ' + this.ui.refreshTag] = 'fetchCollections';
+                events["change " + this.ui.tagView] = 'tagViewToggle';
+                events["click " + this.ui.expandArrow] = 'toggleChild';
                 return events;
             },
             /**
@@ -59,156 +69,354 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tag', 'collection', 'typeHeaders', 'value'));
+                _.extend(this, _.pick(options, 'tag', 'collection', 'typeHeaders', 'value', 'enumDefCollection', 'classificationAndMetricEvent'));
+                this.viewType = "flat";
+                this.query = {
+                    flat: {
+                        tagName: null
+                    },
+                    tree: {
+                        tagName: null
+                    }
+                };
+                if (Utils.getUrlState.isTagTab() && this.value && this.value.viewType) {
+                    this.viewType = this.value.viewType;
+                }
+                this.query[this.viewType].tagName = this.tag;
             },
             bindEvents: function() {
                 var that = this;
-                this.listenTo(this.collection, "reset add remove", function() {
+                this.listenTo(this.collection.fullCollection, "reset add remove", function() {
                     this.tagsGenerator();
+                    this.changeLoaderTextState(false);
                 }, this);
-                this.ui.tagsParent.on('click', 'li.parent-node a', function() {
+                this.ui.tagsList.on('click', 'li.parent-node a', function() {
                     that.setUrl(this.getAttribute("href"));
+                });
+                $('body').on('click', '.tagPopoverOptions li', function(e) {
+                    that.$('.tagPopover').popover('hide');
+                    that[$(this).find('a').data('fn')](e)
+                });
+                this.classificationAndMetricEvent.on("classification:Update:ClassificationTab", function(options) {
+                    that.changeLoaderTextState(false);
                 });
             },
             onRender: function() {
                 var that = this;
+                this.changeLoaderTextState(false);
+                this.changeLoaderState(true);
                 this.bindEvents();
-                this.fetchCollections();
-                $('body').on("click", '.tagPopoverList li', function(e) {
-                    that[$(this).find("a").data('fn')](e);
-                });
-                $('body').click(function(e) {
-                    if ($('.tagPopoverList').length) {
-                        if ($(e.target).hasClass('tagPopover')) {
-                            return;
+                this.checkTagOnRefresh();
+            },
+            checkTagOnRefresh: function() {
+                var that = this,
+                    tagName = this.options.tag,
+                    presentTag = this.collection.fullCollection.findWhere({ name: tagName }),
+                    tag = new VTagList();
+                if (!presentTag && tagName) {
+                    tag.url = UrlLinks.classicationApiUrl(tagName);
+                    tag.fetch({
+                        success: function(dataOrCollection, tagDetails) {
+                            that.collection.fullCollection.add(tagDetails);
+                            that.changeLoaderTextState(true);
+                        },
+                        cust_error: function(model, response) {
+                            that.tagsGenerator();
                         }
-                        that.$('.tagPopover').popover('hide');
-                    }
-                });
+                    });
+                } else {
+                    this.tagsGenerator();
+                }
+            },
+            changeLoaderState: function(showLoader) {
+                if (showLoader) {
+                    this.ui.tagTreeLoader.show();
+                    this.ui.tagTreeView.hide();
+                } else {
+                    this.ui.tagTreeLoader.hide();
+                    this.ui.tagTreeView.show();
+                }
+            },
+            changeLoaderTextState: function(showLoader) {
+                if (showLoader) {
+                    this.ui.tagTreeTextLoader.show();
+                } else {
+                    this.ui.tagTreeTextLoader.hide();
+                }
             },
             fetchCollections: function() {
+                this.changeLoaderState(true);
+                this.ui.refreshTag.attr("disabled", true);
                 this.collection.fetch({ reset: true });
                 this.ui.offLineSearchTag.val("");
             },
-            manualRender: function(tagName) {
-                this.tag = tagName;
+            manualRender: function(options) {
+                this.tag = options && options.tagName;
+                _.extend(this.value, options);
+                this.query[this.viewType].tagName = this.tag;
+                if (options && options.viewType) {
+                    this.viewType = options.viewType;
+                    this.changeLoaderTextState(false);
+                }
                 if (!this.createTag) {
                     this.setValues(true);
                 }
             },
+            renderTreeList: function() {
+                var that = this;
+                this.ui.treeLov.empty();
+                var treeStr = '<option></option>';
+                this.collection.fullCollection.each(function(model) {
+                    var name = Utils.getName(model.toJSON(), 'name');
+                    treeStr += '<option>' + (name) + '</option>';
+                });
+                that.ui.treeLov.html(treeStr);
+                that.ui.treeLov.select2({
+                    placeholder: "Search Classification",
+                    allowClear: true
+                });
+            },
+            onTreeSelect: function() {
+                var name = this.ui.treeLov.val();
+                Utils.setUrl({
+                    url: (name ? '#!/tag/tagAttribute/' + name : '#!/tag'),
+                    urlParams: {
+                        viewType: 'tree',
+                    },
+                    mergeBrowserUrl: false,
+                    trigger: true,
+                    updateTabState: true
+                });
+            },
             setValues: function(manual) {
-                var $firstEl = this.ui.tagsParent.find('li a') ? this.ui.tagsParent.find('li a').first() : null;
+                var el = this.ui.tagsList;
+                if (this.viewType == "tree") {
+                    el = this.ui.tagsParent;
+                    if (!this.ui.tagView.prop("checked")) {
+                        this.ui.tagView.prop("checked", true).trigger("change");
+                    }
+                } else {
+                    if (this.ui.tagView.prop("checked")) {
+                        this.ui.tagView.prop("checked", false).trigger("change");
+                    }
+                }
+                var $firstEl = el.find('li a') ? el.find('li a').first() : null;
                 if (Utils.getUrlState.isTagTab()) {
                     if (!this.tag) {
                         this.selectFirst = false;
-                        this.ui.tagsParent.find('li').first().addClass('active');
+                        el.find('li').first().addClass('active');
                         if ($firstEl && $firstEl.length) {
                             url: $firstEl.attr("href"),
                             Utils.setUrl({
                                 url: $firstEl.attr("href"),
                                 mergeBrowserUrl: false,
-                                updateTabState: function() {
-                                    return { tagUrl: this.url, stateChanged: true };
-                                }
+                                updateTabState: true
                             });
                         }
                     } else {
                         var presentTag = this.collection.fullCollection.findWhere({ name: this.tag }),
-                            url = Utils.getUrlState.getQueryUrl().hash,
+                            url = Utils.getUrlState.getQueryUrl().queyParams[0],
                             tag = this.tag,
-                            query = null;
+                            query = Utils.getUrlState.getQueryParams() || null;
                         if (!presentTag) {
                             tag = $firstEl.data('name');
                             url = $firstEl && $firstEl.length ? $firstEl.attr("href") : '#!/tag';
-                            query = $firstEl && $firstEl.length ? { dlttag: true } : null
+                            if ($firstEl && $firstEl.length) {
+                                _.extend(query, { dlttag: true })
+                            }
                         }
                         Utils.setUrl({
                             url: url,
                             urlParams: query,
-                            updateTabState: function() {
-                                return { tagUrl: this.url, stateChanged: true };
-                            }
+                            updateTabState: true
                         });
                         if (!presentTag) {
                             return false;
                         }
-                        this.ui.tagsParent.find('li').removeClass('active');
-                        var target = this.ui.tagsParent.find('li').filter(function() {
-                            return $(this).text() === tag;
-                        }).addClass('active');
-                        if (this.createTag || !manual) {
-                            if (target && target.offset()) {
-                                $('#sidebar-wrapper').animate({
-                                    scrollTop: target.offset().top - 100
-                                }, 500);
+                        el.find('li').removeClass('active'); // remove selected
+                        el.find('li.parent-node').each(function() {
+                            // based on browser url select tag.
+                            var target = $(this);
+                            if (target.children('div').find('a').text() === tag) {
+                                target.addClass('active');
+                                target.parents('ul').addClass('show').removeClass('hide'); // Don't use toggle
+                                return false;
                             }
-                        }
+                        });
 
                     }
                 }
             },
             tagsGenerator: function(searchString) {
+                var tagParents = '',
+                    tagLists = '';
+
+                if (this.collection && this.collection.fullCollection.length >= 0) {
+                    var sortedCollection = this.collection.fullCollection;
+                    this.tagTreeList = this.getTagTreeList({ collection: sortedCollection });
+                    if (searchString) {
+                        if (this.viewType == "flat") {
+                            this.ui.tagsList.empty().html(this.generateTree({ 'data': sortedCollection, 'searchString': searchString }));
+                        } else {
+                            this.ui.tagsParent.empty().html(this.generateTree({ 'data': this.tagTreeList, 'isTree': true, 'searchString': searchString }));
+                        }
+                    } else {
+                        this.ui.tagsParent.empty().html(this.generateTree({ 'data': this.tagTreeList, 'isTree': true, 'searchString': searchString }));
+                        this.ui.tagsList.empty().html(this.generateTree({ 'data': sortedCollection, 'searchString': searchString }));
+
+                    }
+                    this.createTagAction();
+                    this.setValues();
+                    this.renderTreeList();
+                    if (this.createTag) {
+                        this.createTag = false;
+                    }
+
+                }
+                this.changeLoaderState(false);
+                this.ui.refreshTag.attr("disabled", false);
+            },
+            getTagTreeList: function(options) {
                 var that = this,
-                    str = '';
-                that.collection.fullCollection.comparator = function(model) {
-                    return Utils.getName(model.toJSON(), 'name').toLowerCase();
-                };
-                that.collection.fullCollection.sort().each(function(model) {
-                    var name = Utils.getName(model.toJSON(), 'name');
-                    var checkTagOrTerm = Utils.checkTagOrTerm(name);
-                    if (checkTagOrTerm.tag) {
+                    collection = options.collection,
+                    listOfParents = {},
+                    getChildren = function(options) {
+                        var children = options.children,
+                            data = [];
+                        if (children && children.length) {
+                            _.each(children, function(name) {
+                                var child = collection.find({ 'name': name });
+                                if (child) {
+                                    var modelJSON = child.toJSON();
+                                    data.push({
+                                        name: name,
+                                        children: getChildren({ children: modelJSON.subTypes })
+                                    });
+                                }
+                            });
+                        }
+                        return data;
+                    }
+                collection.each(function(model) {
+                    var modelJSON = model.toJSON();
+                    if (modelJSON.superTypes.length == 0) {
+                        var name = modelJSON.name;
+                        listOfParents[name] = {
+                            name: name,
+                            children: getChildren({ children: modelJSON.subTypes })
+                        }
+                    }
+                });
+                return listOfParents;
+            },
+            generateTree: function(options) {
+                var data = options.data,
+                    isTree = options.isTree,
+                    searchString = options.searchString,
+                    that = this,
+                    element = '',
+                    getElString = function(options) {
+                        var name = options.name,
+                            hasChild = isTree && options.children && options.children.length;
+                        return '<li class="parent-node" data-id="tags">' +
+                            '<div><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div>' +
+                            (hasChild ? '<i class="fa toggleArrow fa-angle-right" data-id="expandArrow" data-name="' + name + '"></i>' : '') +
+                            '<a href="#!/tag/tagAttribute/' + name + '?viewType=' + (isTree ? 'tree' : 'flat') + '&searchType=basic&tag=' + name + '" data-name="' + name + '">' + name + '</a></div>' +
+                            (isTree && hasChild ? '<ul class="child hide">' + that.generateTree({ 'data': options.children, 'isTree': isTree }) + '</ul>' : '') + '</li>';
+                    };
+                if (isTree) {
+                    _.each(data, function(obj) {
+                        element += getElString({
+                            name: obj.name,
+                            children: obj.children
+                        });
+                    });
+                } else {
+                    data.each(function(obj) {
+                        var name = obj.get('name');
                         if (searchString) {
                             if (name.search(new RegExp(searchString, "i")) != -1) {
-                                str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name="' + name + '" >' + name + '</a></li>';
+                                element += getElString({
+                                    name: obj.get('name'),
+                                    children: null
+                                });
                             } else {
                                 return;
                             }
                         } else {
-                            str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name="' + name + '">' + name + '</a></li>';
+                            element += getElString({
+                                name: obj.get('name'),
+                                children: null
+                            });
                         }
-                    }
-                });
-                this.ui.tagsParent.empty().html(str);
-                this.setValues();
-                this.createTagAction();
-                if (this.createTag) {
-                    this.createTag = false;
+
+                    });
+                }
+                return element;
+            },
+            toggleChild: function(e) {
+                var el = $(e.currentTarget);
+                if (el) {
+                    el.parent().siblings('ul.child').toggleClass('hide show');
+                }
+            },
+            tagViewToggle: function(e) {
+                if (e.currentTarget.checked) {
+                    this.$('.tree-view').show();
+                    this.$('.list-view').hide();
+                    this.viewType = "tree";
+                } else {
+                    this.viewType = "flat";
+                    this.$('.tree-view').hide();
+                    this.$('.list-view').show();
+                }
+                if (Utils.getUrlState.isTagTab()) {
+                    var name = this.query[this.viewType].tagName;
+                    Utils.setUrl({
+                        url: (name ? '#!/tag/tagAttribute/' + name : '#!/tag'),
+                        urlParams: {
+                            viewType: this.viewType,
+                        },
+                        mergeBrowserUrl: false,
+                        trigger: true,
+                        updateTabState: true
+                    });
                 }
             },
             onClickCreateTag: function(e) {
-                var that = this;
+                var that = this,
+                    nodeName = e.currentTarget.nodeName;
                 $(e.currentTarget).attr("disabled", "true");
                 require([
                     'views/tag/CreateTagLayoutView',
                     'modules/Modal'
                 ], function(CreateTagLayoutView, Modal) {
-                    var view = new CreateTagLayoutView({ 'tagCollection': that.collection });
-                    var modal = new Modal({
-                        title: 'Create a new tag',
-                        content: view,
-                        cancelText: "Cancel",
-                        okCloses: false,
-                        okText: 'Create',
-                        allowCancel: true,
-                    }).open();
+                    var name = (!(nodeName == "BUTTON") ? that.query[that.viewType].tagName : null);
+                    var view = new CreateTagLayoutView({ 'tagCollection': that.collection, 'selectedTag': name, 'enumDefCollection': enumDefCollection }),
+                        modal = new Modal({
+                            title: 'Create a new classification',
+                            content: view,
+                            cancelText: "Cancel",
+                            okCloses: false,
+                            okText: 'Create',
+                            allowCancel: true,
+                        }).open();
                     modal.$el.find('button.ok').attr("disabled", "true");
-                    view.ui.tagName.on('keyup', function(e) {
-                        modal.$el.find('button.ok').removeAttr("disabled");
+                    view.ui.tagName.on('keyup input', function(e) {
+                        $(view.ui.description).trumbowyg('html', _.escape($(this).val()).replace(/\s+/g, ' '));
                     });
-                    view.ui.tagName.on('keyup', function(e) {
-                        if ((e.keyCode == 8 || e.keyCode == 32 || e.keyCode == 46) && e.currentTarget.value.trim() == "") {
-                            modal.$el.find('button.ok').attr("disabled", "true");
-                        }
+                    view.ui.description.on('input keydown', function(e) {
+                        $(this).val($(this).val().replace(/\s+/g, ' '));
                     });
                     modal.on('shownModal', function() {
                         view.ui.parentTag.select2({
                             multiple: true,
-                            placeholder: "Search Tags",
+                            placeholder: "Search Classification",
                             allowClear: true
                         });
                     });
                     modal.on('ok', function() {
-                        modal.$el.find('button.ok').attr("disabled", "true");
+                        modal.$el.find('button.ok').showButtonLoader();
                         that.onCreateButton(view, modal);
                     });
                     modal.on('closeModal', function() {
@@ -236,11 +444,11 @@ define(['require',
                     Utils.notifyInfo({
                         content: "Please fill the attributes or delete the input box"
                     });
+                    modal.$el.find('button.ok').hideButtonLoader();
                     return;
                 }
-
                 this.name = ref.ui.tagName.val();
-                this.description = ref.ui.description.val();
+                this.description = Utils.sanitizeHtmlContent({ data: ref.ui.description.val() });
                 var superTypes = [];
                 if (ref.ui.parentTag.val() && ref.ui.parentTag.val()) {
                     superTypes = ref.ui.parentTag.val();
@@ -264,7 +472,7 @@ define(['require',
                             return activeTagObj.name.toLowerCase() === obj.name.toLowerCase();
                         });
                         if (duplicateCheck) {
-                            duplicateAttributeList.push(obj.name);
+                            duplicateAttributeList.push(_.escape(obj.name));
                         }
                     });
                     var notifyObj = {
@@ -273,7 +481,7 @@ define(['require',
                             confirm: true,
                             buttons: [{
                                     text: 'Ok',
-                                    addClass: 'btn-primary',
+                                    addClass: 'btn-atlas btn-md',
                                     click: function(notice) {
                                         notice.remove();
                                     }
@@ -282,7 +490,6 @@ define(['require',
                             ]
                         }
                     }
-
                     if (duplicateAttributeList.length) {
                         if (duplicateAttributeList.length < 2) {
                             var text = "Attribute <b>" + duplicateAttributeList.join(",") + "</b> is duplicate !"
@@ -295,6 +502,7 @@ define(['require',
                         }
                         notifyObj['text'] = text;
                         Utils.notifyConfirm(notifyObj);
+                        modal.$el.find('button.ok').hideButtonLoader();
                         return false;
                     }
                 }
@@ -312,15 +520,33 @@ define(['require',
                 };
                 new this.collection.model().set(this.json).save(null, {
                     success: function(model, response) {
+                        that.changeLoaderState(true);
+                        var classificationDefs = model.get('classificationDefs');
                         that.ui.createTag.removeAttr("disabled");
                         that.createTag = true;
-                        that.collection.add(model.get('classificationDefs'));
-                        that.setUrl('#!/tag/tagAttribute/' + ref.ui.tagName.val(), true);
+                        if (classificationDefs[0]) {
+                            _.each(classificationDefs[0].superTypes, function(superType) {
+                                var superTypeModel = that.collection.fullCollection.find({ name: superType }),
+                                    subTypes = [];
+                                if (superTypeModel) {
+                                    subTypes = superTypeModel.get('subTypes');
+                                    subTypes.push(classificationDefs[0].name);
+                                    superTypeModel.set({ 'subTypes': _.uniq(subTypes) });
+                                }
+                            });
+                        }
+                        that.collection.fullCollection.add(classificationDefs);
+                        that.setUrl('#!/tag/tagAttribute/' + ref.ui.tagName.val() + '?tag=' + ref.ui.tagName.val(), true);
                         Utils.notifySuccess({
-                            content: "Tag " + that.name + Messages.addSuccessMessage
+                            content: "Classification " + that.name + Messages.getAbbreviationMsg(false, 'addSuccessMessage')
                         });
                         modal.trigger('cancel');
+                        modal.$el.find('button.ok').hideButtonLoader();
+                        that.changeLoaderState(false);
                         that.typeHeaders.fetch({ reset: true });
+                    },
+                    complete: function() {
+                        modal.$el.find("button.ok").hideButtonLoader();
                     }
                 });
             },
@@ -329,14 +555,17 @@ define(['require',
                     url: url,
                     mergeBrowserUrl: false,
                     trigger: true,
-                    updateTabState: function() {
-                        return { tagUrl: this.url, stateChanged: true };
-                    }
+                    updateTabState: true
                 });
             },
             onTagList: function(e, toggle) {
-                this.ui.tagsParent.find('li').removeClass("active");
-                $(e.currentTarget).addClass("active");
+                var that = this;
+                e.stopPropagation();
+                if (e.target.nodeName === "A") {
+                    that.$('.tagPopover').popover('hide');
+                    $(e.currentTarget).parents('ul.tag-tree').find('li.active').removeClass("active");
+                    $(e.currentTarget).addClass("active");
+                }
             },
             offlineSearchTag: function(e) {
                 var type = $(e.currentTarget).data('type');
@@ -344,80 +573,89 @@ define(['require',
             },
             createTagAction: function() {
                 var that = this;
-                this.$('.tagPopover').popover({
-                    placement: 'bottom',
-                    html: true,
-                    trigger: 'manual',
-                    container: 'body',
-                    content: function() {
-                        return "<ul class='tagPopoverList'>" +
-                            "<li class='listTerm' ><i class='fa fa-search'></i> <a href='javascript:void(0)' data-fn='onSearchTag'>Search Tag</a></li>" +
-                            "<li class='listTerm' ><i class='fa fa-trash-o'></i> <a href='javascript:void(0)' data-fn='onDeleteTag'>Delete Tag</a></li>" +
-                            "</ul>";
+                Utils.generatePopover({
+                    el: this.$('.tagPopover'),
+                    contentClass: 'tagPopoverOptions',
+                    popoverOptions: {
+                        content: function() {
+                            return "<ul>" +
+                                "<li class='listTerm' ><i class='fa fa-search'></i> <a href='javascript:void(0)' data-fn='onSearchTag'>Search Classification</a></li>" +
+                                "<li class='listTerm' ><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='onClickCreateTag'>Create Sub-classification</a></li>" +
+                                "<li class='listTerm' ><i class='fa fa-trash-o'></i> <a href='javascript:void(0)' data-fn='onDeleteTag'>Delete Classification</a></li>" +
+                                "</ul>";
+                        }
                     }
-                });
-                this.$('.tagPopover').off('click').on('click', function(e) {
-                    // if any other popovers are visible, hide them
-                    e.preventDefault();
-                    that.$('.tagPopover').not(this).popover('hide');
-                    $(this).popover('toggle');
                 });
             },
             onSearchTag: function() {
+                var el = this.ui.tagsList;
+                if (this.viewType == "tree") {
+                    el = this.ui.tagsParent;
+                }
                 Utils.setUrl({
                     url: '#!/search/searchResult',
                     urlParams: {
-                        tag: this.ui.tagsParent.find('li.active').find("a").data('name'),
+                        tag: el.find('li.active').find('a[data-name]').data('name'),
                         searchType: "basic",
                         dslChecked: false
                     },
-                    updateTabState: function() {
-                        return { searchUrl: this.url, stateChanged: true };
-                    },
                     mergeBrowserUrl: false,
-                    trigger: true
+                    trigger: true,
+                    updateTabState: true
                 });
             },
             onDeleteTag: function() {
-                var that = this;
-                this.tagName = this.ui.tagsParent.find('li.active').find("a").data('name');
-                this.tagDeleteData = this.ui.tagsParent.find('li.active');
-                var notifyObj = {
-                    modal: true,
-                    ok: function(argument) {
-                        that.onNotifyOk();
-                    },
-                    cancel: function(argument) {}
-                }
-                var text = "Are you sure you want to delete the tag"
+                var that = this,
+                    notifyObj = {
+                        modal: true,
+                        ok: function(obj) {
+                            that.notificationModal = obj;
+                            obj.showButtonLoader();
+                            that.onNotifyOk();
+                        },
+                        okCloses: false,
+                        cancel: function(argument) {}
+                    }
+                var text = "Are you sure you want to delete the classification"
                 notifyObj['text'] = text;
                 Utils.notifyConfirm(notifyObj);
             },
             onNotifyOk: function(data) {
                 var that = this,
-                    deleteTagData = this.collection.fullCollection.findWhere({ name: this.tagName }),
-                    classificationData = deleteTagData.toJSON(),
-                    deleteJson = {
-                        classificationDefs: [classificationData],
-                        entityDefs: [],
-                        enumDefs: [],
-                        structDefs: []
-                    };
+                    deleteTagData = this.collection.fullCollection.findWhere({ name: this.tag }),
+                    superTypeOfDeleteTag = deleteTagData.get('superTypes'),
+                    superTypeObj = superTypeOfDeleteTag ? this.collection.fullCollection.findWhere({ name: superTypeOfDeleteTag[0] }) : null;
+
                 deleteTagData.deleteTag({
-                    data: JSON.stringify(deleteJson),
+                    typeName: that.tag,
                     success: function() {
                         Utils.notifySuccess({
-                            content: "Tag " + that.tagName + Messages.deleteSuccessMessage
+                            content: "Classification " + that.tag + Messages.getAbbreviationMsg(false, 'deleteSuccessMessage')
                         });
+                        //delete current classification from subTypes list of parent classification if any
+                        if (superTypeObj) {
+                            var parentSubTypeUpdate = _.reject(superTypeObj.get('subTypes'), function(subtype) {
+                                return subtype === that.tag;
+                            });
+                            superTypeObj.set('subTypes', parentSubTypeUpdate);
+                        }
                         // if deleted tag is prviously searched then remove that tag url from save state of tab.
                         var searchUrl = Globals.saveApplicationState.tabState.searchUrl;
                         var urlObj = Utils.getUrlState.getQueryParams(searchUrl);
-                        if (urlObj && urlObj.tag && urlObj.tag === that.tagName) {
+                        if (urlObj && urlObj.tag && urlObj.tag === that.tag) {
                             Globals.saveApplicationState.tabState.searchUrl = "#!/search";
                         }
-                        that.collection.remove(deleteTagData);
+                        that.collection.fullCollection.remove(deleteTagData);
                         // to update tag list of search tab fetch typeHeaders.
                         that.typeHeaders.fetch({ reset: true });
+                    },
+                    cust_error: function() {},
+                    complete: function() {
+                        if (that.collection.fullCollection.length === 0) {
+                            that.setUrl('#!/tag', true);
+                        }
+                        that.notificationModal.hideButtonLoader();
+                        that.notificationModal.remove();
                     }
                 });
             }

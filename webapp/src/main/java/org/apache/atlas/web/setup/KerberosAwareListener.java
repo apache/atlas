@@ -26,6 +26,7 @@ public class KerberosAwareListener extends ContextLoaderListener {
     @Override
     public void contextInitialized(ServletContextEvent event) {
         LoginProcessor loginProcessor = new LoginProcessor();
+
         loginProcessor.login();
 
         super.contextInitialized(event);

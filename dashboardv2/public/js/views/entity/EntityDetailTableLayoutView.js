@@ -32,16 +32,34 @@ define(['require',
 
             template: EntityDetailTableLayoutView_tmpl,
 
+            templateHelpers: function() {
+                return {
+                    editEntity: this.editEntity,
+                    isRelationshipDetailPage: this.isRelationshipDetailPage
+                };
+            },
+
             /** Layout sub regions */
             regions: {},
 
             /** ui selector cache */
             ui: {
                 detailValue: "[data-id='detailValue']",
+                noValueToggle: "[data-id='noValueToggle']",
+                editButton: '[data-id="editButton"]',
             },
             /** ui events hash */
             events: function() {
                 var events = {};
+                events["click " + this.ui.noValueToggle] = function() {
+                    this.showAllProperties = !this.showAllProperties;
+                    this.ui.noValueToggle.attr("data-original-title", (this.showAllProperties ? "Hide" : "Show") + " empty values");
+                    Utils.togglePropertyRelationshipTableEmptyValues({
+                        "inputType": this.ui.noValueToggle,
+                        "tableEl": this.ui.detailValue
+                    });
+                };
+                events["click " + this.ui.editButton] = 'onClickEditEntity';
                 return events;
             },
             /**
@@ -49,8 +67,9 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'entity', 'referredEntities', 'typeHeaders', 'attributeDefs'));
+                _.extend(this, _.pick(options, 'entity', 'typeHeaders', 'attributeDefs', 'attributes', 'editEntity', 'guid', 'entityDefCollection', 'searchVent', 'fetchCollection', 'isRelationshipDetailPage'));
                 this.entityModel = new VEntity({});
+                this.showAllProperties = false;
             },
             bindEvents: function() {},
             onRender: function() {
@@ -58,16 +77,39 @@ define(['require',
             },
             entityTableGenerate: function() {
                 var that = this,
-                    attributeObject = this.entity.attributes;
-                Utils.findAndMergeRefEntity(attributeObject, that.referredEntities);
-                if (attributeObject && attributeObject.columns) {
-                    var valueSorted = _.sortBy(attributeObject.columns, function(val) {
-                        return val.attributes.position
+                    highlightString = $(".atlas-header .global-search-container input.global-search").val(),
+                    table = CommonViewFunction.propertyTable({
+                        scope: this,
+                        valueObject: _.extend({ "isIncomplete": this.entity.isIncomplete || false }, this.entity.attributes),
+                        attributeDefs: this.attributeDefs,
+                        highlightString: highlightString
                     });
-                    attributeObject.columns = valueSorted;
-                }
-                var table = CommonViewFunction.propertyTable({ scope: this, valueObject: attributeObject, attributeDefs: this.attributeDefs });
-                that.ui.detailValue.append(table);
+                this.ui.detailValue.append(table);
+                Utils.togglePropertyRelationshipTableEmptyValues({
+                    "inputType": this.ui.noValueToggle,
+                    "tableEl": this.ui.detailValue
+                });
+                setTimeout(function() {
+                    that.$el.find(".searched-term-highlight").addClass("bold");
+                }, 5000)
+            },
+            onClickEditEntity: function(e) {
+                var that = this;
+                $(e.currentTarget).blur();
+                require([
+                    'views/entity/CreateEntityLayoutView'
+                ], function(CreateEntityLayoutView) {
+                    var view = new CreateEntityLayoutView({
+                        guid: that.guid,
+                        searchVent: that.searchVent,
+                        entityDefCollection: that.entityDefCollection,
+                        typeHeaders: that.typeHeaders,
+                        callback: function() {
+                            that.fetchCollection();
+                        }
+                    });
+
+                });
             }
         });
     return EntityDetailTableLayoutView;

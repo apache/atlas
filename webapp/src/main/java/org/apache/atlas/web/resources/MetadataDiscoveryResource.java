@@ -18,19 +18,23 @@
 
 package org.apache.atlas.web.resources;
 
-import com.google.common.base.Preconditions;
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.classification.InterfaceAudience;
-import org.apache.atlas.discovery.DiscoveryException;
-import org.apache.atlas.discovery.DiscoveryService;
+import org.apache.atlas.discovery.AtlasDiscoveryService;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.query.QueryParams;
+import org.apache.atlas.repository.converters.AtlasInstanceConverter;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.utils.ParamChecker;
+import org.apache.atlas.v1.model.discovery.DSLSearchResult;
+import org.apache.atlas.v1.model.discovery.FullTextSearchResult;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.web.util.Servlets;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -45,8 +49,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+
 import java.util.List;
-import java.util.Map;
 
 /**
  * Jersey Resource for metadata operations.
@@ -56,25 +60,30 @@ import java.util.Map;
 @Service
 @Deprecated
 public class MetadataDiscoveryResource {
+    private static final Logger LOG                  = LoggerFactory.getLogger(MetadataDiscoveryResource.class);
+    private static final Logger PERF_LOG             = AtlasPerfTracer.getPerfLogger("rest.MetadataDiscoveryResource");
 
-    private static final Logger LOG = LoggerFactory.getLogger(MetadataDiscoveryResource.class);
-    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.MetadataDiscoveryResource");
-    private static final String QUERY_TYPE_DSL = "dsl";
-    private static final String QUERY_TYPE_GREMLIN = "gremlin";
-    private static final String QUERY_TYPE_FULLTEXT = "full-text";
+    private static final String QUERY_TYPE_DSL       = "dsl";
+    private static final String QUERY_TYPE_FULLTEXT  = "full-text";
     private static final String LIMIT_OFFSET_DEFAULT = "-1";
 
-    private final DiscoveryService discoveryService;
+    private final AtlasDiscoveryService  atlasDiscoveryService;
+    private final AtlasInstanceConverter restAdapters;
+    private final AtlasEntityStore       entitiesStore;
 
     /**
      * Created by the Guice ServletModule and injected with the
      * configured DiscoveryService.
      *
-     * @param discoveryService metadata service handle
+     * @param atlasDiscoveryService atlasDiscoveryService
+     * @param restAdapters restAdapters
+     * @param entitiesStore entitiesStore
      */
     @Inject
-    public MetadataDiscoveryResource(DiscoveryService discoveryService) {
-        this.discoveryService = discoveryService;
+    public MetadataDiscoveryResource(AtlasDiscoveryService atlasDiscoveryService, AtlasInstanceConverter restAdapters, AtlasEntityStore entitiesStore) {
+        this.atlasDiscoveryService = atlasDiscoveryService;
+        this.restAdapters          = restAdapters;
+        this.entitiesStore         = entitiesStore;
     }
 
     /**
@@ -89,25 +98,23 @@ public class MetadataDiscoveryResource {
     @Path("search")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response search(@QueryParam("query") String query,
-                           @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("limit") int limit,
-                           @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("offset") int offset) {
-        boolean dslQueryFailed = false;
-        Response response = null;
+    public Response search(@QueryParam("query") String query, @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("limit") int limit, @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("offset") int offset) {
+        boolean  dslQueryFailed = false;
+        Response response       = null;
+
         try {
             response = searchUsingQueryDSL(query, limit, offset);
+
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
                 dslQueryFailed = true;
             }
         } catch (Exception e) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Error while running DSL. Switching to fulltext for query {}", query, e);
-            }
+            LOG.debug("Error while running DSL. Switching to fulltext for query {}", query, e);
 
             dslQueryFailed = true;
         }
 
-        if ( dslQueryFailed ) {
+        if (dslQueryFailed) {
             response = searchUsingFullText(query, limit, offset);
         }
 
@@ -123,126 +130,88 @@ public class MetadataDiscoveryResource {
      * Limit and offset in API are used in conjunction with limit and offset in DSL query
      * Final limit = min(API limit, max(query limit - API offset, 0))
      * Final offset = API offset + query offset
-     *
      * @return JSON representing the type and results.
      */
     @GET
     @Path("search/dsl")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response searchUsingQueryDSL(@QueryParam("query") String dslQuery,
-                                        @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("limit") int limit,
-                                        @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("offset") int offset) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> MetadataDiscoveryResource.searchUsingQueryDSL({}, {}, {})", dslQuery, limit, offset);
-        }
+    public Response searchUsingQueryDSL(@QueryParam("query") String dslQuery, @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("limit") int limit, @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("offset") int offset) {
+        LOG.debug("==> MetadataDiscoveryResource.searchUsingQueryDSL({}, {}, {})", dslQuery, limit, offset);
 
         AtlasPerfTracer perf = null;
+
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.searchUsingQueryDSL(" + dslQuery + ", " + limit + ", " + offset + ")");
             }
 
             dslQuery = ParamChecker.notEmpty(dslQuery, "dslQuery cannot be null");
-            QueryParams queryParams = validateQueryParams(limit, offset);
-            final String jsonResultStr = discoveryService.searchByDSL(dslQuery, queryParams);
 
-            JSONObject response = new DSLJSONResponseBuilder().results(jsonResultStr).query(dslQuery).build();
+            QueryParams       queryParams = validateQueryParams(limit, offset);
+            AtlasSearchResult result      = atlasDiscoveryService.searchUsingDslQuery(dslQuery, queryParams.limit(), queryParams.offset());
+            DSLSearchResult   dslResult   = new DSLSearchResult();
+
+            dslResult.setQueryType(QUERY_TYPE_DSL);
+            dslResult.setRequestId(Servlets.getRequestId());
+            dslResult.setDataType(result.getType());
+            dslResult.setQuery(result.getQueryText());
+            dslResult.setCount(0);
+
+            if (CollectionUtils.isNotEmpty(result.getEntities())) {
+                for (AtlasEntityHeader entityHeader : result.getEntities()) {
+                    Referenceable entity = getEntity(entityHeader.getGuid());
+
+                    dslResult.addResult(entity);
+                }
+
+                if (dslResult.getResults() != null) {
+                    dslResult.setCount(dslResult.getResults().size());
+                }
+            } else if (result.getAttributes() != null && CollectionUtils.isNotEmpty(result.getAttributes().getName())) {
+                List<String> attrNames = result.getAttributes().getName();
+
+                for (List<Object> attrValues : result.getAttributes().getValues()) {
+                    if (attrValues == null) {
+                        continue;
+                    }
+
+                    Referenceable entity = new Referenceable();
+
+                    for (int i = 0; i < attrNames.size(); i++) {
+                        String attrName  = attrNames.get(i);
+                        Object attrValue = attrValues.size() > i ? attrValues.get(i) : null;
+
+                        entity.set(attrName, attrValue);
+                    }
+
+                    dslResult.addResult(entity);
+                }
+
+                if (dslResult.getResults() != null) {
+                    dslResult.setCount(dslResult.getResults().size());
+                }
+            }
+
+            String response = AtlasJson.toV1SearchJson(dslResult);
 
             return Response.ok(response).build();
-        } catch (DiscoveryException | IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
+
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
             LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
+
             throw e;
         } catch (Throwable e) {
             LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
+
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         } finally {
             AtlasPerfTracer.log(perf);
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("<== MetadataDiscoveryResource.searchUsingQueryDSL({}, {}, {})", dslQuery, limit, offset);
-            }
-        }
-    }
-
-    private QueryParams validateQueryParams(int limitParam, int offsetParam) {
-        int maxLimit = AtlasConfiguration.SEARCH_MAX_LIMIT.getInt();
-        int defaultLimit = AtlasConfiguration.SEARCH_DEFAULT_LIMIT.getInt();
-
-        int limit = defaultLimit;
-        boolean limitSet = (limitParam != Integer.valueOf(LIMIT_OFFSET_DEFAULT));
-        if (limitSet) {
-            ParamChecker.lessThan(limitParam, maxLimit, "limit");
-            ParamChecker.greaterThan(limitParam, 0, "limit");
-            limit = limitParam;
-        }
-
-        int offset = 0;
-        boolean offsetSet = (offsetParam != Integer.valueOf(LIMIT_OFFSET_DEFAULT));
-        if (offsetSet) {
-            ParamChecker.greaterThan(offsetParam, -1, "offset");
-            offset = offsetParam;
-        }
-
-        return new QueryParams(limit, offset);
-    }
-
-    /**
-     * Search using raw gremlin query format.
-     *
-     * @param gremlinQuery search query in raw gremlin format.
-     * @return JSON representing the type and results.
-     */
-    @GET
-    @Path("search/gremlin")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    @InterfaceAudience.Private
-    public Response searchUsingGremlinQuery(@QueryParam("query") String gremlinQuery) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> MetadataDiscoveryResource.searchUsingGremlinQuery({})", gremlinQuery);
-        }
-
-        AtlasPerfTracer perf = null;
-        try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.searchUsingGremlinQuery(" + gremlinQuery + ")");
-            }
-
-            gremlinQuery = ParamChecker.notEmpty(gremlinQuery, "gremlinQuery cannot be null or empty");
-            final List<Map<String, String>> results = discoveryService.searchByGremlin(gremlinQuery);
-
-            JSONObject response = new JSONObject();
-            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(AtlasClient.QUERY, gremlinQuery);
-            response.put(AtlasClient.QUERY_TYPE, QUERY_TYPE_GREMLIN);
-
-            JSONArray list = new JSONArray();
-            for (Map<String, String> result : results) {
-                list.put(new JSONObject(result));
-            }
-            response.put(AtlasClient.RESULTS, list);
-            response.put(AtlasClient.COUNT, list.length());
-
-            return Response.ok(response).build();
-        } catch (DiscoveryException | IllegalArgumentException e) {
-            LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (WebApplicationException e) {
-            LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
-            throw e;
-        } catch (Throwable e) {
-            LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
-        } finally {
-            AtlasPerfTracer.log(perf);
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("<== MetadataDiscoveryResource.searchUsingGremlinQuery({})", gremlinQuery);
-            }
+            LOG.debug("<== MetadataDiscoveryResource.searchUsingQueryDSL({}, {}, {})", dslQuery, limit, offset);
         }
     }
 
@@ -258,141 +227,86 @@ public class MetadataDiscoveryResource {
     @Path("search/fulltext")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response searchUsingFullText(@QueryParam("query") String query,
-                                        @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("limit") int limit,
-                                        @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("offset") int offset) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> MetadataDiscoveryResource.searchUsingFullText({}, {}, {})", query, limit, offset);
-        }
+    public Response searchUsingFullText(@QueryParam("query") String query, @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("limit") int limit, @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("offset") int offset) {
+        LOG.debug("==> MetadataDiscoveryResource.searchUsingFullText({}, {}, {})", query, limit, offset);
 
         AtlasPerfTracer perf = null;
+
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.searchUsingFullText(" + query + ", " + limit + ", " + offset + ")");
             }
 
             query = ParamChecker.notEmpty(query, "query cannot be null or empty");
-            QueryParams queryParams = validateQueryParams(limit, offset);
-            final String jsonResultStr = discoveryService.searchByFullText(query, queryParams);
-            JSONArray rowsJsonArr = new JSONArray(jsonResultStr);
 
-            JSONObject response = new FullTextJSonResponseBuilder().results(rowsJsonArr).query(query).build();
+            QueryParams          queryParams    = validateQueryParams(limit, offset);
+            AtlasSearchResult    result         = atlasDiscoveryService.searchUsingFullTextQuery(query, false, queryParams.limit(), queryParams.offset());
+            FullTextSearchResult fullTextResult = new FullTextSearchResult();
+
+            fullTextResult.setQueryType(QUERY_TYPE_FULLTEXT);
+            fullTextResult.setRequestId(Servlets.getRequestId());
+            fullTextResult.setDataType(result.getType());
+            fullTextResult.setQuery(result.getQueryText());
+            fullTextResult.setCount(0);
+
+            if (CollectionUtils.isNotEmpty(result.getFullTextResult())) {
+                for (AtlasSearchResult.AtlasFullTextResult entity : result.getFullTextResult()) {
+                    fullTextResult.addResult(entity);
+                }
+
+                fullTextResult.setCount(fullTextResult.getResults().size());
+            }
+
+            String response = AtlasJson.toV1SearchJson(fullTextResult);
+
             return Response.ok(response).build();
-        } catch (DiscoveryException | IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             LOG.error("Unable to get entity list for query {}", query, e);
+
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
             LOG.error("Unable to get entity list for query {}", query, e);
+
             throw e;
         } catch (Throwable e) {
             LOG.error("Unable to get entity list for query {}", query, e);
+
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         } finally {
             AtlasPerfTracer.log(perf);
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("<== MetadataDiscoveryResource.searchUsingFullText({}, {}, {})", query, limit, offset);
-            }
+            LOG.debug("<== MetadataDiscoveryResource.searchUsingFullText({}, {}, {})", query, limit, offset);
         }
     }
 
-    private class JsonResponseBuilder {
+    private QueryParams validateQueryParams(int limitParam, int offsetParam) {
+        int     maxLimit     = AtlasConfiguration.SEARCH_MAX_LIMIT.getInt();
+        int     defaultLimit = AtlasConfiguration.SEARCH_DEFAULT_LIMIT.getInt();
+        int     limit        = defaultLimit;
+        boolean limitSet     = (limitParam != Integer.parseInt(LIMIT_OFFSET_DEFAULT));
 
-        protected int count = 0;
-        protected String query;
-        protected String queryType;
-        protected JSONObject response;
+        if (limitSet) {
+            ParamChecker.lessThan(limitParam, maxLimit, "limit");
+            ParamChecker.greaterThan(limitParam, 0, "limit");
 
-        JsonResponseBuilder() {
-            this.response = new JSONObject();
+            limit = limitParam;
         }
 
-        protected JsonResponseBuilder count(int count) {
-            this.count = count;
-            return this;
+        int     offset    = 0;
+        boolean offsetSet = (offsetParam != Integer.parseInt(LIMIT_OFFSET_DEFAULT));
+
+        if (offsetSet) {
+            ParamChecker.greaterThan(offsetParam, -1, "offset");
+
+            offset = offsetParam;
         }
 
-        public JsonResponseBuilder query(String query) {
-            this.query = query;
-            return this;
-        }
-
-        public JsonResponseBuilder queryType(String queryType) {
-            this.queryType = queryType;
-            return this;
-        }
-
-        protected JSONObject build() throws JSONException {
-
-            Preconditions.checkNotNull(query, "Query cannot be null");
-            Preconditions.checkNotNull(queryType, "Query Type must be specified");
-            Preconditions.checkArgument(count >= 0, "Search Result count should be > 0");
-
-            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(AtlasClient.QUERY, query);
-            response.put(AtlasClient.QUERY_TYPE, queryType);
-            response.put(AtlasClient.COUNT, count);
-            return response;
-        }
+        return new QueryParams(limit, offset);
     }
 
-    private class DSLJSONResponseBuilder extends JsonResponseBuilder {
+    private Referenceable getEntity(String guid) throws AtlasBaseException {
+        AtlasEntityWithExtInfo entity        = entitiesStore.getById(guid);
 
-        DSLJSONResponseBuilder() {
-            super();
-        }
-
-        private JSONObject dslResults;
-
-        public DSLJSONResponseBuilder results(JSONObject dslResults) {
-            this.dslResults = dslResults;
-            return this;
-        }
-
-        public DSLJSONResponseBuilder results(String dslResults) throws JSONException {
-            return results(new JSONObject(dslResults));
-        }
-
-        @Override
-        public JSONObject build() throws JSONException {
-            Preconditions.checkNotNull(dslResults);
-            JSONArray rowsJsonArr = dslResults.getJSONArray(AtlasClient.ROWS);
-            count(rowsJsonArr.length());
-            queryType(QUERY_TYPE_DSL);
-            JSONObject response = super.build();
-            response.put(AtlasClient.RESULTS, rowsJsonArr);
-            response.put(AtlasClient.DATATYPE, dslResults.get(AtlasClient.DATATYPE));
-            return response;
-        }
-
-    }
-
-    private class FullTextJSonResponseBuilder extends JsonResponseBuilder {
-
-        private JSONArray fullTextResults;
-
-        public FullTextJSonResponseBuilder results(JSONArray fullTextResults) {
-            this.fullTextResults = fullTextResults;
-            return this;
-        }
-
-        public FullTextJSonResponseBuilder results(String dslResults) throws JSONException {
-            return results(new JSONArray(dslResults));
-        }
-
-        public FullTextJSonResponseBuilder() {
-            super();
-        }
-
-        @Override
-        public JSONObject build() throws JSONException {
-            Preconditions.checkNotNull(fullTextResults);
-            count(fullTextResults.length());
-            queryType(QUERY_TYPE_FULLTEXT);
-
-            JSONObject response = super.build();
-            response.put(AtlasClient.RESULTS, fullTextResults);
-            return response;
-        }
+        return restAdapters.getReferenceable(entity);
     }
 }

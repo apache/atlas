@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,16 +20,21 @@ package org.apache.atlas.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
  * Handles logging of performance measurements.
  */
 public final class AtlasPerfTracer {
-    protected final Logger logger;
-    protected final String tag;
-    private   final long   startTimeMs;
+    private static final long reportingThresholdMs = 0L;
 
-    private static long reportingThresholdMs = 0L;
+    private final Logger logger;
+    private final String tag;
+    private final long   startTimeMs;
+
+    private AtlasPerfTracer(Logger logger, String tag) {
+        this.logger = logger;
+        this.tag    = tag;
+        startTimeMs = System.currentTimeMillis();
+    }
 
     public static Logger getPerfLogger(String name) {
         return LoggerFactory.getLogger("org.apache.atlas.perf." + name);
@@ -53,12 +58,6 @@ public final class AtlasPerfTracer {
         }
     }
 
-    private AtlasPerfTracer(Logger logger, String tag) {
-        this.logger = logger;
-        this.tag    = tag;
-        startTimeMs = System.currentTimeMillis();
-    }
-
     public String getTag() {
         return tag;
     }
@@ -73,6 +72,7 @@ public final class AtlasPerfTracer {
 
     public void log() {
         long elapsedTime = getElapsedTime();
+
         if (elapsedTime > reportingThresholdMs) {
             logger.debug("PERF|{}|{}", tag, elapsedTime);
         }

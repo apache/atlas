@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,7 +29,6 @@ import java.util.List;
  * @param <E> edge class used by the graph
  */
 public interface AtlasGraphQuery<V, E> {
-
     /**
      * Adds a predicate that the returned vertices must have the specified
      * property and that one of the values of the property must be the
@@ -52,18 +51,32 @@ public interface AtlasGraphQuery<V, E> {
      */
     AtlasGraphQuery<V, E> in(String propertyKey, Collection<?> values);
 
+    /**
+     * Executes the query and returns the matching edges.
+     * @return
+     */
+    Iterable<AtlasEdge<V, E>> edges();
+
+    /**
+     * Executes the query and returns the matching edges till the max limit
+     * @param limit max number of vertices
+     * @return
+     */
+    Iterable<AtlasEdge<V, E>> edges(int limit);
+
+    /**
+     * Executes the query and returns the matching edges from given offset till the max limit
+     * @param offset starting offset
+     * @param limit max number of vertices
+     * @return
+     */
+    Iterable<AtlasEdge<V, E>> edges(int offset, int limit);
 
     /**
      * Executes the query and returns the matching vertices.
      * @return
      */
     Iterable<AtlasVertex<V, E>> vertices();
-
-    /**
-     * Executes the query and returns the matching edges.
-     * @return
-     */
-    Iterable<AtlasEdge<V, E>> edges();
 
     /**
      * Executes the query and returns the matching vertices from given offset till the max limit
@@ -80,6 +93,26 @@ public interface AtlasGraphQuery<V, E> {
      */
     Iterable<AtlasVertex<V, E>> vertices(int offset, int limit);
 
+    /**
+     * Executes the query and returns IDs of matching vertices.
+     * @return
+     */
+    Iterable<Object> vertexIds();
+
+    /**
+     * Executes the query and returns IDs of the matching vertices from given offset till the max limit
+     * @param limit max number of vertices
+     * @return
+     */
+    Iterable<Object> vertexIds(int limit);
+
+    /**
+     * Executes the query and returns IDs of the matching vertices from given offset till the max limit
+     * @param offset starting offset
+     * @param limit max number of vertices
+     * @return
+     */
+    Iterable<Object> vertexIds(int offset, int limit);
 
     /**
      * Adds a predicate that the returned vertices must have the specified
@@ -91,6 +124,14 @@ public interface AtlasGraphQuery<V, E> {
      * @return
      */
     AtlasGraphQuery<V, E> has(String propertyKey, QueryOperator op, Object values);
+
+    /**
+     * Adds a sorting predicate
+     * @param propertyKey property key to sort on
+     * @param order ASC or DESC
+     * @return
+     */
+    AtlasGraphQuery<V, E> orderBy(String propertyKey, SortOrder order);
 
     /**
      * Adds a predicate that the vertices returned must satisfy the
@@ -108,8 +149,22 @@ public interface AtlasGraphQuery<V, E> {
      */
     AtlasGraphQuery<V, E> createChildQuery();
 
+    /**
+     * Adds all of the predicates that have been added to this query to the
+     * specified query.
+     * @param otherQuery
+     * @return
+     */
+    AtlasGraphQuery<V, E> addConditionsFrom(AtlasGraphQuery<V, E> otherQuery);
 
-    interface QueryOperator {}
+    /**
+     * Whether or not this is a child query.
+     *
+     * @return
+     */
+    boolean isChildQuery();
+
+    enum SortOrder { ASC, DESC }
 
     /**
      * Comparison operators that can be used in an AtlasGraphQuery.
@@ -133,20 +188,5 @@ public interface AtlasGraphQuery<V, E> {
         REGEX
     }
 
-    /**
-     * Adds all of the predicates that have been added to this query to the
-     * specified query.
-     * @param otherQuery
-     * @return
-     */
-    AtlasGraphQuery<V, E> addConditionsFrom(AtlasGraphQuery<V, E> otherQuery);
-
-    /**
-     * Whether or not this is a child query.
-     *
-     * @return
-     */
-    boolean isChildQuery();
-
-
+    interface QueryOperator {}
 }

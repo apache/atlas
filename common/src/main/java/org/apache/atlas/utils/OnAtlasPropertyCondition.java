@@ -21,33 +21,40 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
-import org.springframework.core.type.classreading.AnnotationMetadataReadingVisitor;
+import org.springframework.core.type.AnnotationMetadata;
 
 public class OnAtlasPropertyCondition implements Condition {
-    private final Logger LOG = LoggerFactory.getLogger(OnAtlasPropertyCondition.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OnAtlasPropertyCondition.class);
 
     @Override
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
-        boolean matches = false;
-        String propertyName = (String) metadata.getAnnotationAttributes(ConditionalOnAtlasProperty.class.getName()).get("property");
-        boolean isDefault = (Boolean) metadata.getAnnotationAttributes(ConditionalOnAtlasProperty.class.getName()).get("isDefault");
-        String className = ((AnnotationMetadataReadingVisitor) metadata).getClassName();
+        boolean matches      = false;
+        String  propertyName = (String) metadata.getAnnotationAttributes(ConditionalOnAtlasProperty.class.getName()).get("property");
+        boolean isDefault    = (Boolean) metadata.getAnnotationAttributes(ConditionalOnAtlasProperty.class.getName()).get("isDefault");
 
-        try {
-            Configuration configuration = ApplicationProperties.get();
-            String configuredProperty = configuration.getString(propertyName);
-            if (StringUtils.isNotEmpty(configuredProperty)) {
-                matches = configuredProperty.equals(className);
-            } else if (isDefault) matches = true;
-        } catch (AtlasException e) {
-            LOG.error("Unable to load atlas properties. Dependent bean configuration may fail");
+        if (metadata instanceof AnnotationMetadata) {
+            String className = ((AnnotationMetadata) metadata).getClassName();
+
+            try {
+                Configuration configuration      = ApplicationProperties.get();
+                String        configuredProperty = configuration.getString(propertyName);
+
+                if (StringUtils.isNotEmpty(configuredProperty)) {
+                    matches = configuredProperty.equals(className);
+                } else if (isDefault) {
+                    matches = true;
+                }
+            } catch (AtlasException e) {
+                LOG.error("Unable to load atlas properties. Dependent bean configuration may fail");
+            }
         }
+
         return matches;
     }
 }

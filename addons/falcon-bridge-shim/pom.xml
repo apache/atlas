@@ -16,31 +16,32 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
-        <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>0.9-SNAPSHOT</version>
+        <artifactId>apache-atlas</artifactId>
+        <version>3.0.0-SNAPSHOT</version>
         <relativePath>../../</relativePath>
     </parent>
+
     <artifactId>falcon-bridge-shim</artifactId>
-    <description>Apache Atlas Falcon Bridge Shim Module</description>
-    <name>Apache Atlas Falcon Bridge Shim</name>
     <packaging>jar</packaging>
 
-    <properties>
-        <falcon.version>0.8</falcon.version>
-    </properties>
+    <name>Apache Atlas Falcon Bridge Shim</name>
+    <description>Apache Atlas Falcon Bridge Shim Module</description>
 
+    <properties>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
+    </properties>
     <dependencies>
         <!-- Logging -->
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-plugin-classloader</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.apache.falcon</groupId>
             <artifactId>falcon-common</artifactId>
@@ -48,12 +49,32 @@
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.apache.spark</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>*</artifactId>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-beans</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-context</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-jms</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-tx</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

@@ -18,8 +18,10 @@
 
 package org.apache.atlas.web.rest;
 
+import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
@@ -30,12 +32,15 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
 
 /**
  * REST interface for entity relationships.
@@ -43,6 +48,8 @@ import javax.ws.rs.Produces;
 @Path("v2/relationship")
 @Singleton
 @Service
+@Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
+@Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class RelationshipREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.RelationshipREST");
 
@@ -57,8 +64,7 @@ public class RelationshipREST {
      * Create a new relationship between entities.
      */
     @POST
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasRelationship create(AtlasRelationship relationship) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -68,7 +74,6 @@ public class RelationshipREST {
             }
 
             return relationshipStore.create(relationship);
-
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -78,8 +83,7 @@ public class RelationshipREST {
      * Update an existing relationship between entities.
      */
     @PUT
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasRelationship update(AtlasRelationship relationship) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -89,7 +93,6 @@ public class RelationshipREST {
             }
 
             return relationshipStore.update(relationship);
-
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -100,18 +103,26 @@ public class RelationshipREST {
      */
     @GET
     @Path("/guid/{guid}")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasRelationship getById(@PathParam("guid") String guid) throws AtlasBaseException {
+    @Timed
+    public AtlasRelationshipWithExtInfo getById(@PathParam("guid") String guid, @QueryParam("extendedInfo") @DefaultValue("false") boolean extendedInfo) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
         AtlasPerfTracer perf = null;
+
+        AtlasRelationshipWithExtInfo ret;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.getById(" + guid + ")");
             }
 
-            return relationshipStore.getById(guid);
+            if (extendedInfo) {
+                ret = relationshipStore.getExtInfoById(guid);
+            } else {
+                ret = new AtlasRelationshipWithExtInfo(relationshipStore.getById(guid));
+            }
 
+            return ret;
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -122,9 +133,10 @@ public class RelationshipREST {
      */
     @DELETE
     @Path("/guid/{guid}")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public void deleteById(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
         AtlasPerfTracer perf = null;
 
         try {

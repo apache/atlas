@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,11 +22,13 @@ import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -36,9 +38,10 @@ import java.util.zip.ZipOutputStream;
 public class ZipSink {
     private static final Logger LOG = LoggerFactory.getLogger(ZipSink.class);
 
-    private ZipOutputStream zipOutputStream;
-    final Set<String>       guids = new HashSet<>();
+    private static final String FILE_EXTENSION_JSON = ".json";
 
+    final   Set<String>     guids = new HashSet<>();
+    private ZipOutputStream zipOutputStream;
 
     public ZipSink(OutputStream outputStream) {
         zipOutputStream = new ZipOutputStream(outputStream);
@@ -46,40 +49,53 @@ public class ZipSink {
 
     public void add(AtlasEntity entity) throws AtlasBaseException {
         String jsonData = convertToJSON(entity);
+
         saveToZip(entity.getGuid(), jsonData);
         recordAddedEntityGuids(entity);
     }
 
     public void add(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
         String jsonData = convertToJSON(entityWithExtInfo);
+
         saveToZip(entityWithExtInfo.getEntity().getGuid(), jsonData);
         recordAddedEntityGuids(entityWithExtInfo);
     }
 
     public void setResult(AtlasExportResult result) throws AtlasBaseException {
         String jsonData = convertToJSON(result);
+
         saveToZip(ZipExportFileNames.ATLAS_EXPORT_INFO_NAME, jsonData);
     }
 
     public void setTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
         String jsonData = convertToJSON(typesDef);
+
         saveToZip(ZipExportFileNames.ATLAS_TYPESDEF_NAME, jsonData);
     }
 
     public void setExportOrder(List<String> result) throws AtlasBaseException {
         String jsonData = convertToJSON(result);
+
         saveToZip(ZipExportFileNames.ATLAS_EXPORT_ORDER_NAME, jsonData);
     }
 
     public void close() {
         try {
-            if(zipOutputStream != null) {
+            if (zipOutputStream != null) {
                 zipOutputStream.close();
                 zipOutputStream = null;
             }
         } catch (IOException e) {
             LOG.error("Error closing Zip file", e);
         }
+    }
+
+    public boolean hasEntity(String guid) {
+        return guids.contains(guid);
+    }
+
+    public Set<String> getGuids() {
+        return guids;
     }
 
     private String convertToJSON(Object entity) {
@@ -92,28 +108,28 @@ public class ZipSink {
 
     private void saveToZip(String fileName, String jsonData) throws AtlasBaseException {
         try {
-            addToZipStream(fileName.toString() + ".json", jsonData);
+            addToZipStream(fileName + FILE_EXTENSION_JSON, jsonData);
         } catch (IOException e) {
             throw new AtlasBaseException(String.format("Error writing file %s.", fileName), e);
         }
     }
 
     private void addToZipStream(String entryName, String payload) throws IOException {
-
         ZipEntry e = new ZipEntry(entryName);
-        zipOutputStream.putNextEntry(e);
 
-        zipOutputStream.write(payload.getBytes());
+        zipOutputStream.putNextEntry(e);
+        writeBytes(payload);
         zipOutputStream.closeEntry();
     }
 
-    public boolean hasEntity(String guid) {
-        return guids.contains(guid);
+    private void writeBytes(String payload) throws IOException {
+        IOUtils.copy(IOUtils.toInputStream(payload, StandardCharsets.UTF_8), zipOutputStream);
     }
 
     private void recordAddedEntityGuids(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
         guids.add(entityWithExtInfo.getEntity().getGuid());
-        if(entityWithExtInfo.getReferredEntities() != null) {
+
+        if (entityWithExtInfo.getReferredEntities() != null) {
             guids.addAll(entityWithExtInfo.getReferredEntities().keySet());
         }
     }

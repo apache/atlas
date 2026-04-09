@@ -19,7 +19,6 @@
 package org.apache.atlas.setup;
 
 public class SetupException extends Exception {
-
     public SetupException(String message) {
         super(message);
     }

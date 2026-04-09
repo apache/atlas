@@ -1,22 +1,6 @@
-Apache Atlas (incubating)
+Apache Atlas
 
 Copyright [2015-2017] The Apache Software Foundation
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
-
-==============================================================
-
-This product bundles titan 0.5.4(https://github.com/thinkaurelius/titan/blob/titan05):
-
-==============================================================
- Titan: Distributed Graph Database
- Copyright 2012 and onwards Aurelius
-==============================================================
-Titan includes software developed by Aurelius (http://thinkaurelius.com/) and the following individuals:
-
- * Matthias Broecheler
- * Dan LaRocque
- * Marko A. Rodriguez
- * Stephen Mallette
- * Pavel Yaskevich

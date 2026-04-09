@@ -24,7 +24,6 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.commons.collections.CollectionUtils;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -33,14 +32,13 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertEquals;
 
 /**
- *   Unit test of {@link EntityResource}
+ * Unit test of {@link EntityResource}
  */
 public class EntityResourceTest {
-
     private static final String DELETED_GUID = "deleted_guid";
-
 
     @Mock
     AtlasEntityStore entitiesStore;
@@ -52,7 +50,7 @@ public class EntityResourceTest {
 
     @Test
     public void testDeleteEntitiesDoesNotLookupDeletedEntity() throws Exception {
-        List<String> guids = Collections.singletonList(DELETED_GUID);
+        List<String>            guids           = Collections.singletonList(DELETED_GUID);
         List<AtlasEntityHeader> deletedEntities = Collections.singletonList(new AtlasEntityHeader(null, DELETED_GUID, null));
 
         // Create EntityResult with a deleted guid and no other guids.
@@ -71,7 +69,7 @@ public class EntityResourceTest {
 
         List<AtlasEntityHeader> responseDeletedEntities = response.getDeletedEntities();
 
-        Assert.assertEquals(responseDeletedEntities, deletedEntities);
+        assertEquals(responseDeletedEntities, deletedEntities);
     }
 
     private List<AtlasEntityHeader> toAtlasEntityHeaders(List<String> guids) {
@@ -79,6 +77,7 @@ public class EntityResourceTest {
 
         if (CollectionUtils.isNotEmpty(guids)) {
             ret = new ArrayList<>(guids.size());
+
             for (String guid : guids) {
                 ret.add(new AtlasEntityHeader(null, guid, null));
             }

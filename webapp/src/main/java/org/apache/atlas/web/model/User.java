@@ -16,31 +16,40 @@
  */
 package org.apache.atlas.web.model;
 
-import java.util.Collection;
-import java.util.List;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
+import java.util.List;
 
 public class User implements UserDetails {
     private static final long serialVersionUID = 1L;
 
-    private String username;
-    private String password;
+    private String                 username;
+    private String                 password;
     private List<GrantedAuthority> authorities;
-    private boolean accountNonExpired = true;
-    private boolean accountNonLocked = true;
-    private boolean credentialsNonExpired = true;
-    private boolean enabled = true;
+    private boolean                accountNonExpired     = true;
+    private boolean                accountNonLocked      = true;
+    private boolean                credentialsNonExpired = true;
+    private boolean                enabled               = true;
 
-    public User(String userName2, String userPassword,
-            List<GrantedAuthority> grantedAuths) {
-        this.username = userName2;
-        this.password = userPassword;
+    public User(String userName2, String userPassword, List<GrantedAuthority> grantedAuths) {
+        this.username    = userName2;
+        this.password    = userPassword;
         this.authorities = grantedAuths;
-
     }
 
     public User() {
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return this.authorities;
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
     }
 
     @Override
@@ -50,24 +59,6 @@ public class User implements UserDetails {
 
     public void setUsername(String username) {
         this.username = username;
-    }
-
-    @Override
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return this.authorities;
-    }
-
-    public void setAuthorities(List<GrantedAuthority> authorities) {
-        this.authorities = authorities;
     }
 
     @Override
@@ -106,23 +97,28 @@ public class User implements UserDetails {
         this.enabled = enabled;
     }
 
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("User [username=");
-        builder.append(username);
-        builder.append(", authorities=");
-        builder.append(authorities);
-        builder.append(", accountNonExpired=");
-        builder.append(accountNonExpired);
-        builder.append(", accountNonLocked=");
-        builder.append(accountNonLocked);
-        builder.append(", credentialsNonExpired=");
-        builder.append(credentialsNonExpired);
-        builder.append(", enabled=");
-        builder.append(enabled);
-        builder.append("]");
-        return builder.toString();
+    public void setPassword(String password) {
+        this.password = password;
     }
 
+    public void setAuthorities(List<GrantedAuthority> authorities) {
+        this.authorities = authorities;
+    }
+
+    @Override
+    public String toString() {
+        return "User [username=" +
+                username +
+                ", authorities=" +
+                authorities +
+                ", accountNonExpired=" +
+                accountNonExpired +
+                ", accountNonLocked=" +
+                accountNonLocked +
+                ", credentialsNonExpired=" +
+                credentialsNonExpired +
+                ", enabled=" +
+                enabled +
+                "]";
+    }
 }

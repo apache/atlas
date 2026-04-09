@@ -22,8 +22,9 @@ define(['require',
     'utils/CommonViewFunction',
     'utils/Utils',
     'collection/VTagList',
-    'utils/Messages'
-], function(require, Backbone, TagDetailTableLayoutView_tmpl, CommonViewFunction, Utils, VTagList, Messages) {
+    'utils/Messages',
+    'utils/Enums'
+], function(require, Backbone, TagDetailTableLayoutView_tmpl, CommonViewFunction, Utils, VTagList, Messages, Enums) {
     'use strict';
 
     var TagDetailTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -35,15 +36,18 @@ define(['require',
 
             /** Layout sub regions */
             regions: {
-                RTagTermTableLayoutView: "#r_tagTermTableLayoutView"
+                RTagTableLayoutView: "#r_tagTableLayoutView"
             },
 
             /** ui selector cache */
             ui: {
                 detailValue: "[data-id='detailValue']",
+                tagList: "[data-id='tagList']",
                 addTag: "[data-id='addTag']",
                 deleteTag: "[data-id='delete']",
                 editTag: "[data-id='edit']",
+                checkPropagtedTag: "[data-id='checkPropagtedTag']",
+                propagatedFromClick: "[data-id='propagatedFromClick']"
             },
             /** ui events hash */
             events: function() {
@@ -52,11 +56,19 @@ define(['require',
                     this.addModalView(e);
                 };
                 events["click " + this.ui.deleteTag] = function(e) {
-                    this.deleteTagDataModal(e);
+                    this.onClickTagCross(e);
                 };
                 events["click " + this.ui.editTag] = function(e) {
                     this.editTagDataModal(e);
                 };
+                events["click " + this.ui.propagatedFromClick] = function(e) {
+                    Utils.setUrl({
+                        url: '#!/detailPage/' + $(e.currentTarget).data("guid"),
+                        mergeBrowserUrl: false,
+                        trigger: true
+                    });
+                };
+                events["click " + this.ui.checkPropagtedTag] = 'onCheckPropagtedTag';
                 return events;
             },
             /**
@@ -64,31 +76,28 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'entity', 'guid', 'term', 'entityName', 'fetchCollection', 'enumDefCollection', 'classificationDefCollection'));
+                _.extend(this, _.pick(options, 'entity', 'guid', 'tags', 'entityName', 'fetchCollection', 'enumDefCollection', 'classificationDefCollection'));
                 this.collectionObject = this.entity;
-                this.tagTermCollection = new VTagList();
-                var tagorterm = _.toArray(this.collectionObject.classifications),
-                    tagTermList = [],
-                    that = this;
-                _.each(tagorterm, function(object) {
-                    var checkTagOrTerm = Utils.checkTagOrTerm(object);
-                    if (that.term) {
-                        if (checkTagOrTerm.term) {
-                            tagTermList.push(object);
-                        }
-                    } else {
-                        if (checkTagOrTerm.tag) {
-                            tagTermList.push(object);
-                        }
+                this.tagCollection = new VTagList();
+                this.allTags = _.sortBy(_.toArray(this.collectionObject.classifications), "typeName");
+                var paramObj = Utils.getUrlState.getQueryParams();
+                this.value = { tabActive: "classification", showPC: "true", filter: "all" };
+                if (paramObj) {
+                    if (paramObj.showPC) {
+                        this.value.showPC = paramObj.showPC;
                     }
-                });
-                this.tagTermCollection.set(tagTermList);
+                    if (paramObj.filter) {
+                        this.value.filter = paramObj.filter;
+                    }
+                }
                 this.commonTableOptions = {
-                    collection: this.tagTermCollection,
+                    collection: this.tagCollection,
                     includeFilter: false,
                     includePagination: true,
-                    includePageSize: false,
                     includeFooterRecords: true,
+                    includePageSize: true,
+                    includeGotoPage: true,
+                    includeAtlasTableSorting: true,
                     gridOpts: {
                         className: "table table-hover backgrid table-quickMenu",
                         emptyText: 'No records found!'
@@ -99,44 +108,124 @@ define(['require',
             },
             bindEvents: function() {},
             onRender: function() {
+                this.ui.checkPropagtedTag.prop("checked", this.value.showPC === "true");
+                this.renderFilter();
+                if (this.tagNotFound === undefined && this.value.filter === "all") {
+                    this.updateCollection(this.value.filter);
+                }
                 this.renderTableLayoutView();
+            },
+            updateCollection: function(value) {
+                var newList = null
+                if (this.value.showPC === "true") {
+                    if (value === "all") {
+                        newList = this.allTags;
+                    } else {
+                        newList = _.filter(this.allTags, function(obj) {
+                            if (obj.typeName === value) {
+                                return true;
+                            }
+                        });
+                    }
+                } else {
+                    if (value === "all") {
+                        newList = this.tags.self;
+                    } else {
+                        newList = _.filter(this.tags.self, function(obj) {
+                            if (obj.typeName === value) {
+                                return true;
+                            }
+                        });
+                    }
+                }
+                this.tagCollection.fullCollection.reset(newList);
+                if (value) {
+                    this.value["filter"] = value;
+                    this.triggetUrl();
+                }
+            },
+            triggetUrl: function() {
+                var paramObj = Utils.getUrlState.getQueryParams();
+                if (paramObj && paramObj.tabActive === "classification" && paramObj.viewType !== "term") {
+                    Utils.setUrl({
+                        url: '#!/detailPage/' + this.guid,
+                        mergeBrowserUrl: false,
+                        urlParams: this.value,
+                        trigger: false
+                    });
+                }
+            },
+            renderFilter: function() {
+                var tagName = "<option value='all' selected>All</option>",
+                    that = this;
+                if (this.value.showPC === "false") {
+                    _.each(this.tags.self, function(val) {
+                        var typeName = val.typeName;
+                        tagName += '<option value="' + typeName + '">' + typeName + '</option>';
+                    });
+                } else {
+                    _.each(this.tags.combineMap, function(val, key) {
+                        tagName += '<option value="' + key + '">' + key + '</option>';
+                    });
+                }
+                this.ui.tagList.html(tagName);
+                if (this.value.filter && this.ui.tagList.val() !== this.value.filter) {
+                    if (this.ui.tagList.find("option[value='" + this.value.filter + "']").length > 0) {
+                        this.ui.tagList.val(this.value.filter);
+                        this.updateCollection(this.value.filter);
+                    } else {
+                        this.tagNotFound = true;
+                        this.updateCollection("all");
+                    }
+                }
+                this.ui.tagList.select2({ placeholder: "Search for tag" }).on("change", function() {
+                    var value = that.ui.tagList.val();
+                    that.updateCollection(value);
+                });
             },
             renderTableLayoutView: function() {
                 var that = this;
                 require(['utils/TableLayout'], function(TableLayout) {
                     var cols = new Backgrid.Columns(that.getSchemaTableColumns());
-                    that.RTagTermTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
-                        columns: cols
-                    })));
+                    if (that.RTagTableLayoutView) {
+                        that.RTagTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
+                            columns: cols
+                        })));
+                    }
                 });
             },
-            getSchemaTableColumns: function() {
-                var that = this;
-                var col = {};
+            getSchemaTableColumns: function(options) {
+                var that = this,
+                    col = {};
 
-                return this.tagTermCollection.constructor.getTableCols({
-                        TagorTerm: {
-                            label: (this.term) ? "Terms" : "Tags",
-                            cell: "String",
+                return this.tagCollection.constructor.getTableCols({
+                        typeName: {
+                            label: "Classification",
+                            cell: "html",
                             editable: false,
-                            sortable: false,
                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                 fromRaw: function(rawValue, model) {
-                                    return model.get('typeName');
+                                    if (that.guid !== model.get('entityGuid')) {
+                                        var purgeEntityBtn = (Enums.isEntityPurged[model.get('entityStatus')]) ? ' title="Entity not available" disabled' : ' data-id="propagatedFromClick"',
+                                            propagtedFrom = ' <span class="btn btn-action btn-sm btn-icon btn-blue" data-guid=' + model.get('entityGuid') + purgeEntityBtn + '><span> Propagated From </span></span>';
+                                        return '<a title="" href="#!/tag/tagAttribute/' + model.get('typeName') + '">' + model.get('typeName') + '</a>' + propagtedFrom;
+                                    } else {
+                                        return '<a title="' + model.get('typeName') + '" href="#!/tag/tagAttribute/' + model.get('typeName') + '">' + model.get('typeName') + '</a>';
+                                    }
                                 }
                             })
                         },
-                        Attributes: {
+                        attributes: {
                             label: "Attributes",
                             cell: "html",
                             editable: false,
                             sortable: false,
                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                 fromRaw: function(rawValue, model) {
-                                    var values = model.get('attributes');
-                                    var data = that.classificationDefCollection.fullCollection.findWhere({ 'name': model.get('typeName') });
-                                    var attributeDefs = Utils.getNestedSuperTypeObj({ data: data.toJSON(), collection: that.classificationDefCollection, attrMerge: true });
-                                    var tagValue = 'NA',
+                                    var values = model.get('attributes'),
+                                        data = that.classificationDefCollection.fullCollection.findWhere({ 'name': model.get('typeName') }),
+                                        attributeDefs = data ? Utils.getNestedSuperTypeObj({ data: data.toJSON(), collection: that.classificationDefCollection, attrMerge: true }) : null,
+                                        tagValue = 'NA',
                                         dataType;
                                     if (!_.isEmpty(attributeDefs)) {
                                         var stringValue = "";
@@ -146,10 +235,13 @@ define(['require',
                                         }), 'sortKey'), function(sortedObj) {
                                             var val = _.isNull(values[sortedObj.name]) ? "-" : values[sortedObj.name],
                                                 key = sortedObj.name;
-                                            if (sortedObj.typeName === "date") {
-                                                val = new Date(val)
+                                            if (_.isObject(val)) {
+                                                val = JSON.stringify(val);
                                             }
-                                            stringValue += "<tr><td class='html-cell string-cell renderable'>" + _.escape(key) + "</td><td class='html-cell string-cell renderable' data-type=" + sortedObj.typeName + ">" + _.escape(val) + "</td>";
+                                            if (sortedObj.typeName === "date") {
+                                                val = Utils.formatDate({ date: val });
+                                            }
+                                            stringValue += "<tr><td class='html-cell string-cell renderable'>" + _.escape(key) + "</td><td class='html-cell string-cell renderable' data-type='" + sortedObj.typeName + "'>" + _.escape(val) + "</td>";
                                         });
                                         tagValue = "<div class='mainAttrTable'><table class='attriTable'><tr><th class='html-cell string-cell renderable'>Name</th><th class='html-cell string-cell renderable'>Value</th>" + stringValue + "</table></div>";
                                     }
@@ -158,69 +250,48 @@ define(['require',
                             })
                         },
                         tool: {
-                            label: "Tool",
+                            label: "Action",
                             cell: "html",
                             editable: false,
                             sortable: false,
                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                 fromRaw: function(rawValue, model) {
-                                    var deleteData = '<button class="btn btn-atlasAction btn-atlas no-margin-bottom typeLOV" data-id="delete" data-name="' + model.get('typeName') + '"><i class="fa fa-trash"></i></button>',
-                                        editData = '<button class="btn btn-atlasAction btn-atlas no-margin-bottom typeLOV" data-id="edit" data-name="' + model.get('typeName') + '"><i class="fa fa-pencil"></i></button>';
-                                    if (model.get('attributes') === undefined) {
-                                        return deleteData;
-                                    } else {
-                                        return deleteData + editData;
+                                    var deleteData = '<button title="Delete" class="btn btn-action btn-sm" data-id="delete" data-entityguid="' + model.get('entityGuid') + '" data-name="' + model.get('typeName') + '"><i class="fa fa-trash"></i></button>',
+                                        editData = '<button title="Edit" class="btn btn-action btn-sm" data-id="edit" data-name="' + model.get('typeName') + '"><i class="fa fa-pencil"></i></button>',
+                                        btnObj = null;
+                                    if (that.guid === model.get('entityGuid')) {
+                                        return '<div class="btn-inline">' + deleteData + editData + '</div>'
+                                    } else if (that.guid !== model.get('entityGuid') && model.get('entityStatus') === "DELETED") {
+                                        return '<div class="btn-inline">' + deleteData + '</div>';
                                     }
                                 }
                             })
                         },
                     },
-                    this.tagTermCollection);
+                    this.tagCollection);
             },
             addModalView: function(e) {
                 var that = this;
-                require(['views/tag/addTagModalView'], function(AddTagModalView) {
+                require(['views/tag/AddTagModalView'], function(AddTagModalView) {
                     var view = new AddTagModalView({
                         guid: that.guid,
                         modalCollection: that.collection,
+                        collection: that.classificationDefCollection,
                         enumDefCollection: that.enumDefCollection
                     });
-                    // view.saveTagData = function() {
-                    //override saveTagData function
-                    // }
                 });
             },
-            deleteTagDataModal: function(e) {
-                var tagName = $(e.currentTarget).data("name"),
-                    that = this;
-                if (that.term) {
-                    var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.entityName + "?</b></div>",
-                        titleMessage: Messages.removeTerm,
-                        buttonText: "Remove",
-                    });
-                } else {
-                    var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.entityName + "?</b></div>",
-                        titleMessage: Messages.removeTag,
-                        buttonText: "Remove",
-                    });
-                }
-
-                modal.on('ok', function() {
-                    that.deleteTagData(e);
-                });
-                modal.on('closeModal', function() {
-                    modal.trigger('cancel');
-                });
-            },
-            deleteTagData: function(e) {
+            onClickTagCross: function(e) {
                 var that = this,
-                    tagName = $(e.currentTarget).data("name");
+                    tagName = $(e.currentTarget).data("name"),
+                    entityGuid = $(e.currentTarget).data("entityguid");
                 CommonViewFunction.deleteTag({
-                    'tagName': tagName,
-                    'guid': that.guid,
-                    'tagOrTerm': (that.term ? "term" : "tag"),
+                    tagName: tagName,
+                    guid: that.guid,
+                    associatedGuid: that.guid != entityGuid ? entityGuid : null,
+                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from <b>" + this.entityName + "?</b></div>",
+                    titleMessage: Messages.removeTag,
+                    okText: "Remove",
                     showLoader: function() {
                         that.$('.fontLoader').show();
                         that.$('.tableOverlay').show();
@@ -234,26 +305,42 @@ define(['require',
                         if (that.fetchCollection) {
                             that.fetchCollection();
                         }
-
                     }
                 });
             },
             editTagDataModal: function(e) {
                 var that = this,
                     tagName = $(e.currentTarget).data('name'),
-                    tagModel = _.findWhere(that.collectionObject.classifications, { typeName: tagName });
+                    tagModel = _.find(that.collectionObject.classifications, function(tag) {
+                        return (tagName === tag.typeName && that.guid === tag.entityGuid);
+                    });
                 require([
-                    'views/tag/addTagModalView'
+                    'views/tag/AddTagModalView'
                 ], function(AddTagModalView) {
                     var view = new AddTagModalView({
                         'tagModel': tagModel,
-                        callback: function() {
+                        'callback': function() {
                             that.fetchCollection();
                         },
-                        guid: that.guid,
+                        'guid': that.guid,
+                        'collection': that.classificationDefCollection,
                         'enumDefCollection': that.enumDefCollection
                     });
                 });
+            },
+            onCheckPropagtedTag: function(e) {
+                var that = this,
+                    unPropagatedTags = [];
+                e.stopPropagation();
+                if (e.target.checked) {
+                    that.tagCollection.fullCollection.reset(this.allTags);
+                } else {
+                    that.tagCollection.fullCollection.reset(this.tags.self);
+                }
+                this.value.showPC = "" + e.target.checked;
+                this.value.filter = "all";
+                this.triggetUrl();
+                this.renderFilter(e.target.checked);
             }
         });
     return TagDetailTableLayoutView;

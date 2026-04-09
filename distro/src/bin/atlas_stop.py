@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
@@ -42,7 +42,7 @@ def main():
     atlas_pid_file = mc.pidFile(atlas_home)
 
     try:
-        pf = file(atlas_pid_file, 'r')
+        pf = open(atlas_pid_file, 'r')
         pid = int(pf.read().strip())
         pf.close()
     except:
@@ -60,7 +60,7 @@ def main():
 
     mc.wait_for_shutdown(pid, "stopping atlas", 30)
     if not mc.exist_pid(pid):
-        print "Apache Atlas Server stopped!!!\n"
+        print("Apache Atlas Server stopped!!!\n")
 
     # assuming kill worked since process check on windows is more involved...
     if os.path.exists(atlas_pid_file):
@@ -68,7 +68,40 @@ def main():
 
     # stop solr
     if mc.is_solr_local(confdir):
-        mc.run_solr(mc.solrBinDir(atlas_home), "stop", None, mc.solrPort(), None, True)
+        mc.run_solr(mc.solrBinDir(atlas_home), "stop", None, mc.solrPort(), None, True, mc.solrHomeDir(atlas_home))
+
+    if mc.is_zookeeper_local(confdir):
+        mc.run_zookeeper(mc.zookeeperBinDir(atlas_home), "stop")
+
+    # stop elasticsearch
+    if mc.is_elasticsearch_local():
+        logdir = os.path.join(atlas_home, 'logs')
+        elastic_pid_file = os.path.join(logdir, 'elasticsearch.pid')
+        try:
+            pf = open(elastic_pid_file, 'r')
+            pid = int(pf.read().strip())
+            pf.close()
+        except:
+            pid = None
+
+        if not pid:
+            sys.stderr.write("No process ID file found. Elasticsearch not running?\n")
+            return
+
+        if not mc.exist_pid(pid):
+           sys.stderr.write("Elasticsearch no longer running with pid %s\nImproper shutdown?\npid file deleted.\n" %pid)
+           os.remove(elastic_pid_file)
+           return
+
+        os.kill(pid, SIGTERM)
+
+        mc.wait_for_shutdown(pid, "stopping elasticsearch", 30)
+        if not mc.exist_pid(pid):
+            print("Elasticsearch stopped!!!\n")
+
+        # assuming kill worked since process check on windows is more involved...
+        if os.path.exists(elastic_pid_file):
+            os.remove(elastic_pid_file)
 
     # stop hbase
     if mc.is_hbase_local(confdir):
@@ -94,8 +127,8 @@ if __name__ == '__main__':
     try:
         returncode = main()
     except Exception as e:
-        print "Exception: %s " % str(e)
-        print traceback.format_exc()
+        print("Exception: %s " % str(e))
+        print(traceback.format_exc())
         returncode = -1
 
     sys.exit(returncode)

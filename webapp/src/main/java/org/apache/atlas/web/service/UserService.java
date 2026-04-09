@@ -27,7 +27,6 @@ import javax.inject.Inject;
 
 @Service
 public class UserService implements UserDetailsService {
-
     private final UserDao userDao;
 
     @Inject
@@ -36,8 +35,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Override
-    public User loadUserByUsername(final String username)
-            throws UsernameNotFoundException {
+    public User loadUserByUsername(final String username) throws UsernameNotFoundException {
         return userDao.loadUserByUsername(username);
     }
 }

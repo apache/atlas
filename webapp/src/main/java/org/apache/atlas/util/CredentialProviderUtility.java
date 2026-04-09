@@ -16,14 +16,16 @@
  */
 package org.apache.atlas.util;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.atlas.web.dao.UserDao;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
-import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
 
 import java.io.Console;
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -37,20 +39,9 @@ import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_K
  * of the DGC server.
  */
 public class CredentialProviderUtility {
-    private static final String[] KEYS =
-            new String[]{KEYSTORE_PASSWORD_KEY, TRUSTSTORE_PASSWORD_KEY, SERVER_CERT_PASSWORD_KEY};
-
-    public static abstract class TextDevice {
-        public abstract void printf(String fmt, Object... params);
-
-        public abstract String readLine(String fmt, Object... args);
-
-        public abstract char[] readPassword(String fmt, Object... args);
-
-    }
-
-    private static TextDevice DEFAULT_TEXT_DEVICE = new TextDevice() {
-        Console console = System.console();
+    private static final String[]   KEYS                = new String[] {KEYSTORE_PASSWORD_KEY, TRUSTSTORE_PASSWORD_KEY, SERVER_CERT_PASSWORD_KEY};
+    private static final TextDevice DEFAULT_TEXT_DEVICE = new TextDevice() {
+        final Console console = System.console();
 
         @Override
         public void printf(String fmt, Object... params) {
@@ -70,73 +61,155 @@ public class CredentialProviderUtility {
 
     public static TextDevice textDevice = DEFAULT_TEXT_DEVICE;
 
+    private CredentialProviderUtility() {
+        // to block instantiation
+    }
+
     public static void main(String[] args) throws IOException {
+        try {
+            CommandLine cmd                    = new DefaultParser().parse(createOptions(), args);
+            boolean     generatePasswordOption = cmd.hasOption("g");
+            String      key                    = cmd.getOptionValue("k");
+            char[]      cred                   = null;
+            String      providerPath           = cmd.getOptionValue("f");
+
+            if (cmd.hasOption("p")) {
+                cred = cmd.getOptionValue("p").toCharArray();
+            }
+
+            if (generatePasswordOption) {
+                String userName = cmd.getOptionValue("u");
+                String password = cmd.getOptionValue("p");
+
+                if (userName != null && password != null) {
+                    String  encryptedPassword = UserDao.encrypt(password);
+                    boolean silentOption      = cmd.hasOption("s");
+
+                    if (silentOption) {
+                        System.out.println(encryptedPassword);
+                    } else {
+                        System.out.println("Your encrypted password is  : " + encryptedPassword);
+                    }
+                } else {
+                    System.out.println("Please provide username and password as input. Usage: cputil.py -g -u <username> -p <password>");
+                }
+
+                return;
+            }
+
+            if (key != null && cred != null && providerPath != null) {
+                if (!StringUtils.isEmpty(String.valueOf(cred))) {
+                    Configuration conf = new Configuration(false);
+
+                    conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerPath);
+
+                    CredentialProvider provider = CredentialProviderFactory.getProviders(conf).get(0);
+
+                    provider.createCredentialEntry(key, cred);
+                    provider.flush();
+
+                    System.out.println("Password is stored in Credential Provider");
+                } else {
+                    System.out.println("Please enter a valid password");
+                }
+                return;
+            }
+        } catch (Exception e) {
+            System.out.println("Exception while generatePassword  " + e.getMessage());
+            return;
+        }
+
         // prompt for the provider name
         CredentialProvider provider = getCredentialProvider(textDevice);
 
-        if(provider != null) {
-            char[] cred;
+        if (provider != null) {
             for (String key : KEYS) {
-                cred = getPassword(textDevice, key);
+                char[] cred = getPassword(textDevice, key);
+
                 // create a credential entry and store it
-                boolean overwrite = true;
                 if (provider.getCredentialEntry(key) != null) {
-                    String choice = textDevice.readLine("Entry for %s already exists.  Overwrite? (y/n) [y]:", key);
-                    overwrite = StringUtils.isEmpty(choice) || choice.equalsIgnoreCase("y");
+                    String  choice    = textDevice.readLine("Entry for %s already exists.  Overwrite? (y/n) [y]:", key);
+                    boolean overwrite = StringUtils.isEmpty(choice) || choice.equalsIgnoreCase("y");
+
                     if (overwrite) {
                         provider.deleteCredentialEntry(key);
                         provider.flush();
                         provider.createCredentialEntry(key, cred);
                         provider.flush();
+
                         textDevice.printf("Entry for %s was overwritten with the new value.\n", key);
                     } else {
                         textDevice.printf("Entry for %s was not overwritten.\n", key);
                     }
                 } else {
                     provider.createCredentialEntry(key, cred);
+
                     provider.flush();
                 }
             }
         }
     }
 
+    private static Options createOptions() {
+        Options options = new Options();
+
+        options.addOption("k", "ldapkey", true, "key");
+        options.addOption("f", "ldapPath", true, "path");
+        options.addOption("g", "generatePassword", false, "Generate Password");
+        options.addOption("s", "silent", false, "Silent");
+        options.addOption("u", "username", true, "UserName");
+        options.addOption("p", "password", true, "Password");
+
+        return options;
+    }
+
     /**
      * Retrieves a password from the command line.
-     * @param textDevice  the system console.
-     * @param key   the password key/alias.
+     *
+     * @param textDevice the system console.
+     * @param key the password key/alias.
      * @return the password.
      */
     private static char[] getPassword(TextDevice textDevice, String key) {
-        boolean noMatch;
-        char[] cred = new char[0];
-        char[] passwd1;
-        char[] passwd2;
-        do {
-            passwd1 = textDevice.readPassword("Please enter the password value for %s:", key);
-            passwd2 = textDevice.readPassword("Please enter the password value for %s again:", key);
-            noMatch = !Arrays.equals(passwd1, passwd2);
-            if (noMatch) {
-                if (passwd1 != null) {
-                    Arrays.fill(passwd1, ' ');
-                }
+        char[] ret;
+
+        while (true) {
+            char[]  passwd1 = textDevice.readPassword("Please enter the password value for %s:", key);
+            char[]  passwd2 = textDevice.readPassword("Please enter the password value for %s again:", key);
+            boolean isMatch = Arrays.equals(passwd1, passwd2);
+
+            if (!isMatch) {
                 textDevice.printf("Password entries don't match. Please try again.\n");
             } else {
-                if (passwd1.length == 0) {
+                if (passwd1 == null || passwd1.length == 0) {
                     textDevice.printf("An empty password is not valid.  Please try again.\n");
-                    noMatch = true;
                 } else {
-                    cred = passwd1;
+                    ret = passwd1;
+
+                    if (passwd2 != null) {
+                        Arrays.fill(passwd2, ' ');
+                    }
+
+                    break;
                 }
             }
+
+            if (passwd1 != null) {
+                Arrays.fill(passwd1, ' ');
+            }
+
             if (passwd2 != null) {
                 Arrays.fill(passwd2, ' ');
             }
-        } while (noMatch);
-        return cred;
+        }
+
+        return ret;
     }
 
-    /**\
+    /**
+     * \
      * Returns a credential provider for the entered JKS path.
+     *
      * @param textDevice the system console.
      * @return the Credential provider
      * @throws IOException
@@ -146,10 +219,20 @@ public class CredentialProviderUtility {
 
         if (providerPath != null) {
             Configuration conf = new Configuration(false);
+
             conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerPath);
+
             return CredentialProviderFactory.getProviders(conf).get(0);
         }
 
         return null;
+    }
+
+    public abstract static class TextDevice {
+        public abstract void printf(String fmt, Object... params);
+
+        public abstract String readLine(String fmt, Object... args);
+
+        public abstract char[] readPassword(String fmt, Object... args);
     }
 }

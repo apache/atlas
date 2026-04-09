@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,21 +18,20 @@
 package org.apache.atlas.repository.converters;
 
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.typesystem.IReferenceableInstance;
-import org.apache.atlas.typesystem.IStruct;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.persistence.Id.EntityState;
+import org.apache.atlas.v1.model.instance.AtlasSystemAttributes;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -51,43 +50,50 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
     }
 
     @Override
+    public boolean isValidValueV1(Object v1Obj, AtlasType type) {
+        boolean ret = (v1Obj == null) || v1Obj instanceof Id || v1Obj instanceof Referenceable;
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("AtlasEntityFormatConverter.isValidValueV1(type={}, value={}): {}", (v1Obj != null ? v1Obj.getClass().getCanonicalName() : null), v1Obj, ret);
+        }
+
+        return ret;
+    }
+
+    @Override
     public AtlasEntity fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext context) throws AtlasBaseException {
         AtlasEntity entity = null;
 
         if (v1Obj != null) {
             AtlasEntityType entityType = (AtlasEntityType) type;
 
-            if (v1Obj instanceof IReferenceableInstance) {
-                IReferenceableInstance entRef = (IReferenceableInstance) v1Obj;
+            if (v1Obj instanceof Referenceable) {
+                Referenceable entRef = (Referenceable) v1Obj;
 
-                String guid = entRef.getId()._getId();
+                String guid = entRef.getId().getId();
 
                 if (!context.entityExists(guid)) {
-                    Map<String, Object> v1Attribs = null;
+                    entity = new AtlasEntity(entRef.getTypeName(), super.fromV1ToV2(entityType, entRef.getValues(), context));
 
-                    try {
-                        v1Attribs = entRef.getValuesMap();
-                    } catch (AtlasException excp) {
-                        LOG.error("IReferenceableInstance.getValuesMap() failed", excp);
+                    entity.setGuid(entRef.getId().getId());
+                    entity.setStatus(convertState(entRef.getId().getState()));
+
+                    if (entRef.getSystemAttributes() != null) {
+                        entity.setCreatedBy(entRef.getSystemAttributes().getCreatedBy());
+                        entity.setCreateTime(entRef.getSystemAttributes().getCreatedTime());
+                        entity.setUpdatedBy(entRef.getSystemAttributes().getModifiedBy());
+                        entity.setUpdateTime(entRef.getSystemAttributes().getModifiedTime());
                     }
 
-                    entity = new AtlasEntity(entRef.getTypeName(),
-                                                         super.fromV1ToV2(entityType, v1Attribs, context));
-                    entity.setGuid(entRef.getId()._getId());
-                    entity.setStatus(convertState(entRef.getId().getState()));
-                    entity.setCreatedBy(entRef.getSystemAttributes().createdBy);
-                    entity.setCreateTime(entRef.getSystemAttributes().createdTime);
-                    entity.setUpdatedBy(entRef.getSystemAttributes().modifiedBy);
-                    entity.setUpdateTime(entRef.getSystemAttributes().modifiedTime);
-                    entity.setVersion((long) entRef.getId().version);
+                    entity.setVersion((long) entRef.getId().getVersion());
 
-                    if (CollectionUtils.isNotEmpty(entRef.getTraits())) {
+                    if (CollectionUtils.isNotEmpty(entRef.getTraitNames())) {
                         List<AtlasClassification> classifications = new ArrayList<>();
-                        AtlasFormatConverter traitConverter = converterRegistry.getConverter(TypeCategory.CLASSIFICATION);
+                        AtlasFormatConverter      traitConverter  = converterRegistry.getConverter(TypeCategory.CLASSIFICATION);
 
-                        for (String traitName : entRef.getTraits()) {
-                            IStruct trait = entRef.getTrait(traitName);
-                            AtlasType classifiType = typeRegistry.getType(traitName);
+                        for (String traitName : entRef.getTraitNames()) {
+                            Struct              trait          = entRef.getTraits().get(traitName);
+                            AtlasType           classifiType   = typeRegistry.getType(traitName);
                             AtlasClassification classification = (AtlasClassification) traitConverter.fromV1ToV2(trait, classifiType, context);
 
                             classifications.add(classification);
@@ -95,24 +101,13 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
 
                         entity.setClassifications(classifications);
                     }
-                } else {
-                    entity = context.getById(guid);
                 }
             } else {
-                throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, "IReferenceableInstance",
-                                             v1Obj.getClass().getCanonicalName());
+                throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, "Referenceable",
+                        v1Obj.getClass().getCanonicalName());
             }
         }
         return entity;
-    }
-
-    private Status convertState(EntityState state){
-        Status status = Status.ACTIVE;
-        if(state != null && state.equals(EntityState.DELETED)){
-            status = Status.DELETED;
-        }
-        LOG.debug("Setting state to {}", state);
-        return status;
     }
 
     @Override
@@ -123,15 +118,15 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
             AtlasEntityType entityType = (AtlasEntityType) type;
 
             if (v2Obj instanceof Map) {
-                Map    v2Map    = (Map) v2Obj;
-                String idStr    = (String)v2Map.get(AtlasObjectId.KEY_GUID);
-                String typeName = type.getTypeName();
+                Map<?, ?> v2Map    = (Map<?, ?>) v2Obj;
+                String    idStr    = (String) v2Map.get(AtlasObjectId.KEY_GUID);
+                String    typeName = type.getTypeName();
 
                 if (StringUtils.isEmpty(idStr)) {
                     throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
                 }
 
-                final Map v2Attribs = (Map) v2Map.get(ATTRIBUTES_PROPERTY_KEY);
+                final Map<String, Object> v2Attribs = (Map<String, Object>) v2Map.get(ATTRIBUTES_PROPERTY_KEY);
 
                 if (MapUtils.isEmpty(v2Attribs)) {
                     ret = new Id(idStr, 0, typeName);
@@ -140,22 +135,49 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
                 }
             } else if (v2Obj instanceof AtlasEntity) {
                 AtlasEntity entity = (AtlasEntity) v2Obj;
+                Status      status = entity.getStatus();
 
-                ret = new Referenceable(entity.getGuid(), entity.getTypeName(),
-                                        fromV2ToV1(entityType, entity.getAttributes(), context));
+                if (status == null) {
+                    status = Status.ACTIVE;
+                }
 
+                final Map<String, Object> v2Attribs = entity.getAttributes();
+
+                Referenceable referenceable = new Referenceable(entity.getGuid(), entity.getTypeName(), status.name(),
+                        fromV2ToV1(entityType, v2Attribs, context),
+                        new AtlasSystemAttributes(entity.getCreatedBy(), entity.getUpdatedBy(), entity.getCreateTime(), entity.getUpdateTime()));
+
+                if (CollectionUtils.isNotEmpty(entity.getClassifications())) {
+                    for (AtlasClassification classification : entity.getClassifications()) {
+                        String                  traitName          = classification.getTypeName();
+                        AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(traitName);
+                        AtlasFormatConverter    formatConverter    = classificationType != null ? converterRegistry.getConverter(classificationType.getTypeCategory()) : null;
+                        Struct                  trait              = formatConverter != null ? (Struct) formatConverter.fromV2ToV1(classification, classificationType, context) : null;
+
+                        if (trait != null) {
+                            referenceable.getTraitNames().add(trait.getTypeName());
+                            referenceable.getTraits().put(trait.getTypeName(), trait);
+                        }
+                    }
+                }
+
+                ret = referenceable;
             } else if (v2Obj instanceof AtlasObjectId) { // transient-id
                 AtlasEntity entity = context.getById(((AtlasObjectId) v2Obj).getGuid());
-                if ( entity == null) {
+                if (entity == null) {
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Could not find entity ",
-                        v2Obj.toString());
+                            v2Obj.toString());
                 }
                 ret = this.fromV2ToV1(entity, typeRegistry.getType(((AtlasObjectId) v2Obj).getTypeName()), context);
             } else {
                 throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, "Map or AtlasEntity or String",
-                                             v2Obj.getClass().getCanonicalName());
+                        v2Obj.getClass().getCanonicalName());
             }
         }
         return ret;
+    }
+
+    private Status convertState(Id.EntityState state) {
+        return (state != null && state.equals(Id.EntityState.DELETED)) ? Status.DELETED : Status.ACTIVE;
     }
 }

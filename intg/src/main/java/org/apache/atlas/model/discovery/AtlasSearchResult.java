@@ -17,28 +17,29 @@
  */
 package org.apache.atlas.model.discovery;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AtlasSearchResult implements Serializable {
     private AtlasQueryType                 queryType;
@@ -47,11 +48,15 @@ public class AtlasSearchResult implements Serializable {
     private String                         type;
     private String                         classification;
     private List<AtlasEntityHeader>        entities;
+    private List<AtlasRelationshipHeader>  relations;
     private AttributeSearchResult          attributes;
     private List<AtlasFullTextResult>      fullTextResult;
     private Map<String, AtlasEntityHeader> referredEntities;
+    private long                           approximateCount = -1;
+    private String                         nextMarker;
 
-    public AtlasSearchResult() {}
+    public AtlasSearchResult() {
+    }
 
     public AtlasSearchResult(AtlasQueryType queryType) {
         this(null, queryType);
@@ -62,6 +67,7 @@ public class AtlasSearchResult implements Serializable {
         setQueryType(queryType);
         setSearchParameters(null);
         setEntities(null);
+        setRelations(null);
         setAttributes(null);
         setFullTextResult(null);
         setReferredEntities(null);
@@ -74,15 +80,20 @@ public class AtlasSearchResult implements Serializable {
             setQueryText(searchParameters.getQuery());
             setSearchParameters(searchParameters);
             setEntities(null);
+            setRelations(null);
             setAttributes(null);
             setFullTextResult(null);
             setReferredEntities(null);
         }
     }
 
-    public AtlasQueryType getQueryType() { return queryType; }
+    public AtlasQueryType getQueryType() {
+        return queryType;
+    }
 
-    public void setQueryType(AtlasQueryType queryType) { this.queryType = queryType; }
+    public void setQueryType(AtlasQueryType queryType) {
+        this.queryType = queryType;
+    }
 
     public SearchParameters getSearchParameters() {
         return searchParameters;
@@ -92,29 +103,61 @@ public class AtlasSearchResult implements Serializable {
         this.searchParameters = searchParameters;
     }
 
-    public String getQueryText() { return queryText; }
+    public String getQueryText() {
+        return queryText;
+    }
 
-    public void setQueryText(String queryText) { this.queryText = queryText; }
+    public void setQueryText(String queryText) {
+        this.queryText = queryText;
+    }
 
-    public String getType() { return type; }
+    public String getType() {
+        return type;
+    }
 
-    public void setType(String type) { this.type = type; }
+    public void setType(String type) {
+        this.type = type;
+    }
 
-    public String getClassification() { return classification; }
+    public String getClassification() {
+        return classification;
+    }
 
-    public void setClassification(String classification) { this.classification = classification; }
+    public void setClassification(String classification) {
+        this.classification = classification;
+    }
 
-    public List<AtlasEntityHeader> getEntities() { return entities; }
+    public List<AtlasEntityHeader> getEntities() {
+        return entities;
+    }
 
-    public void setEntities(List<AtlasEntityHeader> entities) { this.entities = entities; }
+    public void setEntities(List<AtlasEntityHeader> entities) {
+        this.entities = entities;
+    }
 
-    public AttributeSearchResult getAttributes() { return attributes; }
+    public List<AtlasRelationshipHeader> getRelations() {
+        return relations;
+    }
 
-    public void setAttributes(AttributeSearchResult attributes) { this.attributes = attributes; }
+    public void setRelations(List<AtlasRelationshipHeader> relations) {
+        this.relations = relations;
+    }
 
-    public List<AtlasFullTextResult> getFullTextResult() { return fullTextResult; }
+    public AttributeSearchResult getAttributes() {
+        return attributes;
+    }
 
-    public void setFullTextResult(List<AtlasFullTextResult> fullTextResult) { this.fullTextResult = fullTextResult; }
+    public void setAttributes(AttributeSearchResult attributes) {
+        this.attributes = attributes;
+    }
+
+    public List<AtlasFullTextResult> getFullTextResult() {
+        return fullTextResult;
+    }
+
+    public void setFullTextResult(List<AtlasFullTextResult> fullTextResult) {
+        this.fullTextResult = fullTextResult;
+    }
 
     public Map<String, AtlasEntityHeader> getReferredEntities() {
         return referredEntities;
@@ -124,23 +167,66 @@ public class AtlasSearchResult implements Serializable {
         this.referredEntities = referredEntities;
     }
 
+    public long getApproximateCount() {
+        return approximateCount;
+    }
+
+    public void setApproximateCount(long approximateCount) {
+        this.approximateCount = approximateCount;
+    }
+
+    public String getNextMarker() {
+        return nextMarker;
+    }
+
+    public void setNextMarker(String nextMarker) {
+        this.nextMarker = nextMarker;
+    }
+
     @Override
-    public int hashCode() { return Objects.hash(queryType, searchParameters, queryText, type, classification, entities, attributes, fullTextResult, referredEntities); }
+    public int hashCode() {
+        return Objects.hash(queryType, searchParameters, queryText, type, classification, entities, relations, attributes, fullTextResult, referredEntities, nextMarker);
+    }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
         AtlasSearchResult that = (AtlasSearchResult) o;
+
         return Objects.equals(queryType, that.queryType) &&
-               Objects.equals(searchParameters, that.searchParameters) &&
-               Objects.equals(queryText, that.queryText) &&
-               Objects.equals(type, that.type) &&
-               Objects.equals(classification, that.classification) &&
-               Objects.equals(entities, that.entities) &&
-               Objects.equals(attributes, that.attributes) &&
-               Objects.equals(fullTextResult, that.fullTextResult) &&
-               Objects.equals(referredEntities, that.referredEntities);
+                Objects.equals(searchParameters, that.searchParameters) &&
+                Objects.equals(queryText, that.queryText) &&
+                Objects.equals(type, that.type) &&
+                Objects.equals(classification, that.classification) &&
+                Objects.equals(entities, that.entities) &&
+                Objects.equals(relations, that.relations) &&
+                Objects.equals(attributes, that.attributes) &&
+                Objects.equals(fullTextResult, that.fullTextResult) &&
+                Objects.equals(referredEntities, that.referredEntities) &&
+                Objects.equals(nextMarker, that.nextMarker);
+    }
+
+    @Override
+    public String toString() {
+        return "AtlasSearchResult{" +
+                "queryType=" + queryType +
+                ", searchParameters='" + searchParameters + '\'' +
+                ", queryText='" + queryText + '\'' +
+                ", type=" + type +
+                ", classification=" + classification +
+                ", entities=" + entities +
+                ", relations=" + relations +
+                ", attributes=" + attributes +
+                ", fullTextResult=" + fullTextResult +
+                ", referredEntities=" + referredEntities +
+                ", approximateCount=" + approximateCount +
+                ", nextMarker=" + nextMarker +
+                '}';
     }
 
     public void addEntity(AtlasEntityHeader newEntity) {
@@ -160,35 +246,35 @@ public class AtlasSearchResult implements Serializable {
         List<AtlasEntityHeader> entities = this.entities;
 
         if (CollectionUtils.isNotEmpty(entities)) {
-            Iterator<AtlasEntityHeader> iter = entities.iterator();
-            while (iter.hasNext()) {
-                AtlasEntityHeader currEntity = iter.next();
-                if (StringUtils.equals(currEntity.getGuid(), entity.getGuid())) {
-                    iter.remove();
-                }
-            }
+            entities.removeIf(currEntity -> StringUtils.equals(currEntity.getGuid(), entity.getGuid()));
         }
     }
 
-    @Override
-    public String toString() {
-        return "AtlasSearchResult{" +
-                "queryType=" + queryType +
-                ", searchParameters='" + searchParameters + '\'' +
-                ", queryText='" + queryText + '\'' +
-                ", type=" + type +
-                ", classification=" + classification +
-                ", entities=" + entities +
-                ", attributes=" + attributes +
-                ", fullTextResult=" + fullTextResult +
-                ", referredEntities=" + referredEntities +
-                '}';
+    public void addRelation(AtlasRelationshipHeader relation) {
+        if (relations == null) {
+            relations = new ArrayList<>();
+        }
+
+        if (relations.isEmpty()) {
+            relations.add(relation);
+        } else {
+            removeRelation(relation);
+            relations.add(relation);
+        }
     }
 
-    public enum AtlasQueryType { DSL, FULL_TEXT, GREMLIN, BASIC, ATTRIBUTE }
+    public void removeRelation(AtlasRelationshipHeader relation) {
+        List<AtlasRelationshipHeader> relations = this.relations;
+
+        if (CollectionUtils.isNotEmpty(relations)) {
+            relations.removeIf(currEntity -> StringUtils.equals(currEntity.getGuid(), relation.getGuid()));
+        }
+    }
+
+    public enum AtlasQueryType { DSL, FULL_TEXT, GREMLIN, BASIC, ATTRIBUTE, RELATIONSHIP }
 
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
@@ -196,44 +282,60 @@ public class AtlasSearchResult implements Serializable {
         private List<String>       name;
         private List<List<Object>> values;
 
-        public AttributeSearchResult() { }
+        public AttributeSearchResult() {
+        }
 
         public AttributeSearchResult(List<String> name, List<List<Object>> values) {
-            this.name = name;
+            this.name   = name;
             this.values = values;
         }
 
-        public List<String> getName() { return name; }
+        public List<String> getName() {
+            return name;
+        }
 
-        public void setName(List<String> name) { this.name = name; }
+        public void setName(List<String> name) {
+            this.name = name;
+        }
 
-        public List<List<Object>> getValues() { return values; }
+        public List<List<Object>> getValues() {
+            return values;
+        }
 
-        public void setValues(List<List<Object>> values) { this.values = values; }
+        public void setValues(List<List<Object>> values) {
+            this.values = values;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, values);
+        }
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o) {
+                return true;
+            } else if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
             AttributeSearchResult that = (AttributeSearchResult) o;
+
             return Objects.equals(name, that.name) &&
                     Objects.equals(values, that.values);
         }
 
         @Override
-        public int hashCode() { return Objects.hash(name, values); }
-
-        @Override
         public String toString() {
             return "AttributeSearchResult{" +
-                    "name="   + name + ", " +
+                    "name=" + name + ", " +
                     "values=" + values +
                     '}';
         }
     }
 
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
@@ -241,32 +343,48 @@ public class AtlasSearchResult implements Serializable {
         AtlasEntityHeader entity;
         Double            score;
 
-        public AtlasFullTextResult() {}
+        public AtlasFullTextResult() {
+        }
 
         public AtlasFullTextResult(AtlasEntityHeader entity, Double score) {
             this.entity = entity;
             this.score  = score;
         }
 
-        public AtlasEntityHeader getEntity() { return entity; }
+        public AtlasEntityHeader getEntity() {
+            return entity;
+        }
 
-        public void setEntity(AtlasEntityHeader entity) { this.entity = entity; }
+        public void setEntity(AtlasEntityHeader entity) {
+            this.entity = entity;
+        }
 
-        public Double getScore() { return score; }
+        public Double getScore() {
+            return score;
+        }
 
-        public void setScore(Double score) { this.score = score; }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            AtlasFullTextResult that = (AtlasFullTextResult) o;
-            return Objects.equals(entity, that.entity) &&
-                   Objects.equals(score, that.score);
+        public void setScore(Double score) {
+            this.score = score;
         }
 
         @Override
-        public int hashCode() { return Objects.hash(entity, score); }
+        public int hashCode() {
+            return Objects.hash(entity, score);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            } else if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            AtlasFullTextResult that = (AtlasFullTextResult) o;
+
+            return Objects.equals(entity, that.entity) &&
+                    Objects.equals(score, that.score);
+        }
 
         @Override
         public String toString() {

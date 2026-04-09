@@ -16,23 +16,36 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
-        <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>0.9-SNAPSHOT</version>
+        <artifactId>apache-atlas</artifactId>
+        <version>3.0.0-SNAPSHOT</version>
     </parent>
+
     <artifactId>atlas-notification</artifactId>
-    <description>Apache Atlas Notification</description>
-    <name>Apache Atlas Notification</name>
     <packaging>jar</packaging>
 
+    <name>Apache Atlas Notification</name>
+    <description>Apache Atlas Notification</description>
+
+    <properties>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
+    </properties>
+
     <dependencies>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-client</artifactId>
+            <artifactId>atlas-client-v1</artifactId>
         </dependency>
 
         <dependency>
@@ -41,13 +54,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-server-api</artifactId>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang3.version}</version>
         </dependency>
 
         <dependency>
@@ -57,12 +66,7 @@
 
         <dependency>
             <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_${scala.binary.version}</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
+            <artifactId>kafka_${kafka.scala.binary.version}</artifactId>
         </dependency>
 
         <dependency>
@@ -71,13 +75,20 @@
         </dependency>
 
         <dependency>
-            <groupId>com.101tec</groupId>
-            <artifactId>zkclient</artifactId>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
+            <artifactId>atlas-client-v2</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-intg</artifactId>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
@@ -92,10 +103,10 @@
                 <executions>
                     <execution>
                         <id>copy-hook-dependencies</id>
-                        <phase>package</phase>
                         <goals>
                             <goal>copy</goal>
                         </goals>
+                        <phase>package</phase>
                         <configuration>
                             <outputDirectory>${project.build.directory}/dependency/hook/kafka-topic-setup</outputDirectory>
                             <overWriteReleases>false</overWriteReleases>
@@ -128,11 +139,6 @@
                                     <version>${commons-collections.version}</version>
                                 </artifactItem>
                                 <artifactItem>
-                                    <groupId>commons-lang</groupId>
-                                    <artifactId>commons-lang</artifactId>
-                                    <version>${commons-lang.version}</version>
-                                </artifactItem>
-                                <artifactItem>
                                     <groupId>org.apache.hadoop</groupId>
                                     <artifactId>hadoop-common</artifactId>
                                     <version>${hadoop.version}</version>
@@ -153,44 +159,14 @@
                                     <version>${slf4j.version}</version>
                                 </artifactItem>
                                 <artifactItem>
-                                    <groupId>log4j</groupId>
-                                    <artifactId>log4j</artifactId>
-                                    <version>1.2.17</version>
-                                </artifactItem>
-                                <artifactItem>
                                     <groupId>org.apache.kafka</groupId>
-                                    <artifactId>kafka_${scala.binary.version}</artifactId>
+                                    <artifactId>kafka_${kafka.scala.binary.version}</artifactId>
                                     <version>${kafka.version}</version>
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.apache.kafka</groupId>
                                     <artifactId>kafka-clients</artifactId>
                                     <version>${kafka.version}</version>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.scala-lang</groupId>
-                                    <artifactId>scala-compiler</artifactId>
-                                    <version>${scala.version}</version>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.scala-lang</groupId>
-                                    <artifactId>scala-reflect</artifactId>
-                                    <version>${scala.version}</version>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.scala-lang</groupId>
-                                    <artifactId>scala-library</artifactId>
-                                    <version>${scala.version}</version>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.scala-lang</groupId>
-                                    <artifactId>scalap</artifactId>
-                                    <version>${scala.version}</version>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>com.101tec</groupId>
-                                    <artifactId>zkclient</artifactId>
-                                    <version>${zkclient.version}</version>
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.apache.zookeeper</groupId>

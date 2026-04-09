@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,14 +28,15 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class HAConfigurationTest {
-
-    private static final String[] TEST_ATLAS_SERVER_IDS_HA = new String[] { "id1", "id2" };
+    private static final String[] TEST_ATLAS_SERVER_IDS_HA = new String[] {"id1", "id2"};
 
     @Mock
     private Configuration configuration;
@@ -43,6 +44,7 @@ public class HAConfigurationTest {
     @BeforeMethod
     public void setup() {
         MockitoAnnotations.initMocks(this);
+
         System.setProperty(AtlasConstants.SYSTEM_PROPERTY_APP_PORT, AtlasConstants.DEFAULT_APP_PORT_STR);
     }
 
@@ -68,14 +70,14 @@ public class HAConfigurationTest {
         assertTrue(isHAEnabled);
 
         // restore
-        when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] { "id1"});
+        when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1"});
         isHAEnabled = HAConfiguration.isHAEnabled(configuration);
         assertFalse(isHAEnabled);
     }
 
     @Test
     public void testShouldReturnHTTPSBoundAddress() {
-        when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:21443");
+        when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX + "id1")).thenReturn("127.0.0.1:21443");
         when(configuration.getBoolean(SecurityProperties.TLS_ENABLED)).thenReturn(true);
 
         String address = HAConfiguration.getBoundAddressForId(configuration, "id1");
@@ -86,8 +88,8 @@ public class HAConfigurationTest {
     @Test
     public void testShouldReturnListOfAddressesInConfig() {
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(TEST_ATLAS_SERVER_IDS_HA);
-        when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:21000");
-        when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id2")).thenReturn("127.0.0.1:31000");
+        when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX + "id1")).thenReturn("127.0.0.1:21000");
+        when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX + "id2")).thenReturn("127.0.0.1:31000");
 
         List<String> serverInstances = HAConfiguration.getServerInstances(configuration);
         assertEquals(serverInstances.size(), 2);
@@ -99,8 +101,7 @@ public class HAConfigurationTest {
     public void testShouldGetZookeeperAcl() {
         when(configuration.getString(HAConfiguration.HA_ZOOKEEPER_ACL)).thenReturn("sasl:myclient@EXAMPLE.COM");
 
-        HAConfiguration.ZookeeperProperties zookeeperProperties =
-                HAConfiguration.getZookeeperProperties(configuration);
+        HAConfiguration.ZookeeperProperties zookeeperProperties = HAConfiguration.getZookeeperProperties(configuration);
         assertTrue(zookeeperProperties.hasAcl());
     }
 
@@ -108,8 +109,27 @@ public class HAConfigurationTest {
     public void testShouldGetZookeeperAuth() {
         when(configuration.getString(HAConfiguration.HA_ZOOKEEPER_AUTH)).thenReturn("sasl:myclient@EXAMPLE.COM");
 
-        HAConfiguration.ZookeeperProperties zookeeperProperties =
-                HAConfiguration.getZookeeperProperties(configuration);
+        HAConfiguration.ZookeeperProperties zookeeperProperties = HAConfiguration.getZookeeperProperties(configuration);
         assertTrue(zookeeperProperties.hasAuth());
+    }
+
+    @Test
+    public void testShouldGetZookeeperConnectStringFromHAConfig() {
+        when(configuration.containsKey(HAConfiguration.HA_ZOOKEEPER_CONNECT)).thenReturn(true);
+        when(configuration.getStringArray(HAConfiguration.HA_ZOOKEEPER_CONNECT)).thenReturn(new String[] {"zk1:2181", "zk2:2181"});
+
+        HAConfiguration.ZookeeperProperties zookeeperProperties = HAConfiguration.getZookeeperProperties(configuration);
+
+        assertEquals(zookeeperProperties.getConnectString(), "zk1:2181,zk2:2181");
+    }
+
+    @Test
+    public void testShouldReturnEmptyZookeeperConnectStringWhenMissing() {
+        when(configuration.containsKey(HAConfiguration.HA_ZOOKEEPER_CONNECT)).thenReturn(false);
+
+        HAConfiguration.ZookeeperProperties zookeeperProperties = HAConfiguration.getZookeeperProperties(configuration);
+
+        assertEquals(zookeeperProperties.getConnectString(), "");
+        verify(configuration, never()).getStringArray("atlas.kafka." + HAConfiguration.ZOOKEEPER_PREFIX + "connect");
     }
 }

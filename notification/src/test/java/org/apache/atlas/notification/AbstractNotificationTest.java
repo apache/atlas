@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,92 +19,133 @@
 package org.apache.atlas.notification;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.notification.hook.HookNotification;
+import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.model.notification.HookNotification.HookNotificationType;
+import org.apache.atlas.model.notification.MessageSource;
+import org.apache.atlas.notification.NotificationInterface.NotificationType;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;
-import org.testng.annotations.Test;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.Mockito.mock;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
 
 /**
  * AbstractNotification tests.
  */
 public class AbstractNotificationTest {
-
-    @Test
+    @org.testng.annotations.Test
     public void testSend() throws Exception {
-        Configuration configuration = mock(Configuration.class);
+        MessageSource    source        = new MessageSource();
+        Configuration    configuration = mock(Configuration.class);
+        TestNotification notification  = new TestNotification(configuration);
+        Test             message1      = new Test(HookNotificationType.ENTITY_CREATE, "user1");
+        Test             message2      = new Test(HookNotificationType.TYPE_CREATE, "user1");
+        Test             message3      = new Test(HookNotificationType.ENTITY_FULL_UPDATE, "user1");
+        List<String>     messageJson   = new ArrayList<>();
 
-        TestNotification notification = new TestNotification(configuration);
+        AbstractNotification.createNotificationMessages(message1, messageJson, source);
+        AbstractNotification.createNotificationMessages(message2, messageJson, source);
+        AbstractNotification.createNotificationMessages(message3, messageJson, source);
 
-        TestMessage message1 = new TestMessage(HookNotification.HookNotificationType.ENTITY_CREATE, "user1");
-        TestMessage message2 = new TestMessage(HookNotification.HookNotificationType.TYPE_CREATE, "user1");
-        TestMessage message3 = new TestMessage(HookNotification.HookNotificationType.ENTITY_FULL_UPDATE, "user1");
+        notification.send(NotificationType.HOOK, message1, message2, message3);
 
-        String messageJson1 = AbstractNotification.getMessageJson(message1);
-        String messageJson2 = AbstractNotification.getMessageJson(message2);
-        String messageJson3 = AbstractNotification.getMessageJson(message3);
+        assertEquals(notification.type, NotificationType.HOOK);
+        assertEquals(notification.messages.size(), 3);
 
-        notification.send(NotificationInterface.NotificationType.HOOK, message1, message2, message3);
-
-        assertEquals(NotificationInterface.NotificationType.HOOK, notification.type);
-        assertEquals(3, notification.messages.length);
-        assertEquals(messageJson1, notification.messages[0]);
-        assertEquals(messageJson2, notification.messages[1]);
-        assertEquals(messageJson3, notification.messages[2]);
+        for (int i = 0; i < notification.messages.size(); i++) {
+            assertEqualsMessageJson(notification.messages.get(i), messageJson.get(i));
+        }
     }
 
-    @Test
+    @org.testng.annotations.Test
     public void testSend2() throws Exception {
-        Configuration configuration = mock(Configuration.class);
+        MessageSource    source        = new MessageSource();
+        Configuration    configuration = mock(Configuration.class);
+        TestNotification notification  = new TestNotification(configuration);
+        Test             message1      = new Test(HookNotificationType.ENTITY_CREATE, "user1");
+        Test             message2      = new Test(HookNotificationType.TYPE_CREATE, "user1");
+        Test             message3      = new Test(HookNotificationType.ENTITY_FULL_UPDATE, "user1");
+        List<Test>       messages      = Arrays.asList(message1, message2, message3);
+        List<String>     messageJson   = new ArrayList<>();
 
-        TestNotification notification = new TestNotification(configuration);
+        AbstractNotification.createNotificationMessages(message1, messageJson, source);
+        AbstractNotification.createNotificationMessages(message2, messageJson, source);
+        AbstractNotification.createNotificationMessages(message3, messageJson, source);
 
-        TestMessage message1 = new TestMessage(HookNotification.HookNotificationType.ENTITY_CREATE, "user1");
-        TestMessage message2 = new TestMessage(HookNotification.HookNotificationType.TYPE_CREATE, "user1");
-        TestMessage message3 = new TestMessage(HookNotification.HookNotificationType.ENTITY_FULL_UPDATE, "user1");
+        notification.send(NotificationInterface.NotificationType.HOOK, messages, source);
 
-        List<TestMessage> messages = new LinkedList<>();
-        messages.add(message1);
-        messages.add(message2);
-        messages.add(message3);
+        assertEquals(notification.type, NotificationType.HOOK);
+        assertEquals(notification.messages.size(), messageJson.size());
 
-        String messageJson1 = AbstractNotification.getMessageJson(message1);
-        String messageJson2 = AbstractNotification.getMessageJson(message2);
-        String messageJson3 = AbstractNotification.getMessageJson(message3);
-
-        notification.send(NotificationInterface.NotificationType.HOOK, messages);
-
-        assertEquals(NotificationInterface.NotificationType.HOOK, notification.type);
-        assertEquals(3, notification.messages.length);
-        assertEquals(messageJson1, notification.messages[0]);
-        assertEquals(messageJson2, notification.messages[1]);
-        assertEquals(messageJson3, notification.messages[2]);
+        for (int i = 0; i < notification.messages.size(); i++) {
+            assertEqualsMessageJson(notification.messages.get(i), messageJson.get(i));
+        }
     }
 
-    public static class TestMessage extends HookNotification.HookNotificationMessage {
+    @org.testng.annotations.Test
+    public void testSend3() throws Exception {
+        MessageSource    source        = new MessageSource();
+        Configuration    configuration = mock(Configuration.class);
+        TestNotification notification  = new TestNotification(configuration);
+        Test             message1      = new Test(HookNotificationType.IMPORT_ENTITY, "user1");
+        Test             message2      = new Test(HookNotificationType.IMPORT_TYPES_DEF, "user1");
+        String           topic         = "ATLAS_IMPORT_21334wqdrr";
+        List<Test>       messages      = Arrays.asList(message1, message2);
+        List<String>     messageJson   = new ArrayList<>();
 
-        public TestMessage(HookNotification.HookNotificationType type, String user) {
+        AbstractNotification.createNotificationMessages(message1, messageJson, source);
+        AbstractNotification.createNotificationMessages(message2, messageJson, source);
+
+        notification.send(topic, messages, source);
+
+        assertEquals(notification.messages.size(), messageJson.size());
+        assertEquals(notification.topic, topic);
+
+        for (int i = 0; i < notification.messages.size(); i++) {
+            assertEqualsMessageJson(notification.messages.get(i), messageJson.get(i));
+        }
+    }
+
+    // ignore msgCreationTime in Json
+    private void assertEqualsMessageJson(String msgJsonActual, String msgJsonExpected) {
+        Map<Object, Object> msgActual   = AtlasType.fromV1Json(msgJsonActual, Map.class);
+        Map<Object, Object> msgExpected = AtlasType.fromV1Json(msgJsonExpected, Map.class);
+
+        msgActual.remove("msgCreationTime");
+        msgExpected.remove("msgCreationTime");
+
+        assertEquals(msgActual, msgExpected);
+    }
+
+    public static class Test extends HookNotification {
+        public Test(HookNotificationType type, String user) {
             super(type, user);
         }
     }
 
     public static class TestNotification extends AbstractNotification {
         private NotificationType type;
-        private String[] messages;
+        private String           topic;
+        private List<String>     messages;
 
         public TestNotification(Configuration applicationProperties) throws AtlasException {
             super(applicationProperties);
         }
 
         @Override
-        protected void sendInternal(NotificationType notificationType, String[] notificationMessages)
-            throws NotificationException {
+        public void sendInternal(NotificationType notificationType, List<String> notificationMessages) {
+            type     = notificationType;
+            messages = notificationMessages;
+        }
 
-            type = notificationType;
+        @Override
+        public void sendInternal(String notificationTopic, List<String> notificationMessages) throws NotificationException {
+            topic    = notificationTopic;
             messages = notificationMessages;
         }
 
@@ -115,6 +156,11 @@ public class AbstractNotificationTest {
 
         @Override
         public void close() {
+        }
+
+        @Override
+        public boolean isReady(NotificationType type) {
+            return true;
         }
     }
 }

@@ -14,42 +14,124 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div class="">
+<div class="position-relative">
     <div class="tableOverlay"></div>
     <!-- Not for table Loader its only for initial loading -->
-    <div class="fontLoader">
+    <div class="fontLoader" style="z-index:999">
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
-    <div class="ellipsis" style="display: none;"><span class="searchResult" style=" font-size: 16px;"></span>
-        <a href="javascript:void(0)" class="inputAssignTag multiSelectTerm btnAssign" style="display:none" data-id="addTerm"><i class="fa fa-folder-o"></i> Assign Term</a>
-        <a href="javascript:void(0)" class="inputAssignTag multiSelectTag assignTag btnAssign" style="display:none" data-id="addAssignTag"><i class="fa fa-plus"></i> Assign Tag</a>
+    <div class="ellipsis-with-margin" style="display: none;"><span class="searchResult" style=" font-size: 16px;"></span>
     </div>
     <div class="searchTable">
-        <div data-id="containerCheckBox" style="display: none;">
-            <input type="checkbox" id="inputLabel" class="checkbox-inline" name="queryType" value="text" name="check" value="1" data-id="checkDeletedEntity" />
-            <label class="checkbox-inline" for="inputLabel">
-                <b>Include historical entities</b></label>
-        </div>
-        <span style="display: none;" class="labelShowRecord pull-left" data-id="pageRecordText"></span>
-        <div data-id="paginationDiv" style="display:none">
-            <ul class="pager pull-right">
-                <li>
-                    <button type="button" class="btn" data-id="previousData" disabled=true>Previous</button>
-                </li>
-                <li>
-                    <button type="button" class="btn" data-id="nextData">Next</button>
-                </li>
-            </ul>
-        </div>
-        <div id="r_searchResultTableLayoutView">
-            {{#if entityCreate}}
-            <div class="entityLink" style="display:none">
-                <h1><b>{{searchType}}</b></h1>
-                <p class="entityLink">Search Atlas for existing entities or
-                    <a href="javascript:void(0)" data-id='createEntity'> create new entity </a>
-                </p>
+        <div class="row no-data" style="display: none;">
+            <div class="position-relative thick-border">
+                <div style="padding-top: 20px; " class="table-responsive tableBorder">
+                    <table class="table table-hover backgrid table-quickMenu">
+                        <tbody>
+                            <tr class="empty">
+                                <td colspan="16"><span>No Records found!</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            {{/if}}
+        </div>
+        <div style="padding-top: 0px;">
+            <div class="row form-group pagination-box filter-box" style="display: none;">
+                <div class="col-sm-12 inline-content-fr">
+                    {{#if isSearchTab}}
+                    <div class="inline">
+                        <button type="button" data-id="downloadSearchResult" class="download-results btn btn-action btn-sm" title="Download Search Results">
+                            <i class="fa fa-download" aria-hidden="true"></i>&nbsp;&nbsp;Download
+                        </button>
+                    </div>
+                    {{/if}}
+                    <div class="inline" data-id="colManager"></div>
+                    <div class="inline">
+                        <a href="javascript:void(0)" class="multiSelectTag assignTag btn btn-action btn-sm" style="display:none" title="Assign Classification" data-id="addAssignTag"><i class="fa fa-plus"></i>&nbsp;Classification</a>
+                    </div>
+                    {{#unless isGlossaryView}}
+                    <div class="inline">
+                        <a href="javascript:void(0)" class="multiSelectTerm assignTerm btn btn-action btn-sm" style="display:none" title="Assign Term" data-id="addAssignTerm"><i class="fa fa-plus"></i>&nbsp;Term</a>
+                    </div>
+                    {{/unless}}
+                    <div class="inline" data-id="containerCheckBox" style="display: none;">
+                        <label class="checkbox-inline btn" for="historicalentities">
+                            <input type="checkbox" data-id="checkDeletedEntity" data-value="includeDE" id="historicalentities" />
+                            <b>Show historical entities</b></label>
+                    </div>
+                    {{#unless isProfileDBView}}
+                    <div class="inline exclude-subclassifications" data-id="containerCheckBox" style="display: none;">
+                        <label class="checkbox-inline btn" for="subclassifications">
+                            <input type="checkbox" data-id="checkSubClassification" data-value="excludeSC" id="subclassifications" />
+                            <b>Exclude sub-classifications</b></label>
+                    </div>
+                    <div class="inline exclude-subtypes" data-id="containerCheckBox" style="display: none;">
+                        <label class="checkbox-inline btn" for="subtypes">
+                            <input type="checkbox" data-id="checkSubType" data-value="excludeST" id="subtypes" />
+                            <b>Exclude sub-types</b></label>
+                    </div>
+                    {{/unless}}
+                </div>
+            </div>
+            <div id="r_searchResultTableLayoutView">
+                {{#if isSearchTab}}<h1><b>{{searchType}}</b></h1>{{/if}}
+                <div class="entityLink" style="display:none">
+                    <p class="entityLink">Search Atlas for existing entities
+                        {{#if entityCreate}}
+                        or
+                        <a href="javascript:void(0)" data-id='createEntity'> create new entity </a>
+                        {{/if}}
+                    </p>
+                </div>
+            </div>
+            <div class="pagination-box searach-result-pagination row" style="display: none">
+                <div class="col-sm-4">
+                    <span class="labelShowRecord pull-left" data-id="pageRecordText"> </span>
+                </div>
+                <div class="col-sm-8">
+                    <div class="inline-content-fr">
+                        <div class="backgrid-paginator inline">
+                            <ul class="" data-id="paginationDiv" style="display:none">
+                                <li>
+                                    <button type="button" data-id="previousData" title="Previous" disabled="true">
+                                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                                    </button>
+                                </li>
+                                <li class="active">
+                                    <a href="javascript:void(0)" data-id="activePage"></a>
+                                </li>
+                                <li>
+                                    <button type="button" data-id="nextData" title="Next">
+                                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="inline col-sm-4" data-id="paginationDiv">
+                            <div class="input-group" data-id="goToPageDiv">
+                                <input type="text" class="form-control number-input" data-id="gotoPage" placeholder="Goto Page" />
+                                <span class="input-group-btn">
+                                    <button class="btn btn-default" type="button" data-id="gotoPagebtn" title="Goto Page" disabled="disabled">
+                                        Go!
+                                    </button>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="inline">
+                            <div class="inline-content">
+                                <span class="control-label-sm inline ">Page Limit :</span>
+                                <div class="inline" style="width: 80px;">
+                                    <select data-id="showPage" multiple="multiple" class="form-control"> </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+</div>
+<div class="text-center" data-id="columnEmptyInfo" style="display: none;">
+    <h4>Please select one/more column to see the data</h4>
 </div>

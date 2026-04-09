@@ -20,9 +20,10 @@ define(['require',
     'backbone',
     'hbs!tmpl/audit/AuditTableLayoutView_tmpl',
     'collection/VEntityList',
+    'utils/Utils',
     'utils/Enums',
     'utils/UrlLinks'
-], function(require, Backbone, AuditTableLayoutView_tmpl, VEntityList, Enums, UrlLinks) {
+], function(require, Backbone, AuditTableLayoutView_tmpl, VEntityList, Utils, Enums, UrlLinks) {
     'use strict';
 
     var AuditTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -38,18 +39,10 @@ define(['require',
             },
 
             /** ui selector cache */
-            ui: {
-                auditCreate: "[data-id='auditCreate']",
-                previousAuditData: "[data-id='previousAuditData']",
-                nextAuditData: "[data-id='nextAuditData']",
-                pageRecordText: "[data-id='pageRecordText']"
-            },
+            ui: {},
             /** ui events hash */
             events: function() {
                 var events = {};
-                events["click " + this.ui.auditCreate] = "onClickAuditCreate";
-                events["click " + this.ui.nextAuditData] = "onClickNextAuditData";
-                events["click " + this.ui.previousAuditData] = "onClickPreviousAuditData";
                 return events;
             },
             /**
@@ -59,7 +52,8 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'guid', 'entity', 'entityName', 'attributeDefs'));
                 this.entityCollection = new VEntityList();
-                this.limit = 26;
+                this.limit = 25;
+                this.offset = 0;
                 this.entityCollection.url = UrlLinks.entityCollectionaudit(this.guid);
                 this.entityCollection.modelAttrName = "events";
                 this.entityModel = new this.entityCollection.model();
@@ -68,102 +62,68 @@ define(['require',
                     collection: this.entityCollection,
                     includeFilter: false,
                     includePagination: false,
-                    includePageSize: false,
+                    includeAtlasPagination: true,
+                    includeAtlasPageSize: true,
+                    includeTableLoader: true,
+                    includeAtlasTableSorting: false,
+                    showDefaultTableSorted: true,
+                    columnSorting: false,
                     includeFooterRecords: false,
                     gridOpts: {
                         className: "table table-hover backgrid table-quickMenu",
                         emptyText: 'No records found!'
                     },
+                    sortOpts: {
+                        sortColumn: "timestamp",
+                        sortDirection: "descending"
+                    },
+                    isApiSorting: true,
+                    atlasPaginationOpts: this.getPaginationOptions(),
                     filterOpts: {},
                     paginatorOpts: {}
                 };
                 this.currPage = 1;
+                this.fromSort = false;
             },
             onRender: function() {
-                $.extend(this.entityCollection.queryParams, { count: this.limit });
-                this.fetchCollection({
-                    next: this.ui.nextAuditData,
-                    nextClick: false,
-                    previous: this.ui.previousAuditData
-                });
-                this.entityCollection.comparator = function(model) {
-                    return -model.get('timestamp');
-                }
+                $.extend(this.entityCollection.queryParams, { offset: this.offset, count: this.limit, sortKey: null, order: "sortOrder", sortBy: "timestamp", sortOrder: "desc" });
+                this.fetchAuditCollection();
+                this.renderTableLayoutView();
+            },
+            fetchAuditCollection: function() {
+                this.commonTableOptions['atlasPaginationOpts'] = this.getPaginationOptions();
+                this.fetchCollection();
             },
             bindEvents: function() {},
-            getToOffset: function() {
-                var toOffset = 0;
-                if (this.entityCollection.models.length < this.limit) {
-                    toOffset = (this.getFromOffset() + (this.entityCollection.models.length));
-                } else {
-                    toOffset = (this.getFromOffset() + (this.entityCollection.models.length - 1));
-                }
-                return toOffset;
+            getPaginationOptions: function() {
+                return {
+                    count: this.getPageCount(),
+                    offset: this.entityCollection.queryParams.offset || this.offset,
+                    fetchCollection: this.fetchCollection.bind(this)
+                };
             },
-            getFromOffset: function(options) {
-                var count = (this.currPage - 1) * (this.limit - 1);
-                if (options && (options.nextClick || options.previousClick || this.entityCollection.models.length)) {
-                    return count + 1;
-                } else {
-                    return count;
-                }
-            },
-            renderOffset: function(options) {
-                var entityLength;
-                if (options.nextClick) {
-                    options.previous.removeAttr("disabled");
-                    if (this.entityCollection.length != 0) {
-                        this.currPage++;
-
-                    }
-                } else if (options.previousClick) {
-                    options.next.removeAttr("disabled");
-                    if (this.currPage > 1 && this.entityCollection.models.length) {
-                        this.currPage--;
-                    }
-                }
-                if (this.entityCollection.models.length > 25) {
-                    entityLength = this.entityCollection.models.length - 1;
-                } else {
-                    entityLength = this.entityCollection.models.length
-                }
-                this.ui.pageRecordText.html("Showing  <u>" + entityLength + " records</u> From " + this.getFromOffset(options) + " - " + this.getToOffset());
+            getPageCount: function() {
+                return (this.entityCollection.queryParams.limit || this.entityCollection.queryParams.count) || this.limit;
             },
             fetchCollection: function(options) {
                 var that = this;
                 this.$('.fontLoader').show();
                 this.$('.tableOverlay').show();
-                if (that.entityCollection.models.length > 1) {
-                    if (options.nextClick) {
-                        this.pervOld.push(that.entityCollection.first().get('eventKey'));
-                    }
-                }
+                //api needs only sortOrder,count,offset, sortBy queryparams & removed extra queryparams limit,sort_by, order
+                this.entityCollection.queryParams.count = this.getPageCount();
+                this.entityCollection.queryParams = _.omit(this.entityCollection.queryParams, 'limit');
                 this.entityCollection.fetch({
-                    success: function() {
-                        if (!(that.ui.pageRecordText instanceof jQuery)) {
-                            return;
-                        }
-                        if (that.entityCollection.models.length < that.limit) {
-                            options.previous.attr('disabled', true);
-                            options.next.attr('disabled', true);
-                        }
-                        that.renderOffset(options);
-                        that.entityCollection.sort();
-                        if (that.entityCollection.models.length) {
-                            if (that.entityCollection && (that.entityCollection.models.length < that.limit && that.currPage == 1) && that.next == that.entityCollection.last().get('eventKey')) {
-                                options.next.attr('disabled', true);
-                                options.previous.removeAttr("disabled");
-                            } else {
-                                that.next = that.entityCollection.last().get('eventKey');
-                                if (that.pervOld.length === 0) {
-                                    options.previous.attr('disabled', true);
-                                }
-                                that.renderTableLayoutView();
-                            }
-                        }
+                    success: function(dataOrCollection, response) {
+                        that.entityCollection.state.pageSize = that.getPageCount();
+                        that.entityCollection.reset(response, $.extend(options));
+                    },
+                    complete: function() {
                         that.$('.fontLoader').hide();
                         that.$('.tableOverlay').hide();
-                        that.$('.auditTable').show(); // Only for first time table show because we never hide after first render.
+                        that.$('.auditTable').show();
+                        if (that.fromSort) {
+                            that.fromSort = !that.fromSort;
+                        }
                     },
                     silent: true
                 });
@@ -175,28 +135,74 @@ define(['require',
                     that.RAuditTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         columns: cols
                     })));
-                    if (!(that.entityCollection.models.length < that.limit)) {
-                        that.RAuditTableLayoutView.$el.find('table tr').last().hide();
+
+                });
+            },
+            backgridHeaderClickHandel: function() {
+                var that = this;
+                return Backgrid.HeaderCell.extend({
+                    onClick: function(e) {
+                        e.preventDefault();
+                        var column = this.column,
+                            direction = "ascending",
+                            columnName = column.get("name").toLocaleLowerCase();
+                        if (column.get("direction") === "ascending") direction = "descending";
+                        column.set("direction", direction);
+                        var options = {
+                            sortBy: columnName,
+                            sortOrder: (direction === "ascending") ? "asc" : "desc",
+                            offset: that.entityCollection.queryParams.offset || that.offset,
+                            count: that.getPageCount()
+                        };
+                        that.commonTableOptions['sortOpts'] = {
+                            sortColumn: columnName,
+                            sortDirection: (direction === "ascending") ? "ascending" : "descending"
+                        };
+                        $.extend(that.entityCollection.queryParams, options);
+                        that.fromSort = true;
+                        that.fetchAuditCollection();
                     }
                 });
             },
             getAuditTableColumns: function() {
                 var that = this;
                 return this.entityCollection.constructor.getTableCols({
+                    tool: {
+                        label: "",
+                        cell: "html",
+                        editable: false,
+                        sortable: false,
+                        fixWidth: "20",
+                        cell: Backgrid.ExpandableCell,
+                        accordion: false,
+                        expand: function(el, model) {
+                            el.attr('colspan', '4');
+                            require([
+                                'views/audit/CreateAuditTableLayoutView',
+                            ], function(CreateAuditTableLayoutView) {
+                                that.action = model.get('action');
+                                var eventModel = that.entityCollection.fullCollection.findWhere({ 'eventKey': model.get('eventKey') }).toJSON(),
+                                    collectionModel = new that.entityCollection.model(eventModel),
+                                    view = new CreateAuditTableLayoutView({ guid: that.guid, entityModel: collectionModel, action: that.action, entity: that.entity, entityName: that.entityName, attributeDefs: that.attributeDefs });
+                                view.render();
+                                $(el).append($('<div>').html(view.$el));
+                            });
+                        }
+                    },
                     user: {
                         label: "Users",
                         cell: "html",
                         editable: false,
-                        sortable: false,
+                        headerCell: that.backgridHeaderClickHandel()
                     },
                     timestamp: {
                         label: "Timestamp",
                         cell: "html",
                         editable: false,
-                        sortable: false,
+                        headerCell: that.backgridHeaderClickHandel(),
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return new Date(rawValue);
+                                return Utils.formatDate({ date: rawValue });
                             }
                         })
                     },
@@ -204,7 +210,7 @@ define(['require',
                         label: "Actions",
                         cell: "html",
                         editable: false,
-                        sortable: false,
+                        headerCell: that.backgridHeaderClickHandel(),
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 if (Enums.auditAction[rawValue]) {
@@ -214,74 +220,10 @@ define(['require',
                                 }
                             }
                         })
-                    },
-                    tool: {
-                        label: "Tools",
-                        cell: "html",
-                        editable: false,
-                        sortable: false,
-                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                            fromRaw: function(rawValue, model) {
-                                return '<div class="label label-success auditDetailBtn" data-id="auditCreate" data-action="' + Enums.auditAction[model.get('action')] + '" data-modalId="' + model.get('eventKey') + '">Detail</div>';
-                            }
-                        })
-                    },
-
+                    }
                 }, this.entityCollection);
 
-            },
-            onClickAuditCreate: function(e) {
-                var that = this;
-                require([
-                    'modules/Modal',
-                    'views/audit/CreateAuditTableLayoutView',
-                ], function(Modal, CreateAuditTableLayoutView) {
-                    that.action = $(e.target).data("action");
-                    var eventModel = that.entityCollection.fullCollection.findWhere({ 'eventKey': $(e.currentTarget).data('modalid') }).toJSON(),
-                        collectionModel = new that.entityCollection.model(eventModel),
-                        view = new CreateAuditTableLayoutView({ guid: that.guid, entityModel: collectionModel, action: that.action, entity: that.entity, entityName: that.entityName, attributeDefs: that.attributeDefs });
-                    var modal = new Modal({
-                        title: that.action,
-                        content: view,
-                        okCloses: true,
-                        showFooter: true,
-                    }).open();
-                    view.on('closeModal', function() {
-                        modal.trigger('cancel');
-                    });
-                    view.$el.on('click', 'td a', function() {
-                        modal.trigger('cancel');
-                    });
-                });
-            },
-            onClickNextAuditData: function() {
-                var that = this;
-                this.ui.previousAuditData.removeAttr("disabled");
-                $.extend(this.entityCollection.queryParams, {
-                    startKey: function() {
-                        return that.next;
-                    }
-                });
-                this.fetchCollection({
-                    next: this.ui.nextAuditData,
-                    nextClick: true,
-                    previous: this.ui.previousAuditData
-                });
-            },
-            onClickPreviousAuditData: function() {
-                var that = this;
-                this.ui.nextAuditData.removeAttr("disabled");
-                $.extend(this.entityCollection.queryParams, {
-                    startKey: function() {
-                        return that.pervOld.pop();
-                    }
-                });
-                this.fetchCollection({
-                    next: this.ui.nextAuditData,
-                    previousClick: true,
-                    previous: this.ui.previousAuditData
-                });
-            },
+            }
         });
     return AuditTableLayoutView;
 });

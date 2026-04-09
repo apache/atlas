@@ -18,10 +18,10 @@
 
 package org.apache.atlas.falcon.service;
 
-import org.apache.atlas.falcon.Util.EventUtil;
 import org.apache.atlas.falcon.event.FalconEvent;
 import org.apache.atlas.falcon.hook.FalconHook;
 import org.apache.atlas.falcon.publisher.FalconEventPublisher;
+import org.apache.atlas.falcon.util.EventUtil;
 import org.apache.falcon.FalconException;
 import org.apache.falcon.entity.v0.Entity;
 import org.apache.falcon.entity.v0.EntityType;
@@ -30,19 +30,18 @@ import org.apache.falcon.service.FalconService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
  * Atlas service to publish Falcon events
  */
 public class AtlasService implements FalconService, ConfigurationChangeListener {
-
     private static final Logger LOG = LoggerFactory.getLogger(AtlasService.class);
-    private FalconEventPublisher publisher;
 
     /**
      * Constant for the service name.
      */
     public static final String SERVICE_NAME = AtlasService.class.getSimpleName();
+
+    private FalconEventPublisher publisher;
 
     @Override
     public String getName() {
@@ -63,22 +62,22 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
         try {
             EntityType entityType = entity.getEntityType();
             switch (entityType) {
-            case CLUSTER:
-                addEntity(entity, FalconEvent.OPERATION.ADD_CLUSTER);
-                break;
+                case CLUSTER:
+                    addEntity(entity, FalconEvent.OPERATION.ADD_CLUSTER);
+                    break;
 
-            case PROCESS:
-                addEntity(entity, FalconEvent.OPERATION.ADD_PROCESS);
-                break;
+                case PROCESS:
+                    addEntity(entity, FalconEvent.OPERATION.ADD_PROCESS);
+                    break;
 
-            case FEED:
-                addEntity(entity, FalconEvent.OPERATION.ADD_FEED);
-                break;
+                case FEED:
+                    addEntity(entity, FalconEvent.OPERATION.ADD_FEED);
+                    break;
 
-            default:
-                LOG.debug("Entity type not processed {}", entityType);
+                default:
+                    LOG.debug("Entity type not processed {}", entityType);
             }
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             LOG.warn("Error handling entity {}", entity, t);
         }
     }
@@ -91,26 +90,26 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
     public void onChange(Entity oldEntity, Entity newEntity) throws FalconException {
         /**
          * Skipping update for now - update uses full update currently and this might result in all attributes wiped for hive entities
-        EntityType entityType = newEntity.getEntityType();
-        switch (entityType) {
-        case CLUSTER:
-            addEntity(newEntity, FalconEvent.OPERATION.UPDATE_CLUSTER);
-            break;
+         EntityType entityType = newEntity.getEntityType();
+         switch (entityType) {
+         case CLUSTER:
+         addEntity(newEntity, FalconEvent.OPERATION.UPDATE_CLUSTER);
+         break;
 
-        case PROCESS:
-            addEntity(newEntity, FalconEvent.OPERATION.UPDATE_PROCESS);
-            break;
+         case PROCESS:
+         addEntity(newEntity, FalconEvent.OPERATION.UPDATE_PROCESS);
+         break;
 
-        case FEED:
-            FalconEvent.OPERATION operation = isReplicationFeed((Feed) newEntity) ?
-                    FalconEvent.OPERATION.UPDATE_REPLICATION_FEED :
-                    FalconEvent.OPERATION.UPDATE_FEED;
-            addEntity(newEntity, operation);
-            break;
+         case FEED:
+         FalconEvent.OPERATION operation = isReplicationFeed((Feed) newEntity) ?
+         FalconEvent.OPERATION.UPDATE_REPLICATION_FEED :
+         FalconEvent.OPERATION.UPDATE_FEED;
+         addEntity(newEntity, operation);
+         break;
 
-        default:
-            LOG.debug("Entity type not processed {}", entityType);
-        }
+         default:
+         LOG.debug("Entity type not processed {}", entityType);
+         }
          **/
     }
 
@@ -124,9 +123,9 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
         LOG.info("Adding {} entity to Atlas: {}", entity.getEntityType().name(), entity.getName());
 
         try {
-            FalconEvent event =
-                    new FalconEvent(EventUtil.getUser(), operation, entity);
-            FalconEventPublisher.Data data = new FalconEventPublisher.Data(event);
+            FalconEvent               event = new FalconEvent(EventUtil.getUser(), operation, entity);
+            FalconEventPublisher.Data data  = new FalconEventPublisher.Data(event);
+
             publisher.publish(data);
         } catch (Exception ex) {
             throw new FalconException("Unable to publish data to publisher " + ex.getMessage(), ex);

@@ -17,26 +17,26 @@
  */
 package org.apache.atlas.model.legacy;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import org.apache.atlas.type.AtlasType;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
-public class EntityResult {
-    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class EntityResult implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     public static final String OP_CREATED = "created";
     public static final String OP_UPDATED = "updated";
@@ -54,25 +54,21 @@ public class EntityResult {
         set(OP_DELETED, deleted);
     }
 
+    public static EntityResult fromString(String json) {
+        return AtlasType.fromV1Json(json, EntityResult.class);
+    }
+
     public void set(String type, List<String> list) {
-        if (list != null && list.size() > 0) {
+        if (list != null && !list.isEmpty()) {
             entities.put(type, list);
         }
     }
 
-    private List<String> get(String type) {
-        List<String> list = entities.get(type);
-        if (list == null) {
-            list = new ArrayList<>();
-        }
-        return list;
-    }
-
-    public Map<String, List<String>> getEntities(){
+    public Map<String, List<String>> getEntities() {
         return entities;
     }
 
-    public void setEntities(Map<String, List<String>> entities){
+    public void setEntities(Map<String, List<String>> entities) {
         this.entities = entities;
     }
 
@@ -92,9 +88,17 @@ public class EntityResult {
     }
 
     @Override
-    public String toString() { return gson.toJson(this); }
+    public String toString() {
+        return AtlasType.toV1Json(this);
+    }
 
-    public static EntityResult fromString(String json) {
-        return gson.fromJson(json, EntityResult.class);
+    private List<String> get(String type) {
+        List<String> list = entities.get(type);
+
+        if (list == null) {
+            list = new ArrayList<>();
+        }
+
+        return list;
     }
 }

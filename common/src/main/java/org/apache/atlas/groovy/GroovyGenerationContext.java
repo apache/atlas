@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,13 +29,12 @@ import java.util.Map;
  *
  */
 public class GroovyGenerationContext {
-
-    private boolean parametersAllowed = true;
-    private int parameterCount = 0;
-    private Map<String, Object> parameterValues = new HashMap<>();
+    private       boolean             parametersAllowed = true;
+    private final Map<String, Object> parameterValues = new HashMap<>();
+    private       int                 parameterCount;
 
     //used to build up the groovy script
-    private StringBuilder generatedQuery = new StringBuilder();
+    private final StringBuilder generatedQuery = new StringBuilder();
 
     public void setParametersAllowed(boolean value) {
         this.parametersAllowed = value;
@@ -44,17 +43,22 @@ public class GroovyGenerationContext {
     public GroovyExpression addParameter(Object value) {
         if (this.parametersAllowed) {
             String parameterName = "p" + (++parameterCount);
+
             this.parameterValues.put(parameterName, value);
+
             return new IdentifierExpression(parameterName);
         } else {
             LiteralExpression expr = new LiteralExpression(value);
+
             expr.setTranslateToParameter(false);
+
             return expr;
         }
     }
 
     public StringBuilder append(String gremlin) {
         this.generatedQuery.append(gremlin);
+
         return generatedQuery;
     }
 

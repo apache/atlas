@@ -29,13 +29,12 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.util.Collection;
- 
 
 @Component
 public class AtlasFileAuthenticationProvider extends AtlasAbstractAuthenticationProvider {
-
-    private static Logger logger = LoggerFactory.getLogger(AtlasFileAuthenticationProvider.class);
+    private static final Logger logger = LoggerFactory.getLogger(AtlasFileAuthenticationProvider.class);
 
     private final UserDetailsService userDetailsService;
 
@@ -48,30 +47,32 @@ public class AtlasFileAuthenticationProvider extends AtlasAbstractAuthentication
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         String username = authentication.getName();
         String password = (String) authentication.getCredentials();
+
         if (username == null || username.isEmpty()) {
             logger.error("Username can't be null or empty.");
-            throw new BadCredentialsException(
-                    "Username can't be null or empty.");
+
+            throw new BadCredentialsException("Username can't be null or empty.");
         }
 
         if (password == null || password.isEmpty()) {
             logger.error("Password can't be null or empty.");
-            throw new BadCredentialsException(
-                    "Password can't be null or empty.");
+
+            throw new BadCredentialsException("Password can't be null or empty.");
         }
 
-        UserDetails user = userDetailsService.loadUserByUsername(username);
-        
-        String encodedPassword = UserDao.getSha256Hash(password);
-        
-        if (!encodedPassword.equals(user.getPassword())) {
-            logger.error("Wrong password " + username);
+        UserDetails user            = userDetailsService.loadUserByUsername(username);
+        boolean     isValidPassword = UserDao.checkEncrypted(password, user.getPassword(), username);
+
+        if (!isValidPassword) {
+            logger.error("Wrong password {}", username);
+
             throw new BadCredentialsException("Wrong password");
         }
+
         Collection<? extends GrantedAuthority> authorities = user.getAuthorities();
+
         authentication = new UsernamePasswordAuthenticationToken(username, password, authorities);
 
         return authentication;
     }
-
 }

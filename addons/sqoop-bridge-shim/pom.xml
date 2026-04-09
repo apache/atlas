@@ -16,23 +16,21 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
-        <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>0.9-SNAPSHOT</version>
+        <artifactId>apache-atlas</artifactId>
+        <version>3.0.0-SNAPSHOT</version>
         <relativePath>../../</relativePath>
     </parent>
+
     <artifactId>sqoop-bridge-shim</artifactId>
-    <description>Apache Atlas Sqoop Bridge Shim Module</description>
-    <name>Apache Atlas Sqoop Bridge Shim</name>
     <packaging>jar</packaging>
 
-    <properties>
-        <sqoop.version>1.4.6.2.3.99.0-195</sqoop.version>
-    </properties>
+    <name>Apache Atlas Sqoop Bridge Shim</name>
+    <description>Apache Atlas Sqoop Bridge Shim Module</description>
 
     <dependencies>
         <!-- Logging -->
@@ -45,6 +43,7 @@
             <groupId>org.apache.sqoop</groupId>
             <artifactId>sqoop</artifactId>
             <version>${sqoop.version}</version>
+            <classifier>${sqoop.classifier}</classifier>
             <scope>compile</scope>
         </dependency>
     </dependencies>

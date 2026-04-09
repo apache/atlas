@@ -44,7 +44,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tag', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'enumDefCollection'));
+                _.extend(this, _.pick(options, 'tag', 'value', 'glossaryCollection', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'searchVent'));
                 this.collection = this.classificationDefCollection;
             },
             bindEvents: function() {},
@@ -61,11 +61,15 @@ define(['require',
                     };
                     if (that.RSearchResultLayoutView) {
                         that.RSearchResultLayoutView.show(new SearchResultLayoutView({
-                            value: value,
+                            value: _.extend({}, that.value, value),
                             entityDefCollection: that.entityDefCollection,
                             typeHeaders: that.typeHeaders,
                             tagCollection: that.collection,
-                            enumDefCollection: that.enumDefCollection
+                            enumDefCollection: that.enumDefCollection,
+                            classificationDefCollection: that.classificationDefCollection,
+                            glossaryCollection: that.glossaryCollection,
+                            searchVent: that.searchVent,
+                            fromView: "classification"
                         }));
                     }
                 });
@@ -76,7 +80,8 @@ define(['require',
                     if (that.RTagAttributeDetailLayoutView) {
                         that.RTagAttributeDetailLayoutView.show(new TagAttributeDetailLayoutView({
                             tag: that.tag,
-                            collection: that.collection
+                            collection: that.collection,
+                            enumDefCollection: that.enumDefCollection
                         }));
                     }
                 });

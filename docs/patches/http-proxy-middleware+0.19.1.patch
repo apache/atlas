@@ -1,0 +1,18 @@
+diff --git a/node_modules/http-proxy-middleware/lib/context-matcher.js b/node_modules/http-proxy-middleware/lib/context-matcher.js
+index 699b8a0..c7ffd19 100644
+--- a/node_modules/http-proxy-middleware/lib/context-matcher.js
++++ b/node_modules/http-proxy-middleware/lib/context-matcher.js
+@@ -52,7 +52,12 @@ function matchSingleStringPath(context, uri) {
+ 
+ function matchSingleGlobPath(pattern, uri) {
+   var pathname = getUrlPathName(uri)
+-  var matches = micromatch(pathname, pattern)
++  var matches
++  try {
++    matches = micromatch(pathname, pattern)
++  } catch (err) {
++    return false
++  }
+   return matches && matches.length > 0
+ }
+ 

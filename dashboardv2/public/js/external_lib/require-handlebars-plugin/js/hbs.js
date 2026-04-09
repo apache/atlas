@@ -375,7 +375,7 @@ define([
                                 }
                             }
                         } catch (e) {
-                            console.log('error injecting styles');
+                            // Error injecting styles
                         }
                     }
 

@@ -18,14 +18,25 @@
 
 package org.apache.atlas.discovery;
 
-
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.AtlasSearchResultDownloadStatus;
+import org.apache.atlas.model.discovery.AtlasSuggestionsResult;
+import org.apache.atlas.model.discovery.QuickSearchParameters;
+import org.apache.atlas.model.discovery.RelationshipSearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.profile.AtlasUserSavedSearch;
+import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public interface AtlasDiscoveryService {
     /**
-     *
      * @param query search query in DSL format.
      * @param limit number of resultant rows (for pagination). [ limit > 0 ] and [ limit < maxlimit ]. -1 maps to atlas.search.defaultlimit property.
      * @param offset offset to the results returned (for pagination). [ offset >= 0 ]. -1 maps to offset 0.
@@ -34,7 +45,14 @@ public interface AtlasDiscoveryService {
     AtlasSearchResult searchUsingDslQuery(String query, int limit, int offset) throws AtlasBaseException;
 
     /**
-     *
+     * @param query query
+     * @param typeName type name
+     * @param classification classification
+     * @return Query in DSL form
+     */
+    String getDslQueryUsingTypeNameClassification(String query, String typeName, String classification);
+
+    /**
      * @param query search query.
      * @param excludeDeletedEntities exclude deleted entities in search result.
      * @param limit number of resultant rows (for pagination). [ limit > 0 ] and [ limit < maxlimit ]. -1 maps to atlas.search.defaultlimit property.
@@ -44,7 +62,6 @@ public interface AtlasDiscoveryService {
     AtlasSearchResult searchUsingFullTextQuery(String query, boolean excludeDeletedEntities, int limit, int offset) throws AtlasBaseException;
 
     /**
-     *
      * @param query search query.
      * @param type entity type.
      * @param classification classification name.
@@ -56,13 +73,135 @@ public interface AtlasDiscoveryService {
      * @return AtlasSearchResult
      */
     AtlasSearchResult searchUsingBasicQuery(String query, String type, String classification, String attrName,
-                                            String attrValuePrefix, boolean excludeDeletedEntities, int limit, int offset) throws AtlasBaseException;
+            String attrValuePrefix, boolean excludeDeletedEntities, int limit, int offset) throws AtlasBaseException;
 
     /**
      * Search for entities matching the search criteria
+     *
      * @param searchParameters Search criteria
      * @return Matching entities
      * @throws AtlasBaseException
      */
     AtlasSearchResult searchWithParameters(SearchParameters searchParameters) throws AtlasBaseException;
+
+    /**
+     * Search for guids of entities matching the search criteria
+     *
+     * @param searchParameters Search criteria
+     * @return GUIDs of matching entities
+     * @throws AtlasBaseException
+     */
+    Set<String> searchGUIDsWithParameters(AtlasAuditAgingType auditAgingType, Set<String> entityTypes, SearchParameters searchParameters) throws AtlasBaseException;
+
+    /**
+     * Search for relations (edges) matching the search criteria
+     *
+     * @param searchParameters Search criteria
+     * @return Matching Edge Entities
+     * @throws AtlasBaseException
+     */
+    AtlasSearchResult searchRelationsWithParameters(RelationshipSearchParameters searchParameters) throws AtlasBaseException;
+
+    /**
+     * Search for entities related to a given entity through a specified relationship.
+     *
+     * @param guid unique ID of the entity
+     * @param relation relationship name or attribute name
+     * @param getApproximateCount whether to calculate and return the approximate count of related entities;
+     *                            when true and excludeDeletedEntities is enabled, counts only active entities
+     * @param searchParameters search parameters including:
+     *                         - sortBy: attribute name to sort by (overrides default sorting)
+     *                         - sortOrder: ASCENDING or DESCENDING
+     *                         - limit: maximum number of results to return
+     *                         - offset: starting position for pagination
+     *                         - excludeDeletedEntities: filter out deleted entities
+     *                         - attributes: specific attributes to include in results
+     *                         - includeClassificationAttributes: include classifications in results
+     * @param disableDefaultSorting when false (default), applies default "name" sorting if sortBy is not specified;
+     *                              when true, disables default sorting for better performance with large result sets
+     *                              (recommended for pagination with high offsets on unsorted queries)
+     * @return AtlasSearchResult containing related entities with accurate approximateCount (excludes deleted entities when requested)
+     * @throws AtlasBaseException if guid is invalid, relationship doesn't exist, or query parameters are invalid
+     */
+    AtlasSearchResult searchRelatedEntities(String guid, String relation, boolean getApproximateCount, SearchParameters searchParameters, boolean disableDefaultSorting) throws AtlasBaseException;
+
+    /**
+     * @param savedSearch Search to be saved
+     * @throws AtlasBaseException
+     */
+    AtlasUserSavedSearch addSavedSearch(String currentUser, AtlasUserSavedSearch savedSearch) throws AtlasBaseException;
+
+    /**
+     * @param savedSearch Search to be saved
+     * @throws AtlasBaseException
+     */
+    AtlasUserSavedSearch updateSavedSearch(String currentUser, AtlasUserSavedSearch savedSearch) throws AtlasBaseException;
+
+    /**
+     * @param userName Name of the user for whom the saved searches are to be retrieved
+     * @return List of saved searches for the user
+     * @throws AtlasBaseException
+     */
+    List<AtlasUserSavedSearch> getSavedSearches(String currentUser, String userName) throws AtlasBaseException;
+
+    /**
+     * @param guid Guid for the saved search
+     * @return Search object identified by the guid
+     * @throws AtlasBaseException
+     */
+    AtlasUserSavedSearch getSavedSearchByGuid(String currentUser, String guid) throws AtlasBaseException;
+
+    /**
+     * @param userName Name of the user who the search belongs
+     * @param searchName Name of the search to be retrieved
+     * @return Search object identified by the name
+     * @throws AtlasBaseException
+     */
+    AtlasUserSavedSearch getSavedSearchByName(String currentUser, String userName, String searchName) throws AtlasBaseException;
+
+    /**
+     * @param currentUser User requesting the operation
+     * @param guid Guid used to look up Saved Search
+     * @throws AtlasBaseException
+     */
+    void deleteSavedSearch(String currentUser, String guid) throws AtlasBaseException;
+
+    /**
+     * Search for entities matching the search criteria
+     *
+     * @param searchParameters Search criteria
+     * @return Matching entities
+     * @throws AtlasBaseException
+     */
+    AtlasQuickSearchResult quickSearch(QuickSearchParameters searchParameters) throws AtlasBaseException;
+
+    /**
+     * Should return top 5 suggestion strings for the given prefix.
+     *
+     * @param prefixString the prefix string
+     * @param fieldName field from which to retrieve suggestions
+     * @return top 5 suggestion strings for the given prefix.
+     */
+    AtlasSuggestionsResult getSuggestions(String prefixString, String fieldName);
+
+    /**
+     * Creates task to search and download the results of Basic and DSL search
+     *
+     * @param taskParams parameters of AtlasTask
+     */
+    void createAndQueueSearchResultDownloadTask(Map<String, Object> taskParams) throws AtlasBaseException;
+
+    /**
+     * @return AtlasSearchResultDownloadStatus
+     * @throws IOException
+     */
+    AtlasSearchResultDownloadStatus getSearchResultDownloadStatus() throws IOException;
+
+    /**
+     * Creates task to age out audits
+     *
+     * @param taskParams parameters of AtlasTask
+     * @return Task created to perform audit aging
+     */
+    AtlasTask createAndQueueAuditReductionTask(Map<String, Object> taskParams, String taskType) throws AtlasBaseException;
 }

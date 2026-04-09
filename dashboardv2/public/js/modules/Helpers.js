@@ -55,7 +55,7 @@ define(['require',
 
     Handlebars.registerHelper('toHumanDate', function(val) {
         if (!val) return "";
-        return val;//localization.formatDate(val, 'f');
+        return val; //localization.formatDate(val, 'f');
     });
     Handlebars.registerHelper('tt', function(str) {
         //return localization.tt(str);
@@ -67,8 +67,15 @@ define(['require',
             case '==':
                 return (v1 == v2) ? options.fn(this) : options.inverse(this);
                 break;
+
             case '===':
                 return (v1 === v2) ? options.fn(this) : options.inverse(this);
+                break;
+            case '!=':
+                return (v1 !== v2) ? options.fn(this) : options.inverse(this);
+                break;
+            case '!==':
+                return (v1 !== v2) ? options.fn(this) : options.inverse(this);
                 break;
             case '<':
                 return (v1 < v2) ? options.fn(this) : options.inverse(this);
@@ -82,11 +89,62 @@ define(['require',
             case '>=':
                 return (v1 >= v2) ? options.fn(this) : options.inverse(this);
                 break;
+            case 'isEmpty':
+                return (_.isEmpty(v1)) ? options.fn(this) : options.inverse(this);
+                break;
+            case 'has':
+                return (_.has(v1, v2)) ? options.fn(this) : options.inverse(this);
+                break;
             default:
                 return options.inverse(this);
                 break;
         }
         //return options.inverse(this);
+    });
+
+    Handlebars.registerHelper('arithmetic', function(val1, operator, val2, commaFormat, options) {
+        var v1 = (val1 && parseInt(val1.toString().replace(/\,/g, ''))) || 0,
+            v2 = (val2 && parseInt(val2.toString().replace(/\,/g, ''))) || 0,
+            val = null;
+        switch (operator) {
+            case '+':
+                val = v1 + v2;
+                break;
+            case '-':
+                val = v1 - v2;
+                break;
+            case '/':
+                val = v1 / v2;
+                break;
+            case '*':
+                val = v1 * v2;
+                break;
+            case '%':
+                val = v1 % v2;
+                break;
+            default:
+                val = 0;
+                break;
+        }
+        if (commaFormat === false) {
+            return val;
+        }
+        return _.numberFormatWithComma(val);;
+
+    });
+
+    Handlebars.registerHelper('lookup', function(obj, field, defaulValue) {
+        return (obj[field] ? obj[field] : (defaulValue ? defaulValue : ""));
+    });
+
+    Handlebars.registerHelper('eachlookup', function(obj, field, options) {
+        return Handlebars.helpers.each((obj[field] ? obj[field] : null), options);
+    });
+
+    Handlebars.registerHelper('callmyfunction', function(functionObj, param, options) {
+        var argumentObj = _.extend([], arguments);
+        argumentObj.shift();
+        return functionObj.apply(this, argumentObj);
     });
 
     return HHelpers;

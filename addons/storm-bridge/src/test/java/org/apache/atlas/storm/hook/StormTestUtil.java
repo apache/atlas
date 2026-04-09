@@ -34,13 +34,12 @@ import java.util.HashMap;
  * An until to create a test topology.
  */
 final class StormTestUtil {
-
     private StormTestUtil() {
     }
 
     public static ILocalCluster createLocalStormCluster() {
         // start a local storm cluster
-        HashMap<String,Object> localClusterConf = new HashMap<>();
+        HashMap<String, Object> localClusterConf = new HashMap<>();
         localClusterConf.put("nimbus-daemon", true);
         return Testing.getLocalCluster(localClusterConf);
     }

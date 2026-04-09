@@ -61,27 +61,18 @@ define(['require',
                 return events;
             },
             initialize: function(options) {
-                // this.parentView = options.parentView;
+                _.extend(this, _.pick(options, 'enumDefCollection'));
                 this.collection = new Backbone.Collection();
-                this.typeEnum = new VTagList();
-                this.typeEnum.url = UrlLinks.typedefsUrl().defs;
-                this.typeEnum.modelAttrName = "enumDefs";
+                this.collectionAttribute();
             },
             onRender: function() {
                 var that = this;
-                this.$('.fontLoader').show();
                 this.ui.addAttributeDiv.find('.closeInput').hide();
                 if (!('placeholder' in HTMLInputElement.prototype)) {
                     this.ui.addAttributeDiv.find('input,textarea').placeholder();
                 }
-                that.typeEnum.fetch({
-                    reset: true,
-                    complete: function(model, response) {
-                        that.collectionAttribute();
-                        that.$('.fontLoader').hide();
-                        that.$('.hide').removeClass('hide');
-                    }
-                });
+                that.$('.hide').removeClass('hide');
+                this.ui.addAttributeDiv.find('.toggleDuplicates').addClass("hide");
             },
             bindEvents: function() {},
             collectionAttribute: function() {
@@ -93,7 +84,7 @@ define(['require',
                     "valuesMinCount": 0,
                     "valuesMaxCount": 1,
                     "isUnique": false,
-                    "isIndexable": false
+                    "isIndexable": true
                 }));
 
             },

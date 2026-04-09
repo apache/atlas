@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,18 +17,19 @@
  */
 package org.apache.atlas.repository.impexp;
 
+import org.apache.atlas.repository.util.UniqueList;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
 
 public class UniqueListTest {
-    private final String firstElement = "firstElement";
-    private ExportService.UniqueList<String> uniqueList;
+    private final String             firstElement = "firstElement";
+    private       UniqueList<String> uniqueList;
 
     @BeforeClass
     public void setup() {
-        uniqueList = new ExportService.UniqueList();
+        uniqueList = new UniqueList();
         uniqueList.add(firstElement);
         uniqueList.add("def");
         uniqueList.add("firstElement");
@@ -42,7 +43,7 @@ public class UniqueListTest {
 
     @Test
     public void addAllList_ListHas2() {
-        ExportService.UniqueList<String> uniqueList2 = new ExportService.UniqueList<>();
+        UniqueList<String> uniqueList2 = new UniqueList<>();
         uniqueList2.addAll(uniqueList);
 
         assertEquals(3, uniqueList2.size());
@@ -50,7 +51,7 @@ public class UniqueListTest {
 
     @Test
     public void attemptClear_SizeIsZero() {
-        ExportService.UniqueList<String> uniqueList2 = new ExportService.UniqueList<>();
+        UniqueList<String> uniqueList2 = new UniqueList<>();
         uniqueList2.addAll(uniqueList);
         uniqueList2.clear();
 
@@ -59,7 +60,7 @@ public class UniqueListTest {
 
     @Test
     public void attemptOneRemove_SizeIsReduced() {
-        ExportService.UniqueList<String> uniqueList2 = new ExportService.UniqueList<>();
+        UniqueList<String> uniqueList2 = new UniqueList<>();
         uniqueList2.addAll(uniqueList);
         String removedElement = uniqueList2.remove(0);
 

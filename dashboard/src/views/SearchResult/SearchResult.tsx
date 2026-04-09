@@ -1,0 +1,1127 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { getBasicSearchResult } from "../../api/apiMethods/searchApiMethod";
+import { useSearchParams } from "react-router-dom";
+import { FormControlLabel, FormGroup, IconButton, Stack } from "@mui/material";
+import { useSelector } from "react-redux";
+import {
+  customSortBy,
+  findUniqueValues,
+  extractKeyValueFromEntity,
+  isArray,
+  isEmpty,
+  isNull,
+  removeDuplicateObjects,
+  dateFormat,
+  flattenArray,
+  serverError,
+  searchParamsAPiQuery,
+  globalSearchParams
+} from "@utils/Utils";
+import { toast } from "react-toastify";
+import { TableLayout } from "@components/Table/TableLayout";
+import moment from "moment-timezone";
+import { LightTooltip } from "@components/muiComponents";
+import { _get } from "@api/apiMethods/apiMethod";
+import { getValues } from "@components/commonComponents";
+import DialogShowMoreLess from "@components/DialogShowMoreLess";
+import { entityStateReadOnly, serviceTypeMap } from "@utils/Enum";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import { startsWith } from "@utils/Helper";
+import { removeClassification } from "@api/apiMethods/classificationApiMethod";
+import { removeTerm } from "@api/apiMethods/glossaryApiMethod";
+import { TextShowMoreLess } from "@components/TextShowMoreLess";
+import DisplayImage from "@components/EntityDisplayImage";
+import { AntSwitch } from "@utils/Muiutils";
+
+interface EntityState {
+  entity: {
+    loading: boolean;
+    entityData: any;
+  };
+}
+interface Params {
+  excludeDeletedEntities: boolean;
+  includeSubClassifications: boolean;
+  includeSubTypes: boolean;
+  includeClassificationAttributes: boolean;
+  entityFilters?: any;
+  tagFilters?: any;
+  attributes?: string[];
+  limit: number;
+  offset: number;
+  typeName: string | null;
+  classification: any;
+  termName: string | null;
+  relationshipFilters?: string | null;
+}
+
+let defaultColumnsName: Array<string> = [
+  "select",
+  "name",
+  "owner",
+  "description",
+  "typeName",
+  "classificationNames",
+  "term"
+];
+
+const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }: any) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchData, setSearchData] = useState<any>([]);
+  const [loader, setLoader] = useState(true);
+  const toastId: any = useRef(null);
+  const [updateTable, setUpdateTable] = useState(moment.now());
+  const { entityData } = useSelector((state: EntityState) => state.entity);
+  const { businessMetaData } = useSelector((state: any) => state.businessMetaData);
+  const { businessMetadataDefs } = businessMetaData || {};
+  const [pageCount, setPageCount] = useState<number>(0);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [isEmptyData, setIsEmptyData] = useState(false);
+  const [checkedEntities, setCheckedEntities] = useState<any>(
+    !isEmpty(searchParams.get("includeDE"))
+      ? searchParams.get("includeDE")
+      : false
+  );
+  const [checkedSubClassifications, setCheckedSubClassifications] =
+    useState<any>(
+      !isEmpty(searchParams.get("excludeSC"))
+        ? searchParams.get("excludeSC")
+        : false
+    );
+  const entityFilterParams = searchParams.get("entityFilters");
+  const tagFilterParams = searchParams.get("tagFilters");
+  const relatonshipParams = searchParams.get("relationshipFilters");
+
+  const handleSwitchChangeSubClassification = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    event.stopPropagation();
+
+    setCheckedSubClassifications(event.target.checked);
+    if (event.target.checked) {
+      searchParams.set("excludeSC", event.target.checked ? "true" : "false");
+      setSearchParams(searchParams);
+    } else {
+      searchParams.delete("excludeSC");
+      setSearchParams(searchParams);
+    }
+  };
+
+  const handleSwitchChangeEntities = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    event.stopPropagation();
+    setCheckedEntities(event.target.checked);
+    if (event.target.checked) {
+      searchParams.set("includeDE", event.target.checked ? "true" : "false");
+      setSearchParams(searchParams);
+    } else {
+      searchParams.delete("includeDE");
+      setSearchParams(searchParams);
+    }
+  };
+
+  const fetchSearchResult = useCallback(
+    async ({ pagination }: { pagination?: any }) => {
+      setLoader(true);
+      const { pageSize, pageIndex } = pagination || {};
+
+      let params: Params | any = {
+        excludeDeletedEntities: !isEmpty(searchParams.get("includeDE"))
+          ? !searchParams.get("includeDE")
+          : true,
+        includeSubClassifications: !isEmpty(searchParams.get("excludeSC"))
+          ? !searchParams.get("excludeSC")
+          : true,
+        includeSubTypes: !isEmpty(searchParams.get("excludeST"))
+          ? !searchParams.get("excludeST")
+          : true,
+        includeClassificationAttributes: true,
+        ...(isEmpty(classificationParams || glossaryTypeParams) && {
+          entityFilters: !isEmpty(entityFilterParams)
+            ? searchParamsAPiQuery(entityFilterParams)
+            : null
+        }),
+        ...(isEmpty(classificationParams || glossaryTypeParams) && {
+          tagFilters: (() => {
+            const raw = !isEmpty(tagFilterParams)
+              ? searchParamsAPiQuery(tagFilterParams)
+              : null;
+            const tagFilterObj = raw as {
+              condition?: string;
+              criterion?: { attributeName?: string }[];
+            } | null;
+            if (!tagFilterObj?.criterion?.length) return raw;
+            // Remove criterion with attributeName "tag" - classic UI incorrectly
+            // puts term filter here; term is sent via termName
+            const validCriterion = tagFilterObj.criterion.filter(
+              (c) => c.attributeName !== "tag"
+            );
+            if (validCriterion.length === 0) return null;
+            return { ...tagFilterObj, criterion: validCriterion };
+          })()
+        }),
+        ...(isEmpty(classificationParams || glossaryTypeParams) && {
+          attributes: (() => {
+            const attrParam = searchParams.get("attributes");
+            if (!attrParam) return [];
+            const attrs = findUniqueValues(
+              attrParam.split(",").map((a: string) => a?.trim()).filter(Boolean),
+              defaultColumnsName
+            );
+            // Filter out classic UI column names that are not valid entity attributes
+            const invalidEntityAttrs = ["tag", "selected"];
+            return attrs.filter((a: string) => !invalidEntityAttrs.includes(a));
+          })()
+        }),
+        limit:
+          searchParams.get("pageLimit") != null
+            ? Number(searchParams.get("pageLimit"))
+            : pageSize,
+        offset:
+          searchParams.get("pageOffset") != null
+            ? Number(searchParams.get("pageOffset"))
+            : pageIndex * pageSize,
+        ...(isEmpty(classificationParams || glossaryTypeParams) && {
+          relationshipFilters: !isEmpty(relatonshipParams)
+            ? searchParamsAPiQuery(relatonshipParams)
+            : null,
+          ...(searchParams.get("query") != null && {
+            query: searchParams.get("query")
+          })
+        }),
+        typeName: searchParams.get("type") || null,
+        classification: searchParams.get("tag") || classificationParams || null,
+        termName: searchParams.get("term") || glossaryTypeParams || null
+      };
+      let dslParams = {
+        limit: pageSize,
+        offset:
+          searchParams.get("pageOffset") != null
+            ? searchParams.get("pageOffset")
+            : pageIndex * pageSize || 0,
+        typeName: searchParams.get("type") || null,
+        ...(searchParams.get("query") != null && {
+          query: searchParams.get("query")
+        })
+      };
+
+      globalSearchParams.basicParams = params;
+      globalSearchParams.dslParams = dslParams;
+
+      
+      const qParam = searchParams.get("query");
+      if (qParam) {
+        try {
+          (globalSearchParams as any).basicParams.query = qParam;
+          (globalSearchParams as any).dslParams.query = qParam;
+        } catch {
+          /* ignore */
+        }
+      }
+
+      const isDslSearch = searchParams.get("searchType") == "dsl";
+      let searchTypeParams = isDslSearch ? dslParams : params;
+      try {
+        const searchResp = await getBasicSearchResult(
+          {
+            data:
+              (searchParams.get("searchType") == "basic" ||
+                !isEmpty(classificationParams || glossaryTypeParams)) &&
+              searchTypeParams,
+            params: searchParams.get("searchType") == "dsl" && searchTypeParams
+          },
+          searchParams.get("searchType") || "basic"
+        );
+        const { data = {} } = searchResp || {};
+
+        const hasEntities = Array.isArray((data as any)?.entities);
+        const hasDslAttributes =
+          Array.isArray((data as any)?.attributes) ||
+          Array.isArray((data as any)?.attributes?.name);
+        const hasDslValues =
+          Array.isArray((data as any)?.attributes?.values) ||
+          Array.isArray((data as any)?.values);
+
+        if (isDslSearch && !hasEntities && !hasDslAttributes) {
+          setSearchData({ entities: [] });
+          setIsEmptyData(true);
+          setLoader(false);
+          return;
+        }
+
+        let dataLength = 0;
+        let totalCountLocal = 0;
+        if (isDslSearch && !hasEntities && hasDslAttributes && hasDslValues) {
+          const vals = (data as any).attributes?.values || (data as any).values;
+          dataLength = (vals as any[])?.length || 0;
+          totalCountLocal = dataLength;
+        } else {
+          const { approximateCount, entities } = data as any;
+          dataLength = Array.isArray(entities) ? entities.length : 0;
+          totalCountLocal = approximateCount ?? dataLength;
+        }
+
+        if (!dataLength) {
+          setIsEmptyData(true);
+          setSearchData({ entities: [], referredEntities: {} });
+          setTotalCount(0);
+          setPageCount(0);
+          setLoader(false);
+        } else {
+          setIsEmptyData(false);
+          setSearchData(searchResp.data);
+          setTotalCount(totalCountLocal || 0);
+          setPageCount(
+            Math.ceil((totalCountLocal || dataLength) / (pagination.pageSize || pageSize))
+          );
+          setLoader(false);
+        }
+      } catch (error: any) {
+        console.error(
+          "Error fetching data:",
+          error?.response?.data?.errorMessage
+        );
+        toast.dismiss(toastId.current);
+        serverError(error, toastId);
+        setLoader(false);
+      }
+    },
+    [updateTable, searchParams]
+  );
+
+  const location = useLocation();
+
+  // Trigger refetch when URL search params change from custom filter click.
+  // Fixes first-click issue: ensures fetch runs after navigation with correct params.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (
+      location.pathname === "/search/searchResult" &&
+      location.search &&
+      params.get("isCF") === "true"
+    ) {
+      setUpdateTable(moment.now());
+    }
+  }, [location.search]);
+
+  const refreshTable = () => {
+    setUpdateTable(moment.now());
+  };
+  let typeDefEntityData = !isNull(entityData)
+    ? entityData.entityDefs.find((entity: { name: string }) => {
+        if (entity.name == searchParams.get("type")) {
+          return entity;
+        }
+      })
+    : {};
+
+  const defaultColumns: any = [
+    {
+      accessorFn: (row: any) => row.attributes.name,
+      accessorKey: "name",
+      cell: (info: any) => {
+        let entityDef: any = info.row.original;
+        const { name }: { name: string; found: boolean; key: any } =
+          extractKeyValueFromEntity(entityDef);
+
+        const getName = (entity: { guid: string }) => {
+          const href = `/detailPage/${entity.guid}`;
+
+          return (
+            <LightTooltip title={name}>
+              {entity.guid != "-1" ? (
+                <Link
+                  className={`entity-name nav-link text-decoration-none ${
+                    entityDef.status && entityStateReadOnly[entityDef.status]
+                      ? "text-red"
+                      : "text-blue"
+                  }`}
+                  style={{ width: "unset !important", whiteSpace: "nowrap" }}
+                  to={{
+                    pathname: href
+                  }}
+                >
+                  {name}
+                </Link>
+              ) : (
+                <span>{name} </span>
+              )}
+            </LightTooltip>
+          );
+        };
+        if (
+          entityDef.attributes &&
+          entityDef.attributes.serviceType !== undefined
+        ) {
+          if (
+            serviceTypeMap[entityDef.typeName] === undefined &&
+            entityData.entityDefs
+          ) {
+            var defObj = entityData.entityDefs.find(
+              (obj: { typeName: string }) => ({
+                name: obj.typeName
+              })
+            );
+            if (defObj) {
+              serviceTypeMap[entityDef.typeName] = defObj.get("serviceType");
+            }
+          }
+        } else if (serviceTypeMap[entityDef.typeName] === undefined) {
+          serviceTypeMap[entityDef.typeName] = entityDef.attributes
+            ? entityDef.attributes.serviceType
+            : null;
+        }
+        entityDef.serviceType = serviceTypeMap[entityDef.typeName];
+        return (
+          <div className="searchTableName">
+            <DisplayImage entity={entityDef} />
+            {getName(entityDef)}
+            {entityDef.status && entityStateReadOnly[entityDef.status] && (
+              <LightTooltip title="Deleted">
+                <IconButton
+                  aria-label="back"
+                  sx={{
+                    display: "inline-flex",
+                    position: "relative",
+                    padding: "4px",
+                    marginLeft: "4px",
+                    color: (theme) => theme.palette.grey[500]
+                  }}
+                >
+                  <DeleteOutlineOutlinedIcon sx={{ fontSize: "1.25rem" }} />
+                </IconButton>
+              </LightTooltip>
+            )}
+          </div>
+        );
+      },
+      header: "Name",
+      sortingFn: "alphanumeric",
+      show: true
+    },
+    {
+      accessorFn: (row: any) => row.attributes.owner,
+      accessorKey: "owner",
+      cell: (info: any) => <span>{info.getValue()}</span>,
+      header: "Owner",
+      show: true
+    },
+    {
+      accessorFn: (row: any) => row.attributes.description,
+      accessorKey: "description",
+      cell: (info: any) => <span>{info.getValue()}</span>,
+      header: "Description",
+      show: true
+    },
+    {
+      accessorFn: (row: any) => row.typeName,
+      accessorKey: "typeName",
+      cell: (info: any) => {
+        const typeName = info.getValue();
+        const searchParams = new URLSearchParams();
+        searchParams.set("query", typeName);
+        searchParams.set("searchType", "dsl");
+        
+        return (
+          <LightTooltip title={`Search ${typeName}`}>
+            <Link
+              className="text-blue text-decoration-none"
+              to={{
+                pathname: "/search/searchResult",
+                search: searchParams.toString()
+              }}
+            >
+              {typeName}
+            </Link>
+          </LightTooltip>
+        );
+      },
+      header: "Type",
+      show: true
+    },
+    {
+      accessorFn: (row: any) => row.classificationNames[0],
+      accessorKey: "classificationNames",
+      cell: (info: any) => {
+        let data: { status: string; guid: string; classifications: any } =
+          info.row.original;
+        if (data.guid == "-1") {
+          return;
+        }
+
+        return (
+          <DialogShowMoreLess
+            value={data}
+            readOnly={
+              data.status && entityStateReadOnly[data.status] ? true : false
+            }
+            setUpdateTable={setUpdateTable}
+            columnVal="classifications"
+            colName="Classification"
+            displayText="typeName"
+            removeApiMethod={removeClassification}
+            isShowMoreLess={true}
+          />
+        );
+      },
+      header: "Classifications",
+      show: true,
+      enableSorting: false
+    },
+    isEmpty(glossaryTypeParams) && {
+      accessorFn: (row: { meanings: { qualifiedName?: string }[] }) =>
+        row.meanings[0]?.qualifiedName,
+      accessorKey: "term",
+      cell: (info: any) => {
+        let data: {
+          status: string;
+          guid: string;
+          typeName: string;
+          meanings: any;
+        } = info.row.original;
+        if (data.guid == "-1") {
+          return;
+        }
+        if (data.typeName && !startsWith(data.typeName, "AtlasGlossary")) {
+          return (
+            <DialogShowMoreLess
+              value={data}
+              readOnly={
+                data.status && entityStateReadOnly[data.status] ? true : false
+              }
+              columnVal="meanings"
+              colName="Term"
+              setUpdateTable={setUpdateTable}
+              displayText={"qualifiedName"}
+              removeApiMethod={removeTerm}
+              isShowMoreLess={true}
+            />
+          );
+        }
+      },
+      header: "Term",
+      show: true,
+      enableSorting: false
+    }
+  ];
+  let superTypeAttr: any = [];
+  const getSuperTypeAttributeDefsCol = (
+    superTypes: any,
+    entityAttr: string
+  ) => {
+    superTypes?.map((superTypesEntity: any) => {
+      let superTypeAttributeData = !isNull(entityData)
+        ? entityData.entityDefs.find((entity: any) => {
+            if (entity.name == superTypesEntity) {
+              return entity;
+            }
+          })
+        : {};
+
+      superTypeAttributeData?.attributeDefs?.map(
+        (superTypesEntityData: any) => {
+          let superTypesObj = {};
+          if (!isEmpty(superTypesEntityData)) {
+            let referredEntities: number =
+              superTypeAttributeData.relationshipAttributeDefs.findIndex(
+                (obj: { name: string }) =>
+                  obj.name === superTypesEntityData.name
+              );
+            if (referredEntities == -1) {
+              superTypesObj = {
+                accessorFn: (row: any) =>
+                  row.attributes[superTypesEntityData.name],
+                accessorKey: superTypesEntityData.name,
+                header:
+                  superTypesEntityData.name.charAt(0).toUpperCase() +
+                  superTypesEntityData.name.slice(1),
+                cell: (info: any) => {
+                  let rowAttrVal =
+                    info.row.original.attributes[superTypesEntityData.name];
+                  if (searchData.referredEntities !== undefined) {
+                    if (isArray(rowAttrVal)) {
+                      let refAtrrVal = rowAttrVal.map((obj: any) => {
+                        let referredEntities =
+                          searchData.referredEntities[obj?.guid];
+                        return getValues(
+                          info,
+                          referredEntities,
+                          superTypesEntityData,
+                          "relationShipAttr"
+                        );
+                      });
+                      return refAtrrVal.length > 0 ? (
+                        <TextShowMoreLess data={refAtrrVal} />
+                      ) : (
+                        <span>NA</span>
+                      );
+                    } else {
+                      let referredEntities =
+                        searchData.referredEntities[rowAttrVal?.guid];
+                      return getValues(
+                        info,
+                        referredEntities,
+                        superTypesEntityData,
+                        "relationShipAttr"
+                      );
+                    }
+                  } else {
+                    return getValues(
+                      info,
+                      superTypeAttributeData,
+                      superTypesEntityData
+                    );
+                  }
+                },
+                show: false
+              };
+            }
+          }
+          superTypeAttr.push(superTypesObj);
+        }
+      );
+      if (!isEmpty(superTypeAttributeData?.superTypes) && entityAttr == "") {
+        return getSuperTypeAttributeDefsCol(
+          superTypeAttributeData?.superTypes,
+          ""
+        );
+      }
+    });
+    return superTypeAttr;
+  };
+  const getEntityDefsCol = (typeDefEntityData: any) => {
+    let getEntityAttr: any = [];
+
+    typeDefEntityData?.attributeDefs?.map((entity: any) => {
+      let referredEntities: number =
+        typeDefEntityData.relationshipAttributeDefs.findIndex(
+          (obj: { name: string }) => obj.name === entity.name
+        );
+      if (referredEntities == -1) {
+        getEntityAttr.push({
+          accessorFn: (row: any) => row.attributes[entity.name],
+          accessorKey: entity.name,
+          header: entity.name.charAt(0).toUpperCase() + entity.name.slice(1),
+          cell: (info: any) => {
+            if (referredEntities == -1) {
+              return getValues(info, typeDefEntityData, entity);
+            }
+          },
+
+          show: false,
+          enableSorting:
+            entity.typeName.search(
+              /(string|date|boolean|int|number|byte|float|long|double|short)/i
+            ) == 0
+        });
+      }
+
+      if (!isEmpty(typeDefEntityData?.superTypes)) {
+        let superTypesAttr: any = getSuperTypeAttributeDefsCol(
+          typeDefEntityData?.superTypes,
+          "entityAttr"
+        );
+        getEntityAttr = [...getEntityAttr, ...superTypesAttr];
+      }
+    });
+    return getEntityAttr;
+  };
+
+  let entitytAttributeDefsCol = flattenArray(
+    removeDuplicateObjects(getEntityDefsCol(typeDefEntityData))
+  );
+
+  let superTypeAttributeDefsCol = flattenArray(
+    removeDuplicateObjects(
+      getSuperTypeAttributeDefsCol(typeDefEntityData?.superTypes, "")
+    )
+  );
+  let relationshipAttributeDefsCol =
+    typeDefEntityData?.relationshipAttributeDefs?.map(
+      (entity: { typeName: any; name: string }) => {
+        return {
+          accessorFn: (row: any) => row.attributes[entity.name],
+          accessorKey: entity.name,
+          header: entity.name.charAt(0).toUpperCase() + entity.name.slice(1),
+          cell: (user: any) => {
+            let rowVal = user.row.original[entity.name];
+            if (isArray(rowVal) && rowVal.length > 0) {
+              return user.row.original[entity.name].length > 0 ? (
+                <TextShowMoreLess data={rowVal} displayText="displayText" />
+              ) : (
+                <span>NA</span>
+              );
+            }
+
+            if (searchData.referredEntities != undefined) {
+              let rowAttrVal = user.row.original.attributes[entity.name];
+              if (isArray(rowAttrVal)) {
+                let refAtrrVal = rowAttrVal.map((obj: any) => {
+                  let referredEntities = searchData.referredEntities[obj?.guid];
+                  return getValues(
+                    user,
+                    referredEntities,
+                    entity,
+                    "relationShipAttr"
+                  );
+                });
+                return refAtrrVal.length > 0 ? (
+                  <TextShowMoreLess data={refAtrrVal} />
+                ) : (
+                  <span>NA</span>
+                );
+              } else {
+                let referredEntities =
+                  searchData.referredEntities[rowAttrVal?.guid];
+                return getValues(
+                  user,
+                  referredEntities,
+                  entity,
+                  "relationShipAttr"
+                );
+              }
+            }
+          },
+          show: false,
+          enableSorting:
+            entity.typeName.search(
+              /(string|date|boolean|int|number|byte|float|long|double|short)/i
+            ) == 0
+        };
+      }
+    );
+
+  // Function to get business metadata attribute columns
+  const getBusinessMetadataAttributeCols = () => {
+    let businessMetadataAttrCols: any = [];
+    let businessAttributes: any = {};
+
+    // Get business attributes based on search type
+    if (searchParams.get("type") === "_ALL_ENTITY_TYPES") {
+      // For _ALL_ENTITY_TYPES, get all business metadata definitions
+      if (businessMetadataDefs && businessMetadataDefs.length > 0) {
+        businessMetadataDefs.forEach((bmDef: any) => {
+          const attributes = bmDef.attributeDefs || [];
+          if (attributes.length > 0) {
+            // Sort attributes by name to match Classic UI behavior
+            const sortedAttributes = [...attributes].sort((a: any, b: any) => {
+              if (a.name < b.name) return -1;
+              if (a.name > b.name) return 1;
+              return 0;
+            });
+            businessAttributes[bmDef.name] = sortedAttributes;
+          }
+        });
+      }
+    } else {
+      // For specific type, get from entity definition
+      const rawBusinessAttributes = typeDefEntityData?.businessAttributeDefs || {};
+      // Sort attributes within each business metadata
+      Object.keys(rawBusinessAttributes).forEach((bmName: string) => {
+        const attributes = rawBusinessAttributes[bmName];
+        if (Array.isArray(attributes)) {
+          businessAttributes[bmName] = [...attributes].sort((a: any, b: any) => {
+            if (a.name < b.name) return -1;
+            if (a.name > b.name) return 1;
+            return 0;
+          });
+        } else {
+          businessAttributes[bmName] = attributes;
+        }
+      });
+    }
+
+    // Create columns for each business metadata attribute
+    if (businessAttributes && Object.keys(businessAttributes).length > 0) {
+      Object.keys(businessAttributes).forEach((businessMetadataName: string) => {
+        const attributes = businessAttributes[businessMetadataName];
+        if (attributes && Array.isArray(attributes)) {
+          attributes.forEach((attr: any) => {
+            const attributeKey = `${businessMetadataName}.${attr.name}`;
+            businessMetadataAttrCols.push({
+              id: attributeKey, // Set id to match accessorKey for URL params tracking
+              accessorFn: (row: any) => {
+                // Business metadata attributes are flattened in the API response
+                // Format: attributes["bm1.BM_attr1"] (matching Classic UI behavior)
+                // Try flattened format first
+                if (row.attributes?.[attributeKey] !== undefined) {
+                  return row.attributes[attributeKey];
+                }
+                // Fallback to nested format: attributes[bmName][attrName]
+                const bmData = row.attributes?.[businessMetadataName];
+                if (bmData && bmData[attr.name] !== undefined) {
+                  return bmData[attr.name];
+                }
+                return null;
+              },
+              accessorKey: attributeKey,
+              header: attributeKey, // Display as "bm1.BM_attr1" format
+              cell: (info: any) => {
+                const rowData = info.row.original;
+                // Try flattened format first: attributes["bm1.BM_attr1"]
+                let attrValue = rowData.attributes?.[attributeKey];
+                
+                // Fallback to nested format: attributes[bmName][attrName]
+                if (attrValue === undefined || attrValue === null) {
+                  const bmData = rowData.attributes?.[businessMetadataName];
+                  attrValue = bmData?.[attr.name];
+                }
+
+                if (attrValue === undefined || attrValue === null || attrValue === "") {
+                  return <span>NA</span>;
+                }
+
+                // Use getValues helper to format the value properly
+                // Pass attributeKey as the name so getValues can access attributes[attributeKey]
+                return getValues(
+                  info,
+                  typeDefEntityData,
+                  {
+                    ...attr,
+                    name: attributeKey,
+                    isBusinessAttributes: true
+                  }
+                );
+              },
+              show: false, // Default to unchecked/hidden
+              enableSorting:
+                attr.typeName?.search(
+                  /(string|date|boolean|int|number|byte|float|long|double|short)/i
+                ) == 0
+            });
+          });
+        }
+      });
+    }
+
+    return businessMetadataAttrCols;
+  };
+
+  let businessMetadataAttributeCols = getBusinessMetadataAttributeCols();
+
+  let dynamicColumns: any = customSortBy(
+    [
+      ...(entitytAttributeDefsCol || []),
+      ...(relationshipAttributeDefsCol || []),
+      ...(superTypeAttributeDefsCol || []),
+      ...(businessMetadataAttributeCols || [])
+    ],
+    ["header"]
+  );
+
+  let defaultHideColumnsName = [
+    {
+      accessorKey: "__timestamp",
+      header: "Created Timestamp"
+    },
+    {
+      accessorKey: "__modificationTimestamp",
+      header: "Last Modified Timestamp"
+    },
+    { accessorKey: "__modifiedBy", header: "Last Modified User" },
+    {
+      accessorKey: "__createdBy",
+      header: "Created By User"
+    },
+    {
+      accessorKey: "__state",
+      header: "Status"
+    },
+    {
+      accessorKey: "__guid",
+      header: "Guid"
+    },
+    {
+      accessorKey: "__typeName",
+      header: "Type Name"
+    },
+    {
+      accessorKey: "__isIncomplete",
+      header: "IsIncomplete"
+    },
+    {
+      accessorKey: "__labels",
+      header: "Label(s)"
+    },
+    {
+      accessorKey: "__customAttributes",
+      header: "User-defined Properties"
+    },
+    {
+      accessorKey: "__pendingTasks",
+      header: "__pendingTasks"
+    }
+  ];
+  let defaultHideColumns = defaultHideColumnsName?.map(
+    (entity: any, index: any) => {
+      let classificationHideCol: string[] = [
+        "Type Name",
+        "Created Timestamp",
+        "Last Modified Timestamp",
+        "Last Modified User",
+        "Created By User"
+      ];
+
+      if (
+        !isEmpty(searchParams.get("tag")) &&
+        classificationHideCol.findIndex(
+          (obj: string) => obj == entity.header
+        ) == -1
+      ) {
+        return null;
+      }
+      if (entity.accessorKey == "__guid") {
+        return {
+          accessorKey: "__guid",
+          header: "Guid",
+          cell: (user: any) => {
+            return (
+              <span>
+                {" "}
+                <Link
+                  className="text-blue text-decoration-none"
+                  to={{
+                    pathname: `/detailPage/${user.row.original.attributes.__guid}`
+                  }}
+                >
+                  {user.row.original.attributes.__guid}
+                </Link>
+              </span>
+            );
+          },
+          show: false
+        };
+      }
+
+      return {
+        accessorKey: entity.accessorKey,
+        header: entity.header,
+        cell: (user: any) => {
+          let rowData = user.row.original;
+          if (
+            entity.accessorKey == "__timestamp" ||
+            entity.accessorKey == "__modificationTimestamp"
+          ) {
+            let date = user.row.original.attributes[entity.accessorKey];
+            return date !== undefined && <span>{dateFormat(date)}</span>;
+          }
+          return (
+            <span key={index}>{rowData.attributes[entity.accessorKey]}</span>
+          );
+        },
+        show: false
+      };
+    }
+  );
+
+  const isDslSearchMode = searchParams.get("searchType") === "dsl";
+  const getDslAttributeNames = () => {
+    const src: any = Array.isArray(searchData) ? searchData[0] : searchData;
+    if (!src) return [] as string[];
+    if (Array.isArray(src?.attributes)) {
+      return src.attributes
+        .map((a: any) => (typeof a === 'string' ? a : a?.name))
+        .filter(Boolean);
+    }
+    if (src?.attributes && Array.isArray(src?.attributes?.name)) {
+      return src.attributes.name as string[];
+    }
+    return [] as string[];
+  };
+  const sanitize = (name: string) =>
+    String(name).replace(/[^A-Za-z0-9_]/g, "_").replace(/_{2,}/g, "_");
+  const dslAttrNames = isDslSearchMode ? getDslAttributeNames() : [];
+  const dslColumns = dslAttrNames.map((label: string, idx: number) => {
+    const key = `dsl_${sanitize(label)}` || `dsl_${idx}`
+    return {
+      id: key,
+      accessorKey: key,
+      header: label,
+      cell: (info: any) => <span>{info.getValue()}</span>,
+      show: true
+    }
+  });
+
+  let allColumns =
+    isDslSearchMode && dslColumns.length > 0
+      ? dslColumns
+      : isEmpty(searchParams.get("type")) &&
+        isEmpty(searchParams.get("tag")) &&
+        !isEmpty(searchParams.get("term"))
+      ? removeDuplicateObjects([...defaultColumns])
+      : removeDuplicateObjects([
+          ...defaultColumns,
+          ...dynamicColumns,
+          ...defaultHideColumns
+        ]);
+
+  const isDslAggregate = isDslSearchMode && dslColumns.length > 0;
+
+  const defaultColumnVisibility: any = (columns: any) => {
+    let columnsParams: any = searchParams.get("attributes");
+    let hideColumns: any = {};
+
+    for (let col of columns) {
+      // If column is explicitly in URL params, show it (true = visible in React Table)
+      if (
+        !isEmpty(columnsParams) &&
+        columnsParams.split(",").includes(col.accessorKey)
+      ) {
+        hideColumns[col.accessorKey] = true;
+      } 
+      // If column has show: false (like business metadata), hide it by default (false = hidden in React Table)
+      else if (col.show === false) {
+        hideColumns[col.accessorKey] = false;
+      }
+      // For columns with show: true or default columns, show them
+      else {
+        hideColumns[col.accessorKey] = true;
+      }
+    }
+
+    return hideColumns;
+  };
+  const getDefaultSort = useMemo(() => {
+    if (isDslAggregate) {
+      return [] as any[]; // no default sorting for DSL aggregates
+    }
+    return [{ id: "name", asc: true }];
+  }, [isDslAggregate]);
+
+  return (
+    <Stack position="relative" gap={"1rem"}>
+      {!isEmpty(classificationParams || glossaryTypeParams) && (
+        <Stack
+          direction="row"
+          justifyContent="right"
+          alignItems="center"
+          right={0}
+          top={0}
+        >
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <AntSwitch
+                  sx={{ m: 1 }}
+                  size="small"
+                  checked={checkedSubClassifications}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    handleSwitchChangeSubClassification(e);
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  inputProps={{ "aria-label": "controlled" }}
+                />
+              }
+              label="Exclude sub-classification"
+            />
+          </FormGroup>
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <AntSwitch
+                  sx={{ m: 1 }}
+                  size="small"
+                  checked={checkedEntities}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    handleSwitchChangeEntities(e);
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  inputProps={{ "aria-label": "controlled" }}
+                />
+              }
+              label="Show historical entities"
+            />
+          </FormGroup>
+        </Stack>
+      )}
+
+      <TableLayout
+        fetchData={fetchSearchResult}
+        data={
+          isDslSearchMode && dslColumns.length > 0
+            ? (() => {
+                const src: any = Array.isArray(searchData)
+                  ? searchData[0]
+                  : searchData;
+                const values: any[] = Array.isArray(src?.values)
+                  ? src.values
+                  : Array.isArray(src?.attributes?.values)
+                  ? src.attributes.values
+                  : [];
+                return values.map((row: any[], idx: number) => {
+                  const obj: any = { id: `dsl-row-${idx}` };
+                  dslAttrNames.forEach((n: string, i: number) => {
+                    const colKey = `dsl_${sanitize(n)}`
+                    obj[colKey] = Array.isArray(row) ? row[i] : row
+                  });
+                  return obj;
+                });
+              })()
+            : searchData.entities || []
+        }
+        columns={allColumns.filter(
+          (value: object) => Object.keys(value).length !== 0
+        )}
+        emptyText="No Records found!"
+        isFetching={loader}
+        pageCount={pageCount}
+        // columnVisibilityParams={true}
+        columnVisibilityParams={!isDslAggregate}
+        defaultColumnVisibility={isDslAggregate ? {} : defaultColumnVisibility(allColumns)}
+        defaultColumnParams={defaultColumnsName.join(",")}
+        columnVisibility={!isDslAggregate}
+        // columnVisibility={true}
+        refreshTable={refreshTable}
+        defaultSortCol={getDefaultSort}
+        clientSideSorting={true}
+        isClientSidePagination={false}
+        columnSort={true}
+        showPagination={true}
+        showRowSelection={!isDslAggregate}
+        // showRowSelection={true}
+        tableFilters={!hideFilters}
+        assignFilters={
+          !isEmpty(classificationParams || glossaryTypeParams)
+            ? {
+                classifications: true,
+                term: true
+              }
+            : null
+        }
+        queryBuilder={!hideFilters}
+        allTableFilters={!hideFilters}
+        setUpdateTable={setUpdateTable}
+        isfilterQuery={!hideFilters}
+        isEmptyData={isEmptyData}
+        setIsEmptyData={setIsEmptyData}
+        showGoToPage={true}
+        totalCount={totalCount}
+      />
+    </Stack>
+  );
+};
+
+export default SearchResult;

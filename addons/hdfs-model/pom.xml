@@ -16,147 +16,89 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
-        <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>0.9-SNAPSHOT</version>
+        <artifactId>apache-atlas</artifactId>
+        <version>3.0.0-SNAPSHOT</version>
         <relativePath>../../</relativePath>
     </parent>
+
     <artifactId>hdfs-model</artifactId>
-    <description>Apache Atlas FileSystem Model</description>
-    <name>Apache Atlas FileSystem Model</name>
     <packaging>jar</packaging>
 
+    <name>Apache Atlas FileSystem Model</name>
+    <description>Apache Atlas FileSystem Model</description>
+
     <dependencies>
+        <!-- apache atlas core dependencies -->
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-client-v1</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-text</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-notification</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+        </dependency>
         <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
         </dependency>
 
-        <!-- apache atlas core dependencies -->
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-client</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-notification</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-        </dependency>
-
         <!-- apache hdfs core dependencies -->
-
         <!-- Testing dependencies -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-graphdb-impls</artifactId>
             <type>pom</type>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-repository</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
-            <classifier>tests</classifier>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>
-                <groupId>net.alchim31.maven</groupId>
-                <artifactId>scala-maven-plugin</artifactId>
-                <version>3.2.0</version>
-                <executions>
-                    <execution>
-                        <id>scala-compile-first</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>scala-test-compile-first</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <scalaVersion>${scala.version}</scalaVersion>
-                    <recompileMode>incremental</recompileMode>
-                    <useZincServer>true</useZincServer>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                    <args>
-                        <arg>-unchecked</arg>
-                        <arg>-deprecation</arg>
-                        <arg>-feature</arg>
-                    </args>
-                    <jvmArgs>
-                        <jvmArg>-Xmx512m</jvmArg>
-                        <jvmArg>-XX:MaxPermSize=128m</jvmArg>
-                    </jvmArgs>
-                    <!--
-                    <javacArgs>
-                        <javacArg>-source</javacArg>
-                        <javacArg>${java.version}</javacArg>
-                        <javacArg>-target</javacArg>
-                        <javacArg>${java.version}</javacArg>
-                    </javacArgs>
-                    -->
-                    <!-- The following plugin is required to use quasiquotes in Scala 2.10 and is used
-                         by Spark SQL for code generation. -->
-                    <!--<compilerPlugins>
-                        <compilerPlugin>
-                            <groupId>org.scalamacros</groupId>
-                            <artifactId>paradise_${scala.version}</artifactId>
-                            <version>${scala.macros.version}</version>
-                        </compilerPlugin>
-                    </compilerPlugins>-->
-                </configuration>
-            </plugin>
-
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
+                <configuration>
+                    <generateProjectInfo>false</generateProjectInfo>
+                    <generateReports>false</generateReports>
+                </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>org.apache.maven.doxia</groupId>
+                        <artifactId>doxia-core</artifactId>
+                        <version>${doxia.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.maven.doxia</groupId>
                         <artifactId>doxia-module-twiki</artifactId>
-                        <version>1.3</version>
+                        <version>${doxia.version}</version>
                     </dependency>
                 </dependencies>
                 <executions>
@@ -167,23 +109,14 @@
                         <phase>prepare-package</phase>
                     </execution>
                 </executions>
-                <configuration>
-                    <generateProjectInfo>false</generateProjectInfo>
-                    <generateReports>false</generateReports>
-                </configuration>
             </plugin>
-
-
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.2.1</version>
                 <inherited>false</inherited>
-                <executions>
-                </executions>
+                <executions />
             </plugin>
-
-
         </plugins>
     </build>
 </project>
