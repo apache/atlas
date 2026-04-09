@@ -225,10 +225,12 @@ jobs:
 
             // Gate: Check for at least 1 approval on current HEAD SHA
             // Approvals must be on the current commit - stale approvals from previous commits don't count
+            // Note: per_page=100 is required for PRs with many reviews (default is 30)
             const { data: reviews } = await github.rest.pulls.listReviews({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: prNumber
+              pull_number: prNumber,
+              per_page: 100
             });
 
             const currentApprovals = reviews.filter(review => 
