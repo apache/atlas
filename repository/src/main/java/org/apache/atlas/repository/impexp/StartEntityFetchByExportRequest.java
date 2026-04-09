@@ -109,6 +109,11 @@ public class StartEntityFetchByExportRequest {
 
                 return ret;
             }
+
+            if (StringUtils.isEmpty(item.getTypeName()) && MapUtils.isNotEmpty(item.getUniqueAttributes())) {
+                LOG.info("Request missing typeName but has uniqueAttributes. Attempting generic type search.");
+                return getEntitiesForMatchTypeType(item, MATCH_TYPE_FOR_TYPE);
+            }
         } catch (AtlasBaseException ex) {
             LOG.error("Error fetching starting entity for: {}", item, ex);
         } finally {
@@ -145,14 +150,20 @@ public class StartEntityFetchByExportRequest {
     }
 
     private List<String> getEntitiesForMatchTypeUsingUniqueAttributes(AtlasObjectId item, String matchType) throws AtlasBaseException {
-        final String          queryTemplate = getQueryTemplateForMatchType(matchType);
-        final String          typeName      = item.getTypeName();
-        final AtlasEntityType entityType    = typeRegistry.getEntityTypeByName(typeName);
-
-        Set<String> ret = new HashSet<>();
+        final String          typeName   = item.getTypeName();
+        final AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
         if (entityType == null) {
             throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, typeName);
+        }
+
+        final String queryTemplate = getQueryTemplateForMatchType(matchType);
+        Set<String>  ret           = new HashSet<>();
+
+        Set<String> typeNamesToQuery = new HashSet<>();
+        typeNamesToQuery.add(typeName);
+        if (CollectionUtils.isNotEmpty(entityType.getAllSubTypes())) {
+            typeNamesToQuery.addAll(entityType.getAllSubTypes());
         }
 
         for (Map.Entry<String, Object> e : item.getUniqueAttributes().entrySet()) {
@@ -165,27 +176,49 @@ public class StartEntityFetchByExportRequest {
                 continue;
             }
 
-            List<String> guids = executeGremlinQuery(queryTemplate, getBindingsForObjectId(typeName, attribute.getQualifiedName(), e.getValue()));
+            for (String typeToSearch : typeNamesToQuery) {
+                List<String> guids = executeGremlinQuery(queryTemplate, getBindingsForObjectId(typeToSearch, attribute.getQualifiedName(), e.getValue()));
 
-            if (!CollectionUtils.isNotEmpty(guids)) {
-                continue;
+                if (CollectionUtils.isNotEmpty(guids)) {
+                    ret.addAll(guids);
+                }
             }
-
-            ret.addAll(guids);
         }
 
         return new ArrayList<>(ret);
     }
 
-    private List<String> getEntitiesForMatchTypeType(AtlasObjectId item, String matchType) {
+    private List<String> getEntitiesForMatchTypeType(AtlasObjectId item, String matchType) throws AtlasBaseException {
         return executeGremlinQuery(getQueryTemplateForMatchType(matchType), getBindingsForTypeName(item.getTypeName()));
     }
 
-    private HashMap<String, Object> getBindingsForTypeName(String typeName) {
-        HashMap<String, Object> ret = new HashMap<>();
+    private HashMap<String, Object> getBindingsForTypeName(String typeName) throws AtlasBaseException {
+        HashMap<String, Object> ret              = new HashMap<>();
+        Set<String>             typeNamesToQuery = new HashSet<>();
 
-        ret.put(BINDING_PARAMETER_TYPENAME, new HashSet<>(Arrays.asList(StringUtils.split(typeName, ","))));
+        if (StringUtils.isBlank(typeName)) {
+            typeNamesToQuery.addAll(typeRegistry.getAllEntityDefNames());
+        } else {
+            List<String> providedTypeNames = Arrays.asList(StringUtils.split(typeName, ","));
 
+            for (String name : providedTypeNames) {
+                AtlasType type = typeRegistry.getType(name);
+
+                if (type instanceof AtlasEntityType) {
+                    AtlasEntityType entityType = (AtlasEntityType) type;
+                    typeNamesToQuery.add(entityType.getTypeName());
+
+                    Set<String> subTypes = entityType.getAllSubTypes();
+                    if (CollectionUtils.isNotEmpty(subTypes)) {
+                        typeNamesToQuery.addAll(subTypes);
+                    }
+                } else {
+                    typeNamesToQuery.add(name);
+                }
+            }
+        }
+
+        ret.put(BINDING_PARAMETER_TYPENAME, typeNamesToQuery);
         return ret;
     }
 
