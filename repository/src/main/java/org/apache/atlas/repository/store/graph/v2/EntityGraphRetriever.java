@@ -170,17 +170,27 @@ public class EntityGraphRetriever {
     private final AtlasTypeRegistry typeRegistry;
     private final boolean           ignoreRelationshipAttr;
     private final AtlasGraph        graph;
+    private final  boolean processMultipleRelationshipTypes;
 
     @Inject
     public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
-        this(graph, typeRegistry, false);
+        this(graph, typeRegistry, false, false);
     }
 
     public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean ignoreRelationshipAttr) {
-        this.graph                  = graph;
-        this.graphHelper            = new GraphHelper(graph);
-        this.typeRegistry           = typeRegistry;
-        this.ignoreRelationshipAttr = ignoreRelationshipAttr;
+        this(graph, typeRegistry, ignoreRelationshipAttr, false);
+    }
+
+    public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean ignoreRelationshipAttr, boolean processMultipleRelationshipTypes) {
+        this.graph                            = graph;
+        this.graphHelper                      = new GraphHelper(graph);
+        this.typeRegistry                     = typeRegistry;
+        this.ignoreRelationshipAttr           = ignoreRelationshipAttr;
+        this.processMultipleRelationshipTypes = processMultipleRelationshipTypes;
+    }
+
+    public boolean isProcessMultipleRelationshipTypes() {
+        return processMultipleRelationshipTypes;
     }
 
     public static Object mapVertexToPrimitive(AtlasElement entityVertex, final String vertexPropertyName, AtlasAttributeDef attrDef) {
@@ -1415,7 +1425,11 @@ public class EntityGraphRetriever {
         }
 
         for (String attributeName : entityType.getRelationshipAttributes().keySet()) {
-            mapVertexToRelationshipAttribute(entityVertex, entityType, attributeName, entity, entityExtInfo, isMinExtInfo);
+            if (isProcessMultipleRelationshipTypes()) {
+                mapVertexToRelationshipAttributeWithMultipleTypes(entityVertex, entityType, attributeName, entity, entityExtInfo, isMinExtInfo);
+            } else {
+                mapVertexToRelationshipAttribute(entityVertex, entityType, attributeName, entity, entityExtInfo, isMinExtInfo);
+            }
         }
     }
 
@@ -1465,6 +1479,136 @@ public class EntityGraphRetriever {
         }
 
         return ret;
+    }
+
+    private Object mapVertexToRelationshipAttributeWithMultipleTypes(AtlasVertex entityVertex, AtlasEntityType entityType, String attributeName, AtlasEntity entity, AtlasEntityExtInfo entityExtInfo, boolean isMinExtInfo) throws AtlasBaseException {
+        Object      ret                   = null;
+        Set<String> relationshipTypeNames = entityType.getAttributeRelationshipTypes(attributeName);
+
+        if (CollectionUtils.isEmpty(relationshipTypeNames)) {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID, "relationshipDef is null");
+        }
+
+        ret = mapMultipleRelationshipTypes(entityVertex, entityType, attributeName, relationshipTypeNames, entityExtInfo, isMinExtInfo);
+
+        entity.setRelationshipAttribute(attributeName, ret);
+
+        // Handle legacy attributes for the first relationship type found
+        if (!relationshipTypeNames.isEmpty()) {
+            String                firstRelationshipTypeName = relationshipTypeNames.iterator().next();
+            AtlasRelationshipType firstRelationshipType     = typeRegistry.getRelationshipTypeByName(firstRelationshipTypeName);
+            if (firstRelationshipType != null) {
+                AtlasAttribute attribute = entityType.getRelationshipAttribute(attributeName, firstRelationshipTypeName);
+                if (attribute != null) {
+                    AtlasRelationshipEndDef attributeEndDef = getAttributeEndDefFromRelationshipType(firstRelationshipType, entityType, attributeName);
+
+                    if (attributeEndDef != null && attributeEndDef.getIsLegacyAttribute() && !entity.hasAttribute(attributeName)) {
+                        entity.setAttribute(attributeName, toLegacyAttribute(ret));
+                    }
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    private AtlasRelationshipEndDef getAttributeEndDefFromRelationshipType(AtlasRelationshipType relationshipType, AtlasEntityType entityType, String attributeName) {
+        if (relationshipType == null) {
+            return null;
+        }
+
+        AtlasRelationshipDef    relationshipDef = relationshipType.getRelationshipDef();
+        AtlasRelationshipEndDef endDef1         = relationshipDef.getEndDef1();
+        AtlasRelationshipEndDef endDef2         = relationshipDef.getEndDef2();
+        AtlasEntityType         endDef1Type     = typeRegistry.getEntityTypeByName(endDef1.getType());
+        AtlasEntityType         endDef2Type     = typeRegistry.getEntityTypeByName(endDef2.getType());
+
+        if (endDef1Type.isTypeOrSuperTypeOf(entityType.getTypeName()) && StringUtils.equals(endDef1.getName(), attributeName)) {
+            return endDef1;
+        } else if (endDef2Type.isTypeOrSuperTypeOf(entityType.getTypeName()) && StringUtils.equals(endDef2.getName(), attributeName)) {
+            return endDef2;
+        }
+
+        return null;
+    }
+
+    private Object mapMultipleRelationshipTypes(AtlasVertex entityVertex, AtlasEntityType entityType, String attributeName, Set<String> relationshipTypeNames, AtlasEntityExtInfo entityExtInfo, boolean isMinExtInfo) throws AtlasBaseException {
+        List<Object> allResults            = new ArrayList<>();
+        boolean      hasSingleCardinality  = false;
+        boolean      hasListSetCardinality = false;
+
+        for (String relationshipTypeName : relationshipTypeNames) {
+            try {
+                AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(relationshipTypeName);
+                if (relationshipType == null) {
+                    continue;
+                }
+
+                AtlasAttribute attribute = entityType.getRelationshipAttribute(attributeName, relationshipTypeName);
+                if (attribute == null) {
+                    continue;
+                }
+
+                AtlasRelationshipEndDef attributeEndDef = getAttributeEndDefFromRelationshipType(relationshipType, entityType, attributeName);
+                if (attributeEndDef == null) {
+                    continue;
+                }
+
+                Object result = null;
+                switch (attributeEndDef.getCardinality()) {
+                    case SINGLE:
+                        hasSingleCardinality = true;
+                        result = mapRelatedVertexToObjectId(entityVertex, attribute, entityExtInfo, isMinExtInfo);
+                        break;
+
+                    case LIST:
+                    case SET:
+                        hasListSetCardinality = true;
+                        result = mapRelationshipArrayAttribute(entityVertex, attribute, entityExtInfo, isMinExtInfo);
+                        break;
+                }
+
+                if (result != null) {
+                    allResults.add(result);
+                }
+            } catch (Exception e) {
+                LOG.warn("Error processing relationship type {}: {}", relationshipTypeName, e.getMessage());
+            }
+        }
+
+        // Combine results based on cardinality
+        if (hasSingleCardinality && hasListSetCardinality) {
+            // Mixed cardinalities - combine into a list
+            List<Object> combinedResults = new ArrayList<>();
+            for (Object result : allResults) {
+                if (result instanceof Collection) {
+                    combinedResults.addAll((Collection<?>) result);
+                } else {
+                    combinedResults.add(result);
+                }
+            }
+            return combinedResults;
+        } else if (hasListSetCardinality) {
+            // All are list/set cardinalities - combine all collections
+            List<Object> combinedResults = new ArrayList<>();
+            for (Object result : allResults) {
+                if (result instanceof Collection) {
+                    combinedResults.addAll((Collection<?>) result);
+                } else {
+                    combinedResults.add(result);
+                }
+            }
+            return combinedResults;
+        } else if (hasSingleCardinality) {
+            // All are single cardinalities - return the first non-null result
+            for (Object result : allResults) {
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+
+        return null;
     }
 
     private Object toLegacyAttribute(Object obj) {
