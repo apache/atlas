@@ -1,6 +1,7 @@
 package org.apache.atlas.web.rest;
 
 import org.apache.atlas.web.service.DLQReplayService;
+import org.apache.atlas.web.service.TagDenormDLQReplayService;
 import org.apache.atlas.web.util.Servlets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,9 +21,18 @@ public class DLQAdminController {
     @Autowired
     private DLQReplayService dlqReplayService;
 
+    @Autowired
+    private TagDenormDLQReplayService tagDenormDLQReplayService;
+
     @GET
     @Path("/replay/status")
     public Map<String, Object> getStatus() {
         return dlqReplayService.getStatus();
+    }
+
+    @GET
+    @Path("/tag-denorm-replay/status")
+    public Map<String, Object> getTagDenormReplayStatus() {
+        return tagDenormDLQReplayService.getStatus();
     }
 }

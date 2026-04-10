@@ -177,7 +177,7 @@ data:
 
     atlas.notification.create.topics=true
     atlas.notification.replicas=3
-    atlas.notification.topics=ATLAS_HOOK,ATLAS_ENTITIES
+    atlas.notification.topics=ATLAS_HOOK,ATLAS_ENTITIES,ATLAS_TAG_DENORM_DLQ
     atlas.notification.log.failed.messages=true
     atlas.notification.failed.messages.filename=atlas_hook_failed_messages.log
     atlas.notification.consumer.retry.interval=3000

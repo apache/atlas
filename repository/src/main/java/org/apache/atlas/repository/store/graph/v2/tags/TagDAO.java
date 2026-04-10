@@ -77,5 +77,15 @@ public interface TagDAO {
      * @throws AtlasBaseException If an error occurs during retrieval
      */
     Map<String, List<AtlasClassification>> getAllClassificationsForVertices(Collection<String> vertexIds) throws AtlasBaseException;
+
+    /**
+     * Batch-reads all tags for multiple vertex IDs in parallel using async queries.
+     * Avoids N sequential point reads when reconciling denorm attributes for a batch.
+     *
+     * @param vertexIds The vertex IDs to fetch tags for
+     * @return A map from vertexId to its list of non-deleted Tag objects
+     * @throws AtlasBaseException If an error occurs during retrieval
+     */
+    Map<String, List<Tag>> getAllTagsByVertexIds(Collection<String> vertexIds) throws AtlasBaseException;
 }
 

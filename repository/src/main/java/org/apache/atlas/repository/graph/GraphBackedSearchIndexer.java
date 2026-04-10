@@ -551,6 +551,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, TASK_CLASSIFICATION_TYPENAME, UniqueKind.NONE, String.class, SINGLE, false, false, true);
             createCommonVertexIndex(management, TASK_ENTITY_GUID, UniqueKind.NONE, String.class, SINGLE, false, false, true);
             createCommonVertexIndex(management, TASK_ERROR_MESSAGE, UniqueKind.NONE, String.class, SINGLE, false, false);
+            createCommonVertexIndex(management, TASK_ES_STATUS, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), KEYWORD_FIELD);
+            createCommonVertexIndex(management, TASK_ES_ERROR_MESSAGE, UniqueKind.NONE, String.class, SINGLE, false, false);
             createCommonVertexIndex(management, TASK_ATTEMPT_COUNT, UniqueKind.NONE, Integer.class, SINGLE, false, false);
 
             createCommonVertexIndex(management, TASK_UPDATED_TIME, UniqueKind.NONE, Long.class, SINGLE, false, false);

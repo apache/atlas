@@ -55,6 +55,35 @@ public class AtlasTask {
     }
 
     private String parentEntityGuid;
+
+    /**
+     * Tracks ES sync outcome for tag denorm operations, independent of the main task status.
+     * Ordinal order is used for escalation: a higher ordinal never gets overwritten by a lower one.
+     */
+    public enum EsStatus {
+        NOT_ATTEMPTED,     // 0 — default, ES sync not yet run
+        COMPLETE,          // 1 — all vertices written to ES successfully
+        PARTIAL_FAILURE,   // 2 — some vertices failed, sent to DLQ
+        FAILED;            // 3 — total failure, all vertices sent to DLQ
+
+        public static EsStatus from(String s) {
+            if (StringUtils.isEmpty(s)) {
+                return NOT_ATTEMPTED;
+            }
+
+            switch (s.toLowerCase()) {
+                case "complete":
+                    return COMPLETE;
+                case "partial_failure":
+                    return PARTIAL_FAILURE;
+                case "failed":
+                    return FAILED;
+                default:
+                    return NOT_ATTEMPTED;
+            }
+        }
+    }
+
     public enum Status {
         PENDING,
         IN_PROGRESS,
@@ -104,6 +133,8 @@ public class AtlasTask {
     private String              classificationId;
     private String              entityGuid;
     private String              tagTypeName;
+    private EsStatus            esStatus;
+    private String              esErrorMessage;
     private Map<String, Object> headers;
 
     public AtlasTask() {
@@ -123,6 +154,8 @@ public class AtlasTask {
         this.classificationId   = classificationId;
         this.entityGuid         = entityGuid;
         this.tagTypeName        = tagTypeName;
+        this.esStatus           = EsStatus.NOT_ATTEMPTED;
+        this.esErrorMessage     = null;
     }
 
     public String getGuid() {
@@ -219,6 +252,26 @@ public class AtlasTask {
         this.errorMessage = errorMessage;
     }
 
+    public EsStatus getEsStatus() {
+        return esStatus;
+    }
+
+    public void setEsStatus(EsStatus esStatus) {
+        this.esStatus = esStatus;
+    }
+
+    public void setEsStatus(String esStatus) {
+        this.esStatus = EsStatus.from(esStatus);
+    }
+
+    public String getEsErrorMessage() {
+        return esErrorMessage;
+    }
+
+    public void setEsErrorMessage(String esErrorMessage) {
+        this.esErrorMessage = esErrorMessage;
+    }
+
     public Date getStartTime() {
         return startTime;
     }
@@ -293,6 +346,8 @@ public class AtlasTask {
                 ", classificationId='" + classificationId + '\'' +
                 ", entityGuid='" + entityGuid + '\'' +
                 ", tagTypeName='" + tagTypeName + '\'' +
+                ", esStatus=" + esStatus +
+                ", esErrorMessage='" + esErrorMessage + '\'' +
                 '}';
     }
 }

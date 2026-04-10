@@ -132,6 +132,9 @@ public class RequestContext {
     // Track Cassandra operations for rollback
     private final Map<String, Stack<CassandraTagOperation>> cassandraTagOperations = new HashMap<>();
     private final List<ESDeferredOperation> esDeferredOperations = new ArrayList<>();
+    private final Map<String, String> verticesNeedingTagDenorm = new LinkedHashMap<>();
+    private int tagDenormEsSuccessCount = 0;
+    private int tagDenormEsFailureCount = 0;
     private static final String X_ATLAN_CLIENT_ORIGIN = "X-Atlan-Client-Origin";
     private static final String CLIENT_ORIGIN_PRODUCT = "product_webapp";
 
@@ -203,6 +206,9 @@ public class RequestContext {
         deletedClassificationAndVertices.clear();
         addedClassificationAndVertices.clear();
         esDeferredOperations.clear();
+        clearVerticesNeedingTagDenorm();
+        tagDenormEsSuccessCount = 0;
+        tagDenormEsFailureCount = 0;
         this.cassandraTagOperations.clear();
         this.allInternalAttributesMap.clear();
 
@@ -985,6 +991,23 @@ public class RequestContext {
     public List<ESDeferredOperation> getESDeferredOperations() {
         return esDeferredOperations;
     }
+
+    public void addVertexNeedingTagDenorm(String vertexId, String entityGuid) {
+        verticesNeedingTagDenorm.put(vertexId, entityGuid);
+    }
+
+    public Map<String, String> getVerticesNeedingTagDenorm() {
+        return verticesNeedingTagDenorm;
+    }
+
+    public void clearVerticesNeedingTagDenorm() {
+        verticesNeedingTagDenorm.clear();
+    }
+
+    public void addTagDenormEsSuccessCount(int count) { tagDenormEsSuccessCount += count; }
+    public void addTagDenormEsFailureCount(int count) { tagDenormEsFailureCount += count; }
+    public int getTagDenormEsSuccessCount() { return tagDenormEsSuccessCount; }
+    public int getTagDenormEsFailureCount() { return tagDenormEsFailureCount; }
 
     public void addLineageCalcTime(long additionalTime) {
         this.lineageCalcTime.addAndGet(additionalTime);

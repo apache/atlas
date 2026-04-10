@@ -412,6 +412,8 @@ public final class Constants {
     public static final String TASK_ATTEMPT_COUNT     = encodePropertyKey(TASK_PREFIX + "attemptCount");
     public static final String TASK_PARAMETERS        = encodePropertyKey(TASK_PREFIX + "parameters");
     public static final String TASK_ERROR_MESSAGE     = encodePropertyKey(TASK_PREFIX + "errorMessage");
+    public static final String TASK_ES_STATUS          = encodePropertyKey(TASK_PREFIX + "esStatus");
+    public static final String TASK_ES_ERROR_MESSAGE   = encodePropertyKey(TASK_PREFIX + "esErrorMessage");
     public static final String TASK_WARNING_MESSAGE     = encodePropertyKey(TASK_PREFIX + "warning");
     public static final String TASK_START_TIME        = encodePropertyKey(TASK_PREFIX + "startTime");
     public static final String TASK_END_TIME          = encodePropertyKey(TASK_PREFIX + "endTime");

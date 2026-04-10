@@ -142,6 +142,15 @@ public abstract class ClassificationTask extends AbstractTask {
             MDC.put("assets_affected", String.valueOf(assetsAffected));
             MDC.put("status", "success");
 
+            // Log sync mismatch between Cassandra writes and ES writes
+            if (context.hasSyncMismatch()) {
+                LOG.warn("Tag denorm sync mismatch for task {}: cassandraCount={}, esSuccessCount={}",
+                        getTaskGuid(), context.getCassandraCount(), context.getEsSuccessCount());
+                MDC.put("sync_mismatch", "true");
+                MDC.put("cassandra_count", String.valueOf(context.getCassandraCount()));
+                MDC.put("es_success_count", String.valueOf(context.getEsSuccessCount()));
+            }
+
             // Record successful completion
             taskMetricsService.recordTaskEnd(
                 taskType,
@@ -296,6 +305,8 @@ public abstract class ClassificationTask extends AbstractTask {
 
     public static class TaskContext {
         private int assetsAffected = 0;
+        private int cassandraCount = 0;
+        private int esSuccessCount = 0;
 
         public void incrementAssetsAffected(int count) {
             this.assetsAffected += count;
@@ -304,5 +315,11 @@ public abstract class ClassificationTask extends AbstractTask {
         public int getAssetsAffected() {
             return assetsAffected;
         }
+
+        public void addCassandraCount(int count) { this.cassandraCount += count; }
+        public void addEsSuccessCount(int count) { this.esSuccessCount += count; }
+        public int getCassandraCount() { return cassandraCount; }
+        public int getEsSuccessCount() { return esSuccessCount; }
+        public boolean hasSyncMismatch() { return cassandraCount != esSuccessCount; }
     }
 }

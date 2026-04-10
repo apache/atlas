@@ -204,6 +204,13 @@ public class TaskRegistry {
         setEncodedProperty(taskVertex, TASK_STATUS, task.getStatus().toString());
         setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
         setEncodedProperty(taskVertex, Constants.TASK_ERROR_MESSAGE, task.getErrorMessage());
+
+        if (task.getEsStatus() != null) {
+            setEncodedProperty(taskVertex, Constants.TASK_ES_STATUS, task.getEsStatus().toString());
+        }
+        if (task.getEsErrorMessage() != null) {
+            setEncodedProperty(taskVertex, Constants.TASK_ES_ERROR_MESSAGE, task.getEsErrorMessage());
+        }
     }
 
     @GraphTransaction
@@ -711,6 +718,16 @@ public class TaskRegistry {
         String errorMessage = v.getProperty(Constants.TASK_ERROR_MESSAGE, String.class);
         if (errorMessage != null) {
             ret.setErrorMessage(errorMessage);
+        }
+
+        String esStatus = v.getProperty(Constants.TASK_ES_STATUS, String.class);
+        if (esStatus != null) {
+            ret.setEsStatus(AtlasTask.EsStatus.from(esStatus));
+        }
+
+        String esErrorMessage = v.getProperty(Constants.TASK_ES_ERROR_MESSAGE, String.class);
+        if (esErrorMessage != null) {
+            ret.setEsErrorMessage(esErrorMessage);
         }
 
         List<String> headerKeys = v.getPropertyKeys().stream().filter(key -> key.toLowerCase().startsWith(ATLAN_HEADER_PREFIX_PATTERN)).collect(Collectors.toUnmodifiableList());
