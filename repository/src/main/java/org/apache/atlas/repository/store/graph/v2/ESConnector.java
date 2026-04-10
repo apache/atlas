@@ -350,6 +350,52 @@ public class ESConnector implements Closeable {
         }
     }
 
+    /**
+     * MS-928: Apply ES-native nested type mappings that JanusGraph cannot create.
+     *
+     * JanusGraph's addMixedIndex() creates multi-fields, not ES nested types.
+     * This method reads typedef attributes with indexTypeESMapping="nested" and
+     * applies the correct nested mapping directly to ES via PUT _mapping.
+     *
+     * Safe to call multiple times — ES ignores PUT mapping for fields that
+     * already have the correct mapping.
+     *
+     * @param nestedMappings map of field name → properties (e.g., {"nestedColumnOrder": {"version": {"type": "version"}}})
+     */
+    public static void ensureNestedMappings(Map<String, Map<String, Object>> nestedMappings) {
+        if (nestedMappings == null || nestedMappings.isEmpty()) {
+            return;
+        }
+
+        try {
+            Map<String, Object> properties = new LinkedHashMap<>();
+            for (Map.Entry<String, Map<String, Object>> entry : nestedMappings.entrySet()) {
+                Map<String, Object> fieldMapping = new LinkedHashMap<>();
+                fieldMapping.put("type", "nested");
+                fieldMapping.put("properties", entry.getValue());
+                properties.put(entry.getKey(), fieldMapping);
+            }
+
+            Map<String, Object> body = Collections.singletonMap("properties", properties);
+            String jsonBody = AtlasType.toJson(body);
+
+            Request request = new Request("PUT", "/" + VERTEX_INDEX_NAME + "/_mapping");
+            request.setEntity(new org.apache.http.entity.StringEntity(jsonBody, ContentType.APPLICATION_JSON));
+
+            Response response = lowLevelClient.performRequest(request);
+            int statusCode = response.getStatusLine().getStatusCode();
+
+            if (statusCode >= 200 && statusCode < 300) {
+                LOG.info("ESConnector: applied {} nested mapping(s) to ES: {}", nestedMappings.size(), nestedMappings.keySet());
+            } else {
+                String responseBody = EntityUtils.toString(response.getEntity());
+                LOG.warn("ESConnector: failed to apply nested mappings (HTTP {}): {}", statusCode, responseBody);
+            }
+        } catch (Exception e) {
+            LOG.warn("ESConnector: failed to apply nested mappings to ES — non-fatal, existing mappings may suffice", e);
+        }
+    }
+
     @Override
     public void close() throws IOException {
         if (lowLevelClient != null) {

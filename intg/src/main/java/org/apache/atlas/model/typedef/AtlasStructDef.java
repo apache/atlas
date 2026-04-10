@@ -311,6 +311,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         HashMap<String, Object> indexTypeESConfig;
         HashMap<String, HashMap<String, Object>> indexTypeESFields;
         HashMap<String, ArrayList> autoUpdateAttributes;
+        String indexTypeESMapping; // ES mapping type override (e.g., "nested") — applied directly to ES, bypassing JanusGraph
 
         public AtlasAttributeDef() { this(null, null); }
 
@@ -404,6 +405,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 setDisplayName(other.getDisplayName());
                 setIndexTypeESConfig(other.getIndexTypeESConfig());
                 setIndexTypeESFields(other.getIndexTypeESFields());
+                setIndexTypeESMapping(other.getIndexTypeESMapping());
                 setAutoUpdateAttributes(other.getAutoUpdateAttributes());
                 setSkipScrubbing(other.getSkipScrubbing());
                 setIsDefaultValueNull(other.getIsDefaultValueNull());
@@ -603,6 +605,10 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             return this.indexTypeESFields;
         }
 
+        public void setIndexTypeESMapping(String indexTypeESMapping) { this.indexTypeESMapping = indexTypeESMapping; }
+
+        public String getIndexTypeESMapping() { return this.indexTypeESMapping; }
+
         public void setAutoUpdateAttributes(HashMap<String, ArrayList> autoUpdateAttributes) { this.autoUpdateAttributes = autoUpdateAttributes; }
 
         public HashMap<String, ArrayList> getAutoUpdateAttributes() {
@@ -640,6 +646,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             sb.append(", displayName='").append(displayName).append('\'');
             sb.append(", indexTypeESConfig='").append(indexTypeESConfig).append('\'');
             sb.append(", indexTypeESFields='").append(indexTypeESFields).append('\'');
+            sb.append(", indexTypeESMapping='").append(indexTypeESMapping).append('\'');
             sb.append(", autoUpdateAttributes='").append(autoUpdateAttributes).append('\'');
             sb.append(", skipScrubbing='").append(skipScrubbing).append('\'');
             sb.append(", isDefaultValueNull='").append(isDefaultValueNull).append('\'');
@@ -684,13 +691,14 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                     Objects.equals(displayName, that.displayName) &&
                     Objects.equals(indexTypeESConfig, that.indexTypeESConfig) &&
                     Objects.equals(indexTypeESFields, that.indexTypeESFields) &&
+                    Objects.equals(indexTypeESMapping, that.indexTypeESMapping) &&
                     Objects.equals(autoUpdateAttributes, that.autoUpdateAttributes) &&
                     Objects.equals(skipScrubbing, that.skipScrubbing);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName, indexTypeESConfig, indexTypeESFields, autoUpdateAttributes, skipScrubbing, isDefaultValueNull);
+            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName, indexTypeESConfig, indexTypeESFields, indexTypeESMapping, autoUpdateAttributes, skipScrubbing, isDefaultValueNull);
         }
 
         @Override
