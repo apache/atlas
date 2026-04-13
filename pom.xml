@@ -70,6 +70,7 @@
         <module>notification</module>
         <module>plugin-classloader</module>
         <module>repository</module>
+        <module>rest-notification-webapp</module>
         <module>server-api</module>
         <module>test-tools</module>
         <module>tools/atlas-index-repair</module>

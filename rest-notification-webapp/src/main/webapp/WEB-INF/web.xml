@@ -20,7 +20,7 @@
   -->
 
 <web-app>
-    <display-name>Extractor Web Application</display-name>
+    <display-name>Atlas Rest Notification Web Application</display-name>
     <context-param>
         <param-name>contextConfigLocation</param-name>
         <param-value>WEB-INF/applicationContext.xml
