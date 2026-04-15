@@ -1118,6 +1118,79 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
+                "name": "LINK_SKILL_TO_SKILL_ARTIFACT",
+                "qualifiedName": "LINK_SKILL_TO_SKILL_ARTIFACT",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "RELATIONSHIP",
+                "policyResources": [
+                    "end-one-entity-classification:*",
+                    "end-two-entity-classification:*",
+                    "end-one-entity:*",
+                    "end-two-entity:*",
+                    "end-one-entity-type:Skill",
+                    "end-two-entity-type:SkillArtifact",
+                    "relationship-type:*"
+                ],
+                "policyActions": [
+                    "add-relationship",
+                    "update-relationship",
+                    "remove-relationship"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "LINK_CONTEXT_REPOSITORY_TO_ARTIFACT",
+                "qualifiedName": "LINK_CONTEXT_REPOSITORY_TO_ARTIFACT",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "RELATIONSHIP",
+                "policyResources":
+                [
+                    "end-one-entity-classification:*",
+                    "end-two-entity-classification:*",
+                    "end-one-entity:*",
+                    "end-two-entity:*",
+                    "end-one-entity-type:ContextRepository",
+                    "end-two-entity-type:ContextArtifact",
+                    "relationship-type:*"
+                ],
+                "policyActions":
+                [
+                    "add-relationship",
+                    "update-relationship",
+                    "remove-relationship"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
                 "name": "LINK_ASSET_GROUPING_STRATEGY_TO_COLLECTION",
                 "qualifiedName": "LINK_ASSET_GROUPING_STRATEGY_TO_COLLECTION",
                 "policyCategory": "bootstrap",

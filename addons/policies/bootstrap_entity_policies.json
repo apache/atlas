@@ -3968,6 +3968,134 @@
                     "entity-delete"
                 ]
             }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
+                "name": "READ_SKILL_ENTITIES",
+                "qualifiedName": "READ_SKILL_ENTITIES",
+                "description": "Allows all users to read Skill assets.",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$member",
+                    "$guest",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "isPolicyEnabled": true,
+                "policyResources": [
+                    "entity-type:Skill",
+                    "entity-type:SkillArtifact",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions": [
+                    "entity-read"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
+                "name": "CUD_SKILL_ENTITIES",
+                "qualifiedName": "CUD_SKILL_ENTITIES",
+                "description": "Allows admins and API tokens to perform CUD operations on Skill assets.",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "isPolicyEnabled": true,
+                "policyResources": [
+                    "entity-type:Skill",
+                    "entity-type:SkillArtifact",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions": [
+                    "entity-create",
+                    "entity-update",
+                    "entity-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
+                "name": "READ_CONTEXT_ENTITIES",
+                "qualifiedName": "READ_CONTEXT_ENTITIES",
+                "description": "Allows all users to read Context Studio assets.",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$member",
+                    "$guest",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "isPolicyEnabled": true,
+                "policyResources": [
+                    "entity-type:ContextRepository",
+                    "entity-type:ContextArtifact",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions": [
+                    "entity-read"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
+                "name": "CUD_CONTEXT_ENTITIES",
+                "qualifiedName": "CUD_CONTEXT_ENTITIES",
+                "description": "Allows admins and API tokens to perform CUD operations on Context Studio assets.",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "isPolicyEnabled": true,
+                "policyResources": [
+                    "entity-type:ContextRepository",
+                    "entity-type:ContextArtifact",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions": [
+                    "entity-create",
+                    "entity-update",
+                    "entity-delete"
+                ]
+            }
         }
     ]
 }
