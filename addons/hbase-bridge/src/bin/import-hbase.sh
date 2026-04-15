@@ -125,9 +125,9 @@ else
 fi
 
 if [ ! -z "$HADOOP_CP" ]; then
-  CP="${HBASE_CP}:${HADOOP_CP}:${ATLASCPPATH}"
+  CP="${ATLASCPPATH}:${HBASE_CP}:${HADOOP_CP}"
 else
-  CP="${HBASE_CP}:${ATLASCPPATH}"
+  CP="${ATLASCPPATH}:${HBASE_CP}"
 fi
 
 # If running in cygwin, convert pathnames and classpath to Windows format.
@@ -141,7 +141,7 @@ then
 fi
 
 JAVA_PROPERTIES="$ATLAS_OPTS -Datlas.log.dir=$ATLAS_LOG_DIR -Datlas.log.file=import-hbase.log
--Dlog4j.configuration=atlas-hbase-import-log4j.xml"
+-Dlogback.configurationFile=atlas-hbase-import-logback.xml"
 
 IMPORT_ARGS=
 JVM_ARGS=
