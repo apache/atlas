@@ -1,27 +1,34 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.contract;
 
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.*;
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.indexSearchPaginated;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 import static org.apache.atlas.type.AtlasTypeUtil.getAtlasObjectId;
 
@@ -34,6 +41,8 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
     public static final String ASSET_ATTR_HAS_CONTRACT = "hasContract";
     public static final String CONTRACT_QUALIFIED_NAME_SUFFIX = "contract";
     public static final String CONTRACT_ATTR_STATUS = "status";
+    private static final String CONTRACT_DELETE_SCOPE_HEADER = "x-atlan-contract-delete-scope";
+    private static final String CASCADE_DELETE_KEY_PREFIX = "contractCascadeDelete:";
     private static final Set<String> contractAttributes = new HashSet<>();
     static {
         contractAttributes.add(ATTR_CONTRACT);
@@ -43,17 +52,20 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
     }
     private final boolean storeDifferentialAudits;
     private final EntityDiscoveryService discovery;
+    private final AtlasEntityStore entityStore;
 
     private final AtlasEntityComparator entityComparator;
 
 
     public ContractPreProcessor(AtlasGraph graph, AtlasTypeRegistry typeRegistry,
                                 EntityGraphRetriever entityRetriever,
-                                boolean storeDifferentialAudits, EntityDiscoveryService discovery) {
+                                boolean storeDifferentialAudits, EntityDiscoveryService discovery,
+                                AtlasEntityStore entityStore) {
 
         super(graph, typeRegistry, entityRetriever, discovery);
         this.storeDifferentialAudits = storeDifferentialAudits;
         this.discovery = discovery;
+        this.entityStore = entityStore;
         this.entityComparator = new AtlasEntityComparator(typeRegistry, entityRetriever, null, new BulkRequestContext());
     }
 
@@ -69,6 +81,144 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
                 processUpdateContract(entity, context);
         }
 
+    }
+
+    @Override
+    public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processDeleteContract");
+
+        try {
+            DeleteType deleteType = RequestContext.get().getDeleteType();
+            if (deleteType == DeleteType.SOFT || deleteType == DeleteType.DEFAULT) {
+                LOG.warn("Soft delete of DataContract {} -- asset attributes will NOT be cleaned up. Use hard delete.",
+                        GraphHelper.getGuid(vertex));
+                return;
+            }
+
+            if (!AtlasEntity.Status.ACTIVE.equals(GraphHelper.getStatus(vertex))) {
+                LOG.info("Contract {} is already deleted/purged, skipping processDelete", GraphHelper.getGuid(vertex));
+                return;
+            }
+
+            String contractGuid = GraphHelper.getGuid(vertex);
+            String assetGuid    = vertex.getProperty(ATTR_ASSET_GUID, String.class);
+
+            if (StringUtils.isEmpty(assetGuid)) {
+                LOG.warn("Contract {} has no {} attribute, skipping asset cleanup", contractGuid, ATTR_ASSET_GUID);
+                return;
+            }
+
+            String scope = RequestContext.get().getRequestContextHeaders()
+                    .getOrDefault(CONTRACT_DELETE_SCOPE_HEADER, "all");
+
+            if ("single".equalsIgnoreCase(scope)) {
+                processSingleVersionDelete(contractGuid, assetGuid);
+            } else {
+                processDeleteAllVersions(contractGuid, assetGuid);
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
+    private void processDeleteAllVersions(String contractGuid, String assetGuid) throws AtlasBaseException {
+        String cascadeKey = CASCADE_DELETE_KEY_PREFIX + assetGuid;
+        Map<String, String> headers = RequestContext.get().getRequestContextHeaders();
+        if (headers.containsKey(cascadeKey)) {
+            LOG.info("Contract {} is being cascade-deleted for asset {}, skipping", contractGuid, assetGuid);
+            return;
+        }
+        headers.put(cascadeKey, "true");
+
+        List<AtlasEntityHeader> allVersions = getAllVersions(assetGuid);
+        List<String> siblingGuids = allVersions.stream()
+                .map(AtlasEntityHeader::getGuid)
+                .filter(guid -> !guid.equals(contractGuid))
+                .collect(Collectors.toList());
+
+        if (CollectionUtils.isNotEmpty(siblingGuids)) {
+            LOG.info("Cascade deleting {} sibling contract versions for asset {}", siblingGuids.size(), assetGuid);
+            for (String siblingGuid : siblingGuids) {
+                entityStore.deleteById(siblingGuid);
+            }
+        }
+
+        cleanupAssetAttributes(assetGuid);
+        LOG.info("processDeleteAllVersions completed: contract={}, asset={}", contractGuid, assetGuid);
+    }
+
+    private void processSingleVersionDelete(String contractGuid, String assetGuid) throws AtlasBaseException {
+        AtlasEntity latestVersion = getCurrentVersion(assetGuid);
+        if (latestVersion == null || !latestVersion.getGuid().equals(contractGuid)) {
+            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED,
+                    "Only the latest contract version can be deleted. Delete all versions or delete the latest first.");
+        }
+
+        AtlasEntity previousVersion = getSecondLatestVersion(assetGuid);
+
+        if (previousVersion != null) {
+            // Previous version becomes the new latest — asset relationship edges to the
+            // deleted contract are auto-removed by JanusGraph on hard delete.
+            // The dataContractLatest/dataContractLatestCertified edges will be set by
+            // the next create/update operation on this contract. For now, just ensure
+            // hasContract stays true since versions remain.
+            LOG.info("processSingleVersionDelete: contract={}, asset={}, previousVersion={}",
+                    contractGuid, assetGuid, previousVersion.getGuid());
+        } else {
+            cleanupAssetAttributes(assetGuid);
+            LOG.info("processSingleVersionDelete: last version deleted, contract={}, asset={}", contractGuid, assetGuid);
+        }
+    }
+
+    private List<AtlasEntityHeader> getAllVersions(String assetGuid) throws AtlasBaseException {
+        Map<String, Object> dsl = new HashMap<>();
+
+        List<Map<String, Object>> mustClauseList = new ArrayList<>();
+        mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", CONTRACT_ENTITY_TYPE)));
+        mustClauseList.add(mapOf("term", mapOf(ATTR_ASSET_GUID, assetGuid)));
+        mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
+
+        dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
+
+        return indexSearchPaginated(dsl, contractAttributes, discovery);
+    }
+
+    private AtlasEntity getSecondLatestVersion(String assetGuid) throws AtlasBaseException {
+        IndexSearchParams indexSearchParams = new IndexSearchParams();
+        Map<String, Object> dsl = new HashMap<>();
+
+        List<Map<String, Object>> mustClauseList = new ArrayList<>();
+        mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", CONTRACT_ENTITY_TYPE)));
+        mustClauseList.add(mapOf("term", mapOf(ATTR_ASSET_GUID, assetGuid)));
+
+        dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
+        dsl.put("sort", Collections.singletonList(mapOf(ATTR_CONTRACT_VERSION, mapOf("order", "desc"))));
+        dsl.put("size", 2);
+
+        indexSearchParams.setDsl(dsl);
+        indexSearchParams.setAttributes(contractAttributes);
+        indexSearchParams.setSuppressLogs(true);
+
+        AtlasSearchResult result = discovery.directIndexSearch(indexSearchParams);
+        if (result == null || CollectionUtils.isEmpty(result.getEntities()) || result.getEntities().size() < 2) {
+            return null;
+        }
+        return new AtlasEntity(result.getEntities().get(1));
+    }
+
+    private void cleanupAssetAttributes(String assetGuid) {
+        try {
+            AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(assetGuid);
+            if (assetVertex == null) {
+                LOG.warn("Asset vertex not found for guid {}, skipping attribute cleanup", assetGuid);
+                return;
+            }
+
+            AtlasGraphUtilsV2.setProperty(assetVertex, ASSET_ATTR_HAS_CONTRACT, false);
+            LOG.info("Cleared hasContract on asset {}", assetGuid);
+        } catch (Exception e) {
+            LOG.error("Failed to cleanup asset attributes for asset {}", assetGuid, e);
+        }
     }
 
     private void processUpdateContract(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {

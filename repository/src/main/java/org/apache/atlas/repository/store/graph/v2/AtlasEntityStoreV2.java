@@ -2478,7 +2478,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case CONTRACT_ENTITY_TYPE:
-                preProcessors.add(new ContractPreProcessor(graph, typeRegistry, entityRetriever, storeDifferentialAudits, discovery));
+                preProcessors.add(new ContractPreProcessor(graph, typeRegistry, entityRetriever, storeDifferentialAudits, discovery, this));
                 break;
 
             case STAKEHOLDER_TITLE_ENTITY_TYPE:
