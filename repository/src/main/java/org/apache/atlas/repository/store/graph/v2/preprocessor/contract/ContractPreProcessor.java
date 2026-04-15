@@ -157,16 +157,44 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         AtlasEntity previousVersion = getSecondLatestVersion(assetGuid);
 
         if (previousVersion != null) {
-            // Previous version becomes the new latest — asset relationship edges to the
-            // deleted contract are auto-removed by JanusGraph on hard delete.
-            // The dataContractLatest/dataContractLatestCertified edges will be set by
-            // the next create/update operation on this contract. For now, just ensure
-            // hasContract stays true since versions remain.
+            restoreAssetContractPointers(assetGuid, previousVersion);
             LOG.info("processSingleVersionDelete: contract={}, asset={}, previousVersion={}",
                     contractGuid, assetGuid, previousVersion.getGuid());
         } else {
             cleanupAssetAttributes(assetGuid);
             LOG.info("processSingleVersionDelete: last version deleted, contract={}, asset={}", contractGuid, assetGuid);
+        }
+    }
+
+    private void restoreAssetContractPointers(String assetGuid, AtlasEntity previousVersion) throws AtlasBaseException {
+        AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(assetGuid);
+        if (assetVertex == null) {
+            LOG.warn("Asset vertex not found for guid {}, cannot restore contract pointers", assetGuid);
+            return;
+        }
+
+        String assetTypeName = GraphHelper.getTypeName(assetVertex);
+        String assetQualifiedName = assetVertex.getProperty(QUALIFIED_NAME, String.class);
+
+        AtlasEntity assetUpdate = new AtlasEntity(assetTypeName);
+        assetUpdate.setGuid(assetGuid);
+        assetUpdate.setAttribute(QUALIFIED_NAME, assetQualifiedName);
+
+        assetUpdate.setRelationshipAttribute(REL_ATTR_LATEST_CONTRACT, getAtlasObjectId(previousVersion));
+
+        String prevStatus = (String) previousVersion.getAttribute(ATTR_CERTIFICATE_STATUS);
+        if (DataContract.Status.VERIFIED.name().equals(prevStatus)) {
+            assetUpdate.setRelationshipAttribute(REL_ATTR_GOVERNED_ASSET_CERTIFIED, getAtlasObjectId(previousVersion));
+        }
+
+        EntityStream entityStream = new AtlasEntityStream(new AtlasEntity.AtlasEntitiesWithExtInfo(assetUpdate));
+
+        try {
+            RequestContext.get().setSkipAuthorizationCheck(true);
+            entityStore.createOrUpdate(entityStream, true);
+            LOG.info("Restored contract pointers on asset {} to previous version {}", assetGuid, previousVersion.getGuid());
+        } finally {
+            RequestContext.get().setSkipAuthorizationCheck(false);
         }
     }
 
@@ -190,6 +218,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         List<Map<String, Object>> mustClauseList = new ArrayList<>();
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", CONTRACT_ENTITY_TYPE)));
         mustClauseList.add(mapOf("term", mapOf(ATTR_ASSET_GUID, assetGuid)));
+        mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
 
         dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
         dsl.put("sort", Collections.singletonList(mapOf(ATTR_CONTRACT_VERSION, mapOf("order", "desc"))));
