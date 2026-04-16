@@ -40,6 +40,8 @@ import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.Properties;
 
+import org.apache.atlas.server.common.security.AtlasAuthenticationException;
+
 @Component
 public class AtlasADAuthenticationProvider extends AtlasAbstractAuthenticationProvider {
     private static Logger LOG = LoggerFactory.getLogger(AtlasADAuthenticationProvider.class);

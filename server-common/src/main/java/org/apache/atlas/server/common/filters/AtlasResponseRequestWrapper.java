@@ -15,19 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.notification.rest.web.filters;
+package org.apache.atlas.server.common.filters;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
-
 
 public class AtlasResponseRequestWrapper extends HttpServletResponseWrapper {
     public AtlasResponseRequestWrapper(HttpServletResponse response) {
         super(response);
     }
 }
-
-
-
-
-

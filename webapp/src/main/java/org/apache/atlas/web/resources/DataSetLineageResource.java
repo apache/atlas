@@ -31,7 +31,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.v1.model.lineage.DataSetLineageResponse;
 import org.apache.atlas.v1.model.lineage.SchemaResponse;
 import org.apache.atlas.web.util.LineageUtils;
-import org.apache.atlas.web.util.Servlets;
+import org.apache.atlas.server.common.util.Servlets;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

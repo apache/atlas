@@ -18,12 +18,12 @@
 package org.apache.atlas.notification.rest.web.security;
 
 import org.apache.atlas.notification.rest.web.filters.ActiveServerFilter;
-import org.apache.atlas.notification.rest.web.filters.AtlasAuthenticationEntryPoint;
+import org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint;
 import org.apache.atlas.notification.rest.web.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.notification.rest.web.filters.AtlasCSRFPreventionFilter;
-import org.apache.atlas.notification.rest.web.filters.AtlasDelegatingAuthenticationEntryPoint;
+import org.apache.atlas.server.common.filters.AtlasDelegatingAuthenticationEntryPoint;
 import org.apache.atlas.notification.rest.web.filters.AtlasKnoxSSOAuthenticationFilter;
-import org.apache.atlas.notification.rest.web.filters.HeadersUtil;
+import org.apache.atlas.server.common.filters.HeadersUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -45,6 +45,9 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import javax.inject.Inject;
 import java.util.LinkedHashMap;
+
+import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
+import org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler;
 
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)

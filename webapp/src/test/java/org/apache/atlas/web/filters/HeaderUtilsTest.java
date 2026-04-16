@@ -30,6 +30,9 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
+import org.apache.atlas.server.common.filters.HeadersUtil;
+
 public class HeaderUtilsTest {
     private Map<String, String> originalHeaders;
 

@@ -51,6 +51,8 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
+import org.apache.atlas.server.common.security.AtlasAuthenticationException;
+
 public class AtlasADAuthenticationProviderTest {
     @Mock
     private Configuration mockConfiguration;

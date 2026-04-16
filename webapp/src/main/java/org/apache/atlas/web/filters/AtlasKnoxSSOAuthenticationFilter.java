@@ -72,6 +72,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
+import org.apache.atlas.server.common.filters.HeadersUtil;
+import org.apache.atlas.server.common.filters.SSOAuthenticationProperties;
+
 @Component("ssoAuthenticationFilter")
 public class AtlasKnoxSSOAuthenticationFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasKnoxSSOAuthenticationFilter.class);

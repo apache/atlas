@@ -32,6 +32,8 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
+import org.apache.atlas.server.common.security.UserAuthorityGranter;
+
 public class UserAuthorityGranterTest {
     @Mock
     private Principal mockPrincipal;

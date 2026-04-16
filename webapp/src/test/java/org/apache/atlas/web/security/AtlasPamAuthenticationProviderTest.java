@@ -60,6 +60,9 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import org.apache.atlas.server.common.security.AtlasAuthenticationException;
+import org.apache.atlas.server.common.security.UserAuthorityGranter;
+
 public class AtlasPamAuthenticationProviderTest {
     @Mock
     private Configuration mockConfiguration;

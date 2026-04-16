@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.atlas.notification.rest.web.security;
+package org.apache.atlas.server.common.security;
 
 import org.springframework.security.authentication.jaas.AuthorityGranter;
 
@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.Set;
 
 public class UserAuthorityGranter implements AuthorityGranter {
-
     @Override
     public Set<String> grant(Principal principal) {
         Collections.singleton("DATA_SCIENTIST");

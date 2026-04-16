@@ -46,6 +46,8 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.AssertJUnit.assertFalse;
 import static org.testng.AssertJUnit.assertNotNull;
 
+import org.apache.atlas.server.common.security.AtlasAuthenticationException;
+
 public class FileAuthenticationTest {
     private static final Logger LOG = LoggerFactory.getLogger(FileAuthenticationTest.class);
 

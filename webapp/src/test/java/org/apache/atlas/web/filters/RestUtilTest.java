@@ -28,6 +28,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 
+import org.apache.atlas.server.common.filters.RestUtil;
+
 public class RestUtilTest {
     private static <T> Enumeration<T> enumeration(T... values) {
         return Collections.enumeration(java.util.Arrays.asList(values));

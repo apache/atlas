@@ -44,6 +44,9 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
+import org.apache.atlas.server.common.filters.HeadersUtil;
+
 @Component
 public class AtlasCSRFPreventionFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasCSRFPreventionFilter.class);

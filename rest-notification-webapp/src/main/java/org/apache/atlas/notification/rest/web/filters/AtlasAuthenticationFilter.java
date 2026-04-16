@@ -20,7 +20,7 @@ package org.apache.atlas.notification.rest.web.filters;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.notification.rest.Servlets;
+import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.notification.rest.web.security.AtlasAuthenticationProvider;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.utils.AuthenticationUtil;
@@ -87,6 +87,10 @@ import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
+import org.apache.atlas.server.common.filters.HeadersUtil;
+import org.apache.atlas.server.common.filters.NullServletContext;
+import org.apache.atlas.server.common.filters.RestUtil;
 
 /**
  * This enforces authentication as part of the filter before processing the request.

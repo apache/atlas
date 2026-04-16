@@ -33,6 +33,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import org.apache.atlas.server.common.util.DateTimeHelper;
+
 public class DateTimeHelperTest {
     @Test
     public void testConstantsAndPattern() {
