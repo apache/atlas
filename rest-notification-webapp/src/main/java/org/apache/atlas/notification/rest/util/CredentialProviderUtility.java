@@ -16,7 +16,7 @@
  */
 package org.apache.atlas.notification.rest.util;
 
-import org.apache.atlas.notification.rest.web.dao.UserDao;
+import org.apache.atlas.server.common.dao.UserDao;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;

@@ -17,8 +17,8 @@
 
 package org.apache.atlas.notification.rest.web.service;
 
-import org.apache.atlas.notification.rest.web.dao.UserDao;
-import org.apache.atlas.notification.rest.web.model.User;
+import org.apache.atlas.server.common.dao.UserDao;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -36,7 +36,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Override
-    public User loadUserByUsername(final String username)
+    public UserDetails loadUserByUsername(final String username)
             throws UsernameNotFoundException {
         return userDao.loadUserByUsername(username);
     }

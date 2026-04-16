@@ -16,7 +16,7 @@
  */
 package org.apache.atlas.web.security;
 
-import org.apache.atlas.web.dao.UserDao;
+import org.apache.atlas.server.common.dao.UserDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;

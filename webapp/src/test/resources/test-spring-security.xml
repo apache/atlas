@@ -52,7 +52,7 @@
         <csrf disabled="true"/>
     </security:http>
 
-    <beans:bean id="userDAO" class="org.apache.atlas.web.dao.UserDao" init-method="init"/>
+    <beans:bean id="userDAO" class="org.apache.atlas.server.common.dao.UserDao" init-method="init"/>
     <beans:bean id="userDetailsService" class="org.apache.atlas.web.service.UserService">
         <beans:constructor-arg ref="userDAO"/>
     </beans:bean>
