@@ -25,13 +25,14 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.util.LinkedHashMap;
 
 public class AtlasDelegatingAuthenticationEntryPoint extends DelegatingAuthenticationEntryPoint {
-    public static final  String SESSION_TIMEOUT = "Session Timeout";
-    private static final Logger LOG             = LoggerFactory.getLogger(AtlasDelegatingAuthenticationEntryPoint.class);
+
+    public static final String SESSION_TIMEOUT = "Session Timeout";
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasDelegatingAuthenticationEntryPoint.class);
+
 
     public AtlasDelegatingAuthenticationEntryPoint(LinkedHashMap<RequestMatcher, AuthenticationEntryPoint> entryPoints) {
         super(entryPoints);
@@ -41,7 +42,8 @@ public class AtlasDelegatingAuthenticationEntryPoint extends DelegatingAuthentic
     }
 
     public void commence(HttpServletRequest request, HttpServletResponse response,
-            AuthenticationException authException) throws IOException {
+                         AuthenticationException authException) throws IOException {
+
         String ajaxRequestHeader = request.getHeader(HeadersUtil.X_REQUESTED_WITH_KEY);
         response.setHeader(HeadersUtil.X_FRAME_OPTIONS_KEY, HeadersUtil.X_FRAME_OPTIONS_VAL);
 

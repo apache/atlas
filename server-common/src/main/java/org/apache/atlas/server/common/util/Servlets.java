@@ -43,6 +43,7 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,9 +52,11 @@ import java.util.Map;
  * Utility functions for dealing with servlets.
  */
 public final class Servlets {
-    public static final  String  JSON_MEDIA_TYPE        = MediaType.APPLICATION_JSON + "; charset=UTF-8";
-    public static final  String  BINARY                 = MediaType.APPLICATION_OCTET_STREAM;
-    private static final Logger  LOG                    = LoggerFactory.getLogger(Servlets.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Servlets.class);
+
+    public static final String JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON + "; charset=UTF-8";
+    public static final String BINARY          = MediaType.APPLICATION_OCTET_STREAM;
+
     private static final int     QUERY_PARAM_MAX_LENGTH = AtlasConfiguration.QUERY_PARAM_MAX_LENGTH.getInt();
     private static final Charset UTF8_CHARSET           = Charset.forName("UTF-8");
     private static final String  DO_AS                  = "doAs";
@@ -65,26 +68,30 @@ public final class Servlets {
     /**
      * Returns the user of the given request.
      *
-     * @param httpRequest an HTTP servlet request
+     * @param httpRequest    an HTTP servlet request
      * @return the user
      */
     public static String getUserFromRequest(HttpServletRequest httpRequest) {
         String user = httpRequest.getRemoteUser();
+
         if (!StringUtils.isEmpty(user)) {
             return user;
         }
 
         user = httpRequest.getParameter("user.name"); // available in query-param
+
         if (!StringUtils.isEmpty(user)) {
             return user;
         }
 
         user = httpRequest.getHeader("Remote-User"); // backwards-compatibility
+
         if (!StringUtils.isEmpty(user)) {
             return user;
         }
 
         user = getDoAsUser(httpRequest);
+
         if (!StringUtils.isEmpty(user)) {
             return user;
         }
@@ -95,6 +102,7 @@ public final class Servlets {
     public static String getDoAsUser(HttpServletRequest request) {
         if (StringUtils.isNoneEmpty(request.getQueryString())) {
             List<NameValuePair> list = URLEncodedUtils.parse(request.getQueryString(), UTF8_CHARSET);
+
             if (list != null) {
                 for (NameValuePair nv : list) {
                     if (DO_AS.equals(nv.getName())) {
@@ -103,17 +111,19 @@ public final class Servlets {
                 }
             }
         }
+
         return null;
     }
 
     /**
      * Returns the URI of the given request.
      *
-     * @param httpRequest an HTTP servlet request
+     * @param httpRequest    an HTTP servlet request
      * @return the URI, including the query string
      */
     public static String getRequestURI(HttpServletRequest httpRequest) {
         final StringBuilder url = new StringBuilder(100).append(httpRequest.getRequestURI());
+
         if (httpRequest.getQueryString() != null) {
             url.append('?').append(httpRequest.getQueryString());
         }
@@ -124,11 +134,12 @@ public final class Servlets {
     /**
      * Returns the full URL of the given request.
      *
-     * @param httpRequest an HTTP servlet request
+     * @param httpRequest    an HTTP servlet request
      * @return the full URL, including the query string
      */
     public static String getRequestURL(HttpServletRequest httpRequest) {
         final StringBuilder url = new StringBuilder(100).append(httpRequest.getRequestURL());
+
         if (httpRequest.getQueryString() != null) {
             url.append('?').append(httpRequest.getQueryString());
         }
@@ -164,7 +175,9 @@ public final class Servlets {
         }
 
         StringWriter writer = new StringWriter();
+
         IOUtils.copy(request.getInputStream(), writer);
+
         return writer.toString();
     }
 
@@ -174,6 +187,7 @@ public final class Servlets {
 
     public static String escapeJsonString(String inputStr) {
         ParamChecker.notNull(inputStr, "Input String cannot be null");
+
         return StringEscapeUtils.escapeJson(inputStr);
     }
 
@@ -215,6 +229,7 @@ public final class Servlets {
             return UriUtils.decode(query, "UTF-8");
         } catch (Exception e) {
             LOG.error("Error occurred while decoding query:" + query, e.getMessage());
+
             throw new AtlasBaseException(e.getMessage());
         }
     }

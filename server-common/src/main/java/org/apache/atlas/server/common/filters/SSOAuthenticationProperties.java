@@ -24,7 +24,7 @@ import java.security.interfaces.RSAPublicKey;
 public class SSOAuthenticationProperties {
     private String       authenticationProviderUrl;
     private RSAPublicKey publicKey;
-    private String       cookieName = "hadoop-jwt";
+    private String       cookieName                = "hadoop-jwt";
     private String       originalUrlQueryParam;
     private String[]     userAgentList;
 

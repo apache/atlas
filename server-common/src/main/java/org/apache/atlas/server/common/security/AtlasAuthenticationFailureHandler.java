@@ -36,16 +36,17 @@ public class AtlasAuthenticationFailureHandler implements AuthenticationFailureH
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationFailureHandler.class);
 
     @Override
-    public void onAuthenticationFailure(HttpServletRequest httpServletRequest, HttpServletResponse response,
-            AuthenticationException e) throws IOException, ServletException {
+    public void onAuthenticationFailure(HttpServletRequest httpServletRequest, HttpServletResponse response, AuthenticationException e) throws IOException, ServletException {
         LOG.debug("Login Failure ", e);
 
         JSONObject json = new JSONObject();
+
         json.put("msgDesc", e.getMessage());
 
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setCharacterEncoding("UTF-8");
+
         response.getWriter().write(json.toJSONString());
     }
 }

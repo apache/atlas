@@ -28,12 +28,13 @@ import java.util.regex.Pattern;
  * Support function to parse and format date.
  */
 public final class DateTimeHelper {
-    public static final  String  ISO8601_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-    private static final String  DATE_PATTERN   =
-            "(2\\d\\d\\d|19\\d\\d)-(0[1-9]|1[012])-(0[1-9]|1[0-9]|2[0-9]|3[01])T" + "([0-1][0-9]|2[0-3]):([0-5][0-9])Z";
-    private static final Pattern PATTERN        = Pattern.compile(DATE_PATTERN);
 
-    private static final ThreadLocal<DateFormat> DATE_FORMAT = new ThreadLocal<DateFormat>() {
+    public static final String ISO8601_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    private static final String DATE_PATTERN =
+            "(2\\d\\d\\d|19\\d\\d)-(0[1-9]|1[012])-(0[1-9]|1[0-9]|2[0-9]|3[01])T" + "([0-1][0-9]|2[0-3]):([0-5][0-9])Z";
+    private static final Pattern PATTERN = Pattern.compile(DATE_PATTERN);
+
+    private static ThreadLocal<DateFormat> DATE_FORMAT = new ThreadLocal<DateFormat>() {
         @Override
         public DateFormat initialValue() {
             DateFormat dateFormat = new SimpleDateFormat(ISO8601_FORMAT);

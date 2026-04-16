@@ -27,7 +27,6 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 
 public class AtlasHeaderFilter implements Filter {
@@ -44,12 +43,12 @@ public class AtlasHeaderFilter implements Filter {
         filterChain.doFilter(request, response);
     }
 
-    @Override
-    public void destroy() {
-    }
-
     public void setHeaders(HttpServletResponse httpResponse) {
         AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
         HeadersUtil.setSecurityHeaders(responseWrapper);
+    }
+
+    @Override
+    public void destroy() {
     }
 }

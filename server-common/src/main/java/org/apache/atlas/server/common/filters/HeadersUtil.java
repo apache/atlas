@@ -35,30 +35,29 @@ import java.util.Properties;
 public class HeadersUtil {
     public static final Logger LOG = LoggerFactory.getLogger(HeadersUtil.class);
 
-    public static final String X_FRAME_OPTIONS_KEY                = "X-Frame-Options";
-    public static final String X_CONTENT_TYPE_OPTIONS_KEY         = "X-Content-Type-Options";
-    public static final String X_XSS_PROTECTION_KEY               = "X-XSS-Protection";
-    public static final String STRICT_TRANSPORT_SEC_KEY           = "Strict-Transport-Security";
-    public static final String CONTENT_SEC_POLICY_KEY             = "Content-Security-Policy";
-    public static final String X_FRAME_OPTIONS_VAL                = "DENY";
-    public static final String X_CONTENT_TYPE_OPTIONS_VAL         = "nosniff";
-    public static final String X_XSS_PROTECTION_VAL               = "1; mode=block";
-    public static final String STRICT_TRANSPORT_SEC_VAL           = "max-age=31536000; includeSubDomains";
-    public static final String CONTENT_SEC_POLICY_VAL             = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:; connect-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline';font-src 'self' data:";
-    public static final String SERVER_KEY                         = "Server";
-    public static final String USER_AGENT_KEY                     = "User-Agent";
-    public static final String USER_AGENT_VALUE                   = "Mozilla";
-    public static final String X_REQUESTED_WITH_KEY               = "X-REQUESTED-WITH";
-    public static final String X_REQUESTED_WITH_VALUE             = "XMLHttpRequest";
-    public static final int    SC_AUTHENTICATION_TIMEOUT          = 419;
-    public static final String CONFIG_PREFIX_HTTP_RESPONSE_HEADER = "atlas.headers";
+    public static final String X_FRAME_OPTIONS_KEY                 = "X-Frame-Options";
+    public static final String X_CONTENT_TYPE_OPTIONS_KEY          = "X-Content-Type-Options";
+    public static final String X_XSS_PROTECTION_KEY                = "X-XSS-Protection";
+    public static final String STRICT_TRANSPORT_SEC_KEY            = "Strict-Transport-Security";
+    public static final String CONTENT_SEC_POLICY_KEY              = "Content-Security-Policy";
+    public static final String X_FRAME_OPTIONS_VAL                 = "DENY";
+    public static final String X_CONTENT_TYPE_OPTIONS_VAL          = "nosniff";
+    public static final String X_XSS_PROTECTION_VAL                = "1; mode=block";
+    public static final String STRICT_TRANSPORT_SEC_VAL            = "max-age=31536000; includeSubDomains";
+    public static final String CONTENT_SEC_POLICY_VAL              = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:; connect-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline';font-src 'self' data:";
+    public static final String SERVER_KEY                          = "Server";
+    public static final String USER_AGENT_KEY                      = "User-Agent";
+    public static final String USER_AGENT_VALUE                    = "Mozilla";
+    public static final String X_REQUESTED_WITH_KEY                = "X-REQUESTED-WITH";
+    public static final String X_REQUESTED_WITH_VALUE              = "XMLHttpRequest";
+    public static final int    SC_AUTHENTICATION_TIMEOUT           = 419;
+    public static final String CONFIG_PREFIX_HTTP_RESPONSE_HEADER  = "atlas.headers";
 
     private static final Map<String, String> HEADER_MAP = new HashMap<>();
 
     private HeadersUtil() {
         // to block instantiation
     }
-
     public static String getHeaderMap(String header) {
         return HEADER_MAP.get(header);
     }
