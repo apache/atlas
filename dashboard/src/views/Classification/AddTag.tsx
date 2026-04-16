@@ -60,9 +60,18 @@ const AddTag = (props: {
   entityData: any;
   setUpdateTable: any;
   setRowSelection: any;
+  /** Schema tab: GET child entity/ies by guid and merge into detail + tab cache (no relationship replay). */
+  onSchemaChildEntityRefresh?: (childGuids: string[]) => void | Promise<void>;
 }) => {
-  const { open, onClose, entityData, setUpdateTable, isAdd, setRowSelection } =
-    props;
+  const {
+    open,
+    onClose,
+    entityData,
+    setUpdateTable,
+    isAdd,
+    setRowSelection,
+    onSchemaChildEntityRefresh
+  } = props;
   const { guid }: any = useParams();
   const location = useLocation();
   const dispatchApi = useAppDispatch();
@@ -302,7 +311,15 @@ const AddTag = (props: {
             dispatchApi(fetchGlossaryData());
             dispatchApi(fetchGlossaryDetails(params));
           }
-          dispatchApi(fetchDetailPageData(guid as string));
+          if (typeof onSchemaChildEntityRefresh !== "function") {
+            await dispatchApi(fetchDetailPageData(guid as string)).unwrap();
+          }
+        }
+        const childGuids = isArray(entityData)
+          ? entityData.map((obj: { guid: string }) => obj.guid)
+          : [entityGuid];
+        if (typeof onSchemaChildEntityRefresh === "function") {
+          await Promise.resolve(onSchemaChildEntityRefresh(childGuids));
         }
 
         if (!isEmpty(setRowSelection)) {
@@ -330,7 +347,15 @@ const AddTag = (props: {
             dispatchApi(fetchGlossaryData());
             dispatchApi(fetchGlossaryDetails(params));
           }
-          dispatchApi(fetchDetailPageData(guid as string));
+          if (typeof onSchemaChildEntityRefresh !== "function") {
+            await dispatchApi(fetchDetailPageData(guid as string)).unwrap();
+          }
+        }
+        const editChildGuids = isArray(entityData)
+          ? entityData.map((obj: { guid: string }) => obj.guid)
+          : [entityGuid];
+        if (typeof onSchemaChildEntityRefresh === "function") {
+          await Promise.resolve(onSchemaChildEntityRefresh(editChildGuids));
         }
 
         if (!isEmpty(setRowSelection)) {

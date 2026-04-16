@@ -25,6 +25,20 @@ define([
 ], function(require, Backbone, RelationshipCardsLayoutViewTmpl, UrlLinks, Utils) {
     "use strict";
 
+    /**
+     * Match dashboard/src/utils/relationshipSearchQuery.ts — Atlas may return -1 for approximateCount.
+     */
+    function normalizeRelationshipApproximateCount(raw) {
+        if (raw === undefined || raw === null) {
+            return undefined;
+        }
+        var n = Number(raw);
+        if (!isFinite(n) || n < 0) {
+            return undefined;
+        }
+        return n;
+    }
+
     var RelationshipCardsLayoutView = Backbone.Marionette.LayoutView.extend({
         template: RelationshipCardsLayoutViewTmpl,
         ui: {
@@ -235,12 +249,19 @@ define([
                     that.referredEntities = _.extend({}, that.referredEntities, response.referredEntities);
                 }
                 that.cardData[name] = _.isArray(entities) ? entities : (entities ? [entities] : []);
-                if (!_.isUndefined(response.approximateCount)) {
-                    that.cardCounts[name] = response.approximateCount;
-                } else if (!_.isUndefined(response.totalCount)) {
-                    that.cardCounts[name] = response.totalCount;
+                var approxNorm = normalizeRelationshipApproximateCount(response.approximateCount);
+                var totalNorm = normalizeRelationshipApproximateCount(response.totalCount);
+                var listLen = that.cardData[name].length;
+                var reqLimit = that.getRelationshipParams(name, 0, undefined, { showDeleted: true }).limit;
+                if (approxNorm !== undefined) {
+                    that.cardCounts[name] = approxNorm;
+                } else if (totalNorm !== undefined) {
+                    that.cardCounts[name] = totalNorm;
+                } else if (listLen >= reqLimit) {
+                    /* Unknown total but full page — allow scroll load-more (match React schema semantics). */
+                    that.cardCounts[name] = listLen + 1;
                 } else {
-                    that.cardCounts[name] = that.cardData[name].length;
+                    that.cardCounts[name] = listLen;
                 }
                 if (_.isUndefined(that.sortByName[name])) {
                     that.sortByName[name] = false;
@@ -354,6 +375,13 @@ define([
                 }
                 var newItems = _.isArray(entities) ? entities : (entities ? [entities] : []);
                 that.cardData[relationName] = existing.concat(newItems);
+                var approxMore = normalizeRelationshipApproximateCount(response && response.approximateCount);
+                var totalMore = normalizeRelationshipApproximateCount(response && response.totalCount);
+                if (approxMore !== undefined) {
+                    that.cardCounts[relationName] = approxMore;
+                } else if (totalMore !== undefined) {
+                    that.cardCounts[relationName] = totalMore;
+                }
                 var updatedCount = that.getTotalCountForName(relationName, that.cardData[relationName].length);
                 if (newItems.length === 0 || updatedCount <= that.cardData[relationName].length) {
                     that.exhaustedByName[relationName] = true;
@@ -400,10 +428,12 @@ define([
                 }
                 var newItems = _.isArray(entities) ? entities : (entities ? [entities] : []);
                 that.cardData[relationName] = newItems;
-                if (!_.isUndefined(response.approximateCount)) {
-                    that.cardCounts[relationName] = response.approximateCount;
-                } else if (!_.isUndefined(response.totalCount)) {
-                    that.cardCounts[relationName] = response.totalCount;
+                var approxR = normalizeRelationshipApproximateCount(response.approximateCount);
+                var totalR = normalizeRelationshipApproximateCount(response.totalCount);
+                if (approxR !== undefined) {
+                    that.cardCounts[relationName] = approxR;
+                } else if (totalR !== undefined) {
+                    that.cardCounts[relationName] = totalR;
                 }
                 var prevSnapR = that._lastCardCountSnapshot[relationName];
                 that.adjustPageLimitWhenTotalGrew(relationName, prevSnapR, that.cardCounts[relationName]);
