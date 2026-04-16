@@ -1,0 +1,14 @@
+{
+  "patches": [
+    {
+      "id": "TYPEDEF_PATCH_0008_001",
+      "description": "Update isIndexable to False for ddl.queryText attribute in BaseModel",
+      "action": "UPDATE_ATTRIBUTE_METADATA",
+      "typeName": "ddl",
+      "applyToVersion": "1.0",
+      "updateToVersion": "1.1",
+      "attributeName":   "queryText",
+      "params": { "isIndexable": false }
+    }
+  ]
+}
