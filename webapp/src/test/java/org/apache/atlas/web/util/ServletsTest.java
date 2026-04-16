@@ -26,6 +26,8 @@ import javax.ws.rs.core.Response;
 
 import static org.testng.Assert.assertNotNull;
 
+import org.apache.atlas.server.common.util.Servlets;
+
 @Test
 public class ServletsTest {
     public void testEmptyMessage() throws Exception {

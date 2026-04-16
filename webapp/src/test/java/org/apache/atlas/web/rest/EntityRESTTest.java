@@ -39,7 +39,7 @@ import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.FileUtils;
-import org.apache.atlas.web.util.Servlets;
+import org.apache.atlas.server.common.util.Servlets;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;

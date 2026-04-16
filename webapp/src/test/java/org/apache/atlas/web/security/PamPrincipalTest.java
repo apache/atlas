@@ -38,6 +38,8 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import org.apache.atlas.server.common.security.PamPrincipal;
+
 public class PamPrincipalTest {
     @Mock
     private UnixUser mockUnixUser;

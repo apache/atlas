@@ -43,6 +43,8 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
+
 public class AtlasAuthenticationFailureHandlerTest {
     @Mock
     private HttpServletRequest mockHttpServletRequest;

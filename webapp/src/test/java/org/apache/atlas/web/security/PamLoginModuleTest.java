@@ -54,6 +54,8 @@ import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
+import org.apache.atlas.server.common.security.PamPrincipal;
+
 public class PamLoginModuleTest {
     @Mock
     private Subject mockSubject;

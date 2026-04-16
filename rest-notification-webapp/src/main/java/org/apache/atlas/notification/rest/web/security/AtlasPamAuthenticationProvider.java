@@ -41,6 +41,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.atlas.server.common.security.AtlasAuthenticationException;
+import org.apache.atlas.server.common.security.UserAuthorityGranter;
+
 @Component
 public class AtlasPamAuthenticationProvider extends AtlasAbstractAuthenticationProvider {
 

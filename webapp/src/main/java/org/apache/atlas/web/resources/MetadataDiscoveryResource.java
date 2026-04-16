@@ -33,7 +33,7 @@ import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.v1.model.discovery.DSLSearchResult;
 import org.apache.atlas.v1.model.discovery.FullTextSearchResult;
 import org.apache.atlas.v1.model.instance.Referenceable;
-import org.apache.atlas.web.util.Servlets;
+import org.apache.atlas.server.common.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

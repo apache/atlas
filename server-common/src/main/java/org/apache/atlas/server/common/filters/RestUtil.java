@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,35 +16,39 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.notification.rest.web.filters;
+package org.apache.atlas.server.common.filters;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
+
 import java.util.Enumeration;
 
 public class RestUtil {
-
-    private static final Logger LOG = LoggerFactory.getLogger(RestUtil.class);
-    public static final String TIMEOUT_ACTION = "timeout";
-    public static final String LOGOUT_URL = "/logout.html";
+    public static final  String TIMEOUT_ACTION       = "timeout";
+    public static final  String LOGOUT_URL           = "/logout.html";
+    public static final  String DELIMITTER           = "://";
+    private static final Logger LOG                  = LoggerFactory.getLogger(RestUtil.class);
     private static final String PROXY_ATLAS_URL_PATH = "/atlas";
-    private static final String X_FORWARDED_PROTO = "x-forwarded-proto";
-    private static final String X_FORWARDED_HOST = "x-forwarded-host";
-    private static final String X_FORWARDED_CONTEXT = "x-forwarded-context";
-    public static final String DELIMITTER = "://";
+    private static final String X_FORWARDED_PROTO    = "x-forwarded-proto";
+    private static final String X_FORWARDED_HOST     = "x-forwarded-host";
+    private static final String X_FORWARDED_CONTEXT  = "x-forwarded-context";
+
+    private RestUtil() {
+        // to block instantiation
+    }
 
     public static String constructForwardableURL(HttpServletRequest httpRequest) {
-        String xForwardedProto = "";
-        String xForwardedHost = "";
-        String xForwardedContext = "";
-        Enumeration<?> headerNames = httpRequest.getHeaderNames();
+        String         xForwardedProto   = "";
+        String         xForwardedHost    = "";
+        String         xForwardedContext = "";
+        Enumeration<?> headerNames       = httpRequest.getHeaderNames();
         while (headerNames.hasMoreElements()) {
-            String name = (String) headerNames.nextElement();
+            String         name   = (String) headerNames.nextElement();
             Enumeration<?> values = httpRequest.getHeaders(name);
-            String value = "";
+            String         value  = "";
             if (values != null) {
                 while (values.hasMoreElements()) {
                     value = (String) values.nextElement();

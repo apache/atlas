@@ -39,6 +39,8 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
+import org.apache.atlas.server.common.util.Servlets;
+
 @Provider
 @Produces(MediaType.APPLICATION_JSON)
 @Component

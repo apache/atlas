@@ -30,7 +30,7 @@ import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.v1.model.typedef.TypesDef;
 import org.apache.atlas.web.rest.TypesREST;
-import org.apache.atlas.web.util.Servlets;
+import org.apache.atlas.server.common.util.Servlets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

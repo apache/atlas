@@ -80,7 +80,7 @@ import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.model.DebugMetrics;
 import org.apache.atlas.web.service.AtlasDebugMetricsSink;
 import org.apache.atlas.web.service.ServiceState;
-import org.apache.atlas.web.util.Servlets;
+import org.apache.atlas.server.common.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;

@@ -19,7 +19,7 @@
 package org.apache.atlas.web.dao;
 
 import org.apache.atlas.web.model.User;
-import org.apache.atlas.web.security.AtlasAuthenticationException;
+import org.apache.atlas.server.common.security.AtlasAuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;

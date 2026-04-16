@@ -29,6 +29,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
+import org.apache.atlas.server.common.security.AtlasAuthenticationException;
+
 @Component
 @Scope("prototype")
 public class AtlasAuthenticationProvider extends AtlasAbstractAuthenticationProvider {

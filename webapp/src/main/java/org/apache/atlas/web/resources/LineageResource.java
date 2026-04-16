@@ -27,7 +27,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.v1.model.lineage.LineageResponse;
 import org.apache.atlas.v1.model.lineage.SchemaResponse;
 import org.apache.atlas.web.util.LineageUtils;
-import org.apache.atlas.web.util.Servlets;
+import org.apache.atlas.server.common.util.Servlets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

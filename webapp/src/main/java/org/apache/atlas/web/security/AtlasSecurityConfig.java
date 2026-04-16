@@ -18,12 +18,12 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.web.filters.ActiveServerFilter;
-import org.apache.atlas.web.filters.AtlasAuthenticationEntryPoint;
+import org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint;
 import org.apache.atlas.web.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
-import org.apache.atlas.web.filters.AtlasDelegatingAuthenticationEntryPoint;
+import org.apache.atlas.server.common.filters.AtlasDelegatingAuthenticationEntryPoint;
 import org.apache.atlas.web.filters.AtlasKnoxSSOAuthenticationFilter;
-import org.apache.atlas.web.filters.HeadersUtil;
+import org.apache.atlas.server.common.filters.HeadersUtil;
 import org.apache.atlas.web.filters.StaleTransactionCleanupFilter;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -72,6 +72,9 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import javax.inject.Inject;
 
+import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
+import org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -80,7 +83,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
-import static org.apache.atlas.web.filters.HeadersUtil.SERVER_KEY;
+import static org.apache.atlas.server.common.filters.HeadersUtil.SERVER_KEY;
 
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)

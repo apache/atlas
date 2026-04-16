@@ -23,7 +23,7 @@ import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.web.security.AtlasAuthenticationProvider;
-import org.apache.atlas.web.util.Servlets;
+import org.apache.atlas.server.common.util.Servlets;
 import org.apache.commons.collections.iterators.IteratorEnumeration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
@@ -87,7 +87,12 @@ import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.apache.atlas.web.filters.RestUtil.constructForwardableURL;
+import static org.apache.atlas.server.common.filters.RestUtil.constructForwardableURL;
+
+import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
+import org.apache.atlas.server.common.filters.HeadersUtil;
+import org.apache.atlas.server.common.filters.NullServletContext;
+import org.apache.atlas.server.common.filters.RestUtil;
 
 /**
  * This enforces authentication as part of the filter before processing the request.

@@ -33,6 +33,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint;
+
 public class AtlasAuthenticationEntryPointTest {
     @Mock
     private HttpServletRequest request;

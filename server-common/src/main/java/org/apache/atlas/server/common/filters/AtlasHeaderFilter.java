@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.notification.rest.web.filters;
+package org.apache.atlas.server.common.filters;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +27,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class AtlasHeaderFilter implements Filter {
@@ -43,12 +44,12 @@ public class AtlasHeaderFilter implements Filter {
         filterChain.doFilter(request, response);
     }
 
+    @Override
+    public void destroy() {
+    }
+
     public void setHeaders(HttpServletResponse httpResponse) {
         AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
         HeadersUtil.setSecurityHeaders(responseWrapper);
-    }
-
-    @Override
-    public void destroy() {
     }
 }

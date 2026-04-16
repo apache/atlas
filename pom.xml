@@ -72,6 +72,7 @@
         <module>repository</module>
         <module>rest-notification-webapp</module>
         <module>server-api</module>
+        <module>server-common</module>
         <module>test-tools</module>
         <module>tools/atlas-index-repair</module>
         <module>tools/classification-updater</module>
@@ -563,6 +564,12 @@
             <dependency>
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>kafka-bridge</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>server-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

@@ -80,6 +80,11 @@
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>server-common</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>

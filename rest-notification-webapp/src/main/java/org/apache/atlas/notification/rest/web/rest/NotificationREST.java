@@ -29,7 +29,7 @@ import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
-import org.apache.atlas.notification.rest.Servlets;
+import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;

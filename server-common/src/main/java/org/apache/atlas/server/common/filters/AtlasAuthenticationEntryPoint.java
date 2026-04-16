@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.web.filters;
+package org.apache.atlas.server.common.filters;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,16 +24,18 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
+@SuppressWarnings("deprecation")
 @Component
 public class AtlasAuthenticationEntryPoint extends LoginUrlAuthenticationEntryPoint {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationEntryPoint.class);
 
-    private static final String LOGIN_PATH = "/login.jsp";
+    private String loginPath = "/login.jsp";
 
     @Inject
     public AtlasAuthenticationEntryPoint(@Value("/login.jsp") String loginFormUrl) {
@@ -41,17 +43,16 @@ public class AtlasAuthenticationEntryPoint extends LoginUrlAuthenticationEntryPo
     }
 
     @Override
-    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
+    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
+            throws IOException, ServletException {
         String ajaxRequestHeader = request.getHeader("X-Requested-With");
-
         response.setHeader("X-Frame-Options", "DENY");
 
         if ("XMLHttpRequest".equals(ajaxRequestHeader)) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         } else {
-            LOG.debug("redirecting to login page loginPath {}", LOGIN_PATH);
-
-            response.sendRedirect(LOGIN_PATH);
+            LOG.debug("redirecting to login page loginPath" + loginPath);
+            response.sendRedirect(loginPath);
         }
     }
 }

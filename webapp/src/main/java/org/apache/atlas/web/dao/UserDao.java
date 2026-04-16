@@ -21,7 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.web.model.User;
-import org.apache.atlas.web.security.AtlasAuthenticationException;
+import org.apache.atlas.server.common.security.AtlasAuthenticationException;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

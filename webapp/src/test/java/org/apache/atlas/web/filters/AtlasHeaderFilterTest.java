@@ -44,6 +44,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.testng.Assert.assertNotNull;
 
+import org.apache.atlas.server.common.filters.AtlasHeaderFilter;
+import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
+import org.apache.atlas.server.common.filters.HeadersUtil;
+
 public class AtlasHeaderFilterTest {
     @Mock
     private FilterConfig mockFilterConfig;

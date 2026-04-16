@@ -64,13 +64,13 @@
     </beans:bean>
 
     <beans:bean id="atlasAuthenticationSuccessHandler"
-                class="org.apache.atlas.web.security.AtlasAuthenticationSuccessHandler" />
+                class="org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler" />
 
     <beans:bean id="atlasAuthenticationFailureHandler"
-                class="org.apache.atlas.web.security.AtlasAuthenticationFailureHandler" />
+                class="org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler" />
 
     <beans:bean id="formAuthenticationEntryPoint"
-                class="org.apache.atlas.web.filters.AtlasAuthenticationEntryPoint">
+                class="org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint">
         <beans:constructor-arg value="/login.jsp"/>
     </beans:bean>
 

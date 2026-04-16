@@ -20,10 +20,10 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.web.filters.ActiveServerFilter;
-import org.apache.atlas.web.filters.AtlasAuthenticationEntryPoint;
+import org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint;
 import org.apache.atlas.web.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
-import org.apache.atlas.web.filters.AtlasDelegatingAuthenticationEntryPoint;
+import org.apache.atlas.server.common.filters.AtlasDelegatingAuthenticationEntryPoint;
 import org.apache.atlas.web.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.web.filters.StaleTransactionCleanupFilter;
 import org.apache.commons.configuration.Configuration;
@@ -95,6 +95,9 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
+
+import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
+import org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler;
 
 @SuppressWarnings("deprecation")
 public class AtlasSecurityConfigTest {

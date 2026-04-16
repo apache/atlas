@@ -20,7 +20,7 @@ package org.apache.atlas.notification.rest.web.resources;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.notification.rest.Servlets;
+import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.notification.rest.web.service.ServiceState;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.configuration.Configuration;
