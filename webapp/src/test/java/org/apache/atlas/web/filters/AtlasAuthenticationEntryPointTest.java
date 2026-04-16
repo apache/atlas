@@ -24,6 +24,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -54,7 +55,7 @@ public class AtlasAuthenticationEntryPointTest {
     }
 
     @Test
-    public void testCommence_AjaxRequest() throws IOException {
+    public void testCommence_AjaxRequest() throws IOException, ServletException {
         // Arrange
         when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
 
@@ -67,7 +68,7 @@ public class AtlasAuthenticationEntryPointTest {
     }
 
     @Test
-    public void testCommence_NormalRequest() throws IOException {
+    public void testCommence_NormalRequest() throws IOException, ServletException {
         // Arrange
         when(request.getHeader("X-Requested-With")).thenReturn(null);
 

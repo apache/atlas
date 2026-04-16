@@ -31,6 +31,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -76,7 +77,7 @@ public class AtlasAuthenticationSuccessHandlerTest {
     private AtlasAuthenticationSuccessHandler authenticationSuccessHandler;
 
     @BeforeMethod
-    public void setUp() throws IOException {
+    public void setUp() throws IOException, ServletException {
         MockitoAnnotations.openMocks(this);
         authenticationSuccessHandler = new AtlasAuthenticationSuccessHandler();
 
@@ -106,7 +107,7 @@ public class AtlasAuthenticationSuccessHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationSuccess_WithSession() throws IOException {
+    public void testOnAuthenticationSuccess_WithSession() throws IOException, ServletException {
         // Setup
         String sessionId = "test-session-id";
         Object principal = "test-user";
@@ -139,7 +140,7 @@ public class AtlasAuthenticationSuccessHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationSuccess_WithSessionAndNegativeTimeout() throws IOException {
+    public void testOnAuthenticationSuccess_WithSessionAndNegativeTimeout() throws IOException, ServletException {
         // Setup
         String sessionId = "test-session-id";
         Object principal = "test-user";
@@ -171,7 +172,7 @@ public class AtlasAuthenticationSuccessHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationSuccess_WithoutSession() throws IOException {
+    public void testOnAuthenticationSuccess_WithoutSession() throws IOException, ServletException {
         // Setup
         Object principal = "test-user";
 
@@ -197,7 +198,7 @@ public class AtlasAuthenticationSuccessHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationSuccess_VerifyJSONContent() throws IOException {
+    public void testOnAuthenticationSuccess_VerifyJSONContent() throws IOException, ServletException {
         // Setup
         Object principal = "test-user";
         when(mockAuthentication.getPrincipal()).thenReturn(principal);
@@ -227,7 +228,7 @@ public class AtlasAuthenticationSuccessHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationSuccess_VerifyResponseStatusValue() throws IOException {
+    public void testOnAuthenticationSuccess_VerifyResponseStatusValue() throws IOException, ServletException {
         // Setup
         Object principal = "test-user";
         when(mockAuthentication.getPrincipal()).thenReturn(principal);
@@ -241,7 +242,7 @@ public class AtlasAuthenticationSuccessHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationSuccess_WithIOException() throws IOException {
+    public void testOnAuthenticationSuccess_WithIOException() throws IOException, ServletException {
         // Setup
         Object principal = "test-user";
         when(mockAuthentication.getPrincipal()).thenReturn(principal);
@@ -264,7 +265,7 @@ public class AtlasAuthenticationSuccessHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationSuccess_WithComplexPrincipal() throws IOException {
+    public void testOnAuthenticationSuccess_WithComplexPrincipal() throws IOException, ServletException {
         // Setup with complex principal object
         Object complexPrincipal = new Object() {
             @Override
