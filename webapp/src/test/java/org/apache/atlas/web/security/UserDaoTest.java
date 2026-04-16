@@ -16,9 +16,9 @@
  */
 package org.apache.atlas.web.security;
 
-import org.apache.atlas.web.dao.UserDao;
-import org.apache.atlas.web.model.User;
+import org.apache.atlas.server.common.dao.UserDao;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.testng.annotations.Test;
 
@@ -39,7 +39,7 @@ public class UserDaoTest {
 
         user.setUserLogins(userLogins);
 
-        User userBean = user.loadUserByUsername("admin");
+        UserDetails userBean = user.loadUserByUsername("admin");
 
         assertEquals(userBean.getPassword(), "admin123");
 
@@ -66,7 +66,7 @@ public class UserDaoTest {
         user.setUserLogins(userLogins);
 
         try {
-            User userBean = user.loadUserByUsername("xyz");
+            UserDetails userBean = user.loadUserByUsername("xyz");
         } catch (UsernameNotFoundException uex) {
             hadException = true;
         }

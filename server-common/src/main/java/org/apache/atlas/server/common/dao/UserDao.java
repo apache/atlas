@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.web.dao;
+package org.apache.atlas.server.common.dao;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.web.model.User;
 import org.apache.atlas.server.common.security.AtlasAuthenticationException;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
@@ -28,6 +27,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.codec.Hex;
@@ -98,7 +99,7 @@ public class UserDao {
         }
     }
 
-    protected static String mergePasswordAndSalt(String password, Object salt, boolean strict) {
+    public static String mergePasswordAndSalt(String password, Object salt, boolean strict) {
         if (!StringUtils.hasText(password)) {
             password = "";
         }
@@ -115,7 +116,7 @@ public class UserDao {
         loadFileLoginsDetails();
     }
 
-    public User loadUserByUsername(final String username) throws AuthenticationException {
+    public UserDetails loadUserByUsername(final String username) throws AuthenticationException {
         String userdetailsStr = userLogins.getProperty(username);
 
         if (userdetailsStr == null || userdetailsStr.isEmpty()) {

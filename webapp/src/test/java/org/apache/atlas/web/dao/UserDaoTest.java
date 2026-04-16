@@ -18,8 +18,9 @@
 
 package org.apache.atlas.web.dao;
 
-import org.apache.atlas.web.model.User;
+import org.apache.atlas.server.common.dao.UserDao;
 import org.apache.atlas.server.common.security.AtlasAuthenticationException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -65,7 +66,7 @@ public class UserDaoTest {
 
         userDao.setUserLogins(mockProps);
 
-        User user = userDao.loadUserByUsername("johndoe");
+        UserDetails user = userDao.loadUserByUsername("johndoe");
 
         assertEquals(user.getUsername(), "johndoe");
         assertTrue(user.getAuthorities().stream()
