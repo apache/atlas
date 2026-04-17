@@ -509,6 +509,21 @@
                                             <artifactId>hadoop-common</artifactId>
                                             <version>${hadoop.version}</version>
                                         </artifactItem>
+                                        <artifactItem>
+                                            <groupId>ch.qos.logback</groupId>
+                                            <artifactId>logback-classic</artifactId>
+                                            <version>${logback.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>ch.qos.logback</groupId>
+                                            <artifactId>logback-core</artifactId>
+                                            <version>${logback.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.slf4j</groupId>
+                                            <artifactId>slf4j-api</artifactId>
+                                            <version>${slf4j.version}</version>
+                                        </artifactItem>
                                     </artifactItems>
                                 </configuration>
                             </execution>

@@ -121,7 +121,7 @@ then
 fi
 
 JAVA_PROPERTIES="$ATLAS_OPTS -Datlas.log.dir=$ATLAS_LOG_DIR -Datlas.log.file=import-kafka.log
--Dlog4j.configuration=atlas-kafka-import-log4j.xml"
+-Dlogback.configurationFile=atlas-kafka-import-logback.xml"
 shift
 
 while [[ ${1} =~ ^\-D ]]; do
