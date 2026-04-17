@@ -89,9 +89,8 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         try {
             DeleteType deleteType = RequestContext.get().getDeleteType();
             if (deleteType == DeleteType.SOFT || deleteType == DeleteType.DEFAULT) {
-                LOG.warn("Soft delete of DataContract {} -- asset attributes will NOT be cleaned up. Use hard delete.",
-                        GraphHelper.getGuid(vertex));
-                return;
+                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED,
+                        "Soft delete is not supported for DataContract. Use hard delete (PURGE) instead.");
             }
 
             if (!AtlasEntity.Status.ACTIVE.equals(GraphHelper.getStatus(vertex))) {
