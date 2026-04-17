@@ -138,9 +138,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
         if (CollectionUtils.isNotEmpty(siblingGuids)) {
             LOG.info("Cascade deleting {} sibling contract versions for asset {}", siblingGuids.size(), assetGuid);
-            for (String siblingGuid : siblingGuids) {
-                entityStore.deleteById(siblingGuid);
-            }
+            entityStore.deleteByIds(siblingGuids);
         }
 
         cleanupAssetAttributes(assetGuid);
@@ -189,12 +187,13 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
         EntityStream entityStream = new AtlasEntityStream(new AtlasEntity.AtlasEntitiesWithExtInfo(assetUpdate));
 
+        boolean originalSkipAuthCheck = RequestContext.get().isSkipAuthorizationCheck();
         try {
             RequestContext.get().setSkipAuthorizationCheck(true);
             entityStore.createOrUpdate(entityStream, true);
             LOG.info("Restored contract pointers on asset {} to previous version {}", assetGuid, previousVersion.getGuid());
         } finally {
-            RequestContext.get().setSkipAuthorizationCheck(false);
+            RequestContext.get().setSkipAuthorizationCheck(originalSkipAuthCheck);
         }
     }
 
