@@ -368,6 +368,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         List<Map<String, Object>> mustClauseList = new ArrayList<>();
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", CONTRACT_ENTITY_TYPE)));
         mustClauseList.add(mapOf("term", mapOf(ATTR_ASSET_GUID, datasetGuid)));
+        mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
 
         dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
         dsl.put("sort", Collections.singletonList(mapOf(ATTR_CONTRACT_VERSION, mapOf("order", "desc"))));
