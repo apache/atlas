@@ -27,7 +27,6 @@ on:
       - lite_master
       - switchable-graph-provider
       - ring-*
-      - dq-665-contract-delete
     paths-ignore:
       - '.claude/**'
       - '.cursor/**'
