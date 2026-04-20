@@ -17,6 +17,7 @@
 
 import { searchApiUrl } from "../apiUrlLinks/searchApiUrl";
 import { fetchApi } from "./fetchApi";
+import { serializeRelationshipSearchParams } from "@utils/relationshipSearchQuery";
 
 const getBasicSearchResult = (params: any, searchType: string | null) => {
   const config: any = {
@@ -49,12 +50,10 @@ const getRelationShip = (params: any) => {
   return fetchApi(searchApiUrl("relationship"), config);
 };
 
-const getRelationShipV2 = (params: any) => {
-  const config: any = {
-    method: "GET",
-    ...params
-  };
-  return fetchApi(searchApiUrl("relationship"), config);
+const getRelationShipV2 = (params: { params: Record<string, unknown> }) => {
+  const qs = serializeRelationshipSearchParams(params.params);
+  const url = `${searchApiUrl("relationship")}?${qs}`;
+  return fetchApi(url, { method: "GET" });
 };
 
 export {

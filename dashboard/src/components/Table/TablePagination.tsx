@@ -67,16 +67,18 @@ interface PaginationProps {
   setIsEmptyData?: any;
   showGoToPage?: boolean;
   totalCount?: number;
+  /** Client mode: notify parent when page size changes (user action). */
+  onClientPageSizeChange?: (pageSize: number) => void;
 }
 
 const TablePagination: React.FC<PaginationProps> = ({
   isServerSide = false,
-  getPageCount,
+  getPageCount: _getPageCount,
   previousPage,
   nextPage,
   setPageIndex,
   setPageSize,
-  getRowModel,
+  getRowModel: _getRowModel,
   pagination,
   setRowSelection,
   memoizedData,
@@ -87,13 +89,22 @@ const TablePagination: React.FC<PaginationProps> = ({
   isEmptyData,
   setIsEmptyData,
   showGoToPage = false,
-  totalCount
+  totalCount,
+  onClientPageSizeChange
 }) => {
   const theme: any = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const { pageIndex, pageSize } = pagination;
+
+  /** Client mode: optional approximate total so Next/footer work before all rows load. */
+  const clientEffectiveTotal =
+    !isServerSide &&
+    typeof totalCount === "number" &&
+    totalCount >= 0
+      ? totalCount
+      : memoizedData.length;
 
   const [value, setValue] = useState<any>({
     label:
@@ -119,7 +130,7 @@ const TablePagination: React.FC<PaginationProps> = ({
       ? Number(searchParams.get("pageOffset")) + Number(limit)
       : isServerSide
       ? Number(limit)
-      : Math.min((pageIndex + 1) * pageSize, getRowModel?.().rows.length || 0)
+      : Math.min((pageIndex + 1) * pageSize, clientEffectiveTotal)
   );
   const [offset, setOffset] = useState<number>(
     isServerSide && searchParams.get("pageOffset")
@@ -185,7 +196,10 @@ const TablePagination: React.FC<PaginationProps> = ({
       setPageIndex?.(0);
       setLimit(newPageSize);
       setPageFrom(1);
-      setPageTo(Math.min(newPageSize, getRowModel?.().rows.length || 0));
+      setPageTo(Math.min(newPageSize, clientEffectiveTotal));
+      if (typeof onClientPageSizeChange === "function") {
+        onClientPageSizeChange(newPageSize);
+      }
       // Clear Go-to state on page size change
       setGoToPageVal?.("");
       setPendingGoToPageVal("");
@@ -236,7 +250,11 @@ const TablePagination: React.FC<PaginationProps> = ({
       setGoToPageVal?.("");
       setPendingGoToPageVal("");
     } else {
-      if (goToPage > (getPageCount?.() || Infinity)) {
+      const maxPage = Math.max(
+        1,
+        Math.ceil(clientEffectiveTotal / pageSize) || 1
+      );
+      if (goToPage > maxPage) {
         toast.dismiss(toastId.current);
         toastId.current = toast.info(
           <>
@@ -258,9 +276,7 @@ const TablePagination: React.FC<PaginationProps> = ({
       }
       setPageIndex?.(goToPage - 1);
       setPageFrom((goToPage - 1) * pageSize + 1);
-      setPageTo(
-        Math.min(goToPage * pageSize, getRowModel?.().rows.length || 0)
-      );
+      setPageTo(Math.min(goToPage * pageSize, clientEffectiveTotal));
       setGoToPageVal?.("");
       setPendingGoToPageVal("");
       setGoToPageTrigger("");
@@ -294,9 +310,10 @@ const TablePagination: React.FC<PaginationProps> = ({
       navigate({ search: searchParams.toString() });
     } else {
       previousPage?.();
-      setPageFrom(pageIndex * pageSize + 1);
+      const newPageIndex = Math.max(0, pageIndex - 1);
+      setPageFrom(newPageIndex * pageSize + 1);
       setPageTo(
-        Math.min(pageIndex * pageSize, getRowModel?.().rows.length || 0)
+        Math.min((newPageIndex + 1) * pageSize, clientEffectiveTotal)
       );
     }
     setGoToPageVal?.("");
@@ -319,7 +336,7 @@ const TablePagination: React.FC<PaginationProps> = ({
       nextPage?.();
       setPageFrom((pageIndex + 1) * pageSize + 1);
       setPageTo(
-        Math.min((pageIndex + 2) * pageSize, getRowModel?.().rows.length || 0)
+        Math.min((pageIndex + 2) * pageSize, clientEffectiveTotal)
       );
     }
     setGoToPageVal?.("");
@@ -332,17 +349,25 @@ const TablePagination: React.FC<PaginationProps> = ({
     ? (typeof totalCount === "number" && totalCount >= 0
         ? offset + limit >= totalCount
         : memoizedData.length < limit)
-    : pageIndex + 1 >= (getPageCount?.() || Infinity);
+    : clientEffectiveTotal === 0
+    ? true
+    : pageIndex + 1 >= Math.ceil(clientEffectiveTotal / pageSize);
 
-  const totalRows = getRowModel?.().rows.length || 0;
+  /** Client-side: optional totalCount (approximate) or loaded row count. */
+  const totalDatasetRows = isServerSide
+    ? typeof totalCount === "number" && totalCount >= 0
+      ? totalCount
+      : memoizedData.length
+    : clientEffectiveTotal;
+
   const displayFrom = isServerSide
     ? pageFrom
-    : totalRows === 0
+    : totalDatasetRows === 0
     ? 0
-    : pageIndex * pageSize + 1;
+    : Math.min(pageIndex * pageSize + 1, totalDatasetRows);
   const displayTo = isServerSide
     ? pageTo
-    : Math.min((pageIndex + 1) * pageSize, totalRows);
+    : Math.min((pageIndex + 1) * pageSize, totalDatasetRows);
 
   return (
     <Stack
@@ -356,8 +381,8 @@ const TablePagination: React.FC<PaginationProps> = ({
     >
       <div>
         <span className="text-grey">
-          Showing <u>{totalRows.toLocaleString()} records</u> From {displayFrom}{" "}
-          - {displayTo}
+          Showing <u>{totalDatasetRows.toLocaleString()} records</u> From{" "}
+          {displayFrom} - {displayTo}
         </span>
       </div>
 
