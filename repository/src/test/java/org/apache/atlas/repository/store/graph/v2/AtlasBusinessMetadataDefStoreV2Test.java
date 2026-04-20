@@ -587,6 +587,7 @@ public class AtlasBusinessMetadataDefStoreV2Test {
         attributeDef.setValuesMaxCount(1);
         attributeDef.setIsUnique(false);
         attributeDef.setDisplayName(name);
+        attributeDef.setIsIndexable(true);
 
         businessMetadataDef.addAttribute(attributeDef);
     }
