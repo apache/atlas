@@ -1,4 +1,5 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.contract;
+
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
