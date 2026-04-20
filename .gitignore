@@ -94,3 +94,5 @@ site/
 
 # Credentials
 **/creds.yaml
+e2e_test_delete*.py
+test_contract_delete*.py
