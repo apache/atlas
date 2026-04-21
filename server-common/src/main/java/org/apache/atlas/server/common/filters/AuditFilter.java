@@ -16,21 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.web.filters;
+package org.apache.atlas.server.common.filters;
 
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
-import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.atlas.server.common.util.DateTimeHelper;
 import org.apache.atlas.server.common.util.Servlets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -42,6 +39,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
@@ -53,10 +51,14 @@ import static org.apache.atlas.AtlasConfiguration.REST_API_ENABLE_DELETE_TYPE_OV
  * This records audit information as part of the filter after processing the request
  * and also introduces a UUID into request and response for tracing requests in logs.
  */
-@Component
 public class AuditFilter implements Filter {
     private static final Logger LOG       = LoggerFactory.getLogger(AuditFilter.class);
     private static final Logger AUDIT_LOG = LoggerFactory.getLogger("AUDIT");
+
+    private static final String[] AUDIT_EXCLUSION_CLASSES = {
+            "org.apache.atlas.util.AtlasRepositoryConfiguration",
+            "org.apache.atlas.notification.rest.AtlasRepositoryConfiguration"
+    };
 
     private boolean deleteTypeOverrideEnabled;
     private boolean createShellEntityForNonExistingReference;
@@ -129,11 +131,21 @@ public class AuditFilter implements Filter {
     }
 
     boolean isOperationExcludedFromAudit(String requestHttpMethod, String requestOperation, Configuration config) {
-        try {
-            return AtlasRepositoryConfiguration.isExcludedFromAudit(config, requestHttpMethod, requestOperation);
-        } catch (AtlasException e) {
-            return false;
+        for (String className : AUDIT_EXCLUSION_CLASSES) {
+            try {
+                Class<?> cls    = Class.forName(className);
+                Method   method = cls.getMethod("isExcludedFromAudit", Configuration.class, String.class, String.class);
+                Object   val    = method.invoke(null, config, requestHttpMethod, requestOperation);
+
+                if (val instanceof Boolean) {
+                    return (Boolean) val;
+                }
+            } catch (Exception e) {
+                // Continue to the next implementation.
+            }
         }
+
+        return false;
     }
 
     private String formatName(String oldName, String requestId) {

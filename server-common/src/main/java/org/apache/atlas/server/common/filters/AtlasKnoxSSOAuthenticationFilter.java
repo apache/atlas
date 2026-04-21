@@ -18,7 +18,7 @@
  * under the License.
  */
 
-package org.apache.atlas.web.filters;
+package org.apache.atlas.server.common.filters;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.nimbusds.jose.JWSObject;
@@ -26,7 +26,7 @@ import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jwt.SignedJWT;
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.web.security.AtlasAuthenticationProvider;
+import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBridge;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
@@ -41,7 +41,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
-import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import javax.servlet.Filter;
@@ -76,7 +75,6 @@ import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
 import org.apache.atlas.server.common.filters.HeadersUtil;
 import org.apache.atlas.server.common.filters.SSOAuthenticationProperties;
 
-@Component("ssoAuthenticationFilter")
 public class AtlasKnoxSSOAuthenticationFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasKnoxSSOAuthenticationFilter.class);
 
@@ -94,7 +92,7 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
     private static final String PEM_HEADER           = "-----BEGIN CERTIFICATE-----\n";
     private static final String PEM_FOOTER           = "\n-----END CERTIFICATE-----";
 
-    private final AtlasAuthenticationProvider authenticationProvider;
+    private final AtlasAuthenticationProviderBridge authenticationProvider;
 
     private SSOAuthenticationProperties jwtProperties;
     private String                      originalUrlQueryParam     = "originalUrl";
@@ -106,7 +104,7 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
     private JWSVerifier                 verifier;
 
     @Inject
-    public AtlasKnoxSSOAuthenticationFilter(AtlasAuthenticationProvider authenticationProvider) {
+    public AtlasKnoxSSOAuthenticationFilter(AtlasAuthenticationProviderBridge authenticationProvider) {
         this.authenticationProvider = authenticationProvider;
 
         try {
@@ -123,7 +121,7 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
         setJwtProperties();
     }
 
-    public AtlasKnoxSSOAuthenticationFilter(AtlasAuthenticationProvider authenticationProvider, SSOAuthenticationProperties jwtProperties) {
+    public AtlasKnoxSSOAuthenticationFilter(AtlasAuthenticationProviderBridge authenticationProvider, SSOAuthenticationProperties jwtProperties) {
         this.authenticationProvider = authenticationProvider;
         this.jwtProperties          = jwtProperties;
 
@@ -223,7 +221,7 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
 
                     //if we get the userName from the token then log into atlas using the same user
                     if (userName != null && !userName.trim().isEmpty()) {
-                        List<GrantedAuthority>            grantedAuths        = AtlasAuthenticationProvider.getAuthoritiesFromUGI(userName);
+                        List<GrantedAuthority>            grantedAuths        = authenticationProvider.getAuthoritiesFromUGI(userName);
                         final UserDetails                 principal           = new User(userName, "", grantedAuths);
                         final AbstractAuthenticationToken finalAuthentication = new UsernamePasswordAuthenticationToken(principal, "", grantedAuths);
                         WebAuthenticationDetails          webDetails          = new WebAuthenticationDetails(httpRequest);

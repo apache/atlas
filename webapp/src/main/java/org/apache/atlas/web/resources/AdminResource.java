@@ -76,7 +76,7 @@ import org.apache.atlas.util.AtlasMetricsUtil;
 import org.apache.atlas.util.SearchTracker;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
-import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
+import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.model.DebugMetrics;
 import org.apache.atlas.web.service.AtlasDebugMetricsSink;
 import org.apache.atlas.web.service.ServiceState;
@@ -133,7 +133,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import static javax.servlet.http.HttpServletResponse.SC_NO_CONTENT;
-import static org.apache.atlas.web.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
+import static org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
 
 /**
  * Jersey Resource for admin operations.

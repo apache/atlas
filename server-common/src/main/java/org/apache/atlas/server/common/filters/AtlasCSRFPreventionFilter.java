@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.web.filters;
+package org.apache.atlas.server.common.filters;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
@@ -25,7 +25,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -47,7 +46,6 @@ import java.util.regex.Pattern;
 import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
 import org.apache.atlas.server.common.filters.HeadersUtil;
 
-@Component
 public class AtlasCSRFPreventionFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasCSRFPreventionFilter.class);
 

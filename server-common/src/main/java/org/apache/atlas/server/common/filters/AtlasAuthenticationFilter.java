@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.web.filters;
+package org.apache.atlas.server.common.filters;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.utils.AuthenticationUtil;
-import org.apache.atlas.web.security.AtlasAuthenticationProvider;
+import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBridge;
 import org.apache.atlas.server.common.util.Servlets;
 import org.apache.commons.collections.iterators.IteratorEnumeration;
 import org.apache.commons.configuration.Configuration;
@@ -53,8 +53,8 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
-import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
@@ -75,6 +75,7 @@ import java.security.Principal;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -99,7 +100,6 @@ import org.apache.atlas.server.common.filters.RestUtil;
  * todo: Subclass of {@link AuthenticationFilter}.
  */
 
-@Component
 public class AtlasAuthenticationFilter extends AuthenticationFilter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationFilter.class);
 
@@ -114,6 +114,8 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     private static final String   ORIGINAL_URL_QUERY_PARAM       = "originalUrl";
 
     private final boolean isKerberos = AuthenticationUtil.isKerberosAuthenticationEnabled();
+
+    private final AtlasAuthenticationProviderBridge authenticationProviderBridge;
 
     private Signer               signer;
     private SignerSecretProvider secretProvider;
@@ -130,6 +132,13 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     private SecurityContextLogoutHandler logoutHandler;
 
     public AtlasAuthenticationFilter() {
+        this(userName -> Collections.emptyList());
+    }
+
+    @Inject
+    public AtlasAuthenticationFilter(AtlasAuthenticationProviderBridge authenticationProviderBridge) {
+        this.authenticationProviderBridge = authenticationProviderBridge;
+
         LOG.info("==> AtlasAuthenticationFilter()");
 
         try {
@@ -781,7 +790,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             }
 
             if ((existingAuth == null || !existingAuth.isAuthenticated()) && !StringUtils.isEmpty(userName)) {
-                final List<GrantedAuthority>   grantedAuths        = AtlasAuthenticationProvider.getAuthoritiesFromUGI(userName);
+                final List<GrantedAuthority>   grantedAuths        = authenticationProviderBridge.getAuthoritiesFromUGI(userName);
                 final UserDetails                 principal           = new User(userName, "", grantedAuths);
                 final AbstractAuthenticationToken finalAuthentication = new UsernamePasswordAuthenticationToken(principal, "", grantedAuths);
                 final WebAuthenticationDetails    webDetails          = new WebAuthenticationDetails(httpRequest);

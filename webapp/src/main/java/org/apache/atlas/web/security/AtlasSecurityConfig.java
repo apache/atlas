@@ -17,14 +17,19 @@
  */
 package org.apache.atlas.web.security;
 
-import org.apache.atlas.web.filters.ActiveServerFilter;
+import org.apache.atlas.server.common.filters.ActiveServerFilter;
 import org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint;
-import org.apache.atlas.web.filters.AtlasAuthenticationFilter;
-import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
+import org.apache.atlas.server.common.filters.AtlasAuthenticationFilter;
+import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.server.common.filters.AtlasDelegatingAuthenticationEntryPoint;
-import org.apache.atlas.web.filters.AtlasKnoxSSOAuthenticationFilter;
+import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.server.common.filters.HeadersUtil;
+import org.apache.atlas.server.common.filters.spi.ActiveInstanceStateProvider;
+import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBridge;
+import org.apache.atlas.server.common.filters.spi.ServiceStateProvider;
 import org.apache.atlas.web.filters.StaleTransactionCleanupFilter;
+import org.apache.atlas.web.service.ActiveInstanceState;
+import org.apache.atlas.web.service.ServiceState;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.keycloak.adapters.AdapterDeploymentContext;
@@ -323,5 +328,75 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         filter.setSessionAuthenticationStrategy(sessionAuthenticationStrategy());
 
         return filter;
+    }
+
+    @Bean
+    public ActiveInstanceStateProvider activeInstanceStateProvider(ActiveInstanceState activeInstanceState) {
+        return activeInstanceState::getActiveServerAddress;
+    }
+
+    @Bean
+    public ServiceStateProvider serviceStateProvider(ServiceState serviceState) {
+        return new ServiceStateProvider() {
+            @Override
+            public boolean isActive() {
+                return serviceState.getState() == ServiceState.ServiceStateValue.ACTIVE;
+            }
+
+            @Override
+            public boolean isInstanceInTransition() {
+                return serviceState.isInstanceInTransition();
+            }
+
+            @Override
+            public boolean isInstanceInMigration() {
+                return serviceState.isInstanceInMigration();
+            }
+
+            @Override
+            public String getStateName() {
+                return serviceState.getState().toString();
+            }
+        };
+    }
+
+    @Bean
+    public AtlasAuthenticationProviderBridge atlasAuthenticationProviderBridge(AtlasAuthenticationProvider authenticationProvider) {
+        return new AtlasAuthenticationProviderBridge() {
+            @Override
+            public java.util.List<org.springframework.security.core.GrantedAuthority> getAuthoritiesFromUGI(String userName) {
+                return AtlasAuthenticationProvider.getAuthoritiesFromUGI(userName);
+            }
+
+            @Override
+            public void setSsoEnabled(boolean enabled) {
+                authenticationProvider.setSsoEnabled(enabled);
+            }
+
+            @Override
+            public org.springframework.security.core.Authentication authenticate(org.springframework.security.core.Authentication authentication) {
+                return authenticationProvider.authenticate(authentication);
+            }
+        };
+    }
+
+    @Bean
+    public ActiveServerFilter commonActiveServerFilter(ActiveInstanceStateProvider activeInstanceStateProvider, ServiceStateProvider serviceStateProvider) {
+        return new ActiveServerFilter(activeInstanceStateProvider, serviceStateProvider);
+    }
+
+    @Bean
+    public AtlasAuthenticationFilter commonAtlasAuthenticationFilter(AtlasAuthenticationProviderBridge atlasAuthenticationProviderBridge) {
+        return new AtlasAuthenticationFilter(atlasAuthenticationProviderBridge);
+    }
+
+    @Bean
+    public AtlasKnoxSSOAuthenticationFilter commonAtlasKnoxSSOAuthenticationFilter(AtlasAuthenticationProviderBridge atlasAuthenticationProviderBridge) {
+        return new AtlasKnoxSSOAuthenticationFilter(atlasAuthenticationProviderBridge);
+    }
+
+    @Bean
+    public AtlasCSRFPreventionFilter commonAtlasCSRFPreventionFilter() {
+        return new AtlasCSRFPreventionFilter();
     }
 }

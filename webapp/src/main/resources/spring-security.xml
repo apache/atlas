@@ -54,13 +54,13 @@
         <csrf disabled="true"/>
     </security:http>
 
-    <beans:bean id="krbAuthenticationFilter" class="org.apache.atlas.web.filters.AtlasAuthenticationFilter">
+    <beans:bean id="krbAuthenticationFilter" class="org.apache.atlas.server.common.filters.AtlasAuthenticationFilter">
     </beans:bean>
 
-    <beans:bean id="ssoAuthenticationFilter" class="org.apache.atlas.web.filters.AtlasKnoxSSOAuthenticationFilter">
+    <beans:bean id="ssoAuthenticationFilter" class="org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter">
     </beans:bean>
 
-    <beans:bean id="CSRFPreventionFilter" class="org.apache.atlas.web.filters.AtlasCSRFPreventionFilter">
+    <beans:bean id="CSRFPreventionFilter" class="org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter">
     </beans:bean>
 
     <beans:bean id="atlasAuthenticationSuccessHandler"

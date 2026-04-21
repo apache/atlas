@@ -16,16 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.web.filters;
+package org.apache.atlas.server.common.filters;
 
-import org.apache.atlas.web.service.ActiveInstanceState;
-import org.apache.atlas.web.service.ServiceState;
+import org.apache.atlas.server.common.filters.spi.ActiveInstanceStateProvider;
+import org.apache.atlas.server.common.filters.spi.ServiceStateProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriUtils;
 
-import javax.inject.Inject;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -45,9 +43,8 @@ import java.io.IOException;
  * All requests to an active instance pass through. Requests received by a passive instance are redirected
  * by identifying the currently active server. Requests to servers which are in transition are returned with
  * an error SERVICE_UNAVAILABLE. Identification of this state is carried out using
- * {@link ServiceState} and {@link ActiveInstanceState}.
+ * {@link ServiceStateProvider} and {@link ActiveInstanceStateProvider}.
  */
-@Component
 public class ActiveServerFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(ActiveServerFilter.class);
 
@@ -56,11 +53,10 @@ public class ActiveServerFilter implements Filter {
     private final String[]            adminUriNotFiltered = {"/admin/export", "/admin/import", "/admin/importfile", "/admin/audits",
             "/admin/purge", "/admin/expimp/audit", "/admin/metrics", "/admin/server", "/admin/audit/", "admin/tasks",
             "/admin/debug/metrics", "/admin/audits/ageout", "admin/async/import", "admin/async/import/status"};
-    private final ActiveInstanceState activeInstanceState;
-    private final ServiceState        serviceState;
+    private final ActiveInstanceStateProvider activeInstanceState;
+    private final ServiceStateProvider        serviceState;
 
-    @Inject
-    public ActiveServerFilter(ActiveInstanceState activeInstanceState, ServiceState serviceState) {
+    public ActiveServerFilter(ActiveInstanceStateProvider activeInstanceState, ServiceStateProvider serviceState) {
         this.activeInstanceState = activeInstanceState;
         this.serviceState        = serviceState;
     }
@@ -126,7 +122,7 @@ public class ActiveServerFilter implements Filter {
     }
 
     boolean isInstanceActive() {
-        return serviceState.getState() == ServiceState.ServiceStateValue.ACTIVE;
+        return serviceState.isActive();
     }
 
     private boolean isFilteredURI(ServletRequest servletRequest) {
