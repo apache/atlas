@@ -110,7 +110,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
 
         params.setTermName(SALES_TERM + "@" + SALES_GLOSSARY);
 
-        assertSearchProcessorWithoutMarker(params, 10);
+        assertSearchProcessorWithoutMarker(params, 13);
     }
 
     // TSP execute and CSP,ESP filter
@@ -131,7 +131,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         params.setTermName(SALES_TERM + "@" + SALES_GLOSSARY);
         params.setTypeName(HIVE_TABLE_TYPE);
 
-        assertSearchProcessorWithoutMarker(params, 10);
+        assertSearchProcessorWithoutMarker(params, 13);
     }
 
     @Test
@@ -459,7 +459,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         params.setTermName(SALES_TERM + "@" + SALES_GLOSSARY);
         params.setMarker("*");
 
-        assertSearchProcessorWithoutMarker(params, 10);
+        assertSearchProcessorWithoutMarker(params, 13);
     }
 
     @Test
@@ -668,8 +668,8 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
 
         assertTrue(CollectionUtils.isNotEmpty(list));
         assertEquals(list.size(), 3);
-        assertTrue(list.get(0).getAttribute("owner").toString().equalsIgnoreCase("Jane BI"));
-        assertTrue(list.get(1).getAttribute("owner").toString().equalsIgnoreCase("Joe"));
+        assertTrue(list.get(0).getAttribute("owner").toString().equalsIgnoreCase("Dev 1"));
+        assertTrue(list.get(1).getAttribute("owner").toString().equalsIgnoreCase("Dev 2"));
     }
 
     @Test
@@ -689,7 +689,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         assertTrue(CollectionUtils.isNotEmpty(list));
         assertEquals(list.size(), 3);
         assertTrue(list.get(0).getDisplayText().equalsIgnoreCase("time_dim"));
-        assertTrue(list.get(1).getDisplayText().equalsIgnoreCase("sales_fact_monthly_mv"));
+        assertTrue(list.get(1).getDisplayText().equalsIgnoreCase("sample_table"));
     }
 
     @Test
