@@ -67,7 +67,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String       AD                               = "AD";
     public static final String       LDAP_AD_BIND_PASSWORD            = "atlas.authentication.method.ldap.ad.bind.password";
     public static final String       LDAP_BIND_PASSWORD               = "atlas.authentication.method.ldap.bind.password";
-    public static final String       MASK_LDAP_PASSWORD               = "********";
+    public static final String       MASK_PASSWORD                    = "********";
     public static final String       DEFAULT_GRAPHDB_BACKEND          = GRAPHBD_BACKEND_JANUS;
     public static final boolean      DEFAULT_SOLR_WAIT_SEARCHER       = false;
     public static final boolean      DEFAULT_INDEX_MAP_NAME           = false;
@@ -342,7 +342,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
                 if (ldapType.equalsIgnoreCase(LDAP)) {
                     String maskPasssword = configuration.getString(LDAP_BIND_PASSWORD);
 
-                    if (MASK_LDAP_PASSWORD.equals(maskPasssword)) {
+                    if (MASK_PASSWORD.equals(maskPasssword)) {
                         String password = SecurityUtil.getPassword(configuration, LDAP_BIND_PASSWORD, HADOOP_SECURITY_CREDENTIAL_PROVIDER_PATH);
 
                         configuration.clearProperty(LDAP_BIND_PASSWORD);
@@ -351,7 +351,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
                 } else if (ldapType.equalsIgnoreCase(AD)) {
                     String maskPasssword = configuration.getString(LDAP_AD_BIND_PASSWORD);
 
-                    if (MASK_LDAP_PASSWORD.equals(maskPasssword)) {
+                    if (MASK_PASSWORD.equals(maskPasssword)) {
                         String password = SecurityUtil.getPassword(configuration, LDAP_AD_BIND_PASSWORD, HADOOP_SECURITY_CREDENTIAL_PROVIDER_PATH);
 
                         configuration.clearProperty(LDAP_AD_BIND_PASSWORD);
@@ -362,6 +362,20 @@ public final class ApplicationProperties extends PropertiesConfiguration {
                 LOG.error("Error in getting secure password ", e);
             }
         }
+    }
+
+    public static String getDecryptedPassword(Configuration configuration, String propertyKey) {
+        String configuredValue = configuration != null ? configuration.getString(propertyKey) : null;
+
+        if (configuredValue != null && MASK_PASSWORD.equals(configuredValue)) {
+            try {
+                return SecurityUtil.getPassword(configuration, propertyKey, HADOOP_SECURITY_CREDENTIAL_PROVIDER_PATH);
+            } catch (Exception e) {
+                LOG.error("Error in getting secure password ", e);
+            }
+        }
+
+        return configuredValue;
     }
 
     private void setDefaults() {
