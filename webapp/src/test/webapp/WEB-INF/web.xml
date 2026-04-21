@@ -59,7 +59,7 @@
 
     <filter>
         <filter-name>AuditFilter</filter-name>
-        <filter-class>org.apache.atlas.web.filters.AuditFilter</filter-class>
+        <filter-class>org.apache.atlas.server.common.filters.AuditFilter</filter-class>
     </filter>
 
     <filter-mapping>

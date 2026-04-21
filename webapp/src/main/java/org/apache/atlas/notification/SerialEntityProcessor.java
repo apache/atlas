@@ -59,7 +59,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.utils.LruCache;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.notification.HookNotificationV1;
-import org.apache.atlas.web.filters.AuditFilter;
+import org.apache.atlas.server.common.filters.AuditFilter;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration2.Configuration;

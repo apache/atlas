@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.atlas.web.filters;
+package org.apache.atlas.server.common.filters;
 
 import com.nimbusds.jwt.SignedJWT;
 import org.springframework.security.core.Authentication;

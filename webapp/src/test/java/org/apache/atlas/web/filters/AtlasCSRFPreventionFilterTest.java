@@ -16,6 +16,7 @@
  */
 package org.apache.atlas.web.filters;
 
+import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
@@ -28,7 +29,7 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import static org.apache.atlas.web.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
+import static org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,21 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.notification.rest.web.filters;
+package org.apache.atlas.server.common.filters;
 
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
-import org.apache.atlas.notification.rest.AtlasRepositoryConfiguration;
 import org.apache.atlas.server.common.util.DateTimeHelper;
 import org.apache.atlas.server.common.util.Servlets;
 import org.apache.commons.configuration2.Configuration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -40,7 +37,9 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
@@ -52,13 +51,23 @@ import static org.apache.atlas.AtlasConfiguration.REST_API_ENABLE_DELETE_TYPE_OV
  * This records audit information as part of the filter after processing the request
  * and also introduces a UUID into request and response for tracing requests in logs.
  */
-@Component
 public class AuditFilter implements Filter {
     private static final Logger LOG       = LoggerFactory.getLogger(AuditFilter.class);
     private static final Logger AUDIT_LOG = LoggerFactory.getLogger("AUDIT");
 
-    private boolean deleteTypeOverrideEnabled                = false;
-    private boolean createShellEntityForNonExistingReference = false;
+    private static final String[] AUDIT_EXCLUSION_CLASSES = {
+            "org.apache.atlas.util.AtlasRepositoryConfiguration",
+            "org.apache.atlas.notification.rest.AtlasRepositoryConfiguration"
+    };
+
+    private boolean deleteTypeOverrideEnabled;
+    private boolean createShellEntityForNonExistingReference;
+
+    public static void audit(AuditLog auditLog) {
+        if (AUDIT_LOG.isInfoEnabled() && auditLog != null) {
+            AUDIT_LOG.info(auditLog.toString());
+        }
+    }
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -71,13 +80,12 @@ public class AuditFilter implements Filter {
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain)
-    throws IOException, ServletException {
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
         final long                startTime          = System.currentTimeMillis();
-        final Date                requestTime         = new Date();
+        final Date                requestTime        = new Date();
         final HttpServletRequest  httpRequest        = (HttpServletRequest) request;
         final HttpServletResponse httpResponse       = (HttpServletResponse) response;
-        final String              requestId          = UUID.randomUUID().toString();
+        final String              requestId          = getRequestId(httpRequest);
         final Thread              currentThread      = Thread.currentThread();
         final String              oldName            = currentThread.getName();
         final String              user               = AtlasAuthorizationUtils.getCurrentUserName();
@@ -117,8 +125,40 @@ public class AuditFilter implements Filter {
         }
     }
 
+    @Override
+    public void destroy() {
+        // do nothing
+    }
+
+    boolean isOperationExcludedFromAudit(String requestHttpMethod, String requestOperation, Configuration config) {
+        for (String className : AUDIT_EXCLUSION_CLASSES) {
+            try {
+                Class<?> cls    = Class.forName(className);
+                Method   method = cls.getMethod("isExcludedFromAudit", Configuration.class, String.class, String.class);
+                Object   val    = method.invoke(null, config, requestHttpMethod, requestOperation);
+
+                if (val instanceof Boolean) {
+                    return (Boolean) val;
+                }
+            } catch (Exception e) {
+                // Continue to the next implementation.
+            }
+        }
+
+        return false;
+    }
+
     private String formatName(String oldName, String requestId) {
         return oldName + " - " + requestId;
+    }
+
+    private String getRequestId(HttpServletRequest httpRequest) {
+        String requestId = (String) httpRequest.getAttribute(AtlasHeaderPreAuthFilter.REQUEST_ID_ATTRIBUTE);
+        if (StringUtils.isNotEmpty(requestId)) {
+            return requestId;
+        }
+
+        return UUID.randomUUID().toString();
     }
 
     private void recordAudit(HttpServletRequest httpRequest, Date when, String who, int httpStatus, long timeTaken) {
@@ -130,29 +170,8 @@ public class AuditFilter implements Filter {
         if (!isOperationExcludedFromAudit(whatRequest, whatUrlPath.toLowerCase(), null)) {
             audit(new AuditLog(who, fromAddress, whatRequest, whatURL, when, httpStatus, timeTaken));
         } else {
-            if(LOG.isDebugEnabled()) {
-                LOG.debug(" Skipping Audit for {} ", whatURL);
-            }
+            LOG.debug(" Skipping Audit for {}", whatURL);
         }
-    }
-
-    public static void audit(AuditLog auditLog) {
-        if (AUDIT_LOG.isInfoEnabled() && auditLog != null) {
-            AUDIT_LOG.info(auditLog.toString());
-        }
-    }
-
-    boolean isOperationExcludedFromAudit(String requestHttpMethod, String requestOperation, Configuration config) {
-       try {
-        return AtlasRepositoryConfiguration.isExcludedFromAudit(config, requestHttpMethod, requestOperation);
-    } catch (AtlasException e) {
-        return false;
-    }
-    }
-
-    @Override
-    public void destroy() {
-        // do nothing
     }
 
     public static class AuditLog {
@@ -184,23 +203,23 @@ public class AuditFilter implements Filter {
             this.timeTaken     = timeTaken;
         }
 
-        public void setHttpStatus(int httpStatus) { this.httpStatus = httpStatus; }
+        public void setHttpStatus(int httpStatus) {
+            this.httpStatus = httpStatus;
+        }
 
-        public void setTimeTaken(long timeTaken) { this.timeTaken = timeTaken; }
+        public void setTimeTaken(long timeTaken) {
+            this.timeTaken = timeTaken;
+        }
 
         @Override
         public String toString() {
-            StringBuilder sb = new StringBuilder();
-
-            sb.append(DateTimeHelper.formatDateUTC(requestTime))
-              .append(FIELD_SEP).append(userName)
-              .append(FIELD_SEP).append(fromAddress)
-              .append(FIELD_SEP).append(requestMethod)
-              .append(FIELD_SEP).append(requestUrl)
-              .append(FIELD_SEP).append(httpStatus)
-              .append(FIELD_SEP).append(timeTaken);
-
-            return sb.toString();
+            return DateTimeHelper.formatDateUTC(requestTime) +
+                    FIELD_SEP + userName +
+                    FIELD_SEP + fromAddress +
+                    FIELD_SEP + requestMethod +
+                    FIELD_SEP + requestUrl +
+                    FIELD_SEP + httpStatus +
+                    FIELD_SEP + timeTaken;
         }
     }
 }

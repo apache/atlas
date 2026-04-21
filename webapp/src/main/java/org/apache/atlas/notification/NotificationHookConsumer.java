@@ -40,6 +40,8 @@ import org.apache.atlas.service.Service;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AdaptiveWaiter;
 import org.apache.atlas.util.AtlasMetricsUtil;
+import org.apache.atlas.server.common.filters.AuditFilter;
+import org.apache.atlas.server.common.filters.AuditFilter.AuditLog;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.commons.collections4.map.PassiveExpiringMap;
 import org.apache.commons.configuration2.Configuration;

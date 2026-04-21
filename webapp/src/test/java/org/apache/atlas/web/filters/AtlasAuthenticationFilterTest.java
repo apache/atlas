@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.filters;
 
+import org.apache.atlas.server.common.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;

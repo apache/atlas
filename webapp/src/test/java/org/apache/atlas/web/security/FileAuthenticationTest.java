@@ -27,7 +27,7 @@ import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -77,7 +77,7 @@ public class FileAuthenticationTest {
 
         System.setProperty("atlas.conf", persistDir);
 
-        applicationContext = new ClassPathXmlApplicationContext("test-spring-security.xml");
+        applicationContext = new AnnotationConfigApplicationContext(TestSpringSecurityBridgeConfig.class);
         authProvider       = applicationContext.getBean(org.apache.atlas.web.security.AtlasAuthenticationProvider.class);
     }
 

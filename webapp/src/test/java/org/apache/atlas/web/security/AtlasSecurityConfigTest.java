@@ -19,14 +19,14 @@
 
 package org.apache.atlas.web.security;
 
-import org.apache.atlas.web.filters.ActiveServerFilter;
+import org.apache.atlas.server.common.filters.ActiveServerFilter;
 import org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint;
-import org.apache.atlas.web.filters.AtlasAuthenticationFilter;
-import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
+import org.apache.atlas.server.common.filters.AtlasAuthenticationFilter;
+import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.server.common.filters.AtlasDelegatingAuthenticationEntryPoint;
+import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.web.filters.AtlasHeaderPreAuthFilter;
 import org.apache.atlas.web.filters.AtlasJwtAuthWrapper;
-import org.apache.atlas.web.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.web.filters.StaleTransactionCleanupFilter;
 import org.apache.commons.configuration2.Configuration;
 import org.keycloak.adapters.AdapterDeploymentContext;
