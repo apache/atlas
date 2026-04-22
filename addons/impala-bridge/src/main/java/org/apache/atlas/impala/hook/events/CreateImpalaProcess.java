@@ -89,6 +89,10 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
 
                 if (entity != null) {
                     inputs.add(entity);
+                    if (outputNodes.contains(input)) {
+                        // Include self-referencing entities in outputs to preserve circular lineage; otherwise they’re skipped as already processed inputs.
+                        outputs.add(entity);
+                    }
                 }
             }
         }
