@@ -32,44 +32,74 @@ import javax.inject.Inject;
 @Component("atlasServerCommonAuthenticationProvider")
 @Scope("prototype")
 public class AtlasAuthenticationProvider extends AtlasAbstractAuthenticationProvider {
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationProvider.class);
-
-    public static final String FILE_AUTH_METHOD = "atlas.authentication.method.file";
-    public static final String LDAP_AUTH_METHOD = "atlas.authentication.method.ldap";
-    public static final String LDAP_TYPE        = "atlas.authentication.method.ldap.type";
-    public static final String PAM_AUTH_METHOD  = "atlas.authentication.method.pam";
-
-    final AtlasLdapAuthenticationProvider ldapAuthenticationProvider;
-    final AtlasFileAuthenticationProvider fileAuthenticationProvider;
-    final AtlasADAuthenticationProvider   adAuthenticationProvider;
-    final AtlasPamAuthenticationProvider  pamAuthenticationProvider;
+    private static final Logger LOG = LoggerFactory
+            .getLogger(AtlasAuthenticationProvider.class);
 
     private boolean fileAuthenticationMethodEnabled = true;
-    private boolean pamAuthenticationEnabled;
-    private String  ldapType             = "NONE";
+    private boolean pamAuthenticationEnabled = false;
+    private String ldapType = "NONE";
+    public static final String FILE_AUTH_METHOD = "atlas.authentication.method.file";
+    public static final String LDAP_AUTH_METHOD = "atlas.authentication.method.ldap";
+    public static final String LDAP_TYPE = "atlas.authentication.method.ldap.type";
+    public static final String PAM_AUTH_METHOD = "atlas.authentication.method.pam";
+
+
+
     private boolean ssoEnabled;
+
+    final AtlasLdapAuthenticationProvider ldapAuthenticationProvider;
+
+    final AtlasFileAuthenticationProvider fileAuthenticationProvider;
+
+    final AtlasADAuthenticationProvider adAuthenticationProvider;
+
+    final AtlasPamAuthenticationProvider pamAuthenticationProvider;
 
     @Inject
     public AtlasAuthenticationProvider(AtlasLdapAuthenticationProvider ldapAuthenticationProvider,
-            AtlasFileAuthenticationProvider fileAuthenticationProvider, AtlasADAuthenticationProvider adAuthenticationProvider,
-            AtlasPamAuthenticationProvider pamAuthenticationProvider) {
+                                       AtlasFileAuthenticationProvider fileAuthenticationProvider,
+                                       AtlasADAuthenticationProvider adAuthenticationProvider,
+                                       AtlasPamAuthenticationProvider pamAuthenticationProvider) {
         this.ldapAuthenticationProvider = ldapAuthenticationProvider;
         this.fileAuthenticationProvider = fileAuthenticationProvider;
-        this.adAuthenticationProvider   = adAuthenticationProvider;
-        this.pamAuthenticationProvider  = pamAuthenticationProvider;
+        this.adAuthenticationProvider = adAuthenticationProvider;
+        this.pamAuthenticationProvider = pamAuthenticationProvider;
+    }
+
+    @PostConstruct
+    void setAuthenticationMethod() {
+        try {
+            Configuration configuration = ApplicationProperties.get();
+
+            this.fileAuthenticationMethodEnabled = configuration.getBoolean(FILE_AUTH_METHOD, true);
+
+            this.pamAuthenticationEnabled = configuration.getBoolean(PAM_AUTH_METHOD, false);
+
+            boolean ldapAuthenticationEnabled = configuration.getBoolean(LDAP_AUTH_METHOD, false);
+
+            if (ldapAuthenticationEnabled) {
+                this.ldapType = configuration.getString(LDAP_TYPE, "NONE");
+            } else {
+                this.ldapType = "NONE";
+            }
+        } catch (Exception e) {
+            LOG.error("Error while getting atlas.login.method application properties", e);
+        }
     }
 
     @Override
-    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        if (ssoEnabled) {
-            if (authentication != null) {
-                authentication = getSSOAuthentication(authentication);
+    public Authentication authenticate(Authentication authentication)
+            throws AuthenticationException {
 
-                if (authentication != null && authentication.isAuthenticated()) {
+        if(ssoEnabled){
+            if (authentication != null){
+                authentication = getSSOAuthentication(authentication);
+                if(authentication!=null && authentication.isAuthenticated()){
                     return authentication;
                 }
             }
         } else {
+
             if (ldapType.equalsIgnoreCase("LDAP")) {
                 try {
                     authentication = ldapAuthenticationProvider.authenticate(authentication);
@@ -104,7 +134,6 @@ public class AtlasAuthenticationProvider extends AtlasAbstractAuthenticationProv
         }
 
         LOG.error("Authentication failed.");
-
         throw new AtlasAuthenticationException("Authentication failed.");
     }
 
@@ -129,27 +158,7 @@ public class AtlasAuthenticationProvider extends AtlasAbstractAuthenticationProv
         this.ssoEnabled = ssoEnabled;
     }
 
-    @PostConstruct
-    void setAuthenticationMethod() {
-        try {
-            Configuration configuration = ApplicationProperties.get();
-
-            this.fileAuthenticationMethodEnabled = configuration.getBoolean(FILE_AUTH_METHOD, true);
-            this.pamAuthenticationEnabled        = configuration.getBoolean(PAM_AUTH_METHOD, false);
-
-            boolean ldapAuthenticationEnabled = configuration.getBoolean(LDAP_AUTH_METHOD, false);
-
-            if (ldapAuthenticationEnabled) {
-                this.ldapType = configuration.getString(LDAP_TYPE, "NONE");
-            } else {
-                this.ldapType = "NONE";
-            }
-        } catch (Exception e) {
-            LOG.error("Error while getting atlas.login.method application properties", e);
-        }
-    }
-
-    private Authentication getSSOAuthentication(Authentication authentication) throws AuthenticationException {
+    private Authentication getSSOAuthentication(Authentication authentication) throws AuthenticationException{
         return authentication;
     }
 }
