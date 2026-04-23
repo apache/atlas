@@ -1608,9 +1608,9 @@ public class NotificationHookConsumerTest {
         Method getAuthMethod = SerialEntityProcessor.class.getDeclaredMethod("getAuthenticationForUser", String.class);
         getAuthMethod.setAccessible(true);
 
-        try (MockedStatic<org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider> authProvider =
-                        mockStatic(org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.class)) {
-            authProvider.when(() -> org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("testUser"))
+        try (MockedStatic<org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider> authProvider =
+                        mockStatic(org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.class)) {
+            authProvider.when(() -> org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("testUser"))
                     .thenReturn(new ArrayList<>());
 
             Object auth = getAuthMethod.invoke(getEntityProcessor(consumer), "testUser");
@@ -1632,11 +1632,11 @@ public class NotificationHookConsumerTest {
         Method setCurrentUserMethod = SerialEntityProcessor.class.getDeclaredMethod("setCurrentUser", String.class);
         setCurrentUserMethod.setAccessible(true);
 
-        try (MockedStatic<org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider> authProvider =
-                        mockStatic(org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.class);
+        try (MockedStatic<org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider> authProvider =
+                        mockStatic(org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.class);
                 MockedStatic<org.springframework.security.core.context.SecurityContextHolder> securityContext =
                         mockStatic(org.springframework.security.core.context.SecurityContextHolder.class)) {
-            authProvider.when(() -> org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("testUser"))
+            authProvider.when(() -> org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("testUser"))
                     .thenReturn(new ArrayList<>());
 
             org.springframework.security.core.context.SecurityContext mockContext =
@@ -2402,11 +2402,11 @@ public class NotificationHookConsumerTest {
         Method setCurrentUserMethod = SerialEntityProcessor.class.getDeclaredMethod("setCurrentUser", String.class);
         setCurrentUserMethod.setAccessible(true);
 
-        try (MockedStatic<org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider> authProvider =
-                        mockStatic(org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.class);
+        try (MockedStatic<org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider> authProvider =
+                        mockStatic(org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.class);
                 MockedStatic<org.springframework.security.core.context.SecurityContextHolder> securityContext =
                         mockStatic(org.springframework.security.core.context.SecurityContextHolder.class)) {
-            authProvider.when(() -> org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("testUser"))
+            authProvider.when(() -> org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("testUser"))
                     .thenReturn(new ArrayList<>());
 
             org.springframework.security.core.context.SecurityContext mockContext =
@@ -2429,9 +2429,9 @@ public class NotificationHookConsumerTest {
         Method getAuthMethod = SerialEntityProcessor.class.getDeclaredMethod("getAuthenticationForUser", String.class);
         getAuthMethod.setAccessible(true);
 
-        try (MockedStatic<org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider> authProvider =
-                        mockStatic(org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.class)) {
-            authProvider.when(() -> org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("cachedUser"))
+        try (MockedStatic<org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider> authProvider =
+                        mockStatic(org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.class)) {
+            authProvider.when(() -> org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("cachedUser"))
                     .thenReturn(new ArrayList<>());
 
             // First call - should cache
@@ -2443,7 +2443,7 @@ public class NotificationHookConsumerTest {
             assertNotNull(auth2);
 
             // Should only call the static method once due to caching
-            authProvider.verify(times(1), () -> org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("cachedUser"));
+            authProvider.verify(times(1), () -> org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("cachedUser"));
         }
     }
 

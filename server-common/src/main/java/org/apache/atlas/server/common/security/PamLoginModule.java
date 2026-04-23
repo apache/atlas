@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.atlas.web.security;
+package org.apache.atlas.server.common.security;
 
 import org.jvnet.libpam.PAM;
 import org.jvnet.libpam.PAMException;
