@@ -130,7 +130,7 @@ public class AuditFilter implements Filter {
         // do nothing
     }
 
-    boolean isOperationExcludedFromAudit(String requestHttpMethod, String requestOperation, Configuration config) {
+    public boolean isOperationExcludedFromAudit(String requestHttpMethod, String requestOperation, Configuration config) {
         for (String className : AUDIT_EXCLUSION_CLASSES) {
             try {
                 Class<?> cls    = Class.forName(className);
