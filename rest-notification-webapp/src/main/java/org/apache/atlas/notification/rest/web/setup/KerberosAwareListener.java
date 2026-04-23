@@ -18,7 +18,7 @@
 package org.apache.atlas.notification.rest.web.setup;
 
 
-import org.apache.atlas.notification.rest.web.listeners.LoginProcessor;
+import org.apache.atlas.server.common.listeners.LoginProcessor;
 import org.springframework.web.context.ContextLoaderListener;
 
 import javax.servlet.ServletContextEvent;
