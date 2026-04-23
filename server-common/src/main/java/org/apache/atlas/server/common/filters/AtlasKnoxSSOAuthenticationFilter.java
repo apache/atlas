@@ -302,7 +302,7 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
      * @param req servlet request to get the JWT token from
      * @return serialized JWT token
      */
-    protected String getJWTFromCookie(HttpServletRequest req) {
+    public String getJWTFromCookie(HttpServletRequest req) {
         String   serializedJWT = null;
         Cookie[] cookies       = req.getCookies();
 
@@ -327,7 +327,7 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
      * @param request for getting the original request URL
      * @return url to use as login url for redirect
      */
-    protected String constructLoginURL(HttpServletRequest request, boolean isXMLRequest) {
+    public String constructLoginURL(HttpServletRequest request, boolean isXMLRequest) {
         String delimiter = "?";
 
         if (authenticationProviderUrl.contains("?")) {
@@ -377,7 +377,7 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
      * @param jwtToken the token to validate
      * @return true if valid
      */
-    protected boolean validateToken(SignedJWT jwtToken) {
+    public boolean validateToken(SignedJWT jwtToken) {
         boolean isValid = validateSignature(jwtToken);
 
         if (isValid) {

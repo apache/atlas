@@ -272,7 +272,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     }
 
     @Override
-    protected Properties getConfiguration(String configPrefix, FilterConfig filterConfig) throws ServletException {
+    public Properties getConfiguration(String configPrefix, FilterConfig filterConfig) throws ServletException {
         LOG.info("==> AtlasAuthenticationFilter.getConfiguration()");
 
         try {
@@ -459,7 +459,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
         }
     }
 
-    void parseBrowserUserAgents(String userAgents) {
+    public void parseBrowserUserAgents(String userAgents) {
         String[] agentsArray = userAgents.split(",");
 
         browserUserAgents = new HashSet<>();
@@ -469,7 +469,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
         }
     }
 
-    boolean isBrowser(String userAgent) {
+    public boolean isBrowser(String userAgent) {
         if (userAgent != null) {
             for (Pattern pattern : browserUserAgents) {
                 Matcher matcher = pattern.matcher(userAgent);
