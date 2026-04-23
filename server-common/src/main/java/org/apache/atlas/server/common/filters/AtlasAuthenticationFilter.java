@@ -23,6 +23,7 @@ import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBridge;
+import org.apache.atlas.server.common.model.User;
 import org.apache.atlas.server.common.util.Servlets;
 import org.apache.commons.collections.iterators.IteratorEnumeration;
 import org.apache.commons.configuration.Configuration;
@@ -49,7 +50,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
