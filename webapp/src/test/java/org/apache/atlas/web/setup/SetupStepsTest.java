@@ -24,7 +24,7 @@ import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.setup.SetupException;
 import org.apache.atlas.setup.SetupStep;
 import org.apache.atlas.web.service.CuratorFactory;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CreateBuilder;

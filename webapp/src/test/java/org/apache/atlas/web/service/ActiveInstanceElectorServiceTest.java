@@ -24,7 +24,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.util.AtlasMetricsUtil;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.mockito.InOrder;
 import org.mockito.Mock;

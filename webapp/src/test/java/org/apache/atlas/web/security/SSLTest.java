@@ -21,7 +21,7 @@ package org.apache.atlas.web.security;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.web.TestUtils;
 import org.apache.atlas.web.service.SecureEmbeddedServer;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.alias.CredentialProvider;
@@ -66,7 +66,7 @@ public class SSLTest extends BaseSSLAndKerberosTest {
 
         secureEmbeddedServer = new TestSecureEmbeddedServer(21443, getWarPath()) {
             @Override
-            public org.apache.commons.configuration.Configuration getConfiguration() {
+            public org.apache.commons.configuration2.Configuration getConfiguration() {
                 return configuration;
             }
         };
