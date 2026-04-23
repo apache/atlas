@@ -24,7 +24,7 @@ import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.utils.AuthenticationUtil;
-import org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider;
 import org.apache.atlas.server.common.util.Servlets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;

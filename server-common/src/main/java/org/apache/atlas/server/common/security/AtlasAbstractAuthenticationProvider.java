@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.atlas.web.security;
+package org.apache.atlas.server.common.security;
 
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.collections.CollectionUtils;

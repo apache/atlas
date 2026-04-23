@@ -27,8 +27,7 @@ import org.apache.atlas.server.common.filters.HeadersUtil;
 import org.apache.atlas.server.common.filters.spi.ActiveInstanceStateProvider;
 import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBridge;
 import org.apache.atlas.server.common.filters.spi.ServiceStateProvider;
-import org.apache.atlas.notification.rest.web.service.ActiveInstanceState;
-import org.apache.atlas.notification.rest.web.service.ServiceState;
+import org.apache.atlas.server.common.security.AtlasAuthenticationProvider;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -163,36 +162,6 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
                 .addFilterBefore(ssoAuthenticationFilter, BasicAuthenticationFilter.class)
                 .addFilterAfter(atlasAuthenticationFilter, SecurityContextHolderAwareRequestFilter.class)
                 .addFilterAfter(csrfPreventionFilter, AtlasAuthenticationFilter.class);
-    }
-
-    @Bean
-    public ActiveInstanceStateProvider activeInstanceStateProvider(ActiveInstanceState activeInstanceState) {
-        return activeInstanceState::getActiveServerAddress;
-    }
-
-    @Bean
-    public ServiceStateProvider serviceStateProvider(ServiceState serviceState) {
-        return new ServiceStateProvider() {
-            @Override
-            public boolean isActive() {
-                return serviceState.getState() == ServiceState.ServiceStateValue.ACTIVE;
-            }
-
-            @Override
-            public boolean isInstanceInTransition() {
-                return serviceState.isInstanceInTransition();
-            }
-
-            @Override
-            public boolean isInstanceInMigration() {
-                return serviceState.isInstanceInMigration();
-            }
-
-            @Override
-            public String getStateName() {
-                return serviceState.getState().toString();
-            }
-        };
     }
 
     @Bean

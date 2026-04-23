@@ -49,7 +49,11 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import org.apache.atlas.server.common.security.AtlasADAuthenticationProvider;
 import org.apache.atlas.server.common.security.AtlasAuthenticationException;
+import org.apache.atlas.server.common.security.AtlasFileAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasLdapAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasPamAuthenticationProvider;
 
 public class AtlasAuthenticationProviderTest {
     @Mock

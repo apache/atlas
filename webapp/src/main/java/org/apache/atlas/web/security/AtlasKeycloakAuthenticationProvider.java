@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthenticationProvider {
+public class AtlasKeycloakAuthenticationProvider extends org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider {
     private final boolean groupsFromUGI;
     private final String  groupsClaim;
 

@@ -6,16 +6,16 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.notification.rest.web.security;
+package org.apache.atlas.server.common.security;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.commons.configuration.Configuration;
@@ -29,79 +29,47 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
-import org.apache.atlas.server.common.security.AtlasAuthenticationException;
-
-@Component
+@Component("atlasServerCommonAuthenticationProvider")
 @Scope("prototype")
 public class AtlasAuthenticationProvider extends AtlasAbstractAuthenticationProvider {
-    private static final Logger LOG = LoggerFactory
-            .getLogger(AtlasAuthenticationProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationProvider.class);
 
-    private boolean fileAuthenticationMethodEnabled = true;
-    private boolean pamAuthenticationEnabled = false;
-    private String ldapType = "NONE";
     public static final String FILE_AUTH_METHOD = "atlas.authentication.method.file";
     public static final String LDAP_AUTH_METHOD = "atlas.authentication.method.ldap";
-    public static final String LDAP_TYPE = "atlas.authentication.method.ldap.type";
-    public static final String PAM_AUTH_METHOD = "atlas.authentication.method.pam";
-
-
-
-    private boolean ssoEnabled = false;
+    public static final String LDAP_TYPE        = "atlas.authentication.method.ldap.type";
+    public static final String PAM_AUTH_METHOD  = "atlas.authentication.method.pam";
 
     final AtlasLdapAuthenticationProvider ldapAuthenticationProvider;
-
     final AtlasFileAuthenticationProvider fileAuthenticationProvider;
+    final AtlasADAuthenticationProvider   adAuthenticationProvider;
+    final AtlasPamAuthenticationProvider  pamAuthenticationProvider;
 
-    final AtlasADAuthenticationProvider adAuthenticationProvider;
-
-    final AtlasPamAuthenticationProvider pamAuthenticationProvider;
+    private boolean fileAuthenticationMethodEnabled = true;
+    private boolean pamAuthenticationEnabled;
+    private String  ldapType             = "NONE";
+    private boolean ssoEnabled;
 
     @Inject
     public AtlasAuthenticationProvider(AtlasLdapAuthenticationProvider ldapAuthenticationProvider,
-                                       AtlasFileAuthenticationProvider fileAuthenticationProvider,
-                                       AtlasADAuthenticationProvider adAuthenticationProvider,
-                                       AtlasPamAuthenticationProvider pamAuthenticationProvider) {
+            AtlasFileAuthenticationProvider fileAuthenticationProvider, AtlasADAuthenticationProvider adAuthenticationProvider,
+            AtlasPamAuthenticationProvider pamAuthenticationProvider) {
         this.ldapAuthenticationProvider = ldapAuthenticationProvider;
         this.fileAuthenticationProvider = fileAuthenticationProvider;
-        this.adAuthenticationProvider = adAuthenticationProvider;
-        this.pamAuthenticationProvider = pamAuthenticationProvider;
-    }
-
-    @PostConstruct
-    void setAuthenticationMethod() {
-        try {
-            Configuration configuration = ApplicationProperties.get();
-
-            this.fileAuthenticationMethodEnabled = configuration.getBoolean(FILE_AUTH_METHOD, true);
-
-            this.pamAuthenticationEnabled = configuration.getBoolean(PAM_AUTH_METHOD, false);
-
-            boolean ldapAuthenticationEnabled = configuration.getBoolean(LDAP_AUTH_METHOD, false);
-
-            if (ldapAuthenticationEnabled) {
-                this.ldapType = configuration.getString(LDAP_TYPE, "NONE");
-            } else {
-                this.ldapType = "NONE";
-            }
-        } catch (Exception e) {
-            LOG.error("Error while getting atlas.login.method application properties", e);
-        }
+        this.adAuthenticationProvider   = adAuthenticationProvider;
+        this.pamAuthenticationProvider  = pamAuthenticationProvider;
     }
 
     @Override
-    public Authentication authenticate(Authentication authentication)
-            throws AuthenticationException {
-
-        if(ssoEnabled){
-            if (authentication != null){
+    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+        if (ssoEnabled) {
+            if (authentication != null) {
                 authentication = getSSOAuthentication(authentication);
-                if(authentication!=null && authentication.isAuthenticated()){
+
+                if (authentication != null && authentication.isAuthenticated()) {
                     return authentication;
                 }
             }
         } else {
-
             if (ldapType.equalsIgnoreCase("LDAP")) {
                 try {
                     authentication = ldapAuthenticationProvider.authenticate(authentication);
@@ -136,7 +104,21 @@ public class AtlasAuthenticationProvider extends AtlasAbstractAuthenticationProv
         }
 
         LOG.error("Authentication failed.");
+
         throw new AtlasAuthenticationException("Authentication failed.");
+    }
+
+    @Override
+    public boolean supports(Class<?> authentication) {
+        if (pamAuthenticationEnabled) {
+            return pamAuthenticationProvider.supports(authentication);
+        } else if (ldapType.equalsIgnoreCase("LDAP")) {
+            return ldapAuthenticationProvider.supports(authentication);
+        } else if (ldapType.equalsIgnoreCase("AD")) {
+            return adAuthenticationProvider.supports(authentication);
+        } else {
+            return super.supports(authentication);
+        }
     }
 
     public boolean isSsoEnabled() {
@@ -147,7 +129,27 @@ public class AtlasAuthenticationProvider extends AtlasAbstractAuthenticationProv
         this.ssoEnabled = ssoEnabled;
     }
 
-    private Authentication getSSOAuthentication(Authentication authentication) throws AuthenticationException{
+    @PostConstruct
+    void setAuthenticationMethod() {
+        try {
+            Configuration configuration = ApplicationProperties.get();
+
+            this.fileAuthenticationMethodEnabled = configuration.getBoolean(FILE_AUTH_METHOD, true);
+            this.pamAuthenticationEnabled        = configuration.getBoolean(PAM_AUTH_METHOD, false);
+
+            boolean ldapAuthenticationEnabled = configuration.getBoolean(LDAP_AUTH_METHOD, false);
+
+            if (ldapAuthenticationEnabled) {
+                this.ldapType = configuration.getString(LDAP_TYPE, "NONE");
+            } else {
+                this.ldapType = "NONE";
+            }
+        } catch (Exception e) {
+            LOG.error("Error while getting atlas.login.method application properties", e);
+        }
+    }
+
+    private Authentication getSSOAuthentication(Authentication authentication) throws AuthenticationException {
         return authentication;
     }
 }

@@ -28,8 +28,6 @@ import org.apache.atlas.server.common.filters.spi.ActiveInstanceStateProvider;
 import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBridge;
 import org.apache.atlas.server.common.filters.spi.ServiceStateProvider;
 import org.apache.atlas.web.filters.StaleTransactionCleanupFilter;
-import org.apache.atlas.web.service.ActiveInstanceState;
-import org.apache.atlas.web.service.ServiceState;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.keycloak.adapters.AdapterDeploymentContext;
@@ -328,36 +326,6 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         filter.setSessionAuthenticationStrategy(sessionAuthenticationStrategy());
 
         return filter;
-    }
-
-    @Bean
-    public ActiveInstanceStateProvider activeInstanceStateProvider(ActiveInstanceState activeInstanceState) {
-        return activeInstanceState::getActiveServerAddress;
-    }
-
-    @Bean
-    public ServiceStateProvider serviceStateProvider(ServiceState serviceState) {
-        return new ServiceStateProvider() {
-            @Override
-            public boolean isActive() {
-                return serviceState.getState() == ServiceState.ServiceStateValue.ACTIVE;
-            }
-
-            @Override
-            public boolean isInstanceInTransition() {
-                return serviceState.isInstanceInTransition();
-            }
-
-            @Override
-            public boolean isInstanceInMigration() {
-                return serviceState.isInstanceInMigration();
-            }
-
-            @Override
-            public String getStateName() {
-                return serviceState.getState().toString();
-            }
-        };
     }
 
     @Bean

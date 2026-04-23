@@ -56,12 +56,12 @@
     <beans:bean id="userDetailsService" class="org.apache.atlas.web.service.UserService">
         <beans:constructor-arg ref="userDAO"/>
     </beans:bean>
-    <beans:bean id="atlasLDAPProvider" class="org.apache.atlas.web.security.AtlasLdapAuthenticationProvider"/>
-    <beans:bean id="atlasFileProvider" class="org.apache.atlas.web.security.AtlasFileAuthenticationProvider">
+    <beans:bean id="atlasLDAPProvider" class="org.apache.atlas.server.common.security.AtlasLdapAuthenticationProvider"/>
+    <beans:bean id="atlasFileProvider" class="org.apache.atlas.server.common.security.AtlasFileAuthenticationProvider">
         <beans:constructor-arg ref="userDetailsService"/>
     </beans:bean>
-    <beans:bean id="atlasADProvider" class="org.apache.atlas.web.security.AtlasADAuthenticationProvider"/>
-    <beans:bean id="atlasPamProvider" class="org.apache.atlas.web.security.AtlasPamAuthenticationProvider"/>
+    <beans:bean id="atlasADProvider" class="org.apache.atlas.server.common.security.AtlasADAuthenticationProvider"/>
+    <beans:bean id="atlasPamProvider" class="org.apache.atlas.server.common.security.AtlasPamAuthenticationProvider"/>
     <beans:bean id="atlasKeycloakProvider" class="org.apache.atlas.web.security.AtlasKeycloakAuthenticationProvider"/>
     <beans:bean id="atlasAuthenticationProvider" class="org.apache.atlas.web.security.AtlasAuthenticationProvider">
         <beans:constructor-arg index="0" ref="atlasLDAPProvider"/>

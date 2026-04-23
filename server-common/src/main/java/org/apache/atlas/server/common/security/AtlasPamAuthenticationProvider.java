@@ -17,10 +17,10 @@
  * under the License.
  */
 
-package org.apache.atlas.web.security;
+package org.apache.atlas.server.common.security;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.web.model.User;
+import org.apache.atlas.server.common.model.User;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,7 @@ import org.apache.atlas.server.common.security.UserAuthorityGranter;
 public class AtlasPamAuthenticationProvider extends AtlasAbstractAuthenticationProvider {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasPamAuthenticationProvider.class);
 
-    private static final String                                       loginModuleName = "org.apache.atlas.web.security.PamLoginModule";
+    private static final String                                       loginModuleName = "org.apache.atlas.server.common.security.PamLoginModule";
     private static final AppConfigurationEntry.LoginModuleControlFlag controlFlag     = AppConfigurationEntry.LoginModuleControlFlag.REQUIRED;
 
     private final Map<String, String>               options                    = new HashMap<>();

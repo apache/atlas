@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.web.security;
+package org.apache.atlas.server.common.security;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.web.model.User;
+import org.apache.atlas.server.common.model.User;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.slf4j.Logger;

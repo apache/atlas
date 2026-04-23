@@ -120,7 +120,7 @@ import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_TYPENAME;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_UNIQUE_ATTRIBUTES;
 import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.TYPE_HIVE_PROCESS;
-import static org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI;
+import static org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI;
 
 /**
  * Consumer of notifications from hooks e.g., hive hook etc.

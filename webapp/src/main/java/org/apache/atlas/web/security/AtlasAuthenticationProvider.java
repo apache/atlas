@@ -29,7 +29,12 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
+import org.apache.atlas.server.common.security.AtlasADAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider;
 import org.apache.atlas.server.common.security.AtlasAuthenticationException;
+import org.apache.atlas.server.common.security.AtlasFileAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasLdapAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasPamAuthenticationProvider;
 
 @Component
 @Scope("prototype")
