@@ -1505,19 +1505,16 @@ public class EntityGraphMapper {
             MetricRecorder metric = RequestContext.get().startMetricRecord("mapRelationshipAttributes");
 
             if (op.equals(CREATE)) {
-                // Only map attributes present on the entity; unset names are null and must be skipped (not treated as clears).
                 for (String attrName : entityType.getRelationshipAttributes().keySet()) {
-                    Object attrValue = entity.getRelationshipAttribute(attrName);
-                    if (attrValue != null) {
-                        mapRelationshipAttributeWithMultipleTypes(entity, entityType, attrName, attrValue, vertex, op, context);
-                    }
+                    Object         attrValue    = entity.getRelationshipAttribute(attrName);
+                    mapRelationshipAttribute(entity, entityType, attrName, attrValue, vertex, op, context);
                 }
             } else if (op.equals(UPDATE) || op.equals(PARTIAL_UPDATE)) {
-                // relationship attributes mapping — include null when the key is present (explicit clear of that relationship attribute).
+                // relationship attributes mapping
                 for (String attrName : entityType.getRelationshipAttributes().keySet()) {
                     if (entity.hasRelationshipAttribute(attrName)) {
-                        Object attrValue = entity.getRelationshipAttribute(attrName);
-                        mapRelationshipAttributeWithMultipleTypes(entity, entityType, attrName, attrValue, vertex, op, context);
+                        Object         attrValue    = entity.getRelationshipAttribute(attrName);
+                        mapRelationshipAttribute(entity, entityType, attrName, attrValue, vertex, op, context);
                     }
                 }
             }
@@ -1530,34 +1527,20 @@ public class EntityGraphMapper {
         LOG.debug("<== mapRelationshipAttributes({}, {})", op, entity.getTypeName());
     }
 
-    private void mapRelationshipAttributeWithMultipleTypes(AtlasEntity entity, AtlasEntityType entityType, String attrName, Object attrValue, AtlasVertex vertex, EntityOperation op, EntityMutationContext context) throws AtlasBaseException {
-        LOG.debug("==> mapRelationshipAttributeWithMultipleTypes({}, {})", attrName, entity.getTypeName());
+    private void mapRelationshipAttribute(AtlasEntity entity, AtlasEntityType entityType, String attrName, Object attrValue, AtlasVertex vertex, EntityOperation op, EntityMutationContext context) throws AtlasBaseException {
+        LOG.debug("==> mapRelationshipAttribute({}, {})", attrName, entity.getTypeName());
         Set<String> relationshipTypeNames = entityType.getAttributeRelationshipTypes(attrName);
 
         if (CollectionUtils.isEmpty(relationshipTypeNames)) {
-            // legacy path: infer type from the value and map once, same as before multi-type handling.
-            String         relationType = AtlasEntityUtil.getRelationshipType(attrValue);
-            AtlasAttribute attribute    = entityType.getRelationshipAttribute(attrName, relationType);
-            mapAttribute(attribute, attrValue, vertex, op, context);
-
+            mapRelationshipAttributeUsingInferredType(entityType, attrName, attrValue, vertex, op, context);
             return;
         }
 
-        if (relationshipTypeNames.size() == 1 && !(attrValue instanceof Collection) && !(attrValue instanceof Map)) {
-            String         onlyRelationshipType = relationshipTypeNames.iterator().next();
-            AtlasAttribute attribute            = entityType.getRelationshipAttribute(attrName, onlyRelationshipType);
-            mapAttribute(attribute, attrValue, vertex, op, context);
-
-            return;
-        }
-
-        // Multi-type split for list/set payloads only. Map-valued relationship attributes (key -> ref) are not handled here;
-        // they fall through to the else branch as a single value.
         if (attrValue instanceof Collection) {
             Collection<?> relatedObjects = (Collection<?>) attrValue;
 
             // Group related objects by their appropriate relationship type
-            // e.g., hive_table elements should use hive_table_db relationship, iceberg_table elements should use iceberg_table_db
+            // e.g., hive_table elements should use hive_table_db relationship, delta_table elements should use delta_table_db
             Map<String, List<Object>> elementsByRelationshipType = groupElementsByRelationshipType(
                     relatedObjects, attrName, relationshipTypeNames);
 
@@ -1571,36 +1554,42 @@ public class EntityGraphMapper {
                     // Use the same collection type as the original (List or Set)
                     Object filteredValue = createCollectionOfSameType(attrValue, filteredElements);
 
-                    LOG.debug("Processing relationship type {} for attribute {} with {} elements",
-                            relationshipTypeName, attrName, filteredElements.size());
+                    LOG.debug("Processing relationship type {} for attribute {} with {} elements", relationshipTypeName, attrName, filteredElements.size());
 
                     mapAttribute(attribute, filteredValue, vertex, op, context);
                 }
             }
-        } else {
-            // Single element - prefer explicit relationship type from the value
-            String appropriateRelType = AtlasEntityUtil.getRelationshipType(attrValue);
-            AtlasAttribute attribute = entityType.getRelationshipAttribute(attrName, appropriateRelType);
+        } else if (attrValue instanceof Map) {
+            LOG.warn("mapRelationshipAttribute: attribute {} on {}: Map-valued relationship attribute is not supported", attrName, entity.getTypeName());
+        } else if (relationshipTypeNames.size() == 1) {
+            String         onlyRelationshipType = relationshipTypeNames.iterator().next();
+            AtlasAttribute attribute            = entityType.getRelationshipAttribute(attrName, onlyRelationshipType);
             mapAttribute(attribute, attrValue, vertex, op, context);
+        } else {
+            mapRelationshipAttributeUsingInferredType(entityType, attrName, attrValue, vertex, op, context);
         }
 
-        LOG.debug("<== mapRelationshipAttributeWithMultipleTypes({}, {})", attrName, entity.getTypeName());
+        LOG.debug("<== mapRelationshipAttribute({}, {})", attrName, entity.getTypeName());
     }
 
-    private Map<String, List<Object>> groupElementsByRelationshipType(Collection<?> relatedObjects,
-            String attrName,
-            Set<String> relationshipTypeNames) {
+    private void mapRelationshipAttributeUsingInferredType(AtlasEntityType entityType, String attrName, Object attrValue, AtlasVertex vertex, EntityOperation op, EntityMutationContext context) throws AtlasBaseException {
+        String         relationType = AtlasEntityUtil.getRelationshipType(attrValue);
+        AtlasAttribute attribute    = entityType.getRelationshipAttribute(attrName, relationType);
+        mapAttribute(attribute, attrValue, vertex, op, context);
+    }
+
+    private Map<String, List<Object>> groupElementsByRelationshipType(Collection<?> relatedObjects, String attrName, Set<String> relationshipTypeNames) {
         Map<String, List<Object>> elementsByRelationshipType = new HashMap<>();
 
         // Group related objects by their appropriate relationship type
         for (Object element : relatedObjects) {
             String relationshipType = AtlasEntityUtil.getRelationshipType(element);
 
-            if (StringUtils.isEmpty(relationshipType) && relationshipTypeNames.size() == 1) {
+            if (StringUtils.isEmpty(relationshipType) && relationshipTypeNames != null && relationshipTypeNames.size() == 1) {
                 relationshipType = relationshipTypeNames.iterator().next();
             }
 
-            if (StringUtils.isEmpty(relationshipType) || !relationshipTypeNames.contains(relationshipType)) {
+            if (relationshipTypeNames == null || StringUtils.isEmpty(relationshipType) || !relationshipTypeNames.contains(relationshipType)) {
                 continue;
             }
 
