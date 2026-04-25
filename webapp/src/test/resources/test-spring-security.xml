@@ -53,7 +53,7 @@
     </security:http>
 
     <beans:bean id="userDAO" class="org.apache.atlas.server.common.dao.UserDao" init-method="init"/>
-    <beans:bean id="userDetailsService" class="org.apache.atlas.web.service.UserService">
+    <beans:bean id="userDetailsService" class="org.apache.atlas.server.common.service.UserService">
         <beans:constructor-arg ref="userDAO"/>
     </beans:bean>
     <beans:bean id="atlasLDAPProvider" class="org.apache.atlas.server.common.security.AtlasLdapAuthenticationProvider"/>

@@ -15,16 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.atlas.web.service;
+package org.apache.atlas.server.common.service;
 
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.audit.AtlasAuditEntry;
-import org.apache.atlas.repository.audit.AtlasAuditService;
-import org.apache.atlas.util.BeanUtil;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -48,12 +43,11 @@ public class EmbeddedServer {
     public static final Logger LOG = LoggerFactory.getLogger(EmbeddedServer.class);
 
     public static final String ATLAS_DEFAULT_BIND_ADDRESS = "0.0.0.0";
+    public static final String REST_DEFAULT_BIND_ADDRESS  = "0.0.0.0";
+    public static final String DEFAULT_BIND_ADDRESS       = ATLAS_DEFAULT_BIND_ADDRESS;
     public static final Date   SERVER_START_TIME          = new Date();
 
-    protected final Server server;
-
-    private AtlasAuditService auditService;
-    private ServiceState      serviceState;
+    public final Server server;
 
     public EmbeddedServer(String host, int port, String path) throws IOException {
         int                           queueSize     = AtlasConfiguration.WEBSERVER_QUEUE_SIZE.getInt();
@@ -78,17 +72,14 @@ public class EmbeddedServer {
     public static EmbeddedServer newServer(String host, int port, String path, boolean secure) throws IOException {
         if (secure) {
             return new SecureEmbeddedServer(host, port, path);
-        } else {
-            return new EmbeddedServer(host, port, path);
         }
+
+        return new EmbeddedServer(host, port, path);
     }
 
     public void start() throws AtlasBaseException {
         try {
             server.start();
-
-            auditServerStatus();
-
             server.join();
         } catch (Exception e) {
             throw new AtlasBaseException(AtlasErrorCode.EMBEDDED_SERVER_START, e);
@@ -129,26 +120,5 @@ public class EmbeddedServer {
         connector.setHost(host);
 
         return connector;
-    }
-
-    private void auditServerStatus() {
-        auditService = BeanUtil.getBean(AtlasAuditService.class);
-        serviceState = BeanUtil.getBean(ServiceState.class);
-
-        ServiceState.ServiceStateValue serviceStateValue = serviceState.getState();
-
-        if (serviceStateValue == ServiceState.ServiceStateValue.ACTIVE) {
-            Date date = new Date();
-
-            try {
-                auditService.add(AtlasAuditEntry.AuditOperation.SERVER_START, SERVER_START_TIME, date, null, null, 0);
-                auditService.add(AtlasAuditEntry.AuditOperation.SERVER_STATE_ACTIVE, date, date, null, null, 0);
-            } catch (AtlasBaseException e) {
-                LOG.error("Exception occurred during audit", e);
-            } finally {
-                // After server related audits are added, the request created and now cleared here.
-                RequestContext.clear();
-            }
-        }
     }
 }

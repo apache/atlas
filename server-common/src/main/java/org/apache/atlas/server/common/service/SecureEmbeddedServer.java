@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.web.service;
+package org.apache.atlas.server.common.service;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;

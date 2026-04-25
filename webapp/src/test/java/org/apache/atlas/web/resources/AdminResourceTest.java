@@ -74,7 +74,7 @@ import org.apache.atlas.util.SearchTracker;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.web.model.DebugMetrics;
 import org.apache.atlas.web.service.AtlasDebugMetricsSink;
-import org.apache.atlas.web.service.ServiceState;
+import org.apache.atlas.server.common.service.ServiceState;
 import org.apache.atlas.server.common.util.Servlets;
 import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mock;

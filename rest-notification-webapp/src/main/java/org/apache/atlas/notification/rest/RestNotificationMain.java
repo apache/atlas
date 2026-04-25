@@ -20,7 +20,7 @@ package org.apache.atlas.notification.rest;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConstants;
-import org.apache.atlas.notification.rest.web.service.EmbeddedServer;
+import org.apache.atlas.server.common.service.EmbeddedServer;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
