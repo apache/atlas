@@ -18,11 +18,13 @@
 package org.apache.atlas.server.common.service;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.server.common.filters.spi.ActiveInstanceStateProvider;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
@@ -42,7 +44,7 @@ import java.util.List;
  * An object that encapsulates storing and retrieving state related to an Active Atlas server.
  *
  * The current implementation uses Zookeeper to store and read this state from. It does this
- * under a read-write lock implemented using Curator's {@link org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock} to
+ * under a read-write lock implemented using Curator's {@link InterProcessReadWriteLock} to
  * provide for safety across multiple processes.
  */
 @Component
@@ -51,10 +53,15 @@ public class ActiveInstanceState implements ActiveInstanceStateProvider {
 
     public static final String APACHE_ATLAS_ACTIVE_SERVER_INFO = "/active_server_info";
 
-    private final Configuration           configuration;
-    private final CuratorFactory            curatorFactory;
+    private final Configuration  configuration;
+    private final CuratorFactory curatorFactory;
     private final HighAvailabilitySupport haSupport;
 
+    /**
+     * Create a new instance of {@link ActiveInstanceState}.
+     * @param curatorFactory an instance of {@link CuratorFactory} to get the {@link InterProcessReadWriteLock}
+     * @throws AtlasException
+     */
     @Inject
     public ActiveInstanceState(Configuration configuration, CuratorFactory curatorFactory, HighAvailabilitySupport haSupport) {
         this.configuration  = configuration;
@@ -62,10 +69,20 @@ public class ActiveInstanceState implements ActiveInstanceStateProvider {
         this.haSupport        = haSupport;
     }
 
+    /**
+     * Update state of the active server instance.
+     *
+     * This method writes this instance's Server Address to a shared node in Zookeeper.
+     * This information is used by other passive instances to locate the current active server.
+     * @throws AtlasBaseException
+     * @param serverId ID of this server instance
+     */
     public void update(String serverId) throws AtlasBaseException {
         try {
             CuratorFramework            client                 = curatorFactory.clientInstance();
+
             HighAvailabilityProperties zookeeperProperties    = haSupport.getZookeeperProperties(configuration);
+
             String                     atlasServerAddress     = haSupport.getBoundAddressForId(configuration, serverId);
 
             List<ACL> acls = new ArrayList<>();
@@ -96,6 +113,12 @@ public class ActiveInstanceState implements ActiveInstanceStateProvider {
         }
     }
 
+    /**
+     * Retrieve state of the active server instance.
+     *
+     * This method reads the active server location from the shared node in Zookeeper.
+     * @return the active server's address and port of form http://host-or-ip:port
+     */
     @Override
     public String getActiveServerAddress() {
         CuratorFramework            client         = curatorFactory.clientInstance();
