@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.notification.rest.web.service;
+package org.apache.atlas.server.common.service;
 
 import org.apache.atlas.server.common.dao.UserDao;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -27,7 +27,6 @@ import javax.inject.Inject;
 
 @Service
 public class UserService implements UserDetailsService {
-
     private final UserDao userDao;
 
     @Inject
@@ -36,8 +35,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(final String username)
-            throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
         return userDao.loadUserByUsername(username);
     }
 }

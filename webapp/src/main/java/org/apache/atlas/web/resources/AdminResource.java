@@ -79,7 +79,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.model.DebugMetrics;
 import org.apache.atlas.web.service.AtlasDebugMetricsSink;
-import org.apache.atlas.web.service.ServiceState;
+import org.apache.atlas.server.common.service.ServiceState;
 import org.apache.atlas.server.common.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;

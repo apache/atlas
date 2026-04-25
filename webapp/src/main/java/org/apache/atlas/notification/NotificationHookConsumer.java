@@ -74,7 +74,7 @@ import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityPartialUp
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
 import org.apache.atlas.server.common.filters.AuditFilter;
 import org.apache.atlas.server.common.filters.AuditFilter.AuditLog;
-import org.apache.atlas.web.service.ServiceState;
+import org.apache.atlas.server.common.service.ServiceState;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.map.PassiveExpiringMap;

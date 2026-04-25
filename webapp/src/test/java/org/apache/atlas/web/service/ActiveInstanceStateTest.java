@@ -19,6 +19,9 @@
 package org.apache.atlas.web.service;
 
 import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.server.common.service.ActiveInstanceState;
+import org.apache.atlas.server.common.service.HighAvailabilitySupport;
+import org.apache.atlas.server.common.service.CuratorFactory;
 import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CreateBuilder;
@@ -84,7 +87,7 @@ public class ActiveInstanceStateTest {
 
         when(curatorFramework.setData()).thenReturn(setDataBuilder);
 
-        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory);
+        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory, new HighAvailabilitySupport.AtlasConfigurationDefaults());
 
         activeInstanceState.update("id1");
 
@@ -118,7 +121,7 @@ public class ActiveInstanceStateTest {
 
         when(curatorFramework.setData()).thenReturn(setDataBuilder);
 
-        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory);
+        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory, new HighAvailabilitySupport.AtlasConfigurationDefaults());
 
         activeInstanceState.update("id1");
 
@@ -141,7 +144,7 @@ public class ActiveInstanceStateTest {
 
         when(curatorFramework.setData()).thenReturn(setDataBuilder);
 
-        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory);
+        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory, new HighAvailabilitySupport.AtlasConfigurationDefaults());
 
         activeInstanceState.update("id1");
 
@@ -158,7 +161,7 @@ public class ActiveInstanceStateTest {
         when(curatorFramework.getData()).thenReturn(getDataBuilder);
         when(getDataBuilder.forPath(getPath())).thenReturn(SERVER_ADDRESS.getBytes(StandardCharsets.UTF_8));
 
-        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory);
+        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory, new HighAvailabilitySupport.AtlasConfigurationDefaults());
         String              actualServerAddress = activeInstanceState.getActiveServerAddress();
 
         assertEquals(actualServerAddress, SERVER_ADDRESS);
@@ -174,7 +177,7 @@ public class ActiveInstanceStateTest {
         when(curatorFramework.getData()).thenReturn(getDataBuilder);
         when(getDataBuilder.forPath(getPath())).thenThrow(new Exception());
 
-        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory);
+        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory, new HighAvailabilitySupport.AtlasConfigurationDefaults());
 
         assertNull(activeInstanceState.getActiveServerAddress());
     }

@@ -57,7 +57,7 @@ import org.apache.atlas.v1.model.notification.HookNotificationV1;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
-import org.apache.atlas.web.service.ServiceState;
+import org.apache.atlas.server.common.service.ServiceState;
 import org.apache.commons.configuration.Configuration;
 import org.apache.kafka.common.TopicPartition;
 import org.mockito.Mock;

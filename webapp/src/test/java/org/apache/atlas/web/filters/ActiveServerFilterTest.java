@@ -20,8 +20,8 @@ package org.apache.atlas.web.filters;
 
 import org.apache.atlas.server.common.filters.ActiveServerFilter;
 import org.apache.atlas.server.common.filters.spi.ServiceStateProvider;
-import org.apache.atlas.web.service.ActiveInstanceState;
-import org.apache.atlas.web.service.ServiceState;
+import org.apache.atlas.server.common.service.ActiveInstanceState;
+import org.apache.atlas.server.common.service.ServiceState;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;

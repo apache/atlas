@@ -17,8 +17,8 @@
  */
 package org.apache.atlas.notification.rest.web.security;
 
-import org.apache.atlas.notification.rest.web.service.ActiveInstanceState;
-import org.apache.atlas.notification.rest.web.service.ServiceState;
+import org.apache.atlas.server.common.service.ActiveInstanceState;
+import org.apache.atlas.server.common.service.ServiceState;
 import org.apache.atlas.server.common.filters.spi.ActiveInstanceStateProvider;
 import org.apache.atlas.server.common.filters.spi.ServiceStateProvider;
 import org.springframework.context.annotation.Bean;

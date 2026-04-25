@@ -15,15 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.atlas.web.service;
+package org.apache.atlas.server.common.service;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.ha.AtlasServerIdSelector;
-import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.service.Service;
-import org.apache.atlas.util.AtlasMetricsUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
@@ -32,16 +29,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
 /**
  * A service that implements leader election to determine whether this Atlas server is Active.
- *
+ * <p>
  * The service implements leader election through <a href="http://curator.apache.org/">Curator</a>'s
  * {@link LeaderLatch} recipe. The service also implements {@link LeaderLatchListener} to get
  * notified of changes to leadership state. Upon becoming leader, this instance is treated as the
@@ -49,7 +46,6 @@ import java.util.Set;
  * on being removed from leadership, this instance is treated as a passive instance and calls
  * {@link ActiveStateChangeHandler}s to deactivate them.
  */
-
 @Component
 //
 // This should be called the last, leaving it without the @Order(Integer.MAX_VALUE) will make it get
@@ -60,66 +56,57 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
     private final Configuration                  configuration;
     private final ServiceState                   serviceState;
     private final ActiveInstanceState            activeInstanceState;
-    private final AtlasMetricsUtil               metricsUtil;
+    private final HighAvailabilitySupport        haSupport;
+    private final List<ServiceMetricsHook>       metricsHooks;
     private final Set<ActiveStateChangeHandler>  activeStateChangeHandlerProviders;
     private final List<ActiveStateChangeHandler> activeStateChangeHandlers;
     private final CuratorFactory                 curatorFactory;
     private       LeaderLatch                    leaderLatch;
     private       String                         serverId;
 
-    /**
-     * Create a new instance of {@link ActiveInstanceElectorService}
-     * @param activeStateChangeHandlerProviders The list of registered {@link ActiveStateChangeHandler}s that
-     *                                          must be called back on state changes.
-     * @throws AtlasException
-     */
     @Inject
-    ActiveInstanceElectorService(Configuration configuration, Set<ActiveStateChangeHandler> activeStateChangeHandlerProviders,
-            CuratorFactory curatorFactory, ActiveInstanceState activeInstanceState, ServiceState serviceState, AtlasMetricsUtil metricsUtil) {
+    public ActiveInstanceElectorService(Configuration configuration,
+            Set<ActiveStateChangeHandler> activeStateChangeHandlerProviders,
+            List<ServiceMetricsHook> metricsHooks,
+            CuratorFactory curatorFactory,
+            ActiveInstanceState activeInstanceState,
+            ServiceState serviceState,
+            HighAvailabilitySupport haSupport) {
         this.configuration                     = configuration;
         this.activeStateChangeHandlerProviders = activeStateChangeHandlerProviders;
+        this.metricsHooks                      = metricsHooks != null ? metricsHooks : Collections.emptyList();
         this.activeStateChangeHandlers         = new ArrayList<>();
         this.curatorFactory                    = curatorFactory;
         this.activeInstanceState               = activeInstanceState;
         this.serviceState                      = serviceState;
-        this.metricsUtil                       = metricsUtil;
+        this.haSupport                         = haSupport;
     }
 
-    /**
-     * Join leader election on starting up.
-     *
-     * If Atlas High Availability configuration is disabled, this operation is a no-op.
-     * @throws AtlasException
-     */
     @Override
     public void start() throws AtlasException {
-        metricsUtil.onServerStart();
+        boolean haEnabled = haSupport.isHAEnabled(configuration);
 
-        if (!HAConfiguration.isHAEnabled(configuration)) {
-            metricsUtil.onServerActivation();
+        for (ServiceMetricsHook hook : metricsHooks) {
+            hook.onServerStart();
+            if (!haEnabled) {
+                hook.onServerActivation();
+            }
+        }
 
+        if (!haEnabled) {
             LOG.info("HA is not enabled, no need to start leader election service");
-
             return;
         }
 
         cacheActiveStateChangeHandlers();
-
-        serverId = AtlasServerIdSelector.selectServerId(configuration);
-
+        serverId = haSupport.selectServerId(configuration);
         joinElection();
     }
 
-    /**
-     * Leave leader election process and clean up resources on shutting down.
-     *
-     * If Atlas High Availability configuration is disabled, this operation is a no-op.
-     */
     @Override
     public void stop() {
-        if (!HAConfiguration.isHAEnabled(configuration)) {
+        if (!haSupport.isHAEnabled(configuration)) {
             LOG.info("HA is not enabled, no need to stop leader election service");
-
             return;
         }
 
@@ -131,41 +118,32 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
         }
     }
 
-    /**
-     * Call all registered {@link ActiveStateChangeHandler}s on being elected active.
-     *
-     * In addition, shared state information about this instance becoming active is updated
-     * using {@link ActiveInstanceState}.
-     */
     @Override
     public void isLeader() {
         LOG.warn("Server instance with server id {} is elected as leader", serverId);
-
         serviceState.becomingActive();
 
         try {
             for (ActiveStateChangeHandler handler : activeStateChangeHandlers) {
                 handler.instanceIsActive();
             }
-
             activeInstanceState.update(serverId);
             serviceState.setActive();
-            metricsUtil.onServerActivation();
+            for (ServiceMetricsHook metricsHook : metricsHooks) {
+                metricsHook.onServerActivation();
+            }
         } catch (Exception e) {
             LOG.error("Got exception while activating", e);
-
             notLeader();
             rejoinElection();
+        } finally {
+            RequestContext.clear();
         }
     }
 
-    /**
-     * Call all registered {@link ActiveStateChangeHandler}s on becoming passive instance.
-     */
     @Override
     public void notLeader() {
         LOG.warn("Server instance with server id {} is removed as leader", serverId);
-
         serviceState.becomingPassive();
 
         for (int idx = activeStateChangeHandlers.size() - 1; idx >= 0; idx--) {
@@ -182,15 +160,12 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
     private void joinElection() {
         LOG.info("Starting leader election for {}", serverId);
 
-        String zkRoot = HAConfiguration.getZookeeperProperties(configuration).getZkRoot();
-
+        String zkRoot = haSupport.getZookeeperProperties(configuration).getZkRoot();
         leaderLatch = curatorFactory.leaderLatchInstance(serverId, zkRoot);
-
         leaderLatch.addListener(this);
 
         try {
             leaderLatch.start();
-
             LOG.info("Leader latch started for {}.", serverId);
         } catch (Exception e) {
             LOG.info("Exception while starting leader latch for {}.", serverId, e);
@@ -212,7 +187,6 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
     private void rejoinElection() {
         try {
             leaderLatch.close();
-
             joinElection();
         } catch (IOException e) {
             LOG.error("Error rejoining election", e);

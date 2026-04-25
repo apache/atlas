@@ -19,6 +19,7 @@
 package org.apache.atlas.web.service;
 
 import org.apache.atlas.server.common.dao.UserDao;
+import org.apache.atlas.server.common.service.UserService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;

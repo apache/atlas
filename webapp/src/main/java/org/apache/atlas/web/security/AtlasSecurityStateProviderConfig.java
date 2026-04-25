@@ -19,8 +19,8 @@ package org.apache.atlas.web.security;
 
 import org.apache.atlas.server.common.filters.spi.ActiveInstanceStateProvider;
 import org.apache.atlas.server.common.filters.spi.ServiceStateProvider;
-import org.apache.atlas.web.service.ActiveInstanceState;
-import org.apache.atlas.web.service.ServiceState;
+import org.apache.atlas.server.common.service.ActiveInstanceState;
+import org.apache.atlas.server.common.service.ServiceState;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
