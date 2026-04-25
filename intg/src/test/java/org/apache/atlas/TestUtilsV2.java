@@ -625,6 +625,11 @@ public final class TestUtilsV2 {
                 createOptionalAttrDef("attrSuperBoolean", AtlasBusinessMetadataDef.ATLAS_TYPE_BOOLEAN, options, description),
                 createOptionalAttrDef("attrSuperString", AtlasBusinessMetadataDef.ATLAS_TYPE_STRING, options, description));
 
+        setBusinessMetadataAttributesIndexable(bmNoApplicableTypes);
+        setBusinessMetadataAttributesIndexable(bmWithAllTypes);
+        setBusinessMetadataAttributesIndexable(bmWithAllTypesMV);
+        setBusinessMetadataAttributesIndexable(bmWithSuperType);
+
         AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(new ArrayList<>(),
                 new ArrayList<>(), new ArrayList<>(),
                 new ArrayList<>(), new ArrayList<>(),
@@ -633,6 +638,16 @@ public final class TestUtilsV2 {
         populateSystemAttributes(ret);
 
         return ret;
+    }
+
+    private static void setBusinessMetadataAttributesIndexable(AtlasBusinessMetadataDef def) {
+        if (def == null || CollectionUtils.isEmpty(def.getAttributeDefs())) {
+            return;
+        }
+
+        for (AtlasAttributeDef ad : def.getAttributeDefs()) {
+            ad.setIsIndexable(true);
+        }
     }
 
     public static AtlasTypesDef defineHiveTypes() {
