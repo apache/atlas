@@ -6,15 +6,16 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
- * implied.  See the License for the specific language governing
- * permissions and limitations under the License.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package org.apache.atlas.server.common.service;
 
 import org.apache.atlas.server.common.filters.spi.ServiceStateProvider;
@@ -41,9 +42,17 @@ import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 public class ServiceState implements ServiceStateProvider {
     private static final Logger LOG = LoggerFactory.getLogger(ServiceState.class);
 
-    private final Configuration         configuration;
+    public enum ServiceStateValue {
+        ACTIVE,
+        PASSIVE,
+        BECOMING_ACTIVE,
+        BECOMING_PASSIVE,
+        MIGRATING
+    }
+
+    private Configuration configuration;
+    private volatile ServiceStateValue state;
     private final HighAvailabilitySupport haSupport;
-    private volatile ServiceStateValue  state;
 
     @Inject
     public ServiceState(Configuration configuration, HighAvailabilitySupport haSupport) {
@@ -52,7 +61,7 @@ public class ServiceState implements ServiceStateProvider {
 
         state = !haSupport.isHAEnabled(configuration) ? ServiceStateValue.ACTIVE : ServiceStateValue.PASSIVE;
 
-        if (!StringUtils.isEmpty(configuration.getString(ATLAS_MIGRATION_MODE_FILENAME, ""))) {
+        if(!StringUtils.isEmpty(configuration.getString(ATLAS_MIGRATION_MODE_FILENAME, ""))) {
             state = ServiceStateValue.MIGRATING;
         }
     }
@@ -83,9 +92,9 @@ public class ServiceState implements ServiceStateProvider {
 
     @Override
     public boolean isInstanceInTransition() {
-        ServiceStateValue currentState = getState();
-
-        return currentState == ServiceStateValue.BECOMING_ACTIVE || currentState == ServiceStateValue.BECOMING_PASSIVE;
+        ServiceStateValue state = getState();
+        return state == ServiceStateValue.BECOMING_ACTIVE
+                || state == ServiceStateValue.BECOMING_PASSIVE;
     }
 
     public void setMigration() {
@@ -113,13 +122,5 @@ public class ServiceState implements ServiceStateProvider {
                 "Cannot change state as requested, as HA is not enabled for this instance.");
 
         state = newState;
-    }
-
-    public enum ServiceStateValue {
-        ACTIVE,
-        PASSIVE,
-        BECOMING_ACTIVE,
-        BECOMING_PASSIVE,
-        MIGRATING
     }
 }
