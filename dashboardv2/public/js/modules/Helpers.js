@@ -18,7 +18,8 @@
 
 define(['require',
     'handlebars',
-], function(require, Handlebars, localization) {
+    'underscore',
+], function(require, Handlebars, _) {
     /*
      * General guidelines while writing helpers:
      *
