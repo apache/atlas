@@ -340,6 +340,10 @@ const getEntityIconPath = (options: any) => {
 };
 
 const serverError = (error: any, toastId: any) => {
+  // fetchApi already surfaces 403 via serverErrorHandler (toast); avoid duplicate.
+  if (error?.response?.status === 403) {
+    return;
+  }
   if (
     error.response !== undefined &&
     error.response.data.errorMessage !== undefined

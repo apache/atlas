@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Typography, LinearProgress, Stack } from "@mui/material";
 import { toast } from "react-toastify";
-import { CustomButton } from "@components/muiComponents";
+import { CustomButton, LightTooltip } from "@components/muiComponents";
 
 const thumb = {
   position: "relative",
@@ -140,17 +140,21 @@ const ImportLayout = ({
             color="inherit"
             sx={progressCss}
           />
-          <Typography
-            sx={{
-              overflow: "hidden",
-              whiteSpace: "nowrap",
-              textOverflow: "ellipsis",
-              lineHeight: "2",
-              width: "100%"
-            }}
-          >
-            {file.name}
-          </Typography>
+          <LightTooltip title={file.name} placement="top" arrow>
+            <Typography
+              component="span"
+              sx={{
+                overflow: "hidden",
+                whiteSpace: "nowrap",
+                textOverflow: "ellipsis",
+                lineHeight: "2",
+                width: "100%",
+                display: "block"
+              }}
+            >
+              {file.name}
+            </Typography>
+          </LightTooltip>
         </Stack>
       </Stack>
       <CustomButton

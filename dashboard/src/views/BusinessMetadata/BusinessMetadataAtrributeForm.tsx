@@ -33,6 +33,7 @@ import {
   FormControlLabel,
   Checkbox,
   Autocomplete,
+  Chip,
   Tooltip,
   tooltipClasses,
   TooltipProps,
@@ -235,6 +236,18 @@ const BusinessMetadataAttributeForm = ({
         : [];
 
       let enumTypeOptions = [...selectedEnumValues];
+      const isBmAttributeEdit = !isEmpty(editbmAttribute);
+      const nonRemovableApplicableTypes =
+        isBmAttributeEdit &&
+        Array.isArray(field?.options?.applicableEntityTypes)
+          ? new Set(
+              field.options.applicableEntityTypes.filter(
+                (t: unknown): t is string =>
+                  typeof t === "string" && t.length > 0
+              )
+            )
+          : null;
+
       return (
         <>
           <fieldset
@@ -832,6 +845,29 @@ const BusinessMetadataAttributeForm = ({
                               : []
                           }
                           className="advanced-search-autocomplete"
+                          renderTags={
+                            nonRemovableApplicableTypes
+                              ? (tagValue, getTagProps) =>
+                                  tagValue.map((option: string, tagIndex) => {
+                                    const tagProps = getTagProps({
+                                      index: tagIndex
+                                    });
+                                    const stripDelete =
+                                      nonRemovableApplicableTypes.has(option);
+                                    return (
+                                      <Chip
+                                        {...tagProps}
+                                        label={option}
+                                        onDelete={
+                                          stripDelete
+                                            ? undefined
+                                            : tagProps.onDelete
+                                        }
+                                      />
+                                    );
+                                  })
+                              : undefined
+                          }
                           renderInput={(params) => (
                             <TextField
                               {...params}

@@ -61,11 +61,12 @@ const fetchApi = async (url: string, config: AxiosRequestConfig) => {
             window.location.replace("login.jsp");
             break;
           case 403:
+            // Match classic UI (Utils.defaultErrorHandler): show API message via
+            // notify/toast only; do not redirect — user stays on current screen.
             serverErrorHandler(
               { responseJSON: error.response?.data },
               "You are not authorized"
             );
-            window.location.replace("login.jsp");
             break;
           case 404:
             serverErrorHandler(
@@ -99,7 +100,13 @@ const fetchApi = async (url: string, config: AxiosRequestConfig) => {
             break;
         }
       }
-      if (error.response?.statusText != "abort") {
+      // Only treat as offline / connection failure when there is no HTTP
+      // response (or status 0). Do not run this for 403/404/5xx — those are
+      // handled above and would wrongly show a network toast.
+      const res = error.response;
+      const isAbort =
+        error.code === "ERR_CANCELED" || res?.statusText === "abort";
+      if (!isAbort && (!res || Number(res.status) === 0)) {
         errorHandelingForAbortAndStatus0();
       }
     }
