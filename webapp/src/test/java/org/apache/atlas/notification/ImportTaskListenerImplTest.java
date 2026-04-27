@@ -292,7 +292,6 @@ public class ImportTaskListenerImplTest {
 
     @Test
     public void testStartImportConsumer_Successful() throws Exception {
-        Mockito.doReturn("import123").when(importRequest).getImportId();
         when(importRequest.getStatus()).thenReturn(WAITING);
         when(importRequest.getTopicName()).thenReturn("topic1");
 
@@ -574,7 +573,6 @@ public class ImportTaskListenerImplTest {
 
     @Test
     public void testImportNotProcessedWhenPassive() throws Exception {
-        Mockito.doReturn("import123").when(importRequest).getImportId();
         when(importRequest.getStatus()).thenReturn(WAITING);
         when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123");
         importTaskListener.instanceIsPassive();
@@ -585,7 +583,6 @@ public class ImportTaskListenerImplTest {
 
     @Test
     public void testExecutorNotRecreatedWhenPassive() throws Exception {
-        Mockito.doReturn("import123").when(importRequest).getImportId();
         when(importRequest.getStatus()).thenReturn(WAITING);
         when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123");
         when(importRequest.getStatus()).thenReturn(WAITING);
