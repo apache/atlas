@@ -15,8 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.notification.rest.web.setup;
-
+package org.apache.atlas.server.common.setup;
 
 import org.apache.atlas.server.common.listeners.LoginProcessor;
 import org.springframework.web.context.ContextLoaderListener;
@@ -27,6 +26,7 @@ public class KerberosAwareListener extends ContextLoaderListener {
     @Override
     public void contextInitialized(ServletContextEvent event) {
         LoginProcessor loginProcessor = new LoginProcessor();
+
         loginProcessor.login();
 
         super.contextInitialized(event);

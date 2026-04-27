@@ -102,7 +102,7 @@
     </listener>
 
     <listener>
-        <listener-class>org.apache.atlas.web.setup.KerberosAwareListener</listener-class>
+        <listener-class>org.apache.atlas.server.common.setup.KerberosAwareListener</listener-class>
     </listener>
 
 

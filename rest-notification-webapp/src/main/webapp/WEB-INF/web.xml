@@ -62,7 +62,7 @@
     </listener>
 
     <listener>
-        <listener-class>org.apache.atlas.notification.rest.web.setup.KerberosAwareListener</listener-class>
+        <listener-class>org.apache.atlas.server.common.setup.KerberosAwareListener</listener-class>
     </listener>
 
     <filter>
