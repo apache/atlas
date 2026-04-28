@@ -50,9 +50,15 @@ public class ActiveServerFilter implements Filter {
 
     private static final String MIGRATION_STATUS_STATIC_PAGE = "migration-status.html";
 
-    private final String[]            adminUriNotFiltered = {"/admin/export", "/admin/import", "/admin/importfile", "/admin/audits",
+    private final String[] adminUriNotSupportedInPassive = {
+            "/admin/export", "/admin/import", "/admin/importfile", "/admin/audits",
             "/admin/purge", "/admin/expimp/audit", "/admin/metrics", "/admin/server", "/admin/audit/", "admin/tasks",
-            "/admin/debug/metrics", "/admin/audits/ageout", "admin/async/import", "admin/async/import/status"};
+            "/admin/debug/metrics", "/admin/audits/ageout", "admin/audits/rules", "admin/async/import", "admin/async/import/status"
+    };
+    private final String[] adminUriNotSupportedInMigration = {
+            "/admin/export", "/admin/import", "/admin/importfile", "admin/async/import"
+    };
+
     private final ActiveInstanceStateProvider activeInstanceState;
     private final ServiceStateProvider        serviceState;
 
@@ -77,10 +83,9 @@ public class ActiveServerFilter implements Filter {
      */
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
-        if (isFilteredURI(servletRequest)) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Is a filtered URI: {}. Passing request downstream.", ((HttpServletRequest) servletRequest).getRequestURI());
-            }
+        if (isAdminURISupportedInCurrentState(servletRequest)) {
+            LOG.debug("URL {} is supported when the instance is in {} state. Passing request downstream.",
+                    ((HttpServletRequest) servletRequest).getRequestURI(), serviceState.getStateName());
 
             filterChain.doFilter(servletRequest, servletResponse);
         } else if (isInstanceActive()) {
@@ -125,12 +130,14 @@ public class ActiveServerFilter implements Filter {
         return serviceState.isActive();
     }
 
-    private boolean isFilteredURI(ServletRequest servletRequest) {
+    private boolean isAdminURISupportedInCurrentState(ServletRequest servletRequest) {
         HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
         String             requestURI         = httpServletRequest.getRequestURI();
 
         if (requestURI.contains("/admin/")) {
-            for (String s : adminUriNotFiltered) {
+            String[] uriNotSupported = serviceState.isInstanceInMigration() ? adminUriNotSupportedInMigration : adminUriNotSupportedInPassive;
+
+            for (String s : uriNotSupported) {
                 if (requestURI.contains(s)) {
                     LOG.trace("URL not supported in HA mode: {}", requestURI);
 
@@ -139,9 +146,9 @@ public class ActiveServerFilter implements Filter {
             }
 
             return true;
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     private boolean isRootURI(ServletRequest servletRequest) {
