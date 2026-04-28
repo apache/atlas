@@ -66,7 +66,7 @@ public class WebappAdminAuditHookTest {
                 any(Date.class),
                 isNull(),
                 isNull(),
-                eq(0));
+                eq(0L));
     }
 
     @Test
@@ -84,7 +84,7 @@ public class WebappAdminAuditHookTest {
                 endCaptor.capture(),
                 isNull(),
                 isNull(),
-                eq(0));
+                eq(0L));
 
         assertNotNull(startCaptor.getValue());
         assertNotNull(endCaptor.getValue());
@@ -113,6 +113,6 @@ public class WebappAdminAuditHookTest {
                 any(Date.class),
                 isNull(),
                 isNull(),
-                eq(0));
+                eq(0L));
     }
 }
