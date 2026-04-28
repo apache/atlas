@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -77,7 +78,13 @@ public class FileAuthenticationTest {
 
         System.setProperty("atlas.conf", persistDir);
 
-        applicationContext = new AnnotationConfigApplicationContext(TestSpringSecurityBridgeConfig.class);
+        AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
+
+        ((ConfigurableEnvironment) ctx.getEnvironment()).setActiveProfiles("testSpringSecurityBridge");
+        ctx.register(TestSpringSecurityBridgeConfig.class);
+        ctx.refresh();
+
+        applicationContext = ctx;
         authProvider       = applicationContext.getBean(org.apache.atlas.web.security.AtlasAuthenticationProvider.class);
     }
 

@@ -78,6 +78,10 @@ public class ActiveInstanceState implements ActiveInstanceStateProvider {
      * @param serverId ID of this server instance
      */
     public void update(String serverId) throws AtlasBaseException {
+        if (!haSupport.isHAEnabled(configuration)) {
+            return;
+        }
+
         try {
             CuratorFramework            client                 = curatorFactory.clientInstance();
 
@@ -121,8 +125,16 @@ public class ActiveInstanceState implements ActiveInstanceStateProvider {
      */
     @Override
     public String getActiveServerAddress() {
+        if (!haSupport.isHAEnabled(configuration)) {
+            return null;
+        }
+
         CuratorFramework            client         = curatorFactory.clientInstance();
         String                      serverAddress  = null;
+
+        if (client == null) {
+            return null;
+        }
 
         try {
             HighAvailabilityProperties zookeeperProperties = haSupport.getZookeeperProperties(configuration);

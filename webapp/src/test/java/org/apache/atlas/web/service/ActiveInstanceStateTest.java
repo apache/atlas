@@ -18,8 +18,10 @@
 
 package org.apache.atlas.web.service;
 
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.server.common.service.ActiveInstanceState;
+import org.apache.atlas.server.common.service.HighAvailabilityProperties;
 import org.apache.atlas.server.common.service.HighAvailabilitySupport;
 import org.apache.atlas.server.common.service.CuratorFactory;
 import org.apache.commons.configuration.Configuration;
@@ -50,6 +52,31 @@ import static org.testng.Assert.assertNull;
 public class ActiveInstanceStateTest {
     private static final String HOST_PORT      = "127.0.0.1:21000";
     public static final  String SERVER_ADDRESS = "http://" + HOST_PORT;
+
+    /** Tests exercise ZK/Curator paths used only when HA is enabled. */
+    private static final HighAvailabilitySupport HA_SUPPORT_FOR_TESTS = new HighAvailabilitySupport() {
+        private final HighAvailabilitySupport defaults = new HighAvailabilitySupport.AtlasConfigurationDefaults();
+
+        @Override
+        public boolean isHAEnabled(Configuration configuration) {
+            return true;
+        }
+
+        @Override
+        public String selectServerId(Configuration configuration) throws AtlasException {
+            return defaults.selectServerId(configuration);
+        }
+
+        @Override
+        public String getBoundAddressForId(Configuration configuration, String serverId) {
+            return defaults.getBoundAddressForId(configuration, serverId);
+        }
+
+        @Override
+        public HighAvailabilityProperties getZookeeperProperties(Configuration configuration) {
+            return defaults.getZookeeperProperties(configuration);
+        }
+    };
 
     @Mock
     private Configuration configuration;
@@ -87,7 +114,7 @@ public class ActiveInstanceStateTest {
 
         when(curatorFramework.setData()).thenReturn(setDataBuilder);
 
-        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory, new HighAvailabilitySupport.AtlasConfigurationDefaults());
+        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory, HA_SUPPORT_FOR_TESTS);
 
         activeInstanceState.update("id1");
 
@@ -121,7 +148,7 @@ public class ActiveInstanceStateTest {
 
         when(curatorFramework.setData()).thenReturn(setDataBuilder);
 
-        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory, new HighAvailabilitySupport.AtlasConfigurationDefaults());
+        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory, HA_SUPPORT_FOR_TESTS);
 
         activeInstanceState.update("id1");
 
@@ -144,7 +171,7 @@ public class ActiveInstanceStateTest {
 
         when(curatorFramework.setData()).thenReturn(setDataBuilder);
 
-        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory, new HighAvailabilitySupport.AtlasConfigurationDefaults());
+        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory, HA_SUPPORT_FOR_TESTS);
 
         activeInstanceState.update("id1");
 
@@ -161,7 +188,7 @@ public class ActiveInstanceStateTest {
         when(curatorFramework.getData()).thenReturn(getDataBuilder);
         when(getDataBuilder.forPath(getPath())).thenReturn(SERVER_ADDRESS.getBytes(StandardCharsets.UTF_8));
 
-        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory, new HighAvailabilitySupport.AtlasConfigurationDefaults());
+        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory, HA_SUPPORT_FOR_TESTS);
         String              actualServerAddress = activeInstanceState.getActiveServerAddress();
 
         assertEquals(actualServerAddress, SERVER_ADDRESS);
@@ -177,7 +204,7 @@ public class ActiveInstanceStateTest {
         when(curatorFramework.getData()).thenReturn(getDataBuilder);
         when(getDataBuilder.forPath(getPath())).thenThrow(new Exception());
 
-        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory, new HighAvailabilitySupport.AtlasConfigurationDefaults());
+        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory, HA_SUPPORT_FOR_TESTS);
 
         assertNull(activeInstanceState.getActiveServerAddress());
     }
