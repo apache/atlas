@@ -73,7 +73,9 @@ public class CuratorFactory {
         this.configuration = configuration;
         this.haSupport     = haSupport;
 
-        initializeCuratorFramework();
+        if (haSupport.isHAEnabled(configuration)) {
+            initializeCuratorFramework();
+        }
     }
 
     /**

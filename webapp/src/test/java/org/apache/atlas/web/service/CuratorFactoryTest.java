@@ -62,6 +62,8 @@ public class CuratorFactoryTest {
     }
 
     private CuratorFactory buildCuratorFactory() {
+        when(haSupport.isHAEnabled(configuration)).thenReturn(true);
+
         return new CuratorFactory(configuration, haSupport) {
             @Override
             protected void initializeCuratorFramework() {

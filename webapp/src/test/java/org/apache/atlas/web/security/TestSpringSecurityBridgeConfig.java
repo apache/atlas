@@ -21,6 +21,7 @@ import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBri
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
@@ -30,8 +31,13 @@ import java.util.List;
  * Loads {@code test-spring-security.xml} for tests (e.g. {@link FileAuthenticationTest}) and
  * registers {@link AtlasAuthenticationProviderBridge} for Knox/ Kerberos filters declared in XML.
  * XML alone cannot express the bridge; production uses {@link AtlasSecurityConfig} instead.
+ * <p>
+ * Profile-gated so classpath scanning for embedded-server / full webapp tests does not import
+ * {@code test-spring-security.xml} alongside {@link AtlasSecurityConfig} (that overlap creates a
+ * circular dependency between the Knox SSO filter and {@code atlasAuthenticationProviderBridge}).
  */
 @Configuration
+@Profile("testSpringSecurityBridge")
 @ImportResource("classpath:test-spring-security.xml")
 public class TestSpringSecurityBridgeConfig {
 
