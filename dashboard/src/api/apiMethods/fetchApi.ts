@@ -20,6 +20,40 @@ import { globalSessionData } from "../../utils/Enum";
 import { toast } from "react-toastify";
 import { serverErrorHandler } from "@utils/Utils";
 
+/** Keep 403 toasts readable (Atlas authorization message). */
+const FORBIDDEN_ERROR_TOAST_MS = 5_000;
+/**
+ * Callers often `toast.dismiss(ref.current)` in catch when `ref.current` is null;
+ * react-toastify then clears all toasts and removes the 403 toast we just showed.
+ * Queue the toast as a macrotask so it runs after that dismiss.
+ */
+const FETCH_API_FORBIDDEN_TOAST_ID = "fetch-api-http-403";
+
+const showForbiddenToastLater = (
+  responseData: unknown,
+  defaultMessage: string
+) => {
+  setTimeout(() => {
+    let message = defaultMessage;
+    if (responseData && typeof responseData === "object") {
+      const d = responseData as {
+        errorMessage?: unknown;
+        message?: unknown;
+        error?: unknown;
+      };
+      message =
+        (d.errorMessage as string | undefined) ||
+        (d.message as string | undefined) ||
+        (d.error as string | undefined) ||
+        message;
+    }
+    toast.error(message, {
+      toastId: FETCH_API_FORBIDDEN_TOAST_ID,
+      autoClose: FORBIDDEN_ERROR_TOAST_MS
+    });
+  }, 0);
+};
+
 let prevNetworkErrorTime = 0;
 
 function errorHandelingForAbortAndStatus0() {
@@ -61,10 +95,12 @@ const fetchApi = async (url: string, config: AxiosRequestConfig) => {
             window.location.replace("login.jsp");
             break;
           case 403:
-            // Match classic UI (Utils.defaultErrorHandler): show API message via
-            // notify/toast only; do not redirect — user stays on current screen.
-            serverErrorHandler(
-              { responseJSON: error.response?.data },
+            // Match classic UI: toast only, no redirect. Defer toast so callers
+            // that dismiss all toasts in catch (e.g. toast.dismiss(null ref)) do
+            // not remove this notification before it is shown — see
+            // showForbiddenToastLater.
+            showForbiddenToastLater(
+              error.response?.data,
               "You are not authorized"
             );
             break;
