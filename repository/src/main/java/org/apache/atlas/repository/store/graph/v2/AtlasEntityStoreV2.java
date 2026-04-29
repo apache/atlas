@@ -108,6 +108,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final IAtlasEntityChangeNotifier entityChangeNotifier;
     private final EntityGraphMapper          entityGraphMapper;
     private final EntityGraphRetriever       entityRetriever;
+    private       EntityRenameHandler        entityRenameHandler;
     private       boolean                    storeDifferentialAudits;
 
     @Inject
@@ -119,6 +120,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.entityGraphMapper       = entityGraphMapper;
         this.entityRetriever         = new EntityGraphRetriever(graph, typeRegistry);
         this.storeDifferentialAudits = STORE_DIFFERENTIAL_AUDITS.getBoolean();
+    }
+
+    @Inject
+    public void setEntityRenameHandler(EntityRenameHandler entityRenameHandler) {
+        this.entityRenameHandler = entityRenameHandler;
     }
 
     @VisibleForTesting
@@ -1202,6 +1208,43 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
+    private void handleRenamePropagation(boolean isPartialUpdate, AtlasEntity entity, AtlasEntityType entityType,
+                                         AtlasVertex vertex, EntityMutationContext context) throws org.apache.atlas.exception.AtlasBaseException {
+        try {
+            if (!isPartialUpdate || entityRenameHandler == null) {
+                return;
+            }
+
+            if (CollectionUtils.isEmpty(entityType.getRenamePropagationTargets())) {
+                return;
+            }
+
+            String oldUniqueAttrValue = AtlasGraphUtilsV2.getProperty(vertex, entityType.getVertexPropertyName(AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME), String.class);
+            String newUniqueAttrValue = (String) entity.getAttribute(AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME);
+
+            if (StringUtils.isBlank(oldUniqueAttrValue) || StringUtils.isBlank(newUniqueAttrValue)) {
+                return;
+            }
+
+            if (StringUtils.equals(oldUniqueAttrValue, newUniqueAttrValue)) {
+                return;
+            }
+
+            // TOTDO:
+            if (!newUniqueAttrValue.toLowerCase().contains("sb_latest")) {
+                LOG.info("SANKET:DEBUG:HOOK: Skipping rename propagation for entity ");
+                return;
+            }
+
+            // Rename detected: populate dependent entities into the mutation context
+            entityRenameHandler.addDependentsToContext(context, entityType, vertex, entity);
+            //context.getUpdatedEntities().clear();
+        } catch (Exception e) {
+           // context.getUpdatedEntities().clear();
+            throw new RuntimeException(e);
+        }
+    }
+
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("preCreateOrUpdate");
 
@@ -1251,6 +1294,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     }
                     if (!isEntityIncomplete(vertex)) { // In case of an import shell entities, skip updating to entitiesCreated, to avoid mapAttributesAndClassification // In case of hook shell entities, it will not reach to this case
                         context.addUpdated(guid, entity, entityType, vertex);
+
+                        handleRenamePropagation(isPartialUpdate, entity, entityType, vertex, context);
                     }
                 } else {
                     graphDiscoverer.validateAndNormalize(entity);

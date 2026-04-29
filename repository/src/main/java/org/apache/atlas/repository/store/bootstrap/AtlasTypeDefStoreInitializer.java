@@ -397,8 +397,14 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
     private void startInternal() {
         try {
+            // TODO: SANKET:INFO : This is the first step to load the types from the database.
+            LOG.info("SANKET:INFO : This is the first step to load the types from the database.");
             typeDefStore.init();
+            // TODO: SANKET:INFO : This is the second step to load the types from the models.
+            LOG.info("SANKET:INFO : This is the second step to load the types from the models.");
             loadBootstrapTypeDefs();
+            // TODO: SANKET:INFO : This is the third step to notify the load completion.
+            LOG.info("SANKET:INFO : This is the third step to notify the load completion.");
             typeDefStore.notifyLoadCompletion();
             try {
                 AtlasAuthorizerFactory.getAtlasAuthorizer();
@@ -462,6 +468,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     new RemoveLegacyRefAttributesPatchHandler(typeDefStore, typeRegistry),
                     new UpdateTypeDefOptionsPatchHandler(typeDefStore, typeRegistry),
                     new SetServiceTypePatchHandler(typeDefStore, typeRegistry),
+                    new SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry),
                     new UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph),
                     new AddSuperTypePatchHandler(typeDefStore, typeRegistry),
                     new AddMandatoryAttributePatchHandler(typeDefStore, typeRegistry)
@@ -1176,6 +1183,100 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             }
 
             return ret;
+        }
+    }
+
+    /**
+     * Applies {@code SET_ATTRIBUTE_DEF_OVERRIDES} on entity typedefs and {@code SET_PROPAGATE_RENAME} on relationship typedefs.
+     */
+    static class SetAttributeDefOverridesPatchHandler extends PatchHandler {
+        private static final String ACTION_SET_ATTRIBUTE_DEF_OVERRIDES = "SET_ATTRIBUTE_DEF_OVERRIDES";
+        private static final String ACTION_SET_PROPAGATE_RENAME         = "SET_PROPAGATE_RENAME";
+
+        SetAttributeDefOverridesPatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
+            super(typeDefStore, typeRegistry, new String[] {ACTION_SET_ATTRIBUTE_DEF_OVERRIDES, ACTION_SET_PROPAGATE_RENAME});
+        }
+
+        @Override
+        public PatchStatus applyPatch(TypeDefPatch patch) throws AtlasBaseException {
+            String           typeName = patch.getTypeName();
+            AtlasBaseTypeDef typeDef  = typeRegistry.getTypeDefByName(typeName);
+
+            if (typeDef == null) {
+                throw new AtlasBaseException(AtlasErrorCode.PATCH_FOR_UNKNOWN_TYPE, patch.getAction(), typeName);
+            }
+
+            if (!isPatchApplicable(patch, typeDef)) {
+                LOG.info("patch skipped: typeName={}; applyToVersion={}; updateToVersion={}",
+                        patch.getTypeName(), patch.getApplyToVersion(), patch.getUpdateToVersion());
+
+                return SKIPPED;
+            }
+
+            String action = patch.getAction();
+
+            if (ACTION_SET_ATTRIBUTE_DEF_OVERRIDES.equals(action)) {
+                if (!(typeDef instanceof AtlasEntityDef)) {
+                    throw new AtlasBaseException(AtlasErrorCode.PATCH_NOT_APPLICABLE_FOR_TYPE, patch.getAction(),
+                            typeDef.getClass().getSimpleName());
+                }
+
+                return applyEntityDefOverrides(patch, (AtlasEntityDef) typeDef);
+            } else if (ACTION_SET_PROPAGATE_RENAME.equals(action)) {
+                if (!(typeDef instanceof AtlasRelationshipDef)) {
+                    throw new AtlasBaseException(AtlasErrorCode.PATCH_NOT_APPLICABLE_FOR_TYPE, patch.getAction(),
+                            typeDef.getClass().getSimpleName());
+                }
+
+                return applyPropagateRename(patch, (AtlasRelationshipDef) typeDef);
+            }
+
+            throw new AtlasBaseException(AtlasErrorCode.PATCH_INVALID_DATA, patch.getAction(), typeName);
+        }
+
+        private PatchStatus applyEntityDefOverrides(TypeDefPatch patch, AtlasEntityDef typeDef) throws AtlasBaseException {
+            AtlasEntityDef updatedDef = new AtlasEntityDef(typeDef);
+
+            updatedDef.setAttributeDefOverrides(patch.getAttributeDefs());
+            updatedDef.setTypeVersion(patch.getUpdateToVersion());
+
+            typeDefStore.updateEntityDefByName(typeDef.getName(), updatedDef);
+
+            return APPLIED;
+        }
+
+        private PatchStatus applyPropagateRename(TypeDefPatch patch, AtlasRelationshipDef typeDef) throws AtlasBaseException {
+            Object endDefObj = patch.getParams() != null ? patch.getParams().get("endDefNumber") : null;
+            String endDefNumber = endDefObj != null ? String.valueOf(endDefObj).trim() : null;
+
+            boolean useEndDef2 = "endDef2".equalsIgnoreCase(endDefNumber);
+            boolean useEndDef1 = "endDef1".equalsIgnoreCase(endDefNumber);
+
+            if (endDefNumber == null || (!useEndDef1 && !useEndDef2)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
+                        "SET_PROPAGATE_RENAME patch for '" + typeDef.getName()
+                                + "' must set params.endDefNumber to \"endDef1\" or \"endDef2\", got: "
+                                + endDefNumber);
+            }
+
+            AtlasRelationshipDef updatedDef = new AtlasRelationshipDef(typeDef);
+
+            if (useEndDef2) {
+                AtlasRelationshipEndDef end2 = new AtlasRelationshipEndDef(updatedDef.getEndDef2());
+
+                end2.setIsPropagateRename(true);
+                updatedDef.setEndDef2(end2);
+            } else {
+                AtlasRelationshipEndDef end1 = new AtlasRelationshipEndDef(updatedDef.getEndDef1());
+
+                end1.setIsPropagateRename(true);
+                updatedDef.setEndDef1(end1);
+            }
+
+            updatedDef.setTypeVersion(patch.getUpdateToVersion());
+            typeDefStore.updateRelationshipDefByName(typeDef.getName(), updatedDef);
+
+            return APPLIED;
         }
     }
 

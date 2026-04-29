@@ -928,6 +928,202 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     @Test
+    public void testSetAttributeDefOverridesPatchHandlerSupportedActions() {
+        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
+                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+
+        String[] actions = handler.getSupportedActions();
+        assertEquals(actions.length, 2);
+        assertEquals(actions[0], "SET_ATTRIBUTE_DEF_OVERRIDES");
+        assertEquals(actions[1], "SET_PROPAGATE_RENAME");
+    }
+
+    @Test
+    public void testSetAttributeDefOverridesPatchHandlerApplyOverrides() throws Exception {
+        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
+                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+
+        Object patch = createMockTypeDefPatch("SET_ATTRIBUTE_DEF_OVERRIDES", "TestEntity", "1.0", "2.0");
+
+        AtlasEntityDef entityDef = new AtlasEntityDef("TestEntity", "desc", "1.0");
+        when(typeRegistry.getTypeDefByName("TestEntity")).thenReturn(entityDef);
+
+        AtlasAttributeDef overrideAttr = new AtlasAttributeDef("qualifiedName", "string");
+        overrideAttr.setAutoComputeFormat("{db}.{name}");
+        setField(patch, "attributeDefs", Arrays.asList(overrideAttr));
+
+        PatchStatus result = handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch);
+        assertEquals(result, APPLIED);
+        verify(typeDefStore).updateEntityDefByName(eq("TestEntity"), any());
+    }
+
+    @Test
+    public void testSetAttributeDefOverridesPatchHandlerApplyOverridesSkipped() throws Exception {
+        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
+                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+
+        Object patch = createMockTypeDefPatch("SET_ATTRIBUTE_DEF_OVERRIDES", "TestEntity", "2.0", "3.0");
+
+        AtlasEntityDef entityDef = new AtlasEntityDef("TestEntity", "desc", "1.0");
+        when(typeRegistry.getTypeDefByName("TestEntity")).thenReturn(entityDef);
+
+        AtlasAttributeDef overrideAttr = new AtlasAttributeDef("qualifiedName", "string");
+        setField(patch, "attributeDefs", Arrays.asList(overrideAttr));
+
+        PatchStatus result = handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch);
+        assertEquals(result, SKIPPED);
+        verify(typeDefStore, never()).updateEntityDefByName(anyString(), any());
+    }
+
+    @Test
+    public void testSetAttributeDefOverridesPatchHandlerApplyOverridesWrongType() throws Exception {
+        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
+                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+
+        Object patch = createMockTypeDefPatch("SET_ATTRIBUTE_DEF_OVERRIDES", "TestRelationship", "1.0", "2.0");
+
+        AtlasRelationshipDef relationshipDef = new AtlasRelationshipDef();
+        relationshipDef.setName("TestRelationship");
+        relationshipDef.setTypeVersion("1.0");
+        relationshipDef.setEndDef1(new AtlasRelationshipEndDef("E1", "a1", AtlasAttributeDef.Cardinality.SINGLE));
+        relationshipDef.setEndDef2(new AtlasRelationshipEndDef("E2", "a2", AtlasAttributeDef.Cardinality.SINGLE));
+        when(typeRegistry.getTypeDefByName("TestRelationship")).thenReturn(relationshipDef);
+
+        AtlasAttributeDef overrideAttr = new AtlasAttributeDef("qualifiedName", "string");
+        setField(patch, "attributeDefs", Arrays.asList(overrideAttr));
+
+        expectThrows(AtlasBaseException.class, () -> handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch));
+    }
+
+    @Test
+    public void testSetAttributeDefOverridesPatchHandlerPropagateRenameEnd1() throws Exception {
+        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
+                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+
+        Object patch = createMockTypeDefPatch("SET_PROPAGATE_RENAME", "TestRelationship", "1.0", "2.0");
+
+        AtlasRelationshipDef relationshipDef = new AtlasRelationshipDef();
+        relationshipDef.setName("TestRelationship");
+        relationshipDef.setTypeVersion("1.0");
+        relationshipDef.setEndDef1(new AtlasRelationshipEndDef("E1", "a1", AtlasAttributeDef.Cardinality.SINGLE));
+        relationshipDef.setEndDef2(new AtlasRelationshipEndDef("E2", "a2", AtlasAttributeDef.Cardinality.SINGLE));
+        when(typeRegistry.getTypeDefByName("TestRelationship")).thenReturn(relationshipDef);
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("endDefNumber", "endDef1");
+        setField(patch, "params", params);
+
+        PatchStatus result = handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch);
+        assertEquals(result, APPLIED);
+        verify(typeDefStore).updateRelationshipDefByName(eq("TestRelationship"), any());
+    }
+
+    @Test
+    public void testSetAttributeDefOverridesPatchHandlerPropagateRenameEnd2() throws Exception {
+        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
+                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+
+        Object patch = createMockTypeDefPatch("SET_PROPAGATE_RENAME", "TestRelationship", "1.0", "2.0");
+
+        AtlasRelationshipDef relationshipDef = new AtlasRelationshipDef();
+        relationshipDef.setName("TestRelationship");
+        relationshipDef.setTypeVersion("1.0");
+        relationshipDef.setEndDef1(new AtlasRelationshipEndDef("E1", "a1", AtlasAttributeDef.Cardinality.SINGLE));
+        relationshipDef.setEndDef2(new AtlasRelationshipEndDef("E2", "a2", AtlasAttributeDef.Cardinality.SINGLE));
+        when(typeRegistry.getTypeDefByName("TestRelationship")).thenReturn(relationshipDef);
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("endDefNumber", "endDef2");
+        setField(patch, "params", params);
+
+        PatchStatus result = handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch);
+        assertEquals(result, APPLIED);
+        verify(typeDefStore).updateRelationshipDefByName(eq("TestRelationship"), any());
+    }
+
+    @Test
+    public void testSetAttributeDefOverridesPatchHandlerPropagateRenameInvalidEndDef() throws Exception {
+        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
+                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+
+        Object patch = createMockTypeDefPatch("SET_PROPAGATE_RENAME", "TestRelationship", "1.0", "2.0");
+
+        AtlasRelationshipDef relationshipDef = new AtlasRelationshipDef();
+        relationshipDef.setName("TestRelationship");
+        relationshipDef.setTypeVersion("1.0");
+        relationshipDef.setEndDef1(new AtlasRelationshipEndDef("E1", "a1", AtlasAttributeDef.Cardinality.SINGLE));
+        relationshipDef.setEndDef2(new AtlasRelationshipEndDef("E2", "a2", AtlasAttributeDef.Cardinality.SINGLE));
+        when(typeRegistry.getTypeDefByName("TestRelationship")).thenReturn(relationshipDef);
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("endDefNumber", "endDef3");
+        setField(patch, "params", params);
+
+        expectThrows(AtlasBaseException.class, () -> handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch));
+    }
+
+    @Test
+    public void testSetAttributeDefOverridesPatchHandlerPropagateRenameMissingParam() throws Exception {
+        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
+                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+
+        Object patch = createMockTypeDefPatch("SET_PROPAGATE_RENAME", "TestRelationship", "1.0", "2.0");
+
+        AtlasRelationshipDef relationshipDef = new AtlasRelationshipDef();
+        relationshipDef.setName("TestRelationship");
+        relationshipDef.setTypeVersion("1.0");
+        relationshipDef.setEndDef1(new AtlasRelationshipEndDef("E1", "a1", AtlasAttributeDef.Cardinality.SINGLE));
+        relationshipDef.setEndDef2(new AtlasRelationshipEndDef("E2", "a2", AtlasAttributeDef.Cardinality.SINGLE));
+        when(typeRegistry.getTypeDefByName("TestRelationship")).thenReturn(relationshipDef);
+
+        setField(patch, "params", new HashMap<String, Object>());
+
+        expectThrows(AtlasBaseException.class, () -> handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch));
+    }
+
+    @Test
+    public void testSetAttributeDefOverridesPatchHandlerPropagateRenameWrongType() throws Exception {
+        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
+                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+
+        Object patch = createMockTypeDefPatch("SET_PROPAGATE_RENAME", "TestEntity", "1.0", "2.0");
+
+        AtlasEntityDef entityDef = new AtlasEntityDef("TestEntity", "desc", "1.0");
+        when(typeRegistry.getTypeDefByName("TestEntity")).thenReturn(entityDef);
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("endDefNumber", "endDef1");
+        setField(patch, "params", params);
+
+        expectThrows(AtlasBaseException.class, () -> handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch));
+    }
+
+    @Test
+    public void testSetAttributeDefOverridesPatchHandlerUnknownType() throws Exception {
+        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
+                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+
+        Object patch = createMockTypeDefPatch("SET_ATTRIBUTE_DEF_OVERRIDES", "UnknownType", "1.0", "2.0");
+        when(typeRegistry.getTypeDefByName("UnknownType")).thenReturn(null);
+
+        expectThrows(AtlasBaseException.class, () -> handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch));
+    }
+
+    @Test
+    public void testSetAttributeDefOverridesPatchHandlerInvalidAction() throws Exception {
+        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
+                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+
+        Object patch = createMockTypeDefPatch("SET_ATTRIBUTE_DEF_OVERRIDES", "TestEntity", "1.0", "2.0");
+        setField(patch, "action", "NOT_A_SUPPORTED_PATCH_ACTION");
+
+        AtlasEntityDef entityDef = new AtlasEntityDef("TestEntity", "desc", "1.0");
+        when(typeRegistry.getTypeDefByName("TestEntity")).thenReturn(entityDef);
+
+        expectThrows(AtlasBaseException.class, () -> handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch));
+    }
+
+    @Test
     public void testUpdateAttributeMetadataHandlerComprehensive() throws Exception {
         AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler handler = new AtlasTypeDefStoreInitializer.UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph);
 

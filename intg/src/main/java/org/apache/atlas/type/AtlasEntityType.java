@@ -24,6 +24,8 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef.AtlasRelationshipAttributeDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
+import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
@@ -107,7 +109,14 @@ public class AtlasEntityType extends AtlasStructType {
     private List<AtlasAttribute>                             dynAttributes            = Collections.emptyList();
     private List<AtlasAttribute>                             dynEvalTriggerAttributes = Collections.emptyList();
     private Map<String, List<TemplateToken>>                 parsedTemplates          = Collections.emptyMap();
-    private Set<String>                                      tagPropagationEdges      = Collections.emptySet();
+    private Set<String>                                      tagPropagationEdges           = Collections.emptySet();
+    private List<RenamePropagationTarget>                    renamePropagationTargets      = Collections.emptyList();
+    /**
+     * Referenced entity type name → dotted slot in {@code qualifiedName} {@code autoComputeFormat}
+     * for that type's {@code name} (used when that entity is renamed). Built in
+     * {@link #computeRenamePropagationTemplateMap(AtlasTypeRegistry)}.
+     */
+    private Map<String, String>                              renamePropagationTemplateMap  = Collections.emptyMap();
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
@@ -248,6 +257,14 @@ public class AtlasEntityType extends AtlasStructType {
         return this.tagPropagationEdges;
     }
 
+    public List<RenamePropagationTarget> getRenamePropagationTargets() {
+        return renamePropagationTargets;
+    }
+
+    public Map<String, String> getRenamePropagationTemplateMap() {
+        return renamePropagationTemplateMap;
+    }
+
     public String[] getTagPropagationEdgesArray() {
         return CollectionUtils.isNotEmpty(tagPropagationEdges) ? tagPropagationEdges.toArray(new String[tagPropagationEdges.size()]) : null;
     }
@@ -379,6 +396,7 @@ public class AtlasEntityType extends AtlasStructType {
             }
 
             tagPropagationEdges.addAll(superType.tagPropagationEdges);
+            renamePropagationTargets.addAll(superType.renamePropagationTargets);
         }
 
         ownedRefAttributes = new ArrayList<>();
@@ -405,6 +423,7 @@ public class AtlasEntityType extends AtlasStructType {
         businessAttributes       = Collections.unmodifiableMap(businessAttributes);
         ownedRefAttributes       = Collections.unmodifiableList(ownedRefAttributes);
         tagPropagationEdges      = Collections.unmodifiableSet(tagPropagationEdges);
+        renamePropagationTargets = Collections.unmodifiableList(renamePropagationTargets);
 
         entityDef.setSubTypes(subTypes);
 
@@ -458,6 +477,8 @@ public class AtlasEntityType extends AtlasStructType {
         this.parsedTemplates = parseDynAttributeTemplates();
 
         populateDynFlagsInfo();
+
+        computeRenamePropagationTemplateMap(typeRegistry);
 
         LOG.debug("resolveReferencesPhase3({}): tagPropagationEdges={}", getTypeName(), tagPropagationEdges);
     }
@@ -552,6 +573,8 @@ public class AtlasEntityType extends AtlasStructType {
         this.relationshipAttributes = new HashMap<>(); // this will be populated in resolveReferencesPhase3()
         this.businessAttributes     = new HashMap<>(); // this will be populated in resolveReferences(), from AtlasBusinessMetadataType
         this.tagPropagationEdges    = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
+        this.renamePropagationTargets     = new ArrayList<>(); // this will be populated in resolveReferencesPhase2()
+        this.renamePropagationTemplateMap = new HashMap<>();  // this will be populated in resolveReferencesPhase3()
 
         this.typeAndAllSubTypes.add(this.getTypeName());
 
@@ -860,6 +883,222 @@ public class AtlasEntityType extends AtlasStructType {
         if (propagatesTags) {
             tagPropagationEdges.add(relationshipType.getRelationshipLabel());
         }
+
+        addRenamePropagationTargetIfTriggered(relationshipType, attribute);
+    }
+
+    /**
+     * Fills {@link #renamePropagationTemplateMap}: parse {@code qualifiedName} {@code autoComputeFormat},
+     * for each {@code ….*.name} slot walk relationships to the referenced type, map type → slot
+     * ({@code putIfAbsent} per type). No-op if no template.
+     */
+    private void computeRenamePropagationTemplateMap(AtlasTypeRegistry typeRegistry) {
+        AtlasAttribute qnAttr = getAttribute(AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME);
+
+        if (qnAttr == null || qnAttr.getAttributeDef() == null) {
+            return;
+        }
+
+        String template = qnAttr.getAttributeDef().getAutoComputeFormat();
+
+        if (StringUtils.isBlank(template)) {
+            return;
+        }
+
+        List<String> slots      = extractTemplateSlots(template);
+        Map<String, String> map = new HashMap<>();
+
+        for (String slot : slots) {
+            String[] segments = slot.split("\\.");
+
+            // Single-segment slots (e.g. "name", "clusterName") are own attributes — not rename-relevant.
+            // Only process multi-segment slots that end in ".name".
+            if (segments.length < 2 || !NAME.equals(segments[segments.length - 1])) {
+                continue;
+            }
+
+            AtlasEntityType resolved = resolveSlotPath(slot, segments, typeRegistry);
+
+            if (resolved != null) {
+                // putIfAbsent: first matching slot per referenced type wins.
+                map.putIfAbsent(resolved.getTypeName(), slot);
+            }
+        }
+
+        if (!map.isEmpty()) {
+            this.renamePropagationTemplateMap = Collections.unmodifiableMap(map);
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("computeRenamePropagationTemplateMap({}): renamePropagationTemplateMap={}", getTypeName(), renamePropagationTemplateMap);
+        }
+    }
+
+    /**
+     * Walks each relationship hop in {@code segments[0..n-2]} starting from {@code this} type.
+     * Returns the entity type reached at the end of the path, or {@code null} with a WARN log
+     * on any invalid step (blank segment, missing/non-relationship attribute, unresolvable type,
+     * non-entity attribute type, or degenerate self-resolution).
+     */
+    private AtlasEntityType resolveSlotPath(String slot, String[] segments, AtlasTypeRegistry typeRegistry) {
+        // Walk segments[0..n-2] as relationship hops; segments[n-1] is "name" (already validated by caller).
+        // Blank-segment check is done inline to avoid a separate loop over segments.
+        AtlasEntityType currentType = this;
+
+        for (int i = 0; i < segments.length - 1; i++) {
+            String hop = segments[i];
+
+            // Guard: blank segment means a malformed template (e.g. "a..b.name").
+            if (StringUtils.isBlank(hop)) {
+                LOG.warn("computeRenamePropagationTemplateMap({}): slot '{}' has blank segment at hop {} — skipping",
+                        getTypeName(), slot, i);
+                return null;
+            }
+
+            // Resolve the relationship attribute for this hop.
+            AtlasAttribute relAttr = getFirstRelAttrByName(currentType, hop);
+
+            if (relAttr == null) {
+                // Give a more specific message: attribute exists but is a plain (non-relationship) attribute vs truly missing.
+                String reason = currentType.getAttribute(hop) != null
+                        ? "exists but is not a relationship attribute"
+                        : "not found on type '" + currentType.getTypeName() + "'";
+                LOG.warn("computeRenamePropagationTemplateMap({}): hop {} of slot '{}': relationship attribute '{}' {} — skipping",
+                        getTypeName(), i, slot, hop, reason);
+                return null;
+            }
+
+            // Resolve the entity type that the relationship attribute points to.
+            AtlasEntityType nextType;
+
+            try {
+                nextType = getReferencedEntityType(typeRegistry.getType(relAttr.getTypeName()));
+            } catch (AtlasBaseException e) {
+                LOG.warn("computeRenamePropagationTemplateMap({}): hop {} of slot '{}': cannot resolve type '{}' for attribute '{}' on '{}' — skipping",
+                        getTypeName(), i, slot, relAttr.getTypeName(), hop, currentType.getTypeName(), e);
+                return null;
+            }
+
+            // Guard: relationship attribute must point to an entity type (not a primitive or struct).
+            if (nextType == null) {
+                LOG.warn("computeRenamePropagationTemplateMap({}): hop {} of slot '{}': attribute '{}' on '{}' has type '{}' which is not an entity type — skipping",
+                        getTypeName(), i, slot, hop, currentType.getTypeName(), relAttr.getTypeName());
+                return null;
+            }
+
+            currentType = nextType;
+        }
+
+        // Guard: a valid path must reach a different type; resolving back to self means the template
+        // only references own attributes and carries no rename-propagation signal.
+        if (currentType == this) {
+            LOG.warn("computeRenamePropagationTemplateMap({}): slot '{}' path resolved back to '{}' — skipping",
+                    getTypeName(), slot, getTypeName());
+            return null;
+        }
+
+        return currentType;
+    }
+
+    /** Ordered list of strings inside each brace-delimited placeholder in the template. */
+    private static List<String> extractTemplateSlots(String template) {
+        List<String> slots = new ArrayList<>();
+        int          pos   = 0;
+
+        while (pos < template.length()) {
+            int open = template.indexOf(DYN_ATTRIBUTE_OPEN_DELIM, pos);
+
+            if (open == -1) {
+                break;
+            }
+
+            int close = template.indexOf(DYN_ATTRIBUTE_CLOSE_DELIM, open + 1);
+
+            if (close == -1) {
+                break;
+            }
+
+            String slot = template.substring(open + 1, close).trim();
+
+            if (!slot.isEmpty()) {
+                slots.add(slot);
+            }
+
+            pos = close + 1;
+        }
+
+        return slots;
+    }
+
+    /** First relationship attribute named {@code attributeName} on {@code entityType}, or {@code null}. */
+    private static AtlasAttribute getFirstRelAttrByName(AtlasEntityType entityType, String attributeName) {
+        Map<String, Map<String, AtlasAttribute>> relAttrs = entityType.getRelationshipAttributes();
+
+        if (MapUtils.isEmpty(relAttrs)) {
+            return null;
+        }
+
+        Map<String, AtlasAttribute> byRelType = relAttrs.get(attributeName);
+
+        return MapUtils.isNotEmpty(byRelType) ? byRelType.values().iterator().next() : null;
+    }
+
+    /**
+     * Adds one direct rename-propagation target when this entity type is the trigger end
+     * of the supplied relationship (that is, the matching endDef has propagateRename=true).
+     *
+     * Invoked during relationship attribute wiring in resolveReferencesPhase2 so runtime
+     * propagation can use precomputed targets instead of scanning typedefs per event.
+     */
+    private void addRenamePropagationTargetIfTriggered(AtlasRelationshipType relationshipType, AtlasAttribute relationshipAttribute) {
+        AtlasRelationshipEndDef endDef1 = relationshipType.getRelationshipDef().getEndDef1();
+        AtlasRelationshipEndDef endDef2 = relationshipType.getRelationshipDef().getEndDef2();
+
+        if (endDef1 == null || endDef2 == null) {
+            return;
+        }
+
+        String  thisTypeName  = getTypeName();
+        boolean triggerOnEnd1 = StringUtils.equals(relationshipType.getEnd1Type().getTypeName(), thisTypeName) && endDef1.getIsPropagateRename();
+        boolean triggerOnEnd2 = StringUtils.equals(relationshipType.getEnd2Type().getTypeName(), thisTypeName) && endDef2.getIsPropagateRename();
+
+        if (!triggerOnEnd1 && !triggerOnEnd2) {
+            return;
+        }
+
+        String targetTypeName = triggerOnEnd1
+                ? relationshipType.getEnd2Type().getTypeName()
+                : relationshipType.getEnd1Type().getTypeName();
+
+        List<Map<String, String>> propagateAttributes = triggerOnEnd1
+                ? endDef1.getPropagateAttributes()
+                : endDef2.getPropagateAttributes();
+
+        RelationshipCategory category = relationshipType.getRelationshipDef().getRelationshipCategory();
+        RenamePropagationTarget target = new RenamePropagationTarget(targetTypeName, category, relationshipAttribute, propagateAttributes != null ? propagateAttributes : Collections.emptyList());
+
+        if (!containsRenamePropagationTarget(target)) {
+            renamePropagationTargets.add(target);
+        }
+    }
+
+    /**
+     * Returns true when an equivalent direct target is already present.
+     */
+    private boolean containsRenamePropagationTarget(RenamePropagationTarget candidate) {
+        if (candidate == null) {
+            return false;
+        }
+
+        for (RenamePropagationTarget existing : renamePropagationTargets) {
+            if (StringUtils.equals(existing.getTargetTypeName(), candidate.getTargetTypeName()) &&
+                    existing.getCategory() == candidate.getCategory() &&
+                    existing.getRelAttr() == candidate.getRelAttr()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     boolean isAssignableFrom(AtlasObjectId objId) {
@@ -897,10 +1136,13 @@ public class AtlasEntityType extends AtlasStructType {
         List<String>        visitedTypes             = new ArrayList<>();
         Map<String, String> attributeToEntityNameMap = new HashMap<>();
 
-        collectTypeHierarchyInfo(typeRegistry, allSuperTypeNames, allAttributes, attributeToEntityNameMap, visitedTypes);
+        // Pass this entity's attributeDefOverrides so that collectTypeHierarchyInfo can apply
+        // them inline when it encounters the inherited qualifiedName attribute, avoiding a
+        // separate post-construction mutation pass in resolveReferences().
+        collectTypeHierarchyInfo(typeRegistry, allSuperTypeNames, allAttributes, attributeToEntityNameMap, visitedTypes, entityDef.getAttributeDefOverrides());
     }
 
-    private void collectTypeHierarchyInfo(AtlasTypeRegistry typeRegistry, Set<String> allSuperTypeNames, Map<String, AtlasAttribute> allAttributes, Map<String, String> attributeToEntityNameMap, List<String> visitedTypes) throws AtlasBaseException {
+    private void collectTypeHierarchyInfo(AtlasTypeRegistry typeRegistry, Set<String> allSuperTypeNames, Map<String, AtlasAttribute> allAttributes, Map<String, String> attributeToEntityNameMap, List<String> visitedTypes, List<AtlasAttributeDef> derivedEntityOverrides) throws AtlasBaseException {
         if (visitedTypes.contains(entityDef.getName())) {
             throw new AtlasBaseException(AtlasErrorCode.CIRCULAR_REFERENCE, entityDef.getName(), visitedTypes.toString());
         }
@@ -912,7 +1154,7 @@ public class AtlasEntityType extends AtlasStructType {
                 AtlasEntityType superType = typeRegistry.getEntityTypeByName(superTypeName);
 
                 if (superType != null) {
-                    superType.collectTypeHierarchyInfo(typeRegistry, allSuperTypeNames, allAttributes, attributeToEntityNameMap, visitedTypes);
+                    superType.collectTypeHierarchyInfo(typeRegistry, allSuperTypeNames, allAttributes, attributeToEntityNameMap, visitedTypes, derivedEntityOverrides);
                 }
             }
 
@@ -933,10 +1175,39 @@ public class AtlasEntityType extends AtlasStructType {
                     }
                 }
 
-                allAttributes.put(attributeName, new AtlasAttribute(this, attributeDef, type));
+                AtlasAttributeDef attrDefToUse = getAttrDefWithOverrides(attributeDef, attributeName, derivedEntityOverrides);
+
+                allAttributes.put(attributeName, new AtlasAttribute(this, attrDefToUse, type));
                 attributeToEntityNameMap.put(attributeName, entityDef.getName());
             }
         }
+    }
+
+    /**
+     * Returns the {@link AtlasAttributeDef} to use when building {@code allAttributes} for a derived
+     * entity type.  For {@code qualifiedName}, if the derived entity carries an
+     * {@code attributeDefOverrides} entry that specifies an {@code autoComputeFormat}, a fresh copy
+     * of the base {@code attributeDef} is returned with that format applied.  This keeps the
+     * declaring type's (e.g. {@code Referenceable}) shared {@code AtlasAttributeDef} instance
+     * immutable while giving each derived type its own independently overrideable copy.
+     * For all other attributes the original shared instance is returned unchanged.
+     */
+    private static AtlasAttributeDef getAttrDefWithOverrides(AtlasAttributeDef attributeDef, String attributeName, List<AtlasAttributeDef> derivedEntityOverrides) {
+        if (!AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME.equals(attributeName) || CollectionUtils.isEmpty(derivedEntityOverrides)) {
+            return attributeDef;
+        }
+
+        for (AtlasAttributeDef override : derivedEntityOverrides) {
+            if (AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME.equals(override.getName()) && override.getAutoComputeFormat() != null) {
+                AtlasAttributeDef copy = new AtlasAttributeDef(attributeDef);
+
+                copy.setAutoComputeFormat(override.getAutoComputeFormat());
+
+                return copy;
+            }
+        }
+
+        return attributeDef;
     }
 
     private void populateDynFlagsInfo() {

@@ -69,6 +69,10 @@ public final class Constants {
     public static final String TYPEDESCRIPTION_PROPERTY_KEY = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.description");
     public static final String TYPEVERSION_PROPERTY_KEY     = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.version");
     public static final String TYPEOPTIONS_PROPERTY_KEY     = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.options");
+    /**
+     * JSON-serialized {@code List<AtlasAttributeDef>} for entity typedef attribute overrides (e.g. qualifiedName format).
+     */
+    public static final String ENTITY_ATTR_DEF_OVERRIDES_PROPERTY_KEY = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "entity.attrDefOverrides");
     public static final String TYPESERVICETYPE_PROPERTY_KEY = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.servicetype");
 
     // relationship def constants
