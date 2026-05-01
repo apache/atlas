@@ -48,7 +48,7 @@ capabilities around these data assets for data scientists, analysts and the data
 
 ## Getting Started
 
-   * [What's new in Apache Atlas 2.4?](#/WhatsNew-2.4)
+   * [What's new in Apache Atlas 2.5?](#/WhatsNew-2.5)
    * [Build & Install](#/Installation)
    * [Quick Start](#/QuickStart)
 
