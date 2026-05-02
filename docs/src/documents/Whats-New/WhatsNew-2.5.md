@@ -14,7 +14,6 @@ submenu: Whats New
 * **Graph / persistence**: support for RDBMS backend and RDBMS-backed audit repository
 * **UI**: React UI as the default landing experience; Lineage experience migrated from Backbone.js to React; legacy Backbone.js “New UI” removed
 * **Configuration**: support to load custom application properties; option to customize the configuration filename; optional disabling of composite indexes
-* **PostgreSQL**: decrypt PostgreSQL password when configured for encrypted storage
 
 ## Enhancements
 * **Platform**
