@@ -193,13 +193,19 @@ export const attributeFilter = {
             let temp = obj.split("::") || obj.split("|" + spliter + "|");
             let rule = {};
             if (apiObj) {
+              const attrName = temp[0];
+              const isDateAttr =
+                temp[3] === "date" ||
+                attrName === "__timestamp" ||
+                attrName === "__modificationTimestamp" ||
+                attrName === "createTime";
               rule = {
-                attributeName: temp[0],
+                attributeName: attrName,
                 operator: mapUiOperatorToAPI(temp[1]),
                 attributeValue: temp[2]?.trim()
               };
               rule.attributeValue =
-                rule.type === "date" && formatDate && rule.attributeValue.length
+                isDateAttr && formatDate && rule.attributeValue?.length
                   ? formatedDate({
                       date: parseInt(rule.attributeValue),
                       zone: false
@@ -231,9 +237,12 @@ export const attributeFilter = {
                     rule.value;
                 }
               } else if (
-                (rule.type === "date" || rule.attributeName == "createTime") &&
+                (rule.type === "date" ||
+                  rule.attributeName === "createTime" ||
+                  rule.id === "__timestamp" ||
+                  rule.id === "__modificationTimestamp") &&
                 formatDate &&
-                rule.value.length
+                rule.value?.length
               ) {
                 rule.value = formatedDate({
                   date: parseInt(rule.value),

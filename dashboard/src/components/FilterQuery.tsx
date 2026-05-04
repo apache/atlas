@@ -22,8 +22,12 @@ import { attributeFilter } from "@utils/CommonViewFunction";
 import {
   queryBuilderDateRangeUIValueToAPI,
   systemAttributes,
-  filterQueryValue
+  filterQueryValue,
+  getDisplayOperator
 } from "@utils/Enum";
+import { removeCriterionFromFilterUrl } from "@utils/filterUrlCriterionRemoval";
+import type { ParsedApiFilter } from "@utils/filterUrlCriterionRemoval";
+import { dateTimeFormat } from "@utils/Global";
 import moment from "moment";
 import { useLocation, useNavigate } from "react-router-dom";
 import { globalSearchFilterInitialQuery } from "@utils/Utils";
@@ -45,13 +49,18 @@ export const FilterQuery = ({ value }: any) => {
           </Typography>
         );
       } else {
-        if (obj.type === "date" || obj.id == "createTime") {
+        const isDateAttr =
+          obj.type === "date" ||
+          obj.id === "createTime" ||
+          obj.id === "__timestamp" ||
+          obj.id === "__modificationTimestamp";
+        if (isDateAttr) {
           if (queryBuilderDateRangeUIValueToAPI[obj.value]) {
             obj.value = queryBuilderDateRangeUIValueToAPI[obj.value];
+          } else if (/^\d+$/.test(String(obj.value))) {
+            obj.value = `${moment(Number(obj.value)).format(dateTimeFormat)} (${moment.tz(moment.tz.guess()).zoneAbbr()})`;
           } else {
-            obj.value = `${obj.value} (${moment
-              .tz(moment.tz.guess())
-              .zoneAbbr()})`;
+            obj.value = `${obj.value} (${moment.tz(moment.tz.guess()).zoneAbbr()})`;
           }
         }
 
@@ -60,6 +69,7 @@ export const FilterQuery = ({ value }: any) => {
             color="primary"
             className="chip-items"
             data-type={type}
+            data-rule-key={key}
             data-id={`${obj.id}${key}`}
             data-cy={`${obj.id}${key}`}
             label={
@@ -71,7 +81,7 @@ export const FilterQuery = ({ value }: any) => {
                       : obj.id}
                   </Typography>
                   <Typography className="operator" fontWeight="600">
-                    {obj.operator}{" "}
+                    {getDisplayOperator(obj.operator)}{" "}
                   </Typography>
                   <Typography className="searchValue">
                     {filterQueryValue[obj.id]
@@ -97,9 +107,138 @@ export const FilterQuery = ({ value }: any) => {
 
   const clearQueryAttr = (e: any) => {
     const searchParams = new URLSearchParams(location.search);
-    const currentType: any = e?.target
-      ?.closest("[data-type]")
-      ?.getAttribute("data-type");
+    const chipEl = (e?.target as HTMLElement)?.closest?.(
+      "[data-type]"
+    ) as HTMLElement | null;
+    const currentType = chipEl?.getAttribute("data-type");
+    const ruleKeyRaw = chipEl?.getAttribute("data-rule-key");
+
+    const navigateAfterChange = (sp: URLSearchParams) => {
+      const meaningfulFilterParams = [
+        "type",
+        "tag",
+        "query",
+        "term",
+        "relationshipName",
+        "entityFilters",
+        "tagFilters",
+        "relationshipFilters",
+        "excludeST",
+        "excludeSC",
+        "includeDE"
+      ];
+      const hasMeaningfulFilters = meaningfulFilterParams.some((param) =>
+        sp.has(param)
+      );
+      if (!hasMeaningfulFilters) {
+        navigate({
+          pathname: "/search"
+        });
+      } else if ([...sp]?.length <= 1) {
+        navigate({
+          pathname: "/search"
+        });
+      } else {
+        navigate({
+          pathname: "/search/searchResult",
+          search: sp.toString()
+        });
+      }
+    };
+
+    const syncFilterParamGlobalState = (
+      paramKey: "entityFilters" | "tagFilters" | "relationshipFilters",
+      urlValue: string | null
+    ) => {
+      if (!urlValue) {
+        globalSearchFilterInitialQuery.setQuery({ [paramKey]: [] });
+        return;
+      }
+      const api = attributeFilter.extractUrl({
+        value: urlValue,
+        apiObj: true
+      }) as ParsedApiFilter | null;
+      if (!api?.criterion || !Array.isArray(api.criterion)) {
+        globalSearchFilterInitialQuery.setQuery({ [paramKey]: [] });
+        return;
+      }
+      globalSearchFilterInitialQuery.setQuery({
+        [paramKey]: {
+          combinator: String(api.condition || "AND").toLowerCase(),
+          rules: api.criterion.map((rule: any, i: number) => ({
+            id: `url-rule-${i}`,
+            field: rule.attributeName,
+            operator: getDisplayOperator(rule.operator) || rule.operator,
+            value: rule.attributeValue,
+            ...(rule.type ? { type: rule.type } : {})
+          }))
+        }
+      });
+    };
+
+    const isFilterCriterionChip =
+      ruleKeyRaw !== null &&
+      ruleKeyRaw !== "" &&
+      (currentType === "entityFilters" ||
+        currentType === "tagFilters" ||
+        currentType === "relationshipFilters");
+
+    if (isFilterCriterionChip) {
+      const idx = Number.parseInt(ruleKeyRaw as string, 10);
+      if (Number.isNaN(idx)) {
+        return;
+      }
+      const paramKey = currentType as
+        | "entityFilters"
+        | "tagFilters"
+        | "relationshipFilters";
+      const raw = searchParams.get(paramKey);
+      if (!raw) {
+        return;
+      }
+      const allowSimplify = paramKey === "entityFilters";
+      const result = removeCriterionFromFilterUrl(raw, idx, allowSimplify);
+      if (!result) {
+        return;
+      }
+      if (result.kind === "empty") {
+        searchParams.delete(paramKey);
+        globalSearchFilterInitialQuery.setQuery({ [paramKey]: [] });
+        navigateAfterChange(searchParams);
+        return;
+      }
+      if (result.kind === "singleTypeName") {
+        searchParams.set("type", result.typeName);
+        searchParams.delete("entityFilters");
+        if (searchParams.get("includeDE") === "true") {
+          const delUrl = attributeFilter.generateUrl({
+            value: {
+              condition: "AND",
+              criterion: [
+                {
+                  attributeName: "__state",
+                  operator: "eq",
+                  attributeValue: "DELETED"
+                }
+              ]
+            }
+          });
+          if (delUrl) {
+            searchParams.set("entityFilters", delUrl);
+          }
+        }
+        syncFilterParamGlobalState(
+          "entityFilters",
+          searchParams.get("entityFilters")
+        );
+        navigateAfterChange(searchParams);
+        return;
+      }
+      searchParams.set(paramKey, result.url);
+      syncFilterParamGlobalState(paramKey, result.url);
+      navigateAfterChange(searchParams);
+      return;
+    }
 
     if (currentType == "term") {
       searchParams.delete("gtype");
@@ -127,43 +266,11 @@ export const FilterQuery = ({ value }: any) => {
       globalSearchFilterInitialQuery.setQuery({ [currentType]: [] });
     }
 
-    searchParams.delete(currentType);
-
-    // Check if there are any meaningful filters left after removal
-    const meaningfulFilterParams = [
-      "type",
-      "tag",
-      "query",
-      "term",
-      "relationshipName",
-      "entityFilters",
-      "tagFilters",
-      "relationshipFilters",
-      "excludeST",
-      "excludeSC",
-      "includeDE"
-    ];
-
-    const hasMeaningfulFilters = meaningfulFilterParams.some((param) =>
-      searchParams.has(param)
-    );
-
-    // If no meaningful filters remain, navigate to clear all (like Clear button)
-    if (!hasMeaningfulFilters) {
-      navigate({
-        pathname: "/search"
-      });
-    } else if ([...searchParams]?.length <= 1) {
-      // Only searchType or other system params remain
-      navigate({
-        pathname: "/search"
-      });
-    } else {
-      navigate({
-        pathname: "/search/searchResult",
-        search: searchParams.toString()
-      });
+    if (currentType) {
+      searchParams.delete(currentType);
     }
+
+    navigateAfterChange(searchParams);
   };
 
   if (value.type) {

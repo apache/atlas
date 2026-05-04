@@ -288,6 +288,7 @@ const AssignCategory = ({
         maxWidth="sm"
         button2Handler={assignCatgeory}
         disableButton2={loading}
+        button2Loading={loading}
       >
         <Stack>
           <TextField

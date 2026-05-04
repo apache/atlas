@@ -56,10 +56,50 @@ const getRelationShipV2 = (params: { params: Record<string, unknown> }) => {
   return fetchApi(url, { method: "GET" });
 };
 
+/**
+ * Dashboard: latest entities via basic search.
+ * Request `__timestamp` only in `attributes` so responses include system created time
+ * (Atlas often returns `createTime: 0`; `__timestamp` holds the real ms value).
+ */
+const getLatestEntities = (limit: number) => {
+  const timestampMs = Date.now();
+  return getBasicSearchResult(
+    {
+      data: {
+        typeName: "_ALL_ENTITY_TYPES",
+        excludeDeletedEntities: true,
+        includeClassificationAttributes: true,
+        includeSubClassifications: true,
+        includeSubTypes: true,
+        limit,
+        offset: 0,
+        tagFilters: null,
+        entityFilters: {
+          condition: "AND",
+          criterion: [
+            {
+              attributeName: "__timestamp",
+              operator: "lte",
+              attributeValue: String(timestampMs),
+              type: "date"
+            }
+          ]
+        },
+        classification: null,
+        termName: null,
+        relationshipFilters: null,
+        attributes: ["__timestamp"]
+      }
+    },
+    "basic"
+  );
+};
+
 export {
-  getBasicSearchResult,
-  getRelationShipResult,
-  getGlobalSearchResult,
-  getRelationShip,
-  getRelationShipV2
+	getBasicSearchResult,
+	getRelationShipResult,
+	getGlobalSearchResult,
+	getRelationShip,
+	getRelationShipV2,
+	getLatestEntities
 };

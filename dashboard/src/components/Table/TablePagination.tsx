@@ -491,25 +491,27 @@ const TablePagination: React.FC<PaginationProps> = ({
                     value={pendingGoToPageVal}
                   />
                   <LightTooltip title="Goto Page">
-                    <IconButton
-                      type="button"
-                      size="small"
-                      className={`${
-                        !isEmpty(pendingGoToPageVal)
-                          ? "cursor-pointer"
-                          : "cursor-not-allowed"
-                      } table-pagination-gotopage-button`}
-                      aria-label="search"
-                      onClick={() => {
-                        if (!isEmpty(pendingGoToPageVal)) {
-                          setGoToPageTrigger(pendingGoToPageVal);
-                          handleGoToPage();
-                        }
-                      }}
-                      disabled={isEmpty(pendingGoToPageVal)}
-                    >
-                      Go
-                    </IconButton>
+                    <span style={{ display: "inline-flex" }}>
+                      <IconButton
+                        type="button"
+                        size="small"
+                        className={`${
+                          !isEmpty(pendingGoToPageVal)
+                            ? "cursor-pointer"
+                            : "cursor-not-allowed"
+                        } table-pagination-gotopage-button`}
+                        aria-label="search"
+                        onClick={() => {
+                          if (!isEmpty(pendingGoToPageVal)) {
+                            setGoToPageTrigger(pendingGoToPageVal);
+                            handleGoToPage();
+                          }
+                        }}
+                        disabled={isEmpty(pendingGoToPageVal)}
+                      >
+                        Go
+                      </IconButton>
+                    </span>
                   </LightTooltip>
                 </Paper>
               </Stack>
@@ -517,19 +519,21 @@ const TablePagination: React.FC<PaginationProps> = ({
 
             <Stack flexDirection="row" alignItems="center">
               <LightTooltip title="Previous">
-                <IconButton
-                  size="small"
-                  className="pagination-page-change-btn"
-                  onClick={handlePreviousPage}
-                  disabled={isPreviousDisabled}
-                  aria-label="previous page"
-                >
-                  {theme.direction === "rtl" ? (
-                    <KeyboardArrowRight />
-                  ) : (
-                    <KeyboardArrowLeft />
-                  )}
-                </IconButton>
+                <span style={{ display: "inline-flex" }}>
+                  <IconButton
+                    size="small"
+                    className="pagination-page-change-btn"
+                    onClick={handlePreviousPage}
+                    disabled={isPreviousDisabled}
+                    aria-label="previous page"
+                  >
+                    {theme.direction === "rtl" ? (
+                      <KeyboardArrowRight />
+                    ) : (
+                      <KeyboardArrowLeft />
+                    )}
+                  </IconButton>
+                </span>
               </LightTooltip>
 
               <LightTooltip title={`Page ${activePage}`}>
@@ -539,19 +543,21 @@ const TablePagination: React.FC<PaginationProps> = ({
               </LightTooltip>
 
               <LightTooltip title="Next">
-                <IconButton
-                  size="small"
-                  className="pagination-page-change-btn"
-                  onClick={handleNextPage}
-                  disabled={isNextDisabled}
-                  aria-label="next page"
-                >
-                  {theme.direction === "rtl" ? (
-                    <KeyboardArrowLeft />
-                  ) : (
-                    <KeyboardArrowRight />
-                  )}
-                </IconButton>
+                <span style={{ display: "inline-flex" }}>
+                  <IconButton
+                    size="small"
+                    className="pagination-page-change-btn"
+                    onClick={handleNextPage}
+                    disabled={isNextDisabled}
+                    aria-label="next page"
+                  >
+                    {theme.direction === "rtl" ? (
+                      <KeyboardArrowLeft />
+                    ) : (
+                      <KeyboardArrowRight />
+                    )}
+                  </IconButton>
+                </span>
               </LightTooltip>
             </Stack>
           </>
