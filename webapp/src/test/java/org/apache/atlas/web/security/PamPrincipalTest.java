@@ -19,6 +19,7 @@
 
 package org.apache.atlas.web.security;
 
+import org.apache.atlas.server.common.security.PamPrincipal;
 import org.jvnet.libpam.UnixUser;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -37,8 +38,6 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
-
-import org.apache.atlas.server.common.security.PamPrincipal;
 
 public class PamPrincipalTest {
     @Mock

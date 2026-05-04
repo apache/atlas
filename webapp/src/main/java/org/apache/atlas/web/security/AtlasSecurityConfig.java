@@ -24,6 +24,8 @@ import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.server.common.filters.AtlasDelegatingAuthenticationEntryPoint;
 import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.server.common.filters.HeadersUtil;
+import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
+import org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler;
 import org.apache.atlas.web.filters.StaleTransactionCleanupFilter;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -71,9 +73,6 @@ import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import javax.inject.Inject;
-
-import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
-import org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -19,6 +19,7 @@
 
 package org.apache.atlas.web.security;
 
+import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
 import org.json.simple.JSONObject;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -43,8 +44,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
-
-import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
 
 public class AtlasAuthenticationFailureHandlerTest {
     @Mock

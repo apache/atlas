@@ -20,6 +20,9 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.server.common.security.AtlasADAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasAuthenticationException;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.mockito.Mock;
@@ -50,10 +53,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-
-import org.apache.atlas.server.common.security.AtlasADAuthenticationProvider;
-import org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider;
-import org.apache.atlas.server.common.security.AtlasAuthenticationException;
 
 public class AtlasADAuthenticationProviderTest {
     @Mock

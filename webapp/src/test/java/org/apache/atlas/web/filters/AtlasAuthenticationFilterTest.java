@@ -18,14 +18,16 @@
 
 package org.apache.atlas.web.filters;
 
-import org.apache.atlas.server.common.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.security.SecurityProperties;
-import org.apache.atlas.utils.AuthenticationUtil;
+import org.apache.atlas.server.common.filters.AtlasAuthenticationFilter;
+import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
+import org.apache.atlas.server.common.filters.RestUtil;
 import org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider;
 import org.apache.atlas.server.common.util.Servlets;
+import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -97,9 +99,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-
-import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
-import org.apache.atlas.server.common.filters.RestUtil;
 
 public class AtlasAuthenticationFilterTest {
     private static final String AUTH_COOKIE = AuthenticatedURL.AUTH_COOKIE;

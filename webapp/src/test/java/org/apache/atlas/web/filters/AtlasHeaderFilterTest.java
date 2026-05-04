@@ -17,6 +17,9 @@
  */
 package org.apache.atlas.web.filters;
 
+import org.apache.atlas.server.common.filters.AtlasHeaderFilter;
+import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
+import org.apache.atlas.server.common.filters.HeadersUtil;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
@@ -43,10 +46,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.testng.Assert.assertNotNull;
-
-import org.apache.atlas.server.common.filters.AtlasHeaderFilter;
-import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
-import org.apache.atlas.server.common.filters.HeadersUtil;
 
 public class AtlasHeaderFilterTest {
     @Mock

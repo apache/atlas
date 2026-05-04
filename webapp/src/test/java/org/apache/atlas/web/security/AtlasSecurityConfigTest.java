@@ -25,6 +25,8 @@ import org.apache.atlas.server.common.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.server.common.filters.AtlasDelegatingAuthenticationEntryPoint;
 import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
+import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
+import org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler;
 import org.apache.atlas.web.filters.StaleTransactionCleanupFilter;
 import org.apache.commons.configuration.Configuration;
 import org.keycloak.adapters.AdapterDeploymentContext;
@@ -95,9 +97,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-
-import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
-import org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler;
 
 @SuppressWarnings("deprecation")
 public class AtlasSecurityConfigTest {

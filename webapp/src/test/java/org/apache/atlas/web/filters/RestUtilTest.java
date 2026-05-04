@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.web.filters;
 
+import org.apache.atlas.server.common.filters.RestUtil;
 import org.testng.annotations.Test;
 
 import javax.servlet.http.HttpServletRequest;
@@ -27,8 +28,6 @@ import java.util.Enumeration;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
-
-import org.apache.atlas.server.common.filters.RestUtil;
 
 public class RestUtilTest {
     private static <T> Enumeration<T> enumeration(T... values) {

@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.filters;
 
+import org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.core.AuthenticationException;
@@ -33,8 +34,6 @@ import java.io.IOException;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint;
 
 public class AtlasAuthenticationEntryPointTest {
     @Mock

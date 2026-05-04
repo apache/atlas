@@ -24,6 +24,7 @@ import com.nimbusds.jwt.SignedJWT;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
+import org.apache.atlas.server.common.filters.SSOAuthenticationProperties;
 import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBridge;
 import org.apache.atlas.web.security.AtlasAuthenticationProvider;
 import org.apache.commons.configuration.Configuration;
@@ -70,8 +71,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-
-import org.apache.atlas.server.common.filters.SSOAuthenticationProperties;
 
 public class AtlasKnoxSSOAuthenticationFilterTest {
     @Mock

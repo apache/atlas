@@ -22,7 +22,9 @@ package org.apache.atlas.web.security;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.server.common.model.User;
 import org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasAuthenticationException;
 import org.apache.atlas.server.common.security.AtlasPamAuthenticationProvider;
+import org.apache.atlas.server.common.security.UserAuthorityGranter;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.mockito.Mock;
@@ -61,9 +63,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
-
-import org.apache.atlas.server.common.security.AtlasAuthenticationException;
-import org.apache.atlas.server.common.security.UserAuthorityGranter;
 
 public class AtlasPamAuthenticationProviderTest {
     @Mock
