@@ -40,7 +40,6 @@ import java.util.List;
 @Profile("testSpringSecurityBridge")
 @ImportResource("classpath:test-spring-security.xml")
 public class TestSpringSecurityBridgeConfig {
-
     @Bean
     public AtlasAuthenticationProviderBridge atlasAuthenticationProviderBridge(AtlasAuthenticationProvider authenticationProvider) {
         return new AtlasAuthenticationProviderBridge() {

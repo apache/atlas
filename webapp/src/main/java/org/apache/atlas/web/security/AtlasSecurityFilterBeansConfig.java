@@ -21,15 +21,14 @@ import org.apache.atlas.server.common.filters.ActiveServerFilter;
 import org.apache.atlas.server.common.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
-import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBridge;
 import org.apache.atlas.server.common.filters.spi.ActiveInstanceStateProvider;
+import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBridge;
 import org.apache.atlas.server.common.filters.spi.ServiceStateProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class AtlasSecurityFilterBeansConfig {
-
     @Bean
     public AtlasAuthenticationProviderBridge atlasAuthenticationProviderBridge(AtlasAuthenticationProvider authenticationProvider) {
         return new AtlasAuthenticationProviderBridge() {

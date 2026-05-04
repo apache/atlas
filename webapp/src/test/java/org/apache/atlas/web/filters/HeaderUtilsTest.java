@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.web.filters;
 
+import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
+import org.apache.atlas.server.common.filters.HeadersUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,9 +31,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
-import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
-import org.apache.atlas.server.common.filters.HeadersUtil;
 
 public class HeaderUtilsTest {
     private Map<String, String> originalHeaders;

@@ -20,6 +20,7 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.server.common.security.PamLoginModule;
+import org.apache.atlas.server.common.security.PamPrincipal;
 import org.jvnet.libpam.PAM;
 import org.jvnet.libpam.UnixUser;
 import org.mockito.Mock;
@@ -54,8 +55,6 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-
-import org.apache.atlas.server.common.security.PamPrincipal;
 
 public class PamLoginModuleTest {
     @Mock

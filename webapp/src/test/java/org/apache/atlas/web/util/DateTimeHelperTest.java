@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.util;
 
+import org.apache.atlas.server.common.util.DateTimeHelper;
 import org.junit.Test;
 
 import java.text.DateFormat;
@@ -32,8 +33,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
-
-import org.apache.atlas.server.common.util.DateTimeHelper;
 
 public class DateTimeHelperTest {
     @Test
