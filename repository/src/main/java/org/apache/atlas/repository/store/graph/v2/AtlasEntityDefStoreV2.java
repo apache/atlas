@@ -318,7 +318,7 @@ public class AtlasEntityDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEntityDe
 
             ret.setSuperTypes(typeDefStore.getSuperTypeNames(vertex));
 
-            String overridesJson = vertex.getProperty(Constants.ENTITY_ATTR_DEF_OVERRIDES_PROPERTY_KEY, String.class);
+            String overridesJson = vertex.getProperty(Constants.TYPE_ATTR_DEF_OVERRIDES_PROPERTY_KEY, String.class);
 
             if (StringUtils.isNotBlank(overridesJson)) {
                 List<AtlasAttributeDef> overrides = AtlasJson.fromJson(overridesJson,

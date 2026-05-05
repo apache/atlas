@@ -1209,39 +1209,49 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     private void handleRenamePropagation(boolean isPartialUpdate, AtlasEntity entity, AtlasEntityType entityType,
-                                         AtlasVertex vertex, EntityMutationContext context) throws org.apache.atlas.exception.AtlasBaseException {
-        try {
-            if (!isPartialUpdate || entityRenameHandler == null) {
-                return;
-            }
+                                         AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
+        if (!isPartialUpdate || entityRenameHandler == null) {
+            return;
+        }
 
-            if (CollectionUtils.isEmpty(entityType.getRenamePropagationTargets())) {
-                return;
-            }
+        if (CollectionUtils.isEmpty(entityType.getRenamePropagationTargets())) {
+            return;
+        }
+
+        String entityGuid = StringUtils.isNotEmpty(entity.getGuid()) ? entity.getGuid() : AtlasGraphUtilsV2.getIdFromVertex(vertex);
+
+        try {
+            LOG.debug("handleRenamePropagation(): type={}; guid={}; renamePropagationTargetCount={}",
+                    entityType.getTypeName(), entityGuid, entityType.getRenamePropagationTargets().size());
 
             String oldUniqueAttrValue = AtlasGraphUtilsV2.getProperty(vertex, entityType.getVertexPropertyName(AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME), String.class);
             String newUniqueAttrValue = (String) entity.getAttribute(AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME);
 
             if (StringUtils.isBlank(oldUniqueAttrValue) || StringUtils.isBlank(newUniqueAttrValue)) {
+                LOG.debug("handleRenamePropagation(): skip — missing qualifiedName on vertex or request (type={}; guid={})",
+                        entityType.getTypeName(), entityGuid);
                 return;
             }
 
             if (StringUtils.equals(oldUniqueAttrValue, newUniqueAttrValue)) {
+                LOG.debug("handleRenamePropagation(): skip — qualifiedName unchanged (type={}; guid={})",
+                        entityType.getTypeName(), entityGuid);
                 return;
             }
 
-            // TOTDO:
-            if (!newUniqueAttrValue.toLowerCase().contains("sb_latest")) {
-                LOG.info("SANKET:DEBUG:HOOK: Skipping rename propagation for entity ");
-                return;
-            }
+            LOG.info("Rename detected (qualifiedName changed): type={}; guid={}; processing dependent entities for rename propagation",
+                    entityType.getTypeName(), entityGuid);
+            LOG.debug("handleRenamePropagation(): qualifiedName old -> new (guid={}): {} -> {}", entityGuid, oldUniqueAttrValue,
+                    newUniqueAttrValue);
 
-            // Rename detected: populate dependent entities into the mutation context
             entityRenameHandler.addDependentsToContext(context, entityType, vertex, entity);
-            //context.getUpdatedEntities().clear();
+        } catch (AtlasBaseException e) {
+            LOG.error("handleRenamePropagation(): rename propagation failed for type={}; guid={}", entityType.getTypeName(), entityGuid, e);
+            throw e;
         } catch (Exception e) {
-           // context.getUpdatedEntities().clear();
-            throw new RuntimeException(e);
+            LOG.error("handleRenamePropagation(): unexpected error during rename propagation for type={}; guid={}",
+                    entityType.getTypeName(), entityGuid, e);
+            throw new AtlasBaseException(e);
         }
     }
 

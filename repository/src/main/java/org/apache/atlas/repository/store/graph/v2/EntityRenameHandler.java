@@ -49,11 +49,16 @@ import java.util.Set;
 public class EntityRenameHandler {
     private static final Logger LOG      = LoggerFactory.getLogger(EntityRenameHandler.class);
 
-    private final AtlasTypeRegistry          typeRegistry;
+    /** Key for trigger-side attribute in relationship end {@code propagateAttributes} map entries. */
+    private static final String  PROPAGATE_ATTRIBUTES_SOURCE_KEY = "source";
+    /** Key for dependent stub attribute in those entries. */
+    private static final String  PROPAGATE_ATTRIBUTES_TARGET_KEY = "target";
+
+    private final AtlasTypeRegistry typeRegistry;
 
     @Inject
     public EntityRenameHandler(AtlasTypeRegistry typeRegistry) {
-        this.typeRegistry            = typeRegistry;
+        this.typeRegistry = typeRegistry;
     }
 
     /**
@@ -61,7 +66,7 @@ public class EntityRenameHandler {
      * them into the mutation context so they are persisted in the same transaction.
      *
      * Uses typedef-time metadata on each {@link AtlasEntityType} for O(1) slot-key lookup where
-     * applicable, without deriving template paths from the graph at runtime.
+     * applicable, without resolving qualifiedName patterns from the graph at runtime.
      */
     public void addDependentsToContext(EntityMutationContext context,
                                        AtlasEntityType       sourceEntityType,
@@ -77,58 +82,68 @@ public class EntityRenameHandler {
 
         collectDependents(sourceVertex, sourceEntityType, renamedTypeName, newName, visitedGuids, dependents);
 
-        LOG.info("SANKET:DEBUG:HOOK: dependents: {}", dependents);
-
         LOG.debug("addDependentsToContext(): done — renamedType={}, dependentCount={}", renamedTypeName, dependents.size());
 
         injectDependentsIntoContext(context, dependents);
-        LOG.info("SANKET:DEBUG:HOOK: context.getUpdatedEntities(): {}", context.getUpdatedEntities());
     }
 
-    // ─── context injection ──────────────────────────────────────────────────────
-
+    /**
+     * Registers each dependent rewrite on {@code context} so they persist in the same transaction as the
+     * renamed root entity.
+     * <p>
+     * For every entry in {@code dependents}, builds a minimal {@link AtlasEntity} (GUID, new
+     * {@code qualifiedName}, and any extra attributes from {@code propagateAttributes}), resolves the
+     * dependent's {@link AtlasEntityType}, and calls {@link EntityMutationContext#addUpdated}.
+     *
+     * @param context     mutation batch for the current create/update
+     * @param dependents  dependent entity GUID → payload produced by {@link #collectDependents}
+     */
     private void injectDependentsIntoContext(EntityMutationContext context, Map<String, DependentUpdate> dependents) {
-        for (DependentUpdate dep : dependents.values()) {
-            AtlasEntity stub = new AtlasEntity(dep.getTypeName());
+        for (DependentUpdate dependentUpdate : dependents.values()) {
+            AtlasEntity dependentStub = new AtlasEntity(dependentUpdate.getTypeName());
 
-            stub.setGuid(dep.getGuid());
-            stub.setAttribute(AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME, dep.getNewUniqueAttribute());
+            dependentStub.setGuid(dependentUpdate.getGuid());
+            dependentStub.setAttribute(AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME, dependentUpdate.getNewUniqueAttribute());
 
-            if (MapUtils.isNotEmpty(dep.getMappedAttrs())) {
-                for (Map.Entry<String, Object> entry : dep.getMappedAttrs().entrySet()) {
-                    stub.setAttribute(entry.getKey(), entry.getValue());
+            if (MapUtils.isNotEmpty(dependentUpdate.getMappedAttrs())) {
+                for (Map.Entry<String, Object> mappedAttrEntry : dependentUpdate.getMappedAttrs().entrySet()) {
+                    dependentStub.setAttribute(mappedAttrEntry.getKey(), mappedAttrEntry.getValue());
                 }
             }
 
-            AtlasEntityType dependentEntityType = typeRegistry.getEntityTypeByName(dep.getTypeName());
+            AtlasEntityType dependentEntityType = typeRegistry.getEntityTypeByName(dependentUpdate.getTypeName());
 
-            context.addUpdated(dep.getGuid(), stub, dependentEntityType, dep.getVertex());
+            context.addUpdated(dependentUpdate.getGuid(), dependentStub, dependentEntityType, dependentUpdate.getVertex());
         }
     }
 
-    // ─── core traversal ─────────────────────────────────────────────────────────
-
     /**
-     * Single recursive traversal over all propagation targets.
+     * Walks {@link RenamePropagationTarget}s declared on {@code sourceEntityType}, follows each relationship
+     * from {@code sourceVertex} to neighboring entities, recomputes each neighbor's {@code qualifiedName} when it
+     * should reflect {@code renamedTypeName}'s new {@code newName}, and records updates in
+     * {@code dependentUpdatesByGuid}. Recurses when a neighbor's type also declares propagation targets.
      *
-     * <p>The override strategy is decided purely by whether the target carries
-     * explicit {@code propagateAttributes} mappings:
-     *
+     * <p>How the segment of {@code qualifiedName} to rewrite is chosen:
      * <ul>
-     *   <li><b>propagateAttributes present:</b> the slot patched in the dependent's {@code qualifiedName}
-     *       template is the {@code target} of the mapping whose {@code source} is {@code "name"}
-     *       (see {@link #findQualifiedNameOverrideKey}); {@code newName} is written into that slot.
-     *       Extra stub attributes come from {@link #buildMappedAttrs}. The updated dependent becomes
-     *       the new rename root for any further cascade.</li>
-     *   <li><b>propagateAttributes absent:</b> the override slot is resolved via O(1) lookup
-     *       in the dependent type's precomputed {@code renamePropagationTemplateMap} using
-     *       {@code renamedTypeName}. The same renamed type and new name are propagated
-     *       unchanged through the cascade.</li>
+     *   <li><b>{@code propagateAttributes} present:</b> use {@link #findQualifiedNameOverrideKey} (mapping whose
+     *       {@code source} is {@code "name"}), write {@code newName} into that {@code target} path, and add any
+     *       extra attributes via {@link #buildMappedAttrs}. For the next level, {@code newName} is read back from
+     *       the patched path on the new qualified name (falling back to the prior {@code newName} if blank).</li>
+     *   <li><b>{@code propagateAttributes} absent:</b> use {@link AtlasEntityType#getAutoComputeFormatPathByRefTypeNameMap()}
+     *       on the dependent type to find the dotted path for {@code renamedTypeName}, then recompute with the same
+     *       {@code newName}. Recursion keeps the same {@code renamedTypeName} and {@code newName}.</li>
      * </ul>
+     *
+     * @param sourceVertex              graph vertex for the entity currently acting as the rename root
+     * @param sourceEntityType          typedef for {@code sourceVertex}
+     * @param renamedTypeName           entity type whose name change drives this step (used for map lookup when there is no {@code propagateAttributes})
+     * @param newName                   replacement {@code name} (or a value derived from the patched qualified name when {@code propagateAttributes} is used)
+     * @param visitedGuids              prevents revisiting the same dependent GUID in a cycle
+     * @param dependentUpdatesByGuid    accumulates dependent GUID → {@link DependentUpdate}
      */
     private void collectDependents(AtlasVertex sourceVertex, AtlasEntityType sourceEntityType,
                                    String renamedTypeName, String newName,
-                                   Set<String> visitedGuids, Map<String, DependentUpdate> out) throws AtlasBaseException {
+                                   Set<String> visitedGuids, Map<String, DependentUpdate> dependentUpdatesByGuid) throws AtlasBaseException {
         for (RenamePropagationTarget propagationTarget : sourceEntityType.getRenamePropagationTargets()) {
             AtlasAttribute relAttr = propagationTarget.getRelAttr();
 
@@ -153,38 +168,36 @@ public class EntityRenameHandler {
                 AtlasEntityType dependentEntityType = typeRegistry.getEntityTypeByName(dependentTypeName);
 
                 if (dependentEntityType == null) {
+                    LOG.debug("collectDependents(): skip — no typedef for dependent type '{}' (guid={})", dependentTypeName, dependentGuid);
                     continue;
                 }
 
-                String template = getUniqueAttributeTemplate(dependentEntityType);
-                String oldQN    = AtlasGraphUtilsV2.getProperty(dependentVertex,
+                String uniqueAttributeAutoComputeFormat = getUniqueAttributeAutoComputeFormat(dependentEntityType);
+                String oldQualifiedName = AtlasGraphUtilsV2.getProperty(dependentVertex,
                         dependentEntityType.getVertexPropertyName(AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME), String.class);
 
-                LOG.info("SANKET:DEBUG:HOOK: oldQN: {}", oldQN);
-                LOG.info("SANKET:DEBUG:HOOK: template: {}", template);
-                LOG.info("SANKET:DEBUG:HOOK: dependentTypeName: {}", dependentTypeName);
-
-                if (StringUtils.isBlank(template) || StringUtils.isBlank(oldQN)) {
+                if (StringUtils.isBlank(uniqueAttributeAutoComputeFormat) || StringUtils.isBlank(oldQualifiedName)) {
+                    LOG.debug("collectDependents(): skip — blank unique-attribute autoComputeFormat or stored qualifiedName (dependentType={}; guid={})",
+                            dependentTypeName, dependentGuid);
                     continue;
                 }
 
-                String              overrideKey;
+                String qualifiedNameOverrideKey;
                 Map<String, Object> mappedAttrs;
 
                 if (CollectionUtils.isNotEmpty(propagationTarget.getPropagateAttributes())) {
-                    // QualifiedName slot key comes from the propagateAttributes entry whose source is "name".
-                    overrideKey = findQualifiedNameOverrideKey(propagationTarget.getPropagateAttributes());
-                    if (overrideKey == null) {
-                        overrideKey = AtlasTypeUtil.ATTRIBUTE_NAME;
+                    // Dotted path comes from propagateAttributes (entry whose source is "name").
+                    qualifiedNameOverrideKey = findQualifiedNameOverrideKey(propagationTarget.getPropagateAttributes());
+                    if (qualifiedNameOverrideKey == null) {
+                        qualifiedNameOverrideKey = AtlasTypeUtil.ATTRIBUTE_NAME;
                     }
                     mappedAttrs = buildMappedAttrs(propagationTarget, newName);
                 } else {
-                    // No propagateAttributes: O(1) lookup of the slot key from the typedef-time
-                    // precomputed renamePropagationTemplateMap on the dependent entity type.
-                    overrideKey = dependentEntityType.getRenamePropagationTemplateMap().get(renamedTypeName);
+                    // Typedef map: referenced type → dotted path in this dependent's qualifiedName autoComputeFormat.
+                    qualifiedNameOverrideKey = dependentEntityType.getAutoComputeFormatPathByRefTypeNameMap().get(renamedTypeName);
 
-                    if (overrideKey == null) {
-                        LOG.debug("collectDependents(): no override key for renamedType={} on dependentType={} — skipping",
+                    if (qualifiedNameOverrideKey == null) {
+                        LOG.debug("collectDependents(): no qualifiedName path for renamedType={} on dependentType={} — skipping",
                                 renamedTypeName, dependentTypeName);
                         continue;
                     }
@@ -192,37 +205,37 @@ public class EntityRenameHandler {
                     mappedAttrs = new HashMap<>();
                 }
 
-                String newQN = recomputeUniqueAttribute(oldQN, template, overrideKey, newName);
+                String newQualifiedName = recomputeUniqueAttribute(oldQualifiedName, uniqueAttributeAutoComputeFormat, qualifiedNameOverrideKey, newName);
 
-                if (StringUtils.isBlank(newQN) || StringUtils.equals(oldQN, newQN)) {
+                if (StringUtils.isBlank(newQualifiedName) || StringUtils.equals(oldQualifiedName, newQualifiedName)) {
+                    LOG.debug("collectDependents(): skip — recomputed qualifiedName empty or unchanged (dependentType={}; guid={})",
+                            dependentTypeName, dependentGuid);
                     continue;
                 }
 
-                LOG.debug("collectDependents(): updating {} [{}] {} -> {}", dependentTypeName, dependentGuid, oldQN, newQN);
+                LOG.debug("collectDependents(): dependent qualifiedName update type={} guid={} {} -> {}",
+                        dependentTypeName, dependentGuid, oldQualifiedName, newQualifiedName);
 
-                out.put(dependentGuid, new DependentUpdate(dependentGuid, dependentTypeName, dependentVertex, newQN, mappedAttrs));
+                dependentUpdatesByGuid.put(dependentGuid, new DependentUpdate(dependentGuid, dependentTypeName, dependentVertex, newQualifiedName, mappedAttrs));
 
                 if (CollectionUtils.isNotEmpty(dependentEntityType.getRenamePropagationTargets())) {
                     if (CollectionUtils.isNotEmpty(propagationTarget.getPropagateAttributes())) {
-                        // The updated dependent becomes the new rename root for its own downstream cascade.
-                        // Read the segment we patched (same key as overrideKey) for the next level's newName.
-                        String dependentNewName = parseUniqueAttribute(newQN, template).get(overrideKey);
+                        // This dependent becomes the next root; use the name segment we just patched (or the prior newName).
+                        String nameForChildPropagation = parseUniqueAttribute(newQualifiedName, uniqueAttributeAutoComputeFormat).get(qualifiedNameOverrideKey);
 
-                        if (StringUtils.isBlank(dependentNewName)) {
-                            dependentNewName = newName;
+                        if (StringUtils.isBlank(nameForChildPropagation)) {
+                            nameForChildPropagation = newName;
                         }
 
-                        collectDependents(dependentVertex, dependentEntityType, dependentTypeName, dependentNewName, visitedGuids, out);
+                        collectDependents(dependentVertex, dependentEntityType, dependentTypeName, nameForChildPropagation, visitedGuids, dependentUpdatesByGuid);
                     } else {
-                        // Template-slot cascade: propagate the same renamed type and new name unchanged.
-                        collectDependents(dependentVertex, dependentEntityType, renamedTypeName, newName, visitedGuids, out);
+                        // Same renamed type and name propagate to further dependents.
+                        collectDependents(dependentVertex, dependentEntityType, renamedTypeName, newName, visitedGuids, dependentUpdatesByGuid);
                     }
                 }
             }
         }
     }
-
-    // ─── association attribute mapping ──────────────────────────────────────────
 
     /**
      * Builds the mapped-attribute payload for an association-linked dependent.
@@ -244,8 +257,8 @@ public class EntityRenameHandler {
         Map<String, Object> mappedAttrs = new HashMap<>();
 
         for (Map<String, String> mapping : propagateAttributes) {
-            String sourceAttr = mapping.get("source");
-            String targetAttr = mapping.get("target");
+            String sourceAttr = mapping.get(PROPAGATE_ATTRIBUTES_SOURCE_KEY);
+            String targetAttr = mapping.get(PROPAGATE_ATTRIBUTES_TARGET_KEY);
 
             // Only "name" is available at this point; other source attributes would need the full sourceEntity.
             if (AtlasTypeUtil.ATTRIBUTE_NAME.equals(sourceAttr) && StringUtils.isNotBlank(targetAttr)) {
@@ -259,10 +272,10 @@ public class EntityRenameHandler {
     /**
      * Returns the {@code target} attribute name of the first {@code propagateAttributes} entry whose
      * {@code source} is {@link AtlasTypeUtil#ATTRIBUTE_NAME "name"}. The returned {@code target}
-     * identifies which {@code {slot}} in the dependent's {@code qualifiedName} template is patched
+     * identifies which dotted path in the dependent's unique-attribute {@code autoComputeFormat} is patched
      * with {@code newName} in {@link #recomputeUniqueAttribute}.
      *
-     * @return {@code null} when no mapping has {@code source=name} and a non-blank {@code target}
+     * @return {@code null} when no mapping has {@code source=name} with a non-blank {@code target}
      */
     private static String findQualifiedNameOverrideKey(List<Map<String, String>> propagateAttributes) {
         if (CollectionUtils.isEmpty(propagateAttributes)) {
@@ -270,8 +283,8 @@ public class EntityRenameHandler {
         }
 
         for (Map<String, String> mapping : propagateAttributes) {
-            String sourceAttr = mapping.get("source");
-            String targetAttr = mapping.get("target");
+            String sourceAttr = mapping.get(PROPAGATE_ATTRIBUTES_SOURCE_KEY);
+            String targetAttr = mapping.get(PROPAGATE_ATTRIBUTES_TARGET_KEY);
 
             if (AtlasTypeUtil.ATTRIBUTE_NAME.equals(sourceAttr) && StringUtils.isNotBlank(targetAttr)) {
                 return targetAttr;
@@ -281,48 +294,46 @@ public class EntityRenameHandler {
         return null;
     }
 
-    // ─── qualifiedName recomputation ────────────────────────────────────────────
-
     /**
      * Recomputes a dependent entity's qualifiedName after a rename using a 3-step in-memory approach:
      * <ol>
-     *   <li><b>Parse</b>  — extract each template slot's value from the stored qualifiedName string.</li>
-     *   <li><b>Override</b> — replace the single slot that changed (the renamed entity's name key).</li>
-     *   <li><b>Rebuild</b> — reconstruct the qualifiedName from the updated slots.</li>
+     *   <li><b>Parse</b> — split the stored qualifiedName using the unique attribute's {@code autoComputeFormat}.</li>
+     *   <li><b>Override</b> — replace the path segment that changed (the renamed entity's name key).</li>
+     *   <li><b>Rebuild</b> — stitch the qualifiedName back together from the updated segments.</li>
      * </ol>
      * No extra graph reads are required; all values come from the existing qualifiedName string.
      */
-    private String recomputeUniqueAttribute(String currentUniqueAttr, String template, String overrideKey, String newValue) {
-        Map<String, String> slots = parseUniqueAttribute(currentUniqueAttr, template);
+    private String recomputeUniqueAttribute(String currentUniqueAttr, String uniqueAttributeAutoComputeFormat, String overrideKey, String newValue) {
+        Map<String, String> slots = parseUniqueAttribute(currentUniqueAttr, uniqueAttributeAutoComputeFormat);
 
         if (StringUtils.isNotBlank(overrideKey) && newValue != null) {
             slots.put(overrideKey, newValue);
         }
 
-        return buildUniqueAttribute(template, slots);
+        return buildUniqueAttribute(uniqueAttributeAutoComputeFormat, slots);
     }
 
     /**
-     * Parses a qualifiedName string into a {@code { templateKey → value }} map by walking
-     * the template and value strings in parallel with two cursors.
+     * Parses a qualifiedName string into a {@code { pathKey → value }} map by walking the unique attribute's
+     * {@code autoComputeFormat} pattern and the stored value in parallel.
      *
      * <p>Literal characters (such as {@code '.'} or {@code '@'}) are delimiters; the character immediately
-     * after {@code '}'} in the template is used as the value's end delimiter for each slot.
-     * The last slot captures everything remaining in the qualifiedName.
+     * after {@code '}'} in the format string is used as the value's end delimiter for each placeholder.
+     * The last placeholder captures everything remaining in the qualifiedName.
      *
      * <pre>
-     *   template   = "{db.name}.{name}@{clusterName}"
-     *   uniqueAttr = "mydb.mytable@cluster1"
-     *   result     = { "db.name" → "mydb", "name" → "mytable", "clusterName" → "cluster1" }
+     *   uniqueAttributeAutoComputeFormat = "{db.name}.{name}@{clusterName}"
+     *   uniqueAttr                       = "mydb.mytable@cluster1"
+     *   result                           = { "db.name" → "mydb", "name" → "mytable", "clusterName" → "cluster1" }
      * </pre>
      */
-    private Map<String, String> parseUniqueAttribute(String uniqueAttr, String template) {
+    private Map<String, String> parseUniqueAttribute(String uniqueAttr, String uniqueAttributeAutoComputeFormat) {
         Map<String, String> slots = new LinkedHashMap<>();
-        int                 tPos  = 0; // cursor into template
+        int                 tPos  = 0; // cursor into uniqueAttributeAutoComputeFormat
         int                 uPos  = 0; // cursor into uniqueAttr
 
-        while (tPos < template.length() && uPos <= uniqueAttr.length()) {
-            char tc = template.charAt(tPos);
+        while (tPos < uniqueAttributeAutoComputeFormat.length() && uPos <= uniqueAttr.length()) {
+            char tc = uniqueAttributeAutoComputeFormat.charAt(tPos);
 
             if (tc != '{') {
                 // Literal delimiter — advance both cursors past it.
@@ -331,30 +342,30 @@ public class EntityRenameHandler {
                 continue;
             }
 
-            int closeBrace = template.indexOf('}', tPos);
+            int closeBrace = uniqueAttributeAutoComputeFormat.indexOf('}', tPos);
 
             if (closeBrace < 0) {
-                break; // malformed template
+                break; // malformed autoComputeFormat
             }
 
-            String key = template.substring(tPos + 1, closeBrace);
+            String key = uniqueAttributeAutoComputeFormat.substring(tPos + 1, closeBrace);
 
             tPos = closeBrace + 1; // advance past '}'
 
-            // Last slot: nothing follows in the template, so capture the rest of uniqueAttr.
-            if (tPos >= template.length()) {
+            // Last placeholder: nothing follows in the format string, so capture the rest of uniqueAttr.
+            if (tPos >= uniqueAttributeAutoComputeFormat.length()) {
                 slots.put(key, uniqueAttr.substring(uPos));
                 break;
             }
 
-            // The character immediately after '}' in the template is the value's end delimiter.
-            char delim    = template.charAt(tPos);
+            // Character after '}' in the format string is the value's end delimiter in uniqueAttr.
+            char delim    = uniqueAttributeAutoComputeFormat.charAt(tPos);
             int  delimPos = uniqueAttr.indexOf(delim, uPos);
 
             if (delimPos >= 0) {
                 slots.put(key, uniqueAttr.substring(uPos, delimPos));
                 uPos = delimPos + 1; // skip past the delimiter in uniqueAttr
-                tPos++;              // skip past the delimiter in template
+                tPos++;              // skip past the delimiter in format string
             } else {
                 // Delimiter not found — capture the rest (handles malformed / truncated values).
                 slots.put(key, uniqueAttr.substring(uPos));
@@ -366,32 +377,32 @@ public class EntityRenameHandler {
     }
 
     /**
-     * Reconstructs a qualifiedName string from a template and a populated slot map.
-     * Each {@code {key}} in the template is replaced with its value; unknown keys become {@code ""}.
+     * Reconstructs a qualifiedName string from the unique attribute's {@code autoComputeFormat} and a populated map.
+     * Each {@code {key}} in the format string is replaced with its value; unknown keys become {@code ""}.
      *
      * <pre>
-     *   template = "{db.name}.{name}@{clusterName}"
-     *   slots    = { "db.name" → "mydb", "name" → "new_table", "clusterName" → "cluster1" }
-     *   result   = "mydb.new_table@cluster1"
+     *   uniqueAttributeAutoComputeFormat = "{db.name}.{name}@{clusterName}"
+     *   slots                          = { "db.name" → "mydb", "name" → "new_table", "clusterName" → "cluster1" }
+     *   result                         = "mydb.new_table@cluster1"
      * </pre>
      */
-    private String buildUniqueAttribute(String template, Map<String, String> slots) {
-        StringBuilder sb   = new StringBuilder(template.length() + 32);
+    private String buildUniqueAttribute(String uniqueAttributeAutoComputeFormat, Map<String, String> slots) {
+        StringBuilder sb   = new StringBuilder(uniqueAttributeAutoComputeFormat.length() + 32);
         int           tPos = 0;
 
-        while (tPos < template.length()) {
-            if (template.charAt(tPos) != '{') {
-                sb.append(template.charAt(tPos++));
+        while (tPos < uniqueAttributeAutoComputeFormat.length()) {
+            if (uniqueAttributeAutoComputeFormat.charAt(tPos) != '{') {
+                sb.append(uniqueAttributeAutoComputeFormat.charAt(tPos++));
                 continue;
             }
 
-            int closeBrace = template.indexOf('}', tPos);
+            int closeBrace = uniqueAttributeAutoComputeFormat.indexOf('}', tPos);
 
             if (closeBrace < 0) {
-                break; // malformed template
+                break; // malformed autoComputeFormat
             }
 
-            String key = template.substring(tPos + 1, closeBrace);
+            String key = uniqueAttributeAutoComputeFormat.substring(tPos + 1, closeBrace);
 
             sb.append(slots.getOrDefault(key, ""));
 
@@ -401,10 +412,8 @@ public class EntityRenameHandler {
         return sb.toString();
     }
 
-    // ─── small helpers ──────────────────────────────────────────────────────────
-
-    /** Returns the {@code autoComputeFormat} for the entity's {@code qualifiedName} attribute, trimmed. */
-    private String getUniqueAttributeTemplate(AtlasEntityType entityType) {
+    /** Returns trimmed {@code autoComputeFormat} for the type's unique ({@code qualifiedName}) attribute. */
+    private String getUniqueAttributeAutoComputeFormat(AtlasEntityType entityType) {
         AtlasAttribute uniqueAttr = entityType.getAttribute(AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME);
 
         if (uniqueAttr == null || uniqueAttr.getAttributeDef() == null) {
@@ -434,8 +443,6 @@ public class EntityRenameHandler {
 
         return list;
     }
-
-    // ─── inner class ────────────────────────────────────────────────────────────
 
     public static class DependentUpdate {
         private final String              guid;

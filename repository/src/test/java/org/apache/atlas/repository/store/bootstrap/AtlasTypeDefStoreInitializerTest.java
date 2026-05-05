@@ -1010,7 +1010,7 @@ public class AtlasTypeDefStoreInitializerTest {
         when(typeRegistry.getTypeDefByName("TestRelationship")).thenReturn(relationshipDef);
 
         Map<String, Object> params = new HashMap<>();
-        params.put("endDefNumber", "endDef1");
+        params.put("endDefToken", "endDef1");
         setField(patch, "params", params);
 
         PatchStatus result = handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch);
@@ -1033,7 +1033,7 @@ public class AtlasTypeDefStoreInitializerTest {
         when(typeRegistry.getTypeDefByName("TestRelationship")).thenReturn(relationshipDef);
 
         Map<String, Object> params = new HashMap<>();
-        params.put("endDefNumber", "endDef2");
+        params.put("endDefToken", "endDef2");
         setField(patch, "params", params);
 
         PatchStatus result = handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch);
@@ -1056,7 +1056,7 @@ public class AtlasTypeDefStoreInitializerTest {
         when(typeRegistry.getTypeDefByName("TestRelationship")).thenReturn(relationshipDef);
 
         Map<String, Object> params = new HashMap<>();
-        params.put("endDefNumber", "endDef3");
+        params.put("endDefToken", "endDef3");
         setField(patch, "params", params);
 
         expectThrows(AtlasBaseException.class, () -> handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch));
@@ -1092,7 +1092,7 @@ public class AtlasTypeDefStoreInitializerTest {
         when(typeRegistry.getTypeDefByName("TestEntity")).thenReturn(entityDef);
 
         Map<String, Object> params = new HashMap<>();
-        params.put("endDefNumber", "endDef1");
+        params.put("endDefToken", "endDef1");
         setField(patch, "params", params);
 
         expectThrows(AtlasBaseException.class, () -> handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch));

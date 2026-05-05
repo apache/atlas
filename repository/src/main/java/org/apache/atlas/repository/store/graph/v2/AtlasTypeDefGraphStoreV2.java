@@ -275,7 +275,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
             AtlasEntityDef entityDef = (AtlasEntityDef) typeDef;
 
             if (CollectionUtils.isNotEmpty(entityDef.getAttributeDefOverrides())) {
-                ret.setProperty(Constants.ENTITY_ATTR_DEF_OVERRIDES_PROPERTY_KEY,
+                ret.setProperty(Constants.TYPE_ATTR_DEF_OVERRIDES_PROPERTY_KEY,
                         AtlasType.toJson(entityDef.getAttributeDefOverrides()));
             }
         }
@@ -305,10 +305,10 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
             AtlasEntityDef entityDef = (AtlasEntityDef) typeDef;
 
             if (CollectionUtils.isNotEmpty(entityDef.getAttributeDefOverrides())) {
-                updateVertexProperty(vertex, Constants.ENTITY_ATTR_DEF_OVERRIDES_PROPERTY_KEY,
+                updateVertexProperty(vertex, Constants.TYPE_ATTR_DEF_OVERRIDES_PROPERTY_KEY,
                         AtlasType.toJson(entityDef.getAttributeDefOverrides()));
             } else {
-                vertex.removeProperty(Constants.ENTITY_ATTR_DEF_OVERRIDES_PROPERTY_KEY);
+                vertex.removeProperty(Constants.TYPE_ATTR_DEF_OVERRIDES_PROPERTY_KEY);
             }
         }
 

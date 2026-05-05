@@ -79,14 +79,11 @@ public class AtlasRelationshipEndDef implements Serializable {
     private boolean propagateRename;
 
     /**
-     * For association relationships, defines which source attributes are mapped to which target
-     * attributes when a rename is propagated. Each entry is a {@code {"source": "...", "target": "..."}}
-     * pair. When absent, only the entity's own {@code name} attribute is synchronized.
-     *
-     * <p>Example — Hive DB rename propagated to Trino schema:
-     * <pre>
-     *   [{"source": "name", "target": "name"}, {"source": "clusterName", "target": "sourceCluster"}]
-     * </pre>
+     * Optional mappings between attributes on the two entity types connected by this relationship,
+     * used when rename propagation applies updates across the relationship. Each element is a map
+     * with {@code "source"} and {@code "target"} keys naming the attribute on the source side and
+     * the attribute on the peer entity type, respectively. When {@code null} or empty, only the
+     * entity {@code name} attribute is synchronized.
      */
     private List<Map<String, String>> propagateAttributes;
 

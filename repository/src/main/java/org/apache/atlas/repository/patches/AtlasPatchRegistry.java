@@ -81,13 +81,6 @@ public class AtlasPatchRegistry {
     public boolean isApplicable(String incomingId, String patchFile, int index) {
         String patchId = getId(incomingId, patchFile, index);
 
-        // TODO: remove after testing - force typedef patches 020 (rename propagation) to always re-apply
-        if ("TYPEDEF_PATCH_1000_020_A".equals(patchId)
-                || "TYPEDEF_PATCH_1000_020_B".equals(patchId)
-                || "TYPEDEF_PATCH_1000_020_C".equals(patchId)) {
-            return true;
-        }
-
         if (MapUtils.isEmpty(patchNameStatusMap) || !patchNameStatusMap.containsKey(patchId)) {
             return true;
         }
