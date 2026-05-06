@@ -56,10 +56,62 @@ const getRelationShipV2 = (params: { params: Record<string, unknown> }) => {
   return fetchApi(url, { method: "GET" });
 };
 
+/** Atlas `SearchParameters.sortBy` / `sortOrder` (see `SortOrder` enum: DESCENDING). */
+const LATEST_ENTITIES_TIMESTAMP_SORT = "__timestamp" as const;
+
+type LatestEntitiesSearchOptions = {
+  limit: number;
+  includeSubClassifications: boolean;
+};
+
+/**
+ * Request `__timestamp` so sort + “Created … ago” work. Do not set
+ * `excludeHeaderAttributes`: for `_ALL_ENTITY_TYPES`, Atlas validates each
+ * `attributes` entry against `__ENTITY_ROOT` and rejects `name` / `qualifiedName`
+ * / `guid` (see `excludeHeaderAttributesAllEntityType` in Atlas tests). Normal
+ * headers then include name, guid, typeName like the main basic search.
+ */
+const buildLatestEntitiesBasicBody = (opts: LatestEntitiesSearchOptions) => {
+  return {
+    typeName: "_ALL_ENTITY_TYPES",
+    excludeDeletedEntities: true,
+    includeClassificationAttributes: true,
+    includeSubTypes: true,
+    includeSubClassifications: opts.includeSubClassifications,
+    limit: opts.limit,
+    offset: 0,
+    tagFilters: null,
+    entityFilters: null,
+    classification: null,
+    termName: null,
+    relationshipFilters: null,
+    attributes: ["__timestamp"],
+    sortBy: LATEST_ENTITIES_TIMESTAMP_SORT,
+    sortOrder: "DESCENDING",
+  };
+};
+
+/**
+ * Dashboard card only: newest entities by `__timestamp`, no entity filters,
+ * sub-classifications off, full entity headers for name/guid/type.
+ */
+const getLatestEntities = () => {
+  return getBasicSearchResult(
+    {
+      data: buildLatestEntitiesBasicBody({
+        limit: 7,
+        includeSubClassifications: false,
+      }),
+    },
+    "basic"
+  );
+};
+
 export {
-  getBasicSearchResult,
-  getRelationShipResult,
-  getGlobalSearchResult,
-  getRelationShip,
-  getRelationShipV2
+	getBasicSearchResult,
+	getRelationShipResult,
+	getGlobalSearchResult,
+	getRelationShip,
+	getRelationShipV2,
+	getLatestEntities
 };
