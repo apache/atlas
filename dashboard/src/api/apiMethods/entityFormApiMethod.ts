@@ -20,7 +20,7 @@ import {
   getEntityUrl,
   getTypedefUrl,
 } from "@api/apiUrlLinks/entityFormApiUrl";
-import { _delete, _get } from "./apiMethod";
+import { _get } from "./apiMethod";
 import { entitiesApiUrl } from "@api/apiUrlLinks/entitiesApiUrl";
 
 interface importTmplConfigs {
