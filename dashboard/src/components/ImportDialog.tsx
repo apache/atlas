@@ -37,7 +37,8 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
-import { getGlossaryImport } from "../api/apiMethods/glossaryApiMethod";
+import { postGlossaryImportFormData } from "@utils/glossaryImportFlow";
+import { getApiErrorToastMessage } from "@utils/apiErrorToastMessage";
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   "& .MuiDialogContent-root": {
@@ -77,22 +78,27 @@ export const ImportDialog: React.FC<CustomModalProps> = ({
   const onUpload = async () => {
     if (fileData) {
       try {
-        let apiMethod =
+        const onProgress = (progressValue: number) => {
+          setProgress(progressValue);
+        };
+        const importResp =
           title == "Import Business Metadata"
-            ? getBusinessMetadataImport
-            : getGlossaryImport;
-        let formData = new FormData();
-        formData.append("file", fileData);
-        const importResp = await apiMethod(formData, {
-          onUploadProgress: (progressEvent: {
-            loaded: number;
-            total: number;
-          }) => {
-            let progressValue =
-              (progressEvent.loaded / progressEvent.total) * 100;
-            setProgress(progressValue);
-          }
-        });
+            ? await (async () => {
+                const formData = new FormData();
+                formData.append("file", fileData);
+                return getBusinessMetadataImport(formData, {
+                  onUploadProgress: (progressEvent: {
+                    loaded: number;
+                    total: number;
+                  }) => {
+                    if (!progressEvent.total) return;
+                    onProgress(
+                      (progressEvent.loaded / progressEvent.total) * 100
+                    );
+                  }
+                });
+              })()
+            : await postGlossaryImportFormData(fileData, onProgress);
 
         if (importResp.data.failedImportInfoList == undefined) {
           toast.dismiss(toastId.current);
@@ -114,8 +120,12 @@ export const ImportDialog: React.FC<CustomModalProps> = ({
         }
         setImportData(importResp.data);
       } catch (error) {
+        const message = getApiErrorToastMessage(error);
+        if (message === null) {
+          return;
+        }
         toast.dismiss(toastId.current);
-        toastId.current = toast.error(`Invalid JSON response from server`);
+        toastId.current = toast.error(message);
       }
     }
   };
