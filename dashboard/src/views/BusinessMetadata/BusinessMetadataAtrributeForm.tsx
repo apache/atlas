@@ -898,6 +898,7 @@ const BusinessMetadataAttributeForm = ({
               maxWidth="sm"
               button2Handler={handleSubmit(onSubmit)}
               disableButton2={isSubmitting}
+              button2Loading={isSubmitting}
             >
               <Stack gap={2} paddingTop="2rem" paddingBottom="2rem">
                 <EnumCreateUpdate

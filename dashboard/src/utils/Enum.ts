@@ -319,6 +319,15 @@ export const queryBuilderUIOperatorToAPI = {
 
 export const queryBuilderApiOperatorToUI = invert(queryBuilderUIOperatorToAPI);
 
+/**
+ * Converts API operator (eq, lte, gte, etc.) to display symbol (=, <=, >=, etc.)
+ * Used when rendering filter query chips above search results table
+ */
+export const getDisplayOperator = (operator: string): string => {
+	const mapped = (queryBuilderApiOperatorToUI as Map<string, string>).get(operator);
+	return mapped ?? operator;
+};
+
 export const queryBuilderDateRangeUIValueToAPI: Record<string, string> = {
   Today: "TODAY",
   Yesterday: "YESTERDAY",

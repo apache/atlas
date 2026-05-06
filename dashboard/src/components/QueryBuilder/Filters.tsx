@@ -25,7 +25,7 @@ import {
   FormControlLabel
 } from "@mui/material";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Accordion,
   AccordionDetails,
@@ -47,6 +47,7 @@ import { useAppSelector } from "@hooks/reducerHook";
 import { cloneDeep } from "@utils/Helper";
 import { getObjDef } from "@views/Administrator/Audits/AuditsFilter/AuditFiltersFields";
 import { attributeFilter } from "@utils/CommonViewFunction";
+import { getDisplayOperator } from "@utils/Enum";
 import moment from "moment";
 import RelationshipFilters from "./RelationshipFilters";
 import TypeFilters from "./TypeFilters/TypeFilters";
@@ -70,28 +71,66 @@ const Filters = ({
   const tagParams = searchParams.get("tag");
   const relationshipParams = searchParams.get("relationshipName");
   const entityFilterParams = searchParams.get("entityFilters");
-  const [checkedEntities, setCheckedEntities] = useState<any>(
-    !isEmpty(searchParams.get("includeDE"))
-      ? searchParams.get("includeDE")
-      : false
+  const [checkedEntities, setCheckedEntities] = useState<boolean>(
+    searchParams.get("includeDE") === "true" || searchParams.get("includeDE") === true
   );
-  const [checkedSubClassifications, setCheckedSubClassifications] =
-    useState<any>(
-      !isEmpty(searchParams.get("excludeSC"))
-        ? searchParams.get("excludeSC")
-        : false
-    );
-  const [checkedSubTypes, setCheckedSubTypes] = useState<any>(
-    !isEmpty(searchParams.get("excludeST"))
-      ? searchParams.get("excludeST")
-      : false
+  const [checkedSubClassifications, setCheckedSubClassifications] = useState<boolean>(
+    searchParams.get("excludeSC") === "true" || searchParams.get("excludeSC") === true
   );
+  const [checkedSubTypes, setCheckedSubTypes] = useState<boolean>(
+    searchParams.get("excludeST") === "true" || searchParams.get("excludeST") === true
+  );
+  const parseFiltersFromUrl = (params: string | null) => {
+    if (isEmpty(params)) return null;
+    const parsed = attributeFilter.extractUrl({
+      value: params,
+      formatDate: true
+    });
+    if (!parsed?.rules) return null;
+    const rulesArr = Array.isArray(parsed.rules)
+      ? parsed.rules
+      : Object.keys(parsed.rules || {}).map((k) => parsed.rules[k]);
+    const mappedRules = rulesArr
+      .filter((r) => r && !r.condition)
+      .map((r, i) => ({
+        field: r.id,
+        operator: getDisplayOperator(r.operator) || r.operator,
+        value: r.value,
+        id: `url-rule-${i}`
+      }));
+    if (mappedRules.length === 0) return null;
+    return {
+      combinator: (parsed.condition || "AND").toLowerCase(),
+      rules: mappedRules
+    };
+  };
+
+  const entityFiltersFromUrl = parseFiltersFromUrl(entityFilterParams);
+  const tagFilterParams = searchParams.get("tagFilters");
+  const relationshipFilterParams = searchParams.get("relationshipFilters");
+  const tagFiltersFromUrl = parseFiltersFromUrl(tagFilterParams);
+  const relationshipFiltersFromUrl = parseFiltersFromUrl(relationshipFilterParams);
+
   const [typeQuery, setTypeQuery] = useState(
     !isEmpty(globalSearchFilterInitialQuery.getQuery()?.entityFilters) &&
       !isEmpty(entityFilterParams)
       ? globalSearchFilterInitialQuery.getQuery()?.entityFilters
-      : initialQuery
+      : !isEmpty(entityFiltersFromUrl)
+        ? entityFiltersFromUrl
+        : initialQuery
   );
+
+  useEffect(() => {
+    if (
+      !isEmpty(entityFilterParams) &&
+      isEmpty(globalSearchFilterInitialQuery.getQuery()?.entityFilters) &&
+      !isEmpty(entityFiltersFromUrl)
+    ) {
+      globalSearchFilterInitialQuery.setQuery({
+        entityFilters: entityFiltersFromUrl
+      });
+    }
+  }, [entityFilterParams]);
   const [classificationQuery, setClassificationQuery] = useState(
     !isEmpty(globalSearchFilterInitialQuery.getQuery()?.tagFilters)
       ? globalSearchFilterInitialQuery.getQuery()?.tagFilters
@@ -125,28 +164,63 @@ const Filters = ({
     businessMetadata: businessMetadataDefs
   };
 
+  const appliedIncludeDE = searchParams.get("includeDE") === "true" || searchParams.get("includeDE") === true;
+  const appliedExcludeSC = searchParams.get("excludeSC") === "true" || searchParams.get("excludeSC") === true;
+  const appliedExcludeST = searchParams.get("excludeST") === "true" || searchParams.get("excludeST") === true;
+
+  const hasChanges = useMemo(() => {
+    const switchChanged =
+      !!checkedEntities !== !!appliedIncludeDE ||
+      !!checkedSubClassifications !== !!appliedExcludeSC ||
+      !!checkedSubTypes !== !!appliedExcludeST;
+
+    const normalizeQuery = (q: RuleGroupType | null) => {
+      if (!q || !q.rules || q.rules.length === 0) return JSON.stringify({ combinator: "and", rules: [] });
+      return JSON.stringify({ combinator: q.combinator || "and", rules: q.rules });
+    };
+
+    const entityQueryChanged =
+      normalizeQuery(typeQuery) !== normalizeQuery(entityFiltersFromUrl || initialQuery);
+    const tagQueryChanged =
+      normalizeQuery(classificationQuery) !== normalizeQuery(tagFiltersFromUrl || initialQuery);
+    const relationshipQueryChanged =
+      normalizeQuery(relationshipQuery) !== normalizeQuery(relationshipFiltersFromUrl || initialQuery);
+
+    return switchChanged || entityQueryChanged || tagQueryChanged || relationshipQueryChanged;
+  }, [
+    checkedEntities,
+    checkedSubClassifications,
+    checkedSubTypes,
+    appliedIncludeDE,
+    appliedExcludeSC,
+    appliedExcludeST,
+    typeQuery,
+    classificationQuery,
+    relationshipQuery,
+    entityFiltersFromUrl,
+    tagFiltersFromUrl,
+    relationshipFiltersFromUrl
+  ]);
+
   const handleSwitchChangeEntities = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     event.stopPropagation();
-    searchParams.set("includeDE", event.target.checked);
-    setCheckedEntities(event.target.checked);
+    setCheckedEntities(Boolean(event.target.checked));
   };
 
   const handleSwitchChangeSubClassification = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     event.stopPropagation();
-    searchParams.set("excludeSC", event.target.checked);
-    setCheckedSubClassifications(event.target.checked);
+    setCheckedSubClassifications(Boolean(event.target.checked));
   };
 
   const handleSwitchChangeSubTypes = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     event.stopPropagation();
-    searchParams.set("excludeST", event.target.checked);
-    setCheckedSubTypes(event.target.checked);
+    setCheckedSubTypes(Boolean(event.target.checked));
   };
 
   const paramsObject: Record<string, any> = {};
@@ -187,9 +261,9 @@ const Filters = ({
     let rules_widgets = null;
     let systemAttrArr;
 
-    if (!isEmpty(paramsObject)) {
+    if (!isEmpty(paramsObject?.entityFilters)) {
       rules_widgets = attributeFilter.extractUrl({
-        value: undefined,
+        value: paramsObject.entityFilters,
         formatDate: true
       });
     }
@@ -699,6 +773,7 @@ const Filters = ({
                 <CustomButton
                   variant="contained"
                   size="small"
+                  disabled={!hasChanges}
                   onClick={() => {
                     applyFilter();
                   }}
