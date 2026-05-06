@@ -18,9 +18,11 @@
 import { styled } from "@mui/material/styles";
 import {
   Suspense,
+  useCallback,
   useEffect,
   useState,
   ChangeEvent,
+  KeyboardEvent,
   lazy,
   useRef,
 } from "react";
@@ -50,6 +52,7 @@ import { fetchRootClassification } from "@redux/slice/rootClassificationSlice";
 import { fetchTypeHeaderData } from "@redux/slice/typeDefSlices/typeDefHeaderSlice";
 import { fetchRootEntity } from "@redux/slice/allEntityTypesSlice";
 import { fetchMetricEntity } from "@redux/slice/metricsSlice";
+import { refreshDashboardHomeData } from "@utils/refreshDashboardHome";
 import ErrorPage from "@views/ErrorPage";
 import AppRoutes from "@views/AppRoutes";
 import ErrorBoundaryWithNavigate from "../../ErrorBoundary";
@@ -153,7 +156,28 @@ const SideBarBody = (props: {
     dispatch(fetchRootClassification());
     dispatch(fetchEnumData());
     dispatch(fetchMetricEntity());
-  }, []);
+  }, [dispatch]);
+
+  const handleAtlasLogoClick = useCallback(() => {
+    refreshDashboardHomeData(dispatch);
+    navigate(
+      {
+        pathname: "/search",
+      },
+      { replace: true }
+    );
+  }, [dispatch, navigate]);
+
+  const handleAtlasLogoKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLElement>) => {
+      if (e.key !== "Enter" && e.key !== " ") {
+        return;
+      }
+      e.preventDefault();
+      handleAtlasLogoClick();
+    },
+    [handleAtlasLogoClick]
+  );
 
   useEffect(() => {
     const draggerElement = draggerRef.current;
@@ -236,14 +260,11 @@ const SideBarBody = (props: {
                 cursor: "pointer",
                 boxSizing: "border-box",
               }}
-              onClick={() => {
-                navigate(
-                  {
-                    pathname: "/search",
-                  },
-                  { replace: true }
-                );
-              }}
+              role="button"
+              tabIndex={0}
+              aria-label="Atlas home — refresh dashboard"
+              onClick={handleAtlasLogoClick}
+              onKeyDown={handleAtlasLogoKeyDown}
               data-cy="apache-atlas-logo-collapsed"
             >
               <img
@@ -271,20 +292,22 @@ const SideBarBody = (props: {
               }}
             >
               <Stack gap="1.5rem" width="100%" marginTop="1rem">
-                <img
-                  src={atlasLogo}
-                  alt="Atlas logo"
-                  onClick={() => {
-                    navigate(
-                      {
-                        pathname: "/search",
-                      },
-                      { replace: true }
-                    );
-                  }}
-                  className="header-logo cursor-pointer"
-                  data-cy="atlas-logo"
-                />
+                <span
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Atlas home — refresh dashboard"
+                  onClick={handleAtlasLogoClick}
+                  onKeyDown={handleAtlasLogoKeyDown}
+                  className="inline-block cursor-pointer"
+                >
+                  <img
+                    src={atlasLogo}
+                    alt=""
+                    aria-hidden
+                    className="header-logo"
+                    data-cy="atlas-logo"
+                  />
+                </span>
                 <Paper
                   sx={{
                     width: "100%",
@@ -493,7 +516,7 @@ const SideBarBody = (props: {
           }),
           margin: "0",
           overflowX: "auto",
-          background: "#f5f5f5",
+          background: "#f5f7f9",
           padding: "0",
         }}
       >

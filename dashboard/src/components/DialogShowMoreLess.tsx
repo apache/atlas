@@ -576,6 +576,7 @@ const DialogShowMoreLess = ({
           button2Label="Remove"
           button2Handler={handleRemove}
           disableButton2={removeLoader}
+          button2Loading={removeLoader}
           isDirty={true}
         >
           {relatedTerm ? (
