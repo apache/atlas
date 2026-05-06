@@ -77,6 +77,7 @@ const DeleteTag = (props: {
         maxWidth="sm"
         button2Handler={handleRemove}
         disableButton2={loader}
+        button2Loading={loader}
       >
         <Typography fontSize={15}>
           Are you sure you want to delete classification
