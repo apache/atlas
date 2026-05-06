@@ -1239,10 +1239,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 return;
             }
 
-            LOG.info("Rename detected (qualifiedName changed): type={}; guid={}; processing dependent entities for rename propagation",
-                    entityType.getTypeName(), entityGuid);
-            LOG.debug("handleRenamePropagation(): qualifiedName old -> new (guid={}): {} -> {}", entityGuid, oldUniqueAttrValue,
-                    newUniqueAttrValue);
+            LOG.info("Rename detected (qualifiedName changed): type={}; guid={}; oldQualifiedName={}; newQualifiedName={}; processing dependent entities for rename propagation",
+                    entityType.getTypeName(), entityGuid, oldUniqueAttrValue, newUniqueAttrValue);
 
             entityRenameHandler.addDependentsToContext(context, entityType, vertex, entity);
         } catch (AtlasBaseException e) {

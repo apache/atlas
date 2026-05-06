@@ -35,10 +35,10 @@ public class RenamePropagationTarget {
 
     public RenamePropagationTarget(String targetTypeName, RelationshipCategory category,
                                    AtlasStructType.AtlasAttribute relAttr, List<Map<String, String>> propagateAttributes) {
-        this.targetTypeName      = targetTypeName;
-        this.category            = category;
-        this.relAttr              = relAttr;
-        this.propagateAttributes  = propagateAttributes != null ? Collections.unmodifiableList(propagateAttributes) : Collections.emptyList();
+        this.targetTypeName        = targetTypeName;
+        this.category              = category;
+        this.relAttr               = relAttr;
+        this.propagateAttributes   = propagateAttributes != null ? Collections.unmodifiableList(propagateAttributes) : Collections.emptyList();
     }
 
     public String getTargetTypeName() {

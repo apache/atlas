@@ -1221,7 +1221,6 @@ public class AtlasEntityType extends AtlasStructType {
             if (AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME.equals(override.getName()) && override.getAutoComputeFormat() != null) {
                 AtlasAttributeDef copy = new AtlasAttributeDef(attributeDef);
 
-                //TODO : can be removed
                 copy.setAutoComputeFormat(override.getAutoComputeFormat());
 
                 return copy;

@@ -125,11 +125,11 @@ public class EntityRenameHandler {
      *
      * <p>How the segment of {@code qualifiedName} to rewrite is chosen:
      * <ul>
-     *   <li><b>{@code propagateAttributes} present:</b> use {@link #findQualifiedNameOverrideKey} (mapping whose
+     *   <li>When {@code propagateAttributes} is present: use {@link #findQualifiedNameOverrideKey} (mapping whose
      *       {@code source} is {@code "name"}), write {@code newName} into that {@code target} path, and add any
      *       extra attributes via {@link #buildMappedAttrs}. For the next level, {@code newName} is read back from
      *       the patched path on the new qualified name (falling back to the prior {@code newName} if blank).</li>
-     *   <li><b>{@code propagateAttributes} absent:</b> use {@link AtlasEntityType#getAutoComputeFormatPathByRefTypeNameMap()}
+     *   <li>When {@code propagateAttributes} is absent: use {@link AtlasEntityType#getAutoComputeFormatPathByRefTypeNameMap()}
      *       on the dependent type to find the dotted path for {@code renamedTypeName}, then recompute with the same
      *       {@code newName}. Recursion keeps the same {@code renamedTypeName} and {@code newName}.</li>
      * </ul>
@@ -152,9 +152,22 @@ public class EntityRenameHandler {
             }
 
             for (AtlasEdge edge : toList(GraphHelper.getEdgesForLabel(sourceVertex, relAttr.getRelationshipEdgeLabel(), relAttr.getRelationshipEdgeDirection()))) {
+                if (GraphHelper.getStatus(edge) == AtlasEntity.Status.DELETED) {
+                    LOG.debug("collectDependents(): skip — soft-deleted edge (label={}, relationshipType={}, relationshipGuid={})",
+                            relAttr.getRelationshipEdgeLabel(),
+                            AtlasGraphUtilsV2.getTypeName(edge),
+                            GraphHelper.getRelationshipGuid(edge));
+                    continue;
+                }
+
                 AtlasVertex dependentVertex = getOtherVertex(edge, sourceVertex);
 
                 if (dependentVertex == null) {
+                    continue;
+                }
+
+                if (GraphHelper.getStatus(dependentVertex) == AtlasEntity.Status.DELETED) {
+                    LOG.debug("collectDependents(): skip — soft-deleted dependent vertex (guid={})", AtlasGraphUtilsV2.getIdFromVertex(dependentVertex));
                     continue;
                 }
 
@@ -220,14 +233,9 @@ public class EntityRenameHandler {
 
                 if (CollectionUtils.isNotEmpty(dependentEntityType.getRenamePropagationTargets())) {
                     if (CollectionUtils.isNotEmpty(propagationTarget.getPropagateAttributes())) {
-                        // This dependent becomes the next root; use the name segment we just patched (or the prior newName).
-                        String nameForChildPropagation = parseUniqueAttribute(newQualifiedName, uniqueAttributeAutoComputeFormat).get(qualifiedNameOverrideKey);
-
-                        if (StringUtils.isBlank(nameForChildPropagation)) {
-                            nameForChildPropagation = newName;
-                        }
-
-                        collectDependents(dependentVertex, dependentEntityType, dependentTypeName, nameForChildPropagation, visitedGuids, dependentUpdatesByGuid);
+                        // This dependent becomes the next root; recurse with the propagated name so
+                        // further dependents are updated relative to this entity's new name.
+                        collectDependents(dependentVertex, dependentEntityType, dependentTypeName, newName, visitedGuids, dependentUpdatesByGuid);
                     } else {
                         // Same renamed type and name propagate to further dependents.
                         collectDependents(dependentVertex, dependentEntityType, renamedTypeName, newName, visitedGuids, dependentUpdatesByGuid);
@@ -297,9 +305,9 @@ public class EntityRenameHandler {
     /**
      * Recomputes a dependent entity's qualifiedName after a rename using a 3-step in-memory approach:
      * <ol>
-     *   <li><b>Parse</b> — split the stored qualifiedName using the unique attribute's {@code autoComputeFormat}.</li>
-     *   <li><b>Override</b> — replace the path segment that changed (the renamed entity's name key).</li>
-     *   <li><b>Rebuild</b> — stitch the qualifiedName back together from the updated segments.</li>
+     *   <li>{@code Parse}: split the stored qualifiedName using the unique attribute's {@code autoComputeFormat}.</li>
+     *   <li>{@code Override}: replace the path segment that changed (the renamed entity's name key).</li>
+     *   <li>{@code Rebuild}: stitch the qualifiedName back together from the updated segments.</li>
      * </ol>
      * No extra graph reads are required; all values come from the existing qualifiedName string.
      */
