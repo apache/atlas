@@ -194,7 +194,7 @@ public class ServiceStateTest {
     @Test
     public void testAuditServerStatusWithException() throws Exception {
         if (!hasAuditServiceField()) {
-            throw new SkipException("ServiceState no longer exposes auditService field in server-common design.");
+            throw new SkipException("ServiceState no longer exposes auditService field in atlas-server-common design.");
         }
 
         ServiceState serviceState = newServiceState(true);

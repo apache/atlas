@@ -25,7 +25,7 @@
         <version>2.6.0</version>
     </parent>
 
-    <artifactId>server-common</artifactId>
+    <artifactId>atlas-server-common</artifactId>
     <packaging>jar</packaging>
     <name>Apache Atlas Server Common</name>
     <description>Shared server-side infrastructure for webapp modules</description>
