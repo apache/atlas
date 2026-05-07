@@ -215,7 +215,7 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>server-common</artifactId>
+            <artifactId>atlas-server-common</artifactId>
         </dependency>
 
         <dependency>

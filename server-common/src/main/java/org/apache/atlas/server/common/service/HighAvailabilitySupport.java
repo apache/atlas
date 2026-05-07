@@ -24,7 +24,7 @@ import org.apache.commons.configuration.Configuration;
 
 /**
  * Interface to abstract High Availability (HA) configuration retrieval.
- * Enables shared services in 'server-common' to operate without direct
+ * Enables shared services in {@code atlas-server-common} to operate without direct
  * dependencies on application-specific configuration classes.
  */
 public interface HighAvailabilitySupport {
