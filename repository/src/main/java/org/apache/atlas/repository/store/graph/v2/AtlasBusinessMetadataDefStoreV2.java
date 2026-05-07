@@ -336,7 +336,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
         if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
             for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
-                if (!Boolean.TRUE.equals(attributeDef.getIsIndexable())) {
+                if (!attributeDef.getIsIndexable()) {
                     return true;
                 }
             }

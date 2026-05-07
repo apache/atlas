@@ -123,7 +123,7 @@ public class AtlasBusinessMetadataType extends AtlasStructType {
                 bmAttribute = new AtlasBusinessAttribute(attribute, entityTypes);
             }
 
-            if (!hasNonIndexableAttributes && !Boolean.TRUE.equals(attributeDef.getIsIndexable())) {
+            if (!hasNonIndexableAttributes && !attributeDef.getIsIndexable()) {
                 hasNonIndexableAttributes = true;
             }
 

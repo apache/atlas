@@ -20,8 +20,6 @@ package org.apache.atlas.repository.store.graph;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -29,8 +27,6 @@ import java.util.List;
  * Interface for graph persistence store for AtlasTypeDef
  */
 public interface AtlasDefStore<T extends AtlasBaseTypeDef> {
-    Logger LOG = LoggerFactory.getLogger(AtlasDefStore.class);
-
     AtlasVertex preCreate(T typeDef) throws AtlasBaseException;
 
     T create(T typeDef, AtlasVertex preCreateResult) throws AtlasBaseException;
@@ -56,10 +52,6 @@ public interface AtlasDefStore<T extends AtlasBaseTypeDef> {
     void deleteByGuid(String guid, AtlasVertex preDeleteResult) throws AtlasBaseException;
 
     default AtlasVertex preDeleteByName(String name, boolean forceDelete) throws AtlasBaseException {
-        if (forceDelete) {
-            LOG.debug("Force-delete flag ignored in {}.preDeleteByName() for type '{}'; feature is implemented only for BusinessMetadata.", getClass().getSimpleName(), name);
-        }
-
         return preDeleteByName(name);
     }
 
@@ -68,10 +60,6 @@ public interface AtlasDefStore<T extends AtlasBaseTypeDef> {
     }
 
     default AtlasVertex preDeleteByGuid(String guid, boolean forceDelete) throws AtlasBaseException {
-        if (forceDelete) {
-            LOG.debug("Force-delete flag ignored in {}.preDeleteByGuid() for guid '{}'; feature is implemented only for BusinessMetadata.", getClass().getSimpleName(), guid);
-        }
-
         return preDeleteByGuid(guid);
     }
 

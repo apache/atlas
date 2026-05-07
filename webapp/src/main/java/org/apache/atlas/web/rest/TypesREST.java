@@ -404,8 +404,9 @@ public class TypesREST {
      * Bulk delete API for all types.
      *
      * @param typesDef A composite object that captures all types to be deleted.
-     * @param forceDelete If true, bypasses pre-delete validation checks and forcefully removes type definitions.
-     *                    For BusinessMetadata types:
+     * @param forceDelete Supported only for BusinessMetadata typedefs:
+     *                    If true, bypasses pre-delete validation checks and forcefully removes the type definition.
+     *                    For BusinessMetadata only:
      *                    - If isIndexable=true and force=false: performs normal graph scan validation
      *                    - If isIndexable=false and force=false: blocks deletion (requires force=true)
      *                    - If force=true: skips all validation and deletes the type
@@ -437,8 +438,9 @@ public class TypesREST {
     /**
      * Delete API for type identified by its name.
      * @param typeName Name of the type to be deleted.
-     * @param forceDelete If true, bypasses pre-delete validation checks and forcefully removes the type definition.
-     *                    For BusinessMetadata types:
+     * @param forceDelete Supported only for BusinessMetadata typedefs:
+     *                    If true, bypasses pre-delete validation checks and forcefully removes the type definition.
+     *                    For BusinessMetadata only:
      *                    - If isIndexable=true and force=false: performs normal graph scan validation
      *                    - If isIndexable=false and force=false: blocks deletion (requires force=true)
      *                    - If force=true: skips all validation and deletes the type

@@ -148,24 +148,12 @@ abstract class AtlasAbstractDefStoreV2<T extends AtlasBaseTypeDef> implements At
 
     @Override
     public void deleteByName(String name, AtlasVertex preDeleteResult) throws AtlasBaseException {
-        LOG.debug("==> AtlasAbstractDefStoreV2.deleteByName({}, {})", name, preDeleteResult);
-
-        AtlasVertex vertex = (preDeleteResult == null) ? preDeleteByName(name) : preDeleteResult;
-
-        typeDefStore.deleteTypeVertex(vertex);
-
-        LOG.debug("<== AtlasAbstractDefStoreV2.deleteByName({}, {})", name, preDeleteResult);
+        deleteByName(name, preDeleteResult, false);
     }
 
     @Override
     public void deleteByGuid(String guid, AtlasVertex preDeleteResult) throws AtlasBaseException {
-        LOG.debug("==> AtlasAbstractDefStoreV2.deleteByGuid({}, {})", guid, preDeleteResult);
-
-        AtlasVertex vertex = (preDeleteResult == null) ? preDeleteByGuid(guid) : preDeleteResult;
-
-        typeDefStore.deleteTypeVertex(vertex);
-
-        LOG.debug("<== AtlasAbstractDefStoreV2.deleteByGuid({}, {})", guid, preDeleteResult);
+        deleteByGuid(guid, preDeleteResult, false);
     }
 
     @Override
