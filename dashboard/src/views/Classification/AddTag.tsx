@@ -381,6 +381,7 @@ const AddTag = (props: {
       disableButton2={
         isEmpty(classificationData) ? true : isSubmitting
       }
+      button2Loading={isSubmitting}
       isDirty={
         isEmpty(classificationData)
           ? false
