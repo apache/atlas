@@ -118,12 +118,11 @@ const ServerStats = ({ selectedValue, currentMetricsData }: any) => {
 
   let notificationTableHeader = [
     "Count",
-    "Avg",
-    "Time (ms)",
+    "Avg time (ms)",
     "Creates",
     "Updates",
-    "Deletes"
-    // "Failed"
+    "Deletes",
+    "Failed"
   ];
 
   let topciOffsetTableHeader = [

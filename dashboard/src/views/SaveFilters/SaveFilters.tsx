@@ -206,6 +206,7 @@ const SaveFilters = ({
         maxWidth="sm"
         button2Handler={handleSubmit(onSubmit)}
         disableButton2={isSubmitting}
+        button2Loading={isSubmitting}
       >
         {" "}
         <form onSubmit={handleSubmit(onSubmit)}>
