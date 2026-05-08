@@ -15,65 +15,40 @@
  * limitations under the License.
  */
 
-import QuickSearch from "@components/GlobalSearch/QuickSearch";
-import { CustomButton } from "@components/muiComponents";
-import { useAppSelector } from "@hooks/reducerHook";
 import { Stack } from "@mui/material";
-import { useState } from "react";
-import EntityForm from "./Entity/EntityForm";
-import AddIcon from "@mui/icons-material/Add";
+import QuickSearch from "@components/GlobalSearch/QuickSearch";
+import DashboardOverview from "./DashboardOverview/DashboardOverview";
+import { useAppSelector } from "@hooks/reducerHook";
 
 const DashBoard = () => {
-  const { sessionObj = "" }: any = useAppSelector(
-    (state: any) => state.session
-  );
-  const [entityModal, setEntityModal] = useState<boolean>(false);
-  const { data } = sessionObj || {};
-  const key = "atlas.entity.create.allowed";
-  const entityCreate = data?.[key] || "";
+	const dashboardRefreshVersion = useAppSelector((state) => state.dashboardRefresh.version);
 
-  const handleOpenEntityModal = () => {
-    setEntityModal(true);
-  };
-  const handleCloseEntityModal = () => {
-    setEntityModal(false);
-  };
-  return (
-    <Stack
-      alignItems="flex-start"
-      justifyContent="space-between"
-      position="relative"
-      height="100%"
-      flex="1"
-      padding="0"
-    >
-      <Stack direction="row" justifyContent="flex-end" width={"100%"}>
-        {entityCreate && (
-          <CustomButton
-            variant="contained"
-            size="small"
-            onClick={(_e: any) => handleOpenEntityModal()}
-            startIcon={<AddIcon />}
-          >
-            Create Entity
-          </CustomButton>
-        )}
-      </Stack>
-      <Stack
-        justifyContent="center"
-        flex="1"
-        alignItems={"center"}
-        height={"100%"}
-        width={"100%"}
-        className="dashboard-quick-search"
-      >
-        <QuickSearch />
-      </Stack>
-      {entityModal && (
-        <EntityForm open={entityModal} onClose={handleCloseEntityModal} />
-      )}
-    </Stack>
-  );
+	return (
+		<Stack
+			width="100%"
+			maxWidth="100%"
+			alignItems="stretch"
+			justifyContent="flex-start"
+			position="relative"
+			height="100%"
+			flex="1"
+			padding={0}
+			spacing={2}
+			sx={{ boxSizing: "border-box", overflow: "hidden" }}
+		>
+			<Stack
+				direction="row"
+				width="100%"
+				justifyContent="center"
+				sx={{ mb: 2, flexShrink: 0 }}
+			>
+				<QuickSearch key={dashboardRefreshVersion} />
+			</Stack>
+			<Stack width="100%" flex={1} sx={{ minWidth: 0 }}>
+				<DashboardOverview />
+			</Stack>
+		</Stack>
+	);
 };
 
 export default DashBoard;
