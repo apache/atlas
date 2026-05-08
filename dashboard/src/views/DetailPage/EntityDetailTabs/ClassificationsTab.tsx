@@ -78,6 +78,7 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
   );
 
   const [openModal, setOpenModal] = useState<boolean>(false);
+  const [removeAssignmentLoading, setRemoveAssignmentLoading] = useState(false);
   const [tagModal, setTagModal] = useState<boolean>(false);
   const [updateTable, setUpdateTable] = useState(moment.now());
   const [rowdata, setRowData] = useState();
@@ -129,6 +130,7 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
 
   const handleRemove = async () => {
     try {
+      setRemoveAssignmentLoading(true);
       await removeClassification(guid, currentValue.selectedValue);
       if (!isEmpty(guid)) {
         dispatchApi(fetchDetailPageData(guid as string));
@@ -145,6 +147,8 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
       setOpenModal(false);
     } catch (error) {
       serverError(error, toastId);
+    } finally {
+      setRemoveAssignmentLoading(false);
     }
   };
 
@@ -381,6 +385,8 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
           button1Handler={handleCloseModal}
           button2Label="Remove"
           button2Handler={handleRemove}
+          disableButton2={removeAssignmentLoading}
+          button2Loading={removeAssignmentLoading}
         >
           <Typography fontSize={15}>
             Remove: <b>{currentValue.selectedValue}</b> assignment from{" "}

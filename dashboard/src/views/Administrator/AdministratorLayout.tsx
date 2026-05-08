@@ -19,7 +19,7 @@ import { LinkTab } from "@components/muiComponents";
 import { Stack, Tabs } from "@mui/material";
 import { Item, samePageLinkNavigation } from "@utils/Muiutils";
 import { isEmpty } from "@utils/Utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import BusinessMetadataTab from "./BusinessMetadataTab";
 import Enumerations from "./Enumerations";
@@ -43,6 +43,26 @@ const AdministratorLayout = () => {
   const [value, setValue] = useState(
     !isEmpty(activeTab) ? allTabs.findIndex((val) => val === activeTab) : 0
   );
+
+  useEffect(() => {
+    const tabIndex = !isEmpty(activeTab)
+      ? allTabs.findIndex((val) => val === activeTab)
+      : 0;
+    const resolvedIndex = tabIndex >= 0 ? tabIndex : 0;
+    setValue(resolvedIndex);
+
+    if (activeTab && activeTab !== "businessMetadata") {
+      setForm(false);
+    }
+    const createParam = searchParams.get("create");
+    if (createParam === "true" && activeTab === "businessMetadata") {
+      setForm(true);
+      setBMAttribute({});
+      const newParams = new URLSearchParams(location.search);
+      newParams.delete("create");
+      navigate({ pathname: "/administrator", search: newParams.toString() }, { replace: true });
+    }
+  }, [activeTab, location.search, navigate]);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     if (

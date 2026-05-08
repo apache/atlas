@@ -48,6 +48,7 @@ import { paramsType } from "@models/detailPageType";
 import TagAtrributes from "./TagAttributes";
 import { fetchClassificationData } from "@redux/slice/typeDefSlices/typedefClassificationSlice";
 import { AntSwitch } from "@utils/Muiutils";
+import { refreshDashboardHomeData } from "@utils/refreshDashboardHome";
 
 const ClassificationForm = ({
   open,
@@ -202,7 +203,8 @@ const ClassificationForm = ({
           isAdd ? "created" : "updated"
         } successfully`
       );
-      fetchInitialData();
+      await fetchInitialData();
+      refreshDashboardHomeData(dispatchApi);
     } catch (error) {
       console.error(
         `Error while ${isAdd ? "creating" : "updating"} classification`,
@@ -223,6 +225,7 @@ const ClassificationForm = ({
         button1Handler={onClose}
         button2Label={isAdd ? "Create" : "Save"}
         disableButton2={isSubmitting}
+        button2Loading={isSubmitting}
         isDirty={isDirty}
         maxWidth="sm"
         button2Handler={handleSubmit(onSubmit)}
