@@ -16,6 +16,7 @@
  */
 
 import { useRef, useState } from "react";
+import { useAsyncPending } from "../hooks/useAsyncPending";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import Stack from "@mui/material/Stack";
@@ -72,6 +73,9 @@ const TreeNodeIcons = (props: {
   const [glossaryModal, setGlossaryModal] = useState<boolean>(false);
   const [termModal, setTermModal] = useState(false);
   const [categoryModal, setCategoryModal] = useState(false);
+  const [savedSearchDeleteLoading, setSavedSearchDeleteLoading] =
+    useState(false);
+  const { pending: renameSubmitting, run: runRenameAction } = useAsyncPending();
 
   const openNode = Boolean(expandNode);
 
@@ -128,6 +132,7 @@ const TreeNodeIcons = (props: {
 
   const handleRemove = async () => {
     try {
+      setSavedSearchDeleteLoading(true);
       await removeSavedSearch(selectedSearchData.guid);
       setDeleteModal(false);
       setExpandNode(null);
@@ -142,23 +147,27 @@ const TreeNodeIcons = (props: {
       toastId.current = toast.success(`${node.id} was deleted successfully`);
     } catch (error) {
       serverError(error, toastId);
+    } finally {
+      setSavedSearchDeleteLoading(false);
     }
   };
 
-  const handleEdit = async () => {
-    try {
-      let filterData = { ...selectedSearchData, name: value };
-      await editSavedSearch(filterData as CustomFiltersNodeType, "PUT");
-      updatedData();
-      setRenameModal(false);
-      setExpandNode(null);
-      toast.dismiss(toastId.current);
-      toastId.current = toast.success(
-        `${filterData.name} was updated successfully`
-      );
-    } catch (error) {
-      serverError(error, toastId);
-    }
+  const handleEdit = () => {
+    void runRenameAction(async () => {
+      try {
+        let filterData = { ...selectedSearchData, name: value };
+        await editSavedSearch(filterData as CustomFiltersNodeType, "PUT");
+        updatedData();
+        setRenameModal(false);
+        setExpandNode(null);
+        toast.dismiss(toastId.current);
+        toastId.current = toast.success(
+          `${filterData.name} was updated successfully`
+        );
+      } catch (error) {
+        serverError(error, toastId);
+      }
+    });
   };
   return (
     <>
@@ -483,7 +492,8 @@ const TreeNodeIcons = (props: {
         button1Handler={handleCloseRenameModal}
         button2Label="Update"
         button2Handler={handleEdit}
-        // disableButton2={value}
+        disableButton2={renameSubmitting}
+        button2Loading={renameSubmitting}
       >
         <Stack
           sx={{
@@ -518,6 +528,8 @@ const TreeNodeIcons = (props: {
         button1Handler={handleCloseDeleteModal}
         button2Label="Ok"
         button2Handler={handleRemove}
+        disableButton2={savedSearchDeleteLoading}
+        button2Loading={savedSearchDeleteLoading}
       >
         <Typography fontSize={15}>
           Are you sure you want to delete <strong>{node.id}</strong> ?{""}
