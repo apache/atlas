@@ -102,6 +102,8 @@ public interface AtlasTypeDefStore {
 
     void deleteTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException;
 
+    void deleteTypesDef(AtlasTypesDef typesDef, boolean forceDelete) throws AtlasBaseException;
+
     AtlasTypesDef searchTypesDef(SearchFilter searchFilter) throws AtlasBaseException;
 
     /* Generic operation */
@@ -109,7 +111,7 @@ public interface AtlasTypeDefStore {
 
     AtlasBaseTypeDef getByGuid(String guid) throws AtlasBaseException;
 
-    void deleteTypeByName(String typeName) throws AtlasBaseException;
+    void deleteTypeByName(String typeName, boolean forceDelete) throws AtlasBaseException;
 
     void notifyLoadCompletion();
 }
