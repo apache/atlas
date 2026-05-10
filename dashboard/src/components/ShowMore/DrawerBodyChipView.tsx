@@ -388,6 +388,7 @@ const DrawerBodyChipView = ({
           button2Label="Remove"
           button2Handler={handleRemove}
           disableButton2={removeLoader}
+          button2Loading={removeLoader}
         >
           <Typography fontSize={14}>
             Remove:{" "}

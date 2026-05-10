@@ -521,6 +521,7 @@ const EntityForm = ({
       button2Label={guid ? "Update" : "Create"}
       button2Handler={handleSubmit(onSubmit)}
       disableButton2={isSubmitting}
+      button2Loading={isSubmitting}
       isDirty={isDirty}
       maxWidth="md"
     >

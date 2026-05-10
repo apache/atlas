@@ -64,7 +64,7 @@ import { globalSearchFilterInitialQuery, isEmpty } from "@utils/Utils";
 import { attributeFilter } from "@utils/CommonViewFunction";
 import { cloneDeep } from "@utils/Helper";
 import LaunchOutlinedIcon from "@mui/icons-material/LaunchOutlined";
-import { getGlossaryImportTmpl } from "@api/apiMethods/glossaryApiMethod";
+import { downloadGlossaryImportTemplate } from "@utils/glossaryImportFlow";
 import { toast } from "react-toastify";
 import { EnumTypeDefData, TreeNode } from "@models/treeStructureType";
 import ImportDialog from "@components/ImportDialog";
@@ -969,33 +969,26 @@ const BarTreeView: FC<{
 
   const downloadFile = async () => {
     try {
-      let apiResp: any = {};
-      if (treeName == "Entities") {
-        apiResp = await getBusinessMetadataImportTmpl({});
-      } else if (treeName == "Glossary") {
-        apiResp = await getGlossaryImportTmpl({});
+      if (treeName == "Glossary") {
+        await downloadGlossaryImportTemplate();
+        return;
       }
-      let text: string = "";
-      if (apiResp) {
-        text = apiResp.data;
-      }
+      const apiResp: any = await getBusinessMetadataImportTmpl({});
+      const text: string = apiResp ? apiResp.data : "";
       const blob = new Blob([text], { type: "text/plain" });
 
       const url = window.URL.createObjectURL(blob);
 
       const link = document.createElement("a");
       link.href = url;
-      if (treeName == "Entities") {
-        link.setAttribute("download", "template_business_metadata");
-      } else if (treeName == "Glossary") {
-        link.setAttribute("download", "template");
-      }
+      link.setAttribute("download", "template_business_metadata");
 
       document.body.appendChild(link);
 
       link.click();
 
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch {
       /* ignore download error */
     }
