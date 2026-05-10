@@ -502,6 +502,33 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-opentelemetry-javaagent</id>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>io.opentelemetry.javaagent</groupId>
+                                    <artifactId>opentelemetry-javaagent</artifactId>
+                                    <version>${opentelemetry.javaagent.version}</version>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
+                                    <destFileName>opentelemetry-javaagent.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                            <outputDirectory>${project.build.directory}/otel-agent</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
                 <configuration>
                     <archiveClasses>true</archiveClasses>
@@ -524,6 +551,13 @@
                         <resource>
                             <directory>${project.build.directory}/api/v2/apidocs/ui</directory>
                             <targetPath>apidocs</targetPath>
+                        </resource>
+                        <resource>
+                            <directory>${project.build.directory}/otel-agent</directory>
+                            <targetPath>WEB-INF/lib</targetPath>
+                            <includes>
+                                <include>opentelemetry-javaagent.jar</include>
+                            </includes>
                         </resource>
                     </webResources>
 

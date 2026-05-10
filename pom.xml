@@ -165,6 +165,7 @@
         <npm-for-v2.version>6.13.7</npm-for-v2.version>
         <okio.version>3.4.0</okio.version>
         <opencsv.version>5.0</opencsv.version>
+        <opentelemetry.javaagent.version>2.27.0</opentelemetry.javaagent.version>
         <paranamer.version>2.7</paranamer.version>
         <poi-ooxml.version>5.4.0</poi-ooxml.version>
         <poi.version>5.4.0</poi.version>
