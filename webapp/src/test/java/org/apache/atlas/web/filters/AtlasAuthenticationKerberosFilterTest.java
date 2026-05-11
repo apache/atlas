@@ -17,8 +17,8 @@
 package org.apache.atlas.web.filters;
 
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.server.common.service.EmbeddedServer;
 import org.apache.atlas.web.security.BaseSecurityTest;
-import org.apache.atlas.web.service.EmbeddedServer;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hdfs.web.URLConnectionFactory;

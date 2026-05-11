@@ -57,6 +57,9 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityCorrelationStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.server.common.filters.AuditFilter;
+import org.apache.atlas.server.common.filters.AuditFilter.AuditLog;
+import org.apache.atlas.server.common.service.ServiceState;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -72,9 +75,6 @@ import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateReq
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityPartialUpdateRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
-import org.apache.atlas.web.filters.AuditFilter;
-import org.apache.atlas.web.filters.AuditFilter.AuditLog;
-import org.apache.atlas.web.service.ServiceState;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.map.PassiveExpiringMap;
@@ -120,7 +120,7 @@ import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_TYPENAME;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_UNIQUE_ATTRIBUTES;
 import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.TYPE_HIVE_PROCESS;
-import static org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI;
+import static org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI;
 
 /**
  * Consumer of notifications from hooks e.g., hive hook etc.

@@ -54,23 +54,23 @@
         <csrf disabled="true"/>
     </security:http>
 
-    <beans:bean id="krbAuthenticationFilter" class="org.apache.atlas.web.filters.AtlasAuthenticationFilter">
+    <beans:bean id="krbAuthenticationFilter" class="org.apache.atlas.server.common.filters.AtlasAuthenticationFilter">
     </beans:bean>
 
-    <beans:bean id="ssoAuthenticationFilter" class="org.apache.atlas.web.filters.AtlasKnoxSSOAuthenticationFilter">
+    <beans:bean id="ssoAuthenticationFilter" class="org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter">
     </beans:bean>
 
-    <beans:bean id="CSRFPreventionFilter" class="org.apache.atlas.web.filters.AtlasCSRFPreventionFilter">
+    <beans:bean id="CSRFPreventionFilter" class="org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter">
     </beans:bean>
 
     <beans:bean id="atlasAuthenticationSuccessHandler"
-                class="org.apache.atlas.web.security.AtlasAuthenticationSuccessHandler" />
+                class="org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler" />
 
     <beans:bean id="atlasAuthenticationFailureHandler"
-                class="org.apache.atlas.web.security.AtlasAuthenticationFailureHandler" />
+                class="org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler" />
 
     <beans:bean id="formAuthenticationEntryPoint"
-                class="org.apache.atlas.web.filters.AtlasAuthenticationEntryPoint">
+                class="org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint">
         <beans:constructor-arg value="/login.jsp"/>
     </beans:bean>
 

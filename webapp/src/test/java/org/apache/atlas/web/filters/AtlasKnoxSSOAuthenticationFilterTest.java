@@ -23,6 +23,9 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
+import org.apache.atlas.server.common.filters.SSOAuthenticationProperties;
+import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBridge;
 import org.apache.atlas.web.security.AtlasAuthenticationProvider;
 import org.apache.commons.configuration.Configuration;
 import org.mockito.Mock;
@@ -117,6 +120,25 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
         SecurityContextHolder.clearContext();
     }
 
+    private AtlasAuthenticationProviderBridge bridge(AtlasAuthenticationProvider provider) {
+        return new AtlasAuthenticationProviderBridge() {
+            @Override
+            public java.util.List<org.springframework.security.core.GrantedAuthority> getAuthoritiesFromUGI(String userName) {
+                return AtlasAuthenticationProvider.getAuthoritiesFromUGI(userName);
+            }
+
+            @Override
+            public void setSsoEnabled(boolean enabled) {
+                provider.setSsoEnabled(enabled);
+            }
+
+            @Override
+            public org.springframework.security.core.Authentication authenticate(org.springframework.security.core.Authentication authentication) {
+                return provider.authenticate(authentication);
+            }
+        };
+    }
+
     // Helper method to use reflection to set private fields
     private void setPrivateField(Object target, String fieldName, Object value) throws Exception {
         Field field = target.getClass().getDeclaredField(fieldName);
@@ -145,7 +167,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
             mockedStatic.when(ApplicationProperties::get).thenReturn(configuration);
             when(configuration.getBoolean("atlas.sso.knox.enabled", false)).thenReturn(false);
 
-            AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider);
+            AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider));
 
             filter.doFilter(servletRequest, servletResponse, filterChain);
 
@@ -170,7 +192,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
             when(servletRequest.getSession()).thenReturn(httpSession);
             when(httpSession.getAttribute("locallogin")).thenReturn("true");
 
-            AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider);
+            AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider));
 
             filter.doFilter(servletRequest, servletResponse, filterChain);
 
@@ -196,7 +218,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
             when(securityContext.getAuthentication()).thenReturn(existingAuth);
             when(existingAuth.isAuthenticated()).thenReturn(true);
 
-            AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider);
+            AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider));
 
             filter.doFilter(servletRequest, servletResponse, filterChain);
 
@@ -236,7 +258,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
             mockedSecurityHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
             when(securityContext.getAuthentication()).thenReturn(null);
 
-            AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider);
+            AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider));
             filter.doFilter(servletRequest, servletResponse, filterChain);
 
             verify(servletResponse).sendRedirect(contains("https://knox.sso?originalUrl="));
@@ -272,7 +294,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
             mockedSecurityHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
             when(securityContext.getAuthentication()).thenReturn(null);
 
-            AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider);
+            AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider));
             filter.doFilter(servletRequest, servletResponse, filterChain);
 
             verify(servletResponse).setContentType("application/json");
@@ -289,7 +311,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
             when(configuration.getBoolean("atlas.sso.knox.enabled", false)).thenReturn(true);
             when(configuration.getString(AtlasKnoxSSOAuthenticationFilter.JWT_AUTH_PROVIDER_URL)).thenReturn(null);
 
-            AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider);
+            AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider));
             SSOAuthenticationProperties properties = filter.loadJwtProperties();
 
             assertNull(properties);
@@ -308,7 +330,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
             when(configuration.getString(AtlasKnoxSSOAuthenticationFilter.JWT_ORIGINAL_URL_QUERY_PARAM, AtlasKnoxSSOAuthenticationFilter.JWT_ORIGINAL_URL_QUERY_PARAM_DEFAULT)).thenReturn("customUrlParam");
             when(configuration.getStringArray(AtlasKnoxSSOAuthenticationFilter.BROWSER_USERAGENT)).thenReturn(new String[] {"Chrome", "Firefox"});
 
-            AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider);
+            AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider));
             SSOAuthenticationProperties properties = filter.loadJwtProperties();
 
             assertEquals("https://knox.sso", properties.getAuthenticationProviderUrl());
@@ -322,7 +344,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
     public void testGetJWTFromCookie() {
         when(servletRequest.getCookies()).thenReturn(new Cookie[] {new Cookie("hadoop-jwt", "test.jwt.token")});
 
-        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider);
+        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider));
         String jwt = filter.getJWTFromCookie(servletRequest);
 
         assertEquals("test.jwt.token", jwt);
@@ -332,7 +354,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
     public void testGetJWTFromCookieNoCookies() {
         when(servletRequest.getCookies()).thenReturn(null);
 
-        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider);
+        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider));
         String jwt = filter.getJWTFromCookie(servletRequest);
 
         assertNull(jwt);
@@ -348,7 +370,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
 
         SSOAuthenticationProperties properties = new SSOAuthenticationProperties();
         properties.setPublicKey(rsaPublicKey);
-        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider, properties);
+        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider), properties);
 
         // Use reflection to set verifier field
         setPrivateField(filter, "verifier", jwsVerifier);
@@ -367,7 +389,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
 
         SSOAuthenticationProperties properties = new SSOAuthenticationProperties();
         properties.setPublicKey(rsaPublicKey);
-        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider, properties);
+        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider), properties);
 
         // Use reflection to set verifier field
         setPrivateField(filter, "verifier", jwsVerifier);
@@ -387,7 +409,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
 
         SSOAuthenticationProperties properties = new SSOAuthenticationProperties();
         properties.setPublicKey(rsaPublicKey);
-        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider, properties);
+        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider), properties);
 
         // Use reflection to set verifier field
         setPrivateField(filter, "verifier", jwsVerifier);
@@ -401,7 +423,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
     public void testIsWebUserAgentUsingReflection() throws Exception {
         SSOAuthenticationProperties properties = new SSOAuthenticationProperties();
         properties.setUserAgentList(new String[] {"Mozilla", "Chrome"});
-        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider, properties);
+        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider), properties);
 
         // Use reflection to call private isWebUserAgent method
         Boolean result = (Boolean) callPrivateMethod(filter, "isWebUserAgent", new Class[] {String.class}, "Mozilla/5.0");
@@ -416,7 +438,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
         SSOAuthenticationProperties properties = new SSOAuthenticationProperties();
         properties.setAuthenticationProviderUrl("https://knox.sso");
         properties.setOriginalUrlQueryParam("customUrlParam");
-        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider, properties);
+        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider), properties);
 
         when(servletRequest.getRequestURL()).thenReturn(new StringBuffer("http://localhost/atlas"));
         when(servletRequest.getQueryString()).thenReturn("param=value");
@@ -431,7 +453,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
         SSOAuthenticationProperties properties = new SSOAuthenticationProperties();
         properties.setAuthenticationProviderUrl("https://knox.sso");
         properties.setOriginalUrlQueryParam("customUrlParam");
-        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider, properties);
+        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider), properties);
 
         when(servletRequest.getHeader("referer")).thenReturn("http://localhost/referer");
         when(servletRequest.getHeaderNames()).thenReturn(Collections.enumeration(Collections.emptyList()));
@@ -447,7 +469,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
         when(servletRequest.getHeaders("x-forwarded-host")).thenReturn(Collections.enumeration(Collections.singletonList("proxy.host")));
         when(servletRequest.getHeaders("x-forwarded-context")).thenReturn(Collections.enumeration(Collections.singletonList("/context")));
 
-        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider);
+        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider));
 
         // Use reflection to call private parseXForwardHeader method
         @SuppressWarnings("unchecked")
@@ -467,7 +489,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
         xFwdHeaderMap.put("x-forwarded-host", "proxy.host");
         xFwdHeaderMap.put("x-forwarded-context", "/context");
 
-        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider);
+        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider));
 
         // Use reflection to call private constructForwardableURL method
         String url = (String) callPrivateMethod(filter, "constructForwardableURL",
@@ -478,7 +500,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
 
     @Test
     public void testSafeAppend() throws Exception {
-        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider);
+        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider));
         StringBuilder sb = new StringBuilder();
 
         // Use reflection to call private safeAppend method
@@ -489,7 +511,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
 
     @Test
     public void testInit() throws ServletException {
-        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider);
+        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider));
         FilterConfig filterConfig = mock(FilterConfig.class);
 
         // This should not throw any exception
@@ -498,7 +520,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
 
     @Test
     public void testDestroy() {
-        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider);
+        AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider));
 
         // This should not throw any exception
         filter.destroy();
@@ -536,7 +558,7 @@ public class AtlasKnoxSSOAuthenticationFilterTest {
             mockedSecurityHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
             when(securityContext.getAuthentication()).thenReturn(null);
 
-            AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(authenticationProvider);
+            AtlasKnoxSSOAuthenticationFilter filter = new AtlasKnoxSSOAuthenticationFilter(bridge(authenticationProvider));
             filter.doFilter(servletRequest, servletResponse, filterChain);
 
             // Should continue with filter chain for non-web user agents

@@ -19,7 +19,7 @@
 package org.apache.atlas;
 
 import org.apache.atlas.security.SecurityProperties;
-import org.apache.atlas.web.service.EmbeddedServer;
+import org.apache.atlas.server.common.service.EmbeddedServer;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.Option;

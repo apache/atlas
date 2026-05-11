@@ -20,7 +20,11 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.web.model.User;
+import org.apache.atlas.server.common.model.User;
+import org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasAuthenticationException;
+import org.apache.atlas.server.common.security.AtlasPamAuthenticationProvider;
+import org.apache.atlas.server.common.security.UserAuthorityGranter;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.mockito.Mock;
@@ -504,7 +508,7 @@ public class AtlasPamAuthenticationProviderTest {
         // Verify static final fields
         Field loginModuleNameField = AtlasPamAuthenticationProvider.class.getDeclaredField("loginModuleName");
         loginModuleNameField.setAccessible(true);
-        assertEquals(loginModuleNameField.get(null), "org.apache.atlas.web.security.PamLoginModule");
+        assertEquals(loginModuleNameField.get(null), "org.apache.atlas.server.common.security.PamLoginModule");
 
         Field controlFlagField = AtlasPamAuthenticationProvider.class.getDeclaredField("controlFlag");
         controlFlagField.setAccessible(true);

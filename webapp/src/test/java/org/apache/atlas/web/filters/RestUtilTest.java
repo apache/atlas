@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.web.filters;
 
+import org.apache.atlas.server.common.filters.RestUtil;
 import org.testng.annotations.Test;
 
 import javax.servlet.http.HttpServletRequest;

@@ -19,6 +19,8 @@
 package org.apache.atlas.web.service;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.server.common.service.EmbeddedServer;
+import org.apache.atlas.server.common.service.SecureEmbeddedServer;
 import org.apache.atlas.web.TestUtils;
 import org.apache.atlas.web.security.BaseSecurityTest;
 import org.apache.commons.configuration.PropertiesConfiguration;

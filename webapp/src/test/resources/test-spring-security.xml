@@ -52,16 +52,16 @@
         <csrf disabled="true"/>
     </security:http>
 
-    <beans:bean id="userDAO" class="org.apache.atlas.web.dao.UserDao" init-method="init"/>
-    <beans:bean id="userDetailsService" class="org.apache.atlas.web.service.UserService">
+    <beans:bean id="userDAO" class="org.apache.atlas.server.common.dao.UserDao" init-method="init"/>
+    <beans:bean id="userDetailsService" class="org.apache.atlas.server.common.service.UserService">
         <beans:constructor-arg ref="userDAO"/>
     </beans:bean>
-    <beans:bean id="atlasLDAPProvider" class="org.apache.atlas.web.security.AtlasLdapAuthenticationProvider"/>
-    <beans:bean id="atlasFileProvider" class="org.apache.atlas.web.security.AtlasFileAuthenticationProvider">
+    <beans:bean id="atlasLDAPProvider" class="org.apache.atlas.server.common.security.AtlasLdapAuthenticationProvider"/>
+    <beans:bean id="atlasFileProvider" class="org.apache.atlas.server.common.security.AtlasFileAuthenticationProvider">
         <beans:constructor-arg ref="userDetailsService"/>
     </beans:bean>
-    <beans:bean id="atlasADProvider" class="org.apache.atlas.web.security.AtlasADAuthenticationProvider"/>
-    <beans:bean id="atlasPamProvider" class="org.apache.atlas.web.security.AtlasPamAuthenticationProvider"/>
+    <beans:bean id="atlasADProvider" class="org.apache.atlas.server.common.security.AtlasADAuthenticationProvider"/>
+    <beans:bean id="atlasPamProvider" class="org.apache.atlas.server.common.security.AtlasPamAuthenticationProvider"/>
     <beans:bean id="atlasKeycloakProvider" class="org.apache.atlas.web.security.AtlasKeycloakAuthenticationProvider"/>
     <beans:bean id="atlasAuthenticationProvider" class="org.apache.atlas.web.security.AtlasAuthenticationProvider">
         <beans:constructor-arg index="0" ref="atlasLDAPProvider"/>
@@ -71,24 +71,24 @@
         <beans:constructor-arg index="4" ref="atlasKeycloakProvider" />
     </beans:bean>
 
-    <beans:bean id="krbAuthenticationFilter" class="org.apache.atlas.web.filters.AtlasAuthenticationFilter">
+    <beans:bean id="krbAuthenticationFilter" class="org.apache.atlas.server.common.filters.AtlasAuthenticationFilter">
     </beans:bean>
 
-    <beans:bean id="ssoAuthenticationFilter" class="org.apache.atlas.web.filters.AtlasKnoxSSOAuthenticationFilter">
-        <beans:constructor-arg name="authenticationProvider" ref="atlasAuthenticationProvider"/>
+    <beans:bean id="ssoAuthenticationFilter" class="org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter">
+        <beans:constructor-arg name="authenticationProvider" ref="atlasAuthenticationProviderBridge"/>
     </beans:bean>
 
-    <beans:bean id="csrfPreventionFilter" class="org.apache.atlas.web.filters.AtlasCSRFPreventionFilter">
+    <beans:bean id="csrfPreventionFilter" class="org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter">
     </beans:bean>
 
     <beans:bean id="atlasAuthenticationSuccessHandler"
-                class="org.apache.atlas.web.security.AtlasAuthenticationSuccessHandler" />
+                class="org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler" />
 
     <beans:bean id="atlasAuthenticationFailureHandler"
-                class="org.apache.atlas.web.security.AtlasAuthenticationFailureHandler" />
+                class="org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler" />
 
     <beans:bean id="formAuthenticationEntryPoint"
-                class="org.apache.atlas.web.filters.AtlasAuthenticationEntryPoint">
+                class="org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint">
         <beans:constructor-arg value="/login.jsp"/>
     </beans:bean>
 

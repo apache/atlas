@@ -20,7 +20,9 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.web.model.User;
+import org.apache.atlas.server.common.model.User;
+import org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasLdapAuthenticationProvider;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.mockito.Mock;

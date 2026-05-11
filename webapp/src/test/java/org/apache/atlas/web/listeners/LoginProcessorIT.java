@@ -16,6 +16,7 @@
  */
 package org.apache.atlas.web.listeners;
 
+import org.apache.atlas.server.common.listeners.LoginProcessor;
 import org.apache.atlas.web.security.BaseSecurityTest;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.conf.Configuration;
