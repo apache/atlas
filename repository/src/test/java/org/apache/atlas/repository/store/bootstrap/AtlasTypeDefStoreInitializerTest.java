@@ -928,9 +928,9 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     @Test
-    public void testSetAttributeDefOverridesPatchHandlerSupportedActions() {
-        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
-                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+    public void testAttributeDefOverridesAndPropagateRenamePatchHandlerSupportedActions() {
+        AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler handler =
+                new AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler(typeDefStore, typeRegistry);
 
         String[] actions = handler.getSupportedActions();
         assertEquals(actions.length, 2);
@@ -939,9 +939,9 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     @Test
-    public void testSetAttributeDefOverridesPatchHandlerApplyOverrides() throws Exception {
-        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
-                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+    public void testAttributeDefOverridesAndPropagateRenamePatchHandlerApplyOverrides() throws Exception {
+        AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler handler =
+                new AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler(typeDefStore, typeRegistry);
 
         Object patch = createMockTypeDefPatch("SET_ATTRIBUTE_DEF_OVERRIDES", "TestEntity", "1.0", "2.0");
 
@@ -958,9 +958,9 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     @Test
-    public void testSetAttributeDefOverridesPatchHandlerApplyOverridesSkipped() throws Exception {
-        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
-                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+    public void testAttributeDefOverridesAndPropagateRenamePatchHandlerApplyOverridesSkipped() throws Exception {
+        AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler handler =
+                new AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler(typeDefStore, typeRegistry);
 
         Object patch = createMockTypeDefPatch("SET_ATTRIBUTE_DEF_OVERRIDES", "TestEntity", "2.0", "3.0");
 
@@ -976,9 +976,9 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     @Test
-    public void testSetAttributeDefOverridesPatchHandlerApplyOverridesWrongType() throws Exception {
-        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
-                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+    public void testAttributeDefOverridesAndPropagateRenamePatchHandlerApplyOverridesWrongType() throws Exception {
+        AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler handler =
+                new AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler(typeDefStore, typeRegistry);
 
         Object patch = createMockTypeDefPatch("SET_ATTRIBUTE_DEF_OVERRIDES", "TestRelationship", "1.0", "2.0");
 
@@ -996,9 +996,9 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     @Test
-    public void testSetAttributeDefOverridesPatchHandlerPropagateRenameEnd1() throws Exception {
-        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
-                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+    public void testAttributeDefOverridesAndPropagateRenamePatchHandlerPropagateRenameEnd1() throws Exception {
+        AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler handler =
+                new AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler(typeDefStore, typeRegistry);
 
         Object patch = createMockTypeDefPatch("SET_PROPAGATE_RENAME", "TestRelationship", "1.0", "2.0");
 
@@ -1019,9 +1019,9 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     @Test
-    public void testSetAttributeDefOverridesPatchHandlerPropagateRenameEnd2() throws Exception {
-        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
-                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+    public void testAttributeDefOverridesAndPropagateRenamePatchHandlerPropagateRenameEnd2() throws Exception {
+        AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler handler =
+                new AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler(typeDefStore, typeRegistry);
 
         Object patch = createMockTypeDefPatch("SET_PROPAGATE_RENAME", "TestRelationship", "1.0", "2.0");
 
@@ -1042,9 +1042,9 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     @Test
-    public void testSetAttributeDefOverridesPatchHandlerPropagateRenameInvalidEndDef() throws Exception {
-        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
-                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+    public void testAttributeDefOverridesAndPropagateRenamePatchHandlerPropagateRenameInvalidEndDef() throws Exception {
+        AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler handler =
+                new AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler(typeDefStore, typeRegistry);
 
         Object patch = createMockTypeDefPatch("SET_PROPAGATE_RENAME", "TestRelationship", "1.0", "2.0");
 
@@ -1063,9 +1063,9 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     @Test
-    public void testSetAttributeDefOverridesPatchHandlerPropagateRenameMissingParam() throws Exception {
-        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
-                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+    public void testAttributeDefOverridesAndPropagateRenamePatchHandlerPropagateRenameMissingParam() throws Exception {
+        AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler handler =
+                new AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler(typeDefStore, typeRegistry);
 
         Object patch = createMockTypeDefPatch("SET_PROPAGATE_RENAME", "TestRelationship", "1.0", "2.0");
 
@@ -1082,9 +1082,9 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     @Test
-    public void testSetAttributeDefOverridesPatchHandlerPropagateRenameWrongType() throws Exception {
-        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
-                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+    public void testAttributeDefOverridesAndPropagateRenamePatchHandlerPropagateRenameWrongType() throws Exception {
+        AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler handler =
+                new AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler(typeDefStore, typeRegistry);
 
         Object patch = createMockTypeDefPatch("SET_PROPAGATE_RENAME", "TestEntity", "1.0", "2.0");
 
@@ -1099,9 +1099,9 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     @Test
-    public void testSetAttributeDefOverridesPatchHandlerUnknownType() throws Exception {
-        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
-                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+    public void testAttributeDefOverridesAndPropagateRenamePatchHandlerUnknownType() throws Exception {
+        AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler handler =
+                new AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler(typeDefStore, typeRegistry);
 
         Object patch = createMockTypeDefPatch("SET_ATTRIBUTE_DEF_OVERRIDES", "UnknownType", "1.0", "2.0");
         when(typeRegistry.getTypeDefByName("UnknownType")).thenReturn(null);
@@ -1110,9 +1110,9 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     @Test
-    public void testSetAttributeDefOverridesPatchHandlerInvalidAction() throws Exception {
-        AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler handler =
-                new AtlasTypeDefStoreInitializer.SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry);
+    public void testAttributeDefOverridesAndPropagateRenamePatchHandlerInvalidAction() throws Exception {
+        AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler handler =
+                new AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler(typeDefStore, typeRegistry);
 
         Object patch = createMockTypeDefPatch("SET_ATTRIBUTE_DEF_OVERRIDES", "TestEntity", "1.0", "2.0");
         setField(patch, "action", "NOT_A_SUPPORTED_PATCH_ACTION");

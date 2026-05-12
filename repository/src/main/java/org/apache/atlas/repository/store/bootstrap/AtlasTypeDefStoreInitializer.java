@@ -462,7 +462,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     new RemoveLegacyRefAttributesPatchHandler(typeDefStore, typeRegistry),
                     new UpdateTypeDefOptionsPatchHandler(typeDefStore, typeRegistry),
                     new SetServiceTypePatchHandler(typeDefStore, typeRegistry),
-                    new SetAttributeDefOverridesPatchHandler(typeDefStore, typeRegistry),
+                    new AttributeDefOverridesAndPropagateRenamePatchHandler(typeDefStore, typeRegistry),
                     new UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph),
                     new AddSuperTypePatchHandler(typeDefStore, typeRegistry),
                     new AddMandatoryAttributePatchHandler(typeDefStore, typeRegistry)
@@ -1181,15 +1181,15 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     }
 
     /**
-     * Applies {@code SET_ATTRIBUTE_DEF_OVERRIDES} on entity typedefs and {@code SET_PROPAGATE_RENAME} on relationship typedefs.
+     * Handles {@code SET_ATTRIBUTE_DEF_OVERRIDES} on entity typedefs and {@code SET_PROPAGATE_RENAME} on relationship typedef end defs.
      */
-    static class SetAttributeDefOverridesPatchHandler extends PatchHandler {
+    static class AttributeDefOverridesAndPropagateRenamePatchHandler extends PatchHandler {
         private static final String ACTION_SET_ATTRIBUTE_DEF_OVERRIDES = "SET_ATTRIBUTE_DEF_OVERRIDES";
         private static final String ACTION_SET_PROPAGATE_RENAME        = "SET_PROPAGATE_RENAME";
         /** Patch JSON key under {@code params}: value is {@code "endDef1"} or {@code "endDef2"} (string, not numeric). */
         private static final String PARAM_END_DEF_TOKEN                = "endDefToken";
 
-        public SetAttributeDefOverridesPatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
+        public AttributeDefOverridesAndPropagateRenamePatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
             super(typeDefStore, typeRegistry, new String[] {ACTION_SET_ATTRIBUTE_DEF_OVERRIDES, ACTION_SET_PROPAGATE_RENAME});
         }
 
@@ -1209,7 +1209,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                 return SKIPPED;
             }
 
-            LOG.debug("SetAttributeDefOverridesPatchHandler.applyPatch(): id={}; action={}; typeName={}",
+            LOG.debug("AttributeDefOverridesAndPropagateRenamePatchHandler.applyPatch(): id={}; action={}; typeName={}",
                     patch.getId(), patch.getAction(), typeName);
 
             String action = patch.getAction();
@@ -1241,7 +1241,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
             int overrideCount = CollectionUtils.isEmpty(patch.getAttributeDefs()) ? 0 : patch.getAttributeDefs().size();
 
-            LOG.debug("SetAttributeDefOverridesPatchHandler.applyEntityDefOverrides(): entityType={}; overrideCount={}; updateToVersion={}",
+            LOG.debug("AttributeDefOverridesAndPropagateRenamePatchHandler.applyEntityDefOverrides(): entityType={}; overrideCount={}; updateToVersion={}",
                     typeDef.getName(), overrideCount, patch.getUpdateToVersion());
 
             typeDefStore.updateEntityDefByName(typeDef.getName(), updatedDef);
@@ -1282,7 +1282,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
             updatedDef.setTypeVersion(patch.getUpdateToVersion());
 
-            LOG.debug("SetAttributeDefOverridesPatchHandler.applyPropagateRename(): relationshipType={}; endDefToken={}; updateToVersion={}",
+            LOG.debug("AttributeDefOverridesAndPropagateRenamePatchHandler.applyPropagateRename(): relationshipType={}; endDefToken={}; updateToVersion={}",
                     typeDef.getName(), endDefToken, patch.getUpdateToVersion());
 
             typeDefStore.updateRelationshipDefByName(typeDef.getName(), updatedDef);

@@ -17,8 +17,6 @@
  */
 package org.apache.atlas.type;
 
-import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -29,24 +27,18 @@ import java.util.Objects;
  */
 public class RenamePropagationTarget {
     private final String                         targetTypeName;
-    private final RelationshipCategory           category;
     private final AtlasStructType.AtlasAttribute relAttr;
     private final List<Map<String, String>>      propagateAttributes;
 
-    public RenamePropagationTarget(String targetTypeName, RelationshipCategory category,
-                                   AtlasStructType.AtlasAttribute relAttr, List<Map<String, String>> propagateAttributes) {
-        this.targetTypeName        = targetTypeName;
-        this.category              = category;
-        this.relAttr               = relAttr;
-        this.propagateAttributes   = propagateAttributes != null ? Collections.unmodifiableList(propagateAttributes) : Collections.emptyList();
+    public RenamePropagationTarget(String targetTypeName, AtlasStructType.AtlasAttribute relAttr,
+                                   List<Map<String, String>> propagateAttributes) {
+        this.targetTypeName       = targetTypeName;
+        this.relAttr              = relAttr;
+        this.propagateAttributes  = propagateAttributes != null ? Collections.unmodifiableList(propagateAttributes) : Collections.emptyList();
     }
 
     public String getTargetTypeName() {
         return targetTypeName;
-    }
-
-    public RelationshipCategory getCategory() {
-        return category;
     }
 
     public AtlasStructType.AtlasAttribute getRelAttr() {
@@ -58,7 +50,7 @@ public class RenamePropagationTarget {
     }
 
     /**
-     * Same target type, relationship category, and relationship attribute instance as wired on this type.
+     * Same target type and relationship attribute instance as wired on this type.
      * {@link #propagateAttributes} is not part of equality — duplicates are detected before add.
      */
     @Override
@@ -71,12 +63,11 @@ public class RenamePropagationTarget {
         }
         RenamePropagationTarget that = (RenamePropagationTarget) o;
         return Objects.equals(targetTypeName, that.targetTypeName)
-                && category == that.category
                 && relAttr == that.relAttr;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(targetTypeName, category, System.identityHashCode(relAttr));
+        return Objects.hash(targetTypeName, System.identityHashCode(relAttr));
     }
 }

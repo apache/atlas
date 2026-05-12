@@ -1096,7 +1096,7 @@ public class AtlasEntityType extends AtlasStructType {
                 : endDef2.getPropagateAttributes();
 
         RelationshipCategory category = relationshipType.getRelationshipDef().getRelationshipCategory();
-        RenamePropagationTarget target = new RenamePropagationTarget(targetTypeName, category, relationshipAttribute, propagateAttributes != null ? propagateAttributes : Collections.emptyList());
+        RenamePropagationTarget target = new RenamePropagationTarget(targetTypeName, relationshipAttribute, propagateAttributes != null ? propagateAttributes : Collections.emptyList());
 
         String relAttrName = relationshipAttribute.getAttributeDef() != null
                 ? relationshipAttribute.getAttributeDef().getName()
