@@ -25,12 +25,6 @@
       "superTypes":   [ "Asset" ],
       "serviceType":  "trino",
       "typeVersion":  "1.0",
-      "attributeDefOverrides": [
-        {
-          "name":              "qualifiedName",
-          "autoComputeFormat": "{table.trinoschema.catalog.name}.{table.trinoschema.name}.{table.name}.{name}@{table.trinoschema.catalog.instance.name}"
-        }
-      ],
       "attributeDefs": [
         { "name": "parameters", "typeName": "map<string,string>", "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true }
       ]
@@ -51,6 +45,12 @@
       "superTypes":   [ "DataSet" ],
       "serviceType":  "trino",
       "typeVersion":  "1.0",
+      "attributeDefOverrides": [
+        {
+          "name":              "qualifiedName",
+          "autoComputeFormat": "{table.trinoschema.catalog.name}.{table.trinoschema.name}.{table.name}.{name}@{table.trinoschema.catalog.instance.name}"
+        }
+      ],
       "attributeDefs": [
         { "name": "data_type",        "typeName": "string",  "cardinality": "SINGLE", "isUnique": false, "isIndexable": true,  "isOptional": true },
         { "name": "ordinal_position", "typeName": "int",     "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true },
