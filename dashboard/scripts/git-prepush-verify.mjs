@@ -1,10 +1,27 @@
 #!/usr/bin/env node
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /**
  * Pre-push: impact-related Jest tests, ESLint (src), production build.
  * Skip: SKIP_DASHBOARD_HOOKS=1 or HUSKY=0
  */
 
-import { execSync, spawnSync } from 'node:child_process'
+import { execFileSync, execSync, spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -25,6 +42,16 @@ const dashboardRoot = join(__dirname, '..')
 if (!existsSync(join(dashboardRoot, 'package.json'))) {
 	console.error('Could not find dashboard root', dashboardRoot)
 	process.exit(1)
+}
+
+if (process.env.SKIP_DASHBOARD_LICENSE_CHECK !== '1') {
+	console.log(
+		'\x1b[35m[dashboard pre-push]\x1b[0m RAT-aligned ASF header on newly added dashboard/src files…',
+	)
+	execFileSync(process.execPath, ['scripts/check-push-new-file-license.mjs'], {
+		cwd: dashboardRoot,
+		stdio: 'inherit',
+	})
 }
 
 const run = (cmd, opts = {}) => {

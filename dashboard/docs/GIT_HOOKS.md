@@ -33,7 +33,7 @@ Runs **only for packages that have staged paths** under that prefix.
 
 | Area | When staged under … | Checks |
 |------|---------------------|--------|
-| **dashboard** | `dashboard/` | (1) **UI test guard** — `src/views`, `src/components`, `App.tsx` / `Main.tsx` / `ErrorBoundary.tsx` must include a **staged** test file; (2) **ASF license** on **new** files under `dashboard/src/`; (3) **lint-staged** → ESLint on staged TS/TSX; (4) **`npm run typecheck`** (`tsc --noEmit`). |
+| **dashboard** | `dashboard/` | (1) **UI test guard** — `src/views`, `src/components`, `App.tsx` / `Main.tsx` / `ErrorBoundary.tsx` must include a **staged** test file; (2) **RAT-aligned ASF license** on **new** files under `dashboard/src/` (`license-header-policy.mjs` markers, same bar as CI RAT); (3) **lint-staged** → ESLint on staged TS/TSX; (4) **`npm run typecheck`** (`tsc --noEmit`). |
 | **dashboardv2** | `dashboardv2/` | (1) **ASF license** on **new** `.js`/`.jsx`/`.ts`/`.tsx` (skips `node_modules`, `bin/`, `external_lib`, `.min.js`); (2) **`node --check`** on staged plain `.js` under `dashboardv2/public/js/` (syntax). **No** Jest/test guard (legacy Grunt UI). |
 | **docs** | `docs/` | (1) **ASF license** on **new** sources (skips `node_modules`, `site/`, `bin/`, `docz-lib/`); (2) **`node --check`** on staged **plain** `docs/**/*.js` outside theme/webapp JSX trees. |
 
@@ -43,7 +43,7 @@ Runs for each package **if commits in the push range** touch that prefix.
 
 | Area | Checks |
 |------|--------|
-| **dashboard** | Colocated tests on disk, **`jest --findRelatedTests`**, **`eslint src`**, **`npm run build`**. |
+| **dashboard** | **RAT-aligned ASF header** on **new** `dashboard/src/` files in the push range, colocated tests on disk, **`jest --findRelatedTests`**, **`eslint src`**, **`npm run build`**. |
 | **dashboardv2** | **`npm run build`** (Grunt). |
 | **docs** | **`npm run build`** (Docz). |
 
@@ -68,7 +68,7 @@ SKIP_DOCS_HOOKS=1 git commit ...
 
 ```bash
 SKIP_DASHBOARD_TEST_GUARD=1 git commit ...   # staged test file rule
-SKIP_DASHBOARD_LICENSE_CHECK=1 git commit ... # ASF on new files under dashboard/src
+SKIP_DASHBOARD_LICENSE_CHECK=1 git commit ... # RAT-aligned ASF on new dashboard/src (also used by pre-push added-file check)
 SKIP_DASHBOARD_TYPECHECK=1 git commit ...     # tsc on commit
 ```
 

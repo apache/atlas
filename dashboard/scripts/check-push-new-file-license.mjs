@@ -17,8 +17,8 @@
  */
 
 /**
- * Pre-commit: newly added (staged) source files under dashboard/src must carry
- * a RAT-aligned Apache license header (see license-header-policy.mjs).
+ * Pre-push: any *new* dashboard/src source files in the push range must carry
+ * a RAT-aligned Apache license header at HEAD (same policy as pre-commit).
  *
  * Skip: SKIP_DASHBOARD_HOOKS=1 | SKIP_DASHBOARD_LICENSE_CHECK=1
  */
@@ -27,6 +27,7 @@ import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { getPushAddedRepoPaths } from './lib/git-changed-files.mjs'
 import {
 	gitShowUtf8,
 	listDashboardSrcAddedMissingLicense,
@@ -43,24 +44,6 @@ if (
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const dashboardDir = join(__dirname, '..')
 
-const shLines = (args) => {
-	try {
-		return String(
-			execFileSync('git', args, {
-				encoding: 'utf8',
-				cwd: dashboardDir,
-				maxBuffer: 20 * 1024 * 1024,
-			}),
-		)
-			.trim()
-			.split('\n')
-			.map((l) => l.trim())
-			.filter(Boolean)
-	} catch {
-		return []
-	}
-}
-
 let repoRoot
 try {
 	repoRoot = String(
@@ -70,27 +53,25 @@ try {
 		}),
 	).trim()
 } catch {
-	console.warn('[license-check] Not in a Git work tree; skipping.')
+	console.warn('[license-check push] Not in a Git work tree; skipping.')
 	process.exit(0)
 }
 
-const added = shLines(['-C', repoRoot, 'diff', '--cached', '--name-only', '--diff-filter=A'])
-
+const added = getPushAddedRepoPaths(repoRoot)
 const missing = listDashboardSrcAddedMissingLicense(
 	added,
-	(norm) => gitShowUtf8(repoRoot, `:${norm}`),
+	(norm) => gitShowUtf8(repoRoot, `HEAD:${norm}`),
 )
 
 if (missing.length > 0) {
 	console.error(
-		'\x1b[31m[dashboard pre-commit]\x1b[0m New file(s) lack a RAT-aligned Apache license header:',
+		'\x1b[31m[dashboard pre-push]\x1b[0m Added file(s) lack a RAT-aligned Apache license header:',
 	)
 	for (const m of missing.sort()) {
 		console.error(`  - ${m}`)
 	}
 	console.error(
-		'\nInclude the full standard ASF block at the top (see CreateDropdown.tsx or audit sibling files).',
-		'Required markers match dashboard/scripts/lib/license-header-policy.mjs.',
+		'\nInclude the full standard ASF block at the top (see license-header-policy.mjs markers).',
 		'Or set SKIP_DASHBOARD_LICENSE_CHECK=1 only for rare exceptions.\n',
 	)
 	process.exit(1)
