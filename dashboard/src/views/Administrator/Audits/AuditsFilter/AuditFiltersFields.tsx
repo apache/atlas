@@ -25,7 +25,8 @@ import moment from "moment";
 import type { Field, RuleType } from "react-querybuilder";
 import { toFullOption } from "react-querybuilder";
 
-export const validator = (r: RuleType) => !!r.value;
+export const validator = (r: RuleType) =>
+  r.value !== undefined && r.value !== null && r.value !== "";
 let defaultRange = "Last 7 Days";
 const getDateConfig = (ruleObj, name, operator) => {
   let valueObj = ruleObj
@@ -160,6 +161,10 @@ export const getObjDef = (
   groupType?: any,
   isSystemAttr?: any
 ): any => {
+  if (!allDataObj || !attrObj) {
+    return;
+  }
+
   const { enums } = allDataObj;
   let getLableWithType = function (label: string, name: string) {
     if (

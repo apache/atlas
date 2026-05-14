@@ -1095,7 +1095,10 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
                   const obj: any = { id: `dsl-row-${idx}` };
                   dslAttrNames.forEach((n: string, i: number) => {
                     const colKey = `dsl_${sanitize(n)}`
-                    obj[colKey] = Array.isArray(row) ? row[i] : row
+                    const value = Array.isArray(row)
+                      ? row[i]
+                      : row?.[n] ?? row?.[colKey] ?? row
+                    obj[colKey] = value
                   });
                   return obj;
                 });

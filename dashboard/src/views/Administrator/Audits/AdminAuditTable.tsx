@@ -252,6 +252,7 @@ const AdminAuditTable = () => {
                 }
               }}
               queryBuilder={false}
+              paginationSummaryVariant="audit"
             />
           </Stack>
         </Grid>

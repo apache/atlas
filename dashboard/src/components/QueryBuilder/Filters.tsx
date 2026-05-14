@@ -155,7 +155,7 @@ const Filters = ({
   const { classificationDefs } = classificationData || {};
   const { entityDefs = {} } = entityData || {};
   const { enumDefs = {} } = enumObj?.data || {};
-  const { businessMetadataDefs = {} } = businessMetaData || {};
+  const { businessMetadataDefs = [] } = businessMetaData || {};
 
   let allDataObj = {
     entitys: entityDefs,

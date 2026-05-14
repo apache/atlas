@@ -181,7 +181,9 @@ const Header: React.FC<Header> = ({
         </LightTooltip>
       )}
       {location.pathname !== "/" &&
-        location.pathname !== "/search" && (
+        location.pathname !== "/search" &&
+        location.pathname !== "/!" &&
+        !location.pathname.includes("!") && (
           <div style={{ display: "flex", justifyContent: "center", flex: "1", minWidth: 0, padding: "0 16px" }}>
             <QuickSearch />
           </div>

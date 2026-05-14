@@ -238,7 +238,7 @@ const BusinessMetaDataForm = ({
   };
 
   const toastMssg = (bmName: string) => {
-    if (isEmpty(bmAttribute && isEmpty(editbmAttribute))) {
+    if (isEmpty(bmAttribute) && isEmpty(editbmAttribute)) {
       toast.success(`Business Metadata ${bmName} was created successfully`);
     } else {
       toast.success(

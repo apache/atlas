@@ -141,10 +141,10 @@ const ShowMoreView = ({
             relationshipGuid: selectedTerm.relationshipGuid
           });
         } else if (!isEmpty(gType)) {
-          let values = cloneDeep(currentEntity);
+          let values = cloneDeep(currentEntity) || {};
           let glossaryData;
           if (title == "Terms") {
-            glossaryData = values?.["terms"].filter(
+            glossaryData = (values["terms"] || []).filter(
               (obj: { displayText: string }) => {
                 return obj.displayText != currentValue.selectedValue;
               }
@@ -152,7 +152,7 @@ const ShowMoreView = ({
 
             values["terms"] = glossaryData;
           } else {
-            glossaryData = values?.["categories"].filter(
+            glossaryData = (values["categories"] || []).filter(
               (obj: { displayText: string }) => {
                 return obj.displayText != currentValue.selectedValue;
               }
@@ -223,7 +223,13 @@ const ShowMoreView = ({
     } else if (title == "Propagated Classifications") {
       return getTagParentList(label);
     } else {
-      return label || optionalLabel;
+      // Ensure we return a string, not an object
+      if (label) return label;
+      if (typeof optionalLabel === 'string') return optionalLabel;
+      if (optionalLabel && typeof optionalLabel === 'object') {
+        return optionalLabel.displayText || optionalLabel.text || optionalLabel.name || '';
+      }
+      return '';
     }
   };
 
@@ -306,7 +312,9 @@ const ShowMoreView = ({
                   onDelete={
                     !isEmpty(removeApiMethod) && !isDeleteIcon
                       ? () => {
-                          handleDelete(obj[displayKey] || obj);
+                          // Handle undefined displayKey by extracting a string value
+                          const deleteValue = obj[displayKey] || obj.displayText || obj.text || obj.name || '';
+                          handleDelete(deleteValue);
                         }
                       : isDeleteIcon && obj.count > 1
                       ? () => {

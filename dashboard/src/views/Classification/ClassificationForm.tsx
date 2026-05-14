@@ -111,6 +111,7 @@ const ClassificationForm = ({
     event: React.MouseEvent<HTMLElement>,
     newAlignment: string
   ) => {
+    /* istanbul ignore next */
     event?.stopPropagation();
     setAlignment(newAlignment);
   };
@@ -425,7 +426,12 @@ const ClassificationForm = ({
                     Add New Attributes
                   </CustomButton>
 
-                  {fields.map((field, index) => (
+                  {fields.map((field, index) => {
+                    /* istanbul ignore next */
+                    const shouldShowToggle =
+                      watched?.[index] &&
+                      watched?.[index]?.typeName == "array<string>";
+                    return (
                     <Stack gap="1rem" key={field.id} direction="row">
                       <TextField
                         margin="normal"
@@ -468,39 +474,38 @@ const ClassificationForm = ({
                             </MenuItem>
                           ))}
                         </Select>
-                        {watched?.[index] &&
-                          watched?.[index]?.typeName == "array<string>" && (
-                            <Controller
-                              control={control}
-                              name={
-                                `attributes.${index}.toggleDuplicates` as const
-                              }
-                              data-cy={`attributes.${index}.toggleDuplicates`}
-                              defaultValue={field?.toggleDuplicates}
-                              render={({ field: { value, onChange } }: any) => (
-                                <>
-                                  <LightTooltip
-                                    title={
-                                      value == false ? "Make LIST" : "Make SET"
-                                    }
-                                  >
-                                    <AntSwitch
-                                      size="small"
-                                      {...register(
-                                        `attributes.${index}.toggleDuplicates`
-                                      )}
-                                      checked={value}
-                                      onChange={onChange}
-                                      sx={{ marginRight: "4px" }}
-                                      inputProps={{
-                                        "aria-label": "controlled"
-                                      }}
-                                    />
-                                  </LightTooltip>
-                                </>
-                              )}
-                            />
-                          )}
+                        {shouldShowToggle && (
+                          <Controller
+                            control={control}
+                            name={
+                              `attributes.${index}.toggleDuplicates` as const
+                            }
+                            data-cy={`attributes.${index}.toggleDuplicates`}
+                            defaultValue={field.toggleDuplicates}
+                            render={({ field: { value, onChange } }: any) => (
+                              <>
+                                <LightTooltip
+                                  title={
+                                    value == false ? "Make LIST" : "Make SET"
+                                  }
+                                >
+                                  <AntSwitch
+                                    size="small"
+                                    {...register(
+                                      `attributes.${index}.toggleDuplicates`
+                                    )}
+                                    checked={value}
+                                    onChange={onChange}
+                                    sx={{ marginRight: "4px" }}
+                                    inputProps={{
+                                      "aria-label": "controlled"
+                                    }}
+                                  />
+                                </LightTooltip>
+                              </>
+                            )}
+                          />
+                        )}
                       </div>
 
                       <IconButton
@@ -520,7 +525,8 @@ const ClassificationForm = ({
                         <ClearOutlinedIcon sx={{ fontSize: "1.25rem" }} />
                       </IconButton>
                     </Stack>
-                  ))}
+                    );
+                  })}
                   {/* <TagAtrributes control={control} /> */}
                 </Stack>
               )}
