@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# Deprecated path: use repo root core.hooksPath=.githooks (see dashboard/scripts/install-git-hooks.mjs).
+ROOT="$(git rev-parse --show-toplevel)"
+exec "$ROOT/.githooks/pre-commit"

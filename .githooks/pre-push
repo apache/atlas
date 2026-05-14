@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+# Atlas monorepo: pre-push (dashboard Jest/eslint/build; dashboardv2 + docs build)
+# Skip: SKIP_ATLAS_HOOKS=1 | SKIP_ALL_ATLAS_GIT_HOOKS=1
+set -e
+if [ "$SKIP_ATLAS_HOOKS" = "1" ] || [ "$SKIP_ALL_ATLAS_GIT_HOOKS" = "1" ]; then exit 0; fi
+ROOT="$(git rev-parse --show-toplevel)"
+exec node "$ROOT/scripts/git-hooks/run-prepush.mjs"

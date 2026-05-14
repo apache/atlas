@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+ROOT="$(git rev-parse --show-toplevel)"
+exec "$ROOT/.githooks/pre-push"

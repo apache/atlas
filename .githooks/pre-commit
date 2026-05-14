@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+# Atlas monorepo: pre-commit (license, lint, typecheck, syntax; dashboard test guard)
+# Skip: SKIP_ATLAS_HOOKS=1 | SKIP_ALL_ATLAS_GIT_HOOKS=1
+set -e
+if [ "$SKIP_ATLAS_HOOKS" = "1" ] || [ "$SKIP_ALL_ATLAS_GIT_HOOKS" = "1" ]; then exit 0; fi
+ROOT="$(git rev-parse --show-toplevel)"
+exec node "$ROOT/scripts/git-hooks/run-precommit.mjs"

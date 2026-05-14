@@ -1,0 +1,4 @@
+#!/usr/bin/sh
+# Git hooks: core.hooksPath=.githooks at Atlas repo root (see dashboard npm prepare).
+printf '%s\n' '[atlas] Hooks: git config core.hooksPath .githooks  OR  npm install (in dashboard/)'
+exit 0
