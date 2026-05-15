@@ -48,6 +48,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.configuration.Configuration;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
@@ -991,6 +992,62 @@ public class AtlasTypeDefStoreInitializerTest {
 
         AtlasAttributeDef overrideAttr = new AtlasAttributeDef("qualifiedName", "string");
         setField(patch, "attributeDefs", Arrays.asList(overrideAttr));
+
+        expectThrows(AtlasBaseException.class, () -> handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch));
+    }
+
+    @Test
+    public void testAttributeDefOverridesAndPropagateRenamePatchHandlerPropagateRenameEnd2WithPropagateAttributes() throws Exception {
+        AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler handler =
+                new AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler(typeDefStore, typeRegistry);
+
+        Object patch = createMockTypeDefPatch("SET_PROPAGATE_RENAME", "TestRelationship", "1.0", "2.0");
+
+        AtlasRelationshipDef relationshipDef = new AtlasRelationshipDef();
+        relationshipDef.setName("TestRelationship");
+        relationshipDef.setTypeVersion("1.0");
+        relationshipDef.setEndDef1(new AtlasRelationshipEndDef("E1", "a1", AtlasAttributeDef.Cardinality.SINGLE));
+        relationshipDef.setEndDef2(new AtlasRelationshipEndDef("E2", "a2", AtlasAttributeDef.Cardinality.SINGLE));
+        when(typeRegistry.getTypeDefByName("TestRelationship")).thenReturn(relationshipDef);
+
+        Map<String, Object> row = new HashMap<>();
+        row.put("source", "name");
+        row.put("target", "name");
+        Map<String, Object> params = new HashMap<>();
+        params.put("endDefToken", "endDef2");
+        params.put("propagateAttributes", Arrays.asList(row));
+        setField(patch, "params", params);
+
+        PatchStatus result = handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch);
+        assertEquals(result, APPLIED);
+
+        ArgumentCaptor<AtlasRelationshipDef> captor = ArgumentCaptor.forClass(AtlasRelationshipDef.class);
+        verify(typeDefStore).updateRelationshipDefByName(eq("TestRelationship"), captor.capture());
+        AtlasRelationshipEndDef end2 = captor.getValue().getEndDef2();
+        assertTrue(end2.getIsPropagateRename());
+        assertEquals(end2.getPropagateAttributes().size(), 1);
+        assertEquals(end2.getPropagateAttributes().get(0).get("source"), "name");
+        assertEquals(end2.getPropagateAttributes().get(0).get("target"), "name");
+    }
+
+    @Test
+    public void testAttributeDefOverridesAndPropagateRenamePatchHandlerPropagateRenamePropagateAttributesInvalidShape() throws Exception {
+        AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler handler =
+                new AtlasTypeDefStoreInitializer.AttributeDefOverridesAndPropagateRenamePatchHandler(typeDefStore, typeRegistry);
+
+        Object patch = createMockTypeDefPatch("SET_PROPAGATE_RENAME", "TestRelationship", "1.0", "2.0");
+
+        AtlasRelationshipDef relationshipDef = new AtlasRelationshipDef();
+        relationshipDef.setName("TestRelationship");
+        relationshipDef.setTypeVersion("1.0");
+        relationshipDef.setEndDef1(new AtlasRelationshipEndDef("E1", "a1", AtlasAttributeDef.Cardinality.SINGLE));
+        relationshipDef.setEndDef2(new AtlasRelationshipEndDef("E2", "a2", AtlasAttributeDef.Cardinality.SINGLE));
+        when(typeRegistry.getTypeDefByName("TestRelationship")).thenReturn(relationshipDef);
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("endDefToken", "endDef1");
+        params.put("propagateAttributes", "not-a-list");
+        setField(patch, "params", params);
 
         expectThrows(AtlasBaseException.class, () -> handler.applyPatch((AtlasTypeDefStoreInitializer.TypeDefPatch) patch));
     }

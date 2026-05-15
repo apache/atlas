@@ -34,6 +34,12 @@
       "superTypes":   [ "DataSet" ],
       "serviceType":  "trino",
       "typeVersion":  "1.0",
+      "attributeDefOverrides": [
+        {
+          "name":              "qualifiedName",
+          "autoComputeFormat": "{trinoschema.catalog.name}.{trinoschema.name}.{name}@{trinoschema.catalog.instance.name}"
+        }
+      ],
       "attributeDefs": [
         { "name": "comment",    "typeName": "string",             "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true },
         { "name": "parameters", "typeName": "map<string,string>", "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true },
@@ -175,7 +181,7 @@
       "typeVersion":          "1.0",
       "relationshipCategory": "ASSOCIATION",
       "propagateTags":        "BOTH",
-      "endDef1": { "type": "hive_table",  "name": "trino_table", "cardinality": "SET"    },
+      "endDef1": { "type": "hive_table",  "name": "trino_table", "cardinality": "SET", "propagateRename": true, "propagateAttributes": [ { "source": "name", "target": "name" } ]   },
       "endDef2": { "type": "trino_table", "name": "hive_table",  "cardinality": "SINGLE" }
     },
     {
