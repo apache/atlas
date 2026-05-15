@@ -24,34 +24,6 @@
       "params": {
         "endDefToken": "endDef1"
       }
-    },
-    {
-      "id": "TYPEDEF_PATCH_6000_001_C",
-      "description": "Persist attributeDefOverrides for trino_table.qualifiedName (upgrade DBs at typeVersion 1.0)",
-      "action": "SET_ATTRIBUTE_DEF_OVERRIDES",
-      "typeName": "trino_table",
-      "applyToVersion": "1.0",
-      "updateToVersion": "1.1",
-      "attributeDefs": [
-        {
-          "name": "qualifiedName",
-          "autoComputeFormat": "{trinoschema.catalog.name}.{trinoschema.name}.{name}@{trinoschema.catalog.instance.name}"
-        }
-      ]
-    },
-    {
-      "id": "TYPEDEF_PATCH_6000_001_D",
-      "description": "Set propagateRename and propagateAttributes on trino_table_hive_table endDef1 (hive_table) (upgrade DBs at typeVersion 1.0)",
-      "action": "SET_PROPAGATE_RENAME",
-      "typeName": "trino_table_hive_table",
-      "applyToVersion": "1.0",
-      "updateToVersion": "1.1",
-      "params": {
-        "endDefToken": "endDef1",
-        "propagateAttributes": [
-          { "source": "name", "target": "name" }
-        ]
-      }
     }
   ]
 }
