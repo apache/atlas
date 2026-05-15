@@ -20,6 +20,8 @@ package org.apache.atlas.repository.store.bootstrap;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
@@ -55,6 +57,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
@@ -1182,12 +1185,15 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
     /**
      * Handles {@code SET_ATTRIBUTE_DEF_OVERRIDES} on entity typedefs and {@code SET_PROPAGATE_RENAME} on relationship typedef end defs.
+     * Optional {@code params.propagateAttributes} for {@code SET_PROPAGATE_RENAME}: a JSON array of objects, each copied to a {@code HashMap<String,String>} on the patched end.
      */
     static class AttributeDefOverridesAndPropagateRenamePatchHandler extends PatchHandler {
         private static final String ACTION_SET_ATTRIBUTE_DEF_OVERRIDES = "SET_ATTRIBUTE_DEF_OVERRIDES";
         private static final String ACTION_SET_PROPAGATE_RENAME        = "SET_PROPAGATE_RENAME";
         /** Patch JSON key under {@code params}: value is {@code "endDef1"} or {@code "endDef2"} (string, not numeric). */
         private static final String PARAM_END_DEF_TOKEN                = "endDefToken";
+        /** Optional: JSON array of objects under {@code params}; each object becomes one {@code Map<String,String>}. */
+        private static final String PARAM_PROPAGATE_ATTRIBUTES         = "propagateAttributes";
 
         public AttributeDefOverridesAndPropagateRenamePatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
             super(typeDefStore, typeRegistry, new String[] {ACTION_SET_ATTRIBUTE_DEF_OVERRIDES, ACTION_SET_PROPAGATE_RENAME});
@@ -1272,11 +1278,13 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                 AtlasRelationshipEndDef end2 = new AtlasRelationshipEndDef(updatedDef.getEndDef2());
 
                 end2.setIsPropagateRename(true);
+                setPropagateAttributesFromParamsIfPresent(patch.getParams(), end2);
                 updatedDef.setEndDef2(end2);
             } else {
                 AtlasRelationshipEndDef end1 = new AtlasRelationshipEndDef(updatedDef.getEndDef1());
 
                 end1.setIsPropagateRename(true);
+                setPropagateAttributesFromParamsIfPresent(patch.getParams(), end1);
                 updatedDef.setEndDef1(end1);
             }
 
@@ -1291,6 +1299,30 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     patch.getId(), ACTION_SET_PROPAGATE_RENAME, typeDef.getName(), endDefToken, patch.getUpdateToVersion());
 
             return APPLIED;
+        }
+
+        /** If {@code params} contains {@code propagateAttributes}, coerces via {@link AtlasJson#getMapper()} {@code convertValue} to {@code List<Map<String,String>>}. */
+        private static void setPropagateAttributesFromParamsIfPresent(Map<String, Object> params, AtlasRelationshipEndDef endDef) throws AtlasBaseException {
+            if (MapUtils.isEmpty(params) || !params.containsKey(PARAM_PROPAGATE_ATTRIBUTES)) {
+                return;
+            }
+            Object raw = params.get(PARAM_PROPAGATE_ATTRIBUTES);
+            if (raw == null) {
+                endDef.setPropagateAttributes(Collections.emptyList());
+                return;
+            }
+            if (!(raw instanceof List)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
+                        "SET_PROPAGATE_RENAME: params.propagateAttributes must be a JSON array");
+            }
+            try {
+                List<Map<String, String>> rows = ((ObjectMapper) AtlasJson.getMapper()).convertValue(raw,
+                        new TypeReference<List<Map<String, String>>>() { });
+                endDef.setPropagateAttributes(rows);
+            } catch (IllegalArgumentException ex) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, ex,
+                        "SET_PROPAGATE_RENAME: params.propagateAttributes must be a JSON array of objects");
+            }
         }
     }
 
