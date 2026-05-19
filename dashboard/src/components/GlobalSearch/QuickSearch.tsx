@@ -198,24 +198,24 @@ const QuickSearch = () => {
 
 		entities = !isEmpty(searchResults?.entities)
 			? searchResults?.entities?.map((entityDef: any) => {
-					const { name }: { name: string; found: boolean; key: any } =
-						extractKeyValueFromEntity(entityDef);
-					return {
-						title: `${name}`,
-						parent: entityDef.typeName,
-						types: "Entities",
-						entityObj: entityDef
-					};
-				})
+				const { name }: { name: string; found: boolean; key: any } =
+					extractKeyValueFromEntity(entityDef);
+				return {
+					title: `${name}`,
+					parent: entityDef.typeName,
+					types: "Entities",
+					entityObj: entityDef
+				};
+			})
 			: [{ title: "No Entities Found", types: "Entities" }];
 
 		suggestionNames = !isEmpty(suggestions)
 			? suggestions.map((suggestion: any) => {
-					return {
-						title: `${suggestion}`,
-						types: "Suggestions"
-					};
-				})
+				return {
+					title: `${suggestion}`,
+					types: "Suggestions"
+				};
+			})
 			: [{ title: "No Suggestions Found", types: "Suggestions" }];
 
 		setOptions([...entities, ...suggestionNames] as GlobalOptionRow[]);
@@ -388,6 +388,7 @@ const QuickSearch = () => {
 				className="global-search-stack"
 				alignItems="center"
 				gap="0.5rem"
+				sx={{ minWidth: 0, flexShrink: 1 }}
 			>
 				<FormControl
 					size="small"
@@ -436,8 +437,8 @@ const QuickSearch = () => {
 						disablePortal
 						className="global-search-autocomplete"
 						sx={{
-							minWidth: 280,
-							flex: 1,
+							minWidth: 150,
+							flex: "1 1 280px",
 							"& + .MuiAutocomplete-popper .MuiAutocomplete-option": {
 								backgroundColor: "white"
 							},
@@ -493,14 +494,14 @@ const QuickSearch = () => {
 
 							const { entityObj, types, parent } =
 								typeof option !== "string" &&
-								"entityObj" in option &&
-								"types" in option &&
-								"parent" in option
+									"entityObj" in option &&
+									"types" in option &&
+									"parent" in option
 									? (option as {
-											entityObj: { status?: string; guid?: string };
-											types: string;
-											parent: string;
-										})
+										entityObj: { status?: string; guid?: string };
+										types: string;
+										parent: string;
+									})
 									: { entityObj: null, types: "", parent: "" };
 							const title =
 								typeof option !== "string" && "title" in option
@@ -556,7 +557,7 @@ const QuickSearch = () => {
 											to={{ pathname: href }}
 											color={
 												entityObj?.status &&
-												entityStateReadOnly[entityObj.status]
+													entityStateReadOnly[entityObj.status]
 													? "error"
 													: "primary"
 											}
@@ -566,48 +567,48 @@ const QuickSearch = () => {
 											)}
 											{types === "Entities" && !isEmpty(entityObj)
 												? parts.map((part, index) => (
-														<Stack
-															flexDirection="row"
-															key={index}
-															style={{
-																fontWeight: part.highlight ? "bold" : "regular"
-															}}
-														>
-															{entityObj?.guid !== "-1" && !part.highlight ? (
-																<Link
-																	className="entity-name text-blue text-decoration-none"
-																	style={{
-																		color: "black",
-																		textDecoration: "none",
-																		maxWidth: "100%",
-																		width: "100%"
-																	}}
-																	to={{ pathname: href }}
-																	color={
-																		entityObj?.status &&
+													<Stack
+														flexDirection="row"
+														key={index}
+														style={{
+															fontWeight: part.highlight ? "bold" : "regular"
+														}}
+													>
+														{entityObj?.guid !== "-1" && !part.highlight ? (
+															<Link
+																className="entity-name text-blue text-decoration-none"
+																style={{
+																	color: "black",
+																	textDecoration: "none",
+																	maxWidth: "100%",
+																	width: "100%"
+																}}
+																to={{ pathname: href }}
+																color={
+																	entityObj?.status &&
 																		entityStateReadOnly[entityObj.status]
-																			? "error"
-																			: "primary"
-																	}
-																>
-																	{part.text}
-																</Link>
-															) : (
-																part.text
-															)}
-														</Stack>
-													))
+																		? "error"
+																		: "primary"
+																}
+															>
+																{part.text}
+															</Link>
+														) : (
+															part.text
+														)}
+													</Stack>
+												))
 												: parts.map((part, index) => (
-														<Stack
-															flexDirection="row"
-															key={index}
-															style={{
-																fontWeight: part.highlight ? "bold" : "regular"
-															}}
-														>
-															{part.text}
-														</Stack>
-													))}
+													<Stack
+														flexDirection="row"
+														key={index}
+														style={{
+															fontWeight: part.highlight ? "bold" : "regular"
+														}}
+													>
+														{part.text}
+													</Stack>
+												))}
 											{types === "Entities" &&
 												!isEmpty(entityObj) &&
 												` (${parent})`}
