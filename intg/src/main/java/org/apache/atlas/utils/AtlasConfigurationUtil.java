@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.utils;
 
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 
 public class AtlasConfigurationUtil {
     private AtlasConfigurationUtil() {
