@@ -98,7 +98,6 @@
         <commons-codec.version>1.14</commons-codec.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-collections4.version>4.4</commons-collections4.version>
-        <commons-conf.version>1.10</commons-conf.version>
         <commons-conf2.version>2.10.1</commons-conf2.version>
         <commons-el.version>1.0</commons-el.version>
         <commons-io.version>2.17.0</commons-io.version>
@@ -346,13 +345,6 @@
                 <groupId>commons-collections</groupId>
                 <artifactId>commons-collections</artifactId>
                 <version>${commons-collections.version}</version>
-            </dependency>
-
-            <!-- commons -->
-            <dependency>
-                <groupId>commons-configuration</groupId>
-                <artifactId>commons-configuration</artifactId>
-                <version>${commons-conf.version}</version>
             </dependency>
 
             <dependency>

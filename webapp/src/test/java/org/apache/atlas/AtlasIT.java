@@ -17,7 +17,7 @@
 package org.apache.atlas;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;

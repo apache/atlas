@@ -25,7 +25,7 @@ import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.storm.model.StormDataTypes;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.v1.model.instance.Referenceable;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.storm.ILocalCluster;
 import org.apache.storm.generated.StormTopology;
 import org.slf4j.Logger;
