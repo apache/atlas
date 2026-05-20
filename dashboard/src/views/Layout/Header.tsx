@@ -29,7 +29,13 @@ import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
 import AccountCircleRoundedIcon from "@mui/icons-material/AccountCircleRounded";
 import { useLocation, useNavigate } from "react-router-dom";
 import QuickSearch from "@components/GlobalSearch/QuickSearch";
-import { Logout } from "@mui/icons-material";
+import CreateDropdown from "@components/CreateDropdown";
+import {
+	AdminPanelSettingsOutlined,
+	HelpOutlineOutlined,
+	Logout,
+	SwapHorizOutlined
+} from "@mui/icons-material";
 import { useAppSelector } from "@hooks/reducerHook";
 import {
   Button,
@@ -174,15 +180,17 @@ const Header: React.FC<Header> = ({
           </Button>
         </LightTooltip>
       )}
-      {location.pathname != "/" &&
-        location.pathname != "/search" &&
-        location.pathname != "/!" &&
-        (!location.pathname.includes("!") ) && (
+      {location.pathname !== "/" &&
+        location.pathname !== "/search" && (
           <div style={{ display: "flex", justifyContent: "center", flex: "1" }}>
             <QuickSearch />
           </div>
         )}
-      <div className="header-menu">
+      {(location.pathname === "/" || location.pathname === "/search") && (
+        <div style={{ flex: "1" }} />
+      )}
+      <div className="header-menu" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <CreateDropdown />
         <LightTooltip title="Downloads">
           <IconButton
             size="small"
@@ -260,9 +268,11 @@ const Header: React.FC<Header> = ({
             }}
             data-cy="administrator"
           >
+            <AdminPanelSettingsOutlined sx={{ marginRight: "4px" }} fontSize="inherit" />
             Administration
           </MenuItem>
           <MenuItem dense onClick={handleNestedMenuClick} data-cy="help">
+            <HelpOutlineOutlined sx={{ marginRight: "4px" }} fontSize="inherit" />
             Help
           </MenuItem>
           <Divider />
@@ -275,6 +285,7 @@ const Header: React.FC<Header> = ({
               handleClose();
             }}
           >
+            <SwapHorizOutlined sx={{ marginRight: "4px" }} fontSize="inherit" />
             Switch to Classic
           </MenuItem>
           <MenuItem

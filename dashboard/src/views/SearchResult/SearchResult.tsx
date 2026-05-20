@@ -71,6 +71,9 @@ interface Params {
   classification: any;
   termName: string | null;
   relationshipFilters?: string | null;
+  sortBy?: string;
+  sortOrder?: string;
+  excludeHeaderAttributes?: boolean;
 }
 
 let defaultColumnsName: Array<string> = [
@@ -155,6 +158,15 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
           ? !searchParams.get("excludeST")
           : true,
         includeClassificationAttributes: true,
+        ...(!isEmpty(searchParams.get("sortBy")) && {
+          sortBy: searchParams.get("sortBy")
+        }),
+        ...(!isEmpty(searchParams.get("sortOrder")) && {
+          sortOrder: searchParams.get("sortOrder")
+        }),
+        ...(searchParams.get("excludeHeaderAttributes") === "true" && {
+          excludeHeaderAttributes: true
+        }),
         ...(isEmpty(classificationParams || glossaryTypeParams) && {
           entityFilters: !isEmpty(entityFilterParams)
             ? searchParamsAPiQuery(entityFilterParams)
@@ -1000,12 +1012,20 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
 
     return hideColumns;
   };
+  const latestEntitiesSortBy = searchParams.get("sortBy");
+  const latestEntitiesSortOrder = searchParams.get("sortOrder");
   const getDefaultSort = useMemo(() => {
     if (isDslAggregate) {
       return [] as any[]; // no default sorting for DSL aggregates
     }
-    return [{ id: "name", asc: true }];
-  }, [isDslAggregate]);
+    if (
+      latestEntitiesSortBy === "__timestamp" &&
+      latestEntitiesSortOrder === "DESCENDING"
+    ) {
+      return [{ id: "__timestamp", desc: true }];
+    }
+    return [{ id: "name", desc: false }];
+  }, [isDslAggregate, latestEntitiesSortBy, latestEntitiesSortOrder]);
 
   return (
     <Stack position="relative" gap={"1rem"}>

@@ -369,6 +369,18 @@ const TablePagination: React.FC<PaginationProps> = ({
     ? pageTo
     : Math.min((pageIndex + 1) * pageSize, totalDatasetRows);
 
+  /** Last page may return fewer than `limit` rows; cap "to" at known total. */
+  const displayToCapped =
+    isServerSide &&
+    typeof totalCount === "number" &&
+    totalCount >= 0
+      ? Math.min(displayTo, totalCount)
+      : displayTo;
+
+  const footerRangeStart =
+    totalDatasetRows === 0 ? 0 : Math.min(displayFrom, displayToCapped);
+  const footerRangeEnd = totalDatasetRows === 0 ? 0 : displayToCapped;
+
   return (
     <Stack
       spacing={{ xs: 1, sm: 2 }}
@@ -381,8 +393,16 @@ const TablePagination: React.FC<PaginationProps> = ({
     >
       <div>
         <span className="text-grey">
-          Showing <u>{totalDatasetRows.toLocaleString()} records</u> From{" "}
-          {displayFrom} - {displayTo}
+          {totalDatasetRows === 0 ? (
+            "No records to display"
+          ) : (
+            <>
+              Showing {footerRangeStart.toLocaleString()}-
+              {footerRangeEnd.toLocaleString()} of{" "}
+              {totalDatasetRows.toLocaleString()}{" "}
+              {totalDatasetRows === 1 ? "record" : "records"}
+            </>
+          )}
         </span>
       </div>
 
@@ -491,25 +511,27 @@ const TablePagination: React.FC<PaginationProps> = ({
                     value={pendingGoToPageVal}
                   />
                   <LightTooltip title="Goto Page">
-                    <IconButton
-                      type="button"
-                      size="small"
-                      className={`${
-                        !isEmpty(pendingGoToPageVal)
-                          ? "cursor-pointer"
-                          : "cursor-not-allowed"
-                      } table-pagination-gotopage-button`}
-                      aria-label="search"
-                      onClick={() => {
-                        if (!isEmpty(pendingGoToPageVal)) {
-                          setGoToPageTrigger(pendingGoToPageVal);
-                          handleGoToPage();
-                        }
-                      }}
-                      disabled={isEmpty(pendingGoToPageVal)}
-                    >
-                      Go
-                    </IconButton>
+                    <span style={{ display: "inline-flex" }}>
+                      <IconButton
+                        type="button"
+                        size="small"
+                        className={`${
+                          !isEmpty(pendingGoToPageVal)
+                            ? "cursor-pointer"
+                            : "cursor-not-allowed"
+                        } table-pagination-gotopage-button`}
+                        aria-label="search"
+                        onClick={() => {
+                          if (!isEmpty(pendingGoToPageVal)) {
+                            setGoToPageTrigger(pendingGoToPageVal);
+                            handleGoToPage();
+                          }
+                        }}
+                        disabled={isEmpty(pendingGoToPageVal)}
+                      >
+                        Go
+                      </IconButton>
+                    </span>
                   </LightTooltip>
                 </Paper>
               </Stack>
@@ -517,19 +539,21 @@ const TablePagination: React.FC<PaginationProps> = ({
 
             <Stack flexDirection="row" alignItems="center">
               <LightTooltip title="Previous">
-                <IconButton
-                  size="small"
-                  className="pagination-page-change-btn"
-                  onClick={handlePreviousPage}
-                  disabled={isPreviousDisabled}
-                  aria-label="previous page"
-                >
-                  {theme.direction === "rtl" ? (
-                    <KeyboardArrowRight />
-                  ) : (
-                    <KeyboardArrowLeft />
-                  )}
-                </IconButton>
+                <span style={{ display: "inline-flex" }}>
+                  <IconButton
+                    size="small"
+                    className="pagination-page-change-btn"
+                    onClick={handlePreviousPage}
+                    disabled={isPreviousDisabled}
+                    aria-label="previous page"
+                  >
+                    {theme.direction === "rtl" ? (
+                      <KeyboardArrowRight />
+                    ) : (
+                      <KeyboardArrowLeft />
+                    )}
+                  </IconButton>
+                </span>
               </LightTooltip>
 
               <LightTooltip title={`Page ${activePage}`}>
@@ -539,19 +563,21 @@ const TablePagination: React.FC<PaginationProps> = ({
               </LightTooltip>
 
               <LightTooltip title="Next">
-                <IconButton
-                  size="small"
-                  className="pagination-page-change-btn"
-                  onClick={handleNextPage}
-                  disabled={isNextDisabled}
-                  aria-label="next page"
-                >
-                  {theme.direction === "rtl" ? (
-                    <KeyboardArrowLeft />
-                  ) : (
-                    <KeyboardArrowRight />
-                  )}
-                </IconButton>
+                <span style={{ display: "inline-flex" }}>
+                  <IconButton
+                    size="small"
+                    className="pagination-page-change-btn"
+                    onClick={handleNextPage}
+                    disabled={isNextDisabled}
+                    aria-label="next page"
+                  >
+                    {theme.direction === "rtl" ? (
+                      <KeyboardArrowLeft />
+                    ) : (
+                      <KeyboardArrowRight />
+                    )}
+                  </IconButton>
+                </span>
               </LightTooltip>
             </Stack>
           </>

@@ -146,16 +146,32 @@ define([
                 disableI18n = (config.hbs && config.hbs.disableI18n),
                 partialDeps = [];
 
+            function partialNameFromStatement(statement) {
+                if (statement.type !== 'PartialStatement' &&
+                        statement.type !== 'PartialBlockStatement') {
+                    return null;
+                }
+                var n = statement.name;
+                if (!n || n.type === 'SubExpression') {
+                    return null;
+                }
+                return n.original || (n.parts && n.parts.join('/'));
+            }
+
             function recursiveNodeSearch(statements, res) {
                 _(statements).forEach(function(statement) {
-                    if (statement && statement.type && statement.type === 'partial') {
-                        res.push(statement.partialName.name);
+                    if (!statement) {
+                        return;
                     }
-                    if (statement && statement.program && statement.program.statements) {
-                        recursiveNodeSearch(statement.program.statements, res);
+                    var pname = partialNameFromStatement(statement);
+                    if (pname) {
+                        res.push(pname);
                     }
-                    if (statement && statement.program && statement.program.inverse && statement.program.inverse.statements) {
-                        recursiveNodeSearch(statement.program.inverse.statements, res);
+                    if (statement.program && statement.program.body) {
+                        recursiveNodeSearch(statement.program.body, res);
+                    }
+                    if (statement.inverse && statement.inverse.body) {
+                        recursiveNodeSearch(statement.inverse.body, res);
                     }
                 });
                 return res;
@@ -164,8 +180,8 @@ define([
             // TODO :: use the parser to do this!
             function findPartialDeps(nodes) {
                 var res = [];
-                if (nodes && nodes.statements) {
-                    res = recursiveNodeSearch(nodes.statements, []);
+                if (nodes && nodes.body) {
+                    res = recursiveNodeSearch(nodes.body, []);
                 }
                 return _(res).unique();
             }
@@ -173,11 +189,11 @@ define([
             // See if the first item is a comment that's json
             function getMetaData(nodes) {
                 var statement, res, test;
-                if (nodes && nodes.statements) {
-                    statement = nodes.statements[0];
-                    if (statement && statement.type === "comment") {
+                if (nodes && nodes.body) {
+                    statement = nodes.body[0];
+                    if (statement && statement.type === 'CommentStatement') {
                         try {
-                            res = (statement.comment).replace(new RegExp('^[\\s]+|[\\s]+$', 'g'), '');
+                            res = (statement.value).replace(new RegExp('^[\\s]+|[\\s]+$', 'g'), '');
                             test = JSON.parse(res);
                             return res;
                         } catch (e) {
@@ -205,65 +221,87 @@ define([
                 return res;
             }
 
+            function isLiteralParam(param) {
+                var t = param && param.type;
+                return t === 'StringLiteral' || t === 'NumberLiteral' ||
+                    t === 'BooleanLiteral' || t === 'UndefinedLiteral' ||
+                    t === 'NullLiteral';
+            }
+
             function recursiveVarSearch(statements, res, prefix, helpersres) {
                 prefix = prefix ? prefix + "." : "";
 
-                var newprefix = "",
-                    flag = false;
+                var newprefix = "";
 
-                // loop through each statement
                 _(statements).forEach(function(statement) {
-                    var parts, part, sideways;
+                    var parts, part, sideways, hid;
 
-                    // if it's a mustache block
-                    if (statement && statement.type && statement.type === 'mustache') {
+                    if (!statement) {
+                        return;
+                    }
 
-                        // If it has params, the first part is a helper or something
+                    if (statement.type === 'BlockStatement' ||
+                            statement.type === 'DecoratorBlock') {
+                        var blockMustache = {
+                            type: 'MustacheStatement',
+                            path: statement.path,
+                            params: statement.params,
+                        };
+                        recursiveVarSearch([blockMustache], res, prefix + newprefix, helpersres);
+                        sideways = recursiveVarSearch([blockMustache], [], "", helpersres)[0] || "";
+                        var suffix = prefix + newprefix + (sideways ?
+                            ((prefix + newprefix) ? "." + sideways : sideways) : '');
+                        if (statement.inverse && statement.inverse.body) {
+                            recursiveVarSearch(statement.inverse.body, res, suffix, helpersres);
+                        }
+                        if (statement.program && statement.program.body) {
+                            recursiveVarSearch(statement.program.body, res, suffix, helpersres);
+                        }
+                        return;
+                    }
+
+                    if (statement.type === 'PartialBlockStatement' &&
+                            statement.program && statement.program.body) {
+                        recursiveVarSearch(statement.program.body, res, prefix + newprefix, helpersres);
+                        return;
+                    }
+
+                    if (statement.type === 'MustacheStatement') {
                         if (!statement.params || !statement.params.length) {
-                            parts = composeParts(statement.id.parts);
+                            parts = composeParts(statement.path.parts);
                             for (part in parts) {
                                 if (parts[part]) {
                                     newprefix = parts[part] || newprefix;
                                     res.push(prefix + parts[part]);
                                 }
                             }
-                            res.push(prefix + statement.id.string);
+                            res.push(prefix + statement.path.original);
                         }
 
                         var paramsWithoutParts = ['this', '.', '..', './..', '../..', '../../..'];
 
-                        // grab the params
-                        if (statement.params && typeof Handlebars.helpers[statement.id.string] === 'undefined') {
+                        hid = statement.path && statement.path.parts &&
+                            statement.path.parts[0];
+
+                        if (statement.params &&
+                                typeof Handlebars.helpers[hid] === 'undefined') {
                             _(statement.params).forEach(function(param) {
-                                if (_(paramsWithoutParts).contains(param.original) || param instanceof Handlebars.AST.StringNode || param instanceof Handlebars.AST.IntegerNode || param instanceof Handlebars.AST.BooleanNode) {
-                                    helpersres.push(statement.id.string);
+                                if (_(paramsWithoutParts).contains(param.original) ||
+                                        isLiteralParam(param)) {
+                                    helpersres.push(hid);
                                 }
 
                                 parts = composeParts(param.parts);
 
-                                for (var part in parts) {
-                                    if (parts[part]) {
-                                        newprefix = parts[part] || newprefix;
-                                        helpersres.push(statement.id.string);
-                                        res.push(prefix + parts[part]);
+                                for (var p in parts) {
+                                    if (parts[p]) {
+                                        newprefix = parts[p] || newprefix;
+                                        helpersres.push(hid);
+                                        res.push(prefix + parts[p]);
                                     }
                                 }
                             });
                         }
-                    }
-
-                    // If it's a meta block
-                    if (statement && statement.mustache) {
-                        recursiveVarSearch([statement.mustache], res, prefix + newprefix, helpersres);
-                    }
-
-                    // if it's a whole new program
-                    if (statement && statement.program && statement.program.statements) {
-                        sideways = recursiveVarSearch([statement.mustache], [], "", helpersres)[0] || "";
-                        if (statement.program.inverse && statement.program.inverse.statements) {
-                            recursiveVarSearch(statement.program.inverse.statements, res, prefix + newprefix + (sideways ? (prefix + newprefix) ? "." + sideways : sideways : ""), helpersres);
-                        }
-                        recursiveVarSearch(statement.program.statements, res, prefix + newprefix + (sideways ? (prefix + newprefix) ? "." + sideways : sideways : ""), helpersres);
                     }
                 });
                 return res;
@@ -274,11 +312,12 @@ define([
                 var res = [];
                 var helpersres = [];
 
-                if (nodes && nodes.statements) {
-                    res = recursiveVarSearch(nodes.statements, [], undefined, helpersres);
+                if (nodes && nodes.body) {
+                    res = recursiveVarSearch(nodes.body, [], undefined, helpersres);
                 }
 
-                var defaultHelpers = ["helperMissing", "blockHelperMissing", "each", "if", "unless", "with"];
+                var defaultHelpers = ['helperMissing', 'blockHelperMissing', 'each', 'if',
+                    'unless', 'with', 'lookup', 'log'];
 
                 return {
                     vars: _(res).chain().unique().map(function(e) {

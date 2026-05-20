@@ -159,7 +159,6 @@ const SchemaTab = ({
         pageLimitByRelation: {}
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- only when parent clears cache
   }, [schemaCache, setSchemaCache]);
 
   const fetchRelationPage = useCallback(

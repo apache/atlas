@@ -148,24 +148,34 @@ abstract class AtlasAbstractDefStoreV2<T extends AtlasBaseTypeDef> implements At
 
     @Override
     public void deleteByName(String name, AtlasVertex preDeleteResult) throws AtlasBaseException {
-        LOG.debug("==> AtlasAbstractDefStoreV1.deleteByName({}, {})", name, preDeleteResult);
-
-        AtlasVertex vertex = (preDeleteResult == null) ? preDeleteByName(name) : preDeleteResult;
-
-        typeDefStore.deleteTypeVertex(vertex);
-
-        LOG.debug("<== AtlasAbstractDefStoreV1.deleteByName({}, {})", name, preDeleteResult);
+        deleteByName(name, preDeleteResult, false);
     }
 
     @Override
     public void deleteByGuid(String guid, AtlasVertex preDeleteResult) throws AtlasBaseException {
-        LOG.debug("==> AtlasAbstractDefStoreV1.deleteByGuid({}, {})", guid, preDeleteResult);
+        deleteByGuid(guid, preDeleteResult, false);
+    }
 
-        AtlasVertex vertex = (preDeleteResult == null) ? preDeleteByGuid(guid) : preDeleteResult;
+    @Override
+    public void deleteByName(String name, AtlasVertex preDeleteResult, boolean forceDelete) throws AtlasBaseException {
+        LOG.debug("==> AtlasAbstractDefStoreV2.deleteByName({}, {}, {})", name, preDeleteResult, forceDelete);
+
+        AtlasVertex vertex = (preDeleteResult == null) ? preDeleteByName(name, forceDelete) : preDeleteResult;
 
         typeDefStore.deleteTypeVertex(vertex);
 
-        LOG.debug("<== AtlasAbstractDefStoreV1.deleteByGuid({}, {})", guid, preDeleteResult);
+        LOG.debug("<== AtlasAbstractDefStoreV2.deleteByName({}, {}, {})", name, preDeleteResult, forceDelete);
+    }
+
+    @Override
+    public void deleteByGuid(String guid, AtlasVertex preDeleteResult, boolean forceDelete) throws AtlasBaseException {
+        LOG.debug("==> AtlasAbstractDefStoreV2.deleteByGuid({}, {}, {})", guid, preDeleteResult, forceDelete);
+
+        AtlasVertex vertex = (preDeleteResult == null) ? preDeleteByGuid(guid, forceDelete) : preDeleteResult;
+
+        typeDefStore.deleteTypeVertex(vertex);
+
+        LOG.debug("<== AtlasAbstractDefStoreV2.deleteByGuid({}, {}, {})", guid, preDeleteResult, forceDelete);
     }
 
     public boolean isInvalidTypeDefName(String typeName) {

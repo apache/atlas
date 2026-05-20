@@ -59,6 +59,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 /* Please note that for these tests, since the typeRegistry can be injected only once,
  * any new tests should make sure that they flush the type registry at the end of the test.
@@ -203,6 +204,39 @@ public class AtlasBusinessMetadataDefStoreV2Test {
 
         for (AtlasBusinessMetadataDef businessMetadataDef : typeRegistry.getAllBusinessMetadataDefs()) {
             assertNotEquals(businessMetadataDef.getName(), businessMetadataName);
+        }
+    }
+
+    @Test
+    public void deleteBusinessMetadataDefWithMixedIndexableAttributesWithoutForceShouldFail() throws AtlasBaseException {
+        createBusinessMetadataTypesWithMixedIndexability(businessMetadataName);
+
+        AtlasBusinessMetadataDef businessMetadataDef = findBusinessMetadataDef(businessMetadataName);
+        assertNotNull(businessMetadataDef);
+
+        typesDefs = new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.singletonList(businessMetadataDef));
+
+        try {
+            typeDefStore.deleteTypesDef(typesDefs, false);
+            fail("Deletion without force should fail when BM has non-indexable attributes");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.NON_INDEXABLE_BM_DELETE_NOT_ALLOWED);
+        }
+    }
+
+    @Test
+    public void deleteBusinessMetadataDefWithMixedIndexableAttributesWithForceShouldSucceed() throws AtlasBaseException {
+        createBusinessMetadataTypesWithMixedIndexability(businessMetadataName);
+
+        AtlasBusinessMetadataDef businessMetadataDef = findBusinessMetadataDef(businessMetadataName);
+        assertNotNull(businessMetadataDef);
+
+        typesDefs = new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.singletonList(businessMetadataDef));
+
+        typeDefStore.deleteTypesDef(typesDefs, true);
+
+        for (AtlasBusinessMetadataDef def : typeRegistry.getAllBusinessMetadataDefs()) {
+            assertNotEquals(def.getName(), businessMetadataName);
         }
     }
 
@@ -494,6 +528,29 @@ public class AtlasBusinessMetadataDefStoreV2Test {
         return businessMetadataDef1;
     }
 
+    private void createBusinessMetadataTypesWithMixedIndexability(String businessMetadataName) throws AtlasBaseException {
+        List<AtlasBusinessMetadataDef> businessMetadataDefs = new ArrayList<>(typesDefs.getBusinessMetadataDefs());
+
+        businessMetadataDefs.add(createBusinessMetadataDefWithMixedIndexability(businessMetadataName));
+
+        typesDefs.setBusinessMetadataDefs(businessMetadataDefs);
+
+        AtlasTypesDef createdTypesDef = typeDefStore.createTypesDef(typesDefs);
+
+        assertEquals(createdTypesDef.getBusinessMetadataDefs(), businessMetadataDefs, "Data integrity issue while persisting");
+    }
+
+    private AtlasBusinessMetadataDef createBusinessMetadataDefWithMixedIndexability(String businessMetadataName) {
+        AtlasBusinessMetadataDef businessMetadataDef = new AtlasBusinessMetadataDef(businessMetadataName, "test_mixed_indexability", null);
+
+        addBusinessAttribute(businessMetadataDef, "mixed_indexable_attr", Collections.singleton("hive_table"), "string", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, true);
+        addBusinessAttribute(businessMetadataDef, "mixed_non_indexable_attr", Collections.singleton("hive_table"), "string", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, false);
+
+        TestUtilsV2.populateSystemAttributes(businessMetadataDef);
+
+        return businessMetadataDef;
+    }
+
     private AtlasBusinessMetadataDef createBusinessMetadataDef2(String businessMetadataName) {
         AtlasBusinessMetadataDef businessMetadataDef1 = new AtlasBusinessMetadataDef(businessMetadataName, "test_description", null);
 
@@ -525,6 +582,28 @@ public class AtlasBusinessMetadataDefStoreV2Test {
             attributeDef.setOption(ATTR_MAX_STRING_LENGTH, "20");
         }
 
+        attributeDef.setIsOptional(true);
+        attributeDef.setValuesMinCount(0);
+        attributeDef.setValuesMaxCount(1);
+        attributeDef.setIsUnique(false);
+        attributeDef.setDisplayName(name);
+        attributeDef.setIsIndexable(true);
+
+        businessMetadataDef.addAttribute(attributeDef);
+    }
+
+    private void addBusinessAttribute(AtlasBusinessMetadataDef businessMetadataDef, String name, Set<String> applicableEntityTypes, String typeName,
+                                      AtlasStructDef.AtlasAttributeDef.Cardinality cardinality, boolean isIndexable) {
+        AtlasStructDef.AtlasAttributeDef attributeDef = new AtlasStructDef.AtlasAttributeDef(name, typeName);
+
+        attributeDef.setCardinality(cardinality);
+        attributeDef.setOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES, AtlasType.toJson(applicableEntityTypes));
+
+        if (typeName.contains(AtlasBaseTypeDef.ATLAS_TYPE_STRING)) {
+            attributeDef.setOption(ATTR_MAX_STRING_LENGTH, "20");
+        }
+
+        attributeDef.setIsIndexable(isIndexable);
         attributeDef.setIsOptional(true);
         attributeDef.setValuesMinCount(0);
         attributeDef.setValuesMaxCount(1);

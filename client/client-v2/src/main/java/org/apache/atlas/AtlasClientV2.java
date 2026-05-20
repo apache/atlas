@@ -74,7 +74,7 @@ import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 
@@ -349,11 +349,33 @@ public class AtlasClientV2 extends AtlasBaseClient {
      * @param typesDef A composite object that captures all types to be deleted
      */
     public void deleteAtlasTypeDefs(AtlasTypesDef typesDef) throws AtlasServiceException {
-        callAPI(API_V2.DELETE_TYPE_DEFS, (Class<?>) null, AtlasType.toJson(typesDef));
+        deleteAtlasTypeDefs(typesDef, false);
+    }
+
+    public void deleteAtlasTypeDefs(AtlasTypesDef typesDef, boolean forceDelete) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = null;
+
+        if (forceDelete) {
+            queryParams = new MultivaluedMapImpl();
+            queryParams.add("force", "true");
+        }
+
+        callAPI(API_V2.DELETE_TYPE_DEFS, (Class<?>) null, AtlasType.toJson(typesDef), queryParams);
     }
 
     public void deleteTypeByName(String typeName) throws AtlasServiceException {
-        callAPI(API_V2.DELETE_TYPE_DEF_BY_NAME, (Class) null, null, typeName);
+        callAPI(API_V2.DELETE_TYPE_DEF_BY_NAME, (Class<?>) null, null, typeName);
+    }
+
+    public void deleteTypeByName(String typeName, boolean forceDelete) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = null;
+
+        if (forceDelete) {
+            queryParams = new MultivaluedMapImpl();
+            queryParams.add("force", "true");
+        }
+
+        callAPI(API_V2.DELETE_TYPE_DEF_BY_NAME, (Class<?>) null, queryParams, typeName);
     }
 
     // Entity APIs

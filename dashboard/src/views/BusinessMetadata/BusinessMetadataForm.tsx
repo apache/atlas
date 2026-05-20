@@ -42,6 +42,7 @@ import BusinessMetadataAttributeForm from "./BusinessMetadataAtrributeForm";
 import { setEditBMAttribute } from "@redux/slice/createBMSlice";
 import { cloneDeep } from "@utils/Helper";
 import { fetchBusinessMetaData } from "@redux/slice/typeDefSlices/typedefBusinessMetadataSlice";
+import { fetchEntityData } from "@redux/slice/typeDefSlices/typedefEntitySlice";
 import { defaultType } from "@utils/Enum";
 import { getTypeName } from "@utils/CommonViewFunction";
 
@@ -340,6 +341,7 @@ const BusinessMetaDataForm = ({
       let bmName = response?.data?.businessMetadataDefs?.[0]?.name;
       toastMssg(bmName);
       dispatchState(fetchBusinessMetaData());
+      dispatchState(fetchEntityData());
       setBMAttribute({});
       setForm(false);
     } catch (error) {

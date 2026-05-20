@@ -219,6 +219,7 @@ const TermRelation = ({ glossaryTypeData }: any) => {
           button2Label={editModal ? "Update" : "Close"}
           button2Handler={editModal ? handleSubmit(onSubmit) : handleCloseModal}
           disableButton2={isSubmitting}
+          button2Loading={isSubmitting}
           maxWidth="md"
         >
           <form onSubmit={handleSubmit(onSubmit)}>
