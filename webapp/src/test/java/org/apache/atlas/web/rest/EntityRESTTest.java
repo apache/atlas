@@ -12,7 +12,6 @@
  */
 package org.apache.atlas.web.rest;
 
-import com.sun.jersey.core.header.FormDataContentDisposition;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.EntityAuditEvent;
@@ -40,6 +39,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.FileUtils;
 import org.apache.atlas.web.util.Servlets;
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;

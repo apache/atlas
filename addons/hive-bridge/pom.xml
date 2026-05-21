@@ -36,8 +36,26 @@
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.databind.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-joda</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
 
         <dependency>
@@ -48,7 +66,6 @@
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-client-v2</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -72,6 +89,14 @@
             <artifactId>hadoop-client</artifactId>
             <exclusions>
                 <exclusion>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jersey.contribs</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
                 </exclusion>
@@ -86,6 +111,34 @@
             </exclusions>
         </dependency>
 
+        <dependency>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-servlet</artifactId>
+            <version>${jersey2.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-client</artifactId>
+            <version>${jersey2.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-server</artifactId>
+            <version>${jersey2.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-json-jackson</artifactId>
+            <version>${jersey2.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+        </dependency>
         <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -116,8 +169,28 @@
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
+                    <groupId>com.fasterxml.jackson.dataformat</groupId>
+                    <artifactId>jackson-dataformat-yaml</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jersey.contribs</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.ws.rs</groupId>
+                    <artifactId>jsr311-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.atlas</groupId>
+                    <artifactId>atlas-client-v2-shaded</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -129,8 +202,24 @@
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
+                    <groupId>com.fasterxml.jackson.datatype</groupId>
+                    <artifactId>jackson-datatype-joda</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>com.github.stephenc.findbugs</groupId>
                     <artifactId>findbugs-annotations</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jersey.contribs</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.eclipse.jetty</groupId>
@@ -141,7 +230,6 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
-
         </dependency>
 
         <dependency>
@@ -157,7 +245,6 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-graphdb-impls</artifactId>
@@ -212,6 +299,10 @@
             <scope>test</scope>
             <exclusions>
                 <exclusion>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
@@ -242,6 +333,22 @@
     </dependencies>
     <build>
         <plugins>
+            <!-- Parent disables Failsafe forking (forkCount=0). Hive IT runs in Maven JVM + Hive TCCL
+                 breaks JAX-RS ClientBuilder; fork + unshaded v2 client on IT classpath fix LinkageError. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration combine.self="merge">
+                    <forkCount>1</forkCount>
+                    <reuseForks>false</reuseForks>
+                    <useSystemClassLoader>false</useSystemClassLoader>
+                    <classpathDependencyExcludes>
+                        <classpathDependencyExclude>org.apache.atlas:atlas-client-v2-shaded</classpathDependencyExclude>
+                        <classpathDependencyExclude>org.glassfish.jersey.media:jersey-media-json-jackson</classpathDependencyExclude>
+                    </classpathDependencyExcludes>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
@@ -454,18 +561,75 @@
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-client-common</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
                                             <artifactId>atlas-client-v1</artifactId>
                                             <version>${project.version}</version>
                                         </artifactItem>
+                                        <!-- Unshaded v2 client: shaded jar relocates javax.ws.rs and breaks
+                                             JerseyClientBuilder.createClient(Configuration) at import runtime. -->
                                         <artifactItem>
                                             <groupId>${project.groupId}</groupId>
                                             <artifactId>atlas-client-v2</artifactId>
                                             <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>atlas-client-common</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>javax.inject</groupId>
+                                            <artifactId>javax.inject</artifactId>
+                                            <version>${javax-inject.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>javax.annotation</groupId>
+                                            <artifactId>javax.annotation-api</artifactId>
+                                            <version>1.3.2</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>jakarta.ws.rs</groupId>
+                                            <artifactId>jakarta.ws.rs-api</artifactId>
+                                            <version>${javax.ws.rs-api}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.glassfish.jersey.core</groupId>
+                                            <artifactId>jersey-client</artifactId>
+                                            <version>${jersey2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.glassfish.jersey.core</groupId>
+                                            <artifactId>jersey-common</artifactId>
+                                            <version>${jersey2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.glassfish.jersey.inject</groupId>
+                                            <artifactId>jersey-hk2</artifactId>
+                                            <version>${jersey2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.glassfish.jersey.media</groupId>
+                                            <artifactId>jersey-media-json-jackson</artifactId>
+                                            <version>${jersey2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.glassfish.jersey.media</groupId>
+                                            <artifactId>jersey-media-multipart</artifactId>
+                                            <version>${jersey2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.glassfish.jersey.ext</groupId>
+                                            <artifactId>jersey-entity-filtering</artifactId>
+                                            <version>${jersey2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.jaxrs</groupId>
+                                            <artifactId>jackson-jaxrs-json-provider</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.jaxrs</groupId>
+                                            <artifactId>jackson-jaxrs-base</artifactId>
+                                            <version>${jackson.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>${project.groupId}</groupId>
@@ -493,11 +657,6 @@
                                             <version>${kafka.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>com.sun.jersey.contribs</groupId>
-                                            <artifactId>jersey-multipart</artifactId>
-                                            <version>${jersey.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
                                             <groupId>com.fasterxml.jackson.core</groupId>
                                             <artifactId>jackson-databind</artifactId>
                                             <version>${jackson.databind.version}</version>
@@ -523,14 +682,19 @@
                                             <version>${commons-text.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>com.sun.jersey</groupId>
-                                            <artifactId>jersey-json</artifactId>
-                                            <version>${jersey.version}</version>
+                                            <groupId>org.glassfish.hk2</groupId>
+                                            <artifactId>hk2-api</artifactId>
+                                            <version>${hk2.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>com.sun.jersey</groupId>
-                                            <artifactId>jersey-client</artifactId>
-                                            <version>${jersey.version}</version>
+                                            <groupId>org.glassfish.hk2</groupId>
+                                            <artifactId>hk2-locator</artifactId>
+                                            <version>${hk2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.glassfish.hk2</groupId>
+                                            <artifactId>hk2-utils</artifactId>
+                                            <version>${hk2.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>ch.qos.logback</groupId>

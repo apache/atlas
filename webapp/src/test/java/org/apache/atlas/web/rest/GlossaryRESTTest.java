@@ -12,7 +12,6 @@
  */
 package org.apache.atlas.web.rest;
 
-import com.sun.jersey.core.header.FormDataContentDisposition;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.SortOrder;
@@ -28,6 +27,7 @@ import org.apache.atlas.model.glossary.relations.AtlasGlossaryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;

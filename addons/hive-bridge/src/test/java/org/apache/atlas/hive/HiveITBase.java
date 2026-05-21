@@ -68,7 +68,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 
-import static com.sun.jersey.api.client.ClientResponse.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.apache.atlas.hive.bridge.HiveMetaStoreBridge.HDFS_PATH;
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.ATTRIBUTE_QUALIFIED_NAME;
 import static org.apache.atlas.hive.model.HiveDataTypes.HIVE_DB;

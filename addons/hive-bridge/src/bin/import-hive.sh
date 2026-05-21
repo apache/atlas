@@ -99,7 +99,7 @@ HIVE_CP="${HIVE_CONF}"
 # Multiple jars in HIVE_CP_EXCLUDE_LIST can be added using "\|" separator
 # Ex: HIVE_CP_EXCLUDE_LIST="jersey-multipart"
 # exclude log4j libs from hive classpath to avoid conflict
-HIVE_CP_EXCLUDE_LIST="log4j-slf4j-impl\|log4j-1.2-api\|log4j-api\|log4j-core\|log4j-web"
+HIVE_CP_EXCLUDE_LIST="javax.ws.rs-api\|log4j-slf4j-impl\|log4j-1.2-api\|log4j-api\|log4j-core\|log4j-web\|jsr311-api"
 
 for i in $(find "${HIVE_HOME}/lib/" -name  "*.jar" | grep -v "$HIVE_CP_EXCLUDE_LIST"); do
     HIVE_CP="${HIVE_CP}:$i"
@@ -117,6 +117,30 @@ else
     echo "Environment variable HADOOP_CLASSPATH or HADOOP_HOME need to be set"
     exit 1
 fi
+
+#Exclude libs from Hadoop classpath which are conflicting with Atlas
+HADOOP_CP_EXCLUDE_LIST=("jersey-core-1.19.jar" "jersey-json-1.19.jar" "jersey-server-1.19.jar" "jersey-servlet-1.19.jar" "jersey-client-1.19.jar" "jsr311-api-1.1.1.jar")
+
+# Construct the classpath excluding the specified JARs
+ORIGINAL_HADOOP_CLASSPATH=$(echo "$HADOOP_CP" | tr ':' '\n')
+for jar in $ORIGINAL_HADOOP_CLASSPATH
+do
+    excluded=false
+    for exclude_jar in "${HADOOP_CP_EXCLUDE_LIST[@]}"
+    do
+        if [[ "$jar" == *"$exclude_jar" ]]; then
+            excluded=true
+            break
+        fi
+    done
+
+    if [ "$excluded" = false ]; then
+        HADOOP_CLASSPATH_NEW="$HADOOP_CLASSPATH_NEW:$jar"
+    fi
+done
+
+# Remove leading colon
+HADOOP_CP=$(echo "$HADOOP_CLASSPATH_NEW" | sed 's/^://')
 
 CP="${HIVE_CP}:${HADOOP_CP}:${ATLASCPPATH}"
 
