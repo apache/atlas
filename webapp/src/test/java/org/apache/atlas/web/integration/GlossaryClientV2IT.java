@@ -20,7 +20,6 @@ package org.apache.atlas.web.integration;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.bulkimport.BulkImportResponse;
@@ -44,6 +43,8 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import javax.ws.rs.core.Response;
 
 import java.io.File;
 import java.io.IOException;
@@ -393,13 +394,13 @@ public class GlossaryClientV2IT extends BaseResourceIT {
             atlasClientV2.getGlossaryByGuid(healthCareGlossary.getGuid());
         } catch (AtlasServiceException ex) {
             assertNotNull(ex.getStatus());
-            assertEquals(ex.getStatus(), ClientResponse.Status.NOT_FOUND);
+            assertEquals(ex.getStatus(), Response.Status.NOT_FOUND);
         }
         try {
             atlasClientV2.getGlossaryByGuid(educationGlossary.getGuid());
         } catch (AtlasServiceException ex) {
             assertNotNull(ex.getStatus());
-            assertEquals(ex.getStatus(), ClientResponse.Status.NOT_FOUND);
+            assertEquals(ex.getStatus(), Response.Status.NOT_FOUND);
         }
     }
 
@@ -410,7 +411,7 @@ public class GlossaryClientV2IT extends BaseResourceIT {
             atlasClientV2.getGlossaryTerm(educationTerm.getGuid());
         } catch (AtlasServiceException ex) {
             assertNotNull(ex.getStatus());
-            assertEquals(ex.getStatus(), ClientResponse.Status.NOT_FOUND);
+            assertEquals(ex.getStatus(), Response.Status.NOT_FOUND);
         }
     }
 
@@ -421,7 +422,7 @@ public class GlossaryClientV2IT extends BaseResourceIT {
             atlasClientV2.getGlossaryCategory(educationCategory.getGuid());
         } catch (AtlasServiceException ex) {
             assertNotNull(ex.getStatus());
-            assertEquals(ex.getStatus(), ClientResponse.Status.NOT_FOUND);
+            assertEquals(ex.getStatus(), Response.Status.NOT_FOUND);
         }
     }
 

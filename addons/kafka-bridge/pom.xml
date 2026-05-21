@@ -39,6 +39,12 @@
     </properties>
 
     <dependencies>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
@@ -116,6 +122,30 @@
         </dependency>
 
         <dependency>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-servlet</artifactId>
+            <version>${jersey2.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-client</artifactId>
+            <version>${jersey2.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-server</artifactId>
+            <version>${jersey2.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-json-jackson</artifactId>
+            <version>${jersey2.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>${mockito.version}</version>
@@ -127,12 +157,12 @@
         </dependency>
 
         <!-- to bring up atlas server for integration tests -->
-        <dependency>
+        <!-- <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-bundle</artifactId>
             <version>${jersey.version}</version>
             <scope>test</scope>
-        </dependency>
+        </dependency>-->
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
@@ -153,6 +183,10 @@
             <scope>test</scope>
             <exclusions>
                 <exclusion>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
                 </exclusion>
@@ -165,6 +199,14 @@
             <version>${hadoop.version}</version>
             <scope>test</scope>
             <exclusions>
+                <exclusion>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jersey.contribs</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
@@ -446,9 +488,19 @@
                                             <version>${kafka.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>com.sun.jersey.contribs</groupId>
-                                            <artifactId>jersey-multipart</artifactId>
-                                            <version>${jersey.version}</version>
+                                            <groupId>org.glassfish.jersey.media</groupId>
+                                            <artifactId>jersey-media-json-jackson</artifactId>
+                                            <version>${jersey2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.glassfish.jersey.core</groupId>
+                                            <artifactId>jersey-client</artifactId>
+                                            <version>${jersey2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.glassfish.jersey.core</groupId>
+                                            <artifactId>jersey-common</artifactId>
+                                            <version>${jersey2.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>com.fasterxml.jackson.core</groupId>
@@ -476,9 +528,9 @@
                                             <version>${jackson.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>com.sun.jersey</groupId>
-                                            <artifactId>jersey-bundle</artifactId>
-                                            <version>${jersey.version}</version>
+                                            <groupId>org.glassfish.jersey.media</groupId>
+                                            <artifactId>jersey-media-multipart</artifactId>
+                                            <version>${jersey2.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.apache.hadoop</groupId>
@@ -521,6 +573,11 @@
                                             <version>${json-simple.version}</version>
                                         </artifactItem>
                                         <artifactItem>
+                                            <groupId>jakarta.ws.rs</groupId>
+                                            <artifactId>jakarta.ws.rs-api</artifactId>
+                                            <version>${javax.ws.rs-api}</version>
+                                        </artifactItem>
+                                        <artifactItem>
                                             <groupId>org.apache.hadoop</groupId>
                                             <artifactId>hadoop-common</artifactId>
                                             <version>${hadoop.version}</version>
@@ -539,6 +596,31 @@
                                             <groupId>org.slf4j</groupId>
                                             <artifactId>slf4j-api</artifactId>
                                             <version>${slf4j.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.glassfish.jersey.ext</groupId>
+                                            <artifactId>jersey-entity-filtering</artifactId>
+                                            <version>${jersey2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.glassfish.jersey.inject</groupId>
+                                            <artifactId>jersey-hk2</artifactId>
+                                            <version>${jersey2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.glassfish.hk2</groupId>
+                                            <artifactId>hk2-api</artifactId>
+                                            <version>${hk2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.glassfish.hk2</groupId>
+                                            <artifactId>hk2-locator</artifactId>
+                                            <version>${hk2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.glassfish.hk2</groupId>
+                                            <artifactId>hk2-utils</artifactId>
+                                            <version>${hk2.version}</version>
                                         </artifactItem>
                                     </artifactItems>
                                 </configuration>

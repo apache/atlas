@@ -22,7 +22,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Lists;
-import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
@@ -54,6 +53,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import javax.ws.rs.core.Response;
 
 import java.io.File;
 import java.io.IOException;
@@ -595,7 +596,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         } catch (AtlasServiceException ex) {
             assertNotNull(ex.getStatus());
 //            assertEquals(ex.getStatus(), ClientResponse.Status.NOT_FOUND);
-            assertEquals(ex.getStatus(), ClientResponse.Status.BAD_REQUEST);
+            assertEquals(ex.getStatus(), Response.Status.BAD_REQUEST);
             // Should it be a 400 or 404
         }
     }
@@ -616,7 +617,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
             fail("Deletion should've failed for non-existent trait association");
         } catch (AtlasServiceException ex) {
             assertNotNull(ex.getStatus());
-            assertEquals(ex.getStatus(), ClientResponse.Status.BAD_REQUEST);
+            assertEquals(ex.getStatus(), Response.Status.BAD_REQUEST);
         }
     }
 

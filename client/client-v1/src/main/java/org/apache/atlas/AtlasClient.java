@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
-import com.sun.jersey.api.client.WebResource;
 import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -40,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.HttpMethod;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -178,7 +178,7 @@ public class AtlasClient extends AtlasBaseClient {
     }
 
     @VisibleForTesting
-    AtlasClient(WebResource service, Configuration configuration) {
+    AtlasClient(WebTarget service, Configuration configuration) {
         super(service, configuration);
     }
 
@@ -192,7 +192,7 @@ public class AtlasClient extends AtlasBaseClient {
         return StringUtils.join(resultsList, ",");
     }
 
-    public WebResource getResource() {
+    public WebTarget getResource() {
         return service;
     }
 
@@ -316,7 +316,7 @@ public class AtlasClient extends AtlasBaseClient {
     public List<String> listTypes(final DataTypes.TypeCategory category) throws AtlasServiceException {
         final API  api      = API_V1.LIST_TYPES;
         ObjectNode response = callAPIWithRetries(api, null, () -> {
-            WebResource resource = getResource(api.getNormalizedPath());
+            WebTarget resource = getResource(api.getNormalizedPath());
 
             resource = resource.queryParam(TYPE, category.name());
 
@@ -341,7 +341,7 @@ public class AtlasClient extends AtlasBaseClient {
     public List<String> listTypes(final DataTypes.TypeCategory category, final String superType, final String notSupertype) throws AtlasServiceException {
         final API  api      = API_V1.LIST_TYPES;
         ObjectNode response = callAPIWithRetries(api, null, () -> {
-            WebResource resource = getResource(api);
+            WebTarget resource = getResource(api);
 
             resource = resource.queryParam(TYPE, category.name());
             resource = resource.queryParam(SUPERTYPE, superType);
@@ -414,7 +414,7 @@ public class AtlasClient extends AtlasBaseClient {
 
         final API  api      = API_V1.UPDATE_ENTITY_PARTIAL;
         ObjectNode response = callAPIWithRetries(api, value, () -> {
-            WebResource resource = getResource(api, guid);
+            WebTarget resource = getResource(api, guid);
 
             resource = resource.queryParam(ATTRIBUTE_NAME, attribute);
 
@@ -482,7 +482,7 @@ public class AtlasClient extends AtlasBaseClient {
         LOG.debug("Updating entity type: {}, attributeName: {}, attributeValue: {}, entity: {}", entityType, uniqueAttributeName, uniqueAttributeValue, entityJson);
 
         ObjectNode response = callAPIWithRetries(api, entityJson, () -> {
-            WebResource resource = getResource(api, QUALIFIED_NAME);
+            WebTarget resource = getResource(api, QUALIFIED_NAME);
 
             resource = resource.queryParam(TYPE, entityType);
             resource = resource.queryParam(ATTRIBUTE_NAME, uniqueAttributeName);
@@ -510,7 +510,7 @@ public class AtlasClient extends AtlasBaseClient {
 
         final API  api          = API_V1.DELETE_ENTITIES;
         ObjectNode jsonResponse = callAPIWithRetries(api, null, () -> {
-            WebResource resource = getResource(api);
+            WebTarget resource = getResource(api);
 
             for (String guid : guids) {
                 resource = resource.queryParam(GUID.toLowerCase(), guid);
@@ -538,7 +538,7 @@ public class AtlasClient extends AtlasBaseClient {
         LOG.debug("Deleting entity type: {}, attributeName: {}, attributeValue: {}", entityType, uniqueAttributeName, uniqueAttributeValue);
 
         API         api      = API_V1.DELETE_ENTITIES;
-        WebResource resource = getResource(api);
+        WebTarget resource = getResource(api);
 
         resource = resource.queryParam(TYPE, entityType);
         resource = resource.queryParam(ATTRIBUTE_NAME, uniqueAttributeName);
@@ -578,7 +578,7 @@ public class AtlasClient extends AtlasBaseClient {
     public Referenceable getEntity(final String entityType, final String attribute, final String value) throws AtlasServiceException {
         final API  api          = API_V1.GET_ENTITY;
         ObjectNode jsonResponse = callAPIWithRetries(api, null, () -> {
-            WebResource resource = getResource(api);
+            WebTarget resource = getResource(api);
 
             resource = resource.queryParam(TYPE, entityType);
             resource = resource.queryParam(ATTRIBUTE_NAME, attribute);
@@ -601,7 +601,7 @@ public class AtlasClient extends AtlasBaseClient {
      */
     public List<String> listEntities(final String entityType) throws AtlasServiceException {
         ObjectNode jsonResponse = callAPIWithRetries(API_V1.LIST_ENTITIES, null, () -> {
-            WebResource resource = getResource(API_V1.LIST_ENTITIES);
+            WebTarget resource = getResource(API_V1.LIST_ENTITIES);
 
             resource = resource.queryParam(TYPE, entityType);
 
@@ -681,7 +681,7 @@ public class AtlasClient extends AtlasBaseClient {
      * @throws AtlasServiceException
      */
     public List<EntityAuditEvent> getEntityAuditEvents(String entityId, String startKey, short numResults) throws AtlasServiceException {
-        WebResource resource = getResource(API_V1.LIST_ENTITY_AUDIT, entityId, URI_ENTITY_AUDIT);
+        WebTarget resource = getResource(API_V1.LIST_ENTITY_AUDIT, entityId, URI_ENTITY_AUDIT);
 
         if (StringUtils.isNotEmpty(startKey)) {
             resource = resource.queryParam(START_KEY, startKey);
@@ -711,7 +711,7 @@ public class AtlasClient extends AtlasBaseClient {
     public JsonNode search(final String searchQuery, final int limit, final int offset) throws AtlasServiceException {
         final API  api    = API_V1.SEARCH;
         ObjectNode result = callAPIWithRetries(api, null, () -> {
-            WebResource resource = getResource(api);
+            WebTarget resource = getResource(api);
 
             resource = resource.queryParam(QUERY, searchQuery);
             resource = resource.queryParam(LIMIT, String.valueOf(limit));
@@ -737,7 +737,7 @@ public class AtlasClient extends AtlasBaseClient {
 
         final API  api      = API_V1.SEARCH_DSL;
         ObjectNode response = callAPIWithRetries(api, null, () -> {
-            WebResource resource = getResource(api);
+            WebTarget resource = getResource(api);
 
             resource = resource.queryParam(QUERY, query);
             resource = resource.queryParam(LIMIT, String.valueOf(limit));
@@ -764,7 +764,7 @@ public class AtlasClient extends AtlasBaseClient {
         final API api = API_V1.SEARCH_FULL_TEXT;
 
         return callAPIWithRetries(api, null, () -> {
-            WebResource resource = getResource(api);
+            WebTarget resource = getResource(api);
 
             resource = resource.queryParam(QUERY, query);
             resource = resource.queryParam(LIMIT, String.valueOf(limit));
@@ -806,17 +806,17 @@ public class AtlasClient extends AtlasBaseClient {
 
     // Wrapper methods for compatibility
     @VisibleForTesting
-    public ObjectNode callAPIWithResource(API api, WebResource resource) throws AtlasServiceException {
+    public ObjectNode callAPIWithResource(API api, WebTarget resource) throws AtlasServiceException {
         return callAPIWithResource(api, resource, null, ObjectNode.class);
     }
 
     @VisibleForTesting
-    public ObjectNode callAPIWithResource(API_V1 apiV1, WebResource resource) throws AtlasServiceException {
+    public ObjectNode callAPIWithResource(API_V1 apiV1, WebTarget resource) throws AtlasServiceException {
         return callAPIWithResource(apiV1, resource, null, ObjectNode.class);
     }
 
     @VisibleForTesting
-    public WebResource getResource(API api, String... params) {
+    public WebTarget getResource(API api, String... params) {
         return getResource(api.getNormalizedPath(), params);
     }
 
@@ -831,7 +831,7 @@ public class AtlasClient extends AtlasBaseClient {
     }
 
     @VisibleForTesting
-    public WebResource getResource(API_V1 apiV1, String... params) {
+    public WebTarget getResource(API_V1 apiV1, String... params) {
         return getResource(apiV1.getNormalizedPath(), params);
     }
 
