@@ -112,6 +112,7 @@
         <elasticsearch.version>7.17.8</elasticsearch.version>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
         <enunciate-maven-plugin.version>2.13.2</enunciate-maven-plugin.version>
+        <enunciate.config.relative>build-tools/src/main/resources/enunciate.xml</enunciate.config.relative>
         <failsafe.version>3.5.3</failsafe.version>
         <falcon.version>0.8</falcon.version>
         <fastutil.version>6.5.16</fastutil.version>
@@ -2304,7 +2305,8 @@
                 <jdk>[17,)</jdk>
             </activation>
             <properties>
-                <enunciate-maven-plugin.version>2.18.1</enunciate-maven-plugin.version>
+                <enunciate-maven-plugin.version>2.15.0</enunciate-maven-plugin.version>
+                <enunciate.config.relative>build-tools/src/main/resources/enunciate-openapi3.xml</enunciate.config.relative>
                 <jdk.argLine>--add-opens=java.base/java.lang=ALL-UNNAMED
                     --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
                     --add-opens=java.base/java.net=ALL-UNNAMED

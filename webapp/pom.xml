@@ -788,7 +788,7 @@
                 <artifactId>enunciate-maven-plugin</artifactId>
                 <version>${enunciate-maven-plugin.version}</version>
                 <configuration>
-                    <configFile>${project.parent.basedir}/build-tools/src/main/resources/enunciate.xml</configFile>
+                    <configFile>${project.parent.basedir}/${enunciate.config.relative}</configFile>
                     <enunciateArtifactId />
                     <docsDir>${project.build.directory}/api/v2/</docsDir>
                     <skipEnunciate>${skipEnunciate}</skipEnunciate>
