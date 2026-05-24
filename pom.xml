@@ -156,6 +156,7 @@
         <maven-compiler-version>3.11.0</maven-compiler-version>
         <maven-plugin-sortpom.version>3.0.1</maven-plugin-sortpom.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
+        <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
         <mockito.version>3.12.4</mockito.version>
         <netty.version>4.1.125.Final</netty.version>
         <node-for-v1.version>v22.14.0</node-for-v1.version>
@@ -184,6 +185,7 @@
         <slf4j.version>2.0.16</slf4j.version>
         <solr-test-framework.version>8.11.3</solr-test-framework.version>
         <solr.version>8.11.3</solr.version>
+        <spotbugs-maven-plugin.version>4.4.2</spotbugs-maven-plugin.version>
         <spray.version>1.3.1</spray.version>
         <spring-ldap-core.version>2.4.4</spring-ldap-core.version>
         <spring.security.version>5.8.15</spring.security.version>
@@ -1100,7 +1102,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>3.2.1</version>
+                    <version>${maven-source-plugin.version}</version>
                 </plugin>
 
                 <plugin>
@@ -1154,7 +1156,7 @@
                 <plugin>
                     <groupId>com.github.spotbugs</groupId>
                     <artifactId>spotbugs-maven-plugin</artifactId>
-                    <version>4.4.2</version>
+                    <version>${spotbugs-maven-plugin.version}</version>
                 </plugin>
 
                 <!-- Source code metrics: mvn javancss:report or mvn site -->

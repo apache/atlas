@@ -583,6 +583,11 @@
                                             <version>${commons-conf2.version}</version>
                                         </artifactItem>
                                         <artifactItem>
+                                            <groupId>org.apache.commons</groupId>
+                                            <artifactId>commons-text</artifactId>
+                                            <version>${commons-text.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
                                             <groupId>com.sun.jersey</groupId>
                                             <artifactId>jersey-json</artifactId>
                                             <version>${jersey.version}</version>
