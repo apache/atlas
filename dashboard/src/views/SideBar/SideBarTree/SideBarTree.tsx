@@ -1042,23 +1042,6 @@ const BarTreeView: FC<{
                     </IconButton>
                   </LightTooltip>
 
-                  {treeName == "CustomFilters" && (
-                    <LightTooltip title={getEmptyTypesTitle()}>
-                      <AccountTreeIcon
-                        sx={{
-                          color: !isEmptyServicetype ? "#999 !important" : "",
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (setisEmptyServicetype) {
-                            setisEmptyServicetype(!isEmptyServicetype);
-                          }
-                        }}
-                        fontSize="small"
-                        className="menuitem-icon"
-                      />
-                    </LightTooltip>
-                  )}
 
                   {(treeName == "Entities" ||
                     treeName == "Classifications" ||
