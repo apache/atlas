@@ -37,6 +37,25 @@ All of this happens **without** requiring the hook to send every table and colum
 
 ---
 
+## Example: Hive table → Trino table → Trino column
+
+Assume a Hive and Trino model where:
+
+- `**hive_table**` has unique attribute (qualified name) shaped like `{db.name}.{name}@{clusterName}` (for example `default.orders@cluster`).
+- `**trino_table**` uses `{trinoschema.catalog.name}.{trinoschema.name}.{name}@{trinoschema.catalog.instance.name}` (for example `cat1.schema1.orders@inst1`).
+- `**trino_column**` uses `{table.trinoschema.catalog.name}.{table.trinoschema.name}.{table.name}.{name}@{table.trinoschema.catalog.instance.name}` (for example `cat1.schema1.orders.col1@inst1`).
+
+The `**trino_table_hive_table**` relationship links each Trino table to its Hive table; `**trino_table_columns**` links columns to a table. The `**propagateRename**` flag on the `**hive_table**` end of `**trino_table_hive_table**` tells Atlas: when the **trigger** Hive table is renamed, walk to linked `**trino_table**` vertices and refresh their unique attribute (qualified name) where the `**autoComputeFormat**` template depends on that rename.
+
+1. An integration renames the Hive table `**orders**` → `**orders_v2**` (partial update; `**name**` and thus the unique attribute on the `**hive_table**` vertex change).
+2. Atlas detects that the entity's **unique attribute (qualified name)** changed and that `**hive_table**` has **rename propagation targets** from typedef resolution.
+3. `**EntityRenameHandler**` follows `**trino_table_hive_table**` from the Hive table vertex to related `**trino_table**` vertices, recomputes each table's string (for example `cat1.schema1.orders@inst1` → `cat1.schema1.orders_v2@inst1`), and registers those rows on the mutation context.
+4. If `**trino_table**` also declares propagation targets, the same process continues to `**trino_column**` rows (for example `cat1.schema1.orders.col1@inst1` → `cat1.schema1.orders_v2.col1@inst1`).
+
+All of this happens **without** requiring the hook to send every Trino table and column in one batch.
+
+---
+
 ## How it works (two stages)
 
 ### 1. Typedef resolution (startup / type updates)
