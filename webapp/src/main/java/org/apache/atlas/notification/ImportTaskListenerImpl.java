@@ -263,9 +263,10 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     AtlasAsyncImportRequest getNextImportFromQueue() {
         LOG.info("==> getNextImportFromQueue()");
 
-        final int                     maxRetries = 5;
-              int                     retryCount = 0;
-              AtlasAsyncImportRequest nextImport = null;
+        final int maxRetries = 5;
+
+        int                     retryCount = 0;
+        AtlasAsyncImportRequest nextImport = null;
 
         while (retryCount < maxRetries) {
             try {
