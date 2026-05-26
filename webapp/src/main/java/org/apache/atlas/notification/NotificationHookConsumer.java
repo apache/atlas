@@ -1463,16 +1463,20 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 final String                        importId                 = entityImportNotification.getImportId();
                                 final AtlasEntityWithExtInfo        entityWithExtInfo        = entityImportNotification.getEntity();
                                 final int                           position                 = entityImportNotification.getPosition();
-                                boolean                             completeImport           = false;
+
+                                LOG.info("==> IMPORT_ENTITY:processing entity: {} at position: {}", importId, position);
 
                                 try {
                                     importRequestComplete = asyncImporter.onImportEntity(entityWithExtInfo, importId, position);
                                 } catch (AtlasBaseException abe) {
                                     importRequestComplete = true;
 
-                                    asyncImporter.onImportComplete(importId);
-
                                     LOG.error("IMPORT_ENTITY: {} failed to import entity: {}", importId, entityImportNotification);
+                                } finally {
+                                    if (importRequestComplete) {
+                                        asyncImporter.onImportComplete(importId);
+                                    }
+                                    LOG.info("<== IMPORT_ENTITY:processing entity: {} at position: {}", importId, position);
                                 }
                             }
                             break;
