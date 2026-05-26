@@ -183,6 +183,7 @@ public enum AtlasErrorCode {
     BLANK_NAME_ATTRIBUTE(400, "ATLAS-400-00-104", "Name Attribute can't be empty!"),
     BLANK_VALUE_ATTRIBUTE(400, "ATLAS-400-00-105", "Value Attribute can't be empty!"),
     INVALID_RELATIONSHIP_LABEL(400, "ATLAS-400-00-106", "Invalid relationship label {0}. The referenced entity type {1} could not be resolved from the type registry."),
+    NON_INDEXABLE_BM_DELETE_NOT_ALLOWED(400, "ATLAS-400-00-107", "Deletion not allowed for non-indexable Business Metadata ''{0}'' without force=true. Non-indexable attributes cannot be validated efficiently for references; use force=true to skip validation and delete (warning: orphaned references may remain)."),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
@@ -210,7 +211,6 @@ public enum AtlasErrorCode {
     NO_TYPE_NAME_ON_VERTEX(404, "ATLAS-404-00-015", "No typename found for given entity with guid: {0}"),
     NO_LINEAGE_CONSTRAINTS_FOR_GUID(404, "ATLAS-404-00-016", "No lineage constraints found for requested entity with guid : {0}"),
     IMPORT_NOT_FOUND(404, "ATLAS-404-00-017", "Import id {0} is not found"),
-    RELATIONSHIP_LABEL_NOT_FOUND(404, "ATLAS-404-00-018", "No edges found with relationship label ''{0}'' on entity {1} (guid: {2}). Either the relationship does not exist or the entity has no relationships of this type."),
 
     METHOD_NOT_ALLOWED(405, "ATLAS-405-00-001", "Error 405 - The request method {0} is inappropriate for the URL: {1}"),
 

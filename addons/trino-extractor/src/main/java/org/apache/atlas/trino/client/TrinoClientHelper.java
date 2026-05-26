@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.trino.client;
 
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Connection;

@@ -48,7 +48,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.ArrayUtils;
 
 import javax.ws.rs.core.MultivaluedMap;
@@ -641,7 +641,7 @@ public class QuickStartV2 {
                 "DB",
                 "DB where name=%22Reporting%22",
                 "DB where name=%22encode_db_name%22",
-                "Table where name=%2522sales_fact%2522",
+                "Table where name=%22sales_fact%22",
                 "DB where name=\"Reporting\"",
                 "DB where DB.name=\"Reporting\"",
                 "DB name = \"Reporting\"",

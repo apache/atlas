@@ -42,7 +42,7 @@ public class SecurityUtil {
      * @return the password.
      * @throws IOException
      */
-    public static String getPassword(org.apache.commons.configuration.Configuration config, String key) throws IOException {
+    public static String getPassword(org.apache.commons.configuration2.Configuration config, String key) throws IOException {
         return getPassword(config, key, CERT_STORES_CREDENTIAL_PROVIDER_PATH);
     }
 
@@ -56,7 +56,7 @@ public class SecurityUtil {
      * @return the password.
      * @throws IOException
      */
-    public static String getPassword(org.apache.commons.configuration.Configuration config, String key, String pathPropertyName) throws IOException {
+    public static String getPassword(org.apache.commons.configuration2.Configuration config, String key, String pathPropertyName) throws IOException {
         String password;
         String provider = config.getString(pathPropertyName);
 

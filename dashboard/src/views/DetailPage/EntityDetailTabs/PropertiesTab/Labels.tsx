@@ -111,19 +111,38 @@ const Labels = ({ loading, labels }: any) => {
     }
   };
 
+  const normalizeLabelsPayload = (raw: unknown): string[] => {
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+    const out: string[] = [];
+    for (const item of raw) {
+      if (typeof item === "string") {
+        const t = item.trim();
+        if (t) {
+          out.push(t);
+        }
+        continue;
+      }
+      if (item && typeof item === "object") {
+        const o = item as { inputValue?: string; value?: string };
+        const v = o.inputValue ?? o.value;
+        if (typeof v === "string" && v.trim()) {
+          out.push(v.trim());
+        }
+      }
+    }
+    return out;
+  };
+
   const onSubmit = async (values: any) => {
-    let formData = { ...values };
-    if(isEmpty(formData.labels) && isEmpty(labels)){
+    const formData = { ...values };
+    const payload = normalizeLabelsPayload(formData.labels);
+    if (payload.length === 0 && (!labels || labels.length === 0)) {
       return;
     }
-    let data = formData.labels?.map((obj: { inputValue: any }) => {
-      if (obj.inputValue) {
-        return obj.inputValue;
-      }
-      return obj;
-    });
     try {
-      await getLabels(guid, data);
+      await getLabels(guid, payload);
       toast.dismiss(toastId.current);
       toastId.current = toast.success(
         "One or more labels were updated successfully"

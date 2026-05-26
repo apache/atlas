@@ -1,57 +1,64 @@
 //>>excludeStart('excludeAfterBuild', pragmas.excludeAfterBuild)
-define(['handlebars', "underscore"], function(Handlebars, _) {
+define(['handlebars', 'underscore'], function(Handlebars, _) {
 
-    function replaceLocaleStrings(ast, mapping, options) {
-        options = options || {};
-        mapping = mapping || {};
-        // Base set of things
-        if (ast && ast.type === "program" && ast.statements) {
-            _(ast.statements).forEach(function(statement, i) {
-                var newString = "<!-- i18n error -->";
-                // If it's a translation node
-                if (statement.type === "mustache" && statement.id && statement.id.original === "$") {
+	function replaceLocaleStrings(ast, mapping, options) {
+		options = options || {};
+		mapping = mapping || {};
+		if (!ast || ast.type !== 'Program' || !ast.body) {
+			return ast;
+		}
+		_(ast.body).forEach(function(statement, i) {
+			var newString = '<!-- i18n error -->';
+			if (statement.type === 'MustacheStatement' && statement.path &&
+					statement.path.original === '$') {
+				if (statement.params.length && statement.params[0]) {
+					var p0 = statement.params[0];
+					var key = p0.type === 'StringLiteral' ? p0.value :
+						(p0.string || p0.original);
+					newString = mapping[key] ||
+						(options.originalKeyFallback ? key : newString);
+				}
+				ast.body[i] = {
+					type: 'ContentStatement',
+					value: newString,
+					original: newString,
+				};
+			} else if (statement.type === 'BlockStatement' ||
+					statement.type === 'DecoratorBlock') {
+				if (statement.program) {
+					replaceLocaleStrings(statement.program, mapping, options);
+				}
+				if (statement.inverse) {
+					replaceLocaleStrings(statement.inverse, mapping, options);
+				}
+			} else if (statement.type === 'PartialBlockStatement' &&
+					statement.program) {
+				replaceLocaleStrings(statement.program, mapping, options);
+			}
+		});
+		return ast;
+	}
 
-                    if (statement.params.length && statement.params[0].string) {
-                        var key = statement.params[0].string;
-                        newString = mapping[key] || (options.originalKeyFallback ? key : newString);
-                    }
-                    ast.statements[i] = new Handlebars.AST.ContentNode(newString);
-                }
-                // If we need to recurse
-                else if (statement.program) {
-                    statement.program = replaceLocaleStrings(statement.program, mapping, options);
-                }
-            });
-            // Also cover the else blocks
-            if (ast.inverse) {
-                replaceLocaleStrings(ast.inverse, mapping, options);
-            }
-        }
-        return ast;
-    }
+	return function precompile(string, mapping, options) {
+		var ast;
 
-    return function precompile(string, mapping, options) {
-        var ast, environment;
+		options = options || {};
 
-        options = options || {};
+		if (!('data' in options)) {
+			options.data = true;
+		}
 
-        if (!('data' in options)) {
-            options.data = true;
-        }
+		if (options.compat) {
+			options.useDepths = true;
+		}
 
-        if (options.compat) {
-            options.useDepths = true;
-        }
+		ast = Handlebars.parse(string);
 
-        ast = Handlebars.parse(string);
+		if (mapping !== false) {
+			ast = replaceLocaleStrings(ast, mapping, options);
+		}
 
-        // avoid replacing locale if mapping is `false`
-        if (mapping !== false) {
-            ast = replaceLocaleStrings(ast, mapping, options);
-        }
-
-        environment = new Handlebars.Compiler().compile(ast, options);
-        return new Handlebars.JavaScriptCompiler().compile(environment, options);
-    };
+		return Handlebars.precompile(ast, options);
+	};
 });
 //>>excludeEnd('excludeAfterBuild')

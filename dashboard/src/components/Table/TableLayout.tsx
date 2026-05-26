@@ -353,7 +353,9 @@ const TableLayout: FC<TableProps> = ({
   isEmptyData,
   setIsEmptyData,
   showGoToPage,
-  customLeftButton
+  customLeftButton,
+  defaultPageSize,
+  onClientPageSizeChange
 }) => {
   let defaultHideColumns = { ...defaultColumnVisibility };
   const location = useLocation();
@@ -362,7 +364,7 @@ const TableLayout: FC<TableProps> = ({
   const [searchParams] = useSearchParams();
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
-    pageSize: 25
+    pageSize: defaultPageSize ?? 25
   });
 
   const [goToPageVal, setGoToPageVal] = useState<any>("");
@@ -730,6 +732,7 @@ const TableLayout: FC<TableProps> = ({
               setIsEmptyData={setIsEmptyData}
               showGoToPage={showGoToPage}
               totalCount={totalCount}
+              onClientPageSizeChange={onClientPageSizeChange}
             />
           )}
         </Paper>

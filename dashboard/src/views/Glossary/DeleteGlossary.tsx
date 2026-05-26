@@ -26,6 +26,7 @@ import { Typography } from "@mui/material";
 import { fetchGlossaryData } from "@redux/slice/glossarySlice";
 import { isEmpty, serverError } from "@utils/Utils";
 import { useRef } from "react";
+import { useAsyncPending } from "@hooks/useAsyncPending";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -48,36 +49,39 @@ const DeleteGlossary = (props: {
   const navigate = useNavigate();
   const dispatchApi = useAppDispatch();
   const toastId: any = useRef(null);
+  const { pending: deleteInProgress, run: runDelete } = useAsyncPending();
 
   const fetchCurrentData = async () => {
     await dispatchApi(fetchGlossaryData());
   };
 
-  const handleRemove = async () => {
-    try {
-      gtype == "term"
-        ? await deleteGlossaryorType(cGuid)
-        : await deleteGlossaryorTerm(guid);
-      updatedData();
-      fetchCurrentData();
-      toast.success(
-        `${
-          gtype == "term" ? "Term" : "Glossary"
-        } ${id} was deleted successfully`
-      );
-      if (!isEmpty(glossaryGuid) || !isEmpty(glossaryType)) {
-        navigate(
-          {
-            pathname: "/"
-          },
-          { replace: true }
+  const handleRemove = () => {
+    void runDelete(async () => {
+      try {
+        gtype == "term"
+          ? await deleteGlossaryorType(cGuid)
+          : await deleteGlossaryorTerm(guid);
+        updatedData();
+        await fetchCurrentData();
+        toast.success(
+          `${
+            gtype == "term" ? "Term" : "Glossary"
+          } ${id} was deleted successfully`
         );
+        if (!isEmpty(glossaryGuid) || !isEmpty(glossaryType)) {
+          navigate(
+            {
+              pathname: "/"
+            },
+            { replace: true }
+          );
+        }
+        onClose();
+        setExpandNode(null);
+      } catch (error) {
+        serverError(error, toastId);
       }
-      onClose();
-      setExpandNode(null);
-    } catch (error) {
-      serverError(error, toastId);
-    }
+    });
   };
 
   return (
@@ -92,6 +96,8 @@ const DeleteGlossary = (props: {
         button2Label="Ok"
         maxWidth="sm"
         button2Handler={handleRemove}
+        disableButton2={deleteInProgress}
+        button2Loading={deleteInProgress}
       >
         <Typography fontSize={15}>
           Are you sure you want to delete{" "}

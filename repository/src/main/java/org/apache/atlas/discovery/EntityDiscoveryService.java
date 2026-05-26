@@ -19,7 +19,6 @@ package org.apache.atlas.discovery;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
@@ -47,7 +46,6 @@ import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.query.executors.DSLQueryExecutor;
-import org.apache.atlas.query.executors.ScriptEngineBasedExecutor;
 import org.apache.atlas.query.executors.TraversalBasedExecutor;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
@@ -98,6 +96,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -154,7 +153,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.indexSearchPrefix        = AtlasGraphUtilsV2.getIndexSearchPrefix();
         this.userProfileService       = userProfileService;
         this.suggestionsProvider      = new SuggestionsProviderImpl(graph, typeRegistry);
-        this.dslQueryExecutor         = AtlasConfiguration.DSL_EXECUTOR_TRAVERSAL.getBoolean() ? new TraversalBasedExecutor(typeRegistry, graph, entityRetriever) : new ScriptEngineBasedExecutor(typeRegistry, graph, entityRetriever);
+        this.dslQueryExecutor         = new TraversalBasedExecutor(typeRegistry, graph, entityRetriever);
         this.taskManagement           = taskManagement;
 
         LOG.info("DSL Executor: {}", this.dslQueryExecutor.getClass().getSimpleName());
@@ -566,7 +565,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             if (endEntityType == null) {
                 if (StringUtils.isEmpty(endEntityTypeName)) {
                     // No edges with this label exist on the entity
-                    throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_LABEL_NOT_FOUND, relation, entityTypeName, guid);
+                    LOG.warn("No edges found for relation '{}' on entity '{}' (guid={}), returning empty result",
+                            relation, entityTypeName, guid);
+                    ret.setEntities(Collections.emptyList());
+                    ret.setApproximateCount(0L);
+                    return ret;
                 } else {
                     // Edges exist but entity type not in registry
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_LABEL, relation, endEntityTypeName);

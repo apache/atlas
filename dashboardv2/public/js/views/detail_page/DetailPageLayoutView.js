@@ -151,8 +151,13 @@ define(['require',
             bindEvents: function() {
                 var that = this;
                 this.listenTo(this.collection, 'reset', function() {
+                    var tags = {};
+                    try {
                     this.entityObject = this.collection.first().toJSON();
                     var collectionJSON = this.entityObject.entity;
+                    collectionJSON.attributes = collectionJSON.attributes || {};
+                    collectionJSON.relationshipAttributes =
+                        collectionJSON.relationshipAttributes || {};
                     this.activeEntityDef = this.entityDefCollection.fullCollection.findWhere({ name: collectionJSON.typeName });
                     if (!this.activeEntityDef) {
                         Utils.backButtonClick();
@@ -253,7 +258,7 @@ define(['require',
                                 this.ui.description.hide();
                             }
                         }
-                        var tags = {
+                        tags = {
                             'self': [],
                             'propagated': [],
                             'propagatedMap': {},
@@ -284,8 +289,38 @@ define(['require',
                         } else {
                             this.generateTag([]);
                         }
-                        if (collectionJSON.relationshipAttributes && collectionJSON.relationshipAttributes.meanings) {
-                            this.generateTerm(collectionJSON.relationshipAttributes.meanings);
+                        /* Terms come from entity or header only. Do not call ensureRelationshipView here:
+                         * that prefetches every relationship search (columns, db, …) on Properties tab load.
+                         * Relationship cards load when the Relationships tab is opened (tab click / tabActive). */
+                        if (collectionJSON && !_.startsWith(collectionJSON.typeName, "AtlasGlossary")) {
+                            if (collectionJSON.relationshipAttributes && collectionJSON.relationshipAttributes.meanings && collectionJSON.relationshipAttributes.meanings.length) {
+                                this.generateTerm(collectionJSON.relationshipAttributes.meanings);
+                            } else {
+                                $.ajax({
+                                    url: UrlLinks.entityHeaderApiUrl(that.id),
+                                    type: 'GET',
+                                    contentType: 'application/json',
+                                    dataType: 'json',
+                                    success: function(header) {
+                                        var raw = header && header.meanings ?
+                                            header.meanings : [];
+                                        var normalized = raw.length ?
+                                            that.normalizeHeaderMeanings(raw) : [];
+                                        var model = that.collection.first();
+                                        if (model) {
+                                            var ent = model.get('entity');
+                                            ent.relationshipAttributes =
+                                                ent.relationshipAttributes || {};
+                                            ent.relationshipAttributes.meanings = normalized;
+                                            model.set('entity', ent);
+                                            if (that.detailPageObj) {
+                                                that.detailPageObj.entity = ent;
+                                            }
+                                        }
+                                        that.generateTerm(normalized);
+                                    }
+                                });
+                            }
                         }
                         if (Globals.entityTypeConfList && _.isEmptyArray(Globals.entityTypeConfList)) {
                             this.editEntity = true;
@@ -301,7 +336,6 @@ define(['require',
                             collectionJSON.attributes.columns = valueSorted;
                         }
                     }
-                    this.hideLoader();
                     var obj = {
                         entity: collectionJSON,
                         guid: this.id,
@@ -330,9 +364,22 @@ define(['require',
                         this.renderEntityBusinessMetadataView(obj);
                     }
                     this.detailPageObj = obj;
-                    if ((this.value && this.value.tabActive === 'relationship') ||
-                        this.$('.tab-content .tab-pane[role="relationship"]').hasClass('active')) {
+                    var relationshipTabActive = (this.value && this.value.tabActive === 'relationship') ||
+                        this.$('.tab-content .tab-pane[role="relationship"]').hasClass('active');
+                    if (relationshipTabActive) {
                         this.renderRelationshipLayoutView(obj);
+                    } else {
+                        var relViewStale = this.RRelationshipLayoutView.currentView;
+                        if (relViewStale && collectionJSON) {
+                            relViewStale.entity = collectionJSON;
+                            relViewStale.guid = this.id;
+                            if (this.entityObject && this.entityObject.referredEntities) {
+                                relViewStale.referredEntities = _.extend({}, this.entityObject.referredEntities);
+                            }
+                            if (_.isFunction(relViewStale.createData)) {
+                                relViewStale.graphData = relViewStale.createData(relViewStale.entity);
+                            }
+                        }
                     }
                     this.renderAuditTableLayoutView(obj);
                     this.renderTagTableLayoutView(obj);
@@ -367,10 +414,16 @@ define(['require',
                         // To render Schema check attribute "schemaElementsAttribute"
                         var schemaOptions = this.activeEntityDef.get('options');
                         var schemaElementsAttribute = schemaOptions && schemaOptions.schemaElementsAttribute;
-                        if (!_.isEmpty(schemaElementsAttribute)) {
+                        var schemaRelationNames = Utils.normalizeSchemaElementsAttribute(schemaElementsAttribute);
+                        if (!_.isEmpty(schemaRelationNames)) {
                             this.$('.schemaTable').show();
+                            var relA = collectionJSON.relationshipAttributes || {};
+                            var attrA = collectionJSON.attributes || {};
+                            var firstRel = schemaRelationNames[0];
+                            var embeddedAttr = relA[firstRel] || attrA[firstRel] || [];
                             this.renderSchemaLayoutView(_.extend({}, obj, {
-                                attribute: collectionJSON.relationshipAttributes[schemaElementsAttribute] || collectionJSON.attributes[schemaElementsAttribute]
+                                schemaRelationNames: schemaRelationNames,
+                                attribute: embeddedAttr
                             }));
                         } else {
                             this.$('.schemaTable').hide();
@@ -388,9 +441,22 @@ define(['require',
                             this.redirectToDefaultTab("lineage");
                         }
                     }
+                    } catch (err) {
+                        if (window.console && console.error) {
+                            console.error(err);
+                        }
+                        Utils.notifyError({
+                            content: (err && err.message) ? err.message :
+                                'Failed to refresh entity detail.'
+                        });
+                    } finally {
+                        this.hideLoader();
+                        this.$('.fontLoader-relative').removeClass('show');
+                    }
 
                 }, this);
                 this.listenTo(this.collection, 'error', function(model, response) {
+                    this.hideLoader();
                     this.$('.fontLoader-relative').removeClass('show');
                     if (response.responseJSON) {
                         Utils.notifyError({
@@ -474,7 +540,15 @@ define(['require',
                 }
                 var relationshipView = this.RRelationshipLayoutView.currentView;
                 if (relationshipView && relationshipView.ensureCardsView) {
-                    relationshipView.ensureCardsView(false);
+                    relationshipView.entity = this.detailPageObj.entity;
+                    relationshipView.guid = this.detailPageObj.guid;
+                    if (this.entityObject && this.entityObject.referredEntities) {
+                        relationshipView.referredEntities = _.extend({}, this.entityObject.referredEntities);
+                    }
+                    if (_.isFunction(relationshipView.createData)) {
+                        relationshipView.graphData = relationshipView.createData(relationshipView.entity);
+                    }
+                    relationshipView.ensureCardsView(true);
                 } else {
                     this.renderRelationshipLayoutView(this.detailPageObj);
                 }
@@ -538,15 +612,31 @@ define(['require',
             },
             onClickTermCross: function(e) {
                 var $el = $(e.currentTarget),
-                    termGuid = $el.data('guid'),
-                    termName = $el.text(),
+                    termGuid = $el.data('guid') || $el.data('termGuid'),
+                    relFromChip = $el.data('relationshipGuid'),
+                    termName = ($el.prev('span').length ? $el.prev('span').text() : '').trim(),
                     that = this,
-                    termObj = _.find(this.collection.first().get('entity').relationshipAttributes.meanings, { guid: termGuid });
+                    entity = this.collection.first() && this.collection.first().get('entity'),
+                    meanings = entity && entity.relationshipAttributes && entity.relationshipAttributes.meanings,
+                    termObj = meanings ? _.find(meanings, function(m) {
+                        var tg = m.termGuid || m.guid;
+                        return tg === termGuid || String(tg) === String(termGuid);
+                    }) : null,
+                    relationshipGuid = relFromChip || (termObj && (termObj.relationshipGuid || termObj.relationGuid));
+                if (!termName) {
+                    termName = ($el.closest('[data-id="termClick"]').attr('title') || '').trim();
+                }
+                if (!termGuid || !relationshipGuid) {
+                    Utils.notifyError({
+                        content: "Cannot remove term: missing term or relationship reference. Refresh the page and try again."
+                    });
+                    return;
+                }
                 CommonViewFunction.removeCategoryTermAssociation({
                     termGuid: termGuid,
                     model: {
                         guid: that.id,
-                        relationshipGuid: termObj.relationshipGuid
+                        relationshipGuid: relationshipGuid
                     },
                     collection: that.glossaryCollection,
                     msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(termName) + "</b> assignment from <b>" + this.name + "?</b></div>",
@@ -558,6 +648,19 @@ define(['require',
                     callback: function() {
                         that.fetchCollection();
                     }
+                });
+            },
+            normalizeHeaderMeanings: function(meanings) {
+                return _.map(meanings, function(m) {
+                    var guid = m.guid || m.termGuid;
+                    var relationshipGuid = m.relationshipGuid || m.relationGuid;
+                    var relationshipStatus = m.relationshipStatus || (m.status ? String(m.status) : "ACTIVE");
+                    return _.extend({}, m, {
+                        guid: guid,
+                        relationshipGuid: relationshipGuid,
+                        relationshipStatus: relationshipStatus,
+                        termGuid: m.termGuid || guid
+                    });
                 });
             },
             generateTag: function(tagObject) {
@@ -583,7 +686,9 @@ define(['require',
                     termData = "";
                 _.each(data, function(val) {
                     var glossaryName = val.qualifiedName ? val.qualifiedName : val.displayText;
-                    termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick" title= "' + _.escape(glossaryName) + '"><span>' + _.escape(glossaryName) + '</span><i class="' + (val.relationshipStatus == "ACTIVE" ? 'fa fa-close' : "") + '" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
+                    var termGuidAttr = val.termGuid || val.guid;
+                    var relGuidAttr = val.relationshipGuid || val.relationGuid || "";
+                    termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick" title="' + _.escape(glossaryName) + '"><span>' + _.escape(glossaryName) + '</span><i class="' + (val.relationshipStatus == "ACTIVE" ? 'fa fa-close' : "") + '" data-id="deleteTerm" data-guid="' + _.escape(termGuidAttr) + '" data-relationship-guid="' + _.escape(relGuidAttr) + '" data-type="term" title="Remove Term"></i></span>';
                 });
                 this.ui.termList.find("span.btn").remove();
                 this.ui.termList.prepend(termData);
@@ -724,6 +829,10 @@ define(['require',
                 var that = this;
                 require(['views/schema/SchemaLayoutView'], function(SchemaLayoutView) {
                     that.RSchemaTableLayoutView.show(new SchemaLayoutView(obj));
+                    /* After async require + show, sync URL tab (e.g. refresh on tabActive=schema) so schema pane is active. */
+                    if (that.value && that.value.tabActive === 'schema' && _.isFunction(that.updateTab)) {
+                        that.updateTab();
+                    }
                 });
             },
             renderAuditTableLayoutView: function(obj) {

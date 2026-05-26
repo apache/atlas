@@ -268,6 +268,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         public static final  int   DEFAULT_SEARCHWEIGHT                    = -1;
         public static final String SEARCH_WEIGHT_ATTR_NAME                 = "searchWeight";
         public static final String INDEX_TYPE_ATTR_NAME                    = "indexType";
+        public static final String IS_INDEXABLE_ATTR_NAME                  = "isIndexable";
         public static final String ATTRDEF_OPTION_SOFT_REFERENCE           = "isSoftReference";
         public static final String ATTRDEF_OPTION_APPEND_ON_PARTIAL_UPDATE = "isAppendOnPartialUpdate";
         public static final int    COUNT_NOT_SET                           = -1;

@@ -24,7 +24,8 @@ define(['require',
     'utils/Enums',
     'utils/Messages',
     'utils/CommonViewFunction',
-], function(require, Backbone, EntityUserDefineView_tmpl, VEntity, Utils, Enums, Messages, CommonViewFunction) {
+    'utils/UrlLinks',
+], function(require, Backbone, EntityUserDefineView_tmpl, VEntity, Utils, Enums, Messages, CommonViewFunction, UrlLinks) {
     'use strict';
 
     return Backbone.Marionette.LayoutView.extend({
@@ -57,7 +58,7 @@ define(['require',
             return events;
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'entity', 'customFilter', 'renderAuditTableLayoutView'));
+            _.extend(this, _.pick(options, 'entity', 'customFilter', 'renderAuditTableLayoutView', 'entityDefCollection'));
             this.userDefineAttr = this.entity && this.entity.customAttributes || [];
             this.initialCall = false;
             this.swapItem = false, this.saveAttrItems = false;
@@ -144,44 +145,183 @@ define(['require',
             });
             return obj;
         },
+        getMergedRelationshipAttributeDefs: function() {
+            var typeName = this.entity && this.entity.typeName;
+            if (!this.entityDefCollection || !typeName) {
+                return [];
+            }
+            var entityDef = this.entityDefCollection.fullCollection.findWhere({ name: typeName });
+            if (!entityDef) {
+                return [];
+            }
+            var merged = Utils.getNestedSuperTypeObj({
+                data: entityDef.toJSON(),
+                collection: this.entityDefCollection,
+                attrMerge: true,
+                seperateRelatioshipAttr: true
+            });
+            return (merged && merged.relationshipAttributeDefs) || [];
+        },
+        isRelationshipAttrValueMissing: function(val) {
+            if (val === undefined || val === null) {
+                return true;
+            }
+            if (Array.isArray(val)) {
+                return val.length === 0;
+            }
+            if (typeof val === 'object') {
+                return !val.guid;
+            }
+            return false;
+        },
+        /**
+         * Detail page GET keeps ignoreRelationships=true. For UDP save, one
+         * extra GET with ignoreRelationships=false fills relationshipAttributes
+         * so mandatory refs match the real edges (avoids multi-type attrs
+         * e.g. table vs iceberg_table_storagedesc where search/entities[0]
+         * picks the wrong neighbor).
+         */
+        enrichEntityPayloadForRelationshipSave: function(entityJson, done) {
+            var that = this;
+            entityJson.relationshipAttributes = entityJson.relationshipAttributes || {};
+            var srcMeanings = that.entity && that.entity.relationshipAttributes &&
+                that.entity.relationshipAttributes.meanings;
+            var hadMeanings = !!(srcMeanings && srcMeanings.length);
+            if (hadMeanings) {
+                entityJson.relationshipAttributes.meanings = srcMeanings;
+            }
+            var fullUrl = UrlLinks.baseUrlV2 + '/entity/guid/' +
+                encodeURIComponent(entityJson.guid) +
+                '?ignoreRelationships=false';
+            $.ajax({
+                url: fullUrl,
+                type: 'GET',
+                dataType: 'json'
+            }).done(function(resp) {
+                var fullEntity = resp && resp.entity;
+                if (fullEntity && fullEntity.relationshipAttributes) {
+                    _.each(fullEntity.relationshipAttributes, function(val, key) {
+                        if (key === 'meanings' && hadMeanings) {
+                            return;
+                        }
+                        if (!that.isRelationshipAttrValueMissing(
+                                entityJson.relationshipAttributes[key])) {
+                            return;
+                        }
+                        entityJson.relationshipAttributes[key] = val;
+                    });
+                }
+                done();
+            }).fail(function() {
+                that.enrichMandatoryRelsViaRelationshipSearch(entityJson, done);
+            });
+        },
+        /**
+         * Fallback when full entity GET fails: fill mandatory missing rel attrs
+         * via relationship search (ambiguous if several types share attr name).
+         */
+        enrichMandatoryRelsViaRelationshipSearch: function(entityJson, done) {
+            var that = this;
+            var relDefs = this.getMergedRelationshipAttributeDefs();
+            var toFetch = [];
+            _.each(relDefs, function(rd) {
+                if (rd.isOptional !== false) {
+                    return;
+                }
+                var name = rd.name;
+                if (!that.isRelationshipAttrValueMissing(
+                        entityJson.relationshipAttributes[name])) {
+                    return;
+                }
+                toFetch.push(rd);
+            });
+            if (!toFetch.length) {
+                done();
+                return;
+            }
+            var ajaxCalls = _.map(toFetch, function(rd) {
+                var relationName = rd.name;
+                return $.ajax({
+                    url: UrlLinks.relationshipSearchV2ApiUrl(),
+                    type: 'GET',
+                    dataType: 'json',
+                    data: {
+                        limit: 100,
+                        offset: 0,
+                        guid: entityJson.guid,
+                        disableDefaultSorting: true,
+                        excludeDeletedEntities: false,
+                        includeSubClassifications: true,
+                        includeSubTypes: true,
+                        includeClassificationAttributes: true,
+                        relation: relationName,
+                        getApproximateCount: true
+                    }
+                }).then(function(response) {
+                    var entities = (response && response.entities) ? response.entities : [];
+                    if (!entities.length) {
+                        return;
+                    }
+                    var isSet = rd.cardinality === 'SET' ||
+                        (rd.typeName && rd.typeName.indexOf('array') === 0);
+                    if (isSet) {
+                        entityJson.relationshipAttributes[relationName] = _.map(entities, function(ent) {
+                            return { guid: ent.guid, typeName: ent.typeName };
+                        });
+                    } else {
+                        var t = entities[0];
+                        entityJson.relationshipAttributes[relationName] = {
+                            guid: t.guid,
+                            typeName: t.typeName
+                        };
+                    }
+                });
+            });
+            $.when.apply($, ajaxCalls).always(function() {
+                done();
+            });
+        },
         saveAttributes: function(list) {
             var that = this;
             var entityJson = that.entityModel.toJSON();
             var properties = that.structureAttributes(list);
             entityJson.customAttributes = properties;
-            var payload = { entity: entityJson };
-            that.entityModel.createOreditEntity({
-                data: JSON.stringify(payload),
-                type: 'POST',
-                success: function() {
-                    var msg = that.initialCall ? 'addSuccessMessage' : 'editSuccessMessage',
-                        caption = "One or more user-defined propertie"; // 's' will be added in abbreviation function
-                    that.customAttibutes = list;
-                    if (list.length === 0) {
-                        msg = 'removeSuccessMessage';
-                        caption = "One or more existing user-defined propertie";
+            that.enrichEntityPayloadForRelationshipSave(entityJson, function() {
+                var payload = { entity: entityJson };
+                that.entityModel.createOreditEntity({
+                    data: JSON.stringify(payload),
+                    type: 'POST',
+                    success: function() {
+                        var msg = that.initialCall ? 'addSuccessMessage' : 'editSuccessMessage',
+                            caption = "One or more user-defined propertie"; // 's' added in abbreviation fn
+                        that.customAttibutes = list;
+                        if (list.length === 0) {
+                            msg = 'removeSuccessMessage';
+                            caption = "One or more existing user-defined propertie";
+                        }
+                        Utils.notifySuccess({
+                            content: caption + Messages.getAbbreviationMsg(true, msg)
+                        });
+                        that.swapItem = false;
+                        that.saveAttrItems = false;
+                        that.render();
+                        if (that.renderAuditTableLayoutView) {
+                            that.renderAuditTableLayoutView();
+                        }
+                    },
+                    error: function(e) {
+                        that.initialCall = false;
+                        Utils.notifyError({
+                            content: (e && e.message) ? e.message :
+                                'Failed to save user-defined properties'
+                        });
+                        that.ui.saveAttrItems.attr("disabled", false);
+                    },
+                    complete: function() {
+                        that.ui.saveAttrItems.attr("disabled", false);
+                        that.initialCall = false;
                     }
-                    Utils.notifySuccess({
-                        content: caption + Messages.getAbbreviationMsg(true, msg)
-                    });
-                    that.swapItem = false;
-                    that.saveAttrItems = false;
-                    that.render();
-                    if (that.renderAuditTableLayoutView) {
-                        that.renderAuditTableLayoutView();
-                    }
-                },
-                error: function(e) {
-                    that.initialCall = false;
-                    Utils.notifySuccess({
-                        content: e.message
-                    });
-                    that.ui.saveAttrItems.attr("disabled", false);
-                },
-                complete: function() {
-                    that.ui.saveAttrItems.attr("disabled", false);
-                    that.initialCall = false;
-                }
+                });
             });
         },
         setAttributeModal: function(itemView) {

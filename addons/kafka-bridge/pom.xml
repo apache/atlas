@@ -35,6 +35,7 @@
     <properties>
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
         <checkstyle.skip>false</checkstyle.skip>
+        <commons-lang.version>2.6</commons-lang.version>
     </properties>
 
     <dependencies>
@@ -62,6 +63,11 @@
             <groupId>org.apache.avro</groupId>
             <artifactId>avro</artifactId>
             <version>${avro.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.11.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -424,6 +430,11 @@
                                             <version>${commons-logging.version}</version>
                                         </artifactItem>
                                         <artifactItem>
+                                            <groupId>commons-lang</groupId>
+                                            <artifactId>commons-lang</artifactId>
+                                            <version>${commons-lang.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
                                             <groupId>org.apache.commons</groupId>
                                             <artifactId>commons-lang3</artifactId>
                                             <version>${commons-lang3.version}</version>
@@ -474,6 +485,11 @@
                                             <version>${hadoop.version}</version>
                                         </artifactItem>
                                         <artifactItem>
+                                            <groupId>org.apache.hadoop</groupId>
+                                            <artifactId>hadoop-common</artifactId>
+                                            <version>${hadoop.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
                                             <groupId>com.google.guava</groupId>
                                             <artifactId>guava</artifactId>
                                             <version>${guava.version}</version>
@@ -489,14 +505,39 @@
                                             <version>${httpcomponents-httpcore.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>commons-configuration</groupId>
-                                            <artifactId>commons-configuration</artifactId>
-                                            <version>${commons-conf.version}</version>
+                                            <groupId>org.apache.commons</groupId>
+                                            <artifactId>commons-configuration2</artifactId>
+                                            <version>${commons-conf2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.commons</groupId>
+                                            <artifactId>commons-text</artifactId>
+                                            <version>1.11.0</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>com.googlecode.json-simple</groupId>
                                             <artifactId>json-simple</artifactId>
                                             <version>${json-simple.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.hadoop</groupId>
+                                            <artifactId>hadoop-common</artifactId>
+                                            <version>${hadoop.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>ch.qos.logback</groupId>
+                                            <artifactId>logback-classic</artifactId>
+                                            <version>${logback.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>ch.qos.logback</groupId>
+                                            <artifactId>logback-core</artifactId>
+                                            <version>${logback.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.slf4j</groupId>
+                                            <artifactId>slf4j-api</artifactId>
+                                            <version>${slf4j.version}</version>
                                         </artifactItem>
                                     </artifactItems>
                                 </configuration>

@@ -20,7 +20,7 @@ package org.apache.atlas.ha;
 
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.security.SecurityProperties;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
@@ -28,6 +28,8 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -109,5 +111,25 @@ public class HAConfigurationTest {
 
         HAConfiguration.ZookeeperProperties zookeeperProperties = HAConfiguration.getZookeeperProperties(configuration);
         assertTrue(zookeeperProperties.hasAuth());
+    }
+
+    @Test
+    public void testShouldGetZookeeperConnectStringFromHAConfig() {
+        when(configuration.containsKey(HAConfiguration.HA_ZOOKEEPER_CONNECT)).thenReturn(true);
+        when(configuration.getStringArray(HAConfiguration.HA_ZOOKEEPER_CONNECT)).thenReturn(new String[] {"zk1:2181", "zk2:2181"});
+
+        HAConfiguration.ZookeeperProperties zookeeperProperties = HAConfiguration.getZookeeperProperties(configuration);
+
+        assertEquals(zookeeperProperties.getConnectString(), "zk1:2181,zk2:2181");
+    }
+
+    @Test
+    public void testShouldReturnEmptyZookeeperConnectStringWhenMissing() {
+        when(configuration.containsKey(HAConfiguration.HA_ZOOKEEPER_CONNECT)).thenReturn(false);
+
+        HAConfiguration.ZookeeperProperties zookeeperProperties = HAConfiguration.getZookeeperProperties(configuration);
+
+        assertEquals(zookeeperProperties.getConnectString(), "");
+        verify(configuration, never()).getStringArray("atlas.kafka." + HAConfiguration.ZOOKEEPER_PREFIX + "connect");
     }
 }

@@ -23,7 +23,7 @@ import com.google.common.base.Charsets;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -75,7 +75,9 @@ public class CuratorFactory {
     public CuratorFactory(Configuration configuration) {
         this.configuration = configuration;
 
-        initializeCuratorFramework();
+        if (configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY) && configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, true)) {
+            initializeCuratorFramework();
+        }
     }
 
     /**

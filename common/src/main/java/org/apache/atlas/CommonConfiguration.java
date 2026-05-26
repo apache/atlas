@@ -29,7 +29,7 @@ public class CommonConfiguration {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonConfiguration.class);
 
     @Bean
-    public org.apache.commons.configuration.Configuration getAtlasConfig() throws AtlasException {
+    public org.apache.commons.configuration2.Configuration getAtlasConfig() throws AtlasException {
         try {
             return ApplicationProperties.get();
         } catch (AtlasException e) {

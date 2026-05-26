@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Divider, IconButton, Stack, Tabs, Typography } from "@mui/material";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import DisplayImage from "@components/EntityDisplayImage";
@@ -44,6 +44,8 @@ import TaskTab from "./EntityDetailTabs/TaskTab";
 import { Item, samePageLinkNavigation, StyledPaper } from "@utils/Muiutils";
 import { cloneDeep } from "@utils/Helper";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
+import { normalizeSchemaElementsAttribute } from "@utils/schemaElementsAttributeUtils";
+import { SchemaTabCacheState } from "@models/schemaTabTypes";
 import React from "react";
 import AddTag from "@views/Classification/AddTag";
 import AssignTerm from "@views/Glossary/AssignTerm";
@@ -69,6 +71,10 @@ const EntityDetailPage: React.FC = () => {
 
   const [openAddTagModal, setOpenAddTagModal] = useState<boolean>(false);
   const [openAddTermModal, setOpenAddTermModal] = useState<boolean>(false);
+  const [schemaTabCache, setSchemaTabCache] =
+    useState<SchemaTabCacheState | null>(null);
+  /** Only reset schema cache when navigating to a different entity — not on first mount / full refresh (avoids racing SchemaTab init). */
+  const prevGuidForSchemaCacheRef = useRef<string | undefined>(undefined);
 
   const handleCloseAddTagModal = () => {
     setOpenAddTagModal(false);
@@ -119,6 +125,8 @@ const EntityDetailPage: React.FC = () => {
 
   let schemaOptions = entityObj?.options;
   let schemaElementsAttribute = schemaOptions?.schemaElementsAttribute;
+  const schemaRelationNames =
+    normalizeSchemaElementsAttribute(schemaElementsAttribute);
 
   let allTabs = [
     "properties",
@@ -148,7 +156,7 @@ const EntityDetailPage: React.FC = () => {
     removeTab("lineage");
   }
 
-  if (!isEmpty(schemaElementsAttribute)) {
+  if (!isEmpty(schemaRelationNames)) {
     addTab("schema");
   } else {
     removeTab("schema");
@@ -209,6 +217,16 @@ const EntityDetailPage: React.FC = () => {
   }, [guid]);
 
   useEffect(() => {
+    if (
+      prevGuidForSchemaCacheRef.current !== undefined &&
+      prevGuidForSchemaCacheRef.current !== guid
+    ) {
+      setSchemaTabCache(null);
+    }
+    prevGuidForSchemaCacheRef.current = guid;
+  }, [guid]);
+
+  useEffect(() => {
     const tabIndex = tabsName.findIndex((tab) => tab === activeTab);
     setValue(tabIndex !== -1 ? tabIndex : 0);
   }, [activeTab, tabsName]);
@@ -245,10 +263,13 @@ const EntityDetailPage: React.FC = () => {
     ),
     schema: (
       <SchemaTab
+        key={guid}
         entity={entity}
         referredEntities={referredEntities}
         loading={loading}
-        schemaElementsAttribute={schemaElementsAttribute}
+        schemaRelationNames={schemaRelationNames}
+        schemaCache={schemaTabCache}
+        setSchemaCache={setSchemaTabCache}
       />
     ),
     raudits: (
@@ -526,7 +547,7 @@ const EntityDetailPage: React.FC = () => {
             <LinkTab label="Relationships" />
             <LinkTab label="Classifications" />
             <LinkTab label="Audits" />
-            {!isEmpty(schemaElementsAttribute) && <LinkTab label="Schema" />}
+            {!isEmpty(schemaRelationNames) && <LinkTab label="Schema" />}
             {!isEmpty(entity) && entity.typeName == "AtlasServer" && (
               <LinkTab label="Export/Import Audits" />
             )}

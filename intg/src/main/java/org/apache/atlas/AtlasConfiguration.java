@@ -18,7 +18,7 @@
 
 package org.apache.atlas;
 
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -87,7 +87,6 @@ public enum AtlasConfiguration {
     PROCESS_NAME_UPDATE_PATCH("atlas.process.name.update.patch", false),
     PROCESS_IMPALA_NAME_UPDATE_PATCH("atlas.process.impala.name.update.patch", false),
     STORE_DIFFERENTIAL_AUDITS("atlas.entity.audit.differential", false),
-    DSL_EXECUTOR_TRAVERSAL("atlas.dsl.executor.traversal", true),
     DSL_CACHED_TRANSLATOR("atlas.dsl.cached.translator", true),
     DEBUG_METRICS_ENABLED("atlas.debug.metrics.enabled", false),
     TASKS_USE_ENABLED("atlas.tasks.enabled", true),

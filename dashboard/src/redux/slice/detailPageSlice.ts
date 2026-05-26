@@ -2,7 +2,7 @@
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
+ * The ASF licenses this file under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
@@ -15,9 +15,27 @@
  * limitations under the License.
  */
 
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getDetailPageData } from "../../api/apiMethods/detailpageApiMethod";
+import {
+  createSlice,
+  createAsyncThunk,
+  PayloadAction,
+} from "@reduxjs/toolkit";
+import {
+  getDetailPageData,
+  getEntityHeader
+} from "../../api/apiMethods/detailpageApiMethod";
 import { cloneDeep } from "@utils/Helper";
+import {
+  mapHeaderMeaningsToRelationshipMeanings,
+  shouldMergeMeaningsFromEntityHeader
+} from "@utils/entityDetailMeaningsUtils";
+
+/** detailPageData payload shape (`referredEntities` updated via merge after child GET). */
+export interface DetailPageDataShape {
+  entity?: unknown;
+  referredEntities?: Record<string, unknown>;
+  [key: string]: unknown;
+}
 
 export const fetchDetailPageData = createAsyncThunk(
   "detailPage/fetchDetailPageData",
@@ -26,6 +44,21 @@ export const fetchDetailPageData = createAsyncThunk(
       const response = await getDetailPageData(guid, { minExtInfo: true });
       const { data = {} } = response || {};
       const responseData = cloneDeep(data);
+      const entity = responseData.entity;
+      if (entity && shouldMergeMeaningsFromEntityHeader(entity)) {
+        try {
+          const headerResp = await getEntityHeader(guid);
+          const header = headerResp?.data;
+          const headerMeanings = header?.meanings;
+          if (Array.isArray(headerMeanings) && headerMeanings.length > 0) {
+            entity.relationshipAttributes = entity.relationshipAttributes || {};
+            entity.relationshipAttributes.meanings =
+              mapHeaderMeaningsToRelationshipMeanings(headerMeanings);
+          }
+        } catch {
+          // Terms are optional; detail page still loads without header.
+        }
+      }
       return responseData;
     } catch (error) {
       return rejectWithValue(error);
@@ -33,16 +66,41 @@ export const fetchDetailPageData = createAsyncThunk(
   }
 );
 
-const initialState = {
+const initialState: {
+  loading: boolean;
+  detailPageData: DetailPageDataShape | null;
+  error: unknown;
+} = {
   loading: false,
   detailPageData: null,
-  error: null as unknown
+  error: null as unknown,
 };
 
 const detailPageSlice = createSlice({
   name: "detailPage",
   initialState,
-  reducers: {},
+  reducers: {
+    mergeReferredEntities: (
+      state,
+      action: PayloadAction<Record<string, unknown>>,
+    ) => {
+      if (!state.detailPageData) {
+        return;
+      }
+      const patch = action.payload;
+      if (!patch || typeof patch !== "object") {
+        return;
+      }
+      const keys = Object.keys(patch);
+      if (keys.length === 0) {
+        return;
+      }
+      state.detailPageData.referredEntities = {
+        ...(state.detailPageData.referredEntities || {}),
+        ...patch,
+      };
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchDetailPageData.pending, (state) => {
@@ -59,5 +117,7 @@ const detailPageSlice = createSlice({
       });
   }
 });
+
+export const { mergeReferredEntities } = detailPageSlice.actions;
 
 export const detailPageReducer = detailPageSlice.reducer;

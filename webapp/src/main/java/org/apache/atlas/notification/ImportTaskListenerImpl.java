@@ -30,7 +30,7 @@ import org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus;
 import org.apache.atlas.repository.impexp.AsyncImportService;
 import org.apache.atlas.repository.store.graph.v2.asyncimport.ImportTaskListener;
 import org.apache.atlas.service.Service;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

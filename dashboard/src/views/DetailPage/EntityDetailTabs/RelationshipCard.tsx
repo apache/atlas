@@ -36,7 +36,7 @@ type RelationshipCardProps = {
 	onToggleSort?: (attributeName: string) => void
 	onToggleShowDeleted?: (attributeName: string) => void
 	onPageLimitChange?: (attributeName: string, value: string) => void
-	onPageLimitSubmit?: (attributeName: string) => void
+	onPageLimitSubmit?: (attributeName: string, rawValue: string) => void
 }
 
 function RelationshipCard({
@@ -62,6 +62,8 @@ function RelationshipCard({
 		if (typeof totalCount === 'number') return totalCount
 		return data.length
 	}, [totalCount, data.length])
+
+	const minPageLimit = resolvedTotal <= 1 ? 1 : 2
 
 	const canLoadMore = resolvedTotal > data.length
 	const lastRequestSizeRef = useRef<number | null>(null)
@@ -148,7 +150,7 @@ function RelationshipCard({
 		event: React.KeyboardEvent<HTMLInputElement>
 	) => {
 		if (event.key === 'Enter') {
-			onPageLimitSubmit?.(attributeName)
+			onPageLimitSubmit?.(attributeName, event.currentTarget.value)
 		}
 	}
 
@@ -240,17 +242,32 @@ function RelationshipCard({
 	const isEmptyCard = resolvedTotal === 0 && isEmpty(data)
 	const isZeroOrOneRecord = data.length <= 1
 	const bodyStyle = useMemo(() => {
-		if (isZeroOrOneRecord) {
-			return { minHeight: 72 }
-		}
 		const maxVisibleRows = 9
 		const rowHeight = 22
 		const bodyPadding = 16
+		const maxHeight = maxVisibleRows * rowHeight + bodyPadding
+
+		if (isZeroOrOneRecord && !canLoadMore) {
+			return { minHeight: 72 }
+		}
+
+		if (canLoadMore) {
+			const visibleRows = Math.min(Math.max(data.length, 1), maxVisibleRows)
+			let baseHeight = visibleRows * rowHeight + bodyPadding
+			baseHeight = Math.max(baseHeight, 80)
+			const h = Math.min(baseHeight, maxHeight)
+			return {
+				height: h,
+				maxHeight: h,
+				minHeight: 0,
+				overflowY: 'auto' as const,
+			}
+		}
+
 		const visibleRows = Math.min(data.length, maxVisibleRows)
 		const baseHeight = visibleRows * rowHeight + bodyPadding
-		const maxHeight = maxVisibleRows * rowHeight + bodyPadding
 		return { height: Math.min(baseHeight, maxHeight), minHeight: 0 }
-	}, [data.length, isZeroOrOneRecord])
+	}, [data.length, isZeroOrOneRecord, canLoadMore])
 
 	const filteredData = useMemo(() => {
 		const query = searchQuery.trim().toLowerCase()
@@ -398,12 +415,11 @@ function RelationshipCard({
 							<input
 								id={`page-limit-${attributeName}`}
 								type='number'
-								min={1}
-								max={resolvedTotal}
+								min={minPageLimit}
 								value={pageLimit && pageLimit > 0 ? pageLimit : ''}
 								onChange={handlePageLimitInputChange}
 								onKeyDown={handlePageLimitKeyDown}
-								aria-label='Page limit'
+								aria-label={`Page limit (minimum ${minPageLimit} for this card)`}
 							/>
 						</div>
 					</div>

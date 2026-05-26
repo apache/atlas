@@ -33,6 +33,11 @@ import RelationshipCardSkeleton from "./RelationshipCardSkeleton";
 import { getRelationShipV2 } from "@api/apiMethods/searchApiMethod";
 import { useParams } from "react-router-dom";
 import { serverError } from "@utils/Utils";
+import {
+  buildRelationshipSearchParams,
+  DEFAULT_RELATIONSHIP_PAGE_LIMIT,
+  getMinPageLimitForTotal
+} from "@utils/relationshipSearchQuery";
 import { useSelector } from "react-redux";
 import { EntityState } from "@models/relationshipSearchType";
 
@@ -43,6 +48,12 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
   const { guid } = useParams<{ guid: string }>();
   const toastId = useRef<any>(null);
   const fetchStartedRef = useRef<boolean>(false);
+  const prevMeaningsSigRef = useRef<string | null>(null);
+  const meaningsCardControlsRef = useRef<{
+    isSorted: boolean;
+    showDeleted: boolean;
+  }>({ isSorted: false, showDeleted: true });
+  const prevCardTotalCountsRef = useRef<Record<string, number>>({});
   const { entityData } = useSelector((state: EntityState) => state.entity);
   const entityTypeName = entity?.typeName;
 
@@ -83,6 +94,7 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
     setShowInitialSkeletons(true);
     setHasRelationshipApiError(false);
     fetchStartedRef.current = false;
+    prevMeaningsSigRef.current = null;
 
     if (initialSkeletonTimerRef.current) {
       clearTimeout(initialSkeletonTimerRef.current);
@@ -114,6 +126,26 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
     return [...new Set(names)];
   }, [entityData, entityTypeName]);
 
+  /** Stable fingerprint of assigned glossary terms for meanings card refresh. */
+  const meaningsSignature = useMemo((): string => {
+    const raw = entity?.relationshipAttributes?.meanings;
+    if (!isArray(raw) || isEmpty(raw)) {
+      return '__none__';
+    }
+    const ids = raw
+      .map((m: any) => {
+        if (m && typeof m === 'object') {
+          return String(
+            m.guid || m.termGuid || m.qualifiedName || ''
+          ).trim();
+        }
+        return '';
+      })
+      .filter(Boolean)
+      .sort();
+    return ids.join('|');
+  }, [entity?.relationshipAttributes?.meanings]);
+
   const handleChange = (
     _event: React.MouseEvent<HTMLElement>,
     newAlignment: string
@@ -128,18 +160,20 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
     setChecked(event.target.checked);
   };
 
-  // Fetch initial relationship attributes data
   const getPageLimit = (relationName: string, totalCount?: number) => {
-    const defaultLimit =
-      typeof totalCount === "number" && totalCount < 100 ? totalCount : 100;
+    const minL = getMinPageLimitForTotal(totalCount);
     const currentLimit = pageLimitByAttr[relationName];
     if (typeof currentLimit !== "number") {
-      return defaultLimit;
+      return Math.max(minL, DEFAULT_RELATIONSHIP_PAGE_LIMIT);
     }
-    if (typeof totalCount === "number" && currentLimit > totalCount) {
+    if (
+      typeof totalCount === "number" &&
+      Number.isFinite(totalCount) &&
+      currentLimit > totalCount
+    ) {
       return totalCount;
     }
-    return currentLimit;
+    return Math.max(minL, currentLimit);
   };
 
   const getRelationshipParams = (
@@ -150,6 +184,8 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
       isSorted?: boolean;
       showDeleted?: boolean;
       limit?: number;
+      /** Use API default page size instead of stored limit (e.g. after term count changes). */
+      ignoreStoredLimit?: boolean;
     }
   ) => {
     const isSorted =
@@ -163,21 +199,21 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
     const limit =
       typeof overrides?.limit === "number"
         ? overrides.limit
-        : getPageLimit(relationName, totalCount);
-    return {
+        : overrides?.ignoreStoredLimit
+          ? Math.max(
+              getMinPageLimitForTotal(totalCount),
+              DEFAULT_RELATIONSHIP_PAGE_LIMIT
+            )
+          : getPageLimit(relationName, totalCount);
+    return buildRelationshipSearchParams({
+      guid: guid as string,
+      relation: relationName,
       limit,
       offset,
-      guid,
-      sortBy: isSorted ? "name" : undefined,
-      sortOrder: isSorted ? "ASCENDING" : undefined,
-      disableDefaultSorting: !isSorted,
-      excludeDeletedEntities: !showDeleted,
-      includeSubClassifications: true,
-      includeSubTypes: true,
-      includeClassificationAttributes: true,
-      relation: relationName,
+      isSorted,
+      showDeleted,
       getApproximateCount: offset === 0
-    };
+    });
   };
 
   const fetchRelationshipData = async (
@@ -188,6 +224,7 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
       isSorted?: boolean;
       showDeleted?: boolean;
       limit?: number;
+      ignoreStoredLimit?: boolean;
     }
   ) => {
     const params = getRelationshipParams(
@@ -328,21 +365,42 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
     if (isEmpty(cardTotalCounts)) {
       return;
     }
+    const snapshot = { ...prevCardTotalCountsRef.current };
     setPageLimitByAttr((prev) => {
       const next = { ...prev };
       Object.keys(cardTotalCounts).forEach((relationName) => {
         const totalCount = cardTotalCounts[relationName];
-        const defaultLimit = totalCount < 100 ? totalCount : 100;
+        const minL = getMinPageLimitForTotal(totalCount);
         const current = next[relationName];
+        const prevTotal = snapshot[relationName];
+
         if (typeof current !== "number") {
-          next[relationName] = defaultLimit;
           return;
         }
-        if (current > totalCount) {
+        if (totalCount > 0 && current > totalCount) {
           next[relationName] = totalCount;
+          return;
+        }
+        if (current < minL) {
+          next[relationName] = minL;
+          return;
+        }
+        if (
+          typeof prevTotal === "number" &&
+          totalCount > prevTotal &&
+          current === prevTotal &&
+          prevTotal > 0
+        ) {
+          next[relationName] = Math.max(minL, DEFAULT_RELATIONSHIP_PAGE_LIMIT);
         }
       });
       return next;
+    });
+    Object.keys(cardTotalCounts).forEach((key) => {
+      const v = cardTotalCounts[key];
+      if (typeof v === "number") {
+        prevCardTotalCountsRef.current[key] = v;
+      }
     });
   }, [cardTotalCounts]);
 
@@ -352,6 +410,11 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
       isSorted?: boolean;
       showDeleted?: boolean;
       limit?: number;
+      ignoreStoredLimit?: boolean;
+    },
+    options?: {
+      /** Use when term assignments changed so stale totalCount (e.g. 0) does not cap the page. */
+      refreshTotalFromApi?: boolean;
     }
   ) => {
     if (!guid || cardLoadingByName[relationName]) {
@@ -359,12 +422,18 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
     }
     setCardResettingByName((prev) => ({ ...prev, [relationName]: true }));
     try {
-      const totalCount = cardTotalCounts[relationName];
+      const totalCount = options?.refreshTotalFromApi
+        ? undefined
+        : cardTotalCounts[relationName];
       const response = await fetchRelationshipData(
         relationName,
         0,
         totalCount,
-        overrides
+        {
+          ...(overrides || {}),
+          ignoreStoredLimit:
+            !!options?.refreshTotalFromApi || !!overrides?.ignoreStoredLimit,
+        }
       );
       const entities = response.entities;
       const updated = isArray(entities)
@@ -389,6 +458,41 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
       setCardResettingByName((prev) => ({ ...prev, [relationName]: false }));
     }
   };
+
+  const resetRelationshipDataRef = useRef(resetRelationshipData);
+  resetRelationshipDataRef.current = resetRelationshipData;
+
+  meaningsCardControlsRef.current = {
+    isSorted: !!sortByNameByAttr['meanings'],
+    showDeleted: !!showDeletedByAttr['meanings']
+  };
+
+  useEffect(() => {
+    if (
+      !guid ||
+      !initialLoadDone ||
+      !relationNames.includes('meanings')
+    ) {
+      return;
+    }
+    if (prevMeaningsSigRef.current === null) {
+      prevMeaningsSigRef.current = meaningsSignature;
+      return;
+    }
+    if (prevMeaningsSigRef.current === meaningsSignature) {
+      return;
+    }
+    prevMeaningsSigRef.current = meaningsSignature;
+    const c = meaningsCardControlsRef.current;
+    void resetRelationshipDataRef.current(
+      'meanings',
+      {
+        isSorted: c.isSorted,
+        showDeleted: c.showDeleted
+      },
+      { refreshTotalFromApi: true }
+    );
+  }, [meaningsSignature, initialLoadDone, guid, relationNames]);
 
   const handleToggleSort = (relationName: string) => {
     const nextSorted = !sortByNameByAttr[relationName];
@@ -417,16 +521,20 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
     setPageLimitByAttr((prev) => ({ ...prev, [relationName]: parsed }));
   };
 
-  const handlePageLimitSubmit = (relationName: string) => {
+  const handlePageLimitSubmit = (relationName: string, rawValue: string) => {
     const totalCount = cardTotalCounts[relationName] ?? 0;
-    const defaultLimit = totalCount < 100 ? totalCount : 100;
-    const currentLimit = pageLimitByAttr[relationName];
-    let nextLimit = currentLimit;
-    if (!Number.isFinite(currentLimit) || currentLimit <= 0) {
-      nextLimit = defaultLimit;
-    }
-    if (totalCount > 0 && nextLimit > totalCount) {
-      nextLimit = totalCount;
+    const minL = getMinPageLimitForTotal(totalCount);
+    const parsed = parseInt(String(rawValue).trim(), 10);
+    let nextLimit = Number.isFinite(parsed) && parsed > 0
+      ? parsed
+      : DEFAULT_RELATIONSHIP_PAGE_LIMIT;
+    if (totalCount > 0) {
+      nextLimit = Math.max(minL, nextLimit);
+      if (nextLimit > totalCount) {
+        nextLimit = totalCount;
+      }
+    } else {
+      nextLimit = Math.max(1, nextLimit);
     }
     setPageLimitByAttr((prev) => ({ ...prev, [relationName]: nextLimit }));
     resetRelationshipData(relationName, { limit: nextLimit });

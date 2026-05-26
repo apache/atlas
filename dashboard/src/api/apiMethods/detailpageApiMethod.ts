@@ -25,7 +25,7 @@ import {
   detailPageRelationshipApiUrl,
   detailPageRelationshipAttributesApiUrl
 } from "../apiUrlLinks/detailpageUrl";
-import { _get } from "./apiMethod";
+import { _get, _post } from "./apiMethod";
 
 const getDetailPageData = (guid: string, params: object, header?: string) => {
   const config = {
@@ -60,13 +60,21 @@ const getAuditData = (params: object) => {
   return _get(auditApiurl(), config);
 };
 
-const getLabels = (guid: string, formData: object) => {
+const getEntityHeader = (guid: string) => {
+  const config = {
+    method: "GET",
+    params: {}
+  };
+  return _get(detailpageApiUrl(guid, "header"), config);
+};
+
+const getLabels = (guid: string, formData: string[]) => {
   const config = {
     method: "POST",
     params: {},
     data: formData
   };
-  return _get(detailPageLabelApiUrl(guid), config);
+  return _post(detailPageLabelApiUrl(guid), config);
 };
 
 const getEntityBusinessMetadata = (guid: string, formData: object) => {
@@ -199,6 +207,7 @@ export {
   getDetailPageAuditData,
   getDetailPageRauditData,
   getAuditData,
+  getEntityHeader,
   getLabels,
   getEntityBusinessMetadata,
   getDetailPageRelationship,
