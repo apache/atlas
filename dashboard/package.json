@@ -6,7 +6,7 @@
   "scripts": {
     "postinstall": "chmod +x node_modules/@esbuild/linux-x64/bin/esbuild 2>/dev/null || true",
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build ",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 200",
     "preview": "vite preview",
     "prebuild": "cd src/views/Lineage/atlas-lineage && (npm ci 2>/dev/null || npm install) && npm run build"
