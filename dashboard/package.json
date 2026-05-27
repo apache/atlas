@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "prebuild": "cd src/views/Lineage/atlas-lineage && (npm ci 2>/dev/null || npm install) && npm run build"
   },
-  "dependencies": {
+  "dependencies": { 
     "@dnd-kit/core": "6.1.0",
     "@dnd-kit/modifiers": "7.0.0",
     "@dnd-kit/sortable": "8.0.0",
