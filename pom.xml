@@ -1826,6 +1826,16 @@
             <!--<organizationUrl>https://www.aetna.com</organizationUrl>-->
         </developer>
         <developer>
+            <id>fkhan</id>
+            <name>Farhan Khan</name>
+            <email>fkhan@apache.org</email>
+            <organization>Freestone Infotech</organization>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
+        </developer>
+        <developer>
             <id>grahamwallis</id>
             <name>Graham Wallis</name>
             <email>grahamwallis@apache.org</email>
