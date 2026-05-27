@@ -34,6 +34,10 @@ RUN tar xfz /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-server.tar.gz --direc
     rm -rf ${ATLAS_HOME}/logs && \
     ln -s /var/log/atlas ${ATLAS_HOME}/logs && \
     ln -s /home/atlas/data ${ATLAS_HOME}/data && \
+    mkdir -p ${ATLAS_HOME}/server/webapp/atlas && \
+    cd ${ATLAS_HOME}/server/webapp/atlas && \
+    jar -xf ../atlas.war && \
+    rm -f ../atlas.war && \
     chown -R atlas:atlas ${ATLAS_HOME}/ /var/run/atlas/ /var/log/atlas/
 
 COPY ./scripts/hbase-site.xml ${ATLAS_HOME}/hbase/conf/
