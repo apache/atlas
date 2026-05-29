@@ -44,7 +44,7 @@
     "react-router-dom": "6.30.3",
     "react-toastify": "10.0.5",
     "redux": "5.0.1",
-    "sanitize-html": "2.13.0"
+    "sanitize-html": "2.17.4"
   },
   "devDependencies": {
     "@types/autosuggest-highlight": "3.2.3",
