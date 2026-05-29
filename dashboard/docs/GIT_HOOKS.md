@@ -43,6 +43,10 @@ git config --get core.hooksPath
 The active hook scripts live in **`.githooks/`** at the **repository root**.
 `dashboard/.githooks/*` only forwards to the root hooks (legacy path compat).
 
+**This repo does not use Husky.** Git invokes hooks via **`core.hooksPath=.githooks`**
+only (`prepare`/`install-git-hooks.mjs` or manual `git config`); there is no
+`husky` npm package.
+
 ## What runs when
 
 ### `pre-commit` (root: `scripts/git-hooks/run-precommit.mjs`)

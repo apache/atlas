@@ -35,8 +35,7 @@ import {
 
 if (
 	process.env.SKIP_DASHBOARD_HOOKS === '1' ||
-	process.env.SKIP_DASHBOARD_LICENSE_CHECK === '1' ||
-	process.env.HUSKY === '0'
+	process.env.SKIP_DASHBOARD_LICENSE_CHECK === '1'
 ) {
 	process.exit(0)
 }

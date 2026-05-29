@@ -18,7 +18,7 @@
 
 /**
  * Pre-push: impact-related Jest tests, ESLint (src), production build.
- * Skip: SKIP_DASHBOARD_HOOKS=1 or HUSKY=0
+ * Skip: SKIP_DASHBOARD_HOOKS=1
  */
 
 import { execFileSync, execSync, spawnSync } from 'node:child_process'
@@ -33,7 +33,7 @@ import {
 	toDashboardRelative,
 } from './lib/test-path-helpers.mjs'
 
-if (process.env.SKIP_DASHBOARD_HOOKS === '1' || process.env.HUSKY === '0') {
+if (process.env.SKIP_DASHBOARD_HOOKS === '1') {
 	process.exit(0)
 }
 

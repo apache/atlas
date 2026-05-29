@@ -18,13 +18,13 @@
 
 /**
  * Pre-commit: ensure UI changes stage tests; lint-staged runs ESLint after this.
- * Skip: SKIP_DASHBOARD_HOOKS=1 or HUSKY=0 or SKIP_DASHBOARD_TEST_GUARD=1
+ * Skip: SKIP_DASHBOARD_HOOKS=1 or SKIP_DASHBOARD_TEST_GUARD=1
  */
 
 import { stagedIncludesTestWhenUiChanges } from './lib/test-path-helpers.mjs'
 import { getStagedFiles } from './lib/git-changed-files.mjs'
 
-if (process.env.SKIP_DASHBOARD_HOOKS === '1' || process.env.HUSKY === '0') {
+if (process.env.SKIP_DASHBOARD_HOOKS === '1') {
 	process.exit(0)
 }
 
