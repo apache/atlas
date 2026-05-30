@@ -62,7 +62,7 @@
     "recharts": "2.15.1",
     "sass": "1.74.1",
     "typescript": "5.2.2",
-    "vite": "6.4.1"
+    "vite": "6.4.2"
   },
   "overrides": {
     "loader-utils": "3.2.1",
