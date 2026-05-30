@@ -157,7 +157,7 @@ Let us look at the attribute called ‘db’ which represents the database to wh
     "cardinality": "SINGLE"`}
 </SyntaxHighlighter>
 
-Note the “isOptional=true” constraint - a table entity cannot be created without a db reference.
+Note the “isOptional=false” constraint - a table entity cannot be created without a db reference.
 
 
 <SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
