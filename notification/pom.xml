@@ -171,7 +171,7 @@
                                 <artifactItem>
                                     <groupId>org.apache.zookeeper</groupId>
                                     <artifactId>zookeeper</artifactId>
-                                    <version>3.4.6</version>
+                                    <version>3.8.6</version>
                                 </artifactItem>
                             </artifactItems>
                         </configuration>
