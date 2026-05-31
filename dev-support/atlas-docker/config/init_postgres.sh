@@ -50,33 +50,56 @@ atlas_psql_cmd=(
 create_role() {
   local role_name=$1
   local role_password=$2
+  local role_exists
+  local role_sql
 
-  "${psql_cmd[@]}" <<EOSQL
-DO \$\$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${role_name}') THEN
-    CREATE ROLE ${role_name} WITH LOGIN PASSWORD '${role_password}';
-  ELSE
-    ALTER ROLE ${role_name} WITH LOGIN PASSWORD '${role_password}';
-  END IF;
-END
-\$\$;
+  role_exists=$("${psql_cmd[@]}" --set=role_name="${role_name}" -At <<'EOSQL'
+SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = :'role_name';
 EOSQL
+)
+
+  if [ "${role_exists}" != "1" ]
+  then
+    role_sql=$("${psql_cmd[@]}" --set=role_name="${role_name}" --set=role_password="${role_password}" -At <<'EOSQL'
+SELECT format('CREATE ROLE %I WITH LOGIN PASSWORD %L', :'role_name', :'role_password');
+EOSQL
+)
+  else
+    role_sql=$("${psql_cmd[@]}" --set=role_name="${role_name}" --set=role_password="${role_password}" -At <<'EOSQL'
+SELECT format('ALTER ROLE %I WITH LOGIN PASSWORD %L', :'role_name', :'role_password');
+EOSQL
+)
+  fi
+
+  "${psql_cmd[@]}" -c "${role_sql}"
 }
 
 create_database() {
   local database_name=$1
   local owner_name=$2
   local database_exists
+  local database_sql
+  local grant_sql
 
-  database_exists=$("${psql_cmd[@]}" -Atc "SELECT 1 FROM pg_database WHERE datname = '${database_name}'")
+  database_exists=$("${psql_cmd[@]}" --set=database_name="${database_name}" -At <<'EOSQL'
+SELECT 1 FROM pg_database WHERE datname = :'database_name';
+EOSQL
+)
 
   if [ "${database_exists}" != "1" ]
   then
-    "${psql_cmd[@]}" -c "CREATE DATABASE ${database_name} OWNER ${owner_name};"
+    database_sql=$("${psql_cmd[@]}" --set=database_name="${database_name}" --set=owner_name="${owner_name}" -At <<'EOSQL'
+SELECT format('CREATE DATABASE %I OWNER %I', :'database_name', :'owner_name');
+EOSQL
+)
+    "${psql_cmd[@]}" -c "${database_sql}"
   fi
 
-  "${psql_cmd[@]}" -c "GRANT ALL PRIVILEGES ON DATABASE ${database_name} TO ${owner_name};"
+  grant_sql=$("${psql_cmd[@]}" --set=database_name="${database_name}" --set=owner_name="${owner_name}" -At <<'EOSQL'
+SELECT format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I', :'database_name', :'owner_name');
+EOSQL
+)
+  "${psql_cmd[@]}" -c "${grant_sql}"
   "${psql_cmd[@]}" --dbname "${database_name}" -c "GRANT ALL ON SCHEMA public TO public;"
 }
 

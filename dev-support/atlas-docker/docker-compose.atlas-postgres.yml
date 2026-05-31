@@ -21,13 +21,13 @@ services:
       POSTGRES_PASSWORD: atlasR0cks!
       HIVE_DB_PASSWORD: atlasR0cks!
       ATLAS_DB_PASSWORD: atlasR0cks!
-      ATLAS_SCHEMA_FILE: /home/atlas/create_schema.sql
+      ATLAS_SCHEMA_FILE: /tmp/create_schema.sql
     volumes:
-      - ./config/init_postgres.sh:/home/atlas/init_postgres.sh:ro
-      - ../../graphdb/janusgraph-rdbms/src/main/resources/META-INF/postgres/create_schema.sql:/home/atlas/create_schema.sql:ro
+      - ./config/init_postgres.sh:/tmp/init_postgres.sh:ro
+      - ../../graphdb/janusgraph-rdbms/src/main/resources/META-INF/postgres/create_schema.sql:/tmp/create_schema.sql:ro
     command:
       - /bin/bash
-      - /home/atlas/init_postgres.sh
+      - /tmp/init_postgres.sh
 
 networks:
   atlas:

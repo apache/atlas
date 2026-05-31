@@ -81,6 +81,6 @@ Docker files in this folder create docker images and run them to build Apache At
       docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml up -d --wait
       ```
 
-   Apache Atlas will be installed at /opt/atlas/, and logs are at /var/logs/atlas directory.
+   Apache Atlas will be installed at /opt/atlas/, and logs are at /var/log/atlas directory.
 
 7. Atlas Admin can be accessed at http://localhost:21000 (admin/atlasR0cks!)
