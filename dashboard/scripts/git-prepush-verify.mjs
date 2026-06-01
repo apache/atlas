@@ -17,7 +17,7 @@
  */
 
 /**
- * Pre-push: impact-related Jest tests, ESLint (src), production build.
+ * Pre-push: impact-related Jest tests, ESLint (src).
  * Skip: SKIP_DASHBOARD_HOOKS=1
  */
 
@@ -126,7 +126,6 @@ if (jestSourceArgs.length > 0) {
 run(
 	'npx eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 200',
 )
-run('npm run build')
 
 console.log('\x1b[32m[dashboard pre-push]\x1b[0m All checks passed.\n')
 process.exit(0)

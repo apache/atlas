@@ -17,7 +17,7 @@
  */
 
 /**
- * Repo-wide pre-push: dashboard (tests + eslint + build), dashboardv2 build, docs build.
+ * Repo-wide pre-push: dashboard (tests + eslint).
  */
 
 import { execFileSync } from 'node:child_process'
@@ -39,49 +39,17 @@ if (
 
 const changed = getPushRangeFiles(repoRoot)
 const touchDashboard = changed.some((p) => p.startsWith('dashboard/'))
-const touchV2 = changed.some((p) => p.startsWith('dashboardv2/'))
-const touchDocs = changed.some((p) => p.startsWith('docs/'))
 
-if (!touchDashboard && !touchV2 && !touchDocs) {
+if (!touchDashboard) {
 	process.exit(0)
 }
 
-if (touchDashboard && process.env.SKIP_DASHBOARD_HOOKS !== '1') {
+if (process.env.SKIP_DASHBOARD_HOOKS !== '1') {
 	console.log('\x1b[35m[atlas pre-push]\x1b[0m dashboard package…')
 	execFileSync(process.execPath, ['scripts/git-prepush-verify.mjs'], {
 		cwd: join(repoRoot, 'dashboard'),
 		stdio: 'inherit',
 	})
-}
-
-if (touchV2 && process.env.SKIP_DASHBOARDV2_HOOKS !== '1') {
-	if (process.env.SKIP_DASHBOARDV2_BUILD === '1') {
-		console.log(
-			'\x1b[33m[atlas pre-push]\x1b[0m SKIP_DASHBOARDV2_BUILD=1 — skipping dashboardv2 npm run build.',
-		)
-	} else {
-		console.log('\x1b[35m[atlas pre-push]\x1b[0m dashboardv2 — npm run build…')
-		execFileSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'build'], {
-			cwd: join(repoRoot, 'dashboardv2'),
-			stdio: 'inherit',
-			shell: process.platform === 'win32',
-		})
-	}
-}
-
-if (touchDocs && process.env.SKIP_DOCS_HOOKS !== '1') {
-	if (process.env.SKIP_DOCS_BUILD === '1') {
-		console.log(
-			'\x1b[33m[atlas pre-push]\x1b[0m SKIP_DOCS_BUILD=1 — skipping docs npm run build.',
-		)
-	} else {
-		console.log('\x1b[35m[atlas pre-push]\x1b[0m docs — npm run build…')
-		execFileSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'build'], {
-			cwd: join(repoRoot, 'docs'),
-			stdio: 'inherit',
-			shell: process.platform === 'win32',
-		})
-	}
 }
 
 console.log('\x1b[32m[atlas pre-push]\x1b[0m Done.\n')

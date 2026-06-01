@@ -61,13 +61,14 @@ Runs **only for packages that have staged paths** under that prefix.
 
 ### `pre-push` (root: `scripts/git-hooks/run-prepush.mjs`)
 
-Runs for each package **if commits in the push range** touch that prefix.
+Runs when commits in the push range touch **`dashboard/`**.
 
 | Area | Checks |
 |------|--------|
-| **dashboard** | **RAT-aligned ASF header** on **new** `dashboard/src/` files in the push range, colocated tests on disk, **`jest --findRelatedTests`**, **`eslint src`**, **`npm run build`**. |
-| **dashboardv2** | **`npm run build`** (Grunt). |
-| **docs** | **`npm run build`** (Docz). |
+| **dashboard** | **RAT-aligned ASF header** on **new** `dashboard/src/` files in the push range, colocated tests on disk for UI changes, **`jest --findRelatedTests`**, **`eslint src`**. |
+
+**No build** runs on pre-push (dashboard, dashboardv2, or docs). Use CI or run
+`npm run build` locally when needed.
 
 ## Skip hooks (emergency / slow machines)
 
@@ -98,13 +99,6 @@ SKIP_DASHBOARD_TYPECHECK=1 git commit ...     # tsc on commit
 
 ```bash
 SKIP_ATLAS_LICENSE_CHECK=1 git commit ...
-```
-
-Skip **long builds** on push:
-
-```bash
-SKIP_DASHBOARDV2_BUILD=1 git push ...
-SKIP_DOCS_BUILD=1 git push ...
 ```
 
 ## Manual run (no Git hook)
@@ -144,6 +138,6 @@ cd dashboard && npm run verify:prepush
 | `dashboard/scripts/install-git-hooks.mjs` | Sets `core.hooksPath=.githooks` |
 | `dashboard/scripts/git-precommit-verify.mjs` | Dashboard staged UI ↔ test guard |
 | `dashboard/scripts/check-staged-new-file-license.mjs` | Dashboard ASF on new files |
-| `dashboard/scripts/git-prepush-verify.mjs` | Dashboard Jest, ESLint, build |
+| `dashboard/scripts/git-prepush-verify.mjs` | Dashboard Jest, ESLint |
 | `dashboard/scripts/run-precommit-local.mjs` | `npm run verify:precommit` (dashboard only) |
 | `dashboard/lint-staged.config.mjs` | ESLint on staged dashboard sources |
