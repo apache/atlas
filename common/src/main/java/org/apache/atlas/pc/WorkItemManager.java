@@ -18,7 +18,7 @@
 
 package org.apache.atlas.pc;
 
-import org.apache.curator.shaded.com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +46,7 @@ public class WorkItemManager<T, U extends WorkItemConsumer<T>> {
     public WorkItemManager(WorkItemBuilder<U, T> builder, String namePrefix, int batchSize, int numWorkers, boolean collectResults) {
         this.numWorkers = numWorkers;
         this.workQueue  = new LinkedBlockingQueue<>(batchSize * numWorkers);
-        this.service    = Executors.newFixedThreadPool(numWorkers, new ThreadFactoryBuilder().setNameFormat(namePrefix + "-%d").build());
+        this.service    = Executors.newFixedThreadPool(numWorkers, new BasicThreadFactory.Builder().namingPattern(namePrefix + "-%d").build());
 
         createConsumers(builder, numWorkers, collectResults);
 
@@ -146,5 +146,21 @@ public class WorkItemManager<T, U extends WorkItemConsumer<T>> {
         }
 
         return (int) ((commitTimeSeconds / consumers.size()) / 1000);
+    }
+
+    protected  <T> List<T> getTypedResults() {
+        if (getResults().isEmpty()) {
+            return null;
+        }
+
+        List<T> ret = new ArrayList<>();
+        Object result;
+        while (((result = getResults().poll())) != null) {
+            T res = (T) result;
+
+            ret.add(res);
+        }
+
+        return ret;
     }
 }
