@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Atlas monorepo: pre-push (dashboard Jest/eslint)
+# Atlas monorepo: pre-push (no-op; checks run on pre-commit)
 # Skip: SKIP_ATLAS_HOOKS=1 | SKIP_ALL_ATLAS_GIT_HOOKS=1
 set -e
 if [ "$SKIP_ATLAS_HOOKS" = "1" ] || [ "$SKIP_ALL_ATLAS_GIT_HOOKS" = "1" ]; then exit 0; fi

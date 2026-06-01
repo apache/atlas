@@ -62,23 +62,7 @@ const runDash = (title, file) => {
 if (touchDashboard && process.env.SKIP_DASHBOARD_HOOKS !== '1') {
 	runDash('UI ↔ staged test guard', 'git-precommit-verify.mjs')
 	runDash('ASF license (new staged files under src/)', 'check-staged-new-file-license.mjs')
-
-	const lintStagedCli = join(
-		repoRoot,
-		'dashboard/node_modules/lint-staged/bin/lint-staged.js',
-	)
-	try {
-		execFileSync(
-			process.execPath,
-			[lintStagedCli, '--config', 'dashboard/lint-staged.config.mjs'],
-			{
-				cwd: repoRoot,
-				stdio: 'inherit',
-			},
-		)
-	} catch {
-		process.exit(1)
-	}
+	runDash('Jest (related tests) + ESLint (src/)', 'git-precommit-tests-lint.mjs')
 
 	if (process.env.SKIP_DASHBOARD_TYPECHECK !== '1') {
 		execFileSync(

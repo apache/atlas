@@ -17,21 +17,17 @@
  */
 
 /**
- * Pre-push: impact-related Jest tests, ESLint (src).
+ * Pre-commit: Jest --findRelatedTests on staged TS/TSX, then ESLint on src/.
  * Skip: SKIP_DASHBOARD_HOOKS=1
  */
 
-import { execFileSync, execSync, spawnSync } from 'node:child_process'
+import { execSync, spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { getPushRangeFiles } from './lib/git-changed-files.mjs'
-import {
-	allUiChangesHaveTestHome,
-	isUiSourcePath,
-	toDashboardRelative,
-} from './lib/test-path-helpers.mjs'
+import { getStagedFiles } from './lib/git-changed-files.mjs'
+import { toDashboardRelative } from './lib/test-path-helpers.mjs'
 
 if (process.env.SKIP_DASHBOARD_HOOKS === '1') {
 	process.exit(0)
@@ -44,23 +40,13 @@ if (!existsSync(join(dashboardRoot, 'package.json'))) {
 	process.exit(1)
 }
 
-if (process.env.SKIP_DASHBOARD_LICENSE_CHECK !== '1') {
-	console.log(
-		'\x1b[35m[dashboard pre-push]\x1b[0m RAT-aligned ASF header on newly added dashboard/src files…',
-	)
-	execFileSync(process.execPath, ['scripts/check-push-new-file-license.mjs'], {
-		cwd: dashboardRoot,
-		stdio: 'inherit',
-	})
-}
-
 const run = (cmd, opts = {}) => {
 	console.log(`\x1b[36m▶\x1b[0m ${cmd}`)
 	execSync(cmd, { stdio: 'inherit', cwd: dashboardRoot, ...opts })
 }
 
-const repoPaths = getPushRangeFiles()
-const dashboardPaths = repoPaths.filter(
+const staged = getStagedFiles()
+const dashboardPaths = staged.filter(
 	(p) => p.startsWith('dashboard/') || p.startsWith('src/'),
 )
 
@@ -77,36 +63,17 @@ const jestSourceArgs = dashRelFiles.filter((p) => {
 	return /\.(ts|tsx)$/.test(p)
 })
 
-if (process.env.SKIP_DASHBOARD_TEST_GUARD !== '1') {
-	const hasUi = dashboardPaths.map(toDashboardRelative).some(isUiSourcePath)
-	if (hasUi) {
-		const { ok, missing } = allUiChangesHaveTestHome(
-			dashboardRoot,
-			dashboardPaths,
-		)
-		if (!ok) {
-			console.error(
-				'\x1b[31m[dashboard pre-push]\x1b[0m These UI files have no colocated __tests__ or *.test.ts(x):',
-			)
-			for (const m of missing) {
-				console.error(`  - ${m}`)
-			}
-			console.error(
-				'Add tests or set SKIP_DASHBOARD_TEST_GUARD=1 only for exceptions.\n',
-			)
-			process.exit(1)
-		}
-	}
+if (dashRelFiles.length > 0) {
+	console.log('\x1b[35m[dashboard pre-commit]\x1b[0m Staged paths (sample):')
+	console.log(
+		dashRelFiles.slice(0, 20).join('\n') +
+			(dashRelFiles.length > 20 ? '\n…' : ''),
+	)
 }
-
-console.log('\x1b[35m[dashboard pre-push]\x1b[0m Changed paths in range (sample):')
-console.log(
-	dashRelFiles.slice(0, 20).join('\n') + (dashRelFiles.length > 20 ? '\n…' : ''),
-)
 
 if (jestSourceArgs.length > 0) {
 	console.log(
-		'\x1b[35m[dashboard pre-push]\x1b[0m Running Jest --findRelatedTests (impact surface):',
+		'\x1b[35m[dashboard pre-commit]\x1b[0m Running Jest --findRelatedTests (staged sources):',
 	)
 	const rel = jestSourceArgs.map((f) =>
 		relative(dashboardRoot, join(dashboardRoot, f)).replace(/\\/g, '/'),
@@ -119,7 +86,7 @@ if (jestSourceArgs.length > 0) {
 	if (res.status !== 0) process.exit(res.status ?? 1)
 } else {
 	console.log(
-		'\x1b[33m[dashboard pre-push]\x1b[0m No TS source files in diff for --findRelatedTests; skipping Jest.',
+		'\x1b[33m[dashboard pre-commit]\x1b[0m No staged TS source files for --findRelatedTests; skipping Jest.',
 	)
 }
 
@@ -127,5 +94,5 @@ run(
 	'npx eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 200',
 )
 
-console.log('\x1b[32m[dashboard pre-push]\x1b[0m All checks passed.\n')
+console.log('\x1b[32m[dashboard pre-commit]\x1b[0m Jest and ESLint passed.\n')
 process.exit(0)

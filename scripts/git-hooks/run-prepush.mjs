@@ -17,18 +17,9 @@
  */
 
 /**
- * Repo-wide pre-push: dashboard (tests + eslint).
+ * Pre-push: no checks (all dashboard verification runs on pre-commit).
+ * Hook file kept so core.hooksPath stays stable; exits immediately.
  */
-
-import { execFileSync } from 'node:child_process'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-import { getRepoRoot, getPushRangeFiles } from './lib/git-helpers.mjs'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const scriptsDir = join(__dirname, '..')
-const repoRoot = getRepoRoot(scriptsDir)
 
 if (
 	process.env.SKIP_ATLAS_HOOKS === '1' ||
@@ -37,20 +28,4 @@ if (
 	process.exit(0)
 }
 
-const changed = getPushRangeFiles(repoRoot)
-const touchDashboard = changed.some((p) => p.startsWith('dashboard/'))
-
-if (!touchDashboard) {
-	process.exit(0)
-}
-
-if (process.env.SKIP_DASHBOARD_HOOKS !== '1') {
-	console.log('\x1b[35m[atlas pre-push]\x1b[0m dashboard package…')
-	execFileSync(process.execPath, ['scripts/git-prepush-verify.mjs'], {
-		cwd: join(repoRoot, 'dashboard'),
-		stdio: 'inherit',
-	})
-}
-
-console.log('\x1b[32m[atlas pre-push]\x1b[0m Done.\n')
 process.exit(0)

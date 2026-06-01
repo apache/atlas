@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Atlas monorepo: pre-commit (license, lint, typecheck, syntax; dashboard test guard)
+# Atlas monorepo: pre-commit (license, Jest, ESLint, typecheck, syntax; dashboard test guard)
 # Skip: SKIP_ATLAS_HOOKS=1 | SKIP_ALL_ATLAS_GIT_HOOKS=1
 set -e
 if [ "$SKIP_ATLAS_HOOKS" = "1" ] || [ "$SKIP_ALL_ATLAS_GIT_HOOKS" = "1" ]; then exit 0; fi

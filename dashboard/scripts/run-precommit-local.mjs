@@ -20,7 +20,7 @@
  * Run the same checks as .githooks/pre-commit (for manual verification).
  * Execute from dashboard/: npm run verify:precommit
  *
- * Order: test guard → ASF header on new files → lint-staged → tsc --noEmit
+ * Order: test guard → ASF header → Jest + ESLint → tsc --noEmit
  */
 
 import { execFileSync } from 'node:child_process'
@@ -50,20 +50,9 @@ try {
 		})
 	})
 
-	const repoRoot = String(
-		execFileSync('git', ['rev-parse', '--show-toplevel'], {
-			encoding: 'utf8',
+	run('Jest (related tests) + ESLint (src/)', () => {
+		execFileSync(process.execPath, ['scripts/git-precommit-tests-lint.mjs'], {
 			cwd: dashboardDir,
-		}),
-	).trim()
-
-	run('lint-staged (ESLint on staged dashboard/src)', () => {
-		const lintStagedCli = join(
-			dashboardDir,
-			'node_modules/lint-staged/bin/lint-staged.js',
-		)
-		execFileSync(process.execPath, [lintStagedCli, '--config', 'dashboard/lint-staged.config.mjs'], {
-			cwd: repoRoot,
 			stdio: 'inherit',
 		})
 	})

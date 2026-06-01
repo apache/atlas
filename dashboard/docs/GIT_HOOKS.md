@@ -18,8 +18,9 @@
 
 # Atlas Git hooks (dashboard, dashboardv2, docs)
 
-Hooks run **locally** before `git commit` and `git push` so common issues are
-caught early. **CI** on the server is still required to enforce merges.
+Hooks run **locally** before `git commit` so common issues are caught early.
+**Pre-push runs no checks** (all dashboard verification is on pre-commit).
+**CI** on the server is still required to enforce merges.
 
 ## One-time setup (per clone)
 
@@ -55,20 +56,14 @@ Runs **only for packages that have staged paths** under that prefix.
 
 | Area | When staged under … | Checks |
 |------|---------------------|--------|
-| **dashboard** | `dashboard/` | (1) **UI test guard** — `src/views`, `src/components`, `App.tsx` / `Main.tsx` / `ErrorBoundary.tsx` must include a **staged** test file; (2) **RAT-aligned ASF license** on **new** files under `dashboard/src/` (`license-header-policy.mjs` markers, same bar as CI RAT); (3) **lint-staged** → ESLint on staged TS/TSX; (4) **`npm run typecheck`** (`tsc --noEmit`). |
-| **dashboardv2** | `dashboardv2/` | (1) **ASF license** on **new** `.js`/`.jsx`/`.ts`/`.tsx` (skips `node_modules`, `bin/`, `external_lib`, `.min.js`); (2) **`node --check`** on staged plain `.js` under `dashboardv2/public/js/` (syntax). **No** Jest/test guard (legacy Grunt UI). |
+| **dashboard** | `dashboard/` | (1) **UI test guard** — staged UI changes must include a **staged** test file; staged UI files must have colocated `__tests__` or `*.test.ts(x)` on disk; (2) **RAT-aligned ASF license** on **new** files under `dashboard/src/`; (3) **`jest --findRelatedTests`** on staged `.ts`/`.tsx` under `src/`; (4) **`eslint src`** (full `src/` tree); (5) **`npm run typecheck`** (`tsc --noEmit`). |
+| **dashboardv2** | `dashboardv2/` | (1) **ASF license** on **new** `.js`/`.jsx`/`.ts`/`.tsx` (skips `node_modules`, `bin/`, `external_lib`, `.min.js`); (2) **`node --check`** on staged plain `.js` under `dashboardv2/public/js/` (syntax). |
 | **docs** | `docs/` | (1) **ASF license** on **new** sources (skips `node_modules`, `site/`, `bin/`, `docz-lib/`); (2) **`node --check`** on staged **plain** `docs/**/*.js` outside theme/webapp JSX trees. |
 
 ### `pre-push` (root: `scripts/git-hooks/run-prepush.mjs`)
 
-Runs when commits in the push range touch **`dashboard/`**.
-
-| Area | Checks |
-|------|--------|
-| **dashboard** | **RAT-aligned ASF header** on **new** `dashboard/src/` files in the push range, colocated tests on disk for UI changes, **`jest --findRelatedTests`**, **`eslint src`**. |
-
-**No build** runs on pre-push (dashboard, dashboardv2, or docs). Use CI or run
-`npm run build` locally when needed.
+**No checks.** Exits immediately. Use pre-commit before each commit, or CI on
+the server for push/merge validation.
 
 ## Skip hooks (emergency / slow machines)
 
@@ -76,7 +71,6 @@ Disable **everything**:
 
 ```bash
 SKIP_ATLAS_HOOKS=1 git commit ...
-SKIP_ATLAS_HOOKS=1 git push ...
 ```
 
 Per **package**:
@@ -87,11 +81,11 @@ SKIP_DASHBOARDV2_HOOKS=1 git commit ...
 SKIP_DOCS_HOOKS=1 git commit ...
 ```
 
-**dashboard** only (still documented):
+**dashboard** only:
 
 ```bash
-SKIP_DASHBOARD_TEST_GUARD=1 git commit ...   # staged test file rule
-SKIP_DASHBOARD_LICENSE_CHECK=1 git commit ... # RAT-aligned ASF on new dashboard/src (also used by pre-push added-file check)
+SKIP_DASHBOARD_TEST_GUARD=1 git commit ...   # UI ↔ test rules
+SKIP_DASHBOARD_LICENSE_CHECK=1 git commit ... # RAT-aligned ASF on new dashboard/src
 SKIP_DASHBOARD_TYPECHECK=1 git commit ...     # tsc on commit
 ```
 
@@ -107,15 +101,15 @@ From **repo root** `atlas/`:
 
 ```bash
 node scripts/git-hooks/run-precommit.mjs
-node scripts/git-hooks/run-prepush.mjs
 ```
 
-**dashboard**-only local verify (same as before):
+**dashboard**-only local verify:
 
 ```bash
 cd dashboard && npm run verify:precommit
-cd dashboard && npm run verify:prepush
 ```
+
+(`verify:precommit` requires the npm script in `dashboard/package.json`.)
 
 ## Limitations
 
@@ -128,16 +122,16 @@ cd dashboard && npm run verify:prepush
 | Path | Role |
 |------|------|
 | `.githooks/pre-commit` | Root hook → `run-precommit.mjs` |
-| `.githooks/pre-push` | Root hook → `run-prepush.mjs` |
+| `.githooks/pre-push` | Root hook → `run-prepush.mjs` (no-op) |
 | `scripts/git-hooks/run-precommit.mjs` | Monorepo pre-commit orchestration |
-| `scripts/git-hooks/run-prepush.mjs` | Monorepo pre-push orchestration |
+| `scripts/git-hooks/run-prepush.mjs` | No-op (checks moved to pre-commit) |
 | `scripts/git-hooks/check-added-license-generic.mjs` | ASF header for v2/docs new files |
 | `scripts/git-hooks/syntax-check-staged.mjs` | `node --check` for v2/docs |
 | `scripts/git-hooks/lib/git-helpers.mjs` | `git diff` helpers |
 | `scripts/git-hooks/lib/extra-license-skip.mjs` | Path skip rules for v2/docs |
 | `dashboard/scripts/install-git-hooks.mjs` | Sets `core.hooksPath=.githooks` |
-| `dashboard/scripts/git-precommit-verify.mjs` | Dashboard staged UI ↔ test guard |
+| `dashboard/scripts/git-precommit-verify.mjs` | Dashboard UI ↔ test guard |
 | `dashboard/scripts/check-staged-new-file-license.mjs` | Dashboard ASF on new files |
-| `dashboard/scripts/git-prepush-verify.mjs` | Dashboard Jest, ESLint |
-| `dashboard/scripts/run-precommit-local.mjs` | `npm run verify:precommit` (dashboard only) |
-| `dashboard/lint-staged.config.mjs` | ESLint on staged dashboard sources |
+| `dashboard/scripts/git-precommit-tests-lint.mjs` | Dashboard Jest + ESLint |
+| `dashboard/scripts/run-precommit-local.mjs` | Manual pre-commit verify (dashboard) |
+| `dashboard/lint-staged.config.mjs` | Legacy ESLint-on-staged config (unused by hooks) |

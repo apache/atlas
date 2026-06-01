@@ -17,12 +17,20 @@
  */
 
 /**
- * Pre-commit: ensure UI changes stage tests; lint-staged runs ESLint after this.
+ * Pre-commit: staged UI test guard + colocated tests on disk.
  * Skip: SKIP_DASHBOARD_HOOKS=1 or SKIP_DASHBOARD_TEST_GUARD=1
  */
 
-import { stagedIncludesTestWhenUiChanges } from './lib/test-path-helpers.mjs'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import { getStagedFiles } from './lib/git-changed-files.mjs'
+import {
+	allUiChangesHaveTestHome,
+	isUiSourcePath,
+	stagedIncludesTestWhenUiChanges,
+	toDashboardRelative,
+} from './lib/test-path-helpers.mjs'
 
 if (process.env.SKIP_DASHBOARD_HOOKS === '1') {
 	process.exit(0)
@@ -31,6 +39,9 @@ if (process.env.SKIP_DASHBOARD_HOOKS === '1') {
 if (process.env.SKIP_DASHBOARD_TEST_GUARD === '1') {
 	process.exit(0)
 }
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
+const dashboardRoot = join(__dirname, '..')
 
 const staged = getStagedFiles()
 const dashboardPaths = staged.filter(
@@ -41,10 +52,30 @@ if (dashboardPaths.length === 0) {
 	process.exit(0)
 }
 
-const guard = stagedIncludesTestWhenUiChanges(dashboardPaths)
-if (!guard.ok) {
-	console.error('\x1b[31m[dashboard pre-commit]\x1b[0m', guard.message)
+const stagedGuard = stagedIncludesTestWhenUiChanges(dashboardPaths)
+if (!stagedGuard.ok) {
+	console.error('\x1b[31m[dashboard pre-commit]\x1b[0m', stagedGuard.message)
 	process.exit(1)
+}
+
+const hasUi = dashboardPaths.map(toDashboardRelative).some(isUiSourcePath)
+if (hasUi) {
+	const { ok, missing } = allUiChangesHaveTestHome(
+		dashboardRoot,
+		dashboardPaths,
+	)
+	if (!ok) {
+		console.error(
+			'\x1b[31m[dashboard pre-commit]\x1b[0m These staged UI files have no colocated __tests__ or *.test.ts(x):',
+		)
+		for (const m of missing) {
+			console.error(`  - ${m}`)
+		}
+		console.error(
+			'Add tests or set SKIP_DASHBOARD_TEST_GUARD=1 only for exceptions.\n',
+		)
+		process.exit(1)
+	}
 }
 
 process.exit(0)
