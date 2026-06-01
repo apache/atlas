@@ -37,7 +37,7 @@ import { fetchGlossaryDetails } from "@redux/slice/glossaryDetailsSlice";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 import { fetchGlossaryData } from "@redux/slice/glossarySlice";
 
-const CHIP_MAX_WIDTH = "200px";
+const CHIP_MAX_WIDTH = "100px";
 const ITEM_HEIGHT = 48;
 
 export interface DialogShowMoreLessProps {
@@ -216,8 +216,7 @@ const DialogShowMoreLess = ({
       setOpenModal(false);
       toast.dismiss(toastId.current);
       toastId.current = toast.success(
-        `${colName} ${
-          colName == "Term" ? "association" : currentValue.selectedValue
+        `${colName} ${colName == "Term" ? "association" : currentValue.selectedValue
         } was removed successfully`
       );
       const isSchemaClassificationFlow =
@@ -268,7 +267,10 @@ const DialogShowMoreLess = ({
   };
 
   const getLabel = (label: string, optionalLabel?: string) => {
-    if (columnVal == "Classifications" || columnVal == "self") {
+    if (colName == "Classification") {
+      return checkSuperTypes(label);
+    } else if (colName == "Propagated Classification") {
+      // Re-using checkSuperTypes since it does the same as getTagParentList
       return checkSuperTypes(label);
     } else {
       return label || optionalLabel;
@@ -352,7 +354,16 @@ const DialogShowMoreLess = ({
       {value?.[columnVal]?.length > 0 ? (
         <div
           className="tag-list"
-          style={{ flexWrap: isShowMoreLess ? "nowrap" : "wrap" }}
+          style={
+            isShowMoreLess
+              ? {
+                display: "grid",
+                gridTemplateColumns: "minmax(35px, max-content) max-content max-content",
+                alignItems: "center",
+                width: "100%"
+              }
+              : { display: "flex", flexWrap: "wrap", alignItems: "center" }
+          }
         >
           {isShowMoreLess && (
             <LightTooltip
@@ -386,16 +397,20 @@ const DialogShowMoreLess = ({
                 variant="outlined"
                 sx={{
                   "& .MuiChip-label": {
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
                     display: "block",
-                    overflow: "ellipsis",
-                    maxWidth: "145px"
+                    minWidth: 0,
+                    flexShrink: 1
                   },
-
-                  maxWidth: CHIP_MAX_WIDTH
+                  maxWidth: "100px",
+                  minWidth: 0,
+                  overflow: "hidden"
                 }}
                 clickable
                 data-cy="tagClick"
-              />{" "}
+              />
             </LightTooltip>
           )}
           {!isShowMoreLess &&
@@ -430,12 +445,14 @@ const DialogShowMoreLess = ({
                     variant="outlined"
                     sx={{
                       "& .MuiChip-label": {
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
                         display: "block",
-                        overflow: "ellipsis",
-                        maxWidth: "180px"
+                        minWidth: 0
                       },
-
-                      maxWidth: CHIP_MAX_WIDTH
+                      maxWidth: CHIP_MAX_WIDTH,
+                      minWidth: 0
                     }}
                     clickable
                   />
@@ -451,7 +468,7 @@ const DialogShowMoreLess = ({
                 onClick={handleClick}
                 aria-controls={open ? "long-menu" : undefined}
                 aria-expanded={open ? "true" : undefined}
-                aria-haspopup="true"
+                sx={{ flexShrink: 0, padding: "2px" }}
               >
                 <MoreHorizIcon />
               </IconButton>
@@ -474,6 +491,7 @@ const DialogShowMoreLess = ({
                     setAttributeModal(true);
                   }
                 }}
+                sx={{ flexShrink: 0, padding: "2px" }}
               >
                 <AddCircleOutlineIcon fontSize="small" />
               </IconButton>
@@ -527,11 +545,14 @@ const DialogShowMoreLess = ({
                         clickable
                         sx={{
                           "& .MuiChip-label": {
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
                             display: "block",
-                            overflow: "ellipsis",
-                            maxWidth: "180px"
+                            minWidth: 0
                           },
-                          maxWidth: CHIP_MAX_WIDTH
+                          maxWidth: CHIP_MAX_WIDTH,
+                          minWidth: 0
                         }}
                       />
                     </LightTooltip>
@@ -559,6 +580,7 @@ const DialogShowMoreLess = ({
                   setAttributeModal(true);
                 }
               }}
+              sx={{ flexShrink: 0, padding: "2px" }}
             >
               <AddCircleOutlineIcon fontSize="small" />
             </IconButton>
