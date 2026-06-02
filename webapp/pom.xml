@@ -213,9 +213,22 @@
             <artifactId>atlas-server-api</artifactId>
         </dependency>
 
+        <!-- Main compile + Enunciate: MetricsSink.init uses HBase-shaded SubsetConfiguration (not test-only). -->
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>hbase-shaded-client-fixed</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <version>${commons-conf2.version}</version>
         </dependency>
 
         <dependency>
@@ -266,6 +279,13 @@
             </exclusions>
         </dependency>
 
+        <!-- ATLAS-5220: default dist/embedded builds use HBase; keep on WAR (profile-only deps were missing from WEB-INF/lib). -->
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-distcp</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-hdfs</artifactId>
@@ -304,6 +324,17 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-shaded-mapreduce</artifactId>
+            <version>${hbase.version}-hadoop3</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-distcp</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <!-- supports simple auth handler -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -339,18 +370,6 @@
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-webapp</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.elasticsearch.client</groupId>
-            <artifactId>elasticsearch-rest-high-level-client</artifactId>
-            <version>${elasticsearch.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.elasticsearch</groupId>
-                    <artifactId>elasticsearch</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -532,7 +551,7 @@
                             <addClasspath>true</addClasspath>
                         </manifest>
                     </archive>
-                    <packagingExcludes>WEB-INF/lib/hbase-shaded-client-${hbase.version}-hadoop3.jar,WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/jsp-api*.jar,${packages.to.exclude}</packagingExcludes>
+                    <packagingExcludes>WEB-INF/lib/hbase-shaded-client-*-hadoop3.jar,WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/jsp-api*.jar,${atlas.war.audit.excludes}${atlas.war.storage.excludes}${packages.to.exclude}</packagingExcludes>
                 </configuration>
             </plugin>
 
@@ -815,6 +834,163 @@
     </build>
 
     <profiles>
+        <!-- ATLAS-5220: audit backend JARs (profile id matches root -Paudit-*). -->
+        <profile>
+            <id>audit-hbase</id>
+            <activation>
+                <property>
+                    <name>atlas.audit.backend</name>
+                    <value>hbase</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.atlas</groupId>
+                    <artifactId>atlas-audit-hbase</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>audit-cassandra</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.atlas</groupId>
+                    <artifactId>atlas-audit-cassandra</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>audit-rdbms</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.atlas</groupId>
+                    <artifactId>atlas-audit-rdbms</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <!-- ATLAS-5220: graph storage JARs (profile id matches root -Pstorage-*). -->
+        <profile>
+            <id>storage-berkeleyje</id>
+            <properties>
+                <atlas.war.storage.excludes>WEB-INF/lib/janusgraph-hbase-*.jar,WEB-INF/lib/hadoop-distcp-*.jar,WEB-INF/lib/hbase-shaded-mapreduce-*.jar,</atlas.war.storage.excludes>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.janusgraph</groupId>
+                    <artifactId>janusgraph-berkeleyje</artifactId>
+                    <version>${janusgraph.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>org.noggit</groupId>
+                            <artifactId>noggit</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>storage-cassandra</id>
+            <properties>
+                <atlas.war.storage.excludes>WEB-INF/lib/janusgraph-hbase-*.jar,WEB-INF/lib/hadoop-distcp-*.jar,WEB-INF/lib/hbase-shaded-mapreduce-*.jar,</atlas.war.storage.excludes>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.janusgraph</groupId>
+                    <artifactId>janusgraph-cql</artifactId>
+                    <version>${janusgraph.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>storage-hbase</id>
+            <activation>
+                <property>
+                    <name>atlas.storage.backend</name>
+                    <value>hbase</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.janusgraph</groupId>
+                    <artifactId>janusgraph-hbase</artifactId>
+                    <version>${janusgraph.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>org.apache.hbase</groupId>
+                            <artifactId>hbase-shaded-client</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>org.apache.hbase</groupId>
+                            <artifactId>hbase-shaded-mapreduce</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>storage-rdbms</id>
+            <properties>
+                <atlas.war.storage.excludes>WEB-INF/lib/janusgraph-hbase-*.jar,WEB-INF/lib/hadoop-distcp-*.jar,WEB-INF/lib/hbase-shaded-mapreduce-*.jar,</atlas.war.storage.excludes>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.atlas</groupId>
+                    <artifactId>janusgraph-rdbms</artifactId>
+                    <version>${project.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>index-elasticsearch</id>
+            <activation>
+                <property>
+                    <name>atlas.index.backend</name>
+                    <value>elasticsearch</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.atlas</groupId>
+                    <artifactId>atlas-graphdb-janus-es-shim</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.elasticsearch.client</groupId>
+                    <artifactId>elasticsearch-rest-high-level-client</artifactId>
+                    <version>${elasticsearch.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>org.elasticsearch</groupId>
+                            <artifactId>elasticsearch</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
+        </profile>
+
         <profile>
             <id>dist</id>
             <activation>
