@@ -73,7 +73,7 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
             "rltdvhrxhocivajyqojaxulwzhgzgzpkfolziacfnndzncjkthzeaeykdhhrjqdeibhdgiepwqkinvqzqxevushydtwjaabzgbfjmzvcbsoxewruhyhciyjefzsnokxvbeiiowzbhlkmujcnwilslgeswobzwwvkugyupsemqxsbdcmgrlpxmeuljvxyddvpccvcloupjorziwhogwnjvsdrwksvrbxcxjlcrcmrvvmbdmenafmvgrqzcaqbgpnhxiqbvxcbnudafsmjzvlzzzzpqmjkngbximmbjbijrqfb";
 
     private static final String LONG_TOKENIZED_TABLE_NAME =
-            "rrrrtokenizeeeeivajaxulwzhgzgzpkfoianndzncjkthzeaeykdhhrjqdeibhdgiepwqkinvqzqxevushydtwjaabzgbfjmzvcbsoxewruhyhciyjefzsnokxvbeiiowzbhlkmujcnwilslgeswobzwwvkugyupsemqxsbdcmgrlpxmeuljvxyddvpccvcloupjogrqzcaqbgpnhxiqbvxcbnudafsmaajzvlzzzzpqmjkngbximmbjbijrq1";
+            "rrrr.tokenize:eeeivajaxulwzhgzgzpkfoianndzncjkthzeaeykdhhrjqdeibhdgiepwqkinvqzqxevushydtwjaabzgbfjmzvcbsoxewruhyhciyjefzsnokxvbeiiowzbhlkmujcnwilslgeswobzwwvkugyupsemqxsbdcmgrlpxmeuljvxyddvpccvcloupjogrqzcaqbgpnhxiqbvxcbnudafsmaajzvlzzzzpqmjkngbximmbjbijrq1";
 
     private static final SimpleDateFormat FORMATTED_DATE       = new SimpleDateFormat("dd-MMM-yyyy");
     private static final String           EXPECTED_ENTITY_NAME = "hive_Table_Null_tableType";
@@ -879,7 +879,7 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
         SearchParameters.FilterCriteria filterCriteria          = new SearchParameters.FilterCriteria();
         filterCriteria.setCondition(SearchParameters.FilterCriteria.Condition.AND);
         List<SearchParameters.FilterCriteria> lstCriterion      = new ArrayList<>();
-        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.STARTS_WITH, "Sales.rrrrtokenizeeeeivajaxulwzhgzgzpkfoianndzncjkthzeaeykdhhrjqdeibhdgiepwqkinvqzqxevushydtwjaabzgbfjmzvcbsoxewruhyhciyjefzsnokxvbeiiowzbhlkmujcnwilslgeswobzwwvkugyupsemqxsbdcmgrlpxmeuljvxyddvpccvcloupjogrqzcaqbgpnhxiqbvxcbnudafsmaajzvlzzzzpqmjkngbximmbjbijrq1"));
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.STARTS_WITH, "Sales.rrrr.tokenize:eeeivajaxulwzhgzgzpkfoianndzncjkthzeaeykdhhrjqdeibhdgiepwqkinvqzqxevushydtwjaabzgbfjmzvcbsoxewruhyhciyjefzsnokxvbeiiowzbhlkmujcnwilslgeswobzwwvkugyupsemqxsbdcmgrlpxmeuljvxyddvpccvcloupjogrqzcaqbgpnhxiqbvxcbnudafsmaajzvlzzzzpqmjkngbximmbjbijrq1"));
         lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.ENDS_WITH, "@cl1"));
         filterCriteria.setCriterion(lstCriterion);
 
@@ -899,6 +899,25 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
         filterCriteria.setCondition(SearchParameters.FilterCriteria.Condition.AND);
 
         lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.CONTAINS, ".sample_table"));
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.ENDS_WITH, "@cl1"));
+        filterCriteria.setCriterion(lstCriterion);
+
+        SearchParameters      params    = getSearchParameters(HIVE_TABLE_TYPE, filterCriteria, 20);
+        SearchContext         context   = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        List<AtlasVertex>     vertices  = processor.execute();
+
+        assertEquals(vertices.size(), 1);
+    }
+
+    @Test
+    public void searchTableByLongTokenizedQualifiedNameContainsAndEndswith() throws AtlasBaseException {
+        SearchParameters.FilterCriteria filterCriteria          = new SearchParameters.FilterCriteria();
+        List<SearchParameters.FilterCriteria> lstCriterion      = new ArrayList<>();
+
+        filterCriteria.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+
+        lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.CONTAINS, ".rrrr.tokenize:eeeivajaxulwzhgzgzpkfoianndzncjkthzeaeykdhhrjqdeibhdgiepwqkinvqzqxevushydtwjaabzgbfjmzvcbsoxewruhyhciyjefzsnokxvbeiiowzbhlkmujcnwilslgeswobzwwvkugyupsemqxsbdcmgrlpxmeuljvxyddvpccvcloupjogrqzcaqbgpnhxiqbvxcbnudafsmaajzvlzzzzpqmjkngbximmbjbijrq1"));
         lstCriterion.add(getSingleFilterCriteria(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, SearchParameters.Operator.ENDS_WITH, "@cl1"));
         filterCriteria.setCriterion(lstCriterion);
 
