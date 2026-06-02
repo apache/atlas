@@ -26,6 +26,7 @@ import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.utils.AtlasJson;
+import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.v1.model.typedef.AttributeDefinition;
@@ -411,6 +412,8 @@ public class AtlasClient extends AtlasBaseClient {
      */
     public EntityResult updateEntityAttribute(final String guid, final String attribute, String value) throws AtlasServiceException {
         LOG.debug("Updating entity id: {}, attribute name: {}, attribute value: {}", guid, attribute, value);
+
+        ParamChecker.notNull(attribute, "Entity property cannot be null");
 
         final API  api      = API_V1.UPDATE_ENTITY_PARTIAL;
         ObjectNode response = callAPIWithRetries(api, value, () -> {

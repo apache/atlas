@@ -37,7 +37,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.security.Permission;
-import java.util.Locale;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -113,40 +112,6 @@ public class AtlasAdminClientTest {
         System.setOut(originalOut);
         System.setErr(originalErr);
         System.setSecurityManager(originalSecurityManager);
-    }
-
-    /**
-     * Reflective calls to {@code run} wrap failures in {@link java.lang.reflect.InvocationTargetException}.
-     * After the Jersey upgrade, connection failures may surface as {@link javax.ws.rs.ProcessingException},
-     * {@link AtlasServiceException}, or {@link IllegalArgumentException} instead of a cause message containing
-     * the word {@code Connection}.
-     */
-    private static boolean isExpectedAdminClientConnectivityOrServiceFailure(Throwable throwable) {
-        for (Throwable t = throwable; t != null; t = t.getCause()) {
-            if (t instanceof AtlasServiceException
-                    || t instanceof javax.ws.rs.ProcessingException
-                    || t instanceof javax.ws.rs.WebApplicationException
-                    || t instanceof IllegalArgumentException
-                    || t instanceof java.net.ConnectException
-                    || t instanceof java.net.SocketTimeoutException) {
-                return true;
-            }
-            String message = t.getMessage();
-            if (message != null) {
-                String lower = message.toLowerCase(Locale.ROOT);
-                if (lower.contains("connection")
-                        || lower.contains("refused")
-                        || lower.contains("metadata service")
-                        || lower.contains("could not find any active")
-                        || lower.contains("none of the passed urls")
-                        || lower.contains("timed out")
-                        || lower.contains("failed to connect")
-                        || lower.contains("injectionmanager")) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     @Test
@@ -373,8 +338,7 @@ public class AtlasAdminClientTest {
             int result = (Integer) runMethod.invoke(client, (Object) new String[] {"-status"});
             assertEquals(result, -1);
         } catch (Exception e) {
-            assertTrue(isExpectedAdminClientConnectivityOrServiceFailure(e),
-                    "Unexpected failure: " + e.getCause());
+            assertTrue(e.getCause().getMessage().contains("Connection") || e.getCause().getMessage().contains("refused"));
         }
     }
 
@@ -397,8 +361,7 @@ public class AtlasAdminClientTest {
             int result = (Integer) runMethod.invoke(client, (Object) new String[] {"-stats"});
             assertEquals(result, -1);
         } catch (Exception e) {
-            assertTrue(isExpectedAdminClientConnectivityOrServiceFailure(e),
-                    "Unexpected failure: " + e.getCause());
+            assertTrue(e.getCause().getMessage().contains("Connection") || e.getCause().getMessage().contains("refused"));
         }
     }
 
@@ -421,8 +384,7 @@ public class AtlasAdminClientTest {
             assertTrue(result == 0 || result == -1,
                     "Default REST URL success depends on whether a server listens on localhost:21000");
         } catch (Exception e) {
-            assertTrue(isExpectedAdminClientConnectivityOrServiceFailure(e),
-                    "Unexpected failure: " + e.getCause());
+            assertTrue(e.getCause().getMessage().contains("Connection") || e.getCause().getMessage().contains("refused"));
         }
     }
 
@@ -445,8 +407,7 @@ public class AtlasAdminClientTest {
             assertTrue(result == 0 || result == -1,
                     "Default REST URL success depends on whether a server listens on localhost:21000");
         } catch (Exception e) {
-            assertTrue(isExpectedAdminClientConnectivityOrServiceFailure(e),
-                    "Unexpected failure: " + e.getCause());
+            assertTrue(e.getCause().getMessage().contains("Connection") || e.getCause().getMessage().contains("refused"));
         }
     }
 
@@ -498,8 +459,8 @@ public class AtlasAdminClientTest {
         } catch (SecurityException e) {
             assertTrue(e.getMessage().contains("System.exit"));
         } catch (Exception e) {
-            assertTrue(isExpectedAdminClientConnectivityOrServiceFailure(e),
-                    "Unexpected failure: " + e);
+            // Also expected - connection error before System.exit
+            assertTrue(e.getMessage().contains("Connection") || e.getMessage().contains("refused") || e.getMessage().contains("Error"));
         }
     }
 

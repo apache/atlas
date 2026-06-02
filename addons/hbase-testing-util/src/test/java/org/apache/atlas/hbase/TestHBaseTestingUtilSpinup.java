@@ -19,8 +19,6 @@ package org.apache.atlas.hbase;
 
 import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.MiniHBaseCluster;
-import org.apache.hadoop.hbase.wal.FSHLogProvider;
-import org.apache.hadoop.hbase.wal.WALFactory;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -43,11 +41,6 @@ public class TestHBaseTestingUtilSpinup {
         hBaseTestingUtility.getConfiguration().set("hbase.regionserver.info.port", String.valueOf(getFreePort()));
         hBaseTestingUtility.getConfiguration().set("zookeeper.znode.parent", "/hbase-unsecure");
         hBaseTestingUtility.getConfiguration().set("hbase.table.sanity.checks", "false");
-        // Default AsyncFSWAL hits async HDFS output that is not binary-compatible with Hadoop 3.4.x here
-        // (HdfsFileStatus class vs interface). FSHLog is sufficient for this util smoke test on JDK 8.
-        String fsWal = FSHLogProvider.class.getName();
-        hBaseTestingUtility.getConfiguration().set(WALFactory.WAL_PROVIDER, fsWal);
-        hBaseTestingUtility.getConfiguration().set(WALFactory.META_WAL_PROVIDER, fsWal);
     }
 
     @Test
