@@ -28,12 +28,12 @@ import org.apache.atlas.service.Service;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -158,7 +158,7 @@ public abstract class AbstractStorageBasedAuditRepository implements Service, En
     }
 
     protected byte[] getKey(String id, Long ts, int index) {
-        return Bytes.toBytes(getKeyStr(id, ts, index));
+        return getKeyStr(id, ts, index).getBytes(StandardCharsets.UTF_8);
     }
 
     protected long getTimestampFromKey(String key) {

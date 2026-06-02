@@ -65,4 +65,24 @@
             </exclusions>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <!-- ATLAS-5220: Janus ES index helper class is in atlas-graphdb-janus-es-shim; activate with root -Pindex-elasticsearch. -->
+        <profile>
+            <id>index-elasticsearch</id>
+            <activation>
+                <property>
+                    <name>atlas.index.backend</name>
+                    <value>elasticsearch</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.atlas</groupId>
+                    <artifactId>atlas-graphdb-janus-es-shim</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>

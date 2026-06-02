@@ -54,6 +54,9 @@
         <module>addons/storm-bridge-shim</module>
         <module>addons/trino-extractor</module>
         <module>atlas-examples</module>
+        <module>audit/audit-cassandra</module>
+        <module>audit/audit-hbase</module>
+        <module>audit/audit-rdbms</module>
         <module>authorization</module>
         <module>build-tools</module>
         <module>client</module>
@@ -86,7 +89,13 @@
         <antlr4.version>4.7</antlr4.version>
         <aopalliance.version>1.0</aopalliance.version>
         <aspectj.runtime.version>1.8.7</aspectj.runtime.version>
+        <!-- ATLAS-5220: atlas.audit.backend / atlas.storage.backend / atlas.index.backend for slim packaging; audit pairs with entity.repository.impl. -->
+        <atlas.audit.backend>hbase</atlas.audit.backend>
+        <atlas.index.backend>solr</atlas.index.backend>
+        <atlas.storage.backend>hbase</atlas.storage.backend>
         <atlas.surefire.options />
+        <atlas.war.audit.excludes />
+        <atlas.war.storage.excludes />
         <avro.version>1.7.5</avro.version>
         <calcite.version>1.16.0</calcite.version>
         <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
@@ -112,12 +121,14 @@
         <eclipse.jpa.version>2.7.15</eclipse.jpa.version>
         <elasticsearch.version>7.17.8</elasticsearch.version>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
+        <entity.repository.properties>atlas.EntityAuditRepository.impl=${entity.repository.impl}</entity.repository.properties>
         <enunciate-maven-plugin.version>2.13.2</enunciate-maven-plugin.version>
         <failsafe.version>2.18.1</failsafe.version>
         <falcon.version>0.8</falcon.version>
         <fastutil.version>6.5.16</fastutil.version>
         <graph.index.backend>solr</graph.index.backend>
-        <graph.storage.backend>berkeleyje</graph.storage.backend>
+        <!-- Align filtered test/distro graph backend with atlas.storage.backend default (ATLAS-5220). -->
+        <graph.storage.backend>hbase2</graph.storage.backend>
         <gson.version>2.9.0</gson.version>
         <guava.version>25.1-jre</guava.version>
         <guice.version>4.1.0</guice.version>
@@ -2282,13 +2293,103 @@
     </repositories>
 
     <profiles>
+        <!-- ATLAS-5220: combine with -Pstorage-* / -Paudit-* / -Pindex-*; put -Paudit-* after -Pdist.
+             Embedded: -Pdist,storage-hbase,audit-hbase,embedded-hbase-solr -->
         <profile>
-            <id>embedded-cassandra-solr</id>
+            <id>dist</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
             <properties>
-                <guava.version>${guava.version}</guava.version>
+                <atlas.audit.backend>hbase</atlas.audit.backend>
+                <atlas.index.backend>solr</atlas.index.backend>
+                <atlas.storage.backend>hbase</atlas.storage.backend>
+                <atlas.war.audit.excludes />
+                <atlas.war.storage.excludes />
+                <entity.repository.impl>org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.impl>
+                <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.properties>
+                <graph.index.backend>solr</graph.index.backend>
+                <graph.storage.backend>hbase2</graph.storage.backend>
+                <skipDocs>false</skipDocs>
             </properties>
         </profile>
-
+        <!-- ATLAS-5220: audit backend profiles set entity.repository.impl + atlas.audit.backend. -->
+        <profile>
+            <id>audit-cassandra</id>
+            <activation>
+                <property>
+                    <name>atlas.audit.backend</name>
+                    <value>cassandra</value>
+                </property>
+            </activation>
+            <properties>
+                <atlas.audit.backend>cassandra</atlas.audit.backend>
+                <atlas.war.audit.excludes>WEB-INF/lib/atlas-audit-hbase-*.jar,</atlas.war.audit.excludes>
+                <entity.repository.impl>org.apache.atlas.repository.audit.CassandraBasedAuditRepository</entity.repository.impl>
+                <!-- distro filters ${entity.repository.properties} into atlas-application.properties; impl alone is not enough -->
+                <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.CassandraBasedAuditRepository</entity.repository.properties>
+            </properties>
+        </profile>
+        <profile>
+            <id>audit-hbase</id>
+            <activation>
+                <property>
+                    <name>atlas.audit.backend</name>
+                    <value>hbase</value>
+                </property>
+            </activation>
+            <properties>
+                <atlas.audit.backend>hbase</atlas.audit.backend>
+                <atlas.war.audit.excludes />
+                <entity.repository.impl>org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.impl>
+                <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.properties>
+            </properties>
+        </profile>
+        <profile>
+            <id>audit-inmemory</id>
+            <activation>
+                <property>
+                    <name>atlas.audit.backend</name>
+                    <value>inmemory</value>
+                </property>
+            </activation>
+            <properties>
+                <atlas.audit.backend>inmemory</atlas.audit.backend>
+                <atlas.war.audit.excludes>WEB-INF/lib/atlas-audit-hbase-*.jar,</atlas.war.audit.excludes>
+                <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
+                <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.properties>
+            </properties>
+        </profile>
+        <profile>
+            <id>audit-noop</id>
+            <activation>
+                <property>
+                    <name>atlas.audit.backend</name>
+                    <value>noop</value>
+                </property>
+            </activation>
+            <properties>
+                <atlas.audit.backend>noop</atlas.audit.backend>
+                <atlas.war.audit.excludes>WEB-INF/lib/atlas-audit-hbase-*.jar,</atlas.war.audit.excludes>
+                <entity.repository.impl>org.apache.atlas.repository.audit.NoopEntityAuditRepository</entity.repository.impl>
+                <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.NoopEntityAuditRepository</entity.repository.properties>
+            </properties>
+        </profile>
+        <profile>
+            <id>audit-rdbms</id>
+            <activation>
+                <property>
+                    <name>atlas.audit.backend</name>
+                    <value>rdbms</value>
+                </property>
+            </activation>
+            <properties>
+                <atlas.audit.backend>rdbms</atlas.audit.backend>
+                <atlas.war.audit.excludes>WEB-INF/lib/atlas-audit-hbase-*.jar,</atlas.war.audit.excludes>
+                <entity.repository.impl>org.apache.atlas.repository.audit.rdbms.RdbmsBasedAuditRepository</entity.repository.impl>
+                <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.rdbms.RdbmsBasedAuditRepository</entity.repository.properties>
+            </properties>
+        </profile>
         <!-- Turning on this profile affects only tests and does not affect packaging -->
         <profile>
             <id>distributed</id>
@@ -2296,24 +2397,23 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
+                <atlas.audit.backend>hbase</atlas.audit.backend>
+                <atlas.index.backend>solr</atlas.index.backend>
+                <atlas.storage.backend>hbase</atlas.storage.backend>
                 <entity.repository.impl>org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.impl>
+                <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.properties>
                 <graph.index.backend>solr</graph.index.backend>
-                <graph.storage.backend>hbase</graph.storage.backend>
+                <graph.storage.backend>hbase2</graph.storage.backend>
                 <graph.storage.hostname>localhost</graph.storage.hostname>
                 <solr.zk.address>localhost:9983</solr.zk.address>
             </properties>
         </profile>
-
         <profile>
-            <id>dist</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
+            <id>embedded-cassandra-solr</id>
             <properties>
-                <skipDocs>false</skipDocs>
+                <guava.version>${guava.version}</guava.version>
             </properties>
         </profile>
-
         <!-- Graph provider selection profiles
         The following profiles are used to select the graph provider.
         These profiles are mutually exclusive and should be activated by setting the system
@@ -2325,7 +2425,6 @@
         * If GRAPH-PROVIDER is set to anything else, the build will fail.
         Do not activate the graph-provider selection profiles using -P.
         -->
-
         <profile>
             <!-- Default profile, i.e. GRAPH-PROVIDER not set -->
             <id>graph-provider-default</id>
@@ -2335,8 +2434,10 @@
                 </property>
             </activation>
             <properties>
+                <atlas.index.backend>solr</atlas.index.backend>
                 <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/solr-test-framework-*.jar, WEB-INF/lib/jts-*.jar,WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/ant-*.jar</distro.exclude.packages>
                 <graph.index.backend>solr</graph.index.backend>
+                <graph.storage.backend>hbase2</graph.storage.backend>
                 <graphArtifact>atlas-graphdb-janus</graphArtifact>
                 <graphGroup>org.apache.atlas</graphGroup>
                 <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
@@ -2344,7 +2445,6 @@
                 <tests.solr.embedded>true</tests.solr.embedded>
             </properties>
         </profile>
-
         <profile>
             <id>graph-provider-janus</id>
             <activation>
@@ -2354,8 +2454,10 @@
                 </property>
             </activation>
             <properties>
+                <atlas.index.backend>solr</atlas.index.backend>
                 <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/solr-test-framework-*.jar, WEB-INF/lib/jts-*.jar,WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/ant-*.jar</distro.exclude.packages>
                 <graph.index.backend>solr</graph.index.backend>
+                <graph.storage.backend>hbase2</graph.storage.backend>
                 <graphArtifact>atlas-graphdb-janus</graphArtifact>
                 <graphGroup>org.apache.atlas</graphGroup>
                 <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
@@ -2363,13 +2465,66 @@
                 <tests.solr.embedded>true</tests.solr.embedded>
             </properties>
         </profile>
-
+        <!-- ATLAS-5220: index backend (override with -Pindex-*). -->
+        <profile>
+            <id>index-elasticsearch</id>
+            <activation>
+                <property>
+                    <name>atlas.index.backend</name>
+                    <value>elasticsearch</value>
+                </property>
+            </activation>
+            <properties>
+                <atlas.index.backend>elasticsearch</atlas.index.backend>
+                <!-- Filtered into atlas-application.properties as atlas.graph.index.search.backend -->
+                <graph.index.backend>elasticsearch</graph.index.backend>
+            </properties>
+        </profile>
+        <profile>
+            <id>index-solr</id>
+            <properties>
+                <atlas.index.backend>solr</atlas.index.backend>
+            </properties>
+        </profile>
         <profile>
             <id>skipMinify</id>
             <properties>
                 <project.build.dashboardv2.gruntBuild>build</project.build.dashboardv2.gruntBuild>
             </properties>
         </profile>
-
+        <!-- ATLAS-5220: storage backend for atlas-graphdb-janus (override with -Pstorage-*). -->
+        <profile>
+            <id>storage-berkeleyje</id>
+            <properties>
+                <atlas.storage.backend>berkeleyje</atlas.storage.backend>
+                <atlas.war.storage.excludes>WEB-INF/lib/janusgraph-hbase-*.jar,WEB-INF/lib/hadoop-distcp-*.jar,WEB-INF/lib/hbase-shaded-mapreduce-*.jar,</atlas.war.storage.excludes>
+                <graph.storage.backend>berkeleyje</graph.storage.backend>
+            </properties>
+        </profile>
+        <profile>
+            <id>storage-cassandra</id>
+            <properties>
+                <!-- Atlas property (docs/slim); JanusGraph uses short name "cql" for CQL/Cassandra (not "cassandra"). -->
+                <atlas.storage.backend>cassandra</atlas.storage.backend>
+                <atlas.war.storage.excludes>WEB-INF/lib/janusgraph-hbase-*.jar,WEB-INF/lib/hadoop-distcp-*.jar,WEB-INF/lib/hbase-shaded-mapreduce-*.jar,</atlas.war.storage.excludes>
+                <graph.storage.backend>cql</graph.storage.backend>
+            </properties>
+        </profile>
+        <profile>
+            <id>storage-hbase</id>
+            <properties>
+                <atlas.storage.backend>hbase</atlas.storage.backend>
+                <atlas.war.storage.excludes />
+                <graph.storage.backend>hbase2</graph.storage.backend>
+            </properties>
+        </profile>
+        <profile>
+            <id>storage-rdbms</id>
+            <properties>
+                <atlas.storage.backend>rdbms</atlas.storage.backend>
+                <atlas.war.storage.excludes>WEB-INF/lib/janusgraph-hbase-*.jar,WEB-INF/lib/hadoop-distcp-*.jar,WEB-INF/lib/hbase-shaded-mapreduce-*.jar,</atlas.war.storage.excludes>
+                <graph.storage.backend>rdbms</graph.storage.backend>
+            </properties>
+        </profile>
     </profiles>
 </project>
