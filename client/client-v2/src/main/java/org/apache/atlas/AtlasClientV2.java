@@ -69,9 +69,9 @@ import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
-import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPart;
+import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
 import org.glassfish.jersey.media.multipart.file.StreamDataBodyPart;
 
 import javax.ws.rs.HttpMethod;
@@ -85,8 +85,6 @@ import javax.ws.rs.core.Response;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -1131,15 +1129,8 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     private MultiPart getMultiPartData(String fileName) throws AtlasServiceException {
-        try {
-            File                             file        = new File(fileName);
-            InputStream                      inputStream = new FileInputStream(file);
-            final FormDataContentDisposition fd          = FormDataContentDisposition.name("file").fileName(file.getName()).build();
-
-            return new FormDataMultiPart().bodyPart(new StreamDataBodyPart("file", inputStream)).bodyPart(new FormDataBodyPart(fd, "file"));
-        } catch (FileNotFoundException e) {
-            throw new AtlasServiceException(e);
-        }
+        File file = new File(fileName);
+        return new FormDataMultiPart().bodyPart(new FileDataBodyPart("file", file));
     }
 
     private String readStreamContents(InputStream inputStream) throws AtlasServiceException {

@@ -395,10 +395,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetTraitNames() throws Exception {
-        AtlasClassifications classifications = atlasClientV2.getClassifications(createHiveTable().getGuid());
-        assertNotNull(classifications);
-        assertFalse(classifications.getList().isEmpty());
-        assertEquals(classifications.getList().size(), 9);
+        assertBaselineClassifications(createHiveTable().getGuid());
     }
 
     @Test(dependsOnMethods = "testSubmitEntity")
@@ -522,6 +519,8 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         AtlasEntity hiveTable = createHiveTable();
         assertEquals(hiveTable.getClassifications().size(), 7);
 
+        int baselineCount = atlasClientV2.getClassifications(hiveTable.getGuid()).getList().size();
+
         AtlasClassification piiClassification = new AtlasClassification(piiTrait.getName());
 
         atlasClientV2.addClassifications(hiveTable.getGuid(), Lists.newArrayList(piiClassification));
@@ -529,7 +528,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         AtlasClassifications classifications = atlasClientV2.getClassifications(hiveTable.getGuid());
         assertNotNull(classifications);
         assertFalse(classifications.getList().isEmpty());
-        assertEquals(classifications.getList().size(), 9);
+        assertEquals(classifications.getList().size(), baselineCount + 1);
     }
 
     @Test(dependsOnMethods = "testGetTraitNames")
@@ -1200,6 +1199,21 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     private Map<String, String> toMap(final String name, final String value) {
         return new HashMap<>(Collections.singletonMap(name, value));
+    }
+
+    private void assertBaselineClassifications(String entityGuid) throws AtlasServiceException {
+        AtlasClassifications classifications = atlasClientV2.getClassifications(entityGuid);
+        assertNotNull(classifications);
+        assertFalse(classifications.getList().isEmpty());
+
+        Set<String> expectedTraits = new HashSet<>(Arrays.asList(
+                CLASSIFICATION, PII_TAG, PHI_TAG, PCI_TAG, SOX_TAG, SEC_TAG, FINANCE_TAG));
+
+        for (AtlasClassification classification : classifications.getList()) {
+            expectedTraits.remove(classification.getTypeName());
+        }
+
+        assertTrue(expectedTraits.isEmpty(), "Missing baseline classifications: " + expectedTraits);
     }
 
     private AtlasEntityHeader createRandomDatabaseEntity() {

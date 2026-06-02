@@ -36,10 +36,8 @@
         <apache.log4j.version>2.17.1</apache.log4j.version>
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
         <checkstyle.skip>false</checkstyle.skip>
-        <!-- Align minicluster deps with the rest of Atlas (parent hadoop.version = 3.4.2). -->
-        <hadoop.version>3.4.2</hadoop.version>
-        <!-- Hadoop 3.4.x MiniDFS WebHDFS uses Jersey 1 ServletContainer; Glassfish Jersey 2 cannot replace it.
-             Scope test only. Do not override jetty.version: parent Jetty 9.4.x must match Hadoop 3.4. -->
+        <hadoop.version>3.0.3</hadoop.version>
+        <jetty.version>9.3.14.v20161028</jetty.version>
     </properties>
 
     <dependencies>
