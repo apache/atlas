@@ -18,12 +18,27 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-import {
-	RAT_ALIGNED_REQUIRED_MARKERS,
-	contentHasAsfHeader,
-} from '../../scripts/lib/license-header-policy.mjs'
-
 const SCAN_ROOT = path.join(__dirname, '..')
+
+/** Substrings required in the first HEADER_READ_BYTES of each scanned file. */
+const RAT_ALIGNED_REQUIRED_MARKERS = [
+	'Licensed to the Apache Software Foundation',
+	'Apache License, Version 2.0',
+	'http://www.apache.org/licenses/LICENSE-2.0',
+	'Unless required by applicable law or agreed to in writing',
+	'WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND',
+	'limitations under the License',
+]
+
+const contentHasAsfHeader = (head: string): boolean => {
+	const normalized = head
+		.slice(0, HEADER_READ_BYTES)
+		.replace(/\s+/gu, ' ')
+		.trim()
+	return RAT_ALIGNED_REQUIRED_MARKERS.every((marker) =>
+		normalized.includes(marker),
+	)
+}
 
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx'])
 
@@ -96,7 +111,7 @@ const fileStartsWithRatAlignedHeader = (filePath: string): boolean => {
 }
 
 describe('Apache license header in source files', () => {
-	it('requires RAT-aligned markers exported from license-header-policy.mjs', () => {
+	it('requires RAT-aligned ASF license header markers', () => {
 		expect(RAT_ALIGNED_REQUIRED_MARKERS.length).toBeGreaterThanOrEqual(6)
 		expect(RAT_ALIGNED_REQUIRED_MARKERS.join(' ')).toMatch(/LICENSE-2\.0/)
 	})
@@ -128,8 +143,8 @@ describe('Apache license header in source files', () => {
 				'',
 				...relative.map((r) => `  - ${r}`),
 				'',
-				'Required substrings are listed in dashboard/scripts/lib/license-header-policy.mjs',
-				'as RAT_ALIGNED_REQUIRED_MARKERS.',
+				'Required substrings are listed in RAT_ALIGNED_REQUIRED_MARKERS',
+				'in apache-license-header.test.ts.',
 			].join('\n')
 			throw new Error(message)
 		}
