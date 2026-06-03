@@ -78,9 +78,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     public static final String SOLR_ZOOKEEPER_URLS       = "atlas.graph.index.search.solr.zookeeper-urls";
     public static final String INDEX_BACKEND_LUCENE      = "lucene";
     public static final String INDEX_BACKEND_ES          = "elasticsearch";
-    /** Filtered at package time from Maven {@code atlas.storage.backend} (ATLAS-5220). */
     public static final String BUILD_STORAGE_BACKEND_CONF = "atlas.build.storage.backend";
-    /** Filtered at package time from Maven {@code atlas.index.backend} (ATLAS-5220). */
     public static final String BUILD_INDEX_BACKEND_CONF   = "atlas.build.index.backend";
     public static final String GRAPH_TX_LOG_CONF         = "tx.log-tx";
     public static final String GRAPH_TX_LOG_VERBOSE_CONF = "tx.recovery.verbose";
@@ -261,9 +259,6 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         }
     }
 
-    /**
-     * Fail fast when runtime graph config does not match the Maven slim-build profile (ATLAS-5220).
-     */
     static void validateBuildBackendAlignment(Configuration janusConfig) {
         try {
             Configuration appConfig = ApplicationProperties.get();
@@ -442,7 +437,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
      * Register shortName -> FQCN in Janus {@code StandardStoreManager} without loading the class first.
      * Pre-loading with {@link Class#forName(String)} caused missing map entries when the class was not yet
      * visible to the caller's loader at static init time, leading Janus to treat {@code hbase2} as a class name.
-     * Implementation classes are loaded when the graph opens, as in the pre-ATLAS-5220 behavior.
+     * Implementation classes are loaded when the graph opens.
      */
     private static void safeRegisterStoreManager(String shortName, String managerClassName) {
         try {
@@ -498,9 +493,6 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         LOG.debug("Registered Janus index provider {} -> {}", shortName, providerClassName);
     }
 
-    /**
-     * Register Janus shortName → implementation FQCN only when the class is loadable (ATLAS-5220 slim builds may omit JARs).
-     */
     private static void registerJanusOptionalBackends() {
         registerStoreIfLoadable("hbase2", HBASE2_STORE_MANAGER_CLASS);
         registerStoreIfLoadable("cql", CQL_STORE_MANAGER_CLASS);

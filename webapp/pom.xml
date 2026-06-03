@@ -274,7 +274,6 @@
             </exclusions>
         </dependency>
 
-        <!-- ATLAS-5220: default dist/embedded builds use HBase; keep on WAR (profile-only deps were missing from WEB-INF/lib). -->
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-distcp</artifactId>
@@ -829,7 +828,6 @@
     </build>
 
     <profiles>
-        <!-- ATLAS-5220: graph storage JARs (profile id matches root -Pstorage-*). -->
         <profile>
             <id>storage-berkeleyje</id>
             <properties>
