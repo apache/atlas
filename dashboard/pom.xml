@@ -72,10 +72,6 @@
                             <resources>
                                 <resource>
                                     <directory>${project.basedir}/</directory>
-                                    <excludes>
-                                        <exclude>**/node_modules/**</exclude>
-                                        <exclude>**/.vscode/**</exclude>
-                                    </excludes>
                                     <filtering>false</filtering>
                                 </resource>
                             </resources>
