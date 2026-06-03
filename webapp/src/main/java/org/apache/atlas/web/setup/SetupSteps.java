@@ -28,7 +28,7 @@ import org.apache.atlas.setup.SetupException;
 import org.apache.atlas.setup.SetupStep;
 import org.apache.atlas.web.service.AtlasZookeeperSecurityProperties;
 import org.apache.atlas.web.service.CuratorFactory;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.zookeeper.ZooDefs;
