@@ -388,6 +388,7 @@ const QuickSearch = () => {
 				className="global-search-stack"
 				alignItems="center"
 				gap="0.5rem"
+				sx={{ minWidth: 0, flexShrink: 1 }}
 			>
 				<FormControl
 					size="small"
@@ -436,8 +437,8 @@ const QuickSearch = () => {
 						disablePortal
 						className="global-search-autocomplete"
 						sx={{
-							minWidth: 280,
-							flex: 1,
+							minWidth: 150,
+							flex: "1 1 280px",
 							"& + .MuiAutocomplete-popper .MuiAutocomplete-option": {
 								backgroundColor: "white"
 							},

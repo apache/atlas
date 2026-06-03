@@ -28,10 +28,10 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -50,7 +50,7 @@ public class AtlasImportResult implements Serializable {
     private String               hostName;
     private long                 timeStamp;
     private Map<String, Integer> metrics;
-    private List<String>         processedEntities;
+    private Set<String>          processedEntities;
     private OperationStatus      operationStatus;
     private AtlasExportResult    exportResultWithoutData;
 
@@ -66,7 +66,7 @@ public class AtlasImportResult implements Serializable {
         this.timeStamp         = timeStamp;
         this.metrics           = new HashMap<>();
         this.operationStatus   = OperationStatus.FAIL;
-        this.processedEntities = new ArrayList<>();
+        this.processedEntities = new HashSet<>();
     }
 
     public AtlasImportRequest getRequest() {
@@ -135,11 +135,11 @@ public class AtlasImportResult implements Serializable {
         metrics.put(key, currentValue + incrementBy);
     }
 
-    public List<String> getProcessedEntities() {
+    public Set<String> getProcessedEntities() {
         return this.processedEntities;
     }
 
-    public void setProcessedEntities(List<String> processedEntities) {
+    public void setProcessedEntities(Set<String> processedEntities) {
         this.processedEntities = processedEntities;
     }
 
