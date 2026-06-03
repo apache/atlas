@@ -35,7 +35,6 @@
          Some dependencies, like slf4j are excluded from the jar because they are included in Atlas -->
 
     <properties>
-        <!-- Default storage backend for slim packaging; optional backends use storage-* profiles (ATLAS-5220). -->
         <atlas.storage.backend>hbase</atlas.storage.backend>
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
         <checkstyle.skip>false</checkstyle.skip>
@@ -73,7 +72,6 @@
             <artifactId>commons-text</artifactId>
             <version>${commons-text.version}</version>
         </dependency>
-        <!-- Default index: Solr (+Lucene). Elasticsearch: -Pindex-elasticsearch on the WAR (ATLAS-5220). -->
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
@@ -158,7 +156,6 @@
             <artifactId>janusgraph-server</artifactId>
             <version>${janusgraph.version}</version>
             <exclusions>
-                <!-- ATLAS-5220: optional Janus storage backends are profile-scoped; do not pull all from server. -->
                 <exclusion>
                     <groupId>com.codahale.metrics</groupId>
                     <artifactId>*</artifactId>
@@ -296,7 +293,6 @@
         </plugins>
     </build>
 
-    <!-- ATLAS-5220: optional storage backends. HBase stack only when atlas.storage.backend=hbase (default). -->
     <profiles>
         <profile>
             <id>atlas-storage-hbase</id>

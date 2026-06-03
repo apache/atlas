@@ -86,7 +86,6 @@
         <antlr4.version>4.7</antlr4.version>
         <aopalliance.version>1.0</aopalliance.version>
         <aspectj.runtime.version>1.8.7</aspectj.runtime.version>
-        <!-- ATLAS-5220: atlas.audit.backend / atlas.storage.backend / atlas.index.backend for slim packaging; audit pairs with entity.repository.impl. -->
         <atlas.audit.backend>hbase</atlas.audit.backend>
         <atlas.index.backend>solr</atlas.index.backend>
         <atlas.storage.backend>hbase</atlas.storage.backend>
@@ -123,7 +122,6 @@
         <falcon.version>0.8</falcon.version>
         <fastutil.version>6.5.16</fastutil.version>
         <graph.index.backend>solr</graph.index.backend>
-        <!-- Align filtered test/distro graph backend with atlas.storage.backend default (ATLAS-5220). -->
         <graph.storage.backend>hbase2</graph.storage.backend>
         <gson.version>2.9.0</gson.version>
         <guava.version>25.1-jre</guava.version>
@@ -2292,8 +2290,6 @@
     </repositories>
 
     <profiles>
-        <!-- ATLAS-5220: combine with -Pstorage-* / -Paudit-* / -Pindex-*; put -Paudit-* after -Pdist.
-             Embedded: -Pdist,storage-hbase,audit-hbase,embedded-hbase-solr -->
         <profile>
             <id>dist</id>
             <activation>
@@ -2312,7 +2308,6 @@
                 <skipDocs>false</skipDocs>
             </properties>
         </profile>
-        <!-- ATLAS-5220: audit backend profiles set entity.repository.impl + atlas.audit.backend. -->
         <profile>
             <id>audit-cassandra</id>
             <activation>
@@ -2325,7 +2320,6 @@
                 <atlas.audit.backend>cassandra</atlas.audit.backend>
                 <atlas.war.audit.excludes>WEB-INF/lib/hbase-shaded-client-fixed-*.jar,</atlas.war.audit.excludes>
                 <entity.repository.impl>org.apache.atlas.repository.audit.CassandraBasedAuditRepository</entity.repository.impl>
-                <!-- distro filters ${entity.repository.properties} into atlas-application.properties; impl alone is not enough -->
                 <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.CassandraBasedAuditRepository</entity.repository.properties>
             </properties>
         </profile>
@@ -2464,7 +2458,6 @@
                 <tests.solr.embedded>true</tests.solr.embedded>
             </properties>
         </profile>
-        <!-- ATLAS-5220: index backend (override with -Pindex-*). -->
         <profile>
             <id>index-elasticsearch</id>
             <activation>
@@ -2475,7 +2468,6 @@
             </activation>
             <properties>
                 <atlas.index.backend>elasticsearch</atlas.index.backend>
-                <!-- Filtered into atlas-application.properties as atlas.graph.index.search.backend -->
                 <graph.index.backend>elasticsearch</graph.index.backend>
             </properties>
         </profile>
@@ -2491,7 +2483,6 @@
                 <project.build.dashboardv2.gruntBuild>build</project.build.dashboardv2.gruntBuild>
             </properties>
         </profile>
-        <!-- ATLAS-5220: storage backend for atlas-graphdb-janus (override with -Pstorage-*). -->
         <profile>
             <id>storage-berkeleyje</id>
             <properties>
