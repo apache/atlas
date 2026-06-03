@@ -21,27 +21,19 @@
 
     <parent>
         <groupId>org.apache.atlas</groupId>
-        <artifactId>atlas-audit-modules</artifactId>
+        <artifactId>apache-atlas</artifactId>
         <version>3.0.0-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>atlas-audit-hbase</artifactId>
-    <packaging>jar</packaging>
+    <artifactId>atlas-audit-modules</artifactId>
+    <packaging>pom</packaging>
 
-    <name>Apache Atlas Audit (HBase)</name>
-    <description>ATLAS-5220: HBase entity audit repository; include on classpath when atlas.audit.backend=hbase.</description>
+    <name>Apache Atlas Audit Backend Modules</name>
+    <description>ATLAS-5220: optional entity-audit repository implementations (profile-selected at package time).</description>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-repository</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>hbase-shaded-client-fixed</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-    </dependencies>
+    <modules>
+        <module>audit-cassandra</module>
+        <module>audit-hbase</module>
+        <module>audit-rdbms</module>
+    </modules>
 </project>

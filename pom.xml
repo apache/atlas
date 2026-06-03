@@ -54,9 +54,7 @@
         <module>addons/storm-bridge-shim</module>
         <module>addons/trino-extractor</module>
         <module>atlas-examples</module>
-        <module>audit/audit-cassandra</module>
-        <module>audit/audit-hbase</module>
-        <module>audit/audit-rdbms</module>
+        <module>audit</module>
         <module>authorization</module>
         <module>build-tools</module>
         <module>client</module>
