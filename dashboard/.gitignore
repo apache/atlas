@@ -26,5 +26,8 @@ node_modules/
 dist/
 .vite/
 .env
+
+# Local Dependabot export for governance tests (optional)
+config/dependabot-alerts.local.json
 *.log
 .vscode/
