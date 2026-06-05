@@ -43,6 +43,8 @@ import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.security.SecureClientUtils;
+import org.apache.atlas.token.retriever.JwTokenRetrieverDefault;
+import org.apache.atlas.token.retriever.TokenRetriever;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AuthenticationUtil;
@@ -69,8 +71,10 @@ import java.net.ConnectException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
+import static org.apache.atlas.token.retriever.JwTokenRetrieverDefault.JWT_SOURCE;
 
 public abstract class AtlasBaseClient {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasBaseClient.class);
@@ -109,6 +113,8 @@ public abstract class AtlasBaseClient {
     private static final API    EXPORT                  = new API(BASE_URI + ADMIN_EXPORT, HttpMethod.POST, Response.Status.OK, MediaType.APPLICATION_JSON, MediaType.APPLICATION_OCTET_STREAM);
     private static final String IMPORT_REQUEST_PARAMTER = "request";
     private static final String IMPORT_DATA_PARAMETER   = "data";
+    private static final String AUTHORIZATION_HEADER    = "Authorization";
+    private static final String JWT_AUTHZ_PREFIX        = "Bearer ";
 
     protected WebResource        service;
     protected Configuration      configuration;
@@ -117,6 +123,8 @@ public abstract class AtlasBaseClient {
     private   AtlasClientContext atlasClientContext;
     private   boolean            retryEnabled;
     private   Cookie             cookie;
+    private   boolean            useJwtAuth;
+    private   TokenRetriever<String> tokenRetriever;
 
     private SecureClientUtils clientUtils;
 
@@ -361,7 +369,7 @@ public abstract class AtlasBaseClient {
 
         final URLConnectionClientHandler handler;
 
-        if (isKerberosEnabled) {
+        if (isKerberosEnabled && !useJwtAuth) {
             handler = clientUtils.getClientConnectionHandler(config, configuration, doAsUser, ugi);
         } else {
             if (configuration.getBoolean(TLS_ENABLED, false)) {
@@ -457,6 +465,8 @@ public abstract class AtlasBaseClient {
                 requestBuilder.cookie(cookie);
             }
 
+            handleJwt(requestBuilder);
+
             clientResponse = requestBuilder.method(api.getMethod(), ClientResponse.class, requestObject);
 
             LOG.debug("HTTP Status  : {}", clientResponse.getStatus());
@@ -537,11 +547,13 @@ public abstract class AtlasBaseClient {
     }
 
     void initializeState(Configuration configuration, String[] baseUrls, UserGroupInformation ugi, String doAsUser) {
-        this.configuration = configuration;
+        this.configuration  = configuration;
+        useJwtAuth          = isJwtSourceConfigured(configuration);
+        tokenRetriever      = useJwtAuth ? getJwtTokenRetriever(configuration) : null;
 
         Client client = getClient(configuration, ugi, doAsUser);
 
-        if ((!AuthenticationUtil.isKerberosAuthenticationEnabled()) && basicAuthUser != null && basicAuthPassword != null) {
+        if (!useJwtAuth && (!AuthenticationUtil.isKerberosAuthenticationEnabled()) && basicAuthUser != null && basicAuthPassword != null) {
             final HTTPBasicAuthFilter authFilter = new HTTPBasicAuthFilter(basicAuthUser, basicAuthPassword);
 
             client.addFilter(authFilter);
@@ -551,6 +563,36 @@ public abstract class AtlasBaseClient {
 
         atlasClientContext = new AtlasClientContext(baseUrls, client, ugi, doAsUser);
         service            = client.resource(UriBuilder.fromUri(activeServiceUrl).build());
+    }
+
+    private TokenRetriever<String> getJwtTokenRetriever(Configuration configuration) {
+        return new JwTokenRetrieverDefault(configuration);
+    }
+
+    private boolean isJwtSourceConfigured(Configuration configuration) {
+        if (configuration == null) {
+            return false;
+        }
+
+        String jwtSource = configuration.getString(JWT_SOURCE, "");
+        return StringUtils.isNotBlank(jwtSource);
+    }
+
+    private void handleJwt(com.sun.jersey.api.client.WebResource.Builder requestBuilder) {
+        if (!useJwtAuth) {
+            return;
+        }
+        if (tokenRetriever == null) {
+            LOG.warn("AtlasBaseClient.handleJwt(): tokenRetriever is null. Skipping JWT header injection.");
+            return;
+        }
+
+        Optional<String> jwtOptional = tokenRetriever.retrieve();
+        if (jwtOptional.isPresent()) {
+            requestBuilder.header(AUTHORIZATION_HEADER, JWT_AUTHZ_PREFIX + jwtOptional.get());
+        } else {
+            LOG.warn("AtlasBaseClient.handleJwt(): JWT token not available from configured retriever. Authorization header not set.");
+        }
     }
 
     void sleepBetweenRetries() {

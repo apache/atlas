@@ -54,6 +54,7 @@
         <module>addons/storm-bridge-shim</module>
         <module>addons/trino-extractor</module>
         <module>atlas-examples</module>
+        <module>authn</module>
         <module>authorization</module>
         <module>build-tools</module>
         <module>client</module>
@@ -158,6 +159,7 @@
         <maven-plugin-sortpom.version>3.0.1</maven-plugin-sortpom.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <netty.version>4.1.125.Final</netty.version>
+        <nimbus-jose-jwt.version>9.37.3</nimbus-jose-jwt.version>
         <node-for-v1.version>v22.14.0</node-for-v1.version>
         <node-for-v2.version>v12.16.0</node-for-v2.version>
         <npm-for-v1.version>10.9.2</npm-for-v1.version>
@@ -260,6 +262,12 @@
                         <artifactId>junit</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>${nimbus-jose-jwt.version}</version>
             </dependency>
 
             <dependency>
