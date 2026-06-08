@@ -62,8 +62,8 @@
     </beans:bean>
     <beans:bean id="atlasADProvider" class="org.apache.atlas.server.common.security.AtlasADAuthenticationProvider"/>
     <beans:bean id="atlasPamProvider" class="org.apache.atlas.server.common.security.AtlasPamAuthenticationProvider"/>
-    <beans:bean id="atlasKeycloakProvider" class="org.apache.atlas.web.security.AtlasKeycloakAuthenticationProvider"/>
-    <beans:bean id="atlasAuthenticationProvider" class="org.apache.atlas.web.security.AtlasAuthenticationProvider">
+    <beans:bean id="atlasKeycloakProvider" class="org.apache.atlas.server.common.security.AtlasKeycloakAuthenticationProvider"/>
+    <beans:bean id="atlasAuthenticationProvider" class="org.apache.atlas.server.common.security.AtlasAuthenticationProvider">
         <beans:constructor-arg index="0" ref="atlasLDAPProvider"/>
         <beans:constructor-arg index="1" ref="atlasFileProvider"/>
         <beans:constructor-arg index="2" ref="atlasADProvider"/>

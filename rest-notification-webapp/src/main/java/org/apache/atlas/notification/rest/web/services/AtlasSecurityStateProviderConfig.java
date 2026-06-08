@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.notification.rest.web.security;
+package org.apache.atlas.notification.rest.web.services;
 
 import org.apache.atlas.server.common.service.ActiveInstanceState;
 import org.apache.atlas.server.common.service.ServiceState;

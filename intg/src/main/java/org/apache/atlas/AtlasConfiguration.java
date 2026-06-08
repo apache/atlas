@@ -44,6 +44,7 @@ public enum AtlasConfiguration {
     NOTIFICATION_HOOK_CONSUMER_BUFFERING_BATCH_SIZE("atlas.notification.consumer.message.buffering.batch.size", 100),
 
     NOTIFICATION_HOOK_REST_ENABLED("atlas.hook.rest.notification.enabled", false),
+    NOTIFICATION_HOOK_REST_ADDRESS("atlas.hook.rest.notification.address", ""),
     NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES("atlas.notification.hook.consumer.topic.names", "ATLAS_HOOK"), //  a comma separated list of topic names
     NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES("atlas.notification.entities.consumer.topic.names", "ATLAS_ENTITIES"), //  a comma separated list of topic names
 

@@ -777,7 +777,11 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
     @Override
     @GraphTransaction
-    public void deleteTypeByName(String typeName) throws AtlasBaseException {
+    public void deleteTypeByName(String typeName, boolean forceDelete) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> deleteTypeByName({}, forceDelete={})", typeName, forceDelete);
+        }
+
         AtlasType atlasType = typeRegistry.getType(typeName);
 
         if (atlasType == null) {

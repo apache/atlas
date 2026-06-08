@@ -141,7 +141,7 @@ then
 fi
 
 JAVA_PROPERTIES="$ATLAS_OPTS -Datlas.log.dir=$ATLAS_LOG_DIR -Datlas.log.file=import-hbase.log
--Dlog4j.configuration=atlas-hbase-import-log4j.xml"
+-Dlog4j.configurationFile=atlas-hbase-import-logback.xml"
 
 IMPORT_ARGS=
 JVM_ARGS=

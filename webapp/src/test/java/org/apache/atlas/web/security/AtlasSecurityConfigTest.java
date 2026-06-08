@@ -26,6 +26,7 @@ import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.server.common.filters.AtlasDelegatingAuthenticationEntryPoint;
 import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
+import org.apache.atlas.server.common.security.AtlasAuthenticationProvider;
 import org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler;
 import org.apache.atlas.web.filters.StaleTransactionCleanupFilter;
 import org.apache.commons.configuration.Configuration;
@@ -46,6 +47,7 @@ import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -155,23 +157,34 @@ public class AtlasSecurityConfigTest {
         MockitoAnnotations.openMocks(this);
     }
 
+    @SuppressWarnings("unchecked")
+    private static <T> ObjectProvider<T> objectProvider(T value) {
+        ObjectProvider<T> p = mock(ObjectProvider.class);
+        when(p.getIfAvailable()).thenReturn(value);
+        return p;
+    }
+
+    private AtlasSecurityConfig newTestAtlasSecurityConfig() {
+        return new AtlasSecurityConfig(
+                objectProvider(mockSsoAuthenticationFilter),
+                objectProvider(mockCsrfPreventionFilter),
+                objectProvider(mockAtlasAuthenticationFilter),
+                mockAuthenticationProvider,
+                mockSuccessHandler,
+                mockFailureHandler,
+                mockAtlasAuthenticationEntryPoint,
+                mockConfiguration,
+                objectProvider(mockActiveServerFilter),
+                objectProvider(mockStaleTransactionCleanupFilter));
+    }
+
     @Test
     public void testConstructor_WithKeycloakDisabled() throws Exception {
         // Setup
         when(mockConfiguration.getBoolean(AtlasAuthenticationProvider.KEYCLOAK_AUTH_METHOD, false)).thenReturn(false);
 
         // Execute
-        atlasSecurityConfig = new AtlasSecurityConfig(
-                mockSsoAuthenticationFilter,
-                mockCsrfPreventionFilter,
-                mockAtlasAuthenticationFilter,
-                mockAuthenticationProvider,
-                mockSuccessHandler,
-                mockFailureHandler,
-                mockAtlasAuthenticationEntryPoint,
-                mockConfiguration,
-                mockStaleTransactionCleanupFilter,
-                mockActiveServerFilter);
+        atlasSecurityConfig = newTestAtlasSecurityConfig();
 
         // Verify using reflection
         assertFalse((Boolean) getPrivateField(atlasSecurityConfig, "keycloakEnabled"));
@@ -187,17 +200,7 @@ public class AtlasSecurityConfigTest {
         when(mockConfiguration.getBoolean(AtlasAuthenticationProvider.KEYCLOAK_AUTH_METHOD, false)).thenReturn(true);
 
         // Execute
-        atlasSecurityConfig = new AtlasSecurityConfig(
-                mockSsoAuthenticationFilter,
-                mockCsrfPreventionFilter,
-                mockAtlasAuthenticationFilter,
-                mockAuthenticationProvider,
-                mockSuccessHandler,
-                mockFailureHandler,
-                mockAtlasAuthenticationEntryPoint,
-                mockConfiguration,
-                mockStaleTransactionCleanupFilter,
-                mockActiveServerFilter);
+        atlasSecurityConfig = newTestAtlasSecurityConfig();
 
         // Verify using reflection
         assertTrue((Boolean) getPrivateField(atlasSecurityConfig, "keycloakEnabled"));
@@ -346,18 +349,8 @@ public class AtlasSecurityConfigTest {
             setupKeycloakConfiguration();
         }
 
-        // Create AtlasSecurityConfig instance
-        AtlasSecurityConfig configInstance = new AtlasSecurityConfig(
-                mockSsoAuthenticationFilter,
-                mockCsrfPreventionFilter,
-                mockAtlasAuthenticationFilter,
-                mockAuthenticationProvider,
-                mockSuccessHandler,
-                mockFailureHandler,
-                mockAtlasAuthenticationEntryPoint,
-                mockConfiguration,
-                mockStaleTransactionCleanupFilter,
-                mockActiveServerFilter);
+        // Execute
+        AtlasSecurityConfig configInstance = newTestAtlasSecurityConfig();
 
         // Set up comprehensive HttpSecurity mocking first
         setupHttpSecurityMocks();
@@ -431,17 +424,7 @@ public class AtlasSecurityConfigTest {
         }
 
         // Create fresh AtlasSecurityConfig instance
-        AtlasSecurityConfig configInstance = new AtlasSecurityConfig(
-                mockSsoAuthenticationFilter,
-                mockCsrfPreventionFilter,
-                mockAtlasAuthenticationFilter,
-                mockAuthenticationProvider,
-                mockSuccessHandler,
-                mockFailureHandler,
-                mockAtlasAuthenticationEntryPoint,
-                mockConfiguration,
-                mockStaleTransactionCleanupFilter,
-                mockActiveServerFilter);
+        AtlasSecurityConfig configInstance = newTestAtlasSecurityConfig();
 
         // Create fresh HttpSecurity mock for each test to avoid state pollution
         HttpSecurity freshHttpSecurity = mock(HttpSecurity.class);
@@ -582,17 +565,7 @@ public class AtlasSecurityConfigTest {
         when(mockConfiguration.getBoolean(AtlasAuthenticationProvider.KEYCLOAK_AUTH_METHOD, false)).thenReturn(true);
         setupKeycloakConfiguration("/path/to/keycloak.json");
 
-        atlasSecurityConfig = new AtlasSecurityConfig(
-                mockSsoAuthenticationFilter,
-                mockCsrfPreventionFilter,
-                mockAtlasAuthenticationFilter,
-                mockAuthenticationProvider,
-                mockSuccessHandler,
-                mockFailureHandler,
-                mockAtlasAuthenticationEntryPoint,
-                mockConfiguration,
-                mockStaleTransactionCleanupFilter,
-                mockActiveServerFilter);
+        atlasSecurityConfig = newTestAtlasSecurityConfig();
 
         setPrivateField(atlasSecurityConfig, "keycloakConfigFileResource", mockKeycloakConfigFileResource);
 
@@ -812,17 +785,17 @@ public class AtlasSecurityConfigTest {
     @Test
     public void testInjectAnnotation() throws Exception {
         // Verify @Inject annotation on constructor
-        Inject injectAnnotation = AtlasSecurityConfig.class.getConstructor(
-                AtlasKnoxSSOAuthenticationFilter.class,
-                AtlasCSRFPreventionFilter.class,
-                AtlasAuthenticationFilter.class,
+        Inject injectAnnotation = AtlasSecurityConfig.class.getDeclaredConstructor(
+                ObjectProvider.class,
+                ObjectProvider.class,
+                ObjectProvider.class,
                 AtlasAuthenticationProvider.class,
                 AtlasAuthenticationSuccessHandler.class,
                 AtlasAuthenticationFailureHandler.class,
                 AtlasAuthenticationEntryPoint.class,
                 Configuration.class,
-                StaleTransactionCleanupFilter.class,
-                ActiveServerFilter.class
+                ObjectProvider.class,
+                ObjectProvider.class
         ).getAnnotation(Inject.class);
         assertNotNull(injectAnnotation);
     }
@@ -837,17 +810,7 @@ public class AtlasSecurityConfigTest {
             setupKeycloakConfiguration();
         }
 
-        atlasSecurityConfig = new AtlasSecurityConfig(
-                mockSsoAuthenticationFilter,
-                mockCsrfPreventionFilter,
-                mockAtlasAuthenticationFilter,
-                mockAuthenticationProvider,
-                mockSuccessHandler,
-                mockFailureHandler,
-                mockAtlasAuthenticationEntryPoint,
-                mockConfiguration,
-                mockStaleTransactionCleanupFilter,
-                mockActiveServerFilter);
+        atlasSecurityConfig = newTestAtlasSecurityConfig();
 
         // Set the keycloakConfigFileResource using reflection
         setPrivateField(atlasSecurityConfig, "keycloakConfigFileResource", mockKeycloakConfigFileResource);
@@ -943,9 +906,18 @@ public class AtlasSecurityConfigTest {
 
     private void setPrivateField(Object target, String fieldName, Object value) {
         try {
-            Field field = target.getClass().getDeclaredField(fieldName);
-            field.setAccessible(true);
-            field.set(target, value);
+            Class<?> c = target.getClass();
+            while (c != null) {
+                try {
+                    Field field = c.getDeclaredField(fieldName);
+                    field.setAccessible(true);
+                    field.set(target, value);
+                    return;
+                } catch (NoSuchFieldException e) {
+                    c = c.getSuperclass();
+                }
+            }
+            throw new NoSuchFieldException(fieldName);
         } catch (Exception e) {
             throw new RuntimeException("Failed to set private field: " + fieldName, e);
         }
@@ -953,9 +925,17 @@ public class AtlasSecurityConfigTest {
 
     private Object getPrivateField(Object target, String fieldName) {
         try {
-            Field field = target.getClass().getDeclaredField(fieldName);
-            field.setAccessible(true);
-            return field.get(target);
+            Class<?> c = target.getClass();
+            while (c != null) {
+                try {
+                    Field field = c.getDeclaredField(fieldName);
+                    field.setAccessible(true);
+                    return field.get(target);
+                } catch (NoSuchFieldException e) {
+                    c = c.getSuperclass();
+                }
+            }
+            throw new NoSuchFieldException(fieldName);
         } catch (Exception e) {
             throw new RuntimeException("Failed to get private field: " + fieldName, e);
         }

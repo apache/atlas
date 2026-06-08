@@ -20,6 +20,7 @@ package org.apache.atlas.web.security;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.server.common.security.AtlasAuthenticationException;
+import org.apache.atlas.server.common.security.AtlasAuthenticationProvider;
 import org.apache.atlas.web.TestUtils;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.io.FileUtils;
@@ -84,7 +85,7 @@ public class FileAuthenticationTest {
         ctx.refresh();
 
         applicationContext = ctx;
-        authProvider       = applicationContext.getBean(org.apache.atlas.web.security.AtlasAuthenticationProvider.class);
+        authProvider       = applicationContext.getBean(AtlasAuthenticationProvider.class);
     }
 
     @Test

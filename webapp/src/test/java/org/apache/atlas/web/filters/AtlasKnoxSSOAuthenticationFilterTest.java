@@ -26,7 +26,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.server.common.filters.SSOAuthenticationProperties;
 import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBridge;
-import org.apache.atlas.web.security.AtlasAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasAuthenticationProvider;
 import org.apache.commons.configuration.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;

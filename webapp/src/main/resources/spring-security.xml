@@ -90,7 +90,7 @@
 
 
     <beans:bean id="atlasAuthenticationProvider"
-                class="org.apache.atlas.web.security.AtlasAuthenticationProvider">
+                class="org.apache.atlas.server.common.security.AtlasAuthenticationProvider">
     </beans:bean>
 
     <security:authentication-manager

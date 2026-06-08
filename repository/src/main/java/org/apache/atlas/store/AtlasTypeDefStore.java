@@ -109,7 +109,7 @@ public interface AtlasTypeDefStore {
 
     AtlasBaseTypeDef getByGuid(String guid) throws AtlasBaseException;
 
-    void deleteTypeByName(String typeName) throws AtlasBaseException;
+    void deleteTypeByName(String typeName, boolean forceDelete) throws AtlasBaseException;
 
     void notifyLoadCompletion();
 }

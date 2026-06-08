@@ -23,7 +23,7 @@
         <artifactId>apache-atlas</artifactId>
         <version>3.0.0-SNAPSHOT</version>
     </parent>
-
+    <groupId>org.apache.atlas</groupId>
     <artifactId>rest-notification-webapp</artifactId>
     <packaging>war</packaging>
 
@@ -201,7 +201,6 @@
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 

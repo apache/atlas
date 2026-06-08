@@ -18,6 +18,7 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBridge;
+import org.apache.atlas.server.common.security.AtlasAuthenticationProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;

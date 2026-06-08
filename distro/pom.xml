@@ -270,6 +270,7 @@ atlas.graph.storage.hbase.regions-per-server=1
                                         <descriptor>src/main/assemblies/atlas-kafka-hook-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/atlas-couchbase-hook-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/atlas-server-package.xml</descriptor>
+                                        <descriptor>src/main/assemblies/rest-server-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/standalone-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/src-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/atlas-repair-index-package.xml</descriptor>

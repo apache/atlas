@@ -593,7 +593,7 @@ public class TypesRESTTest {
     public void testDeleteAtlasTypeByName_Success() throws AtlasBaseException {
         // Setup
         String typeName = "test_type";
-        doNothing().when(typeDefStore).deleteTypeByName(typeName);
+        doNothing().when(typeDefStore).deleteTypeByName(typeName, false);
 
         try (MockedStatic<AtlasPerfTracer> mockedPerfTracer = mockStatic(AtlasPerfTracer.class)) {
             mockedPerfTracer.when(() -> AtlasPerfTracer.isPerfTraceEnabled(any())).thenReturn(false);
@@ -602,7 +602,7 @@ public class TypesRESTTest {
             typesREST.deleteAtlasTypeByName(typeName);
 
             // Verify
-            verify(typeDefStore).deleteTypeByName(typeName);
+            verify(typeDefStore).deleteTypeByName(typeName, false);
         }
     }
 
@@ -610,7 +610,7 @@ public class TypesRESTTest {
     public void testDeleteAtlasTypeByName_WithPerfTracerEnabled() throws AtlasBaseException {
         // Setup
         String typeName = "test_type_perf";
-        doNothing().when(typeDefStore).deleteTypeByName(typeName);
+        doNothing().when(typeDefStore).deleteTypeByName(typeName, false);
 
         try (MockedStatic<AtlasPerfTracer> mockedPerfTracer = mockStatic(AtlasPerfTracer.class)) {
             mockedPerfTracer.when(() -> AtlasPerfTracer.isPerfTraceEnabled(any())).thenReturn(true);
@@ -620,7 +620,7 @@ public class TypesRESTTest {
             typesREST.deleteAtlasTypeByName(typeName);
 
             // Verify
-            verify(typeDefStore).deleteTypeByName(typeName);
+            verify(typeDefStore).deleteTypeByName(typeName, false);
             mockedPerfTracer.verify(() -> AtlasPerfTracer.isPerfTraceEnabled(any()));
             mockedPerfTracer.verify(() -> AtlasPerfTracer.getPerfTracer(any(), anyString()));
         }
@@ -631,7 +631,7 @@ public class TypesRESTTest {
         // Setup
         String typeName = "test_type_error";
         AtlasBaseException exception = new AtlasBaseException("Delete by name failed");
-        doThrow(exception).when(typeDefStore).deleteTypeByName(typeName);
+        doThrow(exception).when(typeDefStore).deleteTypeByName(typeName, false);
 
         try (MockedStatic<AtlasPerfTracer> mockedPerfTracer = mockStatic(AtlasPerfTracer.class)) {
             mockedPerfTracer.when(() -> AtlasPerfTracer.isPerfTraceEnabled(any())).thenReturn(false);
@@ -642,7 +642,7 @@ public class TypesRESTTest {
             });
 
             assertEquals(thrownException.getMessage(), "Delete by name failed");
-            verify(typeDefStore).deleteTypeByName(typeName);
+            verify(typeDefStore).deleteTypeByName(typeName, false);
         }
     }
 

@@ -441,7 +441,7 @@ public class TypesREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeByName(" + typeName + ")");
             }
 
-            typeDefStore.deleteTypeByName(typeName);
+            typeDefStore.deleteTypeByName(typeName, false);
         } finally {
             AtlasPerfTracer.log(perf);
         }

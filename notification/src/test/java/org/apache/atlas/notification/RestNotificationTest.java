@@ -27,6 +27,7 @@ import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.notification.rest.RestNotification;
+import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.mockito.Matchers;
 import org.mockito.Mock;
@@ -37,6 +38,7 @@ import org.testng.annotations.Test;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -130,5 +132,64 @@ public class RestNotificationTest {
         when(resourceBuilderMock.type(MediaType.APPLICATION_JSON + "; charset=UTF-8")).thenReturn(resourceBuilderMock);
 
         return resourceBuilderMock;
+    }
+
+    @Test
+    public void testRestNotificationEndpointPrefersHookRestAddress() throws Exception {
+        Configuration localConf = new BaseConfiguration();
+        localConf.setProperty("atlas.hook.rest.notification.address", "http://atlas-rest.example.com:41000/rest");
+        localConf.setProperty("atlas.rest.address", "http://atlas-main.example.com:21000");
+        localConf.setProperty("atlas.rest.basic.auth.username", "admin");
+        localConf.setProperty("atlas.rest.basic.auth.password", "admin123");
+
+        RestNotification restNotification = new RestNotification(localConf);
+
+        String[] configuredEndpoints = getConfiguredBaseUrls(restNotification.atlasClientV2);
+
+        assertEquals(configuredEndpoints.length, 1);
+        assertEquals(configuredEndpoints[0], "http://atlas-rest.example.com:41000/rest");
+    }
+
+    @Test
+    public void testRestNotificationEndpointFallsBackToAtlasRestAddress() throws Exception {
+        Configuration localConf = new BaseConfiguration();
+        localConf.setProperty("atlas.rest.address", "http://atlas-main.example.com:21000");
+        localConf.setProperty("atlas.rest.basic.auth.username", "admin");
+        localConf.setProperty("atlas.rest.basic.auth.password", "admin123");
+
+        RestNotification restNotification = new RestNotification(localConf);
+
+        String[] configuredEndpoints = getConfiguredBaseUrls(restNotification.atlasClientV2);
+
+        assertEquals(configuredEndpoints.length, 1);
+        assertEquals(configuredEndpoints[0], "http://atlas-main.example.com:21000");
+    }
+
+    @Test
+    public void testRestNotificationFallsBackToAtlasRestWhenNotificationAddressesAllBlank() throws Exception {
+        Configuration localConf = new BaseConfiguration();
+        localConf.addProperty("atlas.hook.rest.notification.address", "");
+        localConf.addProperty("atlas.hook.rest.notification.address", "   ");
+        localConf.setProperty("atlas.rest.address", "http://atlas-main.example.com:21000");
+        localConf.setProperty("atlas.rest.basic.auth.username", "admin");
+        localConf.setProperty("atlas.rest.basic.auth.password", "admin123");
+
+        RestNotification restNotification = new RestNotification(localConf);
+
+        String[] configuredEndpoints = getConfiguredBaseUrls(restNotification.atlasClientV2);
+
+        assertEquals(configuredEndpoints.length, 1);
+        assertEquals(configuredEndpoints[0], "http://atlas-main.example.com:21000");
+    }
+
+    private String[] getConfiguredBaseUrls(AtlasClientV2 atlasClientV2) throws Exception {
+        Field clientContextField = AtlasBaseClient.class.getDeclaredField("atlasClientContext");
+        clientContextField.setAccessible(true);
+        Object clientContext = clientContextField.get(atlasClientV2);
+
+        Field baseUrlsField = clientContext.getClass().getDeclaredField("baseUrls");
+        baseUrlsField.setAccessible(true);
+
+        return (String[]) baseUrlsField.get(clientContext);
     }
 }

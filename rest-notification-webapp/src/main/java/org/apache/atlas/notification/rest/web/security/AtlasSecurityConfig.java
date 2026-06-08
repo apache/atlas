@@ -17,105 +17,58 @@
  */
 package org.apache.atlas.notification.rest.web.security;
 
-import org.apache.atlas.server.common.filters.ActiveServerFilter;
-import org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint;
-import org.apache.atlas.server.common.filters.AtlasAuthenticationFilter;
-import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
-import org.apache.atlas.server.common.filters.AtlasDelegatingAuthenticationEntryPoint;
-import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
-import org.apache.atlas.server.common.filters.HeadersUtil;
-import org.apache.atlas.server.common.filters.spi.ActiveInstanceStateProvider;
-import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBridge;
-import org.apache.atlas.server.common.filters.spi.ServiceStateProvider;
+import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
 import org.apache.atlas.server.common.security.AtlasAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Bean;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.security.web.authentication.DelegatingAuthenticationEntryPoint;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-import org.springframework.security.web.header.writers.StaticHeadersWriter;
-import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
-import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import javax.inject.Inject;
-import java.util.LinkedHashMap;
 
-import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
-import org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler;
-
+/**
+ * Spring Security configuration for the Atlas rest-notification-webapp.
+ *
+ * Why this class was created
+ * Before this commit, {@code server-common/AtlasSecurityConfig} was a concrete
+ * {@code @EnableWebSecurity} class. It also injected
+ * {@code @Qualifier("staleTransactionCleanupFilter")} — a bean that only exists
+ * in the webapp Spring context. When rest-notification-webapp started, Spring
+ * threw {@code NoSuchBeanDefinitionException} because no such bean was registered,
+ * preventing the Kerberos authentication filter chain from initializing.
+ *
+ * This class was created to be the SINGLE {@code @EnableWebSecurity} authority
+ * for rest-notification-webapp — completely separate from webapp's security config.
+ *
+ * What is intentionally ABSENT here (compared to webapp)
+ *  NO {@code staleTransactionCleanupFilter} — rest-notification makes no direct
+ *  JanusGraph writes and has no such bean in its context
+ *  NO form login ({@code addWebUiFormLogin}) — rest-notification is a headless
+ *  REST server with no browser UI, login page, or interactive sessions.
+ */
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
-public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasSecurityConfig.class);
-
-    private final AtlasAuthenticationProvider       authenticationProvider;
-    private final AtlasAuthenticationSuccessHandler successHandler;
-    private final AtlasAuthenticationFailureHandler failureHandler;
-    private final AtlasKnoxSSOAuthenticationFilter  ssoAuthenticationFilter;
-    private final AtlasAuthenticationFilter         atlasAuthenticationFilter;
-    private final AtlasCSRFPreventionFilter         csrfPreventionFilter;
-    private final AtlasAuthenticationEntryPoint     atlasAuthenticationEntryPoint;
-
-    // Our own Atlas filters need to be registered as well
-    private final Configuration      configuration;
-    private final ActiveServerFilter activeServerFilter;
-
+public class AtlasSecurityConfig extends org.apache.atlas.server.common.security.AtlasSecurityConfig {
     @Inject
-    public AtlasSecurityConfig(AtlasKnoxSSOAuthenticationFilter ssoAuthenticationFilter,
-                               AtlasCSRFPreventionFilter atlasCSRFPreventionFilter,
-                               AtlasAuthenticationFilter atlasAuthenticationFilter,
+    public AtlasSecurityConfig(ObjectProvider<org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter> ssoAuthenticationFilterProvider,
+                               ObjectProvider<org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter> csrfPreventionFilterProvider,
+                               ObjectProvider<org.apache.atlas.server.common.filters.AtlasAuthenticationFilter> atlasAuthenticationFilterProvider,
                                AtlasAuthenticationProvider authenticationProvider,
                                AtlasAuthenticationSuccessHandler successHandler,
                                AtlasAuthenticationFailureHandler failureHandler,
-                               AtlasAuthenticationEntryPoint atlasAuthenticationEntryPoint,
+                               org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint atlasAuthenticationEntryPoint,
                                Configuration configuration,
-                               ActiveServerFilter activeServerFilter)
-
-    {
-        this.ssoAuthenticationFilter = ssoAuthenticationFilter;
-        this.csrfPreventionFilter = atlasCSRFPreventionFilter;
-        this.atlasAuthenticationFilter = atlasAuthenticationFilter;
-        this.authenticationProvider = authenticationProvider;
-        this.successHandler = successHandler;
-        this.failureHandler = failureHandler;
-        this.atlasAuthenticationEntryPoint = atlasAuthenticationEntryPoint;
-        this.configuration = configuration;
-        this.activeServerFilter = activeServerFilter;
-    }
-
-    public AuthenticationEntryPoint getAuthenticationEntryPoint() {
-        LinkedHashMap<RequestMatcher, AuthenticationEntryPoint> entryPointMap = new LinkedHashMap<>();
-        entryPointMap.put(new RequestHeaderRequestMatcher(HeadersUtil.USER_AGENT_KEY, HeadersUtil.USER_AGENT_VALUE), atlasAuthenticationEntryPoint);
-        AtlasDelegatingAuthenticationEntryPoint basicAuthenticationEntryPoint = new AtlasDelegatingAuthenticationEntryPoint(entryPointMap);
-        return basicAuthenticationEntryPoint;
-    }
-
-    public DelegatingAuthenticationEntryPoint getDelegatingAuthenticationEntryPoint() {
-        LinkedHashMap<RequestMatcher, AuthenticationEntryPoint> entryPointMap = new LinkedHashMap<>();
-        entryPointMap.put(new RequestHeaderRequestMatcher("User-Agent", "Mozilla"), atlasAuthenticationEntryPoint);
-        DelegatingAuthenticationEntryPoint entryPoint = new DelegatingAuthenticationEntryPoint(entryPointMap);
-        entryPoint.setDefaultEntryPoint(getAuthenticationEntryPoint());
-        return entryPoint;
-    }
-
-    @Inject
-    protected void configure(AuthenticationManagerBuilder authenticationManagerBuilder) {
-        authenticationManagerBuilder.authenticationProvider(authenticationProvider);
+                               ObjectProvider<org.apache.atlas.server.common.filters.ActiveServerFilter> activeServerFilterProvider) {
+        super(ssoAuthenticationFilterProvider, csrfPreventionFilterProvider, atlasAuthenticationFilterProvider,
+                authenticationProvider, successHandler, failureHandler, atlasAuthenticationEntryPoint, configuration,
+                activeServerFilterProvider);
     }
 
     @Override
-    public void configure(WebSecurity web) throws Exception {
+    public void configure(WebSecurity web) {
         web.ignoring()
                 .antMatchers("/login.jsp",
                         "/css/**",
@@ -128,79 +81,13 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
                         "/n/js/**",
                         "/ieerror.html",
                         "/migration-status.html",
-                        "/api/atlas/admin/status");
+                        "/rest/api/atlas/admin/status");
     }
 
+    @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception {
-
-        //@formatter:off
-        httpSecurity
-                .authorizeRequests().anyRequest().authenticated()
-                .and()
-                .headers()
-                .addHeaderWriter(new StaticHeadersWriter(HeadersUtil.CONTENT_SEC_POLICY_KEY, HeadersUtil.getHeaderMap(HeadersUtil.CONTENT_SEC_POLICY_KEY)))
-                .addHeaderWriter(new StaticHeadersWriter(HeadersUtil.SERVER_KEY, HeadersUtil.getHeaderMap(HeadersUtil.SERVER_KEY)))
-                .and()
-                .servletApi()
-                .and()
-                .csrf().disable()
-                .sessionManagement()
-                .enableSessionUrlRewriting(false)
-                .sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
-                .sessionFixation()
-                .newSession()
-                .and()
-                .httpBasic()
-                .authenticationEntryPoint(getDelegatingAuthenticationEntryPoint());
-
-
-        if (configuration.getBoolean("atlas.server.ha.enabled", false)) {
-            LOG.info("Atlas is in HA Mode, enabling ActiveServerFilter");
-            httpSecurity.addFilterAfter(activeServerFilter, BasicAuthenticationFilter.class);
-        }
-        httpSecurity
-                .addFilterBefore(ssoAuthenticationFilter, BasicAuthenticationFilter.class)
-                .addFilterAfter(atlasAuthenticationFilter, SecurityContextHolderAwareRequestFilter.class)
-                .addFilterAfter(csrfPreventionFilter, AtlasAuthenticationFilter.class);
-    }
-
-    @Bean
-    public AtlasAuthenticationProviderBridge atlasAuthenticationProviderBridge(AtlasAuthenticationProvider authenticationProvider) {
-        return new AtlasAuthenticationProviderBridge() {
-            @Override
-            public java.util.List<org.springframework.security.core.GrantedAuthority> getAuthoritiesFromUGI(String userName) {
-                return AtlasAuthenticationProvider.getAuthoritiesFromUGI(userName);
-            }
-
-            @Override
-            public void setSsoEnabled(boolean enabled) {
-                authenticationProvider.setSsoEnabled(enabled);
-            }
-
-            @Override
-            public org.springframework.security.core.Authentication authenticate(org.springframework.security.core.Authentication authentication) {
-                return authenticationProvider.authenticate(authentication);
-            }
-        };
-    }
-
-    @Bean
-    public ActiveServerFilter commonActiveServerFilter(ActiveInstanceStateProvider activeInstanceStateProvider, ServiceStateProvider serviceStateProvider) {
-        return new ActiveServerFilter(activeInstanceStateProvider, serviceStateProvider);
-    }
-
-    @Bean
-    public AtlasAuthenticationFilter commonAtlasAuthenticationFilter(AtlasAuthenticationProviderBridge atlasAuthenticationProviderBridge) {
-        return new AtlasAuthenticationFilter(atlasAuthenticationProviderBridge);
-    }
-
-    @Bean
-    public AtlasKnoxSSOAuthenticationFilter commonAtlasKnoxSSOAuthenticationFilter(AtlasAuthenticationProviderBridge atlasAuthenticationProviderBridge) {
-        return new AtlasKnoxSSOAuthenticationFilter(atlasAuthenticationProviderBridge);
-    }
-
-    @Bean
-    public AtlasCSRFPreventionFilter commonAtlasCSRFPreventionFilter() {
-        return new AtlasCSRFPreventionFilter();
+        configureCommonHttpSecurity(httpSecurity);
+        addHaAndMigrationGuards(httpSecurity);
+        addCommonAuthFilters(httpSecurity);
     }
 }
