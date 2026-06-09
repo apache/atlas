@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "postinstall": "chmod +x node_modules/@esbuild/linux-x64/bin/esbuild 2>/dev/null || true",
+    "postinstall": "node scripts/ensure-native-deps.mjs",
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 200",
@@ -88,6 +88,16 @@
     "ts-jest": "29.4.6",
     "typescript": "5.2.2",
     "vite": "6.4.2"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-darwin-arm64": "4.59.0",
+    "@rollup/rollup-darwin-x64": "4.59.0",
+    "@rollup/rollup-linux-arm64-gnu": "4.59.0",
+    "@rollup/rollup-linux-arm64-musl": "4.59.0",
+    "@rollup/rollup-linux-x64-gnu": "4.59.0",
+    "@rollup/rollup-linux-x64-musl": "4.59.0",
+    "@rollup/rollup-win32-arm64-msvc": "4.59.0",
+    "@rollup/rollup-win32-x64-msvc": "4.59.0"
   },
   "overrides": {
     "loader-utils": "3.2.1",
