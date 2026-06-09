@@ -20,6 +20,8 @@ package org.apache.atlas.repository.store.bootstrap;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
@@ -55,6 +57,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration2.Configuration;
@@ -462,6 +465,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     new RemoveLegacyRefAttributesPatchHandler(typeDefStore, typeRegistry),
                     new UpdateTypeDefOptionsPatchHandler(typeDefStore, typeRegistry),
                     new SetServiceTypePatchHandler(typeDefStore, typeRegistry),
+                    new AttributeDefOverridesAndPropagateRenamePatchHandler(typeDefStore, typeRegistry),
                     new UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph),
                     new AddSuperTypePatchHandler(typeDefStore, typeRegistry),
                     new AddMandatoryAttributePatchHandler(typeDefStore, typeRegistry)
@@ -1176,6 +1180,149 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             }
 
             return ret;
+        }
+    }
+
+    /**
+     * Handles {@code SET_ATTRIBUTE_DEF_OVERRIDES} on entity typedefs and {@code SET_PROPAGATE_RENAME} on relationship typedef end defs.
+     * Optional {@code params.propagateAttributes} for {@code SET_PROPAGATE_RENAME}: a JSON array of objects, each copied to a {@code HashMap<String,String>} on the patched end.
+     */
+    static class AttributeDefOverridesAndPropagateRenamePatchHandler extends PatchHandler {
+        private static final String ACTION_SET_ATTRIBUTE_DEF_OVERRIDES = "SET_ATTRIBUTE_DEF_OVERRIDES";
+        private static final String ACTION_SET_PROPAGATE_RENAME        = "SET_PROPAGATE_RENAME";
+        /** Patch JSON key under {@code params}: value is {@code "endDef1"} or {@code "endDef2"} (string, not numeric). */
+        private static final String PARAM_END_DEF_TOKEN                = "endDefToken";
+        /** Optional: JSON array of objects under {@code params}; each object becomes one {@code Map<String,String>}. */
+        private static final String PARAM_PROPAGATE_ATTRIBUTES         = "propagateAttributes";
+
+        public AttributeDefOverridesAndPropagateRenamePatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
+            super(typeDefStore, typeRegistry, new String[] {ACTION_SET_ATTRIBUTE_DEF_OVERRIDES, ACTION_SET_PROPAGATE_RENAME});
+        }
+
+        @Override
+        public PatchStatus applyPatch(TypeDefPatch patch) throws AtlasBaseException {
+            String           typeName = patch.getTypeName();
+            AtlasBaseTypeDef typeDef  = typeRegistry.getTypeDefByName(typeName);
+
+            if (typeDef == null) {
+                throw new AtlasBaseException(AtlasErrorCode.PATCH_FOR_UNKNOWN_TYPE, patch.getAction(), typeName);
+            }
+
+            if (!isPatchApplicable(patch, typeDef)) {
+                LOG.info("patch skipped: typeName={}; applyToVersion={}; updateToVersion={}", patch.getTypeName(),
+                        patch.getApplyToVersion(), patch.getUpdateToVersion());
+
+                return SKIPPED;
+            }
+
+            LOG.debug("AttributeDefOverridesAndPropagateRenamePatchHandler.applyPatch(): id={}; action={}; typeName={}",
+                    patch.getId(), patch.getAction(), typeName);
+
+            String action = patch.getAction();
+
+            if (ACTION_SET_ATTRIBUTE_DEF_OVERRIDES.equals(action)) {
+                if (!(typeDef instanceof AtlasEntityDef)) {
+                    throw new AtlasBaseException(AtlasErrorCode.PATCH_NOT_APPLICABLE_FOR_TYPE, patch.getAction(),
+                            typeDef.getClass().getSimpleName());
+                }
+
+                return applyEntityDefOverrides(patch, (AtlasEntityDef) typeDef);
+            } else if (ACTION_SET_PROPAGATE_RENAME.equals(action)) {
+                if (!(typeDef instanceof AtlasRelationshipDef)) {
+                    throw new AtlasBaseException(AtlasErrorCode.PATCH_NOT_APPLICABLE_FOR_TYPE, patch.getAction(),
+                            typeDef.getClass().getSimpleName());
+                }
+
+                return applyPropagateRename(patch, (AtlasRelationshipDef) typeDef);
+            }
+
+            throw new AtlasBaseException(AtlasErrorCode.PATCH_INVALID_DATA, patch.getAction(), typeName);
+        }
+
+        private PatchStatus applyEntityDefOverrides(TypeDefPatch patch, AtlasEntityDef typeDef) throws AtlasBaseException {
+            AtlasEntityDef updatedDef = new AtlasEntityDef(typeDef);
+
+            updatedDef.setAttributeDefOverrides(patch.getAttributeDefs());
+            updatedDef.setTypeVersion(patch.getUpdateToVersion());
+
+            int overrideCount = CollectionUtils.isEmpty(patch.getAttributeDefs()) ? 0 : patch.getAttributeDefs().size();
+
+            LOG.debug("AttributeDefOverridesAndPropagateRenamePatchHandler.applyEntityDefOverrides(): entityType={}; overrideCount={}; updateToVersion={}",
+                    typeDef.getName(), overrideCount, patch.getUpdateToVersion());
+
+            typeDefStore.updateEntityDefByName(typeDef.getName(), updatedDef);
+
+            LOG.info("patch applied: id={}; action={}; entityType={}; attributeDefOverrides={}; typeVersion={}",
+                    patch.getId(), ACTION_SET_ATTRIBUTE_DEF_OVERRIDES, typeDef.getName(), overrideCount,
+                    patch.getUpdateToVersion());
+
+            return APPLIED;
+        }
+
+        private PatchStatus applyPropagateRename(TypeDefPatch patch, AtlasRelationshipDef typeDef) throws AtlasBaseException {
+            Object endDefObj = patch.getParams() != null ? patch.getParams().get(PARAM_END_DEF_TOKEN) : null;
+            String endDefToken = endDefObj != null ? String.valueOf(endDefObj).trim() : null;
+            boolean useEndDef2 = "endDef2".equalsIgnoreCase(endDefToken);
+            boolean useEndDef1 = "endDef1".equalsIgnoreCase(endDefToken);
+
+            if (endDefToken == null || (!useEndDef1 && !useEndDef2)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
+                        "SET_PROPAGATE_RENAME patch for '" + typeDef.getName()
+                                + "' must set params." + PARAM_END_DEF_TOKEN + " to the string \"endDef1\" or \"endDef2\", got: "
+                                + endDefToken);
+            }
+
+            AtlasRelationshipDef updatedDef = new AtlasRelationshipDef(typeDef);
+
+            if (useEndDef2) {
+                AtlasRelationshipEndDef end2 = new AtlasRelationshipEndDef(updatedDef.getEndDef2());
+
+                end2.setIsPropagateRename(true);
+                setPropagateAttributesFromParamsIfPresent(patch.getParams(), end2);
+                updatedDef.setEndDef2(end2);
+            } else {
+                AtlasRelationshipEndDef end1 = new AtlasRelationshipEndDef(updatedDef.getEndDef1());
+
+                end1.setIsPropagateRename(true);
+                setPropagateAttributesFromParamsIfPresent(patch.getParams(), end1);
+                updatedDef.setEndDef1(end1);
+            }
+
+            updatedDef.setTypeVersion(patch.getUpdateToVersion());
+
+            LOG.debug("AttributeDefOverridesAndPropagateRenamePatchHandler.applyPropagateRename(): relationshipType={}; endDefToken={}; updateToVersion={}",
+                    typeDef.getName(), endDefToken, patch.getUpdateToVersion());
+
+            typeDefStore.updateRelationshipDefByName(typeDef.getName(), updatedDef);
+
+            LOG.info("patch applied: id={}; action={}; relationshipType={}; endDefToken={}; typeVersion={}",
+                    patch.getId(), ACTION_SET_PROPAGATE_RENAME, typeDef.getName(), endDefToken, patch.getUpdateToVersion());
+
+            return APPLIED;
+        }
+
+        /** If {@code params} contains {@code propagateAttributes}, coerces via {@link AtlasJson#getMapper()} {@code convertValue} to {@code List<Map<String,String>>}. */
+        private static void setPropagateAttributesFromParamsIfPresent(Map<String, Object> params, AtlasRelationshipEndDef endDef) throws AtlasBaseException {
+            if (MapUtils.isEmpty(params) || !params.containsKey(PARAM_PROPAGATE_ATTRIBUTES)) {
+                return;
+            }
+            Object raw = params.get(PARAM_PROPAGATE_ATTRIBUTES);
+            if (raw == null) {
+                endDef.setPropagateAttributes(Collections.emptyList());
+                return;
+            }
+            if (!(raw instanceof List)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
+                        "SET_PROPAGATE_RENAME: params.propagateAttributes must be a JSON array");
+            }
+            try {
+                List<Map<String, String>> rows = ((ObjectMapper) AtlasJson.getMapper()).convertValue(raw,
+                        new TypeReference<List<Map<String, String>>>() { });
+                endDef.setPropagateAttributes(rows);
+            } catch (IllegalArgumentException ex) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, ex,
+                        "SET_PROPAGATE_RENAME: params.propagateAttributes must be a JSON array of objects");
+            }
         }
     }
 
