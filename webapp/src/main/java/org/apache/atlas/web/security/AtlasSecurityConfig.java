@@ -22,6 +22,7 @@ import org.apache.atlas.web.filters.AtlasAuthenticationEntryPoint;
 import org.apache.atlas.web.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.filters.AtlasDelegatingAuthenticationEntryPoint;
+import org.apache.atlas.web.filters.AtlasHeaderPreAuthFilter;
 import org.apache.atlas.web.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.web.filters.HeadersUtil;
 import org.apache.atlas.web.filters.StaleTransactionCleanupFilter;
@@ -93,6 +94,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
     private final AtlasAuthenticationProvider       authenticationProvider;
     private final AtlasAuthenticationSuccessHandler successHandler;
     private final AtlasAuthenticationFailureHandler failureHandler;
+    private final AtlasHeaderPreAuthFilter          headerPreAuthFilter;
     private final AtlasKnoxSSOAuthenticationFilter  ssoAuthenticationFilter;
     private final AtlasAuthenticationFilter         atlasAuthenticationFilter;
     private final AtlasCSRFPreventionFilter         csrfPreventionFilter;
@@ -111,7 +113,8 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
     private KeycloakConfigResolver keycloakConfigResolver;
 
     @Inject
-    public AtlasSecurityConfig(AtlasKnoxSSOAuthenticationFilter ssoAuthenticationFilter,
+    public AtlasSecurityConfig(AtlasHeaderPreAuthFilter headerPreAuthFilter,
+            AtlasKnoxSSOAuthenticationFilter ssoAuthenticationFilter,
             AtlasCSRFPreventionFilter atlasCSRFPreventionFilter,
             AtlasAuthenticationFilter atlasAuthenticationFilter,
             AtlasAuthenticationProvider authenticationProvider,
@@ -121,6 +124,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
             Configuration configuration,
             StaleTransactionCleanupFilter staleTransactionCleanupFilter,
             ActiveServerFilter activeServerFilter) {
+        this.headerPreAuthFilter           = headerPreAuthFilter;
         this.ssoAuthenticationFilter       = ssoAuthenticationFilter;
         this.csrfPreventionFilter          = atlasCSRFPreventionFilter;
         this.atlasAuthenticationFilter     = atlasAuthenticationFilter;
@@ -238,8 +242,9 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
             httpSecurity.addFilterAfter(activeServerFilter, BasicAuthenticationFilter.class);
         }
 
-        httpSecurity.addFilterAfter(staleTransactionCleanupFilter, BasicAuthenticationFilter.class)
-                .addFilterBefore(ssoAuthenticationFilter, BasicAuthenticationFilter.class)
+        httpSecurity.addFilterBefore(headerPreAuthFilter, BasicAuthenticationFilter.class)
+                .addFilterAfter(ssoAuthenticationFilter, AtlasHeaderPreAuthFilter.class)
+                .addFilterAfter(staleTransactionCleanupFilter, BasicAuthenticationFilter.class)
                 .addFilterAfter(atlasAuthenticationFilter, SecurityContextHolderAwareRequestFilter.class)
                 .addFilterAfter(csrfPreventionFilter, AtlasAuthenticationFilter.class);
 

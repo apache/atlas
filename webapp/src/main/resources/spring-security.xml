@@ -34,6 +34,7 @@
         <security:session-management
                 session-fixation-protection="newSession" />
         <intercept-url pattern="/**" access="isAuthenticated()" />
+        <security:custom-filter position="PRE_AUTH_FILTER" ref="headerPreAuthFilter" />
         <custom-filter ref="ssoAuthenticationFilter" after="BASIC_AUTH_FILTER" />
 
         <security:custom-filter ref="krbAuthenticationFilter" after="SERVLET_API_SUPPORT_FILTER" />
@@ -53,6 +54,9 @@
         <headers disabled="true"/>
         <csrf disabled="true"/>
     </security:http>
+
+    <beans:bean id="headerPreAuthFilter" class="org.apache.atlas.web.filters.AtlasHeaderPreAuthFilter">
+    </beans:bean>
 
     <beans:bean id="krbAuthenticationFilter" class="org.apache.atlas.web.filters.AtlasAuthenticationFilter">
     </beans:bean>
