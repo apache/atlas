@@ -438,11 +438,9 @@ describe('SideBarTree', () => {
 			expect(switchElement).toBeInTheDocument()
 		})
 
-		it('should render AccountTreeIcon for CustomFilters tree', async () => {
-			const mockSetIsEmptyServicetype = jest.fn()
+		it('should not render empty-type toggle for CustomFilters tree', async () => {
 			renderComponent({
 				treeName: 'CustomFilters',
-				setisEmptyServicetype: mockSetIsEmptyServicetype,
 				isEmptyServicetype: false
 			})
 
@@ -450,8 +448,9 @@ describe('SideBarTree', () => {
 				expect(screen.getByTestId('simple-tree-view')).toBeInTheDocument()
 			})
 
-			const accountTreeIcon = screen.getByTestId('account-tree-icon')
-			expect(accountTreeIcon).toBeInTheDocument()
+			expect(screen.queryByTestId('account-tree-icon')).not.toBeInTheDocument()
+			expect(screen.queryByTestId('ant-switch')).not.toBeInTheDocument()
+			expect(screen.getByTestId('icon-button')).toBeInTheDocument()
 		})
 	})
 
@@ -1036,16 +1035,18 @@ describe('SideBarTree', () => {
 			})
 		})
 
-		it('should return correct title for CustomFilters', async () => {
+		it('should render CustomFilters header without empty-type toggle', async () => {
 			renderComponent({
 				treeName: 'CustomFilters',
 				isEmptyServicetype: false
 			})
 
 			await waitFor(() => {
-				const accountTreeIcon = screen.getByTestId('account-tree-icon')
-				expect(accountTreeIcon).toBeInTheDocument()
+				expect(screen.getByTestId('simple-tree-view')).toBeInTheDocument()
 			})
+
+			expect(screen.queryByTestId('ant-switch')).not.toBeInTheDocument()
+			expect(screen.queryByTestId('account-tree-icon')).not.toBeInTheDocument()
 		})
 	})
 
@@ -2024,7 +2025,7 @@ describe('SideBarTree', () => {
 			}
 		})
 
-		it('should toggle isEmptyServicetype for CustomFilters', async () => {
+		it('should not toggle isEmptyServicetype for CustomFilters', async () => {
 			const mockSetIsEmptyServicetype = jest.fn()
 			renderComponent({
 				treeName: 'CustomFilters',
@@ -2036,12 +2037,9 @@ describe('SideBarTree', () => {
 				expect(screen.getByTestId('simple-tree-view')).toBeInTheDocument()
 			})
 
-			const accountTreeIcon = screen.getByTestId('account-tree-icon')
-			await act(async () => {
-				fireEvent.click(accountTreeIcon)
-			})
-
-			expect(mockSetIsEmptyServicetype).toHaveBeenCalledWith(true)
+			expect(screen.queryByTestId('account-tree-icon')).not.toBeInTheDocument()
+			expect(screen.queryByTestId('ant-switch')).not.toBeInTheDocument()
+			expect(mockSetIsEmptyServicetype).not.toHaveBeenCalled()
 		})
 	})
 })
