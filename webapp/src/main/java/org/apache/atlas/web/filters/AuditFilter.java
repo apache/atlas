@@ -83,7 +83,7 @@ public class AuditFilter implements Filter {
         final Date                requestTime        = new Date();
         final HttpServletRequest  httpRequest        = (HttpServletRequest) request;
         final HttpServletResponse httpResponse       = (HttpServletResponse) response;
-        final String              requestId          = UUID.randomUUID().toString();
+        final String              requestId          = getRequestId(httpRequest);
         final Thread              currentThread      = Thread.currentThread();
         final String              oldName            = currentThread.getName();
         final String              user               = AtlasAuthorizationUtils.getCurrentUserName();
@@ -138,6 +138,15 @@ public class AuditFilter implements Filter {
 
     private String formatName(String oldName, String requestId) {
         return oldName + " - " + requestId;
+    }
+
+    private String getRequestId(HttpServletRequest httpRequest) {
+        String requestId = (String) httpRequest.getAttribute(AtlasHeaderPreAuthFilter.REQUEST_ID_ATTRIBUTE);
+        if (StringUtils.isNotEmpty(requestId)) {
+            return requestId;
+        }
+
+        return UUID.randomUUID().toString();
     }
 
     private void recordAudit(HttpServletRequest httpRequest, Date when, String who, int httpStatus, long timeTaken) {
