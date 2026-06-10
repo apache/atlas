@@ -1944,12 +1944,12 @@
             <id>kbhatt</id>
             <name>Keval Bhatt</name>
             <email>kbhatt@apache.org</email>
-            <organization>Freestone Infotech</organization>
+            <organization>Oracle America Inc</organization>
             <roles>
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <timezone>Asia/Kolkata</timezone>
+            <timezone>America/Los_Angeles</timezone>
         </developer>
         <developer>
             <id>madhan</id>
