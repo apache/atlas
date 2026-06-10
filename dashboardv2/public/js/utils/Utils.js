@@ -1341,5 +1341,59 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             el.attr('disabled', false);
         }, 1000);
     }
+
+    /**
+     * Normalizes typedef option schemaElementsAttribute (string | string[] or
+     * comma-separated) into relationship names for schema API calls.
+     */
+    Utils.normalizeSchemaElementsAttribute = function(raw) {
+        if (raw === undefined || raw === null) {
+            return [];
+        }
+        if (_.isArray(raw)) {
+            return _.chain(raw).map(function(s) {
+                return String(s).trim();
+            }).filter(function(s) {
+                return s.length > 0;
+            }).value();
+        }
+        var s = String(raw).trim();
+        if (!s.length) {
+            return [];
+        }
+        if (s.indexOf(',') !== -1) {
+            return _.chain(s.split(',')).map(function(p) {
+                return p.trim();
+            }).filter(function(p) {
+                return p.length > 0;
+            }).value();
+        }
+        return [s];
+    };
+
+    /**
+     * Serializes GET /v2/search/relationship query params; repeats attributes=a&attributes=b.
+     */
+    Utils.serializeRelationshipQueryParams = function(params) {
+        var parts = [];
+        _.each(params, function(val, key) {
+            if (val === undefined || val === null) {
+                return;
+            }
+            if (key === 'attributes' && _.isArray(val)) {
+                _.each(val, function(a) {
+                    parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(String(a)));
+                });
+                return;
+            }
+            if (typeof val === 'boolean') {
+                parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(val ? 'true' : 'false'));
+                return;
+            }
+            parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(String(val)));
+        });
+        return parts.join('&');
+    };
+
     return Utils;
 });

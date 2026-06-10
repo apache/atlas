@@ -44,10 +44,16 @@ public class AtlasBusinessMetadataType extends AtlasStructType {
 
     private final AtlasBusinessMetadataDef businessMetadataDef;
 
+    private boolean hasNonIndexableAttributes;
+
     public AtlasBusinessMetadataType(AtlasBusinessMetadataDef businessMetadataDef) {
         super(businessMetadataDef);
 
         this.businessMetadataDef = businessMetadataDef;
+    }
+
+    public boolean hasNonIndexableAttributes() {
+        return hasNonIndexableAttributes;
     }
 
     @Override
@@ -70,6 +76,8 @@ public class AtlasBusinessMetadataType extends AtlasStructType {
         super.resolveReferences(typeRegistry);
 
         Map<String, AtlasBusinessAttribute> a = new HashMap<>();
+
+        hasNonIndexableAttributes = false;
 
         for (AtlasAttribute attribute : super.allAttributes.values()) {
             AtlasAttributeDef attributeDef = attribute.getAttributeDef();
@@ -115,10 +123,16 @@ public class AtlasBusinessMetadataType extends AtlasStructType {
                 bmAttribute = new AtlasBusinessAttribute(attribute, entityTypes);
             }
 
+            if (!hasNonIndexableAttributes && !attributeDef.getIsIndexable()) {
+                hasNonIndexableAttributes = true;
+            }
+
             a.put(attrName, bmAttribute);
         }
 
         super.allAttributes = Collections.unmodifiableMap(a);
+        LOG.debug("CACHE-POPULATE [Phase1] BM='{}' hasNonIndexableAttributes={} totalAttributes={}",
+                getTypeName(), hasNonIndexableAttributes, a.size());
     }
 
     @Override
@@ -137,6 +151,29 @@ public class AtlasBusinessMetadataType extends AtlasStructType {
         }
     }
 
+    @Override
+    void resolveReferencesPhase3(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+        super.resolveReferencesPhase3(typeRegistry);
+
+        for (AtlasAttribute attribute : super.allAttributes.values()) {
+            AtlasBusinessAttribute bmAttribute = (AtlasBusinessAttribute) attribute;
+            Set<AtlasEntityType>   entityTypes = bmAttribute.getApplicableEntityTypes();
+
+            if (CollectionUtils.isNotEmpty(entityTypes)) {
+                Set<String> expandedTypeNames = new HashSet<>();
+
+                for (AtlasEntityType entityType : entityTypes) {
+                    expandedTypeNames.add(entityType.getTypeName());
+                    expandedTypeNames.addAll(entityType.getAllSubTypes());
+                }
+
+                bmAttribute.applicableEntityTypeNamesWithSubTypes = Collections.unmodifiableSet(expandedTypeNames);
+                LOG.debug("CACHE-POPULATE [Phase3] BM='{}' attr='{}' expandedTypes={}",
+                        getTypeName(), bmAttribute.getName(), expandedTypeNames);
+            }
+        }
+    }
+
     public AtlasBusinessMetadataDef getBusinessMetadataDef() {
         return businessMetadataDef;
     }
@@ -145,6 +182,8 @@ public class AtlasBusinessMetadataType extends AtlasStructType {
         private final Set<AtlasEntityType> applicableEntityTypes;
         private final int                  maxStringLength;
         private final String               validPattern;
+
+        private Set<String> applicableEntityTypeNamesWithSubTypes = Collections.emptySet();
 
         public AtlasBusinessAttribute(AtlasAttribute attribute, Set<AtlasEntityType> applicableEntityTypes) {
             super(attribute);
@@ -169,6 +208,10 @@ public class AtlasBusinessMetadataType extends AtlasStructType {
 
         public Set<AtlasEntityType> getApplicableEntityTypes() {
             return applicableEntityTypes;
+        }
+
+        public Set<String> getApplicableEntityTypeNamesWithSubTypes() {
+            return applicableEntityTypeNamesWithSubTypes;
         }
 
         public String getValidPattern() {

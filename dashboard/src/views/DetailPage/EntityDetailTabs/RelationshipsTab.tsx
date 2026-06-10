@@ -33,6 +33,11 @@ import RelationshipCardSkeleton from "./RelationshipCardSkeleton";
 import { getRelationShipV2 } from "@api/apiMethods/searchApiMethod";
 import { useParams } from "react-router-dom";
 import { serverError } from "@utils/Utils";
+import {
+  buildRelationshipSearchParams,
+  DEFAULT_RELATIONSHIP_PAGE_LIMIT,
+  getMinPageLimitForTotal
+} from "@utils/relationshipSearchQuery";
 import { useSelector } from "react-redux";
 import { EntityState } from "@models/relationshipSearchType";
 
@@ -155,20 +160,6 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
     setChecked(event.target.checked);
   };
 
-  // Fetch initial relationship attributes data
-  /** Page limit may be 1 only when the card total is 0 or 1; otherwise minimum is 2. */
-  const getMinPageLimitForTotal = (totalCount?: number): number => {
-    if (typeof totalCount !== "number" || !Number.isFinite(totalCount)) {
-      return 1;
-    }
-    if (totalCount <= 0) {
-      return 1;
-    }
-    return totalCount <= 1 ? 1 : 2;
-  };
-
-  const DEFAULT_RELATIONSHIP_PAGE_LIMIT = 100;
-
   const getPageLimit = (relationName: string, totalCount?: number) => {
     const minL = getMinPageLimitForTotal(totalCount);
     const currentLimit = pageLimitByAttr[relationName];
@@ -214,20 +205,15 @@ const RelationshipsTab: React.FC<EntityDetailTabProps> = ({
               DEFAULT_RELATIONSHIP_PAGE_LIMIT
             )
           : getPageLimit(relationName, totalCount);
-    return {
+    return buildRelationshipSearchParams({
+      guid: guid as string,
+      relation: relationName,
       limit,
       offset,
-      guid,
-      sortBy: isSorted ? "name" : undefined,
-      sortOrder: isSorted ? "ASCENDING" : undefined,
-      disableDefaultSorting: !isSorted,
-      excludeDeletedEntities: !showDeleted,
-      includeSubClassifications: true,
-      includeSubTypes: true,
-      includeClassificationAttributes: true,
-      relation: relationName,
+      isSorted,
+      showDeleted,
       getApproximateCount: offset === 0
-    };
+    });
   };
 
   const fetchRelationshipData = async (

@@ -44,6 +44,7 @@ import org.janusgraph.core.schema.JanusGraphManagement.IndexBuilder;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.schema.PropertyKeyMaker;
+import org.janusgraph.core.schema.SchemaAction;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
@@ -68,9 +69,10 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static org.janusgraph.core.schema.SchemaAction.DISABLE_INDEX;
 import static org.janusgraph.core.schema.SchemaAction.ENABLE_INDEX;
+import static org.janusgraph.core.schema.SchemaStatus.DISABLED;
 import static org.janusgraph.core.schema.SchemaStatus.ENABLED;
-import static org.janusgraph.core.schema.SchemaStatus.INSTALLED;
 import static org.janusgraph.core.schema.SchemaStatus.REGISTERED;
 
 /**
@@ -94,55 +96,76 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         this.graph      = graph;
     }
 
-    public static void updateSchemaStatus(JanusGraphManagement mgmt, JanusGraph graph, Class<? extends Element> elementType) {
+    public void updateSchemaStatus(JanusGraphManagement mgmt, JanusGraph graph, Class<? extends Element> elementType) {
         LOG.info("updating SchemaStatus for {}: Starting...", elementType.getSimpleName());
+        int count = 0;
 
-        int                       count    = 0;
         Iterable<JanusGraphIndex> iterable = mgmt.getGraphIndexes(elementType);
 
         for (JanusGraphIndex index : iterable) {
-            if (index.isCompositeIndex()) {
-                PropertyKey[] propertyKeys = index.getFieldKeys();
-                SchemaStatus  status       = index.getIndexStatus(propertyKeys[0]);
-                String        indexName    = index.name();
-
-                try {
-                    if (status == REGISTERED) {
-                        JanusGraphManagement management = null;
-
-                        try {
-                            management = graph.openManagement();
-
-                            JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
-
-                            management.updateIndex(indexToUpdate, ENABLE_INDEX).get();
-                        } finally {
-                            if (management != null) {
-                                management.commit();
-                            }
-                        }
-
-                        GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, indexName).status(ENABLED).call();
-
-                        if (!report.getConvergedKeys().isEmpty() && report.getConvergedKeys().containsKey(indexName)) {
-                            LOG.info("SchemaStatus updated for index: {}, from {} to {}.", index.name(), REGISTERED, ENABLED);
-
-                            count++;
-                        } else if (!report.getNotConvergedKeys().isEmpty() && report.getNotConvergedKeys().containsKey(indexName)) {
-                            LOG.error("SchemaStatus failed to update index: {}, from {} to {}.", index.name(), REGISTERED, ENABLED);
-                        }
-                    } else if (status == INSTALLED) {
-                        LOG.warn("SchemaStatus {} found for index: {}", INSTALLED, indexName);
-                    }
-                } catch (InterruptedException e) {
-                    LOG.error("IllegalStateException for indexName : {}, Exception: ", indexName, e);
-                } catch (ExecutionException e) {
-                    LOG.error("ExecutionException for indexName : {}, Exception: ", indexName, e);
-                }
-            }
+            enableIndex(index.name());
+            count++;
         }
 
         LOG.info("updating SchemaStatus for {}: {}: Done!", elementType.getSimpleName(), count);
+    }
+
+    public void disableIndex(String propertyName) {
+        updateIndex(propertyName, DISABLE_INDEX);
+    }
+
+    public void enableIndex(String propertyName) {
+        updateIndex(propertyName, ENABLE_INDEX);
+    }
+
+    private void updateIndex(String indexName, SchemaAction action) {
+        try {
+            JanusGraphManagement management    = null;
+            JanusGraph           janusGraph    = this.graph.getGraph();
+            SchemaStatus         waitForStatus = null;
+            SchemaStatus         currentStatus = null;
+
+            try {
+                management                      = janusGraph.openManagement();
+                JanusGraphIndex indexToUpdate   = management.getGraphIndex(indexName);
+
+                if (indexToUpdate != null && indexToUpdate.isCompositeIndex()) {
+                    PropertyKey[] propertyKeys  = indexToUpdate.getFieldKeys();
+                    currentStatus               = indexToUpdate.getIndexStatus(propertyKeys[0]);
+
+                    if (action == ENABLE_INDEX && currentStatus == REGISTERED) {
+                        waitForStatus = ENABLED;
+                        management.updateIndex(indexToUpdate, action).get();
+                    } else if (action == DISABLE_INDEX && (currentStatus == ENABLED || currentStatus == REGISTERED)) {
+                        waitForStatus = DISABLED;
+                        management.updateIndex(indexToUpdate, action).get();
+                    } else {
+                        LOG.warn("SchemaStatus {} found for index: {}, cannot {}", currentStatus, indexToUpdate.name(), action);
+                        return;
+                    }
+                } else {
+                    LOG.warn("Index: {} not found or not a composite index, cannot {} for index: {}", indexName, action, indexToUpdate != null ? indexToUpdate : "null");
+                }
+            } finally {
+                if (management != null) {
+                    management.commit();
+                }
+            }
+
+            if (currentStatus != null && waitForStatus != null) {
+                GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(janusGraph, indexName).status(waitForStatus).call();
+
+                if (!report.getConvergedKeys().isEmpty() && report.getConvergedKeys().containsKey(indexName)) {
+                    LOG.info("SchemaStatus updated for index: {}, from {} to {}.", indexName, currentStatus, waitForStatus);
+                } else if (!report.getNotConvergedKeys().isEmpty() && report.getNotConvergedKeys().containsKey(indexName)) {
+                    LOG.error("SchemaStatus failed to update index: {}, from {} to {}.", indexName, currentStatus, waitForStatus);
+                }
+            }
+        } catch (InterruptedException e) {
+            LOG.error("InterruptedException for indexName : {}, Exception: ", indexName, e);
+        } catch (ExecutionException e) {
+            LOG.error("ExecutionException for indexName : {}, Exception: ", indexName, e);
+        }
     }
 
     @Override

@@ -32,6 +32,7 @@ import { relationshipsReducer } from "@redux/slice/typeDefSlices/typedefRelation
 import { metricsReducer } from "@redux/slice/metricsSlice";
 import { savedSearchReducer } from "@redux/slice/savedSearchSlice";
 import { drawerSliceReducer } from "@redux/slice/drawerSlice";
+import { dashboardRefreshReducer } from "@redux/slice/dashboardRefreshSlice";
 
 const rootReducer = combineReducers({
   session: sessionReducer,
@@ -39,6 +40,7 @@ const rootReducer = combineReducers({
   typeHeader: typeHeaderReducer,
   allEntityTypes: allEntityTypesReducer,
   metrics: metricsReducer,
+  dashboardRefresh: dashboardRefreshReducer,
   classification: classificationReducer,
   businessMetaData: businessMetadataReducer,
   glossary: glossaryReducer,

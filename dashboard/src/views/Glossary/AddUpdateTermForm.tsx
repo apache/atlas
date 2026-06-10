@@ -142,6 +142,7 @@ const AddUpdateTermForm = (props: {
         button1Handler={onClose}
         button2Label={isAdd ? "Create" : "Update"}
         disableButton2={isSubmitting}
+        button2Loading={isSubmitting}
         maxWidth="sm"
         button2Handler={handleSubmit(onSubmit)}
       >

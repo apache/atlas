@@ -31,7 +31,7 @@ const CustomDatepicker = (props: {
       selected={selected}
       onChange={onChange}
       timeInputLabel=""
-      renderCustomHeader={(headerProps) => <CustomHeader {...headerProps} />}
+      renderCustomHeader={(headerProps: any) => <CustomHeader {...headerProps} />}
       dateFormat="MM/dd/yyyy h:mm:ss aa"
       {...rest}
     />

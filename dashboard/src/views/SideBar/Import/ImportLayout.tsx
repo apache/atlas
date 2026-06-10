@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Typography, LinearProgress, Stack } from "@mui/material";
 import { toast } from "react-toastify";
-import { CustomButton } from "@components/muiComponents";
+import { CustomButton, LightTooltip } from "@components/muiComponents";
 
 const thumb = {
   position: "relative",
@@ -121,16 +121,16 @@ const ImportLayout = ({
     const sizeInMB = (bytes / (k * k)).toFixed(1);
     if (bytes < 100) {
       return `${bytes} b`;
-    } else if (bytes > 100 && +sizeInKB < 100) {
+    } else if (bytes >= 100 && +sizeInKB < 100) {
       return `${sizeInKB} KB`;
-    } else if (+sizeInKB > 100) {
+    } else {
       return `${sizeInMB} MB`;
     }
   };
 
   const thumbs = files.map((file: FileWithPreview) => (
-    <>
-      <Stack key={file.name} sx={thumb}>
+    <div key={file.name}>
+      <Stack sx={thumb}>
         <Stack sx={thumbInner}>
           <Typography>{formatFileSize(file.size)}</Typography>
 
@@ -140,17 +140,21 @@ const ImportLayout = ({
             color="inherit"
             sx={progressCss}
           />
-          <Typography
-            sx={{
-              overflow: "hidden",
-              whiteSpace: "nowrap",
-              textOverflow: "ellipsis",
-              lineHeight: "2",
-              width: "100%"
-            }}
-          >
-            {file.name}
-          </Typography>
+          <LightTooltip title={file.name} placement="top" arrow>
+            <Typography
+              component="span"
+              sx={{
+                overflow: "hidden",
+                whiteSpace: "nowrap",
+                textOverflow: "ellipsis",
+                lineHeight: "2",
+                width: "100%",
+                display: "block"
+              }}
+            >
+              {file.name}
+            </Typography>
+          </LightTooltip>
         </Stack>
       </Stack>
       <CustomButton
@@ -165,7 +169,7 @@ const ImportLayout = ({
       >
         {progressVal > 0 && progressVal < 100 ? "Cancel Upload" : "Remove file"}
       </CustomButton>
-    </>
+    </div>
   ));
 
   const handleRemoveFile = (file: FileWithPreview) => {

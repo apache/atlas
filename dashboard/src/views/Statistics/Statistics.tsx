@@ -23,6 +23,7 @@ import ClassificationStats from "./ClassificationStats";
 import {
   Autocomplete,
   Badge,
+  CircularProgress,
   IconButton,
   Stack,
   TextField
@@ -72,6 +73,7 @@ const Statistics = ({
     value: "Current"
   });
   const [loading, setLoading] = useState(true);
+  const [refreshBusy, setRefreshBusy] = useState(false);
 
   useEffect(() => {
     fetchMetricsStatsDetails();
@@ -117,12 +119,20 @@ const Statistics = ({
   };
 
   const handleRefresh = async () => {
-    await fetchMetricsStatsDetails();
-    await dispatch(fetchMetricEntity());
-    if (toastId.current) {
-      toast.dismiss(toastId.current);
+    if (refreshBusy) {
+      return;
     }
-    toastId.current = toast.success("Metric data is refreshed");
+    setRefreshBusy(true);
+    try {
+      await fetchMetricsStatsDetails();
+      await dispatch(fetchMetricEntity());
+      if (toastId.current) {
+        toast.dismiss(toastId.current);
+      }
+      toastId.current = toast.success("Metric data is refreshed");
+    } finally {
+      setRefreshBusy(false);
+    }
   };
 
   return (
@@ -137,14 +147,23 @@ const Statistics = ({
         postTitleIcon={
           <Stack justifyContent="center" alignItems="center">
             <LightTooltip title="Refresh Data">
-              <IconButton
-                size="small"
-                onClick={() => {
-                  handleRefresh();
-                }}
-              >
-                <Refresh />
-              </IconButton>
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    void handleRefresh();
+                  }}
+                  disabled={refreshBusy || loading}
+                  aria-busy={refreshBusy}
+                  aria-label="Refresh metrics data"
+                >
+                  {refreshBusy ? (
+                    <CircularProgress size={20} thickness={4} color="inherit" />
+                  ) : (
+                    <Refresh />
+                  )}
+                </IconButton>
+              </span>
             </LightTooltip>
           </Stack>
         }

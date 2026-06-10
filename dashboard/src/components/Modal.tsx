@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { styled } from "@mui/material/styles";
+import { styled, type Theme } from "@mui/material/styles";
 import CircularProgress from "@mui/material/CircularProgress";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -54,9 +54,13 @@ interface CustomModalProps {
   button2Label?: string | undefined;
   button2Handler: any;
   disableButton2?: string | object | boolean;
+  /** Shows spinner on primary action and blocks both footer buttons while an async action runs */
+  button2Loading?: boolean;
   maxWidth?: any;
   footer?: boolean;
   isDirty?: boolean;
+  /** When true, only the first footer button is rendered (e.g. import error state). */
+  hideButton2?: boolean;
 }
 
 export const CustomModal: React.FC<CustomModalProps> = ({
@@ -71,10 +75,18 @@ export const CustomModal: React.FC<CustomModalProps> = ({
   button2Label,
   button2Handler,
   disableButton2,
+  button2Loading,
   maxWidth,
   isDirty,
-  footer
+  footer,
+  hideButton2
 }) => {
+  const isLoading = Boolean(button2Loading);
+  const primaryDisabled =
+    isLoading ||
+    Boolean(disableButton2) ||
+    (isDirty !== undefined && !isDirty);
+
   const handleClick = (event: { stopPropagation: () => void }) => {
     event.stopPropagation();
   };
@@ -84,6 +96,7 @@ export const CustomModal: React.FC<CustomModalProps> = ({
         <BootstrapDialog
           maxWidth={maxWidth || "sm"}
           aria-labelledby="customized-dialog-title"
+          aria-busy={isLoading}
           open={open}
           sx={{
             "& .MuiDialog-paper": {
@@ -124,8 +137,12 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (isLoading) {
+                    return;
+                  }
                   onClose();
                 }}
+                disabled={isLoading}
               >
                 <CloseIcon sx={{ width: "0.75em", height: "0.75em" }} />
               </IconButton>
@@ -145,8 +162,12 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                   <CustomButton
                     variant="outlined"
                     color="primary"
+                    disabled={isLoading}
                     onClick={(e: Event) => {
                       e.stopPropagation();
+                      if (isLoading) {
+                        return;
+                      }
                       button1Handler();
                     }}
                   >
@@ -154,37 +175,62 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                   </CustomButton>
                 )}
 
-                <CustomButton
-                  variant="contained"
-                  color="primary"
-                  aria-label="close"
-                  primary={true}
-                  disabled={
-                    disableButton2 || (isDirty != undefined ? !isDirty : false)
-                  }
-                  sx={{
-                    ...(disableButton2 && {
-                      "&.Mui-disabled": {
-                        pointerEvents: "unset",
-                        cursor: "not-allowed"
+                {!hideButton2 && (
+                  <CustomButton
+                    variant="contained"
+                    color="primary"
+                    aria-label={
+                      isLoading
+                        ? "Action in progress, please wait"
+                        : "Confirm dialog action"
+                    }
+                    primary={true}
+                    disabled={primaryDisabled}
+                    sx={{
+                      minWidth: isLoading ? 88 : undefined,
+                      ...(isLoading && {
+                        "&.Mui-disabled": {
+                          opacity: 1,
+                          pointerEvents: "none",
+                          cursor: "progress",
+                          backgroundColor: (theme: Theme) =>
+                            theme.palette.primary.main,
+                          color: (theme: Theme) =>
+                            theme.palette.primary.contrastText
+                        }
+                      }),
+                      ...(primaryDisabled &&
+                        !isLoading && {
+                          "&.Mui-disabled": {
+                            pointerEvents: "unset",
+                            cursor: "not-allowed"
+                          }
+                        })
+                    }}
+                    startIcon={
+                      isLoading ? (
+                        <CircularProgress
+                          aria-hidden
+                          size={18}
+                          thickness={4}
+                          sx={{
+                            color: (theme: Theme) =>
+                              theme.palette.primary.contrastText
+                          }}
+                        />
+                      ) : undefined
+                    }
+                    onClick={(e: Event) => {
+                      e.stopPropagation();
+                      if (isLoading) {
+                        return;
                       }
-                    })
-                  }}
-                  startIcon={
-                    disableButton2 && isDirty ? (
-                      <CircularProgress
-                        sx={{ color: "white", fontWeight: "600" }}
-                        size="14px"
-                      />
-                    ) : undefined
-                  }
-                  onClick={(e: Event) => {
-                    e.stopPropagation();
-                    button2Handler();
-                  }}
-                >
-                  {button2Label}
-                </CustomButton>
+                      button2Handler();
+                    }}
+                  >
+                    {button2Label}
+                  </CustomButton>
+                )}
               </DialogActions>
             </Stack>
           )}

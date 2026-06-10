@@ -421,6 +421,7 @@ const PropagationPropertyModal = ({
         button2Label="Update"
         button2Handler={() => onSubmit()}
         disableButton2={loading}
+        button2Loading={loading}
       >
         <Stack gap={2}>
           <Stack direction="row" alignItems="center" gap="0.5rem">

@@ -155,6 +155,7 @@ const TermRelation = ({ glossaryTypeData }: any) => {
                     handleClick(values);
                   }}
                   data-cy="showAttribute"
+                  data-testid="showAttribute"
                 >
                   <VisibilityIcon className="table-filter-refresh" />
                 </CustomButton>
@@ -170,6 +171,7 @@ const TermRelation = ({ glossaryTypeData }: any) => {
                     setOpenViewModal(true);
                   }}
                   data-cy="editAttribute"
+                  data-testid="editAttribute"
                 >
                   <EditOutlinedIcon className="table-filter-refresh" />
                 </CustomButton>
@@ -219,6 +221,7 @@ const TermRelation = ({ glossaryTypeData }: any) => {
           button2Label={editModal ? "Update" : "Close"}
           button2Handler={editModal ? handleSubmit(onSubmit) : handleCloseModal}
           disableButton2={isSubmitting}
+          button2Loading={isSubmitting}
           maxWidth="md"
         >
           <form onSubmit={handleSubmit(onSubmit)}>

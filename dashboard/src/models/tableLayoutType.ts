@@ -57,4 +57,13 @@ export interface TableProps {
   setIsEmptyData?: React.Dispatch<React.SetStateAction<boolean>>;
   showGoToPage?: boolean;
   customLeftButton?: React.ReactNode;
+  /** Client pagination: default rows per page (e.g. schema tab uses 100 to match relationship API). */
+  defaultPageSize?: number;
+  /** Client pagination: invoked when the user changes page size (e.g. sync schema relationship chunk limit). */
+  onClientPageSizeChange?: (pageSize: number) => void;
+  /**
+   * Admin audit table: API does not return a total count. Footer shows
+   * "Showing {n} records From {start} - {end}" instead of "… of {total}".
+   */
+  paginationSummaryVariant?: 'default' | 'audit';
 }

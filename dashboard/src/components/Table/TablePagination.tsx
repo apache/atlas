@@ -67,16 +67,20 @@ interface PaginationProps {
   setIsEmptyData?: any;
   showGoToPage?: boolean;
   totalCount?: number;
+  /** Client mode: notify parent when page size changes (user action). */
+  onClientPageSizeChange?: (pageSize: number) => void;
+  /** See TableProps.paginationSummaryVariant */
+  paginationSummaryVariant?: 'default' | 'audit';
 }
 
 const TablePagination: React.FC<PaginationProps> = ({
   isServerSide = false,
-  getPageCount,
+  getPageCount: _getPageCount,
   previousPage,
   nextPage,
   setPageIndex,
   setPageSize,
-  getRowModel,
+  getRowModel: _getRowModel,
   pagination,
   setRowSelection,
   memoizedData,
@@ -87,13 +91,23 @@ const TablePagination: React.FC<PaginationProps> = ({
   isEmptyData,
   setIsEmptyData,
   showGoToPage = false,
-  totalCount
+  totalCount,
+  onClientPageSizeChange,
+  paginationSummaryVariant = 'default'
 }) => {
   const theme: any = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const { pageIndex, pageSize } = pagination;
+
+  /** Client mode: optional approximate total so Next/footer work before all rows load. */
+  const clientEffectiveTotal =
+    !isServerSide &&
+    typeof totalCount === "number" &&
+    totalCount >= 0
+      ? totalCount
+      : memoizedData.length;
 
   const [value, setValue] = useState<any>({
     label:
@@ -119,7 +133,7 @@ const TablePagination: React.FC<PaginationProps> = ({
       ? Number(searchParams.get("pageOffset")) + Number(limit)
       : isServerSide
       ? Number(limit)
-      : Math.min((pageIndex + 1) * pageSize, getRowModel?.().rows.length || 0)
+      : Math.min((pageIndex + 1) * pageSize, clientEffectiveTotal)
   );
   const [offset, setOffset] = useState<number>(
     isServerSide && searchParams.get("pageOffset")
@@ -185,7 +199,10 @@ const TablePagination: React.FC<PaginationProps> = ({
       setPageIndex?.(0);
       setLimit(newPageSize);
       setPageFrom(1);
-      setPageTo(Math.min(newPageSize, getRowModel?.().rows.length || 0));
+      setPageTo(Math.min(newPageSize, clientEffectiveTotal));
+      if (typeof onClientPageSizeChange === "function") {
+        onClientPageSizeChange(newPageSize);
+      }
       // Clear Go-to state on page size change
       setGoToPageVal?.("");
       setPendingGoToPageVal("");
@@ -236,7 +253,11 @@ const TablePagination: React.FC<PaginationProps> = ({
       setGoToPageVal?.("");
       setPendingGoToPageVal("");
     } else {
-      if (goToPage > (getPageCount?.() || Infinity)) {
+      const maxPage = Math.max(
+        1,
+        Math.ceil(clientEffectiveTotal / pageSize) || 1
+      );
+      if (goToPage > maxPage) {
         toast.dismiss(toastId.current);
         toastId.current = toast.info(
           <>
@@ -258,9 +279,7 @@ const TablePagination: React.FC<PaginationProps> = ({
       }
       setPageIndex?.(goToPage - 1);
       setPageFrom((goToPage - 1) * pageSize + 1);
-      setPageTo(
-        Math.min(goToPage * pageSize, getRowModel?.().rows.length || 0)
-      );
+      setPageTo(Math.min(goToPage * pageSize, clientEffectiveTotal));
       setGoToPageVal?.("");
       setPendingGoToPageVal("");
       setGoToPageTrigger("");
@@ -294,9 +313,10 @@ const TablePagination: React.FC<PaginationProps> = ({
       navigate({ search: searchParams.toString() });
     } else {
       previousPage?.();
-      setPageFrom(pageIndex * pageSize + 1);
+      const newPageIndex = Math.max(0, pageIndex - 1);
+      setPageFrom(newPageIndex * pageSize + 1);
       setPageTo(
-        Math.min(pageIndex * pageSize, getRowModel?.().rows.length || 0)
+        Math.min((newPageIndex + 1) * pageSize, clientEffectiveTotal)
       );
     }
     setGoToPageVal?.("");
@@ -319,7 +339,7 @@ const TablePagination: React.FC<PaginationProps> = ({
       nextPage?.();
       setPageFrom((pageIndex + 1) * pageSize + 1);
       setPageTo(
-        Math.min((pageIndex + 2) * pageSize, getRowModel?.().rows.length || 0)
+        Math.min((pageIndex + 2) * pageSize, clientEffectiveTotal)
       );
     }
     setGoToPageVal?.("");
@@ -332,20 +352,50 @@ const TablePagination: React.FC<PaginationProps> = ({
     ? (typeof totalCount === "number" && totalCount >= 0
         ? offset + limit >= totalCount
         : memoizedData.length < limit)
-    : pageIndex + 1 >= (getPageCount?.() || Infinity);
+    : clientEffectiveTotal === 0
+    ? true
+    : pageIndex + 1 >= Math.ceil(clientEffectiveTotal / pageSize);
 
-  const totalRows = getRowModel?.().rows.length || 0;
+  /** Client-side: optional totalCount (approximate) or loaded row count. */
+  const totalDatasetRows = isServerSide
+    ? typeof totalCount === "number" && totalCount >= 0
+      ? totalCount
+      : memoizedData.length
+    : clientEffectiveTotal;
+
   const displayFrom = isServerSide
     ? pageFrom
-    : totalRows === 0
+    : totalDatasetRows === 0
     ? 0
-    : pageIndex * pageSize + 1;
+    : Math.min(pageIndex * pageSize + 1, totalDatasetRows);
   const displayTo = isServerSide
     ? pageTo
-    : Math.min((pageIndex + 1) * pageSize, totalRows);
+    : Math.min((pageIndex + 1) * pageSize, totalDatasetRows);
+
+  /** Last page may return fewer than `limit` rows; cap "to" at known total. */
+  const displayToCapped =
+    isServerSide &&
+    typeof totalCount === "number" &&
+    totalCount >= 0
+      ? Math.min(displayTo, totalCount)
+      : displayTo;
+
+  const footerRangeStart =
+    totalDatasetRows === 0 ? 0 : Math.min(displayFrom, displayToCapped);
+  const footerRangeEnd = totalDatasetRows === 0 ? 0 : displayToCapped;
+
+  const showAuditPaginationSummary =
+    paginationSummaryVariant === 'audit' &&
+    isServerSide &&
+    memoizedData.length > 0;
+
+  const auditRangeStart = offset + 1;
+  const auditRangeEnd = offset + memoizedData.length;
 
   return (
     <Stack
+      role="navigation"
+      aria-label="Table pagination"
       spacing={{ xs: 1, sm: 2 }}
       direction="row"
       useFlexGap
@@ -356,8 +406,23 @@ const TablePagination: React.FC<PaginationProps> = ({
     >
       <div>
         <span className="text-grey">
-          Showing <u>{totalRows.toLocaleString()} records</u> From {displayFrom}{" "}
-          - {displayTo}
+          {memoizedData.length === 0 ? (
+            'No records to display'
+          ) : showAuditPaginationSummary ? (
+            <>
+              Showing {memoizedData.length.toLocaleString()}{' '}
+              {memoizedData.length === 1 ? 'record' : 'records'} From{' '}
+              {auditRangeStart.toLocaleString()} -{' '}
+              {auditRangeEnd.toLocaleString()}
+            </>
+          ) : (
+            <>
+              Showing {footerRangeStart.toLocaleString()}-
+              {footerRangeEnd.toLocaleString()} of{' '}
+              {totalDatasetRows.toLocaleString()}{' '}
+              {totalDatasetRows === 1 ? 'record' : 'records'}
+            </>
+          )}
         </span>
       </div>
 
@@ -466,25 +531,27 @@ const TablePagination: React.FC<PaginationProps> = ({
                     value={pendingGoToPageVal}
                   />
                   <LightTooltip title="Goto Page">
-                    <IconButton
-                      type="button"
-                      size="small"
-                      className={`${
-                        !isEmpty(pendingGoToPageVal)
-                          ? "cursor-pointer"
-                          : "cursor-not-allowed"
-                      } table-pagination-gotopage-button`}
-                      aria-label="search"
-                      onClick={() => {
-                        if (!isEmpty(pendingGoToPageVal)) {
-                          setGoToPageTrigger(pendingGoToPageVal);
-                          handleGoToPage();
-                        }
-                      }}
-                      disabled={isEmpty(pendingGoToPageVal)}
-                    >
-                      Go
-                    </IconButton>
+                    <span style={{ display: "inline-flex" }}>
+                      <IconButton
+                        type="button"
+                        size="small"
+                        className={`${
+                          !isEmpty(pendingGoToPageVal)
+                            ? "cursor-pointer"
+                            : "cursor-not-allowed"
+                        } table-pagination-gotopage-button`}
+                        aria-label="search"
+                        onClick={() => {
+                          if (!isEmpty(pendingGoToPageVal)) {
+                            setGoToPageTrigger(pendingGoToPageVal);
+                            handleGoToPage();
+                          }
+                        }}
+                        disabled={isEmpty(pendingGoToPageVal)}
+                      >
+                        Go
+                      </IconButton>
+                    </span>
                   </LightTooltip>
                 </Paper>
               </Stack>
@@ -492,19 +559,21 @@ const TablePagination: React.FC<PaginationProps> = ({
 
             <Stack flexDirection="row" alignItems="center">
               <LightTooltip title="Previous">
-                <IconButton
-                  size="small"
-                  className="pagination-page-change-btn"
-                  onClick={handlePreviousPage}
-                  disabled={isPreviousDisabled}
-                  aria-label="previous page"
-                >
-                  {theme.direction === "rtl" ? (
-                    <KeyboardArrowRight />
-                  ) : (
-                    <KeyboardArrowLeft />
-                  )}
-                </IconButton>
+                <span style={{ display: "inline-flex" }}>
+                  <IconButton
+                    size="small"
+                    className="pagination-page-change-btn"
+                    onClick={handlePreviousPage}
+                    disabled={isPreviousDisabled}
+                    aria-label="previous page"
+                  >
+                    {theme.direction === "rtl" ? (
+                      <KeyboardArrowRight />
+                    ) : (
+                      <KeyboardArrowLeft />
+                    )}
+                  </IconButton>
+                </span>
               </LightTooltip>
 
               <LightTooltip title={`Page ${activePage}`}>
@@ -514,19 +583,21 @@ const TablePagination: React.FC<PaginationProps> = ({
               </LightTooltip>
 
               <LightTooltip title="Next">
-                <IconButton
-                  size="small"
-                  className="pagination-page-change-btn"
-                  onClick={handleNextPage}
-                  disabled={isNextDisabled}
-                  aria-label="next page"
-                >
-                  {theme.direction === "rtl" ? (
-                    <KeyboardArrowLeft />
-                  ) : (
-                    <KeyboardArrowRight />
-                  )}
-                </IconButton>
+                <span style={{ display: "inline-flex" }}>
+                  <IconButton
+                    size="small"
+                    className="pagination-page-change-btn"
+                    onClick={handleNextPage}
+                    disabled={isNextDisabled}
+                    aria-label="next page"
+                  >
+                    {theme.direction === "rtl" ? (
+                      <KeyboardArrowLeft />
+                    ) : (
+                      <KeyboardArrowRight />
+                    )}
+                  </IconButton>
+                </span>
               </LightTooltip>
             </Stack>
           </>

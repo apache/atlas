@@ -20,6 +20,7 @@ package org.apache.atlas.model.typedef;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -27,6 +28,9 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -69,6 +73,19 @@ public class AtlasRelationshipEndDef implements Serializable {
      * Description of the end
      */
     private String description;
+    /**
+     * When set this end acts as a trigger for rename propagation.
+     */
+    private boolean propagateRename;
+
+    /**
+     * Optional mappings between attributes on the two entity types connected by this relationship,
+     * used when rename propagation applies updates across the relationship. Each element is a map
+     * with {@code "source"} and {@code "target"} keys naming the attribute on the source side and
+     * the attribute on the peer entity type, respectively. When {@code null} or empty, only the
+     * entity {@code name} attribute is synchronized.
+     */
+    private List<Map<String, String>> propagateAttributes;
 
     /**
      * Base constructor
@@ -158,6 +175,8 @@ public class AtlasRelationshipEndDef implements Serializable {
             setCardinality(other.getCardinality());
             setIsLegacyAttribute(other.isLegacyAttribute);
             setDescription(other.description);
+            setIsPropagateRename(other.propagateRename);
+            setPropagateAttributes(other.propagateAttributes);
         }
     }
 
@@ -233,6 +252,8 @@ public class AtlasRelationshipEndDef implements Serializable {
         sb.append(", isContainer==>'").append(isContainer).append('\'');
         sb.append(", cardinality==>'").append(cardinality).append('\'');
         sb.append(", isLegacyAttribute==>'").append(isLegacyAttribute).append('\'');
+        sb.append(", propagateRename==>'").append(propagateRename).append('\'');
+        sb.append(", propagateAttributes==>'").append(propagateAttributes).append('\'');
         sb.append('}');
 
         return sb;
@@ -240,7 +261,7 @@ public class AtlasRelationshipEndDef implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, getName(), description, isContainer, cardinality, isLegacyAttribute);
+        return Objects.hash(type, getName(), description, isContainer, cardinality, isLegacyAttribute, propagateRename, propagateAttributes);
     }
 
     @Override
@@ -258,7 +279,27 @@ public class AtlasRelationshipEndDef implements Serializable {
                 Objects.equals(description, that.description) &&
                 isContainer == that.isContainer &&
                 cardinality == that.cardinality &&
-                isLegacyAttribute == that.isLegacyAttribute;
+                isLegacyAttribute == that.isLegacyAttribute &&
+                propagateRename == that.propagateRename &&
+                Objects.equals(propagateAttributes, that.propagateAttributes);
+    }
+
+    @JsonProperty("propagateRename")
+    public boolean getIsPropagateRename() {
+        return propagateRename;
+    }
+
+    @JsonProperty("propagateRename")
+    public void setIsPropagateRename(boolean propagateRename) {
+        this.propagateRename = propagateRename;
+    }
+
+    public List<Map<String, String>> getPropagateAttributes() {
+        return propagateAttributes;
+    }
+
+    public void setPropagateAttributes(List<Map<String, String>> propagateAttributes) {
+        this.propagateAttributes = (propagateAttributes != null) ? Collections.unmodifiableList(propagateAttributes) : null;
     }
 
     @Override

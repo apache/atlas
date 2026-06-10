@@ -30,7 +30,7 @@ import org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus;
 import org.apache.atlas.repository.impexp.AsyncImportService;
 import org.apache.atlas.repository.store.graph.v2.asyncimport.ImportTaskListener;
 import org.apache.atlas.service.Service;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,11 +130,12 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     @Override
     public void onReceiveImportRequest(AtlasAsyncImportRequest importRequest) throws AtlasBaseException {
         try {
-            LOG.info("==> onReceiveImportRequest(atlasAsyncImportRequest={})", importRequest);
+            LOG.info("==> onReceiveImportRequest(importId={})", importRequest.getImportId());
 
             importRequest.setStatus(ImportStatus.WAITING);
 
-            asyncImportService.updateImportRequest(importRequest);
+            asyncImportService.populateCache(importRequest);
+            asyncImportService.saveImport(importRequest.getImportId());
             requestQueue.put(importRequest.getImportId());
 
             startNextImportInQueue();
@@ -145,7 +146,7 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
 
             throw new AtlasBaseException(IMPORT_QUEUEING_FAILED, e, importRequest.getImportId());
         } finally {
-            LOG.info("<== onReceiveImportRequest(atlasAsyncImportRequest={})", importRequest);
+            LOG.info("<== onReceiveImportRequest(importId={})", importRequest.getImportId());
         }
     }
 
@@ -241,6 +242,8 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
                 return;
             }
 
+            LOG.info("startingImport(importId={})", nextImport.getImportId());
+
             ExecutorService exec = ensureExecutorAlive();
             if (exec != null) {
                 exec.submit(() -> startImportConsumer(nextImport));
@@ -261,7 +264,9 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
         LOG.info("==> getNextImportFromQueue()");
 
         final int maxRetries = 5;
-        int       retryCount = 0;
+
+        int                     retryCount = 0;
+        AtlasAsyncImportRequest nextImport = null;
 
         while (retryCount < maxRetries) {
             try {
@@ -278,24 +283,24 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
                 // Reset retry count because we got a valid importId (even if it's invalid later)
                 retryCount = 0;
 
-                AtlasAsyncImportRequest importRequest = asyncImportService.fetchImportRequestByImportId(importId);
+                nextImport = asyncImportService.fetchImportRequestByImportId(importId);
 
-                if (isNotValidImportRequest(importRequest)) {
-                    LOG.info("Import request {}, is not in a valid status to start import, hence skipping..", importRequest);
+                if (isNotValidImportRequest(nextImport)) {
+                    LOG.info("Import request {}, is not in a valid status to start import, hence skipping..", nextImport);
 
                     continue;
                 }
 
-                LOG.info("<== getImportIdFromQueue(nextImportId={})", importRequest.getImportId());
+                LOG.info("<== getImportIdFromQueue(nextImportId={})", nextImport.getImportId());
 
-                return importRequest;
+                return nextImport;
             } catch (InterruptedException e) {
                 LOG.error("Thread interrupted while waiting for importId from the queue", e);
 
                 // Restore the interrupt flag
                 Thread.currentThread().interrupt();
 
-                return null;
+                return nextImport;
             }
         }
 
@@ -347,24 +352,27 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
 
     private void startImportConsumer(AtlasAsyncImportRequest importRequest) {
         try {
-            LOG.info("==> startImportConsumer(atlasAsyncImportRequest={})", importRequest);
-
-            notificationHookConsumer.startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, importRequest.getImportId(), importRequest.getTopicName());
+            LOG.info("==> startImportConsumer(importId={})", importRequest.getImportId());
 
             importRequest.setStatus(ImportStatus.PROCESSING);
             importRequest.setProcessingStartTime(System.currentTimeMillis());
+
+            asyncImportService.populateCache(importRequest);
+            asyncImportService.saveImportRequest(importRequest);
+
+            notificationHookConsumer.startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, importRequest.getImportId(), importRequest.getTopicName());
         } catch (Exception e) {
-            LOG.error("Failed to start consumer for import: {}, marking import as failed", importRequest, e);
-
             importRequest.setStatus(ImportStatus.FAILED);
-        } finally {
-            asyncImportService.updateImportRequest(importRequest);
 
+            LOG.error("Failed to start consumer for import: {}, marking import as failed", importRequest, e);
+        } finally {
             if (ObjectUtils.equals(importRequest.getStatus(), ImportStatus.FAILED)) {
+                asyncImportService.saveImport(importRequest.getImportId());
+
                 onCompleteImportRequest(importRequest.getImportId());
             }
 
-            LOG.info("<== startImportConsumer(atlasAsyncImportRequest={})", importRequest);
+            LOG.info("<== startImportConsumer(importId={})", importRequest.getImportId());
         }
     }
 
