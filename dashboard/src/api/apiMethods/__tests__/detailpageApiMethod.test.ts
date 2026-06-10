@@ -27,6 +27,7 @@
 
 import {
 	getDetailPageData,
+	getEntityWithRelationships,
 	getDetailPageAuditData,
 	getDetailPageRauditData,
 	getAuditData,
@@ -120,6 +121,20 @@ describe('detailpageApiMethod', () => {
 				method: 'GET',
 				params: { ...params, ignoreRelationships: true }
 			})
+		})
+	})
+
+	describe('getEntityWithRelationships', () => {
+		it('should call _get with ignoreRelationships false', async () => {
+			const guid = 'test-guid-123'
+			const result = await getEntityWithRelationships(guid)
+
+			expect(mockDetailpageApiUrl).toHaveBeenCalledWith(guid)
+			expect(mockGet).toHaveBeenCalledWith('/api/detail/test-guid-123', {
+				method: 'GET',
+				params: { ignoreRelationships: false }
+			})
+			expect(result).toEqual(mockResponse)
 		})
 	})
 

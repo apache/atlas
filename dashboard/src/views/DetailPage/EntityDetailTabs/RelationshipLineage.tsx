@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+// @ts-nocheck
 
 import {
   Button,
@@ -35,7 +35,7 @@ import {
   isArray,
   isEmpty
 } from "@utils/Utils";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import * as d3 from "d3";
 import { Link as RouterLink, useLocation, useParams } from "react-router-dom";
 import { entityStateReadOnly, graphIcon } from "@utils/Enum";
@@ -432,7 +432,11 @@ const RelationshipLineage = ({
     }
     d3.select(svgRef.current).selectAll("*").remove();
     if (!isEmpty(graphData.links)) {
-      createGraph(graphData);
+      try {
+        createGraph(graphData);
+      } catch (err) {
+        // Swallow D3 errors to avoid breaking render
+      }
     }
   }, [graphData]);
 
@@ -583,22 +587,34 @@ const RelationshipLineage = ({
 
       const sortedData = customSortBy(data, ["displayText"]);
 
-      for (const val of sortedData) {
+      for (const [index, val] of sortedData.entries()) {
         const { name } = extractKeyValueFromEntity(val, "displayText");
         const valObj = { ...val, entityName: name };
+        const itemKey =
+          valObj?.guid ||
+          valObj?.uniqueAttributes?.qualifiedName ||
+          `${typeName}-${index}`;
 
         if (searchString) {
           if (name.toLowerCase().includes(searchString.toLowerCase())) {
-            listString.push(getElement(valObj));
+            listString.push(
+              <Fragment key={itemKey}>{getElement(valObj)}</Fragment>
+            );
           } else {
             continue;
           }
         } else {
-          listString.push(getElement(valObj));
+          listString.push(
+            <Fragment key={itemKey}>{getElement(valObj)}</Fragment>
+          );
         }
       }
     } else {
-      listString.push(getElement(data));
+      const itemKey =
+        data?.guid ||
+        data?.uniqueAttributes?.qualifiedName ||
+        `${typeName}-single`;
+      listString.push(<Fragment key={itemKey}>{getElement(data)}</Fragment>);
     }
     return (
       <Stack sx={{ background: "white" }} minHeight={"150px"} maxWidth="520px">
@@ -708,6 +724,7 @@ const RelationshipLineage = ({
             position: "relative",
             top: "-60px"
           }}
+          data-testid="relationshipSVG"
           data-id="relationshipSVG"
           data-cy="relationshipSVG"
         >
