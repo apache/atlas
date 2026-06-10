@@ -23,6 +23,9 @@ import moment from "moment";
 
 const TermProperties = ({ additionalAttributes, loader }: any) => {
   const getValue = (values: any, type: string) => {
+    if (typeof values === "boolean") {
+      return values ? "true" : "false";
+    }
     if (type == "time") {
       return moment().milliseconds(values);
     } else if (type == "day") {

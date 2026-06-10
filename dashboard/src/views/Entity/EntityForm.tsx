@@ -63,7 +63,7 @@ export const initialState: State = {
   error: null
 };
 
-function reducer(state: State, action: Action): State {
+export function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "FETCH_REQUEST":
       return { ...state, error: null };
@@ -500,7 +500,7 @@ const EntityForm = ({
         return <FormInputText data={obj} control={control} />;
     }
   };
-  const { name } = extractKeyValueFromEntity(entity);
+  const { name } = extractKeyValueFromEntity(entity) || { name: '', found: false, key: '' };
 
   let requiredFieldList = !isEmpty(entityTypeObj)
     ? Object.keys(entityTypeObj).reduce((acc: any, key: string) => {

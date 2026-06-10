@@ -42,7 +42,7 @@ const Layout: React.FC = () => {
   const handleCloseModal = () => setOpenModal(false);
   const handleOpenAboutModal = () => setOpenAboutModal(true);
   const handleCloseAboutModal = () => setOpenAboutModal(false);
-  const handleCloseSessionModal = () => setOpenAboutModal(false);
+  const handleCloseSessionModal = () => setOpenSessionModal(false);
 
   const timeout = 1000 * (data?.[key] > 0 ? data?.[key] : 900);
   const promptBeforeIdle = 1000 * 15;

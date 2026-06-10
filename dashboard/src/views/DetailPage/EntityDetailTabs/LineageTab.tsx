@@ -299,10 +299,12 @@ const LineageTab = ({ entity, isProcess }: any) => {
         }
       }
       let updatedData = updateLineageData(lineageObj);
-      Object.assign(lineageObj.guidEntityMap, updatedData.plusBtnsObj);
-      lineageObj.relations = lineageObj.relations.concat(
-        updatedData.plusBtnRelationsArray
-      );
+      if (updatedData) {
+        Object.assign(lineageObj.guidEntityMap, updatedData.plusBtnsObj);
+        lineageObj.relations = lineageObj.relations.concat(
+          updatedData.plusBtnRelationsArray
+        );
+      }
       setLineageData(lineageObj);
       setDrawerOpen(false);
       setLoader(false);
@@ -812,6 +814,7 @@ const LineageTab = ({ entity, isProcess }: any) => {
                     onClick={() => setDrawerOpen(false)}
                     size="small"
                     sx={{ padding: 0, minWidth: "24px", color: "white" }}
+                    aria-label="Close"
                   >
                     <CloseIcon />
                   </Button>
@@ -1228,7 +1231,7 @@ const LineageTab = ({ entity, isProcess }: any) => {
                         }}
                         inputProps={{ "aria-label": "controlled" }}
                       />
-                      <Typography line className="menuitem-label">
+                      <Typography className="menuitem-label">
                         Hide Process
                       </Typography>
                     </Stack>
