@@ -23,7 +23,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import SearchResult from '../SearchResult';
-import * as searchApiMethod from '@api/apiMethods/searchApiMethod';
+import * as searchApiMethod from '../../../api/apiMethods/searchApiMethod';
 import { toast } from 'react-toastify';
 
 const theme = createTheme();
@@ -41,7 +41,7 @@ jest.mock('@api/apiUrlLinks/commonApiUrl', () => ({
 }));
 
 // Mock API methods
-jest.mock('@api/apiMethods/searchApiMethod');
+jest.mock('../../../api/apiMethods/searchApiMethod');
 jest.mock('@api/apiMethods/classificationApiMethod', () => ({
   removeClassification: jest.fn()
 }));
@@ -259,14 +259,14 @@ jest.mock('@utils/Utils', () => {
         }
       }
       // Filter out any invalid entries
-      const validArr = arr.filter(item => item != null);
+      const validArr = arr.filter((item: any) => item != null);
       if (validArr.length === 0) return [];
       if (!Array.isArray(keys) || keys.length === 0) {
         const result = [...validArr];
         return Array.isArray(result) ? result : [];
       }
       try {
-        const sorted = [...validArr].sort((a, b) => {
+        const sorted = [...validArr].sort((a: any, b: any) => {
           if (!a || !b) return 0;
           for (const key of keys) {
             const aVal = a?.[key] || '';
@@ -1838,6 +1838,32 @@ describe('SearchResult', () => {
       }, { timeout: 15000 });
     }, 30000);
 
+    it('should render table within search-result-table-wrapper class', async () => {
+      await act(async () => {
+        renderWithProviders(<SearchResult />);
+      });
+
+      await waitFor(() => {
+        expect(document.querySelector('.search-result-table-wrapper')).toBeInTheDocument();
+      }, { timeout: 15000 });
+    }, 30000);
+
+    it('should configure Owner and Type columns with specific sizes', async () => {
+      await act(async () => {
+        renderWithProviders(<SearchResult />);
+      });
+
+      await waitFor(() => {
+        expect(document.querySelector('.table')).toBeInTheDocument();
+        const ownerColumn = capturedColumns.find((col: any) => col.header === 'Owner');
+        expect(ownerColumn).toBeDefined();
+        expect(ownerColumn?.size).toBe(100);
+
+        const typeColumn = capturedColumns.find((col: any) => col.header === 'Type');
+        expect(typeColumn).toBeDefined();
+        expect(typeColumn?.size).toBe(100);
+      }, { timeout: 15000 });
+    }, 30000);
 
     it('should show assign filters when classificationParams is present', async () => {
       await act(async () => {
