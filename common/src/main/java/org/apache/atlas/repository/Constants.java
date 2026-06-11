@@ -135,8 +135,10 @@ public final class Constants {
     public static final String PROVENANCE_TYPE_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "provenanceType");
     public static final String TIMESTAMP_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "timestamp");
     public static final String ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "entityDeletedTimestamp");
-    public static final String MODIFICATION_TIMESTAMP_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "modificationTimestamp");
-    public static final String IS_INCOMPLETE_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "isIncomplete");
+    public static final String MODIFICATION_TIMESTAMP_PROPERTY_KEY   = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "modificationTimestamp");
+    public static final String ENTITY_DELETE_EVENT_TIME_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "entityDeleteEventTime");
+    public static final String ENTITY_CREATE_EVENT_TIME_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "entityCreateEventTime");
+    public static final String IS_INCOMPLETE_PROPERTY_KEY            = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "isIncomplete");
     /**
      * search backing index name.
      */
