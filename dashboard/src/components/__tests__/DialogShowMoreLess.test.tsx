@@ -28,6 +28,7 @@
 
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import '@testing-library/jest-dom'
 import DialogShowMoreLess from '../DialogShowMoreLess'
 
 const toastSuccess = jest.fn()
@@ -45,6 +46,9 @@ jest.mock('../muiComponents', () => ({
 }))
 
 jest.mock('@mui/material', () => ({
+	Box: ({ children, className, sx }: any) => (
+		<div className={className} style={sx} data-testid="box">{children}</div>
+	),
 	Chip: ({ label, onDelete, className, sx, clickable, size, variant, color }: any) => (
 		<div
 			data-testid="chip"
@@ -364,6 +368,27 @@ describe('DialogShowMoreLess', () => {
 
 			const chip = screen.getByText('PII@(a, b)').closest('[data-testid="chip"]')
 			expect(chip).toBeTruthy()
+		})
+
+		it('applies truncation styles to classification chip', () => {
+			render(
+				<DialogShowMoreLess
+					value={{
+						guid: 'g1',
+						Classifications: [
+							{ name: 'PII', entityGuid: 'g1', entityStatus: 'ACTIVE' }
+						]
+					}}
+					columnVal="Classifications"
+					colName="Classification"
+					displayText="name"
+					isShowMoreLess={true}
+				/>
+			)
+
+			const chip = screen.getByText('PII@(a, b)').closest('[data-testid="chip"]')
+			expect(chip).toBeTruthy()
+			expect(chip).toHaveStyle({ minWidth: 0 })
 		})
 	})
 

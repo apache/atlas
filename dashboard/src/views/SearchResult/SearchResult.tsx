@@ -362,8 +362,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
             <LightTooltip title={name}>
               {entity.guid != "-1" ? (
                 <Link
-                  className={`entity-name nav-link text-decoration-none ${
-                    entityDef.status && entityStateReadOnly[entityDef.status]
+                  className={`entity-name nav-link text-decoration-none ${entityDef.status && entityStateReadOnly[entityDef.status]
                       ? "text-red"
                       : "text-blue"
                   }`}
@@ -435,7 +434,8 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
       accessorKey: "owner",
       cell: (info: any) => <span>{info.getValue()}</span>,
       header: "Owner",
-      show: true
+      show: true,
+      size: 100
     },
     {
       accessorFn: (row: any) => row.attributes.description,
@@ -468,7 +468,8 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
         );
       },
       header: "Type",
-      show: true
+      show: true,
+      size: 100
     },
     {
       accessorFn: (row: any) => row.classificationNames[0],
@@ -1078,6 +1079,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
         </Stack>
       )}
 
+      <div className="search-result-table-wrapper">
       <TableLayout
         fetchData={fetchSearchResult}
         data={
@@ -1143,6 +1145,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
         showGoToPage={true}
         totalCount={totalCount}
       />
+      </div>
     </Stack>
   );
 };
