@@ -101,7 +101,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -166,7 +166,7 @@ public class NotificationHookConsumerTest {
 
         assertTrue(hookConsumer.serverAvailable(timer));
 
-        verifyZeroInteractions(timer);
+        verifyNoInteractions(timer);
     }
 
     @Test
@@ -267,7 +267,7 @@ public class NotificationHookConsumerTest {
 
         notificationHookConsumer.startInternal(configuration, executorService);
 
-        verifyZeroInteractions(notificationInterface);
+        verifyNoInteractions(notificationInterface);
     }
 
     @Test

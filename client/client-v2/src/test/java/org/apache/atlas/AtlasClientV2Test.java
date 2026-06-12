@@ -54,6 +54,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
@@ -76,7 +77,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -114,7 +116,7 @@ public class AtlasClientV2Test {
 
         when(response.getStatus()).thenReturn(Response.Status.NO_CONTENT.getStatusCode());
 
-        when(builder.method(anyString(), org.mockito.Matchers.<Class>any(), anyString())).thenReturn(response);
+        when(builder.method(any(), ArgumentMatchers.<Class>any(), any())).thenReturn(response);
 
         try {
             atlasClient.updateClassifications("abb672b1-e4bd-402d-a98f-73cd8f775e2a", Collections.singletonList(atlasClassification));
@@ -135,7 +137,7 @@ public class AtlasClientV2Test {
         ClientResponse response = mock(ClientResponse.class);
 
         when(response.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
-        when(builder.method(anyString(), org.mockito.Matchers.<Class>any(), anyString())).thenReturn(response);
+        when(builder.method(any(), ArgumentMatchers.<Class>any(), any())).thenReturn(response);
 
         try {
             atlasClient.updateClassifications("abb672b1-e4bd-402d-a98f-73cd8f775e2a", Collections.singletonList(atlasClassification));
