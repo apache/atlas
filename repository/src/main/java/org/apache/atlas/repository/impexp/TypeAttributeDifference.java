@@ -171,7 +171,7 @@ public class TypeAttributeDifference {
             }
         } else if (!existingAttribute.getTypeName().equals(incoming.getTypeName())) {
             LOG.info("Attribute type changed for {}.{}: {} -> {}; updating typedef during import",
-                    existing.getName(), incoming.getName(), existingAttribute.getTypeName(), incoming.getTypeName());
+                    existing.getName(), existingAttribute.getName(), existingAttribute.getTypeName(), incoming.getTypeName());
 
             difference.add(incoming);
         }
