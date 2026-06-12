@@ -137,7 +137,8 @@
 
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
         </dependency>
         <!-- Logging -->
         <dependency>
@@ -243,11 +244,6 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-client-v2</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -570,8 +566,6 @@
                                             <artifactId>atlas-client-v1</artifactId>
                                             <version>${project.version}</version>
                                         </artifactItem>
-                                        <!-- Unshaded v2 client: shaded jar relocates javax.ws.rs and breaks
-                                             JerseyClientBuilder.createClient(Configuration) at import runtime. -->
                                         <artifactItem>
                                             <groupId>${project.groupId}</groupId>
                                             <artifactId>atlas-client-v2</artifactId>

@@ -298,7 +298,7 @@ public class HiveHookIT extends HiveITBase {
         try {
             atlasClientV2.getEntityByAttribute(HiveDataTypes.HIVE_TABLE.getName(), Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, tableQualifiedName));
         } catch (AtlasServiceException e) {
-            if (e.getStatus() == Response.Status.NOT_FOUND) {
+            if (e.getStatus() != null && e.getStatus().getStatusCode() == Response.Status.NOT_FOUND.getStatusCode()) {
                 return;
             }
         }
@@ -2101,7 +2101,7 @@ public class HiveHookIT extends HiveITBase {
         try {
             atlasClientV2.getEntityByAttribute(HiveDataTypes.HIVE_DB.getName(), Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, dbQualifiedName));
         } catch (AtlasServiceException e) {
-            if (e.getStatus() == Response.Status.NOT_FOUND) {
+            if (e.getStatus() != null && e.getStatus().getStatusCode() == Response.Status.NOT_FOUND.getStatusCode()) {
                 return;
             }
         }
