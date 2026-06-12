@@ -86,6 +86,15 @@ public class AtlasRelationshipEndDef implements Serializable {
      * entity {@code name} attribute is synchronized.
      */
     private List<Map<String, String>> propagateAttributes;
+    /**
+     * When set, deleting an entity of this end's type cascades the delete to entities on the
+     * other end of the relationship. Use with caution: enabling this flag means ALL related
+     * entities reachable via this relationship will be deleted — the effect is recursive if
+     * the target type also has propagateDelete configured on its relationships. This is
+     * irreversible in a single transaction; ensure the modeled semantics truly require cascade
+     * (e.g., the target entity cannot meaningfully exist without the source).
+     */
+    private boolean propagateDelete;
 
     /**
      * Base constructor
@@ -177,6 +186,7 @@ public class AtlasRelationshipEndDef implements Serializable {
             setDescription(other.description);
             setIsPropagateRename(other.propagateRename);
             setPropagateAttributes(other.propagateAttributes);
+            setIsPropagateDelete(other.propagateDelete);
         }
     }
 
@@ -254,6 +264,7 @@ public class AtlasRelationshipEndDef implements Serializable {
         sb.append(", isLegacyAttribute==>'").append(isLegacyAttribute).append('\'');
         sb.append(", propagateRename==>'").append(propagateRename).append('\'');
         sb.append(", propagateAttributes==>'").append(propagateAttributes).append('\'');
+        sb.append(", propagateDelete==>'").append(propagateDelete).append('\'');
         sb.append('}');
 
         return sb;
@@ -261,7 +272,7 @@ public class AtlasRelationshipEndDef implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, getName(), description, isContainer, cardinality, isLegacyAttribute, propagateRename, propagateAttributes);
+        return Objects.hash(type, getName(), description, isContainer, cardinality, isLegacyAttribute, propagateRename, propagateAttributes, propagateDelete);
     }
 
     @Override
@@ -281,7 +292,8 @@ public class AtlasRelationshipEndDef implements Serializable {
                 cardinality == that.cardinality &&
                 isLegacyAttribute == that.isLegacyAttribute &&
                 propagateRename == that.propagateRename &&
-                Objects.equals(propagateAttributes, that.propagateAttributes);
+                Objects.equals(propagateAttributes, that.propagateAttributes) &&
+                propagateDelete == that.propagateDelete;
     }
 
     @JsonProperty("propagateRename")
@@ -300,6 +312,16 @@ public class AtlasRelationshipEndDef implements Serializable {
 
     public void setPropagateAttributes(List<Map<String, String>> propagateAttributes) {
         this.propagateAttributes = (propagateAttributes != null) ? Collections.unmodifiableList(propagateAttributes) : null;
+    }
+
+    @JsonProperty("propagateDelete")
+    public boolean getIsPropagateDelete() {
+        return propagateDelete;
+    }
+
+    @JsonProperty("propagateDelete")
+    public void setIsPropagateDelete(boolean propagateDelete) {
+        this.propagateDelete = propagateDelete;
     }
 
     @Override

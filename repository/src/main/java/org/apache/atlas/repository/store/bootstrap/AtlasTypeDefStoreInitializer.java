@@ -465,7 +465,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     new RemoveLegacyRefAttributesPatchHandler(typeDefStore, typeRegistry),
                     new UpdateTypeDefOptionsPatchHandler(typeDefStore, typeRegistry),
                     new SetServiceTypePatchHandler(typeDefStore, typeRegistry),
-                    new AttributeDefOverridesAndPropagateRenamePatchHandler(typeDefStore, typeRegistry),
+                    new AttributeDefOverridesAndOperationPropagationPatchHandler(typeDefStore, typeRegistry),
                     new UpdateAttributeMetadataHandler(typeDefStore, typeRegistry, graph),
                     new AddSuperTypePatchHandler(typeDefStore, typeRegistry),
                     new AddMandatoryAttributePatchHandler(typeDefStore, typeRegistry)
@@ -1184,19 +1184,20 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     }
 
     /**
-     * Handles {@code SET_ATTRIBUTE_DEF_OVERRIDES} on entity typedefs and {@code SET_PROPAGATE_RENAME} on relationship typedef end defs.
+     * Handles {@code SET_ATTRIBUTE_DEF_OVERRIDES} on entity typedefs, {@code SET_PROPAGATE_RENAME} and {@code SET_PROPAGATE_DELETE} on relationship typedef end defs.
      * Optional {@code params.propagateAttributes} for {@code SET_PROPAGATE_RENAME}: a JSON array of objects, each copied to a {@code HashMap<String,String>} on the patched end.
      */
-    static class AttributeDefOverridesAndPropagateRenamePatchHandler extends PatchHandler {
+    static class AttributeDefOverridesAndOperationPropagationPatchHandler extends PatchHandler {
         private static final String ACTION_SET_ATTRIBUTE_DEF_OVERRIDES = "SET_ATTRIBUTE_DEF_OVERRIDES";
         private static final String ACTION_SET_PROPAGATE_RENAME        = "SET_PROPAGATE_RENAME";
+        private static final String ACTION_SET_PROPAGATE_DELETE        = "SET_PROPAGATE_DELETE";
         /** Patch JSON key under {@code params}: value is {@code "endDef1"} or {@code "endDef2"} (string, not numeric). */
         private static final String PARAM_END_DEF_TOKEN                = "endDefToken";
         /** Optional: JSON array of objects under {@code params}; each object becomes one {@code Map<String,String>}. */
         private static final String PARAM_PROPAGATE_ATTRIBUTES         = "propagateAttributes";
 
-        public AttributeDefOverridesAndPropagateRenamePatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
-            super(typeDefStore, typeRegistry, new String[] {ACTION_SET_ATTRIBUTE_DEF_OVERRIDES, ACTION_SET_PROPAGATE_RENAME});
+        public AttributeDefOverridesAndOperationPropagationPatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
+            super(typeDefStore, typeRegistry, new String[] {ACTION_SET_ATTRIBUTE_DEF_OVERRIDES, ACTION_SET_PROPAGATE_RENAME, ACTION_SET_PROPAGATE_DELETE});
         }
 
         @Override
@@ -1215,7 +1216,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                 return SKIPPED;
             }
 
-            LOG.debug("AttributeDefOverridesAndPropagateRenamePatchHandler.applyPatch(): id={}; action={}; typeName={}",
+            LOG.debug("AttributeDefOverridesAndOperationPropagationPatchHandler.applyPatch(): id={}; action={}; typeName={}",
                     patch.getId(), patch.getAction(), typeName);
 
             String action = patch.getAction();
@@ -1234,6 +1235,13 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                 }
 
                 return applyPropagateRename(patch, (AtlasRelationshipDef) typeDef);
+            } else if (ACTION_SET_PROPAGATE_DELETE.equals(action)) {
+                if (!(typeDef instanceof AtlasRelationshipDef)) {
+                    throw new AtlasBaseException(AtlasErrorCode.PATCH_NOT_APPLICABLE_FOR_TYPE, patch.getAction(),
+                            typeDef.getClass().getSimpleName());
+                }
+
+                return applyPropagateDelete(patch, (AtlasRelationshipDef) typeDef);
             }
 
             throw new AtlasBaseException(AtlasErrorCode.PATCH_INVALID_DATA, patch.getAction(), typeName);
@@ -1247,7 +1255,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
             int overrideCount = CollectionUtils.isEmpty(patch.getAttributeDefs()) ? 0 : patch.getAttributeDefs().size();
 
-            LOG.debug("AttributeDefOverridesAndPropagateRenamePatchHandler.applyEntityDefOverrides(): entityType={}; overrideCount={}; updateToVersion={}",
+            LOG.debug("AttributeDefOverridesAndOperationPropagationPatchHandler.applyEntityDefOverrides(): entityType={}; overrideCount={}; updateToVersion={}",
                     typeDef.getName(), overrideCount, patch.getUpdateToVersion());
 
             typeDefStore.updateEntityDefByName(typeDef.getName(), updatedDef);
@@ -1290,13 +1298,50 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
             updatedDef.setTypeVersion(patch.getUpdateToVersion());
 
-            LOG.debug("AttributeDefOverridesAndPropagateRenamePatchHandler.applyPropagateRename(): relationshipType={}; endDefToken={}; updateToVersion={}",
+            LOG.debug("AttributeDefOverridesAndOperationPropagationPatchHandler.applyPropagateRename(): relationshipType={}; endDefToken={}; updateToVersion={}",
                     typeDef.getName(), endDefToken, patch.getUpdateToVersion());
 
             typeDefStore.updateRelationshipDefByName(typeDef.getName(), updatedDef);
 
             LOG.info("patch applied: id={}; action={}; relationshipType={}; endDefToken={}; typeVersion={}",
                     patch.getId(), ACTION_SET_PROPAGATE_RENAME, typeDef.getName(), endDefToken, patch.getUpdateToVersion());
+
+            return APPLIED;
+        }
+
+        private PatchStatus applyPropagateDelete(TypeDefPatch patch, AtlasRelationshipDef typeDef) throws AtlasBaseException {
+            Object endDefObj = patch.getParams() != null ? patch.getParams().get(PARAM_END_DEF_TOKEN) : null;
+            String endDefToken = endDefObj != null ? String.valueOf(endDefObj).trim() : null;
+            boolean useEndDef2 = "endDef2".equalsIgnoreCase(endDefToken);
+            boolean useEndDef1 = "endDef1".equalsIgnoreCase(endDefToken);
+
+            if (endDefToken == null || (!useEndDef1 && !useEndDef2)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
+                        "SET_PROPAGATE_DELETE patch for '" + typeDef.getName()
+                                + "' must set params." + PARAM_END_DEF_TOKEN + " to the string \"endDef1\" or \"endDef2\", got: "
+                                + endDefToken);
+            }
+
+            AtlasRelationshipDef updatedDef = new AtlasRelationshipDef(typeDef);
+
+            if (useEndDef2) {
+                AtlasRelationshipEndDef end2 = new AtlasRelationshipEndDef(updatedDef.getEndDef2());
+
+                end2.setIsPropagateDelete(true);
+                updatedDef.setEndDef2(end2);
+            } else {
+                AtlasRelationshipEndDef end1 = new AtlasRelationshipEndDef(updatedDef.getEndDef1());
+
+                end1.setIsPropagateDelete(true);
+                updatedDef.setEndDef1(end1);
+            }
+
+            updatedDef.setTypeVersion(patch.getUpdateToVersion());
+
+            typeDefStore.updateRelationshipDefByName(typeDef.getName(), updatedDef);
+
+            LOG.info("patch applied: id={}; action={}; relationshipType={}; endDefToken={}; typeVersion={}",
+                    patch.getId(), ACTION_SET_PROPAGATE_DELETE, typeDef.getName(), endDefToken, patch.getUpdateToVersion());
 
             return APPLIED;
         }
