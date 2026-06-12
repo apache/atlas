@@ -99,7 +99,7 @@ HIVE_CP="${HIVE_CONF}"
 # Multiple jars in HIVE_CP_EXCLUDE_LIST can be added using "\|" separator
 # Ex: HIVE_CP_EXCLUDE_LIST="jersey-multipart"
 # exclude log4j libs from hive classpath to avoid conflict
-HIVE_CP_EXCLUDE_LIST="javax.ws.rs-api\|log4j-slf4j-impl\|log4j-1.2-api\|log4j-api\|log4j-core\|log4j-web\|jsr311-api"
+HIVE_CP_EXCLUDE_LIST="javax.ws.rs-api\|log4j-slf4j-impl\|log4j-1.2-api\|log4j-api\|log4j-core\|log4j-web\|jsr311-api\|jersey\|glassfish"
 
 for i in $(find "${HIVE_HOME}/lib/" -name  "*.jar" | grep -v "$HIVE_CP_EXCLUDE_LIST"); do
     HIVE_CP="${HIVE_CP}:$i"
@@ -142,7 +142,8 @@ done
 # Remove leading colon
 HADOOP_CP=$(echo "$HADOOP_CLASSPATH_NEW" | sed 's/^://')
 
-CP="${HIVE_CP}:${HADOOP_CP}:${ATLASCPPATH}"
+# Atlas hook jars must precede Hive/Hadoop so Jersey 2 + jakarta.ws.rs-api win over partial Hive libs.
+CP="${ATLASCPPATH}:${HIVE_CP}:${HADOOP_CP}"
 
 # If running in cygwin, convert pathnames and classpath to Windows format.
 if [ "${CYGWIN}" == "true" ]

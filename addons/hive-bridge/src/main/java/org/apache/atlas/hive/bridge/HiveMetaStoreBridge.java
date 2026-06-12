@@ -893,7 +893,7 @@ public class HiveMetaStoreBridge {
         try {
             ret = atlasClientV2.getEntityByAttribute(typeName, Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, qualifiedName), minExtInfo, ignoreRelationship);
         } catch (AtlasServiceException e) {
-            if(e.getStatus() == Response.Status.NOT_FOUND) {
+            if (e.getStatus() != null && e.getStatus().getStatusCode() == Response.Status.NOT_FOUND.getStatusCode()) {
                 return null;
             }
 

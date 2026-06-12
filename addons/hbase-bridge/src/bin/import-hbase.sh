@@ -104,7 +104,7 @@ HBASE_CP="${HBASE_CONF}"
 
 # Multiple jars in HBASE_CP_EXCLUDE_LIST can be added using "\|" separator
 # Ex: HBASE_CP_EXCLUDE_LIST="commons-configuration-1."
-HBASE_CP_EXCLUDE_LIST="commons-configuration-1\|jersey-client\|javax.ws.rs-api\|jsr311-api\|jersey"
+HBASE_CP_EXCLUDE_LIST="javax.ws.rs-api\|jsr311-api\|jersey\|glassfish"
 
 for i in "${HBASE_HOME}/lib/"*.jar "${HBASE_HOME}/lib/client-facing-thirdparty/"*.jar; do
     if [ "`echo $i | grep -v \"$HBASE_CP_EXCLUDE_LIST\"`" == "$i" ]; then
