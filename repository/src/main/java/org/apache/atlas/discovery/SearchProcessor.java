@@ -869,9 +869,10 @@ public abstract class SearchProcessor {
 
                     ret = false;
                 } else if (operator == SearchParameters.Operator.CONTAINS) {
-                    if (StringUtils.length(attributeValue) > INDEX_SEARCH_MAX_TOKEN_STR_LENGTH
-                            || (indexType == null && AtlasAttribute.hastokenizeChar(attributeValue))) {
-                        LOG.debug("{} operator found for string attribute {} and filter value {}, deferring to in-memory or graph query (might cause poor performance)", operator, qualifiedName, attributeValue);
+                    // TEXT attributes (indexType == null) use Solr tokenization; STRING attributes (Mapping.STRING) do not
+                    if (indexType == null && (StringUtils.length(attributeValue) > INDEX_SEARCH_MAX_TOKEN_STR_LENGTH
+                            || AtlasAttribute.hastokenizeChar(attributeValue))) {
+                        LOG.debug("{} operator found for string (TEXT) attribute {} and filter value {}, deferring to in-memory or graph query (might cause poor performance)", operator, qualifiedName, attributeValue);
 
                         ret = false;
                     }
