@@ -28,7 +28,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.notification.rest.RestNotification;
 import org.apache.commons.configuration.Configuration;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeClass;
@@ -42,7 +42,7 @@ import java.util.Collections;
 
 import static org.apache.atlas.kafka.KafkaNotification.ATLAS_HOOK_TOPIC;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -84,7 +84,7 @@ public class RestNotificationTest {
         ClientResponse      response = mock(ClientResponse.class);
 
         when(response.getStatus()).thenReturn(Response.Status.NO_CONTENT.getStatusCode());
-        when(builder.method(anyString(), Matchers.<Class<ClientResponse>>any(), anyList())).thenReturn(response);
+        when(builder.method(anyString(), ArgumentMatchers.<Class<ClientResponse>>any(), anyList())).thenReturn(response);
 
         ((RestNotification) notifier).atlasClientV2 = client;
 
@@ -104,7 +104,7 @@ public class RestNotificationTest {
 
         when(response.getStatus()).thenReturn(AtlasErrorCode.NOTIFICATION_EXCEPTION.getHttpCode().getStatusCode());
         when(response.getEntity(String.class)).thenReturn(AtlasErrorCode.NOTIFICATION_EXCEPTION.getErrorCode());
-        when(builder.method(anyString(), Matchers.<Class<ClientResponse>>any(), anyList())).thenReturn(response);
+        when(builder.method(anyString(), ArgumentMatchers.<Class<ClientResponse>>any(), anyList())).thenReturn(response);
 
         ((RestNotification) notifier).atlasClientV2 = client;
 
