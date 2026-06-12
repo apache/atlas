@@ -177,7 +177,18 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
                 AtlasAttributeDef existingAttribute = currentStructDef.getAttribute(attributeDef.getName());
 
                 if (null != existingAttribute && !attributeDef.getTypeName().equals(existingAttribute.getTypeName())) {
-                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Data type update for attribute is not supported");
+                    if (!RequestContext.get().isImportInProgress()) {
+                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Data type update for attribute is not supported");
+                    }
+
+                    LOG.info("Updating attribute type during import: {}.{} from {} to {}",
+                            structDef.getName(), attributeDef.getName(), existingAttribute.getTypeName(), attributeDef.getTypeName());
+
+                    String propertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef, attributeDef.getName());
+
+                    AtlasGraphUtilsV2.setProperty(vertex, propertyKey, toJsonFromAttributeDef(attributeDef));
+
+                    continue;
                 }
 
                 String propertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef, attributeDef.getName());
@@ -237,7 +248,15 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
 
     @VisibleForTesting
     public static String toJsonFromAttribute(AtlasAttribute attribute) {
-        AtlasAttributeDef   attributeDef = attribute.getAttributeDef();
+        return toJsonFromAttributeDef(attribute.getAttributeDef(), attribute.isOwnedRef(), attribute.getInverseRefAttributeName());
+    }
+
+    @VisibleForTesting
+    public static String toJsonFromAttributeDef(AtlasAttributeDef attributeDef) {
+        return toJsonFromAttributeDef(attributeDef, false, null);
+    }
+
+    private static String toJsonFromAttributeDef(AtlasAttributeDef attributeDef, boolean isComposite, String reverseAttributeName) {
         Map<String, Object> attribInfo   = new HashMap<>();
 
         attribInfo.put("name", attributeDef.getName());
@@ -245,8 +264,8 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         attribInfo.put("isUnique", attributeDef.getIsUnique());
         attribInfo.put("isIndexable", attributeDef.getIsIndexable());
         attribInfo.put("includeInNotification", attributeDef.getIncludeInNotification());
-        attribInfo.put("isComposite", attribute.isOwnedRef());
-        attribInfo.put("reverseAttributeName", attribute.getInverseRefAttributeName());
+        attribInfo.put("isComposite", isComposite);
+        attribInfo.put("reverseAttributeName", reverseAttributeName);
         attribInfo.put("defaultValue", attributeDef.getDefaultValue());
         attribInfo.put("description", attributeDef.getDescription());
         attribInfo.put("searchWeight", attributeDef.getSearchWeight());
