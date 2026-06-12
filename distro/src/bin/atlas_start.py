@@ -27,6 +27,48 @@ ATLAS_CONFIG_OPTS="-Datlas.conf=%s"
 DEFAULT_JVM_HEAP_OPTS="-Xmx1024m"
 DEFAULT_JVM_OPTS="-Dlogback.configurationFile=atlas-logback.xml -Djava.net.preferIPv4Stack=true -server"
 
+OTEL_JAVAAGENT_WEBINF_LIB_NAME = "opentelemetry-javaagent.jar"
+DEFAULT_OTEL_PROMETHEUS_PORT = "9464"
+
+
+def _truthy_env(val):
+    if val is None:
+        return False
+    return str(val).strip().lower() in ("1", "true", "yes", "on")
+
+
+def otel_javaagent_jvm_opts(web_app_dir):
+    """
+    Optional OpenTelemetry javaagent from expanded WEB-INF/lib (packaged in atlas.war).
+    Enable with ATLAS_OTEL_JAVAAGENT_ENABLED (e.g. from Docker env).
+    """
+    if not _truthy_env(os.environ.get(mc.ATLAS_OTEL_JAVAAGENT_ENABLED)):
+        return []
+    jar_fs = os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", OTEL_JAVAAGENT_WEBINF_LIB_NAME)
+    if mc.isCygwin():
+        jar_for_java = mc.convertCygwinPath(jar_fs)
+    else:
+        jar_for_java = jar_fs
+    if not os.path.isfile(jar_fs):
+        raise RuntimeError(
+            "%s is true but agent JAR was not found at %s. "
+            "Ensure the web application was built with opentelemetry-javaagent in WEB-INF/lib."
+            % (mc.ATLAS_OTEL_JAVAAGENT_ENABLED, jar_fs)
+       )
+    port = (os.environ.get(mc.ATLAS_OTEL_PROMETHEUS_PORT) or DEFAULT_OTEL_PROMETHEUS_PORT).strip()
+    if not port:
+        port = DEFAULT_OTEL_PROMETHEUS_PORT
+    host = (os.environ.get(mc.ATLAS_OTEL_PROMETHEUS_HOST) or "127.0.0.1").strip()
+    if not host:
+        host = "127.0.0.1"
+    return [
+        "-javaagent:%s" % jar_for_java,
+        "-Dotel.exporter.prometheus.port=%s" % port,
+        "-Dotel.metrics.exporter=prometheus",
+        "-Dotel.exporter.prometheus.host=%s" % host
+    ]
+
+
 def main():
 
     is_setup = (len(sys.argv)>1) and sys.argv[1] is not None and sys.argv[1] == '-setup'
@@ -46,6 +88,9 @@ def main():
         jvm_confdir = confdir
         jvm_logdir = logdir
 
+    web_app_dir = mc.webAppDir(atlas_home)
+    mc.expandWebApp(atlas_home)
+
     #create sys property for conf dirs
     if not is_setup:
         jvm_opts_list = (ATLAS_LOG_OPTS % (jvm_logdir, "application")).split()
@@ -61,6 +106,8 @@ def main():
     atlas_server_heap_opts = os.environ.get(mc.ATLAS_SERVER_HEAP, DEFAULT_JVM_HEAP_OPTS)
     jvm_opts_list.extend(atlas_server_heap_opts.split())
 
+    jvm_opts_list.extend(otel_javaagent_jvm_opts(web_app_dir))
+
     atlas_server_jvm_opts = os.environ.get(mc.ATLAS_SERVER_OPTS)
     if atlas_server_jvm_opts:
         jvm_opts_list.extend(atlas_server_jvm_opts.split())
@@ -68,14 +115,10 @@ def main():
     atlas_jvm_opts = os.environ.get(mc.ATLAS_OPTS, DEFAULT_JVM_OPTS)
     jvm_opts_list.extend(atlas_jvm_opts.split())
 
-    #expand web app dir
-    web_app_dir = mc.webAppDir(atlas_home)
-    mc.expandWebApp(atlas_home)
-
     p = os.pathsep
     atlas_classpath = confdir + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "classes" ) + p \
-                       + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "*" )  + p \
+                       + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "*" ) + p \
                        + os.path.join(atlas_home, "libext", "*")
 
     is_hbase = mc.is_hbase(confdir)

@@ -5,6 +5,9 @@ services:
       dockerfile: Dockerfile.atlas
       args:
         - ATLAS_BACKEND=${ATLAS_BACKEND}
+        - ATLAS_OTEL_JAVAAGENT_ENABLED=${ATLAS_OTEL_JAVAAGENT_ENABLED:-false}
+        - ATLAS_OTEL_PROMETHEUS_PORT=${ATLAS_OTEL_PROMETHEUS_PORT:-9464}
+        - ATLAS_OTEL_PROMETHEUS_HOST=${ATLAS_OTEL_PROMETHEUS_HOST:-0.0.0.0}
         - ATLAS_SERVER_JAVA_VERSION=${ATLAS_SERVER_JAVA_VERSION}
         - ATLAS_VERSION=${ATLAS_VERSION}
     image: atlas:latest
@@ -20,6 +23,8 @@ services:
       - ./config/atlas/users-credentials.properties:/opt/atlas/conf/users-credentials.properties:ro
     ports:
       - "21000:21000"
+      # OpenTelemetry Prometheus exporter (matches ATLAS_OTEL_PROMETHEUS_PORT in the container).
+      - "${ATLAS_OTEL_PROMETHEUS_PORT:-9464}:${ATLAS_OTEL_PROMETHEUS_PORT:-9464}"
     depends_on:
       atlas-backend:
         condition: service_healthy
@@ -33,6 +38,10 @@ services:
       - ATLAS_BACKEND
       - ATLAS_SERVER_JAVA_VERSION
       - ATLAS_VERSION
+      - ATLAS_OTEL_JAVAAGENT_ENABLED
+      - ATLAS_OTEL_PROMETHEUS_PORT
+      - ATLAS_OTEL_PROMETHEUS_HOST
+
     command:
       - /home/atlas/scripts/atlas.sh
 
