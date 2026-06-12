@@ -17,24 +17,25 @@
 FROM atlas-base:latest
 
 ARG HIVE_VERSION
-ARG HIVE_HADOOP_VERSION
+ARG HADOOP_VERSION
 ARG ATLAS_VERSION
 
 COPY ./dist/apache-atlas-${ATLAS_VERSION}-hive-hook.tar.gz /home/atlas/dist/
 COPY ./downloads/apache-hive-${HIVE_VERSION}-bin.tar.gz    /home/atlas/dist/
-COPY ./downloads/hadoop-${HIVE_HADOOP_VERSION}.tar.gz      /home/atlas/dist/
+COPY ./downloads/hadoop-${HADOOP_VERSION}.tar.gz      /home/atlas/dist/
 
 COPY ./scripts/atlas-hive-setup.sh               /home/atlas/scripts/
 COPY ./scripts/atlas-hive.sh                     /home/atlas/scripts/
 COPY ./scripts/atlas-hive-application.properties /home/atlas/scripts/
 COPY ./scripts/hive-site.xml                     /home/atlas/scripts/
+COPY ./scripts/postgresql*                       /home/atlas/scripts/
 
 RUN tar xvfz /home/atlas/dist/apache-hive-${HIVE_VERSION}-bin.tar.gz --directory=/opt/ && \
     ln -s /opt/apache-hive-${HIVE_VERSION}-bin /opt/hive && \
     rm -f /home/atlas/dist/apache-hive-${HIVE_VERSION}-bin.tar.gz && \
-    tar xvfz /home/atlas/dist/hadoop-${HIVE_HADOOP_VERSION}.tar.gz --directory=/opt/ && \
-    ln -s /opt/hadoop-${HIVE_HADOOP_VERSION} /opt/hadoop && \
-    rm -f /home/atlas/dist/hadoop-${HIVE_HADOOP_VERSION}.tar.gz && \
+    tar xvfz /home/atlas/dist/hadoop-${HADOOP_VERSION}.tar.gz --directory=/opt/ && \
+    ln -s /opt/hadoop-${HADOOP_VERSION} /opt/hadoop && \
+    rm -f /home/atlas/dist/hadoop-${HADOOP_VERSION}.tar.gz && \
     tar xvfz /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-hive-hook.tar.gz --directory=/opt/ && \
     ln -s /opt/apache-atlas-hive-hook-${ATLAS_VERSION} /opt/apache-atlas-hive-hook && \
     rm -f /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-hive-hook.tar.gz && \
@@ -43,6 +44,10 @@ RUN tar xvfz /home/atlas/dist/apache-hive-${HIVE_VERSION}-bin.tar.gz --directory
     ln -s /opt/apache-atlas-hive-hook/hook/hive/atlas-hive-plugin-impl /opt/hive/lib/atlas-hive-plugin-impl && \
     cp -f /home/atlas/scripts/hive-site.xml /opt/hive/conf/hive-site.xml && \
     cp -f /home/atlas/scripts/atlas-hive-application.properties /opt/hive/conf/atlas-application.properties
+
+RUN if [ ! -f /opt/hive/lib/postgresql-42.6.2.jar ]; then \
+        cp /home/atlas/scripts/postgresql* /opt/hive/lib/; \
+    fi
 
 ENV HIVE_HOME=/opt/hive
 ENV HADOOP_HOME=/opt/hadoop
