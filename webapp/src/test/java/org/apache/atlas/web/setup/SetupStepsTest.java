@@ -51,7 +51,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.testng.AssertJUnit.assertTrue;
 
@@ -245,7 +245,7 @@ public class SetupStepsTest {
             assertTrue(e instanceof SetupException);
         }
 
-        verifyZeroInteractions(setupStep1);
+        verifyNoInteractions(setupStep1);
     }
 
     private Pair<CreateBuilder, DeleteBuilder> setupSetupInProgressPathMocks(List<ACL> acls) throws Exception {
