@@ -877,8 +877,8 @@ public abstract class SearchProcessor {
                         ret = false;
                     }
                 } else if ((operator == SearchParameters.Operator.STARTS_WITH || operator == SearchParameters.Operator.ENDS_WITH)
-                        && StringUtils.length(attributeValue) > INDEX_SEARCH_MAX_TOKEN_STR_LENGTH) {
-                    LOG.debug("{} operator found for string attribute {} (max token length:{}) and filter value {}, deferring to in-memory or graph query (might cause poor performance)", operator, qualifiedName, INDEX_SEARCH_MAX_TOKEN_STR_LENGTH, attributeValue);
+                        && indexType == null && StringUtils.length(attributeValue) > INDEX_SEARCH_MAX_TOKEN_STR_LENGTH) {
+                    LOG.debug("{} operator found for string (TEXT) attribute {} (max token length:{}) and filter value {}, deferring to in-memory or graph query (might cause poor performance)", operator, qualifiedName, INDEX_SEARCH_MAX_TOKEN_STR_LENGTH, attributeValue);
 
                     ret = false;
                 }
