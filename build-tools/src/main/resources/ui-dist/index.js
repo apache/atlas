@@ -86,6 +86,10 @@
     function fetchCsrfHeader() {
         var response = getSessionDetails();
 
+        if (!response) {
+            return;
+        }
+
         if (!csrfEnabled && response['atlas.rest-csrf.enabled']) {
             var str = "" + response['atlas.rest-csrf.enabled'];
             csrfEnabled = (str.toLowerCase() == 'true');
