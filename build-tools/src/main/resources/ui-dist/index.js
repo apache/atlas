@@ -86,6 +86,13 @@
     function fetchCsrfHeader() {
         var response = getSessionDetails();
 
+<<<<<<< HEAD
+=======
+        if (!response) {
+            return;
+        }
+
+>>>>>>> 0a7fc7d53 (ATLAS-5309 : Allow unauthenticated access to Swagger apidocs static assets (#673))
         if (!csrfEnabled && response['atlas.rest-csrf.enabled']) {
             var str = "" + response['atlas.rest-csrf.enabled'];
             csrfEnabled = (str.toLowerCase() == 'true');
