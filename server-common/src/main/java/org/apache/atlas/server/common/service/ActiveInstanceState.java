@@ -55,7 +55,7 @@ public class ActiveInstanceState implements ActiveInstanceStateProvider {
 
     private final Configuration  configuration;
     private final CuratorFactory curatorFactory;
-    private final HighAvailabilitySupport haSupport;
+    private final HighAvailability highAvailability;
 
     /**
      * Create a new instance of {@link ActiveInstanceState}.
@@ -63,10 +63,10 @@ public class ActiveInstanceState implements ActiveInstanceStateProvider {
      * @throws AtlasException
      */
     @Inject
-    public ActiveInstanceState(Configuration configuration, CuratorFactory curatorFactory, HighAvailabilitySupport haSupport) {
-        this.configuration  = configuration;
-        this.curatorFactory   = curatorFactory;
-        this.haSupport        = haSupport;
+    public ActiveInstanceState(Configuration configuration, CuratorFactory curatorFactory, HighAvailability highAvailability) {
+        this.configuration      = configuration;
+        this.curatorFactory     = curatorFactory;
+        this.highAvailability   = highAvailability;
     }
 
     /**
@@ -78,16 +78,16 @@ public class ActiveInstanceState implements ActiveInstanceStateProvider {
      * @param serverId ID of this server instance
      */
     public void update(String serverId) throws AtlasBaseException {
-        if (!haSupport.isHAEnabled(configuration)) {
+        if (!highAvailability.isHAEnabled(configuration)) {
             return;
         }
 
         try {
             CuratorFramework            client                 = curatorFactory.clientInstance();
 
-            HighAvailabilityProperties zookeeperProperties    = haSupport.getZookeeperProperties(configuration);
+            HighAvailabilityProperties zookeeperProperties    = highAvailability.getZookeeperProperties(configuration);
 
-            String                     atlasServerAddress     = haSupport.getBoundAddressForId(configuration, serverId);
+            String                     atlasServerAddress     = highAvailability.getBoundAddressForId(configuration, serverId);
 
             List<ACL> acls = new ArrayList<>();
 
@@ -125,7 +125,7 @@ public class ActiveInstanceState implements ActiveInstanceStateProvider {
      */
     @Override
     public String getActiveServerAddress() {
-        if (!haSupport.isHAEnabled(configuration)) {
+        if (!highAvailability.isHAEnabled(configuration)) {
             return null;
         }
 
@@ -137,7 +137,7 @@ public class ActiveInstanceState implements ActiveInstanceStateProvider {
         }
 
         try {
-            HighAvailabilityProperties zookeeperProperties = haSupport.getZookeeperProperties(configuration);
+            HighAvailabilityProperties zookeeperProperties = highAvailability.getZookeeperProperties(configuration);
             byte[]                    bytes            = client.getData().forPath(getZnodePath(zookeeperProperties));
 
             serverAddress = new String(bytes, StandardCharsets.UTF_8);

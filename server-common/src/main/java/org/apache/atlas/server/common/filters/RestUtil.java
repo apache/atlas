@@ -54,6 +54,7 @@ public class RestUtil {
                     value = (String) values.nextElement();
                 }
             }
+
             if (StringUtils.trimToNull(name) != null && StringUtils.trimToNull(value) != null) {
                 if (name.equalsIgnoreCase(X_FORWARDED_PROTO)) {
                     xForwardedProto = value;
@@ -71,6 +72,7 @@ public class RestUtil {
             xForwardedHost = xForwardedHost.split(",")[0].trim();
         }
         String xForwardedURL = "";
+
         if (StringUtils.trimToNull(xForwardedProto) != null) {
             //if header contains x-forwarded-host and x-forwarded-context
             if (StringUtils.trimToNull(xForwardedHost) != null && StringUtils.trimToNull(xForwardedContext) != null) {
@@ -82,6 +84,7 @@ public class RestUtil {
                 //if header does not contains x-forwarded-host and x-forwarded-context
                 //preserve the x-forwarded-proto value coming from the request.
                 String requestURL = httpRequest.getRequestURL().toString();
+
                 if (StringUtils.trimToNull(requestURL) != null && requestURL.startsWith("http:")) {
                     requestURL = requestURL.replaceFirst("http", xForwardedProto);
                 }

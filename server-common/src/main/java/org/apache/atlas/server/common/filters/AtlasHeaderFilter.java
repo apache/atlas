@@ -17,9 +17,6 @@
  */
 package org.apache.atlas.server.common.filters;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -31,15 +28,12 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public class AtlasHeaderFilter implements Filter {
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasHeaderFilter.class);
-
     @Override
     public void init(FilterConfig filterConfig) {
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain)
-            throws IOException, ServletException {
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
         setHeaders((HttpServletResponse) response);
         filterChain.doFilter(request, response);
     }
@@ -50,6 +44,7 @@ public class AtlasHeaderFilter implements Filter {
 
     public void setHeaders(HttpServletResponse httpResponse) {
         AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
+
         HeadersUtil.setSecurityHeaders(responseWrapper);
     }
 }

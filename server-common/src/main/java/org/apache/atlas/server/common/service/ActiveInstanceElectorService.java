@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.atlas.server.common.service;
 
 import org.apache.atlas.AtlasException;
@@ -40,7 +39,7 @@ import java.util.Set;
 
 /**
  * A service that implements leader election to determine whether this Atlas server is Active.
- *
+ * <p>
  * The service implements leader election through <a href="http://curator.apache.org/">Curator</a>'s
  * {@link LeaderLatch} recipe. The service also implements {@link LeaderLatchListener} to get
  * notified of changes to leadership state. Upon becoming leader, this instance is treated as the
@@ -48,7 +47,6 @@ import java.util.Set;
  * on being removed from leadership, this instance is treated as a passive instance and calls
  * {@link ActiveStateChangeHandler}s to deactivate them.
  */
-
 @Component
 //
 // This should be called the last, leaving it without the @Order(Integer.MAX_VALUE) will make it get
@@ -59,8 +57,8 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
     private final Configuration                  configuration;
     private final ServiceState                   serviceState;
     private final ActiveInstanceState            activeInstanceState;
-    private final HighAvailabilitySupport        haSupport;
-    private final List<ServiceMetricsHook>       metricsHooks;
+    private final HighAvailability               highAvailability;
+    private final Set<ServiceStateChangeHandler> serviceStateChangeHandlers;
     private final Set<ActiveStateChangeHandler>  activeStateChangeHandlerProviders;
     private final List<ActiveStateChangeHandler> activeStateChangeHandlers;
     private final CuratorFactory                 curatorFactory;
@@ -69,68 +67,67 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
 
     /**
      * Create a new instance of {@link ActiveInstanceElectorService}
+     *
      * @param activeStateChangeHandlerProviders The list of registered {@link ActiveStateChangeHandler}s that
-     *                                          must be called back on state changes.
+     * must be called back on state changes.
      * @throws AtlasException
      */
     @Inject
     public ActiveInstanceElectorService(Configuration configuration,
             Set<ActiveStateChangeHandler> activeStateChangeHandlerProviders,
-            List<ServiceMetricsHook> metricsHooks,
+            Set<ServiceStateChangeHandler> serviceStateChangeHandlers,
             CuratorFactory curatorFactory,
             ActiveInstanceState activeInstanceState,
             ServiceState serviceState,
-            HighAvailabilitySupport haSupport) {
+            HighAvailability highAvailability) {
         this.configuration                     = configuration;
         this.activeStateChangeHandlerProviders = activeStateChangeHandlerProviders;
-        this.metricsHooks                      = metricsHooks != null ? metricsHooks : Collections.emptyList();
+        this.serviceStateChangeHandlers        = serviceStateChangeHandlers != null
+                ? serviceStateChangeHandlers : Collections.emptySet();
         this.activeStateChangeHandlers         = new ArrayList<>();
         this.curatorFactory                    = curatorFactory;
         this.activeInstanceState               = activeInstanceState;
         this.serviceState                      = serviceState;
-        this.haSupport                         = haSupport;
+        this.highAvailability                  = highAvailability;
     }
 
     /**
      * Join leader election on starting up.
-     *
+     * <p>
      * If Atlas High Availability configuration is disabled, this operation is a no-op.
+     *
      * @throws AtlasException
      */
     @Override
     public void start() throws AtlasException {
-        boolean haEnabled = haSupport.isHAEnabled(configuration);
+        boolean haEnabled = highAvailability.isHAEnabled(configuration);
 
-        for (ServiceMetricsHook hook : metricsHooks) {
+        serviceStateChangeHandlers.forEach(hook -> {
             hook.onServerStart();
             if (!haEnabled) {
                 hook.onServerActivation();
             }
-        }
+        });
 
         if (!haEnabled) {
             LOG.info("HA is not enabled, no need to start leader election service");
-
             return;
         }
 
         cacheActiveStateChangeHandlers();
-
-        serverId = haSupport.selectServerId(configuration);
-
+        serverId = highAvailability.selectServerId(configuration);
         joinElection();
     }
 
     /**
      * Leave leader election process and clean up resources on shutting down.
-     *
+     * <p>
      * If Atlas High Availability configuration is disabled, this operation is a no-op.
      */
     @Override
     public void stop() {
-        if (!haSupport.isHAEnabled(configuration)) {
+        if (!highAvailability.isHAEnabled(configuration)) {
             LOG.info("HA is not enabled, no need to stop leader election service");
-
             return;
         }
 
@@ -144,7 +141,7 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
 
     /**
      * Call all registered {@link ActiveStateChangeHandler}s on being elected active.
-     *
+     * <p>
      * In addition, shared state information about this instance becoming active is updated
      * using {@link ActiveInstanceState}.
      */
@@ -152,19 +149,17 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
     public void isLeader() {
         LOG.warn("Server instance with server id {} is elected as leader", serverId);
         serviceState.becomingActive();
-
         try {
             for (ActiveStateChangeHandler handler : activeStateChangeHandlers) {
                 handler.instanceIsActive();
             }
             activeInstanceState.update(serverId);
             serviceState.setActive();
-            for (ServiceMetricsHook metricsHook : metricsHooks) {
-                metricsHook.onServerActivation();
+            for (ServiceStateChangeHandler serviceStateChangeHandler : serviceStateChangeHandlers) {
+                serviceStateChangeHandler.onServerActivation();
             }
         } catch (Exception e) {
             LOG.error("Got exception while activating", e);
-
             notLeader();
             rejoinElection();
         } finally {
@@ -178,9 +173,7 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
     @Override
     public void notLeader() {
         LOG.warn("Server instance with server id {} is removed as leader", serverId);
-
         serviceState.becomingPassive();
-
         for (int idx = activeStateChangeHandlers.size() - 1; idx >= 0; idx--) {
             try {
                 activeStateChangeHandlers.get(idx).instanceIsPassive();
@@ -188,22 +181,17 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
                 LOG.error("Error while reacting to passive state.", e);
             }
         }
-
         serviceState.setPassive();
     }
 
     private void joinElection() {
         LOG.info("Starting leader election for {}", serverId);
 
-        String zkRoot = haSupport.getZookeeperProperties(configuration).getZkRoot();
-
+        String zkRoot = highAvailability.getZookeeperProperties(configuration).getZkRoot();
         leaderLatch = curatorFactory.leaderLatchInstance(serverId, zkRoot);
-
         leaderLatch.addListener(this);
-
         try {
             leaderLatch.start();
-
             LOG.info("Leader latch started for {}.", serverId);
         } catch (Exception e) {
             LOG.info("Exception while starting leader latch for {}.", serverId, e);
@@ -225,7 +213,6 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
     private void rejoinElection() {
         try {
             leaderLatch.close();
-
             joinElection();
         } catch (IOException e) {
             LOG.error("Error rejoining election", e);

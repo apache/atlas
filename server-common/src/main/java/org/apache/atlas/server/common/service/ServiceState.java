@@ -52,14 +52,14 @@ public class ServiceState implements ServiceStateProvider {
 
     private Configuration configuration;
     private volatile ServiceStateValue state;
-    private final HighAvailabilitySupport haSupport;
+    private final HighAvailability highAvailability;
 
     @Inject
-    public ServiceState(Configuration configuration, HighAvailabilitySupport haSupport) {
-        this.configuration = configuration;
-        this.haSupport     = haSupport;
+    public ServiceState(Configuration configuration, HighAvailability highAvailability) {
+        this.configuration    = configuration;
+        this.highAvailability = highAvailability;
 
-        state = !haSupport.isHAEnabled(configuration) ? ServiceStateValue.ACTIVE : ServiceStateValue.PASSIVE;
+        state = !highAvailability.isHAEnabled(configuration) ? ServiceStateValue.ACTIVE : ServiceStateValue.PASSIVE;
 
         if(!StringUtils.isEmpty(configuration.getString(ATLAS_MIGRATION_MODE_FILENAME, ""))) {
             state = ServiceStateValue.MIGRATING;
@@ -118,7 +118,7 @@ public class ServiceState implements ServiceStateProvider {
     }
 
     private void setState(ServiceStateValue newState) {
-        checkState(haSupport.isHAEnabled(configuration),
+        checkState(highAvailability.isHAEnabled(configuration),
                 "Cannot change state as requested, as HA is not enabled for this instance.");
 
         state = newState;

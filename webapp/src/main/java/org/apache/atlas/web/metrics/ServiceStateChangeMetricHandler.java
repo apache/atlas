@@ -17,21 +17,23 @@
  */
 package org.apache.atlas.web.metrics;
 
-import org.apache.atlas.server.common.service.ServiceMetricsHook;
+import org.apache.atlas.server.common.service.ServiceStateChangeHandler;
 import org.apache.atlas.util.AtlasMetricsUtil;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
 /**
- * Bridges {@link ServiceMetricsHook} to {@link AtlasMetricsUtil} in the main webapp.
+ * WebApp implementation of the ServiceStateChangeHandler.
+ * This class bridges the common server lifecycle events to the
+ * WebApp-specific AtlasMetricsUtil.
  */
 @Component
-public class WebappServiceMetricsHook implements ServiceMetricsHook {
+public class ServiceStateChangeMetricHandler implements ServiceStateChangeHandler {
     private final AtlasMetricsUtil metricsUtil;
 
     @Inject
-    public WebappServiceMetricsHook(AtlasMetricsUtil metricsUtil) {
+    public ServiceStateChangeMetricHandler(AtlasMetricsUtil metricsUtil) {
         this.metricsUtil = metricsUtil;
     }
 

@@ -27,7 +27,6 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -35,9 +34,11 @@ import java.io.IOException;
 
 @Component
 public class AtlasAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
-    public static final  String LOCALLOGIN     = "locallogin";
-    private static final Logger LOG            = LoggerFactory.getLogger(AuthenticationSuccessHandler.class);
-    private              int    sessionTimeout = 3600;
+    private static final Logger LOG = LoggerFactory.getLogger(AuthenticationSuccessHandler.class);
+
+    public static final  String LOCALLOGIN = "locallogin";
+
+    private int sessionTimeout = 3600;
 
     @PostConstruct
     public void setup() {
@@ -45,11 +46,11 @@ public class AtlasAuthenticationSuccessHandler implements AuthenticationSuccessH
     }
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-            Authentication authentication) throws IOException, ServletException {
-        LOG.debug("Login Success " + authentication.getPrincipal());
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
+        LOG.debug("Login Success {}", authentication.getPrincipal());
 
         JSONObject json = new JSONObject();
+
         json.put("msgDesc", "Success");
 
         if (request.getSession() != null) { // incase of form based login mark it as local login in session
@@ -60,6 +61,7 @@ public class AtlasAuthenticationSuccessHandler implements AuthenticationSuccessH
                 request.getSession().setMaxInactiveInterval(sessionTimeout);
             }
         }
+
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);
         response.setCharacterEncoding("UTF-8");
