@@ -59,7 +59,7 @@ public class RestUtil {
                 }
             }
 
-            if (org.apache.commons.lang3.StringUtils.trimToNull(name) != null && org.apache.commons.lang3.StringUtils.trimToNull(value) != null) {
+            if (StringUtils.trimToNull(name) != null && StringUtils.trimToNull(value) != null) {
                 if (name.equalsIgnoreCase(X_FORWARDED_PROTO)) {
                     xForwardedProto = value;
                 } else if (name.equalsIgnoreCase(X_FORWARDED_HOST)) {
@@ -78,11 +78,11 @@ public class RestUtil {
 
         String xForwardedURL = "";
 
-        if (org.apache.commons.lang3.StringUtils.trimToNull(xForwardedProto) != null) {
+        if (StringUtils.trimToNull(xForwardedProto) != null) {
             //if header contains x-forwarded-host and x-forwarded-context
-            if (org.apache.commons.lang3.StringUtils.trimToNull(xForwardedHost) != null && org.apache.commons.lang3.StringUtils.trimToNull(xForwardedContext) != null) {
+            if (StringUtils.trimToNull(xForwardedHost) != null && StringUtils.trimToNull(xForwardedContext) != null) {
                 xForwardedURL = xForwardedProto + DELIMITTER + xForwardedHost + xForwardedContext + PROXY_ATLAS_URL_PATH + httpRequest.getRequestURI();
-            } else if (org.apache.commons.lang3.StringUtils.trimToNull(xForwardedHost) != null) {
+            } else if (StringUtils.trimToNull(xForwardedHost) != null) {
                 //if header contains x-forwarded-host and does not contains x-forwarded-context
                 xForwardedURL = xForwardedProto + DELIMITTER + xForwardedHost + httpRequest.getRequestURI();
             } else {
@@ -90,7 +90,7 @@ public class RestUtil {
                 //preserve the x-forwarded-proto value coming from the request.
                 String requestURL = httpRequest.getRequestURL().toString();
 
-                if (org.apache.commons.lang3.StringUtils.trimToNull(requestURL) != null && requestURL.startsWith("http:")) {
+                if (StringUtils.trimToNull(requestURL) != null && requestURL.startsWith("http:")) {
                     requestURL = requestURL.replaceFirst("http", xForwardedProto);
                 }
 

@@ -40,23 +40,23 @@ import static org.mockito.Mockito.verify;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
-public class WebappAdminAuditHookTest {
+public class ServiceStateChangeAuditHandlerTest {
     private static final String ATLAS_USER = "atlas";
 
     @Mock
     private AtlasAuditService auditService;
 
-    private WebappAdminAuditHook hook;
+    private ServiceStateChangeAuditHandler handler;
 
     @BeforeMethod
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        hook = new WebappAdminAuditHook(auditService);
+        handler = new ServiceStateChangeAuditHandler(auditService);
     }
 
     @Test
     public void testOnServerStartInvokesAuditWithServerStartOperation() throws AtlasBaseException {
-        hook.onServerStart();
+        handler.onServerStart();
 
         verify(auditService, times(1)).add(
                 eq(ATLAS_USER),
@@ -71,7 +71,7 @@ public class WebappAdminAuditHookTest {
 
     @Test
     public void testOnServerActivationInvokesAuditWithServerStateActiveOperation() throws AtlasBaseException {
-        hook.onServerActivation();
+        handler.onServerActivation();
 
         ArgumentCaptor<Date> startCaptor = ArgumentCaptor.forClass(Date.class);
         ArgumentCaptor<Date> endCaptor = ArgumentCaptor.forClass(Date.class);
@@ -103,7 +103,7 @@ public class WebappAdminAuditHookTest {
                 isNull(),
                 anyLong());
 
-        hook.onServerStart();
+        handler.onServerStart();
 
         verify(auditService, times(1)).add(
                 eq(ATLAS_USER),

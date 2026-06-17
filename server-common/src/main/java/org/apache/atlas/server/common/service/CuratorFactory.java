@@ -62,18 +62,18 @@ public class CuratorFactory {
 
     private final Configuration    configuration;
     private       CuratorFramework curatorFramework;
-    private final HighAvailabilitySupport haSupport;
+    private final HighAvailability highAvailability;
 
     /**
      * Initializes the {@link CuratorFramework} that is used for all interaction with Zookeeper.
      * @throws AtlasException
      */
     @Inject
-    public CuratorFactory(Configuration configuration, HighAvailabilitySupport haSupport) {
-        this.configuration = configuration;
-        this.haSupport     = haSupport;
+    public CuratorFactory(Configuration configuration, HighAvailability highAvailability) {
+        this.configuration    = configuration;
+        this.highAvailability = highAvailability;
 
-        if (haSupport.isHAEnabled(configuration)) {
+        if (highAvailability.isHAEnabled(configuration)) {
             initializeCuratorFramework();
         }
     }
@@ -118,7 +118,7 @@ public class CuratorFactory {
 
     @VisibleForTesting
     protected void initializeCuratorFramework() {
-        HighAvailabilityProperties zookeeperProperties = haSupport.getZookeeperProperties(configuration);
+        HighAvailabilityProperties zookeeperProperties = highAvailability.getZookeeperProperties(configuration);
         CuratorFrameworkFactory.Builder builder = getBuilder(zookeeperProperties);
 
         enhanceBuilderWithSecurityParameters(zookeeperProperties, builder);

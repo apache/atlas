@@ -20,8 +20,8 @@ package org.apache.atlas.web.service;
 
 import com.google.common.base.Charsets;
 import org.apache.atlas.server.common.service.CuratorFactory;
+import org.apache.atlas.server.common.service.HighAvailability;
 import org.apache.atlas.server.common.service.HighAvailabilityProperties;
-import org.apache.atlas.server.common.service.HighAvailabilitySupport;
 import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
@@ -48,7 +48,7 @@ public class CuratorFactoryTest {
     private Configuration configuration;
 
     @Mock
-    private HighAvailabilitySupport haSupport;
+    private HighAvailability highAvailability;
 
     @Mock
     private HighAvailabilityProperties zookeeperProperties;
@@ -62,9 +62,9 @@ public class CuratorFactoryTest {
     }
 
     private CuratorFactory buildCuratorFactory() {
-        when(haSupport.isHAEnabled(configuration)).thenReturn(true);
+        when(highAvailability.isHAEnabled(configuration)).thenReturn(true);
 
-        return new CuratorFactory(configuration, haSupport) {
+        return new CuratorFactory(configuration, highAvailability) {
             @Override
             protected void initializeCuratorFramework() {
             }

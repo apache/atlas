@@ -36,15 +36,13 @@ public class AtlasDelegatingAuthenticationEntryPoint extends DelegatingAuthentic
 
     public AtlasDelegatingAuthenticationEntryPoint(LinkedHashMap<RequestMatcher, AuthenticationEntryPoint> entryPoints) {
         super(entryPoints);
-        if (LOG.isDebugEnabled()) {
-            LOG.info("AtlasDelegatingAuthenticationEntryPoint-AjaxAwareAuthenticationEntryPoint(): constructor");
-        }
+
+        LOG.debug("AtlasDelegatingAuthenticationEntryPoint-AjaxAwareAuthenticationEntryPoint(): constructor");
     }
 
-    public void commence(HttpServletRequest request, HttpServletResponse response,
-                         AuthenticationException authException) throws IOException {
-
+    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
         String ajaxRequestHeader = request.getHeader(HeadersUtil.X_REQUESTED_WITH_KEY);
+
         response.setHeader(HeadersUtil.X_FRAME_OPTIONS_KEY, HeadersUtil.X_FRAME_OPTIONS_VAL);
 
         if (ajaxRequestHeader != null
@@ -55,8 +53,7 @@ public class AtlasDelegatingAuthenticationEntryPoint extends DelegatingAuthentic
             }
             response.sendError(HeadersUtil.SC_AUTHENTICATION_TIMEOUT, SESSION_TIMEOUT);
         } else {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                    authException.getMessage());
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage());
         }
     }
 }

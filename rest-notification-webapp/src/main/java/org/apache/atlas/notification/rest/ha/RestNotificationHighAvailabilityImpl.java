@@ -21,15 +21,17 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.notification.rest.AtlasServerIdSelector;
 import org.apache.atlas.notification.rest.RestHAConfiguration;
 import org.apache.atlas.server.common.service.HighAvailabilityProperties;
-import org.apache.atlas.server.common.service.HighAvailabilitySupport;
+import org.apache.atlas.server.common.service.HighAvailability;
 import org.apache.commons.configuration.Configuration;
 import org.springframework.stereotype.Component;
 
 /**
- * Rest notification implementation of {@link HighAvailabilitySupport} using {@link RestHAConfiguration}.
+ * Rest-Notification specific implementation of HighAvailability.
+ * It adapts RestHAConfiguration (not standard HAConfiguration) into
+ * the common contract.
  */
 @Component
-public class RestNotificationHighAvailabilitySupport implements HighAvailabilitySupport {
+public class RestNotificationHighAvailabilityImpl implements HighAvailability {
     @Override
     public boolean isHAEnabled(Configuration configuration) {
         return RestHAConfiguration.isHAEnabled(configuration);

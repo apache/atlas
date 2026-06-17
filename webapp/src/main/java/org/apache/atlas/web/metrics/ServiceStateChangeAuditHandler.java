@@ -21,7 +21,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AtlasAuditEntry.AuditOperation;
 import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.atlas.server.common.service.EmbeddedServer;
-import org.apache.atlas.server.common.service.ServiceMetricsHook;
+import org.apache.atlas.server.common.service.ServiceStateChangeHandler;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,24 +36,24 @@ import java.util.Date;
 /**
  * Persists {@code SERVER_START} and {@code SERVER_STATE_ACTIVE} rows for Administration → Audits.
  * <p>
- * Registered alongside {@link WebappServiceMetricsHook} as a {@link ServiceMetricsHook} so lifecycle
- * matches {@link org.apache.atlas.server.common.service.ActiveInstanceElectorService}: non-HA invokes
- * both hooks in sequence; HA emits {@code SERVER_START} at process init and {@code SERVER_STATE_ACTIVE}
- * when this instance becomes leader.
+ * Registered alongside {@link ServiceStateChangeMetricHandler} as a {@link ServiceStateChangeHandler}
+ * so lifecycle matches {@link org.apache.atlas.server.common.service.ActiveInstanceElectorService}:
+ * non-HA invokes both hooks in sequence; HA emits {@code SERVER_START} at process init and
+ * {@code SERVER_STATE_ACTIVE} when this instance becomes leader.
  * <p>
  * Uses the eight-argument {@link AtlasAuditService#add} overload so user and client id are explicit
  * and do not rely on {@link org.apache.atlas.RequestContext} during bootstrap.
  */
 @Component
-public class WebappAdminAuditHook implements ServiceMetricsHook {
-    private static final Logger LOG = LoggerFactory.getLogger(WebappAdminAuditHook.class);
+public class ServiceStateChangeAuditHandler implements ServiceStateChangeHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(ServiceStateChangeAuditHandler.class);
 
     private static final String ADMIN_AUDIT_USER = "atlas";
 
     private final AtlasAuditService auditService;
 
     @Inject
-    public WebappAdminAuditHook(AtlasAuditService auditService) {
+    public ServiceStateChangeAuditHandler(AtlasAuditService auditService) {
         this.auditService = auditService;
     }
 

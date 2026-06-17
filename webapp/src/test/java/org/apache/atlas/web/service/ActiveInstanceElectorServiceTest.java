@@ -25,10 +25,10 @@ import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.server.common.service.ActiveInstanceElectorService;
 import org.apache.atlas.server.common.service.ActiveInstanceState;
 import org.apache.atlas.server.common.service.CuratorFactory;
+import org.apache.atlas.server.common.service.HighAvailability;
 import org.apache.atlas.server.common.service.HighAvailabilityProperties;
-import org.apache.atlas.server.common.service.HighAvailabilitySupport;
-import org.apache.atlas.server.common.service.ServiceMetricsHook;
 import org.apache.atlas.server.common.service.ServiceState;
+import org.apache.atlas.server.common.service.ServiceStateChangeHandler;
 import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.mockito.InOrder;
@@ -67,20 +67,20 @@ public class ActiveInstanceElectorServiceTest {
     private ServiceState serviceState;
 
     @Mock
-    private HighAvailabilitySupport haSupport;
+    private HighAvailability highAvailability;
 
     @Mock
     private HighAvailabilityProperties haProperties;
 
     @Mock
-    private ServiceMetricsHook metricsHook;
+    private ServiceStateChangeHandler serviceStateChangeHandler;
 
     @BeforeMethod
     public void setup() throws Exception {
         MockitoAnnotations.initMocks(this);
-        when(haSupport.isHAEnabled(any(Configuration.class))).thenReturn(true);
-        when(haSupport.selectServerId(any(Configuration.class))).thenReturn("id1");
-        when(haSupport.getZookeeperProperties(any(Configuration.class))).thenReturn(haProperties);
+        when(highAvailability.isHAEnabled(any(Configuration.class))).thenReturn(true);
+        when(highAvailability.selectServerId(any(Configuration.class))).thenReturn("id1");
+        when(highAvailability.getZookeeperProperties(any(Configuration.class))).thenReturn(haProperties);
         when(haProperties.getZkRoot()).thenReturn(DEFAULT_ZK_ROOT);
     }
 
@@ -88,11 +88,11 @@ public class ActiveInstanceElectorServiceTest {
         return new ActiveInstanceElectorService(
                 configuration,
                 handlers,
-                Collections.singletonList(metricsHook),
+                Collections.singleton(serviceStateChangeHandler),
                 curatorFactory,
                 activeInstanceState,
                 serviceState,
-                haSupport);
+                highAvailability);
     }
 
     @Test
@@ -119,15 +119,15 @@ public class ActiveInstanceElectorServiceTest {
 
     @Test
     public void testLeaderElectionIsNotStartedIfNotInHAMode() throws AtlasException {
-        reset(haSupport);
-        when(haSupport.isHAEnabled(any(Configuration.class))).thenReturn(false);
+        reset(highAvailability);
+        when(highAvailability.isHAEnabled(any(Configuration.class))).thenReturn(false);
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
 
         ActiveInstanceElectorService service = newElector(new HashSet<ActiveStateChangeHandler>());
         service.start();
 
-        verify(metricsHook).onServerStart();
-        verify(metricsHook).onServerActivation();
+        verify(serviceStateChangeHandler).onServerStart();
+        verify(serviceStateChangeHandler).onServerActivation();
         verifyZeroInteractions(curatorFactory);
     }
 
@@ -157,8 +157,8 @@ public class ActiveInstanceElectorServiceTest {
 
     @Test
     public void testNoActionOnStopIfHAModeIsDisabled() {
-        reset(haSupport);
-        when(haSupport.isHAEnabled(any(Configuration.class))).thenReturn(false);
+        reset(highAvailability);
+        when(highAvailability.isHAEnabled(any(Configuration.class))).thenReturn(false);
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
 
         ActiveInstanceElectorService service = newElector(new HashSet<ActiveStateChangeHandler>());

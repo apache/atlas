@@ -18,13 +18,21 @@
 package org.apache.atlas.server.common.service;
 
 /**
- * Reacts to server lifecycle events; WARs may register beans (e.g. delegating to {@code AtlasMetricsUtil}).
+ * A hook interface for reacting to server lifecycle events.
+ * Used to decouple core service logic.
  */
-public interface ServiceMetricsHook {
+public interface ServiceStateChangeHandler {
 
+    /**
+     * Invoked when the server process begins its initialization.
+     */
     default void onServerStart() {
     }
 
+    /**
+     * Invoked when the server instance is elected as the ACTIVE instance
+     * in an HA cluster or starts up in non-HA mode.
+     */
     default void onServerActivation() {
     }
 }

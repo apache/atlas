@@ -21,7 +21,7 @@ package org.apache.atlas.web.service;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.audit.AtlasAuditService;
-import org.apache.atlas.server.common.service.HighAvailabilitySupport;
+import org.apache.atlas.server.common.service.HighAvailability;
 import org.apache.atlas.server.common.service.ServiceState;
 import org.apache.commons.configuration.Configuration;
 import org.mockito.Mock;
@@ -50,7 +50,7 @@ public class ServiceStateTest {
     private AtlasAuditService auditService;
 
     @Mock
-    private HighAvailabilitySupport haSupport;
+    private HighAvailability highAvailability;
 
     @BeforeMethod
     public void setup() {
@@ -58,8 +58,8 @@ public class ServiceStateTest {
     }
 
     private ServiceState newServiceState(boolean haEnabled) {
-        when(haSupport.isHAEnabled(configuration)).thenReturn(haEnabled);
-        return new ServiceState(configuration, haSupport);
+        when(highAvailability.isHAEnabled(configuration)).thenReturn(haEnabled);
+        return new ServiceState(configuration, highAvailability);
     }
 
     @Test

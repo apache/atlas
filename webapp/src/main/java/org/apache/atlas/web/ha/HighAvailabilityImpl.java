@@ -20,16 +20,18 @@ package org.apache.atlas.web.ha;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.AtlasServerIdSelector;
 import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.server.common.service.HighAvailability;
 import org.apache.atlas.server.common.service.HighAvailabilityProperties;
-import org.apache.atlas.server.common.service.HighAvailabilitySupport;
 import org.apache.commons.configuration.Configuration;
 import org.springframework.stereotype.Component;
 
 /**
- * Webapp implementation of {@link HighAvailabilitySupport} using {@link HAConfiguration}.
+ * WebApp-specific implementation of HighAvailability.
+ * This class adapts the legacy HAConfiguration and AtlasServerIdSelector
+ * into the common contract required by the shared server engine.
  */
 @Component
-public class WebappHighAvailabilitySupport implements HighAvailabilitySupport {
+public class HighAvailabilityImpl implements HighAvailability {
     @Override
     public boolean isHAEnabled(Configuration configuration) {
         return HAConfiguration.isHAEnabled(configuration);
