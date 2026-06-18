@@ -107,7 +107,6 @@ public class HiveITBase {
     public void setUp() throws Exception {
         //Set-up hive session
         conf = new HiveConf();
-        conf.setClassLoader(Thread.currentThread().getContextClassLoader());
         conf.set("hive.metastore.event.listeners", "");
 
         // 'driver' using this configuration will be used for tests in HiveHookIT

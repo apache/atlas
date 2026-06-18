@@ -80,11 +80,11 @@ public class ImpalaLineageITBase {
     public void setUp() throws Exception {
         //Set-up hive session
         conf = new HiveConf();
-        conf.setClassLoader(Thread.currentThread().getContextClassLoader());
-        HiveConf conf = new HiveConf();
-        SessionState ss = new SessionState(conf);
-        ss = SessionState.start(ss);
-        SessionState.setCurrentSessionState(ss);
+        conf.set("hive.metastore.event.listeners", "");
+        SessionState sessionState = new SessionState(conf);
+        sessionState = SessionState.start(sessionState);
+        SessionState.setCurrentSessionState(sessionState);
+        ss = sessionState;
         driverWithoutContext = new Driver(conf);
 
         Configuration configuration = ApplicationProperties.get();
