@@ -1844,7 +1844,7 @@ public class NotificationHookConsumerTest {
         Object hookConsumer = createHookConsumer(consumer, notificationConsumer);
 
         Object entityProcessor = getEntityProcessor(hookConsumer);
-        Method recordFailedMethod = SerialEntityProcessor.class.getDeclaredMethod("recordFailedMessages", List.class);
+        Method recordFailedMethod = SerialEntityProcessor.class.getDeclaredMethod("recordFailedMessages", String.class, List.class);
         recordFailedMethod.setAccessible(true);
 
         // Add some failed messages
@@ -1855,7 +1855,7 @@ public class NotificationHookConsumerTest {
         failedMessages.add("failed message 1");
         failedMessages.add("failed message 2");
 
-        recordFailedMethod.invoke(entityProcessor, failedMessages);
+        recordFailedMethod.invoke(entityProcessor, "test-topic", failedMessages);
 
         assertTrue(failedMessages.isEmpty()); // Should be cleared after recording
     }
