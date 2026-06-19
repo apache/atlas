@@ -97,11 +97,12 @@ const DashboardOverview = () => {
 				maxWidth: "100%",
 				boxSizing: "border-box",
 				backgroundColor: "#f5f7f9",
-				padding: 3,
-				borderRadius: 2
+				borderRadius: 2,
+				pb: 3,
+				pr: 3
 			}}
 		>
-			<Grid container spacing={3} sx={{ width: "100%", alignItems: "stretch" }}>
+			<Grid container spacing={3} sx={{ m: 0, width: "100%", alignItems: "stretch" }}>
 				<Grid item xs={12} md={4}>
 					{isLoading ? <DashboardSkeleton /> : <OverviewCard entityCount={entityCount} tagCount={tagCount} />}
 				</Grid>
