@@ -54,6 +54,7 @@
         <module>addons/storm-bridge-shim</module>
         <module>addons/trino-extractor</module>
         <module>atlas-examples</module>
+        <module>authn</module>
         <module>authorization</module>
         <module>build-tools</module>
         <module>client</module>
@@ -98,7 +99,6 @@
         <commons-codec.version>1.14</commons-codec.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-collections4.version>4.4</commons-collections4.version>
-        <commons-conf.version>1.10</commons-conf.version>
         <commons-conf2.version>2.10.1</commons-conf2.version>
         <commons-el.version>1.0</commons-el.version>
         <commons-io.version>2.17.0</commons-io.version>
@@ -160,6 +160,7 @@
         <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
         <mockito.version>3.12.4</mockito.version>
         <netty.version>4.1.125.Final</netty.version>
+        <nimbus-jose-jwt.version>9.37.3</nimbus-jose-jwt.version>
         <node-for-v1.version>v22.14.0</node-for-v1.version>
         <node-for-v2.version>v12.16.0</node-for-v2.version>
         <npm-for-v1.version>10.9.2</npm-for-v1.version>
@@ -266,6 +267,12 @@
             </dependency>
 
             <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>${nimbus-jose-jwt.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>com.squareup.okio</groupId>
                 <artifactId>okio</artifactId>
                 <version>${okio.version}</version>
@@ -348,13 +355,6 @@
                 <groupId>commons-collections</groupId>
                 <artifactId>commons-collections</artifactId>
                 <version>${commons-collections.version}</version>
-            </dependency>
-
-            <!-- commons -->
-            <dependency>
-                <groupId>commons-configuration</groupId>
-                <artifactId>commons-configuration</artifactId>
-                <version>${commons-conf.version}</version>
             </dependency>
 
             <dependency>
@@ -1827,6 +1827,16 @@
             </roles>
             <timezone>America/New_York</timezone>
             <!--<organizationUrl>https://www.aetna.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>fkhan</id>
+            <name>Farhan Khan</name>
+            <email>fkhan@apache.org</email>
+            <organization>Freestone Infotech</organization>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
         </developer>
         <developer>
             <id>grahamwallis</id>

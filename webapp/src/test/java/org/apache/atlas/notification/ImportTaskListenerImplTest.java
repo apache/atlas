@@ -128,7 +128,8 @@ public class ImportTaskListenerImplTest {
         Thread.sleep(500);
 
         verify(requestQueue, times(1)).put("import123");
-        verify(asyncImportService, times(1)).updateImportRequest(importRequest);
+        verify(asyncImportService, times(1)).populateCache(importRequest);
+        verify(asyncImportService, times(1)).saveImport("import123");
     }
 
     @Test
@@ -152,7 +153,8 @@ public class ImportTaskListenerImplTest {
             importTaskListener.onReceiveImportRequest(importRequest);
         } finally {
             verify(requestQueue, times(1)).put("import123");
-            verify(asyncImportService, times(1)).updateImportRequest(importRequest);
+            verify(asyncImportService, times(1)).populateCache(importRequest);
+            verify(asyncImportService, times(1)).saveImport("import123");
         }
     }
 

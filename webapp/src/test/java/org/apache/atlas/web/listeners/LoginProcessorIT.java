@@ -17,7 +17,7 @@
 package org.apache.atlas.web.listeners;
 
 import org.apache.atlas.web.security.BaseSecurityTest;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -39,7 +39,7 @@ public class LoginProcessorIT extends BaseSecurityTest {
     public void testDefaultSimpleLogin() throws Exception {
         LoginProcessor processor = new LoginProcessor() {
             @Override
-            protected org.apache.commons.configuration.Configuration getApplicationConfiguration() {
+            protected org.apache.commons.configuration2.Configuration getApplicationConfiguration() {
                 return new PropertiesConfiguration();
             }
         };
@@ -68,7 +68,7 @@ public class LoginProcessorIT extends BaseSecurityTest {
             }
 
             @Override
-            protected org.apache.commons.configuration.Configuration getApplicationConfiguration() {
+            protected org.apache.commons.configuration2.Configuration getApplicationConfiguration() {
                 PropertiesConfiguration config = new PropertiesConfiguration();
 
                 config.setProperty("atlas.authentication.method", "kerberos");

@@ -21,7 +21,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;

@@ -21,6 +21,7 @@ package org.apache.atlas.repository.graph;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.SearchIndexer;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
@@ -58,7 +59,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -438,6 +439,14 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
         if (propertyName != null) {
             AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
+
+            if (propertyKey != null && RequestContext.get().isImportInProgress()
+                    && !management.propertyKeyHasDataType(propertyName, propertyClass)) {
+                LOG.info("Recreating property key {} during import; data type changed to {}", propertyName, propertyClass.getName());
+
+                management.deletePropertyKey(propertyName);
+                propertyKey = null;
+            }
 
             if (propertyKey == null) {
                 propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);

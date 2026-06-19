@@ -37,5 +37,14 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src", "src/views/Statistics/d3.v3.min.js"],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx",
+    "src/**/__tests__/**",
+    "src/__mocks__/**",
+    "cypress/**"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

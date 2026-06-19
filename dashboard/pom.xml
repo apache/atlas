@@ -58,6 +58,7 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>2.7</version>
                 <executions>
@@ -73,6 +74,20 @@
                                 <resource>
                                     <directory>${project.basedir}/</directory>
                                     <filtering>false</filtering>
+                                    <excludes>
+                                        <!-- do not copy local build artifacts and deps into working dir -->
+                                        <exclude>bin/**</exclude>
+                                        <exclude>dist/**</exclude>
+                                        <exclude>coverage/**</exclude>
+                                        <exclude>**/node_modules/**</exclude>
+                                        <exclude>target/**</exclude>
+                                        <!-- nested frontend caches (e.g. atlas-lineage) — often unknown files / perms -->
+                                        <exclude>**/.cache/**</exclude>
+                                        <!-- also skip other dashboards' outputs if present -->
+                                        <exclude>../dashboard/bin/**</exclude>
+                                        <exclude>../dashboard/dist/**</exclude>
+                                        <exclude>../dashboard/coverage/**</exclude>
+                                    </excludes>
                                 </resource>
                             </resources>
                         </configuration>
