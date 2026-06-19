@@ -34,7 +34,7 @@ import { fetchEntityData } from "@redux/slice/typeDefSlices/typedefEntitySlice.t
 import { fetchTypeHeaderData } from "@redux/slice/typeDefSlices/typeDefHeaderSlice.ts";
 import { fetchMetricEntity } from "@redux/slice/metricsSlice.ts";
 
-const EntitiesTree = ({ sideBarOpen, searchTerm }: Props) => {
+const EntitiesTree = ({ sideBarOpen, searchTerm, isPopover }: Props) => {
   const dispatch = useAppDispatch();
   const { typeHeaderData, loading }: TypedefHeaderDataType = useAppSelector(
     (state: any) => state.typeHeader
@@ -267,6 +267,7 @@ const EntitiesTree = ({ sideBarOpen, searchTerm }: Props) => {
       sideBarOpen={sideBarOpen}
       loader={loading}
       searchTerm={searchTerm}
+      isPopover={isPopover}
     />
   );
 };

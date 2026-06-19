@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import '@testing-library/jest-dom';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
@@ -252,7 +253,7 @@ describe('SideBarBody', () => {
     it('should render search bar when drawer is open', () => {
       renderWithProviders();
       
-      const searchInput = screen.getByPlaceholderText('Entities, Classifications, Glossaries');
+      const searchInput = screen.getByPlaceholderText('Search');
       expect(searchInput).toBeInTheDocument();
       // The data-cy attribute is on the parent InputBase, not the input itself
       expect(searchInput.closest('[data-cy="searchNode"]')).toBeInTheDocument();
@@ -348,7 +349,7 @@ describe('SideBarBody', () => {
     it('should update search term when typing in search bar', async () => {
       renderWithProviders();
       
-      const searchInput = screen.getByPlaceholderText('Entities, Classifications, Glossaries');
+      const searchInput = screen.getByPlaceholderText('Search');
       
       fireEvent.change(searchInput, { target: { value: 'test search' } });
       
@@ -360,7 +361,7 @@ describe('SideBarBody', () => {
     it('should pass search term to tree components', async () => {
       renderWithProviders();
       
-      const searchInput = screen.getByPlaceholderText('Entities, Classifications, Glossaries');
+      const searchInput = screen.getByPlaceholderText('Search');
       
       fireEvent.change(searchInput, { target: { value: 'entity' } });
       
@@ -595,7 +596,7 @@ describe('SideBarBody', () => {
     it('should handle empty search term', () => {
       renderWithProviders();
       
-      const searchInput = screen.getByPlaceholderText('Entities, Classifications, Glossaries');
+      const searchInput = screen.getByPlaceholderText('Search');
       
       fireEvent.change(searchInput, { target: { value: '' } });
       
@@ -605,7 +606,7 @@ describe('SideBarBody', () => {
     it('should handle special characters in search', async () => {
       renderWithProviders();
       
-      const searchInput = screen.getByPlaceholderText('Entities, Classifications, Glossaries');
+      const searchInput = screen.getByPlaceholderText('Search');
       
       fireEvent.change(searchInput, { target: { value: '!@#$%^&*()' } });
       
