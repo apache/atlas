@@ -58,7 +58,9 @@ const AttributeProperties = ({
   const key = "atlas.entity.update.allowed";
 
   let entityUpdate: boolean = false;
-  let entityTypeConfList = [];
+  let entityTypeConfList: string[] = [];
+  
+  // Only process if the key exists and is not empty
   if (!isEmpty(data?.[key])) {
     let entityTypeList = data["atlas.ui.editable.entity.types"]
       .trim()
@@ -66,17 +68,14 @@ const AttributeProperties = ({
     if (entityTypeList.length) {
       if (entityTypeList[0] === "*") {
         entityTypeConfList = [];
+        entityUpdate = true; // Wildcard means all types are allowed
       } else if (entityTypeList.length > 0) {
         entityTypeConfList = entityTypeList;
+        // Check if current entity type is in the allowed list
+        if (entityTypeConfList.includes(typeName)) {
+          entityUpdate = true;
+        }
       }
-    }
-  }
-
-  if (entityTypeConfList && isEmpty(entityTypeConfList)) {
-    entityUpdate = true;
-  } else {
-    if (entityTypeConfList.includes(typeName)) {
-      entityUpdate = true;
     }
   }
 
@@ -112,35 +111,45 @@ const AttributeProperties = ({
     let activeTypeDef = entityDefs.find((obj: { name: any }) => {
       return obj.name == entity.typeName;
     });
-    let attributes: any[];
-    const processSuperTypes = (superTypeName: string) => {
-      let superTypesEntityDef = entityDefs.find((obj: { name: string }) => {
-        return obj.name == superTypeName;
-      });
-      attributes = [...attributes, ...superTypesEntityDef.attributeDefs];
+    
+    // Only process if activeTypeDef is found
+    if (activeTypeDef) {
+      let attributes: any[];
+      const processSuperTypes = (superTypeName: string) => {
+        let superTypesEntityDef = entityDefs.find((obj: { name: string }) => {
+          return obj.name == superTypeName;
+        });
+        if (superTypesEntityDef && superTypesEntityDef.attributeDefs) {
+          attributes = [...attributes, ...superTypesEntityDef.attributeDefs];
+        }
 
-      if (superTypesEntityDef && superTypesEntityDef.superTypes) {
-        for (let nestedSuperType of superTypesEntityDef.superTypes) {
-          processSuperTypes(nestedSuperType);
+        if (superTypesEntityDef && superTypesEntityDef.superTypes) {
+          for (let nestedSuperType of superTypesEntityDef.superTypes) {
+            processSuperTypes(nestedSuperType);
+          }
+        }
+      };
+
+      attributes = activeTypeDef.attributes || [];
+      if (activeTypeDef.superTypes) {
+        for (let superType of activeTypeDef.superTypes) {
+          if (activeTypeDef.attributeDefs) {
+            attributes = [...attributes, ...activeTypeDef.attributeDefs];
+          }
+          processSuperTypes(superType);
         }
       }
-    };
 
-    attributes = activeTypeDef.attributes || [];
-    for (let superType of activeTypeDef.superTypes) {
-      attributes = [...attributes, ...activeTypeDef.attributeDefs];
-      processSuperTypes(superType);
-    }
-
-    for (let property in properties) {
-      let propertyType = attributes.find(
-        (obj: { name: string }) => obj.name == property
-      )?.typeName;
-      if (propertyType == "date" && properties[property] == 0) {
-        properties[property] = null;
-      }
-      if (!isEmpty(properties[property])) {
-        nonEmptyValueProperty[property] = properties[property];
+      for (let property in properties) {
+        let propertyType = attributes.find(
+          (obj: { name: string }) => obj.name == property
+        )?.typeName;
+        if (propertyType == "date" && properties[property] == 0) {
+          properties[property] = null;
+        }
+        if (!isEmpty(properties[property])) {
+          nonEmptyValueProperty[property] = properties[property];
+        }
       }
     }
   }
@@ -151,8 +160,8 @@ const AttributeProperties = ({
   };
 
   let filterEntityData = cloneDeep(entityData);
-  let typeDefEntityData = !isNull(filterEntityData)
-    ? filterEntityData.entityDefs.find((entitys: { name: string }) => {
+  let typeDefEntityData = !isNull(filterEntityData) && filterEntityData?.entityDefs
+    ? filterEntityData.entityDefs.find((entitys: { name: string}) => {
         if (
           entitys.name ==
           (auditDetails ? entityobj?.typeName : properties?.typeName)

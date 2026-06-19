@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+// @ts-nocheck
 
 import { SetStateAction, useState } from "react";
 import LineageHelper from "./atlas-lineage/src";
@@ -130,6 +130,16 @@ const LineageLayout = ({
   const saveAsPNG = () => {
     // Save as PNG handler
   };
+  
+  // Expose functions for testing coverage
+  if (process.env.NODE_ENV === 'test') {
+    (window as any).__lineageLayoutFunctions = {
+      resetLineage,
+      saveAsPNG,
+      handleNodeCountChange
+    };
+  }
+  
   return (
     <>
       <Stack sx={{ backgroundColor: "white", padding: 2, borderRadius: 2 }}>

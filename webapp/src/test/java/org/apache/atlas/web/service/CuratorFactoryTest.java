@@ -21,7 +21,7 @@ package org.apache.atlas.web.service;
 import com.google.common.base.Charsets;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;

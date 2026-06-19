@@ -70,6 +70,8 @@ public interface NotificationConsumer<T> {
      */
     List<AtlasKafkaMessage<T>> receiveRawRecordsWithCheckedCommit(Map<TopicPartition, Long> lastCommittedPartitionOffset);
 
+    void poll();
+
     Set<TopicPartition> getTopicPartition();
 
     Set<String> subscription();

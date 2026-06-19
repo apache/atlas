@@ -97,7 +97,6 @@ const EntityDetailPage: React.FC = () => {
   const { name }: { name: string; found: boolean; key: any } =
     extractKeyValueFromEntity(entity);
   let isProcess: boolean = false;
-  let typeName: any = extractKeyValueFromEntity(entity, "typeName");
   let entityObj =
     !isEmpty(entityDefObj) && !isEmpty(entity)
       ? entityDefObj.find((obj: { name: string }) => {
@@ -119,8 +118,11 @@ const EntityDetailPage: React.FC = () => {
     }
   });
   if (!isLineageRender) {
+    const entityTypeName = entity?.typeName;
     isLineageRender =
-      typeName === "DataSet" || typeName === "Process" ? true : null;
+      entityTypeName === "DataSet" || entityTypeName === "Process"
+        ? true
+        : null;
   }
 
   let schemaOptions = entityObj?.options;

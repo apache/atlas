@@ -16,7 +16,7 @@
  */
 
 import { LightTooltip } from "./muiComponents";
-import { Chip, IconButton, Menu, MenuItem, Typography } from "@mui/material";
+import { Chip, IconButton, Menu, MenuItem, Typography, Box } from "@mui/material";
 import { extractKeyValueFromEntity, isEmpty, serverError } from "@utils/Utils";
 import { useRef, useState } from "react";
 import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
@@ -37,7 +37,8 @@ import { fetchGlossaryDetails } from "@redux/slice/glossaryDetailsSlice";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 import { fetchGlossaryData } from "@redux/slice/glossarySlice";
 
-const CHIP_MAX_WIDTH = "200px";
+const CHIP_MAX_WIDTH = "6.25rem";
+const CLASSIFICATION = "Classification";
 const ITEM_HEIGHT = 48;
 
 export interface DialogShowMoreLessProps {
@@ -129,7 +130,7 @@ const DialogShowMoreLess = ({
    * classification is on this entity; propagated tags use another entityGuid.
    */
   const canShowDeleteOnClassificationChip = (tag: any) => {
-    if (colName !== "Classification") {
+    if (colName !== CLASSIFICATION) {
       return true;
     }
     if (!tag) {
@@ -155,7 +156,7 @@ const DialogShowMoreLess = ({
   const handleRemove = async (): Promise<void> => {
     try {
       setRemoveLoader(true);
-      if (colName == "Classification") {
+      if (colName == CLASSIFICATION) {
         await removeApiMethod(
           detailPage ? entity.guid : value.guid,
           currentValue.selectedValue
@@ -216,12 +217,11 @@ const DialogShowMoreLess = ({
       setOpenModal(false);
       toast.dismiss(toastId.current);
       toastId.current = toast.success(
-        `${colName} ${
-          colName == "Term" ? "association" : currentValue.selectedValue
+        `${colName} ${colName == "Term" ? "association" : currentValue.selectedValue
         } was removed successfully`
       );
       const isSchemaClassificationFlow =
-        colName === "Classification" &&
+        colName === CLASSIFICATION &&
         typeof onSchemaChildEntityRefresh === "function";
       if (!isEmpty(guid)) {
         if (!isEmpty(gType)) {
@@ -256,8 +256,8 @@ const DialogShowMoreLess = ({
   const checkSuperTypes = (classificationName: string) => {
     let tagObj = !isEmpty(classificationData.classificationDefs)
       ? classificationData.classificationDefs.find((obj: { name: string }) => {
-          return obj.name == classificationName;
-        })
+        return obj.name == classificationName;
+      })
       : {};
 
     return !isEmpty(tagObj?.superTypes)
@@ -268,7 +268,10 @@ const DialogShowMoreLess = ({
   };
 
   const getLabel = (label: string, optionalLabel?: string) => {
-    if (columnVal == "Classifications" || columnVal == "self") {
+    if (colName == CLASSIFICATION) {
+      return checkSuperTypes(label);
+    } else if (colName == "Propagated Classification") {
+      // Re-using checkSuperTypes since it does the same as getTagParentList
       return checkSuperTypes(label);
     } else {
       return label || optionalLabel;
@@ -280,7 +283,7 @@ const DialogShowMoreLess = ({
     text: string | undefined,
     data: any | undefined
   ) => {
-    if (colName == "Classification" || colName == "Propagated Classification") {
+    if (colName == CLASSIFICATION || colName == "Propagated Classification") {
       let keys = Array.from(searchParams.keys());
       for (let i = 0; i < keys.length; i++) {
         // if (keys[i] != "searchType") {
@@ -330,7 +333,7 @@ const DialogShowMoreLess = ({
   };
 
   const assignTitle = () => {
-    if (colName == "Classification") {
+    if (colName == CLASSIFICATION) {
       return "Add Classification";
     } else if (colName == "Term") {
       return "Add Term";
@@ -338,7 +341,7 @@ const DialogShowMoreLess = ({
   };
 
   const removeTitle = () => {
-    if (colName == "Classification") {
+    if (colName == CLASSIFICATION) {
       return "Remove Classification Assignment";
     } else if (colName == "Term") {
       return "Remove Term Assignment";
@@ -350,9 +353,18 @@ const DialogShowMoreLess = ({
   return (
     <>
       {value?.[columnVal]?.length > 0 ? (
-        <div
+        <Box
           className="tag-list"
-          style={{ flexWrap: isShowMoreLess ? "nowrap" : "wrap" }}
+          sx={
+            isShowMoreLess
+              ? {
+                display: "grid",
+                gridTemplateColumns: "minmax(2.1875rem, max-content) max-content max-content",
+                alignItems: "center",
+                width: "100%"
+              }
+              : { display: "flex", flexWrap: "wrap", alignItems: "center" }
+          }
         >
           {isShowMoreLess && (
             <LightTooltip
@@ -370,32 +382,36 @@ const DialogShowMoreLess = ({
                       value[columnVal][0][displayText],
                       optionalDisplayText,
                       (colName == "Term" || colName == "Category") &&
-                        value[columnVal][0]
+                      value[columnVal][0]
                     )}
                   </EllipsisText>
                 }
                 onDelete={
                   !isEmpty(removeApiMethod) &&
-                  canShowDeleteOnClassificationChip(value[columnVal][0])
+                    canShowDeleteOnClassificationChip(value[columnVal][0])
                     ? () => {
-                        handleDelete(value[columnVal][0][displayText]);
-                      }
+                      handleDelete(value[columnVal][0][displayText]);
+                    }
                     : undefined
                 }
                 size="small"
                 variant="outlined"
                 sx={{
                   "& .MuiChip-label": {
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
                     display: "block",
-                    overflow: "ellipsis",
-                    maxWidth: "145px"
+                    minWidth: 0,
+                    flexShrink: 1
                   },
-
-                  maxWidth: CHIP_MAX_WIDTH
+                  maxWidth: CHIP_MAX_WIDTH,
+                  minWidth: 0,
+                  overflow: "hidden"
                 }}
                 clickable
                 data-cy="tagClick"
-              />{" "}
+              />
             </LightTooltip>
           )}
           {!isShowMoreLess &&
@@ -414,28 +430,30 @@ const DialogShowMoreLess = ({
                           obj[displayText] || obj,
                           optionalDisplayText,
                           (colName == "Term" || colName == "Category") &&
-                            value[columnVal][index]
+                          value[columnVal][index]
                         )}
                       </EllipsisText>
                     }
                     onDelete={
                       !isEmpty(removeApiMethod) &&
-                      canShowDeleteOnClassificationChip(obj)
+                        canShowDeleteOnClassificationChip(obj)
                         ? () => {
-                            handleDelete(obj[displayText] || obj);
-                          }
+                          handleDelete(obj[displayText] || obj);
+                        }
                         : undefined
                     }
                     size="small"
                     variant="outlined"
                     sx={{
                       "& .MuiChip-label": {
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
                         display: "block",
-                        overflow: "ellipsis",
-                        maxWidth: "180px"
+                        minWidth: 0
                       },
-
-                      maxWidth: CHIP_MAX_WIDTH
+                      maxWidth: CHIP_MAX_WIDTH,
+                      minWidth: 0
                     }}
                     clickable
                   />
@@ -451,7 +469,7 @@ const DialogShowMoreLess = ({
                 onClick={handleClick}
                 aria-controls={open ? "long-menu" : undefined}
                 aria-expanded={open ? "true" : undefined}
-                aria-haspopup="true"
+                sx={{ flexShrink: 0, padding: "2px" }}
               >
                 <MoreHorizIcon />
               </IconButton>
@@ -464,7 +482,7 @@ const DialogShowMoreLess = ({
                 color="primary"
                 size="small"
                 onClick={() => {
-                  if (colName == "Classification") {
+                  if (colName == CLASSIFICATION) {
                     setTagModal(true);
                   } else if (colName == "Term") {
                     setTermModal(true);
@@ -474,6 +492,7 @@ const DialogShowMoreLess = ({
                     setAttributeModal(true);
                   }
                 }}
+                sx={{ flexShrink: 0, padding: "2px" }}
               >
                 <AddCircleOutlineIcon fontSize="small" />
               </IconButton>
@@ -509,17 +528,17 @@ const DialogShowMoreLess = ({
                               obj[displayText],
                               optionalDisplayText,
                               (colName == "Term" || colName == "Category") &&
-                                value[columnVal][index]
+                              value[columnVal][index]
                             )}
                           </EllipsisText>
                         }
                         className="chip-items"
                         onDelete={
                           !isEmpty(removeApiMethod) &&
-                          canShowDeleteOnClassificationChip(obj)
+                            canShowDeleteOnClassificationChip(obj)
                             ? () => {
-                                handleDelete(obj[displayText] || obj);
-                              }
+                              handleDelete(obj[displayText] || obj);
+                            }
                             : undefined
                         }
                         size="small"
@@ -527,11 +546,14 @@ const DialogShowMoreLess = ({
                         clickable
                         sx={{
                           "& .MuiChip-label": {
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
                             display: "block",
-                            overflow: "ellipsis",
-                            maxWidth: "180px"
+                            minWidth: 0
                           },
-                          maxWidth: CHIP_MAX_WIDTH
+                          maxWidth: CHIP_MAX_WIDTH,
+                          minWidth: 0
                         }}
                       />
                     </LightTooltip>
@@ -540,7 +562,7 @@ const DialogShowMoreLess = ({
               }
             })}
           </Menu>
-        </div>
+        </Box>
       ) : (
         !readOnly && (
           <LightTooltip title={assignTitle()}>
@@ -549,7 +571,7 @@ const DialogShowMoreLess = ({
               color="primary"
               size="small"
               onClick={() => {
-                if (colName == "Classification") {
+                if (colName == CLASSIFICATION) {
                   setTagModal(true);
                 } else if (colName == "Term") {
                   setTermModal(true);
@@ -559,6 +581,7 @@ const DialogShowMoreLess = ({
                   setAttributeModal(true);
                 }
               }}
+              sx={{ flexShrink: 0, padding: "2px" }}
             >
               <AddCircleOutlineIcon fontSize="small" />
             </IconButton>
@@ -592,7 +615,7 @@ const DialogShowMoreLess = ({
         </CustomModal>
       )}
 
-      {tagModal && colName == "Classification" && (
+      {tagModal && colName == CLASSIFICATION && (
         <AddTag
           open={tagModal}
           isAdd={true}

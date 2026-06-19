@@ -65,6 +65,11 @@
             <version>${avro.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.11.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-auth</artifactId>
             <version>${hadoop.version}</version>
@@ -481,6 +486,11 @@
                                             <version>${hadoop.version}</version>
                                         </artifactItem>
                                         <artifactItem>
+                                            <groupId>org.apache.hadoop</groupId>
+                                            <artifactId>hadoop-common</artifactId>
+                                            <version>${hadoop.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
                                             <groupId>com.google.guava</groupId>
                                             <artifactId>guava</artifactId>
                                             <version>${guava.version}</version>
@@ -496,9 +506,14 @@
                                             <version>${httpcomponents-httpcore.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>commons-configuration</groupId>
-                                            <artifactId>commons-configuration</artifactId>
-                                            <version>${commons-conf.version}</version>
+                                            <groupId>org.apache.commons</groupId>
+                                            <artifactId>commons-configuration2</artifactId>
+                                            <version>${commons-conf2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.commons</groupId>
+                                            <artifactId>commons-text</artifactId>
+                                            <version>1.11.0</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>com.googlecode.json-simple</groupId>

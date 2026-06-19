@@ -181,15 +181,17 @@ const Header: React.FC<Header> = ({
         </LightTooltip>
       )}
       {location.pathname !== "/" &&
-        location.pathname !== "/search" && (
-          <div style={{ display: "flex", justifyContent: "center", flex: "1" }}>
+        location.pathname !== "/search" &&
+        location.pathname !== "/!" &&
+        !location.pathname.includes("!") && (
+          <div style={{ display: "flex", justifyContent: "center", flex: "1", minWidth: 0, padding: "0 16px" }}>
             <QuickSearch />
           </div>
         )}
       {(location.pathname === "/" || location.pathname === "/search") && (
         <div style={{ flex: "1" }} />
       )}
-      <div className="header-menu" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div className="header-menu" style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
         <CreateDropdown />
         <LightTooltip title="Downloads">
           <IconButton
