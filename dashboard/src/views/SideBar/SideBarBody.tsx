@@ -25,7 +25,9 @@ import {
   KeyboardEvent,
   lazy,
   useRef,
+  useMemo,
 } from "react";
+import TreeSkeletonLoader from "@components/TreeSkeletonLoader";
 import atlasLogo from "/img/atlas_logo.svg";
 import apacheAtlasLogo from "/img/apache-atlas-logo.svg";
 import {
@@ -39,10 +41,10 @@ import {
 import Drawer from "@mui/material/Drawer";
 import CssBaseline from "@mui/material/CssBaseline";
 import { IconButton } from "@components/muiComponents";
-import { useSelector } from "react-redux";
-import SearchIcon from "@mui/icons-material/Search";
-import { InputBase, Paper, Stack } from "@mui/material";
-import { TypeHeaderState } from "@models/treeStructureType.js";
+
+import ClearIcon from "@mui/icons-material/Clear";
+import { getVersion } from "@api/apiMethods/headerApiMethods";
+import { InputBase, Paper, Stack, Box, Popover, Typography, Tooltip, CircularProgress } from "@mui/material";
 import { globalSessionData, PathAssociateWithModule } from "@utils/Enum";
 import KeyboardDoubleArrowLeftIcon from "@mui/icons-material/KeyboardDoubleArrowLeft";
 import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight";
@@ -57,7 +59,7 @@ import ErrorPage from "@views/ErrorPage";
 import AppRoutes from "@views/AppRoutes";
 import ErrorBoundaryWithNavigate from "../../ErrorBoundary";
 import useHistory from "@utils/history.js";
-import SkeletonLoader from "@components/SkeletonLoader";
+import AccountTreeIcon from "@mui/icons-material/AccountTree";
 
 const Header = lazy(() => import("@views/Layout/Header"));
 
@@ -102,7 +104,6 @@ const DrawerHeader = styled("div")(({ theme }) => ({
 }));
 
 const SideBarBody = (props: {
-  loading: boolean;
   handleOpenModal: any;
   handleOpenAboutModal: any;
 }) => {
@@ -110,16 +111,69 @@ const SideBarBody = (props: {
   const routes = useRoutes(AppRoutes as RouteObject[]);
   const history = useHistory();
   const dispatch = useAppDispatch();
-  const { loading: loader, handleOpenModal, handleOpenAboutModal } = props;
+  const { handleOpenModal, handleOpenAboutModal } = props;
   const navigate = useNavigate();
-  const { loading } = useSelector((state: TypeHeaderState) => state.typeHeader);
   const { relationshipSearch = {} } = globalSessionData || {};
   const [open, setOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [versionData, setVersionData] = useState<any>({});
+  const searchParams = new URLSearchParams(location.search);
+
+  const isCustomFilterActive = searchParams.get("isCF") === "true";
+  const isGlossaryActive = !isCustomFilterActive && (location.pathname.includes("/glossary") || !!searchParams.get("gtype") || !!searchParams.get("term") || !!searchParams.get("category"));
+  const isBusinessMetadataActive = !isCustomFilterActive && location.pathname.includes("/administrator/businessMetadata");
+  const isClassificationActive = !isCustomFilterActive && (!!searchParams.get("tag") || location.pathname.includes("/tag/tagAttribute"));
+  const isRelationshipActive = !isCustomFilterActive && (!!searchParams.get("relationshipName") || location.pathname.includes("/relationshipDetailPage"));
+
+  const isEntitiesActive = !isCustomFilterActive && (!!searchParams.get("type") || location.pathname.includes("/detailPage"));
 
   const handleDrawerOpen = () => {
     setOpen(!open);
   };
+
+  const [popoverAnchor, setPopoverAnchor] = useState<HTMLElement | null>(null);
+  const [activePopover, setActivePopover] = useState<string | null>(null);
+
+  const handlePopoverOpen = (event: React.MouseEvent<HTMLElement>, id: string) => {
+    setPopoverAnchor(event.currentTarget);
+    setActivePopover(id);
+  };
+
+  const handlePopoverClose = () => {
+    setPopoverAnchor(null);
+    setActivePopover(null);
+  };
+
+
+
+  const renderPopoverSearch = () => (
+    <div style={{ padding: "8px", borderBottom: "1px solid rgba(255,255,255,0.1)", marginBottom: "4px" }}>
+      <Paper className="sidebar-searchbar" sx={{ width: "100%", display: "flex", alignItems: "center", paddingLeft: "8px" }}>
+        <InputBase
+          fullWidth
+          sx={{ color: "rgba(0, 0, 0, 0.7)" }}
+          placeholder="Search"
+          value={searchTerm}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+          endAdornment={
+            <Stack direction="row" alignItems="center" gap="4px">
+              {searchTerm.length > 0 && (
+                <IconButton
+                  size="small"
+                  onClick={() => setSearchTerm("")}
+                  edge="end"
+                  sx={{ padding: "4px" }}
+                >
+                  <ClearIcon fontSize="small" sx={{ color: "rgba(0, 0, 0, 0.4)" }} />
+                </IconButton>
+              )}
+              <img src="/img/sidebar-icons/icon-search.svg" style={{ width: "16px", height: "16px", filter: "brightness(0.4)", opacity: 1, cursor: "pointer", marginLeft: "4px" }} alt="Search" />
+            </Stack>
+          }
+        />
+      </Paper>
+    </div>
+  );
 
   const [position, setPosition] = useState<string | number>(defaultDrawerWidth);
   const draggerRef = useRef<HTMLDivElement>(null);
@@ -156,6 +210,17 @@ const SideBarBody = (props: {
     dispatch(fetchRootClassification());
     dispatch(fetchEnumData());
     dispatch(fetchMetricEntity());
+
+    // Fetch version data for footer
+    const fetchVersion = async () => {
+      try {
+        const resp = await getVersion();
+        if (resp?.data) setVersionData(resp.data);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchVersion();
   }, [dispatch]);
 
   const handleAtlasLogoClick = useCallback(() => {
@@ -199,6 +264,73 @@ const SideBarBody = (props: {
   });
 
   const matched = matchRoutes(routeConfig, location.pathname);
+  const isMatched = !!matched;
+
+  const rightSideContent = useMemo(() => (
+    <Stack height="auto" minHeight="100%">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          backgroundColor: "white",
+          height: "56px",
+          alignItems: "center",
+          padding: "16px",
+        }}
+      >
+        <Suspense fallback={null}>
+          <Header
+            handleOpenModal={handleOpenModal}
+            handleOpenAboutModal={handleOpenAboutModal}
+          />
+        </Suspense>
+      </div>
+      <div
+        style={{
+          padding: "16px",
+          display: "flex",
+          flex: "1",
+          flexDirection: "column",
+        }}
+      >
+        {isMatched || location.pathname.includes("!") ? (
+          <Suspense
+            fallback={
+              <div
+                style={{
+                  left: 0,
+                  top: 0,
+                  width: "100%",
+                  height: "calc(100vh - 88px)",
+                  position: "relative",
+                }}
+              >
+                <CircularProgress
+                  color="primary"
+                  sx={{
+                    display: "inline-block",
+                    position: "absolute",
+                    left: "50%",
+                    top: "50%",
+                    transform: "translate(-50%, -50%)",
+                  }}
+                />
+              </div>
+            }
+          >
+            <ErrorBoundaryWithNavigate
+              history={history}
+              key={location.pathname}
+            >
+              <Outlet />{" "}
+            </ErrorBoundaryWithNavigate>
+          </Suspense>
+        ) : (
+          <ErrorPage errorCode="404" />
+        )}
+      </div>
+    </Stack>
+  ), [isMatched, location.pathname, history, handleOpenModal, handleOpenAboutModal]);
 
   return (
     <Stack
@@ -210,30 +342,32 @@ const SideBarBody = (props: {
 
       <Drawer
         sx={{
-          width: position,
+          width: open ? position : "60px",
           flexShrink: 0,
           minHeight: "calc(100vh - 64px)",
-          minWidth: "30px",
-          ...(open == false && {
-            transform: `translateX(calc(-${position} + 30px)) !important`,
+          minWidth: "60px",
+          transition: "width 0.2s",
+          ...(!open && {
+            transform: "none !important",
+            visibility: "visible !important",
           }),
-          ...(open == false && { visibility: "visible !important" }),
-
           "& .MuiDrawer-paper": {
             background: "#034858",
             boxSizing: "border-box",
             overflow: "hidden",
             position: "fixed",
             top: "0",
-            transition: "none !important",
-            ...(open == false && {
-              transform: `translateX(30px) !important`,
+            left: "0",
+            width: open ? position : "60px",
+            transition: "width 0.2s",
+            ...(!open && {
+              transform: "none !important",
+              visibility: "visible !important",
             }),
-            ...(open == false && { visibility: "visible !important" }),
           },
         }}
         PaperProps={{
-          style: { width: position, minWidth: "30px" },
+          style: { width: open ? position : "60px", minWidth: "60px" },
         }}
         variant="persistent"
         anchor="left"
@@ -246,38 +380,227 @@ const SideBarBody = (props: {
             backgroundColor: "#034858",
           }}
         >
-          {/* Collapsed sidebar logo */}
+          {/* Collapsed sidebar logo and module icons */}
           {!open && (
-            <div
-              style={{
-                width: "100%",
-                textAlign: "center",
-                paddingLeft: "12px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                minHeight: "64px",
-                cursor: "pointer",
-                boxSizing: "border-box",
-              }}
-              role="button"
-              tabIndex={0}
-              aria-label="Atlas home — refresh dashboard"
-              onClick={handleAtlasLogoClick}
-              onKeyDown={handleAtlasLogoKeyDown}
-              data-cy="apache-atlas-logo-collapsed"
+            <Stack
+              alignItems="center"
+              sx={{ width: "100%", flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", boxSizing: "border-box", pb: 2, '&::-webkit-scrollbar': { display: 'none' }, msOverflowStyle: 'none', scrollbarWidth: 'none' }}
             >
-              <img
-                src={apacheAtlasLogo}
-                alt="Apache Atlas logo"
+              <div
                 style={{
-                  width: "29px",
-                  height: "auto",
-                  maxWidth: "100%",
-                  display: "block",
+                  width: "100%",
+                  textAlign: "center",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: "64px",
+                  cursor: "pointer",
+                  boxSizing: "border-box",
+                  marginBottom: "1rem",
                 }}
-              />
-            </div>
+                role="button"
+                tabIndex={0}
+                aria-label="Atlas home — refresh dashboard"
+                onClick={handleAtlasLogoClick}
+                onKeyDown={handleAtlasLogoKeyDown}
+                data-cy="apache-atlas-logo-collapsed"
+              >
+                <img
+                  src={apacheAtlasLogo}
+                  alt="Apache Atlas logo"
+                  style={{
+                    width: "29px",
+                    height: "auto",
+                    maxWidth: "100%",
+                    display: "block",
+                  }}
+                />
+              </div>
+
+              {/* Module Icons for Mini Drawer */}
+              <Stack alignItems="stretch" gap="1rem" sx={{ width: "100%" }}>
+                {/* Search */}
+                <Box sx={{ display: "flex", justifyContent: "center", borderLeft: "4px solid transparent", borderRight: "4px solid transparent", background: "transparent" }}>
+                  <Tooltip title="Search" placement="right">
+                    <IconButton onClick={() => setOpen(true)} sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.1)' } }}>
+                      <img src="/img/sidebar-icons/icon-search.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="search" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+
+                {/* Entities */}
+                <Box sx={{ display: "flex", justifyContent: "center", borderLeft: isEntitiesActive ? "4px solid #2ccebb" : "4px solid transparent", borderRight: "4px solid transparent", background: isEntitiesActive ? "rgba(255, 255, 255, 0.08)" : "transparent" }}>
+                  <Tooltip title="Entities" placement="right">
+                    <IconButton onClick={(e) => handlePopoverOpen(e, "entities")} sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.1)' } }}>
+                      <img src="/img/sidebar-icons/icon-entities.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="entities" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+                <Popover
+                  marginThreshold={64}
+                  open={activePopover === "entities"}
+                  anchorEl={popoverAnchor}
+                  onClose={handlePopoverClose}
+                  anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                  PaperProps={{ sx: { ml: 1, width: 320, maxHeight: 'calc(100vh - 250px) !important', display: 'flex', flexDirection: 'column', backgroundColor: '#034858', borderRadius: 1, boxShadow: 6, pb: 2, overflow: 'visible', '&::before': { content: '""', display: 'block', position: 'absolute', top: 14, left: -8, width: 0, height: 0, borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderRight: '8px solid #034858' } } }}
+                >
+                  {renderPopoverSearch()}
+                  <div style={{ flex: 1, overflow: 'auto' }}>
+                    <Suspense fallback={<TreeSkeletonLoader count={2} />}>
+                      <div className="sidebar-treeview-container" style={{ padding: '8px' }}>
+                        <EntitiesTree sideBarOpen={true} searchTerm={searchTerm} isPopover={true} />
+                      </div>
+                    </Suspense>
+
+                  </div>
+                </Popover>
+
+                {/* Classifications */}
+                <Box sx={{ display: "flex", justifyContent: "center", borderLeft: isClassificationActive ? "4px solid #2ccebb" : "4px solid transparent", borderRight: "4px solid transparent", background: isClassificationActive ? "rgba(255, 255, 255, 0.08)" : "transparent" }}>
+                  <Tooltip title="Classifications" placement="right">
+                    <IconButton onClick={(e) => handlePopoverOpen(e, "classification")} sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.1)' } }}>
+                      <img src="/img/sidebar-icons/icon-classifications.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="classifications" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+                <Popover
+                  marginThreshold={64}
+                  open={activePopover === "classification"}
+                  anchorEl={popoverAnchor}
+                  onClose={handlePopoverClose}
+                  anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                  PaperProps={{ sx: { ml: 1, width: 320, maxHeight: 'calc(100vh - 250px) !important', display: 'flex', flexDirection: 'column', backgroundColor: '#034858', borderRadius: 1, boxShadow: 6, pb: 2, overflow: 'visible', '&::before': { content: '""', display: 'block', position: 'absolute', top: 14, left: -8, width: 0, height: 0, borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderRight: '8px solid #034858' } } }}
+                >
+                  {renderPopoverSearch()}
+                  <div style={{ flex: 1, overflow: 'auto' }}>
+                    <Suspense fallback={<TreeSkeletonLoader count={2} />}>
+                      <div className="sidebar-treeview-container" style={{ padding: '8px' }}>
+                        <ClassificationTree sideBarOpen={true} searchTerm={searchTerm} isPopover={true} />
+                      </div>
+                    </Suspense>
+
+                  </div>
+                </Popover>
+
+                {/* Glossary */}
+                <Box sx={{ display: "flex", justifyContent: "center", borderLeft: isGlossaryActive ? "4px solid #2ccebb" : "4px solid transparent", borderRight: "4px solid transparent", background: isGlossaryActive ? "rgba(255, 255, 255, 0.08)" : "transparent" }}>
+                  <Tooltip title="Glossary" placement="right">
+                    <IconButton onClick={(e) => handlePopoverOpen(e, "glossary")} sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.1)' } }}>
+                      <img src="/img/sidebar-icons/icon-glossary.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="glossary" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+                <Popover
+                  marginThreshold={64}
+                  open={activePopover === "glossary"}
+                  anchorEl={popoverAnchor}
+                  onClose={handlePopoverClose}
+                  anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                  PaperProps={{ sx: { ml: 1, width: 320, maxHeight: 'calc(100vh - 250px) !important', display: 'flex', flexDirection: 'column', backgroundColor: '#034858', borderRadius: 1, boxShadow: 6, pb: 2, overflow: 'visible', '&::before': { content: '""', display: 'block', position: 'absolute', top: 14, left: -8, width: 0, height: 0, borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderRight: '8px solid #034858' } } }}
+                >
+                  {renderPopoverSearch()}
+                  <div style={{ flex: 1, overflow: 'auto' }}>
+                    <Suspense fallback={<TreeSkeletonLoader count={2} />}>
+                      <div className="sidebar-treeview-container" style={{ padding: '8px' }}>
+                        <GlossaryTree sideBarOpen={true} searchTerm={searchTerm} isPopover={true} />
+                      </div>
+                    </Suspense>
+
+                  </div>
+                </Popover>
+
+                {/* Business Metadata */}
+                <Box sx={{ display: "flex", justifyContent: "center", borderLeft: isBusinessMetadataActive ? "4px solid #2ccebb" : "4px solid transparent", borderRight: "4px solid transparent", background: isBusinessMetadataActive ? "rgba(255, 255, 255, 0.08)" : "transparent" }}>
+                  <Tooltip title="Business Metadata" placement="right">
+                    <IconButton onClick={(e) => handlePopoverOpen(e, "businessMetadata")} sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.1)' } }}>
+                      <img src="/img/sidebar-icons/icon-business-metadata.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="business metadata" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+                <Popover
+                  marginThreshold={64}
+                  open={activePopover === "businessMetadata"}
+                  anchorEl={popoverAnchor}
+                  onClose={handlePopoverClose}
+                  anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                  PaperProps={{ sx: { ml: 1, width: 320, maxHeight: 'calc(100vh - 250px) !important', display: 'flex', flexDirection: 'column', backgroundColor: '#034858', borderRadius: 1, boxShadow: 6, pb: 2, overflow: 'visible', '&::before': { content: '""', display: 'block', position: 'absolute', top: 14, left: -8, width: 0, height: 0, borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderRight: '8px solid #034858' } } }}
+                >
+                  {renderPopoverSearch()}
+                  <div style={{ flex: 1, overflow: 'auto' }}>
+                    <Suspense fallback={<TreeSkeletonLoader count={2} />}>
+                      <div className="sidebar-treeview-container" style={{ padding: '8px' }}>
+                        <BusinessMetadataTree sideBarOpen={true} searchTerm={searchTerm} isPopover={true} />
+                      </div>
+                    </Suspense>
+
+                  </div>
+                </Popover>
+
+                {/* Relationships */}
+                {relationshipSearch && (
+                  <>
+                    <Box sx={{ display: "flex", justifyContent: "center", borderLeft: isRelationshipActive ? "4px solid #2ccebb" : "4px solid transparent", background: isRelationshipActive ? "rgba(255, 255, 255, 0.08)" : "transparent" }}>
+                      <Tooltip title="Relationships" placement="right">
+                        <IconButton onClick={(e) => handlePopoverOpen(e, "relationships")} sx={{ color: isRelationshipActive ? "white" : "rgba(255, 255, 255, 0.6)", '&:hover': { color: 'white', background: 'rgba(255, 255, 255, 0.1)' } }}>
+                          <AccountTreeIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                    <Popover
+                      marginThreshold={64}
+                      open={activePopover === "relationships"}
+                      anchorEl={popoverAnchor}
+                      onClose={handlePopoverClose}
+                      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                      transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                      PaperProps={{ sx: { ml: 1, width: 320, maxHeight: 'calc(100vh - 250px) !important', display: 'flex', flexDirection: 'column', backgroundColor: '#034858', borderRadius: 1, boxShadow: 6, pb: 2, overflow: 'visible', '&::before': { content: '""', display: 'block', position: 'absolute', top: 14, left: -8, width: 0, height: 0, borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderRight: '8px solid #034858' } } }}
+                    >
+                      {renderPopoverSearch()}
+                      <div style={{ flex: 1, overflow: 'auto' }}>
+                        <Suspense fallback={<TreeSkeletonLoader count={2} />}>
+                          <div className="sidebar-treeview-container" style={{ padding: '8px' }}>
+                            <RelationshipsTree sideBarOpen={true} searchTerm={searchTerm} isPopover={true} />
+                          </div>
+                        </Suspense>
+
+                      </div>
+                    </Popover>
+                  </>
+                )}
+
+                {/* Custom Filters */}
+                <Box sx={{ display: "flex", justifyContent: "center", borderLeft: isCustomFilterActive ? "4px solid #2ccebb" : "4px solid transparent", borderRight: "4px solid transparent", background: isCustomFilterActive ? "rgba(255, 255, 255, 0.08)" : "transparent" }}>
+                  <Tooltip title="Custom Filters" placement="right">
+                    <IconButton onClick={(e) => handlePopoverOpen(e, "customFilters")} sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.1)' } }}>
+                      <img src="/img/sidebar-icons/icon-custom-filters.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="custom filters" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+                <Popover
+                  marginThreshold={64}
+                  open={activePopover === "customFilters"}
+                  anchorEl={popoverAnchor}
+                  onClose={handlePopoverClose}
+                  anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                  PaperProps={{ sx: { ml: 1, width: 320, maxHeight: 'calc(100vh - 250px) !important', display: 'flex', flexDirection: 'column', backgroundColor: '#034858', borderRadius: 1, boxShadow: 6, pb: 2, overflow: 'visible', '&::before': { content: '""', display: 'block', position: 'absolute', top: 14, left: -8, width: 0, height: 0, borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderRight: '8px solid #034858' } } }}
+                >
+                  {renderPopoverSearch()}
+                  <div style={{ flex: 1, overflow: 'auto' }}>
+                    <Suspense fallback={<TreeSkeletonLoader count={2} />}>
+                      <div className="sidebar-treeview-container" style={{ padding: '8px' }}>
+                        <CustomFiltersTree sideBarOpen={true} searchTerm={searchTerm} isPopover={true} />
+                      </div>
+                    </Suspense>
+
+                  </div>
+                </Popover>
+              </Stack>
+            </Stack>
           )}
 
           {open && (
@@ -311,24 +634,36 @@ const SideBarBody = (props: {
                 <Paper
                   sx={{
                     width: "100%",
+                    paddingLeft: "8px"
                   }}
                   className="sidebar-searchbar"
                 >
                   <InputBase
                     fullWidth
                     sx={{ color: "rgba(0, 0, 0, 0.7)" }}
-                    placeholder="Entities, Classifications, Glossaries"
+                    placeholder="Search"
                     inputProps={{ "aria-label": "search" }}
                     value={searchTerm}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => {
                       setSearchTerm(e.target.value);
                     }}
                     data-cy="searchNode"
+                    endAdornment={
+                      <Stack direction="row" alignItems="center" gap="4px">
+                        {searchTerm.length > 0 && (
+                          <IconButton
+                            size="small"
+                            onClick={() => setSearchTerm("")}
+                            edge="end"
+                            sx={{ padding: "4px" }}
+                          >
+                            <ClearIcon fontSize="small" sx={{ color: "rgba(0, 0, 0, 0.4)" }} />
+                          </IconButton>
+                        )}
+                        <img src="/img/sidebar-icons/icon-search.svg" style={{ width: "16px", height: "16px", filter: "brightness(0.4)", opacity: 1, cursor: "pointer", marginLeft: "4px" }} alt="Search" />
+                      </Stack>
+                    }
                   />
-
-                  <IconButton type="submit" size="small" aria-label="search">
-                    <SearchIcon fontSize="inherit" />
-                  </IconButton>
                 </Paper>
               </Stack>
             </DrawerHeader>
@@ -337,10 +672,12 @@ const SideBarBody = (props: {
             className="sidebar-wrapper"
             sx={{
               flex: 1,
-              overflow: "hidden auto",
-              paddingBottom: "0px", // Account for bottom toggle button
+              overflowX: "hidden",
+              overflowY: "auto",
+              paddingBottom: "48px", // Added space so it doesn't touch the bottom toggle button
               ...(open == false && {
                 overflow: "hidden",
+                display: "none",
               }),
             }}
           >
@@ -349,20 +686,10 @@ const SideBarBody = (props: {
               data-cy="r_entityTreeRender"
             >
               <Suspense
-                fallback={
-                  <SkeletonLoader
-                    animation="pulse"
-                    variant="text"
-                    width={330}
-                    count={5}
-                  />
-                  // <Stack className="tree-item-loader-box">
-                  // </Stack>
-                }
+                fallback={<TreeSkeletonLoader count={2} />}
               >
                 <EntitiesTree
                   sideBarOpen={open}
-                  loading={loading}
                   searchTerm={searchTerm}
                 />
               </Suspense>
@@ -373,42 +700,9 @@ const SideBarBody = (props: {
               data-cy="r_classificationTreeRender"
             >
               <Suspense
-                fallback={
-                  <SkeletonLoader
-                    animation="pulse"
-                    variant="text"
-                    width={330}
-                    count={5}
-                  />
-                  // <Stack className="tree-item-loader-box">
-                  // </Stack>
-                }
+                fallback={<TreeSkeletonLoader count={2} />}
               >
                 <ClassificationTree
-                  sideBarOpen={open}
-                  loading={loader}
-                  searchTerm={searchTerm}
-                />
-              </Suspense>
-            </div>
-
-            <div
-              className="sidebar-treeview-container"
-              data-cy="r_businessMetadataTreeRender"
-            >
-              <Suspense
-                fallback={
-                  <SkeletonLoader
-                    animation="pulse"
-                    variant="text"
-                    width={330}
-                    count={5}
-                  />
-                  // <Stack className="tree-item-loader-box">
-                  // </Stack>
-                }
-              >
-                <BusinessMetadataTree
                   sideBarOpen={open}
                   searchTerm={searchTerm}
                 />
@@ -420,18 +714,23 @@ const SideBarBody = (props: {
               data-cy="r_glossaryTreeRender"
             >
               <Suspense
-                fallback={
-                  <SkeletonLoader
-                    animation="pulse"
-                    variant="text"
-                    width={330}
-                    count={5}
-                  />
-                  // <Stack className="tree-item-loader-box">
-                  // </Stack>
-                }
+                fallback={<TreeSkeletonLoader count={2} />}
               >
                 <GlossaryTree sideBarOpen={open} searchTerm={searchTerm} />
+              </Suspense>
+            </div>
+
+            <div
+              className="sidebar-treeview-container"
+              data-cy="r_businessMetadataTreeRender"
+            >
+              <Suspense
+                fallback={<TreeSkeletonLoader count={2} />}
+              >
+                <BusinessMetadataTree
+                  sideBarOpen={open}
+                  searchTerm={searchTerm}
+                />
               </Suspense>
             </div>
             {relationshipSearch && (
@@ -440,16 +739,7 @@ const SideBarBody = (props: {
                 data-cy="r_relationshipTreeRender"
               >
                 <Suspense
-                  fallback={
-                    <SkeletonLoader
-                      animation="pulse"
-                      variant="text"
-                      width={330}
-                      count={5}
-                    />
-                    // <Stack className="tree-item-loader-box">
-                    // </Stack>
-                  }
+                  fallback={<TreeSkeletonLoader count={2} />}
                 >
                   <RelationshipsTree
                     sideBarOpen={open}
@@ -464,16 +754,7 @@ const SideBarBody = (props: {
               data-cy="r_customFilterTreeRender"
             >
               <Suspense
-                fallback={
-                  <SkeletonLoader
-                    animation="pulse"
-                    variant="text"
-                    width={330}
-                    count={5}
-                  />
-                  // <Stack className="tree-item-loader-box">
-                  // </Stack>
-                }
+                fallback={<TreeSkeletonLoader count={2} />}
               >
                 <CustomFiltersTree sideBarOpen={open} searchTerm={searchTerm} />
               </Suspense>
@@ -482,15 +763,27 @@ const SideBarBody = (props: {
           <div
             style={{
               width: "100%",
-              textAlign: "right",
               padding: "8px",
               position: "sticky",
               bottom: "0px",
               zIndex: "9",
               left: "0",
               background: "#034858",
+              display: "flex",
+              flexDirection: open ? "row" : "column",
+              justifyContent: open ? "space-between" : "center",
+              alignItems: "center",
+              gap: open ? "0px" : "4px"
             }}
           >
+            {open && (
+              <Box display="flex" flexDirection="column" gap="4px" alignItems="flex-start" pl="4px">
+                <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.6)", pl: '4px' }}>
+                  V {versionData?.Version || '3.12.1.0'}
+                </Typography>
+              </Box>
+            )}
+
             <IconButton size="medium" onClick={() => handleDrawerOpen()}>
               {open ? (
                 <KeyboardDoubleArrowLeftIcon
@@ -511,91 +804,13 @@ const SideBarBody = (props: {
       <Main
         open={open}
         sx={{
-          ...(open == false && {
-            marginLeft: `calc(-${position} + 60px) !important`,
-          }),
           margin: "0",
           overflowX: "auto",
           background: "#f5f7f9",
           padding: "0",
         }}
       >
-        <Stack height="auto" minHeight="100%">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              backgroundColor: "white",
-              height: "56px",
-              alignItems: "center",
-              padding: "16px",
-            }}
-          >
-            <Suspense fallback={null}>
-              <Header
-                handleOpenModal={handleOpenModal}
-                handleOpenAboutModal={handleOpenAboutModal}
-              />
-            </Suspense>
-          </div>
-          <div
-            style={{
-              padding: "16px",
-              display: "flex",
-              flex: "1",
-              flexDirection: "column",
-            }}
-          >
-            {matched || location.pathname.includes("!") ? (
-              <Suspense
-                fallback={
-                  <div
-                    style={{
-                      left: 0,
-                      top: 0,
-                      width: "100%",
-                      height: "calc(100vh - 88px)",
-                      position: "relative",
-                    }}
-                  >
-                    <SkeletonLoader
-                      animation="pulse"
-                      variant="text"
-                      height={50}
-                      width={'80%'}
-                      count={1}
-                      sx={{
-                        position: "absolute",
-                        left: "50%",
-                        top: "50%",
-                        transform: "translate(-50%, -50%)",
-                      }}
-                    />
-                    {/* <CircularProgress
-                      color="primary"
-                      sx={{
-                        display: "inline-block",
-                        position: "absolute",
-                        left: "50%",
-                        top: "50%",
-                        transform: "translate(-50%, -50%)",
-                      }}
-                    /> */}
-                  </div>
-                }
-              >
-                <ErrorBoundaryWithNavigate
-                  history={history}
-                  key={location.pathname}
-                >
-                  <Outlet />{" "}
-                </ErrorBoundaryWithNavigate>
-              </Suspense>
-            ) : (
-              <ErrorPage errorCode="404" />
-            )}
-          </div>
-        </Stack>
+        {rightSideContent}
       </Main>
     </Stack>
   );

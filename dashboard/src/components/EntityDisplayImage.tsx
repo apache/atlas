@@ -15,8 +15,7 @@
  * limitations under the License.
  */
 
-import { useEffect, useState } from "react";
-import { Avatar, Skeleton } from "@mui/material";
+import { Avatar } from "@mui/material";
 import { getEntityIconPath } from "../utils/Utils";
 
 const DisplayImage = ({
@@ -26,75 +25,40 @@ const DisplayImage = ({
   avatarDisplay,
   isProcess
 }: any) => {
-  const [imageUrl, setImageUrl] = useState<any>(null);
-  const [checkEntityImage, setCheckEntityImage] = useState<any>({
-    [entity.guid]: false
-  });
+  const entityData = { ...entity, isProcess: isProcess };
+  
+  const primaryUrl = getEntityIconPath({ entityData }) || "";
+  const fallbackUrl = getEntityIconPath({ entityData, errorUrl: primaryUrl }) || "";
 
-  useEffect(() => {
-    const fetchImagePath = async () => {
-      let entityData = { ...entity, ...{ isProcess: isProcess } };
-      let imagePath: any = getEntityIconPath({ entityData: entityData });
-      try {
-        const response = await fetch(imagePath);
-        const contentType: any = response.headers.get("Content-Type");
+  const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.currentTarget;
+    if (target.src !== fallbackUrl) {
+      target.onerror = null;
+      target.src = fallbackUrl;
+    }
+  };
 
-        if (contentType.startsWith("image/")) {
-          let cache = { [entityData.guid]: imagePath };
-          setCheckEntityImage(cache);
-          setImageUrl(getEntityIconPath({ entityData: entityData }));
-        } else {
-          setImageUrl(
-            getEntityIconPath({ entityData: entityData, errorUrl: imagePath })
-          );
-        }
-      } catch (error) {
-        setImageUrl(
-          getEntityIconPath({ entityData: entityData, errorUrl: imagePath })
-        );
-      }
-    };
-
-    fetchImagePath();
-  }, []);
-
-  return imageUrl != undefined ? (
+  return (
     <div className="search-result-table-name-col" data-cy="entityIcon">
-      {checkEntityImage[entity.guid] !== false ? (
-        avatarDisplay == undefined ? (
-          <img
-            className="search-result-table-img"
-            id={entity.guid}
-            data-cy={entity.guid}
-            src={checkEntityImage[entity.guid]}
-            alt="Entity Icon"
-          />
-        ) : (
-          <Avatar
-            alt="entityImg"
-            src={checkEntityImage[entity.guid]}
-            sx={{ width: width, height: height }}
-            variant="square"
-          ></Avatar>
-        )
-      ) : avatarDisplay == undefined ? (
+      {avatarDisplay == undefined ? (
         <img
           className="search-result-table-img"
           id={entity.guid}
           data-cy={entity.guid}
-          src={imageUrl}
+          src={primaryUrl}
           alt="Entity Icon"
+          onError={handleError}
         />
       ) : (
         <Avatar
           alt="entityImg"
-          src={imageUrl}
+          src={primaryUrl}
           sx={{ width: width, height: height }}
+          variant="square"
+          imgProps={{ onError: handleError }}
         ></Avatar>
       )}
     </div>
-  ) : (
-    <div>{<Skeleton variant="circular" width={22} height={20} />}</div>
   );
 };
 

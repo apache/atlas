@@ -66,6 +66,7 @@ const BusinessMetadataTree = (props: Props) => {
       sideBarOpen={sideBarOpen}
       loader={loading}
       searchTerm={searchTerm}
+      isPopover={props.isPopover}
     />
   );
 };
