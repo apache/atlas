@@ -55,8 +55,9 @@ const TreeNodeIcons = (props: {
   treeName: string;
   updatedData: any;
   isEmptyServicetype: boolean | undefined;
+  isHovered?: boolean;
 }) => {
-  const { node, treeName, updatedData, isEmptyServicetype } = props;
+  const { node, treeName, updatedData, isEmptyServicetype, isHovered } = props;
   const navigate = useNavigate();
   const toastId: any = useRef(null);
   const [expandNode, setExpandNode] = useState<null | HTMLElement>(null);
@@ -189,6 +190,7 @@ const TreeNodeIcons = (props: {
             size="small"
             className="tree-item-more-label"
             data-cy="dropdownMenuButton"
+            style={{ visibility: isHovered || openNode ? "visible" : "hidden" }}
           >
             <MoreHorizOutlinedIcon />
           </IconButton>
@@ -209,6 +211,7 @@ const TreeNodeIcons = (props: {
           className="tree-item-more-label"
           size="small"
           data-cy="dropdownMenuButton"
+          style={{ visibility: isHovered || openNode ? "visible" : "hidden" }}
         >
           <MoreHorizOutlinedIcon className="treeitem-dropdown-toggle" />
         </IconButton>

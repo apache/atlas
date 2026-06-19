@@ -37,7 +37,7 @@ import {
 } from "@models/glossaryTreeType.ts";
 import { fetchGlossaryData } from "@redux/slice/glossarySlice.ts";
 
-const GlossaryTree = ({ sideBarOpen, searchTerm }: Props) => {
+const GlossaryTree = ({ sideBarOpen, searchTerm, isPopover }: Props) => {
   const dispatch = useAppDispatch();
   const { glossaryData, loading }: any = useAppSelector(
     (state: any) => state.glossary
@@ -209,6 +209,7 @@ const GlossaryTree = ({ sideBarOpen, searchTerm }: Props) => {
       sideBarOpen={sideBarOpen}
       loader={loading}
       searchTerm={searchTerm}
+      isPopover={isPopover}
     />
   );
 };
