@@ -254,6 +254,7 @@ const ClassificationTree = (props: Props) => {
       sideBarOpen={sideBarOpen}
       loader={loadingClassification}
       searchTerm={searchTerm}
+      isPopover={props.isPopover}
     />
   );
 };
