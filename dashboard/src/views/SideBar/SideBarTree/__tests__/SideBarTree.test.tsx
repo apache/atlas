@@ -27,6 +27,7 @@
  */
 
 import React from 'react'
+import '@testing-library/jest-dom'
 import { render, screen, waitFor, fireEvent, act, cleanup } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
@@ -154,8 +155,8 @@ jest.mock('@mui/x-tree-view/TreeItem', () => {
 			</div>
 		)
 	}
-	return { 
-		TreeItem, 
+	return {
+		TreeItem,
 		useTreeItemState,
 		TreeItemProps: {},
 		TreeItemContentProps: {}
@@ -283,7 +284,7 @@ describe('SideBarTree', () => {
 		mockFetchGlossaryData.mockReturnValue({ type: 'glossary/fetchGlossaryData' } as any)
 		global.URL.createObjectURL = jest.fn(() => 'blob:url')
 		global.URL.revokeObjectURL = jest.fn()
-		
+
 		// Restore original createElement for React Testing Library
 		document.createElement = originalCreateElement
 		document.body.appendChild = originalAppendChild
@@ -331,7 +332,7 @@ describe('SideBarTree', () => {
 			renderComponent({ loader: true })
 
 			await waitFor(() => {
-				expect(screen.getByTestId('skeleton-loader')).toBeInTheDocument()
+				expect(screen.getAllByTestId('skeleton-loader').length).toBeGreaterThan(0)
 			})
 		})
 
@@ -593,7 +594,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-			
+
 			if (downloadItem) {
 				fireEvent.click(downloadItem)
 			}
@@ -643,7 +644,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-			
+
 			if (downloadItem) {
 				fireEvent.click(downloadItem)
 			}
@@ -672,7 +673,7 @@ describe('SideBarTree', () => {
 			await waitFor(() => {
 				const menuItems = screen.getAllByTestId('menu-item')
 				const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-				
+
 				if (downloadItem) {
 					expect(downloadItem).not.toHaveAttribute('data-disabled', 'true')
 				}
@@ -700,15 +701,15 @@ describe('SideBarTree', () => {
 			// Find menu item by text content
 			const importText = screen.getByText('Import Business Metadata')
 			expect(importText).toBeInTheDocument()
-			
+
 			const importMenuItem = importText.closest('[data-testid="menu-item"]')
 			expect(importMenuItem).toBeInTheDocument()
-			
+
 			if (importMenuItem) {
 				await act(async () => {
 					fireEvent.click(importMenuItem)
 				})
-				
+
 				// Wait for state update and dialog to appear
 				await waitFor(() => {
 					expect(screen.getByTestId('import-dialog')).toBeInTheDocument()
@@ -735,7 +736,7 @@ describe('SideBarTree', () => {
 			// Find menu item by text content
 			const importText = screen.getByText('Import Business Metadata')
 			const importMenuItem = importText.closest('[data-testid="menu-item"]')
-			
+
 			if (importMenuItem) {
 				await act(async () => {
 					fireEvent.click(importMenuItem)
@@ -768,7 +769,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const createItem = menuItems.find(item => item.textContent?.includes('Create'))
-			
+
 			if (createItem) {
 				fireEvent.click(createItem)
 			}
@@ -796,7 +797,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const createItem = menuItems.find(item => item.textContent?.includes('Create'))
-			
+
 			if (createItem) {
 				fireEvent.click(createItem)
 			}
@@ -1424,10 +1425,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'ADVANCED', 
-						searchParameters: { query: 'test' } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'ADVANCED',
+						searchParameters: { query: 'test' }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1454,10 +1455,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { entityFilters: mockEntityFilters } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { entityFilters: mockEntityFilters }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1484,10 +1485,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { tagFilters: mockTagFilters } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { tagFilters: mockTagFilters }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1514,10 +1515,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC_RELATIONSHIP', 
-						searchParameters: { relationshipFilters: mockRelationshipFilters } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC_RELATIONSHIP',
+						searchParameters: { relationshipFilters: mockRelationshipFilters }
 					}]
 				}
 			}, ['/relationship/relationshipSearchresult'])
@@ -1537,10 +1538,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC_RELATIONSHIP', 
-						searchParameters: { limit: 50, offset: 10 } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC_RELATIONSHIP',
+						searchParameters: { limit: 50, offset: 10 }
 					}]
 				}
 			}, ['/relationship/relationshipSearchresult'])
@@ -1560,10 +1561,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { typeName: 'EntityType' } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { typeName: 'EntityType' }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1583,10 +1584,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { classification: 'Tag1' } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { classification: 'Tag1' }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1606,14 +1607,14 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { 
-							nullValue: null, 
-							undefinedValue: undefined, 
-							emptyValue: '' 
-						} 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: {
+							nullValue: null,
+							undefinedValue: undefined,
+							emptyValue: ''
+						}
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1718,7 +1719,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-			
+
 			if (downloadItem) {
 				await act(async () => {
 					fireEvent.click(downloadItem)
@@ -1764,7 +1765,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-			
+
 			if (downloadItem) {
 				await act(async () => {
 					fireEvent.click(downloadItem)
@@ -1802,10 +1803,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { entityFilters: nestedFilters } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { entityFilters: nestedFilters }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1832,10 +1833,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { entityFilters: qbFilters } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { entityFilters: qbFilters }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1855,10 +1856,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { entityFilters: 'invalid' } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { entityFilters: 'invalid' }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -2022,7 +2023,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-			
+
 			if (downloadItem) {
 				expect(downloadItem).not.toHaveAttribute('data-disabled', 'true')
 			}
@@ -2047,7 +2048,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const importItem = menuItems.find(item => item.textContent?.includes('Import'))
-			
+
 			if (importItem) {
 				expect(importItem).not.toHaveAttribute('data-disabled', 'true')
 			}
@@ -2072,7 +2073,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const importItem = menuItems.find(item => item.textContent?.includes('Import'))
-			
+
 			if (importItem) {
 				expect(importItem).not.toHaveAttribute('data-disabled', 'true')
 			}
@@ -2155,7 +2156,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const toggleItem = menuItems.find(item => item.textContent?.includes('flat'))
-			
+
 			if (toggleItem) {
 				await act(async () => {
 					fireEvent.click(toggleItem)

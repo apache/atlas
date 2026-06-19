@@ -402,6 +402,7 @@ const QuickSearch = () => {
 						onChange={handleScopeChange}
 						aria-label="Search scope"
 						displayEmpty
+						sx={{ height: "32px", boxSizing: "border-box" }}
 						renderValue={(v) => SCOPE_LABELS[v as QuickSearchScope]}
 					>
 						<MenuItem value="default">Select All</MenuItem>
@@ -649,11 +650,13 @@ const QuickSearch = () => {
 								}}
 								className="text-black-default"
 								InputProps={{
-									style: {
-										padding: "1px 10px",
+									sx: {
+										height: "32px",
+										padding: "0 10px !important",
 										borderRadius: "4px",
 										color: "#1a1a1a",
-										backgroundColor: "white"
+										backgroundColor: "white",
+										boxSizing: "border-box"
 									},
 									...params.InputProps,
 									type: "search",
@@ -693,6 +696,10 @@ const QuickSearch = () => {
 						color: "#fff !important",
 						textTransform: "none",
 						fontWeight: 600,
+						height: "32px !important",
+						minHeight: "32px !important",
+						maxHeight: "32px !important",
+						boxSizing: "border-box",
 						"&.Mui-disabled": {
 							backgroundColor: "#a8c8eb !important",
 							color: "#fff !important",
@@ -712,6 +719,10 @@ const QuickSearch = () => {
 						backgroundColor: "white !important",
 						color: "#4a90e2 !important",
 						borderColor: "#dddddd !important",
+						height: "32px !important",
+						minHeight: "32px !important",
+						maxHeight: "32px !important",
+						boxSizing: "border-box",
 						"&:hover": {
 							backgroundColor: "rgba(74, 144, 226, 0.08) !important",
 							color: "#4a90e2 !important"
