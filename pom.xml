@@ -159,7 +159,7 @@
         <lucene-solr.version>8.11.3</lucene-solr.version>
         <maven-compiler-version>3.11.0</maven-compiler-version>
         <maven-plugin-sortpom.version>3.0.1</maven-plugin-sortpom.version>
-        <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
+        <maven-shade-plugin.version>3.5.1</maven-shade-plugin.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
         <mockito.version>3.12.4</mockito.version>
