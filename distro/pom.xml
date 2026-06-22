@@ -35,7 +35,7 @@
     <properties>
         <cassandra.embedded>false</cassandra.embedded>
         <elasticsearch.managed>false</elasticsearch.managed>
-        <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.properties>
+        <!-- entity.repository.properties: inherited from root pom (atlas.EntityAuditRepository.impl=${entity.repository.impl}); overridden by -Paudit-* / -Pdist on the reactor -->
         <graph.index.backend>solr</graph.index.backend>
         <graph.index.properties>#Solr
 #Solr cloud mode properties
@@ -60,11 +60,11 @@ atlas.graph.index.search.solr.wait-searcher=false
 # plugins: https://docs.janusgraph.org/latest/elasticsearch.html
 #atlas.graph.index.search.hostname=localhost
 #atlas.graph.index.search.elasticsearch.client-only=true</graph.index.properties>
-        <graph.storage.backend>hbase2</graph.storage.backend>
+        <!-- graph.storage.backend: set in root pom (dist / storage-* profiles); do not hardcode here or -Pstorage-cassandra is ignored -->
         <graph.storage.properties>#Hbase
 #For standalone mode , specify localhost
-#for distributed mode, specify zookeeper quorum here
-atlas.graph.storage.hostname=
+#for distributed mode, specify zookeeper quorum here (comma-separated); empty values break Janus STRING options.
+atlas.graph.storage.hostname=localhost
 atlas.graph.storage.hbase.regions-per-server=1
 
 #In order to use Cassandra as a backend, comment out the hbase specific properties above, and uncomment the
@@ -588,6 +588,101 @@ atlas.graph.storage.hbase.regions-per-server=1</graph.storage.properties>
                 </plugins>
             </build>
         </profile>
+        <!--
+          JIRA (slim packaging): -Pdist,storage-hbase,index-solr,audit-hbase only wires backend/audit choices
+          in the build (graph.storage.backend, index backend, audit impl). It does NOT set localhost HBase host,
+          Solr ZK URL, embedded mode, or download HBase/Solr — deployers configure cluster endpoints in conf/ after build.
+          For a local, ready-to-run tarball with bundled HBase+Solr and dev-oriented defaults, use -Pembedded-hbase-solr.
+          Other examples: Berkeley/RDBMS/Cassandra blocks below; Berkeley+Solr bundle: -Pberkeley-solr.
+        -->
+        <profile>
+            <id>storage-berkeleyje</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <graph.storage.properties># BerkeleyJE — local graph under ATLAS_HOME; edit paths if needed
+atlas.graph.storage.directory=${sys:atlas.home}/data/berkeley
+atlas.graph.storage.lock.clean-expired=true
+atlas.graph.storage.lock.expiry-time=500
+atlas.graph.storage.lock.wait-time=300</graph.storage.properties>
+            </properties>
+        </profile>
+        <profile>
+            <id>storage-rdbms</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <graph.storage.properties># RDBMS — PostgreSQL example; edit host, db, user, password before starting Atlas
+atlas.graph.storage.rdbms.jpa.hikari.connectionTestQuery=select 1
+atlas.graph.storage.rdbms.jpa.hikari.connectionTimeout=30000
+atlas.graph.storage.rdbms.jpa.hikari.driverClassName=org.postgresql.Driver
+atlas.graph.storage.rdbms.jpa.hikari.idleTimeout=300000
+atlas.graph.storage.rdbms.jpa.hikari.jdbcUrl=jdbc:postgresql://localhost:5432/atlas
+atlas.graph.storage.rdbms.jpa.hikari.maxLifetime=1800000
+atlas.graph.storage.rdbms.jpa.hikari.maximumPoolSize=40
+atlas.graph.storage.rdbms.jpa.hikari.minimumIdle=5
+atlas.graph.storage.rdbms.jpa.hikari.password=atlas
+atlas.graph.storage.rdbms.jpa.hikari.username=atlas
+atlas.graph.storage.rdbms.jpa.javax.persistence.jdbc.dialect=org.eclipse.persistence.platform.database.PostgreSQLPlatform
+atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-database-schemas=true
+atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-script-source=META-INF/postgres/create_schema.sql
+atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-source=script
+atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.database.action=create</graph.storage.properties>
+            </properties>
+        </profile>
+        <profile>
+            <id>index-elasticsearch</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <graph.index.backend>elasticsearch</graph.index.backend>
+                <graph.index.properties># Elasticsearch — set hostname to your cluster or load balancer
+atlas.graph.index.search.elasticsearch.client-only=true
+atlas.graph.index.search.hostname=localhost</graph.index.properties>
+            </properties>
+        </profile>
+        <profile>
+            <id>storage-cassandra</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <graph.storage.properties># Janus CQL — point at your Cassandra nodes (comma-separated). Keyspace is created/used by Janus as configured.
+atlas.graph.storage.cql.keyspace=janusgraph
+atlas.graph.storage.hostname=127.0.0.1</graph.storage.properties>
+            </properties>
+        </profile>
+        <profile>
+            <id>audit-cassandra</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.CassandraBasedAuditRepository</entity.repository.properties>
+            </properties>
+        </profile>
+        <profile>
+            <id>index-solr</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <graph.index.properties># Solr Cloud (set zookeeper-url to your Solr/ZK ensemble)
+atlas.graph.index.search.solr.mode=cloud
+atlas.graph.index.search.solr.zookeeper-url=localhost:2181
+atlas.graph.index.search.solr.zookeeper-connect-timeout=60000
+atlas.graph.index.search.solr.zookeeper-session-timeout=60000
+atlas.graph.index.search.solr.wait-searcher=false
+
+# Solr http mode (alternative)
+#atlas.graph.index.search.solr.mode=http
+#atlas.graph.index.search.solr.http-urls=http://localhost:8983/solr</graph.index.properties>
+            </properties>
+        </profile>
+
         <!-- profile to package and configure embedded cassandra and solr with the distribution -->
         <profile>
             <id>embedded-cassandra-solr</id>

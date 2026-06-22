@@ -31,11 +31,12 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.TestResourceFileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.common.util.CollectionUtils;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -125,7 +126,9 @@ public class ClassificationAssociatorTest {
         AtlasTypeRegistry                            typeRegistry    = new AtlasTypeRegistry();
         AtlasTypeRegistry.AtlasTransientTypeRegistry ttr             = typeRegistry.lockTypeRegistryForUpdate();
 
-        ttr.addTypes(CollectionUtils.newSingletonArrayList(ed));
+        List<AtlasEntityDef> entityDefs = new ArrayList<>(1);
+        entityDefs.add(ed);
+        ttr.addTypes(entityDefs);
 
         AtlasGraph                            atlasGraph = mock(AtlasGraph.class);
         ClassificationAssociatorUpdaterForSpy updater    = new ClassificationAssociatorUpdaterForSpy(atlasGraph, ttr, entitiesStore, "col-entity-PII");

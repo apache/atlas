@@ -69,4 +69,23 @@
             </exclusions>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>index-elasticsearch</id>
+            <activation>
+                <property>
+                    <name>atlas.index.backend</name>
+                    <value>elasticsearch</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.elasticsearch.client</groupId>
+                    <artifactId>elasticsearch-rest-high-level-client</artifactId>
+                    <version>${elasticsearch.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>

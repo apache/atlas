@@ -20,7 +20,6 @@ package org.apache.atlas.util;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
-import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
 import org.apache.atlas.repository.graphdb.GraphDatabase;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
@@ -58,6 +57,8 @@ public class AtlasRepositoryConfiguration {
     private static final String  DEFAULT_GRAPH_DATABASE_IMPLEMENTATION_CLASS       = JANUS_GRAPH_DATABASE_IMPLEMENTATION_CLASS;
     private static final String  ENTITY_NOTIFICATION_VERSION_PROPERTY              = "atlas.notification.entity.version";
     private static final String  AUDIT_REPOSITORY_IMPLEMENTATION_PROPERTY          = "atlas.EntityAuditRepository.impl";
+    /** Default when property unset; implementation class is in atlas-repository. */
+    private static final String  DEFAULT_AUDIT_REPOSITORY_IMPL_CLASS               = "org.apache.atlas.repository.audit.HBaseBasedAuditRepository";
     private static final String  DELETE_HANDLER_V1_IMPLEMENTATION_PROPERTY         = "atlas.DeleteHandlerV1.impl";
     private static final boolean DEFAULT_GREMLIN_OPTIMZER_ENABLED                  = true;
 
@@ -103,7 +104,7 @@ public class AtlasRepositoryConfiguration {
         try {
             Configuration config = ApplicationProperties.get();
 
-            return ApplicationProperties.getClass(config, AUDIT_REPOSITORY_IMPLEMENTATION_PROPERTY, HBaseBasedAuditRepository.class.getName(), EntityAuditRepository.class);
+            return ApplicationProperties.getClass(config, AUDIT_REPOSITORY_IMPLEMENTATION_PROPERTY, DEFAULT_AUDIT_REPOSITORY_IMPL_CLASS, EntityAuditRepository.class);
         } catch (AtlasException e) {
             throw new RuntimeException(e);
         }
