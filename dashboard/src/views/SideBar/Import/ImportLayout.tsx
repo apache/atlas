@@ -121,16 +121,16 @@ const ImportLayout = ({
     const sizeInMB = (bytes / (k * k)).toFixed(1);
     if (bytes < 100) {
       return `${bytes} b`;
-    } else if (bytes > 100 && +sizeInKB < 100) {
+    } else if (bytes >= 100 && +sizeInKB < 100) {
       return `${sizeInKB} KB`;
-    } else if (+sizeInKB > 100) {
+    } else {
       return `${sizeInMB} MB`;
     }
   };
 
   const thumbs = files.map((file: FileWithPreview) => (
-    <>
-      <Stack key={file.name} sx={thumb}>
+    <div key={file.name}>
+      <Stack sx={thumb}>
         <Stack sx={thumbInner}>
           <Typography>{formatFileSize(file.size)}</Typography>
 
@@ -169,7 +169,7 @@ const ImportLayout = ({
       >
         {progressVal > 0 && progressVal < 100 ? "Cancel Upload" : "Remove file"}
       </CustomButton>
-    </>
+    </div>
   ));
 
   const handleRemoveFile = (file: FileWithPreview) => {

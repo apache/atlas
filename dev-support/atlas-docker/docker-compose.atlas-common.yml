@@ -47,14 +47,13 @@ services:
       - "2181:2181"
 
   atlas-db:
-    build:
-      context: .
-      dockerfile: Dockerfile.atlas-db
-    image: atlas-db
+    image: postgres:13.21
     container_name: atlas-db
     hostname: atlas-db.example.com
     networks:
       - atlas
+    environment:
+      POSTGRES_PASSWORD: atlasR0cks!
     healthcheck:
       test: 'su -c "pg_isready -q" postgres'
       interval: 30s

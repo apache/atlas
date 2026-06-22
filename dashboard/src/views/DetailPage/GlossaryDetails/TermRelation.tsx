@@ -155,6 +155,7 @@ const TermRelation = ({ glossaryTypeData }: any) => {
                     handleClick(values);
                   }}
                   data-cy="showAttribute"
+                  data-testid="showAttribute"
                 >
                   <VisibilityIcon className="table-filter-refresh" />
                 </CustomButton>
@@ -170,6 +171,7 @@ const TermRelation = ({ glossaryTypeData }: any) => {
                     setOpenViewModal(true);
                   }}
                   data-cy="editAttribute"
+                  data-testid="editAttribute"
                 >
                   <EditOutlinedIcon className="table-filter-refresh" />
                 </CustomButton>

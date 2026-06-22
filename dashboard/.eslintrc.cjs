@@ -45,5 +45,26 @@ module.exports = {
     "prefer-const": "off",
     "no-var": "off",
     "no-useless-catch": "warn"
-  }
+  },
+  overrides: [
+    {
+      files: [
+        "**/__tests__/**/*.{ts,tsx}",
+        "**/*.{test,spec}.{ts,tsx}",
+        "**/setupTests*.ts",
+        "src/**/__mocks__/**/*.{ts,tsx}",
+      ],
+      env: { jest: true },
+      rules: {
+        "@typescript-eslint/no-var-requires": "off",
+        "@typescript-eslint/no-unused-vars": "off",
+        "@typescript-eslint/ban-types": "off",
+        "@typescript-eslint/no-loss-of-precision": "off",
+        "no-extra-semi": "off",
+        "no-mixed-spaces-and-tabs": "off",
+        "react-hooks/rules-of-hooks": "off",
+        "react-hooks/exhaustive-deps": "off",
+      },
+    },
+  ],
 };

@@ -1,0 +1,53 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.masonry-grid {
+  width: 100%;
+}
+
+.masonry-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* allow children to shrink */
+  overflow: hidden;
+}
+
+.masonry-card__header {
+  background: #0a3d62;
+  color: #ffffff;
+  padding: 10px 12px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.masonry-card__body {
+  padding: 12px;
+  overflow: auto; /* scroll within card when content exceeds maxBodyHeight */
+}
+
+.masonry-card__footer {
+  padding: 10px 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+
+
+
+

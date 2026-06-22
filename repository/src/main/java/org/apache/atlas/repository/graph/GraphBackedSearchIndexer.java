@@ -21,6 +21,7 @@ package org.apache.atlas.repository.graph;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.SearchIndexer;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
@@ -143,6 +144,7 @@ import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPEOPTIONS_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPESERVICETYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPEVERSION_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPE_ATTR_DEF_OVERRIDES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPE_CATEGORY_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERSION_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
@@ -439,6 +441,14 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         if (propertyName != null) {
             AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
 
+            if (propertyKey != null && RequestContext.get().isImportInProgress()
+                    && !management.propertyKeyHasDataType(propertyName, propertyClass)) {
+                LOG.info("Recreating property key {} during import; data type changed to {}", propertyName, propertyClass.getName());
+
+                management.deletePropertyKey(propertyName);
+                propertyKey = null;
+            }
+
             if (propertyKey == null) {
                 propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
 
@@ -607,6 +617,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createPropertyKey(management, TYPEVERSION_PROPERTY_KEY, String.class, SINGLE);
             createPropertyKey(management, VERSION_PROPERTY_KEY, Long.class, SINGLE);
             createPropertyKey(management, TYPEOPTIONS_PROPERTY_KEY, String.class, SINGLE);
+            createPropertyKey(management, TYPE_ATTR_DEF_OVERRIDES_PROPERTY_KEY, String.class, SINGLE);
             createPropertyKey(management, IS_PROXY_KEY, Boolean.class, SINGLE);
             createPropertyKey(management, PROVENANCE_TYPE_KEY, Integer.class, SINGLE);
             createPropertyKey(management, HOME_ID_KEY, String.class, SINGLE);

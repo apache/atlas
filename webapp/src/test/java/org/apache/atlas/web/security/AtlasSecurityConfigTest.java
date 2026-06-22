@@ -24,6 +24,8 @@ import org.apache.atlas.web.filters.AtlasAuthenticationEntryPoint;
 import org.apache.atlas.web.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.filters.AtlasDelegatingAuthenticationEntryPoint;
+import org.apache.atlas.web.filters.AtlasHeaderPreAuthFilter;
+import org.apache.atlas.web.filters.AtlasJwtAuthWrapper;
 import org.apache.atlas.web.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.web.filters.StaleTransactionCleanupFilter;
 import org.apache.commons.configuration2.Configuration;
@@ -99,6 +101,9 @@ import static org.testng.Assert.assertTrue;
 @SuppressWarnings("deprecation")
 public class AtlasSecurityConfigTest {
     @Mock
+    private AtlasHeaderPreAuthFilter mockHeaderPreAuthFilter;
+
+    @Mock
     private AtlasKnoxSSOAuthenticationFilter mockSsoAuthenticationFilter;
 
     @Mock
@@ -127,6 +132,9 @@ public class AtlasSecurityConfigTest {
 
     @Mock
     private ActiveServerFilter mockActiveServerFilter;
+
+    @Mock
+    private AtlasJwtAuthWrapper mockAtlasJwtAuthWrapper;
 
     @Mock
     private KeycloakConfigResolver mockKeycloakConfigResolver;
@@ -160,6 +168,7 @@ public class AtlasSecurityConfigTest {
 
         // Execute
         atlasSecurityConfig = new AtlasSecurityConfig(
+                mockHeaderPreAuthFilter,
                 mockSsoAuthenticationFilter,
                 mockCsrfPreventionFilter,
                 mockAtlasAuthenticationFilter,
@@ -169,7 +178,8 @@ public class AtlasSecurityConfigTest {
                 mockAtlasAuthenticationEntryPoint,
                 mockConfiguration,
                 mockStaleTransactionCleanupFilter,
-                mockActiveServerFilter);
+                mockActiveServerFilter,
+                mockAtlasJwtAuthWrapper);
 
         // Verify using reflection
         assertFalse((Boolean) getPrivateField(atlasSecurityConfig, "keycloakEnabled"));
@@ -186,6 +196,7 @@ public class AtlasSecurityConfigTest {
 
         // Execute
         atlasSecurityConfig = new AtlasSecurityConfig(
+                mockHeaderPreAuthFilter,
                 mockSsoAuthenticationFilter,
                 mockCsrfPreventionFilter,
                 mockAtlasAuthenticationFilter,
@@ -195,7 +206,8 @@ public class AtlasSecurityConfigTest {
                 mockAtlasAuthenticationEntryPoint,
                 mockConfiguration,
                 mockStaleTransactionCleanupFilter,
-                mockActiveServerFilter);
+                mockActiveServerFilter,
+                mockAtlasJwtAuthWrapper);
 
         // Verify using reflection
         assertTrue((Boolean) getPrivateField(atlasSecurityConfig, "keycloakEnabled"));
@@ -346,6 +358,7 @@ public class AtlasSecurityConfigTest {
 
         // Create AtlasSecurityConfig instance
         AtlasSecurityConfig configInstance = new AtlasSecurityConfig(
+                mockHeaderPreAuthFilter,
                 mockSsoAuthenticationFilter,
                 mockCsrfPreventionFilter,
                 mockAtlasAuthenticationFilter,
@@ -355,7 +368,8 @@ public class AtlasSecurityConfigTest {
                 mockAtlasAuthenticationEntryPoint,
                 mockConfiguration,
                 mockStaleTransactionCleanupFilter,
-                mockActiveServerFilter);
+                mockActiveServerFilter,
+                mockAtlasJwtAuthWrapper);
 
         // Set up comprehensive HttpSecurity mocking first
         setupHttpSecurityMocks();
@@ -430,6 +444,7 @@ public class AtlasSecurityConfigTest {
 
         // Create fresh AtlasSecurityConfig instance
         AtlasSecurityConfig configInstance = new AtlasSecurityConfig(
+                mockHeaderPreAuthFilter,
                 mockSsoAuthenticationFilter,
                 mockCsrfPreventionFilter,
                 mockAtlasAuthenticationFilter,
@@ -439,7 +454,8 @@ public class AtlasSecurityConfigTest {
                 mockAtlasAuthenticationEntryPoint,
                 mockConfiguration,
                 mockStaleTransactionCleanupFilter,
-                mockActiveServerFilter);
+                mockActiveServerFilter,
+                mockAtlasJwtAuthWrapper);
 
         // Create fresh HttpSecurity mock for each test to avoid state pollution
         HttpSecurity freshHttpSecurity = mock(HttpSecurity.class);
@@ -480,8 +496,10 @@ public class AtlasSecurityConfigTest {
         }
 
         // Verify standard filters are always added
+        verify(freshHttpSecurity, atLeastOnce()).addFilterBefore(eq(mockHeaderPreAuthFilter), any());
+        verify(freshHttpSecurity, atLeastOnce()).addFilterAfter(eq(mockSsoAuthenticationFilter), eq(AtlasHeaderPreAuthFilter.class));
+        verify(freshHttpSecurity, atLeastOnce()).addFilterAfter(eq(mockAtlasJwtAuthWrapper), eq(AtlasKnoxSSOAuthenticationFilter.class));
         verify(freshHttpSecurity, atLeastOnce()).addFilterAfter(eq(mockStaleTransactionCleanupFilter), any());
-        verify(freshHttpSecurity, atLeastOnce()).addFilterBefore(eq(mockSsoAuthenticationFilter), any());
         verify(freshHttpSecurity, atLeastOnce()).addFilterAfter(eq(mockAtlasAuthenticationFilter), any());
         verify(freshHttpSecurity, atLeastOnce()).addFilterAfter(eq(mockCsrfPreventionFilter), any());
 
@@ -581,6 +599,7 @@ public class AtlasSecurityConfigTest {
         setupKeycloakConfiguration("/path/to/keycloak.json");
 
         atlasSecurityConfig = new AtlasSecurityConfig(
+                mockHeaderPreAuthFilter,
                 mockSsoAuthenticationFilter,
                 mockCsrfPreventionFilter,
                 mockAtlasAuthenticationFilter,
@@ -590,7 +609,8 @@ public class AtlasSecurityConfigTest {
                 mockAtlasAuthenticationEntryPoint,
                 mockConfiguration,
                 mockStaleTransactionCleanupFilter,
-                mockActiveServerFilter);
+                mockActiveServerFilter,
+                mockAtlasJwtAuthWrapper);
 
         setPrivateField(atlasSecurityConfig, "keycloakConfigFileResource", mockKeycloakConfigFileResource);
 
@@ -811,6 +831,7 @@ public class AtlasSecurityConfigTest {
     public void testInjectAnnotation() throws Exception {
         // Verify @Inject annotation on constructor
         Inject injectAnnotation = AtlasSecurityConfig.class.getConstructor(
+                AtlasHeaderPreAuthFilter.class,
                 AtlasKnoxSSOAuthenticationFilter.class,
                 AtlasCSRFPreventionFilter.class,
                 AtlasAuthenticationFilter.class,
@@ -820,7 +841,8 @@ public class AtlasSecurityConfigTest {
                 AtlasAuthenticationEntryPoint.class,
                 Configuration.class,
                 StaleTransactionCleanupFilter.class,
-                ActiveServerFilter.class
+                ActiveServerFilter.class,
+                AtlasJwtAuthWrapper.class
         ).getAnnotation(Inject.class);
         assertNotNull(injectAnnotation);
     }
@@ -836,6 +858,7 @@ public class AtlasSecurityConfigTest {
         }
 
         atlasSecurityConfig = new AtlasSecurityConfig(
+                mockHeaderPreAuthFilter,
                 mockSsoAuthenticationFilter,
                 mockCsrfPreventionFilter,
                 mockAtlasAuthenticationFilter,
@@ -845,7 +868,8 @@ public class AtlasSecurityConfigTest {
                 mockAtlasAuthenticationEntryPoint,
                 mockConfiguration,
                 mockStaleTransactionCleanupFilter,
-                mockActiveServerFilter);
+                mockActiveServerFilter,
+                mockAtlasJwtAuthWrapper);
 
         // Set the keycloakConfigFileResource using reflection
         setPrivateField(atlasSecurityConfig, "keycloakConfigFileResource", mockKeycloakConfigFileResource);
