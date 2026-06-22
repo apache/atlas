@@ -85,6 +85,7 @@ import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC
 public class AtlasGraphUtilsV2 {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasGraphUtilsV2.class);
 
+    public static final String ATTRIBUTE_QUALIFIED_NAME    = "qualifiedName";
     public static final String PROPERTY_PREFIX             = Constants.INTERNAL_PROPERTY_KEY_PREFIX + "type.";
     public static final String SUPERTYPE_EDGE_LABEL        = PROPERTY_PREFIX + ".supertype";
     public static final String ENTITYTYPE_EDGE_LABEL       = PROPERTY_PREFIX + ".entitytype";
@@ -393,6 +394,89 @@ public class AtlasGraphUtilsV2 {
         RequestContext.get().endMetricRecord(metric);
 
         return ret;
+    }
+
+    /**
+     * Find entity by unique attributes that was active at the given timestamp.
+     *
+     * This method performs temporal entity resolution by checking:
+     * 1. Active entities with creation time <= asOfTimestamp
+     * 2. Deleted entities where asOfTimestamp falls between creation and deletion
+     *
+     * @param graph                   the graph instance
+     * @param entityType              the entity type
+     * @param attrValues              map of unique attribute names to values (e.g., qualifiedName)
+     * @param asOfTimestamp           the timestamp to check entity validity against
+     * @return AtlasVertex of the entity that was active at the given asOfTimestamp, or null if not found
+     */
+    public static AtlasVertex findActiveByUniqueAttributesAsOf(AtlasGraph graph, AtlasEntityType entityType,
+                                                                Map<String, Object> attrValues, Long asOfTimestamp) {
+        MetricRecorder metric           = RequestContext.get().startMetricRecord("findActiveByUniqueAttributesAsOf");
+        AtlasVertex    activeVertexAsOf = null;
+        final String   threadName       = Thread.currentThread().getName();
+
+        // If active entity exists, check if it was created before or at the given timestamp
+        AtlasVertex activeVertex = findByUniqueAttributes(graph, entityType, attrValues);
+        if (activeVertex != null) {
+            Long activeEntityCreateTime = activeVertex.getProperty(Constants.ENTITY_CREATE_EVENT_TIME_PROPERTY_KEY, Long.class);
+
+            if (activeEntityCreateTime != null && asOfTimestamp >= activeEntityCreateTime) {
+                LOG.debug("Parallel Processing-{}: Found ACTIVE entity {} with createTime={} valid at asOfTimestamp={}", threadName, GraphHelper.getGuid(activeVertex), activeEntityCreateTime, asOfTimestamp);
+                activeVertexAsOf = activeVertex;
+            }
+        }
+
+        // Query for deleted entity where asOfTimestamp falls between creation and deletion times
+        // OPTIMIZATION: Add unique attributes BEFORE time range filters to leverage enhanced composite index
+        // Index: (entityType, state, qualifiedName, createTime, deleteTime)
+        if (activeVertexAsOf == null) {
+            AtlasVertex deletedVertex = queryDeletedEntity(graph, entityType, attrValues, asOfTimestamp);
+            if (deletedVertex != null) {
+                LOG.debug("Parallel Processing-{}: Found DELETED entity {} valid at asOfTimestamp={}", threadName, GraphHelper.getGuid(deletedVertex), asOfTimestamp);
+                activeVertexAsOf = deletedVertex;
+            }
+        }
+
+        // Fallback: return active vertex if it exists (even if created after asOfTimestamp)
+        if (activeVertexAsOf == null && activeVertex != null) {
+            LOG.debug("Parallel Processing-{}: FALLBACK - Returning active entity {} (no timestamp property or valid timestamp)", threadName, GraphHelper.getGuid(activeVertex));
+            activeVertexAsOf = activeVertex;
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+
+        return activeVertexAsOf;
+    }
+
+    private static AtlasVertex queryDeletedEntity(AtlasGraph graph, AtlasEntityType entityType, Map<String, Object> attrValues, Long asOfTimestamp) {
+        final String typeName = entityType.getTypeName();
+
+        // Build query with optimal filter order
+        AtlasGraphQuery query = graph.query()
+                .has(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName)
+                .has(STATE_PROPERTY_KEY, Status.DELETED.name());
+
+        // Add unique attribute filters (most selective, especially qualifiedName)
+        // This allows the enhanced composite index to be fully utilized
+        final Map<String, AtlasAttribute> uniqueAttributes = entityType.getUniqAttributes();
+        final Map<String, Object>         attrNameValues   = populateAttributesMap(uniqueAttributes, attrValues);
+
+        for (Map.Entry<String, Object> entry : attrNameValues.entrySet()) {
+            String attrName  = entry.getKey();
+            Object attrValue = entry.getValue();
+
+            if (attrName != null && attrValue != null) {
+                query.has(attrName, attrValue);
+                LOG.debug("Parallel Processing-{}: Finding DELETED entity of type- {} with {}:{} valid at asOfTimestamp={}", Thread.currentThread().getName(), typeName, attrName, attrValue, asOfTimestamp);
+            }
+        }
+
+        // Add time range filters AFTER unique attributes for optimal index usage
+        query.has(Constants.ENTITY_CREATE_EVENT_TIME_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.LESS_THAN_EQUAL, asOfTimestamp)
+                .has(Constants.ENTITY_DELETE_EVENT_TIME_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.GREATER_THAN, asOfTimestamp);
+
+        Iterator<AtlasVertex> results = query.vertices().iterator();
+        return results.hasNext() ? results.next() : null;
     }
 
     public static AtlasVertex findByGuid(String guid) {
@@ -844,7 +928,7 @@ public class AtlasGraphUtilsV2 {
         }
     }
 
-    private static Map<String, Object> populateUniqueAttributesMap(Map<String, AtlasAttribute> uniqueAttributes, Map<String, Object> attrValues) {
+    protected static Map<String, Object> populateUniqueAttributesMap(Map<String, AtlasAttribute> uniqueAttributes, Map<String, Object> attrValues) {
         return populateAttributesMap(uniqueAttributes, attrValues, true);
     }
 
