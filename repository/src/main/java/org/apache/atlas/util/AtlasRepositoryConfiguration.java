@@ -57,7 +57,7 @@ public class AtlasRepositoryConfiguration {
     private static final String  DEFAULT_GRAPH_DATABASE_IMPLEMENTATION_CLASS       = JANUS_GRAPH_DATABASE_IMPLEMENTATION_CLASS;
     private static final String  ENTITY_NOTIFICATION_VERSION_PROPERTY              = "atlas.notification.entity.version";
     private static final String  AUDIT_REPOSITORY_IMPLEMENTATION_PROPERTY          = "atlas.EntityAuditRepository.impl";
-    /** Default when property unset; class may be supplied by atlas-audit-hbase on the runtime classpath. */
+    /** Default when property unset; implementation class is in atlas-repository. */
     private static final String  DEFAULT_AUDIT_REPOSITORY_IMPL_CLASS               = "org.apache.atlas.repository.audit.HBaseBasedAuditRepository";
     private static final String  DELETE_HANDLER_V1_IMPLEMENTATION_PROPERTY         = "atlas.DeleteHandlerV1.impl";
     private static final boolean DEFAULT_GREMLIN_OPTIMZER_ENABLED                  = true;

@@ -54,7 +54,6 @@
         <module>addons/storm-bridge-shim</module>
         <module>addons/trino-extractor</module>
         <module>atlas-examples</module>
-        <module>audit</module>
         <module>authorization</module>
         <module>build-tools</module>
         <module>client</module>
@@ -2324,7 +2323,7 @@
             </activation>
             <properties>
                 <atlas.audit.backend>cassandra</atlas.audit.backend>
-                <atlas.war.audit.excludes>WEB-INF/lib/atlas-audit-hbase-*.jar,</atlas.war.audit.excludes>
+                <atlas.war.audit.excludes>WEB-INF/lib/hbase-shaded-client-fixed-*.jar,</atlas.war.audit.excludes>
                 <entity.repository.impl>org.apache.atlas.repository.audit.CassandraBasedAuditRepository</entity.repository.impl>
                 <!-- distro filters ${entity.repository.properties} into atlas-application.properties; impl alone is not enough -->
                 <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.CassandraBasedAuditRepository</entity.repository.properties>
@@ -2355,7 +2354,7 @@
             </activation>
             <properties>
                 <atlas.audit.backend>inmemory</atlas.audit.backend>
-                <atlas.war.audit.excludes>WEB-INF/lib/atlas-audit-hbase-*.jar,</atlas.war.audit.excludes>
+                <atlas.war.audit.excludes>WEB-INF/lib/hbase-shaded-client-fixed-*.jar,</atlas.war.audit.excludes>
                 <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
                 <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.properties>
             </properties>
@@ -2370,7 +2369,7 @@
             </activation>
             <properties>
                 <atlas.audit.backend>noop</atlas.audit.backend>
-                <atlas.war.audit.excludes>WEB-INF/lib/atlas-audit-hbase-*.jar,</atlas.war.audit.excludes>
+                <atlas.war.audit.excludes>WEB-INF/lib/hbase-shaded-client-fixed-*.jar,</atlas.war.audit.excludes>
                 <entity.repository.impl>org.apache.atlas.repository.audit.NoopEntityAuditRepository</entity.repository.impl>
                 <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.NoopEntityAuditRepository</entity.repository.properties>
             </properties>
@@ -2385,7 +2384,7 @@
             </activation>
             <properties>
                 <atlas.audit.backend>rdbms</atlas.audit.backend>
-                <atlas.war.audit.excludes>WEB-INF/lib/atlas-audit-hbase-*.jar,</atlas.war.audit.excludes>
+                <atlas.war.audit.excludes>WEB-INF/lib/hbase-shaded-client-fixed-*.jar,</atlas.war.audit.excludes>
                 <entity.repository.impl>org.apache.atlas.repository.audit.rdbms.RdbmsBasedAuditRepository</entity.repository.impl>
                 <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.rdbms.RdbmsBasedAuditRepository</entity.repository.properties>
             </properties>

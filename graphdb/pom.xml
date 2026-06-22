@@ -31,14 +31,13 @@
     <name>Apache Atlas Graph Database Projects</name>
     <description>Apache Atlas Graph Database Projects</description>
 
-    <!-- Optional backend jars build before janus (RDBMS handler, ES index shim) for reactor packaging profiles. -->
+    <!-- Build all modules including all the possible graph providers although only one will be used -->
     <modules>
         <module>api</module>
         <module>common</module>
         <module>graphdb-impls</module>
-        <module>janusgraph-rdbms</module>
-        <module>janus-elasticsearch-shim</module>
         <module>janus</module>
+        <module>janusgraph-rdbms</module>
     </modules>
 
     <properties>
