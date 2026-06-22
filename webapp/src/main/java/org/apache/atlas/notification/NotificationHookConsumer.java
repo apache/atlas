@@ -30,9 +30,11 @@ import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
+import org.apache.atlas.notification.preprocessor.NotificationPreProcessor;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.impexp.AsyncImporter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.AtlasTypeDefGraphStore;
 import org.apache.atlas.repository.store.graph.EntityCorrelationStore;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -114,11 +116,12 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     public static final String CONSUMER_AUTHORIZE_AUTHN_CACHE_TTL_SECONDS                    = "atlas.notification.authorize.authn.cache.ttl.seconds";
     public static final int    SERVER_READY_WAIT_TIME_MS                                     = 1000;
 
-    private static final int    KAFKA_CONSUMER_SHUTDOWN_WAIT             = 30000;
-    private static final String ATLAS_HOOK_CONSUMER_THREAD_NAME          = "atlas-hook-consumer-thread";
-    private static final String ATLAS_HOOK_UNSORTED_CONSUMER_THREAD_NAME = "atlas-hook-unsorted-consumer-thread";
-    private static final String ATLAS_IMPORT_CONSUMER_THREAD_PREFIX      = "atlas-import-consumer-thread-";
-    private static final String THREADNAME_PREFIX                        = NotificationHookConsumer.class.getSimpleName();
+    private static final int    KAFKA_CONSUMER_SHUTDOWN_WAIT                  = 30000;
+    private static final String ATLAS_HOOK_CONSUMER_THREAD_NAME               = "atlas-hook-consumer-thread";
+    private static final String ATLAS_HOOK_UNSORTED_CONSUMER_THREAD_NAME      = "atlas-hook-unsorted-consumer-thread";
+    private static final String ATLAS_IMPORT_CONSUMER_THREAD_PREFIX           = "atlas-import-consumer-thread-";
+    private static final String ATLAS_HOOK_PRE_PROCESSOR_CONSUMER_THREAD_NAME = "atlas-hook-preprocessor-consumer-thread";
+    private static final String THREADNAME_PREFIX                             = NotificationHookConsumer.class.getSimpleName();
 
     private final AtlasEntityStore              atlasEntityStore;
     private final ServiceState                  serviceState;
@@ -138,6 +141,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final long                          consumerMsgBufferingIntervalMS;
     private final int                           consumerMsgBufferingBatchSize;
     private final AsyncImporter                 asyncImporter;
+    private final boolean                       parallelProcessingEnabled;
+    private final AtlasTypeDefGraphStore        typeDefStore;
 
     private ExecutorService executors;
 
@@ -148,7 +153,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     List<HookConsumer> consumers;
 
     @Inject
-    public NotificationHookConsumer(NotificationInterface notificationInterface, AtlasEntityStore atlasEntityStore, ServiceState serviceState, AtlasInstanceConverter instanceConverter, AtlasTypeRegistry typeRegistry, AtlasMetricsUtil metricsUtil, EntityCorrelationStore entityCorrelationStore, @Lazy AsyncImporter asyncImporter) throws AtlasException {
+    public NotificationHookConsumer(NotificationInterface notificationInterface, AtlasEntityStore atlasEntityStore, ServiceState serviceState, AtlasInstanceConverter instanceConverter, AtlasTypeRegistry typeRegistry, AtlasMetricsUtil metricsUtil, EntityCorrelationStore entityCorrelationStore, @Lazy AsyncImporter asyncImporter, AtlasTypeDefGraphStore typeDefStore) throws AtlasException {
         this.notificationInterface        = notificationInterface;
         this.atlasEntityStore             = atlasEntityStore;
         this.serviceState                 = serviceState;
@@ -158,6 +163,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         this.metricsUtil                  = metricsUtil;
         this.lastCommittedPartitionOffset = new HashMap<>();
         this.asyncImporter                = asyncImporter;
+        this.typeDefStore                 = typeDefStore;
 
         consumerRetryInterval = applicationProperties.getInt(CONSUMER_RETRY_INTERVAL, 500);
         minWaitDuration       = applicationProperties.getInt(CONSUMER_MIN_RETRY_INTERVAL, consumerRetryInterval); // 500 ms  by default
@@ -167,6 +173,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         authorizeUsingMessageUser      = applicationProperties.getBoolean(CONSUMER_AUTHORIZE_USING_MESSAGE_USER, false);
         consumerMsgBufferingIntervalMS = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_BUFFERING_INTERVAL.getInt() * 1000L;
         consumerMsgBufferingBatchSize  = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_BUFFERING_BATCH_SIZE.getInt();
+        parallelProcessingEnabled      = AtlasConfiguration.ATLAS_PARALLEL_PROCESSING_ENABLED.getBoolean();
 
         int authnCacheTtlSeconds = applicationProperties.getInt(CONSUMER_AUTHORIZE_AUTHN_CACHE_TTL_SECONDS, 300);
 
@@ -334,6 +341,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             hookConsumers.add(hookConsumer);
         }
 
+        if (parallelProcessingEnabled) {
+            hookConsumers.addAll(getPreprocessorHookConsumers());
+        }
         startConsumers(hookConsumers);
     }
 
@@ -363,6 +373,28 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 60L, TimeUnit.SECONDS, // Idle thread timeout
                 new SynchronousQueue<>(), // Direct handoff queue
                 new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d").build());
+    }
+
+    List<HookConsumer> getPreprocessorHookConsumers() {
+        List<NotificationConsumer<HookNotification>> notificationConsumers = notificationInterface.createConsumers(NotificationType.HOOK_PREPROCESS, 1);
+        List<HookConsumer>                           hookConsumers         = new ArrayList<>();
+
+        for (final NotificationConsumer<HookNotification> consumer : notificationConsumers) {
+            NotificationPreProcessor processor = new NotificationPreProcessor(applicationProperties, metricsUtil, typeRegistry, FAILED_LOG);
+
+            // Register the processor directly with the type definition store to receive updates
+            if (typeDefStore != null) {
+                typeDefStore.registerTypeDefChangeListener(processor);
+                LOG.info("Registered NotificationPreProcessor with AtlasTypeDefStore for type registry updates");
+            } else {
+                LOG.warn("AtlasTypeDefStore is null, NotificationPreProcessor will not receive type registry updates");
+            }
+
+            HookConsumer hookConsumer = new HookConsumer(ATLAS_HOOK_PRE_PROCESSOR_CONSUMER_THREAD_NAME, consumer, processor);
+
+            hookConsumers.add(hookConsumer);
+        }
+        return hookConsumers;
     }
 
     private void startConsumers(List<HookConsumer> hookConsumers) {
@@ -422,6 +454,15 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             this.entityProcessor = AtlasConfiguration.NOTIFICATION_CONCURRENT_PROCESSING.getBoolean()
                     ? new ConcurrentEntityProcessor(applicationProperties, metricsUtil, authnCache, atlasEntityStore, instanceConverter, entityCorrelationManager, typeRegistry, FAILED_LOG, LARGE_MESSAGES_LOG, asyncImporter)
                     : new SerialEntityProcessor(applicationProperties, metricsUtil, authnCache, atlasEntityStore, instanceConverter, entityCorrelationManager, typeRegistry, FAILED_LOG, LARGE_MESSAGES_LOG, asyncImporter);
+
+            LOG.info("entityProcessor: {}", entityProcessor.getClass().getSimpleName());
+        }
+
+        public HookConsumer(String consumerThreadName, NotificationConsumer<HookNotification> consumer, NotificationEntityProcessor entityProcessor) {
+            super(consumerThreadName);
+
+            this.consumer        = consumer;
+            this.entityProcessor = entityProcessor;
 
             LOG.info("entityProcessor: {}", entityProcessor.getClass().getSimpleName());
         }

@@ -92,8 +92,12 @@ public enum AtlasConfiguration {
     TASKS_USE_ENABLED("atlas.tasks.enabled", true),
     SESSION_TIMEOUT_SECS("atlas.session.timeout.secs", -1),
     UPDATE_COMPOSITE_INDEX_STATUS("atlas.update.composite.index.status", true),
-    NOTIFICATION_CONCURRENT_PROCESSING("atlas.notifications.concurrent", false),
     METRICS_TIME_TO_LIVE_HOURS("atlas.metrics.ttl.hours", 336), // 14 days default
+    NOTIFICATION_CONCURRENT_PROCESSING("atlas.notifications.concurrent", false),
+    ATLAS_PARALLEL_PROCESSING_ENABLED("atlas.notification.parallel.processing.enabled", false),
+    ATLAS_METADATA_TOPIC_PREFIX("atlas.notification.metadata.topic.prefix", "ATLAS_METADATA_"),
+    ATLAS_LINEAGE_TOPIC_PREFIX("atlas.notification.lineage.topic.prefix", "ATLAS_LINEAGE_"),
+    ATLAS_PARALLEL_PROCESSING_INPUT_TOPICS("atlas.notification.parallel.processing.input.topics", "ATLAS_HOOK"),
     SOLR_INDEX_TX_LOG_TTL_CONF("write.ahead.log.ttl.in.hours", 240), //10 days default
 
     ATLAS_AUDIT_AGING_ENABLED("atlas.audit.aging.enabled", false),

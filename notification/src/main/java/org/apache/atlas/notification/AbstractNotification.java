@@ -92,8 +92,11 @@ public abstract class AbstractNotification implements NotificationInterface {
      * @param source
      * @return the message as a JSON string
      */
-    public static void createNotificationMessages(Object message, List<String> msgJsonList, MessageSource source) {
+    public static void createNotificationMessages(Object message, List<String> msgJsonList, MessageSource source, long msgCreationTime) {
         AtlasNotificationMessage<?> notificationMsg = new AtlasNotificationMessage<>(CURRENT_MESSAGE_VERSION, message, getHostAddress(), getCurrentUser(), false, source);
+        if (msgCreationTime > 0) {
+            notificationMsg.setMsgCreationTime(msgCreationTime);
+        }
         String                      msgJson         = AtlasType.toV1Json(notificationMsg);
 
         boolean msgLengthExceedsLimit = (msgJson.length() * MAX_BYTES_PER_CHAR) > MESSAGE_MAX_LENGTH_BYTES;
@@ -160,6 +163,10 @@ public abstract class AbstractNotification implements NotificationInterface {
         if (!msgLengthExceedsLimit) {
             msgJsonList.add(msgJson);
         }
+    }
+
+    public static void createNotificationMessages(Object message, List<String> msgJsonList, MessageSource source) {
+        createNotificationMessages(message, msgJsonList, source, 0);
     }
 
     @Override
@@ -240,6 +247,17 @@ public abstract class AbstractNotification implements NotificationInterface {
 
         for (T message : messages) {
             createNotificationMessages(message, strMessages, source);
+        }
+
+        sendInternal(topic, strMessages);
+    }
+
+    @Override
+    public <T> void send(String topic, List<T> messages, MessageSource source, long msgCreationTime) throws NotificationException {
+        List<String> strMessages = new ArrayList<>(messages.size());
+
+        for (T message : messages) {
+            createNotificationMessages(message, strMessages, source, msgCreationTime);
         }
 
         sendInternal(topic, strMessages);

@@ -106,6 +106,19 @@
     </rollingPolicy>
   </appender>
 
+  <appender name="NOTIFICATION_PROCESSOR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${atlas.log.dir}/notification_processor.log</file>
+    <append>true</append>
+    <encoder>
+      <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${atlas.log.dir}/notification_processor-%d.log</fileNamePattern>
+      <maxHistory>30</maxHistory>
+      <cleanHistoryOnStart>false</cleanHistoryOnStart>
+    </rollingPolicy>
+  </appender>
+
   <!-- Uncomment the following for perf logs -->
   <!--
   <appender name="perf_appender" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -169,6 +182,11 @@
 
   <logger name="TASKS" additivity="false" level="info">
     <appender-ref ref="TASKS"/>
+  </logger>
+
+  <!-- Dedicated logger for Notification Processors -->
+  <logger name="NOTIFICATION_PROCESSOR" additivity="false" level="info">
+    <appender-ref ref="NOTIFICATION_PROCESSOR"/>
   </logger>
 
   <root level="warn">
