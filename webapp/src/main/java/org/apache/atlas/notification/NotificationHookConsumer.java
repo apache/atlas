@@ -78,7 +78,7 @@ import org.apache.atlas.web.service.ServiceState;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.map.PassiveExpiringMap;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
@@ -1463,16 +1463,20 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 final String                        importId                 = entityImportNotification.getImportId();
                                 final AtlasEntityWithExtInfo        entityWithExtInfo        = entityImportNotification.getEntity();
                                 final int                           position                 = entityImportNotification.getPosition();
-                                boolean                             completeImport           = false;
+
+                                LOG.info("==> IMPORT_ENTITY:processing entity: {} at position: {}", importId, position);
 
                                 try {
                                     importRequestComplete = asyncImporter.onImportEntity(entityWithExtInfo, importId, position);
                                 } catch (AtlasBaseException abe) {
                                     importRequestComplete = true;
 
-                                    asyncImporter.onImportComplete(importId);
-
                                     LOG.error("IMPORT_ENTITY: {} failed to import entity: {}", importId, entityImportNotification);
+                                } finally {
+                                    if (importRequestComplete) {
+                                        asyncImporter.onImportComplete(importId);
+                                    }
+                                    LOG.info("<== IMPORT_ENTITY:processing entity: {} at position: {}", importId, position);
                                 }
                             }
                             break;

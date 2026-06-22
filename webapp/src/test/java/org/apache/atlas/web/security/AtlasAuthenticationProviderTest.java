@@ -20,7 +20,7 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
