@@ -137,8 +137,8 @@ const AddTag = (props: {
 
   const classificationNames = !isEmpty(classifications)
     ? classifications.map((obj: { typeName: any }) => {
-        return obj.typeName;
-      })
+      return obj.typeName;
+    })
     : [];
 
   const nonAssignTag = classificationDefs.filter((obj: { name: string }) => {
@@ -147,23 +147,23 @@ const AddTag = (props: {
 
   const options = !isEmpty(nonAssignTag)
     ? nonAssignTag.map((obj: { name: any }) => ({
-        label: obj.name,
-        value: obj.name
-      }))
+      label: obj.name,
+      value: obj.name
+    }))
     : [];
 
   const classificationObj = !isEmpty(tagName)
     ? classificationDefs.find((obj: { name: string }) => {
-        return obj.name == (isAdd ? tagName.label : tagName);
-      })
+      return obj.name == (isAdd ? tagName.label : tagName);
+    })
     : null;
 
   let attributeDefList = !isEmpty(classificationObj)
     ? getNestedSuperTypeObj({
-        data: classificationObj,
-        collection: classificationDefs,
-        attrMerge: true
-      })
+      data: classificationObj,
+      collection: classificationDefs,
+      attrMerge: true
+    })
     : null;
 
   const renderFormControl: any = (obj: any) => {
@@ -287,8 +287,8 @@ const AddTag = (props: {
     if (isAdd) {
       let bulkGuids = isArray(entityData)
         ? entityData.map((obj: { guid: any }) => {
-            return obj.guid;
-          })
+          return obj.guid;
+        })
         : [entityGuid];
 
       data["entityGuids"] = bulkGuids;
@@ -386,8 +386,8 @@ const AddTag = (props: {
         isEmpty(classificationData)
           ? false
           : isAdd
-          ? !isEmpty(tagName)
-          : true
+            ? !isEmpty(tagName)
+            : true
       }
     >
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -400,9 +400,9 @@ const AddTag = (props: {
               isAdd
                 ? null
                 : {
-                    label: entityData.typeName,
-                    value: entityData.typeName
-                  }
+                  label: entityData.typeName,
+                  value: entityData.typeName
+                }
             }
             render={({ field: { onChange, value } }) => {
               return (
@@ -411,6 +411,9 @@ const AddTag = (props: {
                     size="small"
                     onChange={(_event, item) => {
                       onChange(item);
+                      if (document.activeElement instanceof HTMLElement) {
+                        document.activeElement.blur();
+                      }
                     }}
                     value={value}
                     disabled={isAdd ? false : true}
@@ -421,6 +424,25 @@ const AddTag = (props: {
                     }
                     options={customSortBy(options, ["label"])}
                     className="form-autocomplete-field"
+                    componentsProps={{
+                      paper: {
+                        sx: {
+                          maxWidth: "100%",
+                          overflowX: "hidden"
+                        }
+                      }
+                    }}
+                    renderOption={(props, option: any) => {
+                      return (
+                        <li
+                          {...props}
+                          title={option.label}
+                          className="text-truncate-block"
+                        >
+                          {option.label}
+                        </li>
+                      );
+                    }}
                     renderInput={(params) => (
                       <TextField
                         {...params}
@@ -429,7 +451,15 @@ const AddTag = (props: {
                         InputProps={{
                           ...params.InputProps
                         }}
+                        sx={{
+                          "& .MuiAutocomplete-input": {
+                            textOverflow: "ellipsis !important",
+                            overflow: "hidden !important",
+                            whiteSpace: "nowrap !important"
+                          }
+                        }}
                         placeholder={`Search Classification`}
+                        title={value?.label || ""}
                       />
                     )}
                   />
@@ -472,24 +502,24 @@ const AddTag = (props: {
                 />
                 {(checkModalTagProperty == undefined ||
                   checkModalTagProperty) && (
-                  <Controller
-                    control={control}
-                    name={"removePropagationsOnEntityDelete"}
-                    data-cy="removePropagationsOnEntityDelete"
-                    render={({ field: { onChange, value } }) => (
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            size="small"
-                            checked={value}
-                            onChange={onChange}
-                          />
-                        }
-                        label=" Remove propagation on entity delete"
-                      />
-                    )}
-                  />
-                )}{" "}
+                    <Controller
+                      control={control}
+                      name={"removePropagationsOnEntityDelete"}
+                      data-cy="removePropagationsOnEntityDelete"
+                      render={({ field: { onChange, value } }) => (
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              size="small"
+                              checked={value}
+                              onChange={onChange}
+                            />
+                          }
+                          label=" Remove propagation on entity delete"
+                        />
+                      )}
+                    />
+                  )}{" "}
               </Stack>
             </Card>
             <Card
@@ -518,8 +548,8 @@ const AddTag = (props: {
           </Stack>
           {(checkTimezoneProperty ||
             entityData?.validityPeriods?.length > 0) && (
-            <AddValidityPeriod control={control} />
-          )}
+              <AddValidityPeriod control={control} />
+            )}
           {!isEmpty(attributeDefList) && (
             <div>
               <Typography fontWeight={600} sx={{ paddingBottom: "1rem" }}>

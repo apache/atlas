@@ -86,8 +86,8 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
   let newClassifications = structuredClone(classifications);
   let options = !isEmpty(newClassifications)
     ? (checked ? newClassifications : tags?.self)?.map(
-        (obj: { typeName: string }) => obj.typeName
-      )
+      (obj: { typeName: string }) => obj.typeName
+    )
     : [];
 
   const classificationData = [...["All"], ...options].sort();
@@ -96,14 +96,14 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
       ? customSortBy(newClassifications, ["typeName"])
       : []
     : !isEmpty(tags?.self)
-    ? customSortBy(tags?.self, ["typeName"])
-    : [];
+      ? customSortBy(tags?.self, ["typeName"])
+      : [];
   let tableData = !isEmpty(classificationName)
     ? classificationName == "All"
       ? data
       : data.filter(
-          (obj: { typeName: string }) => obj.typeName == classificationName
-        )
+        (obj: { typeName: string }) => obj.typeName == classificationName
+      )
     : data;
 
   const handleCloseTagModal = () => {
@@ -164,11 +164,12 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
             return (
               <Stack direction="row" gap={1}>
                 <Link
-                  className="entity-name w-100 text-blue text-decoration-none"
+                  className="entity-name w-100 text-blue text-decoration-none text-truncate-block min-w-0"
                   to={{
                     pathname: href
                   }}
                   color={"primary"}
+                  title={values.typeName}
                 >
                   {values.typeName}
                 </Link>
@@ -210,13 +211,19 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
               <LightTooltip title={values?.typeName}>
                 {" "}
                 <Link
-                  className="entity-name text-blue text-decoration-none"
+                  className="entity-name text-blue text-decoration-none text-truncate-block"
                   to={{
                     pathname: href
                   }}
                   color={"primary"}
                 >
-                  <Typography fontWeight="600"> {values?.typeName} </Typography>
+                  <Typography
+                    fontWeight="600"
+                    noWrap
+                  >
+                    {" "}
+                    {values?.typeName}{" "}
+                  </Typography>
                 </Link>
               </LightTooltip>
             );
@@ -251,27 +258,27 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
               {(guid == values?.entityGuid ||
                 (guid != values?.entityGuid &&
                   values.entityStatus == "DELETED")) && (
-                <LightTooltip title={"Delete Classification"}>
-                  <CustomButton
-                    variant="outlined"
-                    color="success"
-                    className="table-filter-btn assignTag"
-                    size="small"
-                    onClick={(e: React.MouseEvent<HTMLElement>) => {
-                      e.stopPropagation();
-                      setOpenModal(true);
-                      let { name } = extractKeyValueFromEntity(entity);
-                      setCurrentValue({
-                        selectedValue: values.typeName,
-                        assetName: name
-                      });
-                    }}
-                    data-cy="addTag"
-                  >
-                    <DeleteOutlinedIcon className="table-filter-refresh" />
-                  </CustomButton>
-                </LightTooltip>
-              )}
+                  <LightTooltip title={"Delete Classification"}>
+                    <CustomButton
+                      variant="outlined"
+                      color="success"
+                      className="table-filter-btn assignTag"
+                      size="small"
+                      onClick={(e: React.MouseEvent<HTMLElement>) => {
+                        e.stopPropagation();
+                        setOpenModal(true);
+                        let { name } = extractKeyValueFromEntity(entity);
+                        setCurrentValue({
+                          selectedValue: values.typeName,
+                          assetName: name
+                        });
+                      }}
+                      data-cy="addTag"
+                    >
+                      <DeleteOutlinedIcon className="table-filter-refresh" />
+                    </CustomButton>
+                  </LightTooltip>
+                )}
               {guid == values?.entityGuid && (
                 <LightTooltip title={"Edit Classification"}>
                   <CustomButton
@@ -319,14 +326,47 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
                 value={classificationName}
                 onChange={(_e: any, newValue: string) => {
                   handleChange(newValue as string);
+                  if (document.activeElement instanceof HTMLElement) {
+                    document.activeElement.blur();
+                  }
                 }}
                 isOptionEqualToValue={(option, value) => option === value}
                 getOptionLabel={(option) => option}
                 options={classificationData}
                 id="entity-classification"
                 className="classification-table-autocomplete"
+                componentsProps={{
+                  paper: {
+                    sx: {
+                      maxWidth: "100%",
+                      overflowX: "hidden"
+                    }
+                  }
+                }}
+                renderOption={(props, option: any) => {
+                  return (
+                    <li
+                      {...props}
+                      title={option}
+                      className="text-truncate-block"
+                    >
+                      {option}
+                    </li>
+                  );
+                }}
                 renderInput={(params) => (
-                  <TextField {...params} label="Classifications" />
+                  <TextField
+                    {...params}
+                    label="Classifications"
+                    title={classificationName || ""}
+                    sx={{
+                      "& .MuiAutocomplete-input": {
+                        textOverflow: "ellipsis !important",
+                        overflow: "hidden !important",
+                        whiteSpace: "nowrap !important"
+                      }
+                    }}
+                  />
                 )}
                 disableClearable
               />
@@ -389,8 +429,14 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
           button2Loading={removeAssignmentLoading}
         >
           <Typography fontSize={15}>
-            Remove: <b>{currentValue.selectedValue}</b> assignment from{" "}
-            <b>{currentValue.assetName}</b> ?
+            Remove:{" "}
+            <b
+              title={currentValue.selectedValue}
+              className="text-truncate-inline"
+            >
+              {currentValue.selectedValue}
+            </b>{" "}
+            assignment from <b>{currentValue.assetName}</b> ?
           </Typography>
         </CustomModal>
       )}

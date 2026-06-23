@@ -78,6 +78,19 @@ export const TagCustomValueEditor = (props: ValueEditorProps) => {
         disableClearable
         clearOnEscape={false}
         size="small"
+        componentsProps={{
+          paper: {
+            sx: {
+              maxWidth: "100%",
+              overflowX: "hidden"
+            }
+          }
+        }}
+        renderOption={(props, option) => (
+          <li {...props} className="text-truncate w-100" title={option}>
+            {option}
+          </li>
+        )}
         renderInput={(params) => (
           <TextField
             {...params}
