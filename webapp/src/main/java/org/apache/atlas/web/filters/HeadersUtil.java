@@ -35,12 +35,10 @@ public class HeadersUtil {
 
     public static final String X_FRAME_OPTIONS_KEY                 = "X-Frame-Options";
     public static final String X_CONTENT_TYPE_OPTIONS_KEY          = "X-Content-Type-Options";
-    public static final String X_XSS_PROTECTION_KEY                = "X-XSS-Protection";
     public static final String STRICT_TRANSPORT_SEC_KEY            = "Strict-Transport-Security";
     public static final String CONTENT_SEC_POLICY_KEY              = "Content-Security-Policy";
     public static final String X_FRAME_OPTIONS_VAL                 = "DENY";
     public static final String X_CONTENT_TYPE_OPTIONS_VAL          = "nosniff";
-    public static final String X_XSS_PROTECTION_VAL                = "1; mode=block";
     public static final String STRICT_TRANSPORT_SEC_VAL            = "max-age=31536000; includeSubDomains";
     public static final String CONTENT_SEC_POLICY_VAL              = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:; connect-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline';font-src 'self' data:";
     public static final String SERVER_KEY                          = "Server";
@@ -79,7 +77,6 @@ public class HeadersUtil {
 
         HEADER_MAP.put(X_FRAME_OPTIONS_KEY, X_FRAME_OPTIONS_VAL);
         HEADER_MAP.put(X_CONTENT_TYPE_OPTIONS_KEY, X_CONTENT_TYPE_OPTIONS_VAL);
-        HEADER_MAP.put(X_XSS_PROTECTION_KEY, X_XSS_PROTECTION_VAL);
         HEADER_MAP.put(STRICT_TRANSPORT_SEC_KEY, STRICT_TRANSPORT_SEC_VAL);
         HEADER_MAP.put(CONTENT_SEC_POLICY_KEY, CONTENT_SEC_POLICY_VAL);
         HEADER_MAP.put(SERVER_KEY, AtlasConfiguration.HTTP_HEADER_SERVER_VALUE.getString());
