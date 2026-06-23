@@ -196,10 +196,15 @@ export const ExtractObject = (props: any) => {
                   search: searchParams.toString() ? searchParams.toString() : ""
                 }}
                 style={{
-                  width: "unset !important",
-                  whiteSpace: "normal",
+                  display: "inline-block",
+                  maxWidth: "100%",
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                  verticalAlign: "bottom",
                   color: deleteIcon ? "#bb5838" : "#4a90e2"
                 }}
+                title={nameVal}
               >
                 {nameVal}
               </Link>
@@ -299,15 +304,15 @@ export const getValues = (
         relationShipAttr != undefined
           ? entityData
           : properties !== undefined
-          ? values
-          : values?.row?.original?.attributes[entity?.name]
+            ? values
+            : values?.row?.original?.attributes[entity?.name]
     }
   };
   let keyValue = tempObj.valueObject[entity?.name];
   let currentValue = properties !== undefined ? values : values.getValue();
   let attributeTypeName: string = !isEmpty(entity?.attributeDefs)
     ? entity?.attributeDefs?.find((obj: { name: string }) => obj.name == keys)
-        ?.typeName
+      ?.typeName
     : "";
 
   // Filter out profileData, but show isIncomplete (matching Classic UI behavior)
@@ -329,10 +334,10 @@ export const getValues = (
           <span>
             {moment(keyValue).isValid()
               ? formatedDate({
-                  date: keyValue
-                  // zone: false,
-                  // dateFormat: dateFormat
-                })
+                date: keyValue
+                // zone: false,
+                // dateFormat: dateFormat
+              })
               : "N/A"}
           </span>
         )
@@ -352,8 +357,8 @@ export const getValues = (
         filterEntityData?.relationshipAttributes?.[keys as string] != undefined
           ? filterEntityData.relationshipAttributes[keys as string]
           : properties !== undefined
-          ? values
-          : values.getValue();
+            ? values
+            : values.getValue();
 
       return (
         <GetArrayValue
@@ -379,8 +384,8 @@ export const getValues = (
       filterEntityData?.relationshipAttributes?.[keys as string] != undefined
         ? filterEntityData.relationshipAttributes[keys as string]
         : properties !== undefined
-        ? values
-        : values.getValue();
+          ? values
+          : values.getValue();
     return (
       <GetArrayValue
         values={filteredValues}
@@ -430,10 +435,10 @@ export const getValues = (
         <span>
           {moment(keyValue).isValid()
             ? formatedDate({
-                date: currentValue,
-                zone: false,
-                dateFormat: dateFormat
-              })
+              date: currentValue,
+              zone: false,
+              dateFormat: dateFormat
+            })
             : "N/A"}
         </span>
       )

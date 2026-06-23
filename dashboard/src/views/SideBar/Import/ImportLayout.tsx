@@ -144,14 +144,11 @@ const ImportLayout = ({
             <Typography
               component="span"
               sx={{
-                overflow: "hidden",
-                whiteSpace: "nowrap",
-                textOverflow: "ellipsis",
                 lineHeight: "2",
                 width: "100%",
                 display: "block"
               }}
-            >
+             noWrap>
               {file.name}
             </Typography>
           </LightTooltip>
