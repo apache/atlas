@@ -123,10 +123,10 @@ describe('TagFilters', () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks()
-		
+
 		// Reset location mock
 		mockUseLocation.mockReturnValue({ search: '?tag=PII&type=DataSet' })
-		
+
 		// Set up useAppSelector mock implementation
 		mockUseAppSelector.mockImplementation((selector: any) => {
 			const state = createMockState()
@@ -138,7 +138,7 @@ describe('TagFilters', () => {
 			}
 			return result
 		})
-		
+
 		isEmpty.mockImplementation(
 			(val: any) => !val || (Array.isArray(val) && val.length === 0)
 		)
@@ -153,7 +153,9 @@ describe('TagFilters', () => {
 			/>
 		)
 
-		expect(screen.getByText(/Classification:.*PII/)).toBeTruthy()
+		const textNode = screen.getByText(/Classification:.*PII/)
+		expect(textNode).toBeTruthy()
+		expect(textNode.className).toContain('w-100')
 	})
 
 	it('renders QueryBuilder when fields are available', () => {

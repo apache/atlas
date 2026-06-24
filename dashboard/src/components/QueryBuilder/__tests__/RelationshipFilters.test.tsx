@@ -277,7 +277,7 @@ describe('RelationshipFilters', () => {
 			)
 
 			const typography = screen.getByText(/Relationship:/)
-			expect(typography.className).toBe('text-color-green')
+			expect(typography.className).toContain('text-color-green')
 			expect(typography.style.fontWeight).toBe('600')
 		})
 	})

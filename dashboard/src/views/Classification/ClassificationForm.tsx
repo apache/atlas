@@ -22,6 +22,7 @@ import { CustomButton, LightTooltip } from "@components/muiComponents";
 import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
 import {
   Autocomplete,
+  Chip,
   CircularProgress,
   IconButton,
   InputLabel,
@@ -70,8 +71,8 @@ const ClassificationForm = ({
   const { enumDefs } = enumObj.data;
   const classificationObj = !isEmpty(currentTagName)
     ? classificationData.classificationDefs.find(
-        (obj: { name: string }) => obj.name == currentTagName
-      )
+      (obj: { name: string }) => obj.name == currentTagName
+    )
     : {};
 
   const { name, description } = classificationObj;
@@ -127,9 +128,9 @@ const ClassificationForm = ({
 
   const options = !isEmpty(classificationData)
     ? classificationData.classificationDefs.map((obj: { name: any }) => ({
-        label: obj.name,
-        value: obj.name
-      }))
+      label: obj.name,
+      value: obj.name
+    }))
     : [];
 
   const enumType = !isEmpty(enumDefs)
@@ -200,8 +201,7 @@ const ClassificationForm = ({
       onClose();
       toast.dismiss(toastId.current);
       toastId.current = toast.success(
-        `Classification ${name} was ${
-          isAdd ? "created" : "updated"
+        `Classification ${name} was ${isAdd ? "created" : "updated"
         } successfully`
       );
       await fetchInitialData();
@@ -385,6 +385,36 @@ const ClassificationForm = ({
                             }
                             options={options}
                             className="form-autocomplete-field"
+                            componentsProps={{
+                              paper: {
+                                sx: {
+                                  maxWidth: "100%",
+                                  overflowX: "hidden"
+                                }
+                              }
+                            }}
+                            renderOption={(props, option: any) => {
+                              return (
+                                <li
+                                  {...props}
+                                  title={option.label}
+                                  className="text-truncate-block"
+                                >
+                                  {option.label}
+                                </li>
+                              );
+                            }}
+                            renderTags={(tagValue, getTagProps) =>
+                              tagValue.map((option, index) => (
+                                <Chip
+                                  {...getTagProps({ index })}
+                                  key={index}
+                                  label={option.label}
+                                  title={option.label}
+                                  size="small"
+                                />
+                              ))
+                            }
                             renderInput={(params) => (
                               <TextField
                                 {...params}
@@ -432,99 +462,94 @@ const ClassificationForm = ({
                       watched?.[index] &&
                       watched?.[index]?.typeName == "array<string>";
                     return (
-                    <Stack gap="1rem" key={field.id} direction="row">
-                      <TextField
-                        margin="normal"
-                        fullWidth
-                        {...register(`attributes.${index}.attributeName`)}
-                        defaultValue={field.attributeName}
-                        variant="outlined"
-                        size="small"
-                        placeholder={"Attribute Name"}
-                        className="form-textfield"
-                        sx={{
-                          marginTop: "8px !important",
-                          marginBottom: "8px !important"
-                        }}
-                      />
-
-                      <div
-                        style={{
-                          width: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.5rem"
-                        }}
-                      >
-                        <Select
+                      <Stack gap="1rem" key={field.id} direction="row">
+                        <TextField
+                          margin="normal"
                           fullWidth
+                          {...register(`attributes.${index}.attributeName`)}
+                          defaultValue={field.attributeName}
+                          variant="outlined"
                           size="small"
-                          defaultValue={"string"}
-                          id="demo-select-small"
-                          {...register(`attributes.${index}.typeName`)}
+                          placeholder={"Attribute Name"}
                           className="form-textfield"
                           sx={{
                             marginTop: "8px !important",
                             marginBottom: "8px !important"
                           }}
-                        >
-                          {dataTypeSelector.map((type) => (
-                            <MenuItem key={type} value={type}>
-                              {type}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                        {shouldShowToggle && (
-                          <Controller
-                            control={control}
-                            name={
-                              `attributes.${index}.toggleDuplicates` as const
-                            }
-                            data-cy={`attributes.${index}.toggleDuplicates`}
-                            defaultValue={field.toggleDuplicates}
-                            render={({ field: { value, onChange } }: any) => (
-                              <>
-                                <LightTooltip
-                                  title={
-                                    value == false ? "Make LIST" : "Make SET"
-                                  }
-                                >
-                                  <AntSwitch
-                                    size="small"
-                                    {...register(
-                                      `attributes.${index}.toggleDuplicates`
-                                    )}
-                                    checked={value}
-                                    onChange={onChange}
-                                    sx={{ marginRight: "4px" }}
-                                    inputProps={{
-                                      "aria-label": "controlled"
-                                    }}
-                                  />
-                                </LightTooltip>
-                              </>
-                            )}
-                          />
-                        )}
-                      </div>
+                        />
 
-                      <IconButton
-                        aria-label="back"
-                        color="error"
-                        sx={{
-                          display: "inline-flex",
-                          position: "relative",
-                          padding: "4px",
-                          marginLeft: "4px"
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          remove(index);
-                        }}
-                      >
-                        <ClearOutlinedIcon sx={{ fontSize: "1.25rem" }} />
-                      </IconButton>
-                    </Stack>
+                        <div
+                          className="flex-center-gap"
+                        >
+                          <Select
+                            fullWidth
+                            size="small"
+                            defaultValue={"string"}
+                            id="demo-select-small"
+                            {...register(`attributes.${index}.typeName`)}
+                            className="form-textfield"
+                            sx={{
+                              marginTop: "8px !important",
+                              marginBottom: "8px !important"
+                            }}
+                          >
+                            {dataTypeSelector.map((type) => (
+                              <MenuItem key={type} value={type}>
+                                {type}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                          {shouldShowToggle && (
+                            <Controller
+                              control={control}
+                              name={
+                                `attributes.${index}.toggleDuplicates` as const
+                              }
+                              data-cy={`attributes.${index}.toggleDuplicates`}
+                              defaultValue={field.toggleDuplicates}
+                              render={({ field: { value, onChange } }: any) => (
+                                <>
+                                  <LightTooltip
+                                    title={
+                                      value == false ? "Make LIST" : "Make SET"
+                                    }
+                                  >
+                                    <AntSwitch
+                                      size="small"
+                                      {...register(
+                                        `attributes.${index}.toggleDuplicates`
+                                      )}
+                                      checked={value}
+                                      onChange={onChange}
+                                      sx={{ marginRight: "4px" }}
+                                      inputProps={{
+                                        "aria-label": "controlled"
+                                      }}
+                                    />
+                                  </LightTooltip>
+                                </>
+                              )}
+                            />
+                          )}
+                        </div>
+
+                        <IconButton
+                          aria-label="back"
+                          color="error"
+                          sx={{
+                            display: "inline-flex",
+                            position: "relative",
+                            padding: "4px",
+                            marginLeft: "4px"
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            remove(index);
+                          }}
+                        >
+                          <ClearOutlinedIcon sx={{ fontSize: "1.25rem" }} />
+                        </IconButton>
+                      </Stack>
                     );
                   })}
                   {/* <TagAtrributes control={control} /> */}
