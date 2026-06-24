@@ -274,8 +274,8 @@ public class AtlasSecurityConfigTest {
         // Setup
         setupAtlasSecurityConfig(false);
 
-        // Execute using reflection
-        Method method = AtlasSecurityConfig.class.getDeclaredMethod("configure", AuthenticationManagerBuilder.class);
+        // Execute using reflection — configure(AuthenticationManagerBuilder) lives in server-common base class
+        Method method = org.apache.atlas.server.common.security.AtlasSecurityConfig.class.getDeclaredMethod("configure", AuthenticationManagerBuilder.class);
         method.setAccessible(true);
         method.invoke(atlasSecurityConfig, mockAuthenticationManagerBuilder);
 
