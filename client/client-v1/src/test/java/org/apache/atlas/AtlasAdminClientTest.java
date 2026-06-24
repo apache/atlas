@@ -17,7 +17,6 @@
 
 package org.apache.atlas;
 
-import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -28,6 +27,8 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import javax.ws.rs.core.Response;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -242,7 +243,7 @@ public class AtlasAdminClientTest {
     public void testPrintStandardHttpErrorDetailsWithFullException() throws Exception {
         AtlasAdminClient client = new AtlasAdminClient();
         AtlasServiceException exception = mock(AtlasServiceException.class);
-        ClientResponse.Status status = mock(ClientResponse.Status.class);
+        Response.Status status = mock(Response.Status.class);
         when(exception.getStatus()).thenReturn(status);
         when(status.getStatusCode()).thenReturn(404);
         when(status.getReasonPhrase()).thenReturn("Not Found");
@@ -277,7 +278,7 @@ public class AtlasAdminClientTest {
     public void testPrintStandardHttpErrorDetailsWithDifferentStatusCodes() throws Exception {
         AtlasAdminClient client = new AtlasAdminClient();
         AtlasServiceException exception = mock(AtlasServiceException.class);
-        ClientResponse.Status status = mock(ClientResponse.Status.class);
+        Response.Status status = mock(Response.Status.class);
         when(exception.getStatus()).thenReturn(status);
         when(status.getStatusCode()).thenReturn(500);
         when(status.getReasonPhrase()).thenReturn("Internal Server Error");

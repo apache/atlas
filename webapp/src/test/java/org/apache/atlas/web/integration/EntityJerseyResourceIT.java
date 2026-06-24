@@ -20,8 +20,6 @@ package org.apache.atlas.web.integration;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.EntityAuditEvent;
@@ -45,6 +43,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
@@ -57,7 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.sun.jersey.api.client.ClientResponse.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -487,7 +486,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testGetEntityListForBadEntityType() throws Exception {
-        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        MultivaluedMap<String, String> queryParams = new MultivaluedHashMap();
         queryParams.add("type", "blah");
 
         ObjectNode response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.GET_ENTITY, queryParams);
@@ -499,7 +498,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testGetEntityListForNoInstances() throws Exception {
         String typeName = addNewType();
 
-        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        MultivaluedMap<String, String> queryParams = new MultivaluedHashMap();
         queryParams.add("type", typeName);
 
         ObjectNode response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.GET_ENTITY, queryParams);
@@ -726,7 +725,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             atlasClientV1.getTraitDefinition(guid, traitName);
             fail("Deleted trait definition shouldn't exist");
         } catch (AtlasServiceException e) {
-            assertEquals(e.getStatus(), ClientResponse.Status.NOT_FOUND);
+            assertEquals(e.getStatus(), Response.Status.NOT_FOUND);
             assertEntityAudit(guid, EntityAuditEvent.EntityAuditAction.TAG_DELETE);
         }
     }
@@ -783,7 +782,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         } catch (AtlasServiceException e) {
             assertNotNull(e);
             assertNotNull(e.getStatus());
-            assertEquals(e.getStatus(), ClientResponse.Status.BAD_REQUEST);
+            assertEquals(e.getStatus(), Response.Status.BAD_REQUEST);
         }
     }
 
@@ -1004,7 +1003,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Id db2Id = createInstance(db2);
 
         // Delete the database entities
-        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        MultivaluedMap<String, String> queryParams = new MultivaluedHashMap();
         queryParams.add(AtlasClient.GUID.toLowerCase(), db1Id._getId());
         queryParams.add(AtlasClient.GUID.toLowerCase(), db2Id._getId());
 

@@ -41,6 +41,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.databind.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>commons-cli</groupId>
             <artifactId>commons-cli</artifactId>
             <version>${commons-cli.version}</version>
@@ -78,8 +84,16 @@
             <artifactId>hadoop-client</artifactId>
             <exclusions>
                 <exclusion>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-configuration2</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.apache.commons</groupId>
@@ -90,6 +104,36 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-servlet</artifactId>
+            <version>${jersey2.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-client</artifactId>
+            <version>${jersey2.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-server</artifactId>
+            <version>${jersey2.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-json-jackson</artifactId>
+            <version>${jersey2.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-multipart</artifactId>
+            <version>${jersey2.version}</version>
         </dependency>
 
         <dependency>
@@ -119,13 +163,6 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.sun.jersey</groupId>
-            <artifactId>jersey-server</artifactId>
-            <version>${jersey.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -178,6 +215,14 @@
             <scope>test</scope>
             <exclusions>
                 <exclusion>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jersey.contribs</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
@@ -195,6 +240,14 @@
             <scope>test</scope>
             <exclusions>
                 <exclusion>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jersey.contribs</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
@@ -207,6 +260,10 @@
             <version>${hive.version}</version>
             <scope>test</scope>
             <exclusions>
+                <exclusion>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>*</artifactId>
@@ -227,9 +284,31 @@
             <artifactId>jetty-server</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-server</artifactId>
+            <version>${jersey2.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
+            <!-- Parent disables Failsafe forking (forkCount=0). Fork IT JVM; on Java 9+ use
+                 HiveITSystemClassLoader so Hive 3.1.x SessionState sees a URLClassLoader. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration combine.self="merge">
+                    <forkCount>1</forkCount>
+                    <reuseForks>false</reuseForks>
+                    <classpathDependencyExcludes>
+                        <classpathDependencyExclude>org.apache.atlas:atlas-client-v2-shaded</classpathDependencyExclude>
+                        <classpathDependencyExclude>org.glassfish.jersey.media:jersey-media-json-jackson</classpathDependencyExclude>
+                    </classpathDependencyExcludes>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
@@ -481,9 +560,9 @@
                                             <version>${kafka.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>com.sun.jersey.contribs</groupId>
-                                            <artifactId>jersey-multipart</artifactId>
-                                            <version>${jersey.version}</version>
+                                            <groupId>org.glassfish.jersey.media</groupId>
+                                            <artifactId>jersey-media-multipart</artifactId>
+                                            <version>${jersey2.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>com.fasterxml.jackson.core</groupId>
@@ -506,9 +585,14 @@
                                             <version>${commons-conf2.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>com.sun.jersey</groupId>
-                                            <artifactId>jersey-json</artifactId>
-                                            <version>${jersey.version}</version>
+                                            <groupId>org.glassfish.jersey.media</groupId>
+                                            <artifactId>jersey-media-json-jackson</artifactId>
+                                            <version>${jersey2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>jakarta.ws.rs</groupId>
+                                            <artifactId>jakarta.ws.rs-api</artifactId>
+                                            <version>${javax.ws.rs-api}</version>
                                         </artifactItem>
                                     </artifactItems>
                                 </configuration>
@@ -539,6 +623,23 @@
                                 </configuration>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>hive-it-jdk17</id>
+            <activation>
+                <jdk>[9,)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration combine.self="merge">
+                            <argLine combine.children="append">--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED -Djava.system.class.loader=org.apache.atlas.hive.HiveITSystemClassLoader</argLine>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
