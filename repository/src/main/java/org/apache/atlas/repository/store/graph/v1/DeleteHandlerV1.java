@@ -717,11 +717,15 @@ public abstract class DeleteHandlerV1 {
         boolean ret = false;
 
         if (edge != null) {
-            String outVertexType = getTypeName(edge.getOutVertex());
-            String inVertexType  = getTypeName(edge.getInVertex());
+            try {
+                String outVertexType = getTypeName(edge.getOutVertex());
+                String inVertexType  = getTypeName(edge.getInVertex());
 
-            ret = GraphHelper.isRelationshipEdge(edge) || edge.getPropertyKeys().contains(RELATIONSHIP_GUID_PROPERTY_KEY) ||
-                    (typeRegistry.getEntityTypeByName(outVertexType) != null && typeRegistry.getEntityTypeByName(inVertexType) != null);
+                ret = GraphHelper.isRelationshipEdge(edge) || edge.getPropertyKeys().contains(RELATIONSHIP_GUID_PROPERTY_KEY) ||
+                        (typeRegistry.getEntityTypeByName(outVertexType) != null && typeRegistry.getEntityTypeByName(inVertexType) != null);
+            } catch (IllegalStateException e) {
+                LOG.warn("Skipping edge {} because one of its vertices was removed", edge.getIdForDisplay(), e);
+            }
         }
 
         return ret;
@@ -1255,6 +1259,24 @@ public abstract class DeleteHandlerV1 {
         final boolean             isPurgeRequested = RequestContext.get().isPurgeRequested();
 
         for (AtlasEdge edge : incomingEdges) {
+            if (!edge.exists()) {
+                LOG.debug("deleteVertex(): skipping edge {} - already removed in this transaction", edge.getIdForDisplay());
+                continue;
+            }
+
+            AtlasVertex outVertex;
+            try {
+                outVertex = edge.getOutVertex();
+            } catch (IllegalStateException e) {
+                LOG.warn("deleteVertex(): skipping edge {} - out-vertex was already removed", edge.getIdForDisplay(), e);
+                continue;
+            }
+
+            if (!outVertex.exists()) {
+                LOG.debug("deleteVertex(): skipping edge {} - out-vertex {} already removed in this transaction", edge.getIdForDisplay(), outVertex.getIdForDisplay());
+                continue;
+            }
+
             AtlasEntity.Status edgeStatus = getStatus(edge);
             boolean            isProceed  = edgeStatus == (isPurgeRequested ? DELETED : ACTIVE);
 
@@ -1262,10 +1284,20 @@ public abstract class DeleteHandlerV1 {
                 if (isRelationshipEdge(edge)) {
                     deleteRelationship(edge);
                 } else {
-                    AtlasVertex outVertex = edge.getOutVertex();
-
                     if (!isDeletedEntity(outVertex)) {
-                        AtlasVertex    inVertex  = edge.getInVertex();
+                        AtlasVertex inVertex;
+                        try {
+                            inVertex = edge.getInVertex();
+                        } catch (IllegalStateException e) {
+                            LOG.warn("deleteVertex(): skipping edge {} - in-vertex was already removed", edge.getIdForDisplay(), e);
+                            continue;
+                        }
+
+                        if (!inVertex.exists()) {
+                            LOG.debug("deleteVertex(): skipping edge {} - in-vertex {} already removed in this transaction", edge.getIdForDisplay(), inVertex.getIdForDisplay());
+                            continue;
+                        }
+
                         AtlasAttribute attribute = getAttributeForEdge(edge.getLabel());
 
                         deleteEdgeBetweenVertices(outVertex, inVertex, attribute);
