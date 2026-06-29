@@ -28,7 +28,7 @@ const theme = createTheme();
 const mockDispatch = jest.fn();
 const mockUseAppSelector = jest.fn();
 
-jest.mock('@hooks/reducerHook', () => ({
+jest.mock('../../../hooks/reducerHook', () => ({
 	useAppDispatch: () => mockDispatch,
 	useAppSelector: (selector: any) => mockUseAppSelector(selector)
 }));
@@ -43,7 +43,7 @@ const mockLocation = {
 	key: 'test-key'
 };
 
-const mockUseParams = jest.fn(() => ({ guid: 'test-guid-123' }));
+const mockUseParams = jest.fn<any, any>(() => ({ guid: 'test-guid-123' }));
 const mockUseLocation = jest.fn(() => ({
 	pathname: '/glossary/test-guid-123',
 	search: '?gtype=term',
@@ -63,29 +63,29 @@ jest.mock('react-router-dom', () => {
 
 // Mock API methods
 const mockAssignGlossaryType = jest.fn();
-jest.mock('@api/apiMethods/glossaryApiMethod', () => ({
-	assignGlossaryType: (...args: any[]) => mockAssignGlossaryType(...args)
+jest.mock('../../../api/apiMethods/glossaryApiMethod', () => ({
+	assignGlossaryType: function() { return mockAssignGlossaryType.apply(null, arguments as any); }
 }));
 
 // Mock Redux slices
-const mockFetchGlossaryData = jest.fn(() => ({ type: 'glossary/fetchData' }));
-const mockFetchGlossaryDetails = jest.fn(() => ({ type: 'glossary/fetchDetails' }));
-const mockFetchDetailPageData = jest.fn(() => ({ type: 'detailPage/fetchData' }));
+const mockFetchGlossaryData = jest.fn((...args: any[]) => ({ type: 'glossary/fetchData' }));
+const mockFetchGlossaryDetails = jest.fn((...args: any[]) => ({ type: 'glossary/fetchDetails' }));
+const mockFetchDetailPageData = jest.fn((...args: any[]) => ({ type: 'detailPage/fetchData' }));
 
-jest.mock('@redux/slice/glossarySlice', () => ({
-	fetchGlossaryData: (...args: any[]) => mockFetchGlossaryData(...args)
+jest.mock('../../../redux/slice/glossarySlice', () => ({
+	fetchGlossaryData: function() { return mockFetchGlossaryData.apply(null, arguments as any); }
 }));
 
-jest.mock('@redux/slice/glossaryDetailsSlice', () => ({
-	fetchGlossaryDetails: (...args: any[]) => mockFetchGlossaryDetails(...args)
+jest.mock('../../../redux/slice/glossaryDetailsSlice', () => ({
+	fetchGlossaryDetails: function() { return mockFetchGlossaryDetails.apply(null, arguments as any); }
 }));
 
-jest.mock('@redux/slice/detailPageSlice', () => ({
-	fetchDetailPageData: (...args: any[]) => mockFetchDetailPageData(...args)
+jest.mock('../../../redux/slice/detailPageSlice', () => ({
+	fetchDetailPageData: function() { return mockFetchDetailPageData.apply(null, arguments as any); }
 }));
 
 // Mock Utils - must be before importing the component
-jest.mock('@utils/Utils', () => {
+jest.mock('../../../utils/Utils', () => {
 	const mockCustomSortByObjectKeys = (arr: any[]) => {
 		// CRITICAL: Always return an array, never undefined
 		if (arr === undefined || arr === null) return [];
@@ -152,7 +152,7 @@ jest.mock('@utils/Utils', () => {
 });
 
 // Mock Helper
-jest.mock('@utils/Helper', () => ({
+jest.mock('../../../utils/Helper', () => ({
 	cloneDeep: jest.fn((obj: any) => {
 		if (obj === null || obj === undefined) {
 			return {};
@@ -202,7 +202,7 @@ jest.mock('moment-timezone', () => {
 });
 
 // Mock FormTreeView component
-jest.mock('@components/Forms/FormTreeView', () => {
+jest.mock('../../../components/Forms/FormTreeView', () => {
 	return function MockFormTreeView({
 		treeData,
 		searchTerm,
@@ -234,7 +234,7 @@ jest.mock('@components/Forms/FormTreeView', () => {
 });
 
 // Mock CustomModal component
-jest.mock('@components/Modal', () => {
+jest.mock('../../../components/Modal', () => {
 	return function MockCustomModal({
 		open,
 		onClose,
@@ -715,7 +715,7 @@ describe('AssignCategory', () => {
 			});
 
 			await waitFor(() => {
-				const { serverError } = require('@utils/Utils');
+				const { serverError } = require('../../../utils/Utils');
 				expect(serverError).toHaveBeenCalled();
 			});
 		});

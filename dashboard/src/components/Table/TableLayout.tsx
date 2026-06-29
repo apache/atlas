@@ -75,6 +75,7 @@ import TableRowsLoader from "./TableLoader";
 import AddTag from "@views/Classification/AddTag";
 import FilterQuery from "@components/FilterQuery";
 import TablePagination from "./TablePagination";
+import SkeletonLoader from "@components/SkeletonLoader";
 
 interface IndeterminateCheckboxProps extends Omit<CheckboxProps, "ref"> {
   indeterminate?: boolean;
@@ -207,8 +208,8 @@ const DraggableTableHeader = ({ header, isEmptyRows }: { header: any; isEmptyRow
     width: isEmptyRows
       ? undefined
       : header.column.columnDef?.width != undefined
-      ? header.column.columnDef?.width
-      : header.column.getSize(),
+        ? header.column.columnDef?.width
+        : header.column.getSize(),
     zIndex: isDragging ? 1 : 0
   };
 
@@ -222,17 +223,16 @@ const DraggableTableHeader = ({ header, isEmptyRows }: { header: any; isEmptyRow
     >
       {header.isPlaceholder ? null : (
         <div
-          className={`${
-            header.column.getCanSort() ? "cursor-pointer select-none" : ""
-          } table-header-wrap`}
+          className={`${header.column.getCanSort() ? "cursor-pointer select-none" : ""
+            } table-header-wrap`}
           onClick={header.column.getToggleSortingHandler()}
           title={
             header.column.getCanSort()
               ? header.column.getNextSortingOrder() === "asc"
                 ? "Sort ascending"
                 : header.column.getNextSortingOrder() === "desc"
-                ? "Sort descending"
-                : "Clear sort"
+                  ? "Sort descending"
+                  : "Clear sort"
               : undefined
           }
         >
@@ -391,8 +391,8 @@ const TableLayout: FC<TableProps> = ({
   const [columnOrder, setColumnOrder] = useState<any>(() =>
     !isEmpty(memoizedColumns)
       ? memoizedColumns
-          .map((c: any) => c.id || c.accessorKey)
-          .filter(Boolean)
+        .map((c: any) => c.id || c.accessorKey)
+        .filter(Boolean)
       : []
   );
 
@@ -400,8 +400,8 @@ const TableLayout: FC<TableProps> = ({
     setColumnOrder(
       !isEmpty(memoizedColumns)
         ? memoizedColumns
-            .map((c: any) => c.id || c.accessorKey)
-            .filter(Boolean)
+          .map((c: any) => c.id || c.accessorKey)
+          .filter(Boolean)
         : []
     )
   }, [memoizedColumns])
@@ -413,9 +413,6 @@ const TableLayout: FC<TableProps> = ({
   currentParams.forEach((value, key) => {
     params[key] = value;
   });
-  // Total number of visible table columns including selection/expand controls
-  const totalVisibleColumns =
-    (showRowSelection ? 1 : 0) + (expandRow ? 1 : 0) + columnOrder.length;
   const {
     getHeaderGroups,
     getRowModel,
@@ -468,8 +465,8 @@ const TableLayout: FC<TableProps> = ({
     setColumnOrder(
       !isEmpty(memoizedColumns)
         ? memoizedColumns
-            .map((c: any) => c.id || c.accessorKey)
-            .filter(Boolean)
+          .map((c: any) => c.id || c.accessorKey)
+          .filter(Boolean)
         : []
     );
   }, [existingColumnIds]);
@@ -520,8 +517,8 @@ const TableLayout: FC<TableProps> = ({
   };
   const selectedRow = !isEmpty(getSelectedRowModel()?.rows)
     ? getSelectedRowModel()?.rows?.map((obj) => {
-        return obj.original;
-      })
+      return obj.original;
+    })
     : [];
 
   return (
@@ -561,7 +558,7 @@ const TableLayout: FC<TableProps> = ({
               {isfilterQuery &&
                 (location.pathname == "/search/searchResult" ||
                   location.pathname ==
-                    "/relationship/relationshipSearchresult") && (
+                  "/relationship/relationshipSearchresult") && (
                   <Stack
                     flexWrap="wrap"
                     direction="row"
@@ -631,20 +628,25 @@ const TableLayout: FC<TableProps> = ({
             >
               <MuiTable
                 size="small"
-                className={`table ${expandRow ? "expand-row-table" : ""} ${
-                  memoizedData && memoizedData.length > 0 && expandRow
-                    ? "has-expanded-rows"
-                    : ""
-                }`}
+                className={`table ${expandRow ? "expand-row-table" : ""} ${memoizedData && memoizedData.length > 0 && expandRow
+                  ? "has-expanded-rows"
+                  : ""
+                  }`}
                 sx={{
                   tableLayout: memoizedData.length > 0 ? "fixed" : "auto",
                   width: "100%"
                 }}
               >
                 {/* remove dynamic colgroup for empty state */}
-                {!isFetching && (
-                  <TableHead>
-                    {getHeaderGroups().map((headerGroup) => (
+                <TableHead>
+                  {isFetching ? (
+                    <TableRow className="table-header-row">
+                      <TableCell colSpan={100}>
+                        <SkeletonLoader animation="wave" variant="text" count={1} />
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    getHeaderGroups().map((headerGroup) => (
                       <TableRow
                         hover
                         key={headerGroup.id}
@@ -666,7 +668,7 @@ const TableLayout: FC<TableProps> = ({
                           items={columnOrder}
                           strategy={horizontalListSortingStrategy}
                         >
-                          
+
                           {headerGroup.headers.map((header) =>
                             header.isPlaceholder ? null : (
                               <DraggableTableHeader
@@ -678,15 +680,15 @@ const TableLayout: FC<TableProps> = ({
                           )}
                         </SortableContext>
                       </TableRow>
-                    ))}
-                  </TableHead>
-                )}
+                    ))
+                  )}
+                </TableHead>
                 <TableBody>
                   {isFetching ? (
                     <TableRowsLoader rowsNum={10} />
                   ) : memoizedData.length === 0 && isFetching == false ? (
                     <TableRow>
-                      <TableCell colSpan={Math.max(1, totalVisibleColumns)}>
+                      <TableCell colSpan={100}>
                         <Stack textAlign="center">
                           <Typography fontWeight="600" color="text.secondary">
                             {emptyText}

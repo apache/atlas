@@ -120,19 +120,19 @@ const ShowMoreView = ({
       } else if (title == "Terms" || title == "Category") {
         let selectedTerm = !isEmpty(data)
           ? data?.find(
-              (obj: {
-                qualifiedName: string;
-                displayText: string;
-                termGuid: string;
-              }) => {
-                if (
-                  (obj.qualifiedName || obj.displayText) ==
-                  currentValue.selectedValue
-                ) {
-                  return obj;
-                }
+            (obj: {
+              qualifiedName: string;
+              displayText: string;
+              termGuid: string;
+            }) => {
+              if (
+                (obj.qualifiedName || obj.displayText) ==
+                currentValue.selectedValue
+              ) {
+                return obj;
               }
-            )
+            }
+          )
           : {};
 
         if (isEmpty(gType)) {
@@ -190,8 +190,8 @@ const ShowMoreView = ({
   const checkSuperTypes = (classificationName: string) => {
     var tagObj = !isEmpty(classificationDefs)
       ? classificationDefs.find((obj: { name: string }) => {
-          return obj.name == classificationName;
-        })
+        return obj.name == classificationName;
+      })
       : {};
 
     return !isEmpty(tagObj?.superTypes)
@@ -203,10 +203,10 @@ const ShowMoreView = ({
 
   const getTagParentList = (name: string) => {
     let tagObj = !isEmpty(classificationDefs)
-        ? classificationDefs?.find((obj: { name: string }) => {
-            return obj.name == name;
-          })
-        : {},
+      ? classificationDefs?.find((obj: { name: string }) => {
+        return obj.name == name;
+      })
+      : {},
       tagParents = tagObj ? tagObj?.["superTypes"] : null,
       parentName = name;
     if (tagParents && tagParents.length) {
@@ -255,14 +255,16 @@ const ShowMoreView = ({
 
     if (title == "Terms" || title == "Category") {
       const { termGuid, categoryGuid }: any = data || {};
-      const searchParams = new URLSearchParams(location.search);
-
-      searchParams.set("gtype", title == "Terms" ? "term" : "category");
-      searchParams.set("viewType", title == "Terms" ? "term" : "category");
-      searchParams.set("fromView", "entity");
+      const searchParams = new URLSearchParams();
 
       let gTypeGuid =
         (title == "Terms" ? termGuid : categoryGuid) || data?.guid;
+
+      searchParams.set("gid", gTypeGuid);
+      searchParams.set("gtype", title == "Terms" ? "term" : "category");
+      searchParams.set("viewType", title == "Terms" ? "term" : "category");
+      searchParams.set("fromView", "entity");
+      searchParams.set("searchType", "basic");
 
       return (
         <Link
@@ -312,12 +314,12 @@ const ShowMoreView = ({
                   onDelete={
                     !isEmpty(removeApiMethod) && !isDeleteIcon
                       ? () => {
-                          // Handle undefined displayKey by extracting a string value
-                          const deleteValue = obj[displayKey] || obj.displayText || obj.text || obj.name || '';
-                          handleDelete(deleteValue);
-                        }
+                        // Handle undefined displayKey by extracting a string value
+                        const deleteValue = obj[displayKey] || obj.displayText || obj.text || obj.name || '';
+                        handleDelete(deleteValue);
+                      }
                       : isDeleteIcon && obj.count > 1
-                      ? () => {
+                        ? () => {
                           const searchParams = new URLSearchParams();
                           searchParams.set("tabActive", "classification");
                           searchParams.set("filter", obj.typeName);
@@ -326,7 +328,7 @@ const ShowMoreView = ({
                             search: searchParams.toString()
                           });
                         }
-                      : undefined
+                        : undefined
                   }
                   size="small"
                   variant="outlined"
@@ -407,11 +409,10 @@ const ShowMoreView = ({
               sx={{ fontWeight: 600 }}
             >
               {!isEmpty(currentEntity)
-                ? `${currentValue.assetName} ${
-                    !isEmpty(currentEntity?.typeName)
-                      ? `(${currentEntity.typeName})`
-                      : ""
-                  }`
+                ? `${currentValue.assetName} ${!isEmpty(currentEntity?.typeName)
+                  ? `(${currentEntity.typeName})`
+                  : ""
+                }`
                 : ""}
             </Typography>{" "}
             ?

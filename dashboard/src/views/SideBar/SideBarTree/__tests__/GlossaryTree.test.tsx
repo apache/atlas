@@ -31,10 +31,10 @@ import { render, screen, waitFor, act } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
 import GlossaryTree from '../GlossaryTree'
-import { fetchGlossaryData } from '@redux/slice/glossarySlice'
+import { fetchGlossaryData } from '../../../../redux/slice/glossarySlice'
 
 // Mock dependencies
-jest.mock('@redux/slice/glossarySlice', () => ({
+jest.mock('../../../../redux/slice/glossarySlice', () => ({
 	fetchGlossaryData: jest.fn()
 }))
 
@@ -62,8 +62,8 @@ jest.mock('../SideBarTree.tsx', () => {
 	}
 })
 
-jest.mock('@utils/Utils', () => {
-	const actualUtils = jest.requireActual('@utils/Utils')
+jest.mock('../../../../utils/Utils', () => {
+	const actualUtils = jest.requireActual('../../../../utils/Utils')
 	return {
 		...actualUtils,
 		customSortBy: jest.fn((arr, ...args) => {
@@ -140,9 +140,9 @@ describe('GlossaryTree', () => {
 	beforeEach(() => {
 		jest.clearAllMocks()
 		mockFetchGlossaryData.mockReturnValue({ type: 'fetchGlossaryData' } as any)
-		
+
 		// Ensure mocks always return arrays
-		const utils = require('@utils/Utils')
+		const utils = require('../../../../utils/Utils')
 		if (utils.customSortByObjectKeys) {
 			jest.spyOn(utils, 'customSortByObjectKeys').mockImplementation((arr: any) => {
 				if (arr === undefined || arr === null) return []
@@ -228,7 +228,7 @@ describe('GlossaryTree', () => {
 			renderComponent()
 
 			const refreshButton = screen.getByTestId('refresh-button')
-			
+
 			await act(async () => {
 				refreshButton.click()
 			})
@@ -514,6 +514,45 @@ describe('GlossaryTree', () => {
 
 			const treeData = screen.getByTestId('tree-data')
 			expect(treeData).toBeInTheDocument()
+		})
+
+		it('should deduplicate nodes with the same guid in the tree structure', async () => {
+			const mockGlossaryData = [
+				{
+					name: 'Glossary1',
+					guid: 'guid1',
+					categories: [],
+					terms: [
+						{
+							displayText: 'Term1',
+							termGuid: 'duplicate-term',
+							categoryGuid: 'cat1',
+							parentCategoryGuid: undefined
+						},
+						{
+							displayText: 'Term2',
+							termGuid: 'duplicate-term', // Same guid
+							categoryGuid: 'cat2',
+							parentCategoryGuid: undefined
+						}
+					]
+				}
+			]
+
+			renderComponent({}, {
+				glossary: {
+					glossaryData: mockGlossaryData,
+					loading: false
+				}
+			})
+
+			await waitFor(() => {
+				const treeDataStr = screen.getByTestId('tree-data').textContent
+				// Since deduplication keeps the last one in the Map by guid, 
+				// we verify the overall array has only one term processed.
+				expect(treeDataStr).toContain('Term2')
+				expect(treeDataStr).not.toContain('Term1')
+			})
 		})
 	})
 

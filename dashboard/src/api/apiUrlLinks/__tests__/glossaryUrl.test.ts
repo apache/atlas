@@ -47,7 +47,8 @@ import {
 	assignTermtoEntitiesUrl,
 	assignTermtoCategoryUrl,
 	assignGlossaryTypeUrl,
-	removeTermorCatgeoryUrl
+	removeTermorCatgeoryUrl,
+	deleteCategoryUrl
 } from '../glossaryUrl'
 import { getBaseApiUrl } from '../commonApiUrl'
 
@@ -185,6 +186,26 @@ describe('glossaryUrl', () => {
 		it('should handle empty guid', () => {
 			const result = deleteGlossaryorTermUrl('')
 			expect(result).toBe('/mock-base-url/api/atlas/v2/glossary/')
+		})
+	})
+
+	describe('deleteCategoryUrl', () => {
+		it('should return correct URL for deleting category', () => {
+			const guid = 'guid-123'
+			const result = deleteCategoryUrl(guid)
+
+			expect(mockGetBaseApiUrl).toHaveBeenCalledWith('urlV2')
+			expect(result).toBe('/mock-base-url/api/atlas/v2/glossary/category/guid-123')
+		})
+
+		it('should handle different guid values', () => {
+			const result = deleteCategoryUrl('guid-456')
+			expect(result).toBe('/mock-base-url/api/atlas/v2/glossary/category/guid-456')
+		})
+
+		it('should handle empty guid', () => {
+			const result = deleteCategoryUrl('')
+			expect(result).toBe('/mock-base-url/api/atlas/v2/glossary/category/')
 		})
 	})
 

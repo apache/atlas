@@ -37,8 +37,9 @@ const AddUpdateCategoryForm = (props: {
   isAdd: any;
   node: Record<string, any> | undefined;
   dataObj: any;
+  updatedData?: any;
 }) => {
-  const { open, onClose, isAdd, node, dataObj } = props;
+  const { open, onClose, isAdd, node, dataObj, updatedData } = props;
   const { id, parent, types, cGuid } = node || {};
   const { guid: glossaryTypeGuid }: any = useParams();
   const dispatchApi = useAppDispatch();
@@ -118,12 +119,21 @@ const AddUpdateCategoryForm = (props: {
       }
       if (isAdd) {
         dispatchApi(fetchGlossaryData());
+        if (gType && glossaryTypeGuid) {
+          let params: any = { gtype: gType, guid: glossaryTypeGuid };
+          dispatchApi(fetchGlossaryDetails(params));
+          dispatchApi(fetchDetailPageData(glossaryTypeGuid as string));
+        }
       } else {
         if (!isEmpty(dataObj)) {
           let params: any = { gtype: gType, guid: glossaryTypeGuid };
           dispatchApi(fetchGlossaryData());
-          dispatchApi(fetchGlossaryDetails(params));
-          dispatchApi(fetchDetailPageData(dataObj.guid as string));
+          if (updatedData) {
+            updatedData();
+          } else {
+            dispatchApi(fetchGlossaryDetails(params));
+            dispatchApi(fetchDetailPageData(dataObj.guid as string));
+          }
         }
       }
       toast.dismiss(toastId.current);

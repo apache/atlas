@@ -17,7 +17,8 @@
 
 import {
   deleteGlossaryorTerm,
-  deleteGlossaryorType
+  deleteGlossaryorType,
+  deleteCategory
 } from "@api/apiMethods/glossaryApiMethod";
 import CustomModal from "@components/Modal";
 import { useAppDispatch } from "@hooks/reducerHook";
@@ -27,7 +28,7 @@ import { fetchGlossaryData } from "@redux/slice/glossarySlice";
 import { isEmpty, serverError } from "@utils/Utils";
 import { useRef } from "react";
 import { useAsyncPending } from "@hooks/useAsyncPending";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const DeleteGlossary = (props: {
@@ -40,10 +41,8 @@ const DeleteGlossary = (props: {
   const { open, onClose, setExpandNode, node, updatedData } = props;
   const { id, guid, cGuid, types } = node;
   const gtype: string | undefined | null =
-    types != "parent" ? "term" : "glossary";
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const glossaryType = searchParams.get("gtype");
+    types == "Category" ? "category" : types != "parent" ? "term" : "glossary";
+
   const { guid: glossaryGuid } = useParams();
 
   const navigate = useNavigate();
@@ -58,17 +57,27 @@ const DeleteGlossary = (props: {
   const handleRemove = () => {
     void runDelete(async () => {
       try {
-        gtype == "term"
+        gtype == "category"
+          ? await deleteCategory(cGuid)
+          : gtype == "term"
           ? await deleteGlossaryorType(cGuid)
           : await deleteGlossaryorTerm(guid);
-        updatedData();
+        onClose();
+        updatedData?.();
         await fetchCurrentData();
         toast.success(
           `${
-            gtype == "term" ? "Term" : "Glossary"
+            gtype == "category"
+              ? "Category"
+              : gtype == "term"
+              ? "Term"
+              : "Glossary"
           } ${id} was deleted successfully`
         );
-        if (!isEmpty(glossaryGuid) || !isEmpty(glossaryType)) {
+        if (
+          (!isEmpty(glossaryGuid) && glossaryGuid === guid) ||
+          (!isEmpty(glossaryGuid) && glossaryGuid === cGuid)
+        ) {
           navigate(
             {
               pathname: "/"
@@ -76,7 +85,6 @@ const DeleteGlossary = (props: {
             { replace: true }
           );
         }
-        onClose();
         setExpandNode(null);
       } catch (error) {
         serverError(error, toastId);
@@ -101,7 +109,11 @@ const DeleteGlossary = (props: {
       >
         <Typography fontSize={15}>
           Are you sure you want to delete{" "}
-          {gtype == "term" ? "Term" : "Glossary"}
+          {gtype == "category"
+            ? "Category"
+            : gtype == "term"
+            ? "Term"
+            : "Glossary"}
         </Typography>
       </CustomModal>
     </>
