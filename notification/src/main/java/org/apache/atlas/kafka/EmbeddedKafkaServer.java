@@ -17,36 +17,27 @@
  */
 package org.apache.atlas.kafka;
 
-import kafka.server.KafkaConfig;
-import kafka.server.KafkaServer;
-import kafka.zookeeper.ZooKeeperClientException;
+import kafka.testkit.KafkaClusterTestKit;
+import kafka.testkit.TestKitNodes;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.service.Service;
-import org.apache.atlas.util.CommandHandlerUtility;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.ConfigurationConverter;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.KafkaException;
-import org.apache.kafka.common.utils.Time;
-import org.apache.zookeeper.server.NIOServerCnxnFactory;
-import org.apache.zookeeper.server.ServerCnxnFactory;
-import org.apache.zookeeper.server.ZooKeeperServer;
+import org.apache.kafka.common.utils.Exit;
+import org.apache.kafka.common.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import scala.Option;
 
 import javax.inject.Inject;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.BindException;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Component
 @Order(3)
@@ -56,17 +47,18 @@ public class EmbeddedKafkaServer implements Service {
     public static final String PROPERTY_PREFIX   = "atlas.kafka";
     public static final String PROPERTY_EMBEDDED = "atlas.notification.embedded";
 
-    private static final String ATLAS_KAFKA_DATA          = "data";
-    private static final int    MAX_RETRY_TO_ACQUIRE_PORT = 3;
+    private static final String ATLAS_KAFKA_DATA = "data";
 
-    private final boolean           isEmbedded;
-    private final Properties        properties;
-    private       KafkaServer       kafkaServer;
-    private       ServerCnxnFactory factory;
+    private final boolean       isEmbedded;
+    private final Configuration applicationProperties;
+    private final Properties    properties;
+
+    private KafkaClusterTestKit cluster;
 
     @Inject
     public EmbeddedKafkaServer(Configuration applicationProperties) {
-        Configuration kafkaConf = ApplicationProperties.getSubsetConfiguration(applicationProperties, PROPERTY_PREFIX);
+        this.applicationProperties = applicationProperties;
+        Configuration kafkaConf    = ApplicationProperties.getSubsetConfiguration(applicationProperties, PROPERTY_PREFIX);
 
         this.isEmbedded = applicationProperties.getBoolean(PROPERTY_EMBEDDED, false);
         this.properties = ConfigurationConverter.getProperties(kafkaConf);
@@ -78,8 +70,7 @@ public class EmbeddedKafkaServer implements Service {
 
         if (isEmbedded) {
             try {
-                startZk();
-                startKafka();
+                startKraftBroker();
             } catch (Exception e) {
                 throw new AtlasException("Failed to start embedded kafka", e);
             }
@@ -94,90 +85,77 @@ public class EmbeddedKafkaServer implements Service {
     public void stop() {
         LOG.info("==> EmbeddedKafkaServer.stop(isEmbedded={})", isEmbedded);
 
-        if (kafkaServer != null) {
-            kafkaServer.shutdown();
-        }
+        if (cluster != null) {
+            AtomicReference<Throwable> shutdownFailure = new AtomicReference<>();
 
-        if (factory != null) {
-            factory.shutdown();
+            Utils.closeQuietly(cluster, "embedded Kafka cluster", shutdownFailure);
+
+            if (shutdownFailure.get() != null) {
+                LOG.warn("Failed to shut down embedded Kafka cluster", shutdownFailure.get());
+            }
+
+            cluster = null;
         }
 
         LOG.info("<== EmbeddedKafka.stop(isEmbedded={})", isEmbedded);
     }
 
-    private String startZk() throws IOException, InterruptedException {
-        String zkValue = properties.getProperty("zookeeper.connect");
+    private void startKraftBroker() throws Exception {
+        overrideExitMethods();
 
-        LOG.info("Starting zookeeper at {}", zkValue);
+        File logDir = constructDir("kafka");
 
-        URL  zkAddress   = getURL(zkValue);
-        File snapshotDir = constructDir("zk/txn");
-        File logDir      = constructDir("zk/snap");
+        LOG.info("Starting embedded KRaft kafka (log.dir={})", logDir.getAbsolutePath());
 
-        for (int attemptCount = 0; attemptCount < MAX_RETRY_TO_ACQUIRE_PORT; attemptCount++) {
-            try {
-                factory = NIOServerCnxnFactory.createFactory(new InetSocketAddress(zkAddress.getHost(), zkAddress.getPort()), 1024);
-                break;
-            } catch (BindException e) {
-                LOG.warn("Attempt {}: Starting zookeeper at {} failed", attemptCount, zkValue);
+        KafkaClusterTestKit.Builder clusterBuilder = new KafkaClusterTestKit.Builder(
+                new TestKitNodes.Builder()
+                        .setCombined(true)
+                        .setNumBrokerNodes(1)
+                        .setNumControllerNodes(1)
+                        .build());
 
-                if (attemptCount == MAX_RETRY_TO_ACQUIRE_PORT - 1) {
-                    throw e;
-                }
+        Properties brokerConfig = buildBrokerConfig(logDir);
 
-                CommandHandlerUtility.tryKillingProcessUsingPort(zkAddress.getPort(), attemptCount != 0);
-            }
-        }
+        brokerConfig.forEach((key, value) -> clusterBuilder.setConfigProp(key.toString(), value));
 
-        factory.startup(new ZooKeeperServer(snapshotDir, logDir, 500));
+        cluster = clusterBuilder.build();
+        cluster.format();
+        cluster.startup();
+        cluster.waitForReadyBrokers();
 
-        String ret = factory.getLocalAddress().getAddress().toString();
+        String bootstrapServers = cluster.clientProperties().get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG).toString();
 
-        LOG.info("Embedded zookeeper for Kafka started at {}", ret);
+        LOG.info("Embedded KRaft kafka server started at {}", bootstrapServers);
 
-        return ret;
+        applicationProperties.setProperty(PROPERTY_PREFIX + ".bootstrap.servers", bootstrapServers);
+        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     }
 
-    private void startKafka() throws IOException {
-        String kafkaValue = properties.getProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG);
+    private Properties buildBrokerConfig(File logDir) {
+        Properties brokerConfig = new Properties();
 
-        LOG.info("Starting kafka at {}", kafkaValue);
+        brokerConfig.setProperty("log.dir", logDir.getAbsolutePath());
+        brokerConfig.setProperty("delete.topic.enable", "true");
+        brokerConfig.setProperty("group.initial.rebalance.delay.ms", "0");
+        brokerConfig.setProperty("offsets.topic.replication.factor", "1");
+        brokerConfig.setProperty("transaction.state.log.replication.factor", "1");
+        brokerConfig.setProperty("transaction.state.log.min.isr", "1");
+        brokerConfig.setProperty("num.partitions", "1");
 
-        URL        kafkaAddress = getURL(kafkaValue);
-        Properties brokerConfig = properties;
+        String replicationFactor = properties.getProperty("offsets.topic.replication.factor");
 
-        for (int attemptCount = 0; attemptCount < MAX_RETRY_TO_ACQUIRE_PORT; attemptCount++) {
-            try {
-                brokerConfig.setProperty("broker.id", "1");
-                brokerConfig.setProperty("host.name", kafkaAddress.getHost());
-                brokerConfig.setProperty("port", String.valueOf(kafkaAddress.getPort()));
-                brokerConfig.setProperty("log.dirs", constructDir("kafka").getAbsolutePath());
-                brokerConfig.setProperty("log.flush.interval.messages", String.valueOf(1));
-
-                kafkaServer = new KafkaServer(KafkaConfig.fromProps(brokerConfig), Time.SYSTEM, Option.apply(this.getClass().getName()), false);
-
-                kafkaServer.startup();
-                break;
-            } catch (KafkaException | ZooKeeperClientException e) {
-                LOG.warn("Attempt {}: kafka server with broker config {} failed", attemptCount, brokerConfig);
-
-                if (attemptCount == MAX_RETRY_TO_ACQUIRE_PORT - 1) {
-                    throw e;
-                }
-
-                if (kafkaServer != null) {
-                    try {
-                        kafkaServer.shutdown();
-                    } catch (Exception ex) {
-                        LOG.info("Failed to shutdown kafka server", ex);
-                    }
-                }
-
-                CommandHandlerUtility.tryKillingProcessUsingPort(kafkaAddress.getPort(), attemptCount != 0);
-            }
+        if (replicationFactor != null) {
+            brokerConfig.setProperty("offsets.topic.replication.factor", replicationFactor);
         }
 
-        LOG.info("Embedded kafka server started with broker config {}", brokerConfig);
+        return brokerConfig;
+    }
+
+    private void overrideExitMethods() {
+        Exit.setExitProcedure((statusCode, message) ->
+                LOG.warn("Kafka Exit.exit({}, {}) suppressed in embedded broker", statusCode, message));
+        Exit.setHaltProcedure((statusCode, message) ->
+                LOG.warn("Kafka Exit.halt({}, {}) suppressed in embedded broker", statusCode, message));
     }
 
     private File constructDir(String dirPrefix) {
@@ -188,13 +166,5 @@ public class EmbeddedKafkaServer implements Service {
         }
 
         return file;
-    }
-
-    private URL getURL(String url) throws MalformedURLException {
-        try {
-            return new URL(url);
-        } catch (MalformedURLException e) {
-            return new URL("http://" + url);
-        }
     }
 }

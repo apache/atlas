@@ -174,7 +174,18 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public void start() throws AtlasException {
         LOG.info("==> KafkaNotification.start()");
 
+        syncBootstrapServers();
+
         LOG.info("<== KafkaNotification.start()");
+    }
+
+    private void syncBootstrapServers() throws AtlasException {
+        Configuration kafkaConf = ApplicationProperties.getSubsetConfiguration(ApplicationProperties.get(), PROPERTY_PREFIX);
+        String        bootstrap = kafkaConf.getString("bootstrap.servers");
+
+        if (StringUtils.isNotEmpty(bootstrap)) {
+            properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
+        }
     }
 
     // ----- Service ---------------------------------------------------------
