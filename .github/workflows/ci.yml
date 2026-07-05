@@ -145,6 +145,9 @@ jobs:
               echo "All required containers are up and running";
               docker stop $(docker ps -q) && docker rm $(docker ps -aq);
           else
+              for container in "${containers[@]}"; do
+                  docker logs --tail 200 "$container" 2>&1 || true
+              done
               docker stop $(docker ps -q) && docker rm $(docker ps -aq);
               exit 1;
           fi
