@@ -58,6 +58,7 @@
             <version>${jackson.version}</version>
         </dependency>
 
+        <!-- Jackson JAX-RS 2.12.7: last line compatible with Jersey 1.19 / JAX-RS 1.1; core Jackson is 2.16.2 via ${jackson.version}. Full unification -> ATLAS-5190 -->
         <dependency>
             <groupId>com.fasterxml.jackson.jaxrs</groupId>
             <artifactId>jackson-jaxrs-base</artifactId>
