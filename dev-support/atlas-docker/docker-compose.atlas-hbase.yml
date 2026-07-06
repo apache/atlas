@@ -25,8 +25,9 @@ services:
         condition: service_started
       atlas-kafka:
         condition: service_started
+    restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:16030/rs-status" ]
+      test: [ "CMD-SHELL", "wget -q --spider http://localhost:16030/rs-status && wget -q --spider http://localhost:16010/master-status" ]
       interval: 30s
       timeout: 10s
       retries: 30
