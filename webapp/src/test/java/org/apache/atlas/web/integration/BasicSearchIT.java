@@ -57,7 +57,7 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class BasicSearchIT extends BaseResourceIT {
-    private static final String IMPORTED_DATA_QUALIFIED_NAME_MARKER = "@cl1";
+    private static final String IMPORTED_DATA_QUALIFIED_NAME_MARKER = "largedb.";
 
     private AtlasUserSavedSearch userSavedSearch;
 
