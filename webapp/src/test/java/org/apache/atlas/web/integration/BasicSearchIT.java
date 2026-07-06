@@ -57,7 +57,7 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class BasicSearchIT extends BaseResourceIT {
-    private static final String IMPORTED_DATA_QUALIFIED_NAME_MARKER = "largedb.";
+    private static final String IMPORTED_DATA_QUALIFIED_NAME_MARKER = "default.";
 
     private AtlasUserSavedSearch userSavedSearch;
 
@@ -347,6 +347,10 @@ public class BasicSearchIT extends BaseResourceIT {
         String typeName = parameters.getTypeName();
 
         if (!"hive_table".equals(typeName) && !"hive_column".equals(typeName)) {
+            return parameters;
+        }
+
+        if (StringUtils.isNotBlank(parameters.getQuery()) || parameters.getOffset() > 0) {
             return parameters;
         }
 

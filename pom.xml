@@ -1351,6 +1351,13 @@
                     <forkCount>0</forkCount>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-testng</artifactId>
+                        <version>${failsafe.version}</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>integration-test</id>

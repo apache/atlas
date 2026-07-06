@@ -101,6 +101,13 @@
             <classifier>test</classifier>
         </dependency>
 
+        <!-- KafkaClusterTestKit (embedded KRaft broker) calls org.apache.kafka.test.TestUtils, which uses junit.jupiter at runtime in the WAR. -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.11.4</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-client-v2</artifactId>
@@ -112,14 +119,6 @@
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
             <classifier>tests</classifier>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- Kafka 3.9 test utilities call org.junit.jupiter.api.Assertions; keep test-scoped so IT modules (e.g. falcon-bridge) stay on TestNG. -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>5.11.4</version>
             <scope>test</scope>
         </dependency>
 
