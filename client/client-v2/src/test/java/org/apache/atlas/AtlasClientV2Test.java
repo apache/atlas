@@ -43,6 +43,9 @@ import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.ClassificationAssociateRequest;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
+import org.apache.atlas.model.instance.FailedEntity;
+import org.apache.atlas.model.instance.PurgeSummary;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
@@ -52,8 +55,10 @@ import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.http.HttpStatus;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -79,6 +84,7 @@ import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -2510,6 +2516,79 @@ public class AtlasClientV2Test {
 
         assertNotNull(result);
         assertEquals(result, mockResponse);
+    }
+
+    @Test
+    public void testPurgeEntitiesByGuidsAssignsToBaseType() throws Exception {
+        TestableAtlasClientV2 client = new TestableAtlasClientV2();
+        EntityMutationResponse mockResponse = new EntityMutationResponse();
+        client.setMockResponse(mockResponse, EntityMutationResponse.class);
+
+        EntityMutationResponse result = client.purgeEntitiesByGuids(Collections.singleton("guid1"));
+
+        assertNotNull(result);
+        assertEquals(result, mockResponse);
+    }
+
+    @Test
+    public void testPurgeEntitiesByGuidsDeserializesPurgeFieldsOnHttp200() throws Exception {
+        EntityMutationResponse result = invokePurgeWithMockedHttpResponse(HttpStatus.SC_OK, buildSamplePurgeResponseJson());
+
+        assertPurgeResponseFields(result);
+    }
+
+    @Test
+    public void testPurgeEntitiesByGuidsDeserializedResponseAssignsToBaseType() throws Exception {
+        EntityMutationResponse result = invokePurgeWithMockedHttpResponse(HttpStatus.SC_OK, buildSamplePurgeResponseJson());
+
+        assertNotNull(result.getEntitiesByOperation(EntityOperation.PURGE));
+        assertEquals(result.getEntitiesByOperation(EntityOperation.PURGE).size(), 1);
+        assertEquals(result.getEntitiesByOperation(EntityOperation.PURGE).get(0).getGuid(), "purged-guid");
+    }
+
+    private EntityMutationResponse invokePurgeWithMockedHttpResponse(int httpStatus, String responseJson) throws Exception {
+        AtlasClientV2       atlasClient = new AtlasClientV2(service, configuration);
+        WebResource.Builder builder     = setupBuilder(AtlasClientV2.API_V2.PURGE_ENTITIES_BY_GUIDS, service);
+        ClientResponse      response    = mock(ClientResponse.class);
+
+        when(response.getStatus()).thenReturn(httpStatus);
+        when(response.getEntity(String.class)).thenReturn(responseJson);
+        when(builder.method(eq(javax.ws.rs.HttpMethod.PUT), eq(ClientResponse.class), any())).thenReturn(response);
+
+        return atlasClient.purgeEntitiesByGuids(Collections.singleton("purged-guid"));
+    }
+
+    private static String buildSamplePurgeResponseJson() {
+        EntityMutationResponse response = new EntityMutationResponse();
+
+        Map<EntityOperation, List<AtlasEntityHeader>> mutatedEntities = new HashMap<>();
+        List<AtlasEntityHeader> purged = new ArrayList<>();
+        purged.add(new AtlasEntityHeader("Table", "purged-guid", null));
+        mutatedEntities.put(EntityOperation.PURGE, purged);
+        response.setMutatedEntities(mutatedEntities);
+
+        response.addFailedEntity(new FailedEntity("failed-guid", "ATLAS-404-00-006", "instance not found"));
+        response.setSummary(new PurgeSummary(2, 1, 0, 1, 0));
+
+        return AtlasJson.toJson(response);
+    }
+
+    private static void assertPurgeResponseFields(EntityMutationResponse result) {
+        assertNotNull(result);
+        assertNotNull(result.getPurgedEntities());
+        assertEquals(result.getPurgedEntities().size(), 1);
+        assertEquals(result.getPurgedEntities().get(0).getGuid(), "purged-guid");
+
+        assertNotNull(result.getFailedEntities());
+        assertEquals(result.getFailedEntities().size(), 1);
+        assertEquals(result.getFailedEntities().get(0).getGuid(), "failed-guid");
+        assertEquals(result.getFailedEntities().get(0).getErrorCode(), "ATLAS-404-00-006");
+        assertEquals(result.getFailedEntities().get(0).getErrorMessage(), "instance not found");
+
+        assertNotNull(result.getPurgeSummary());
+        assertEquals(result.getPurgeSummary().getRequestedCount(), 2);
+        assertEquals(result.getPurgeSummary().getPurgedCount(), 1);
+        assertEquals(result.getPurgeSummary().getFailedCount(), 1);
     }
 
     @Test

@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.audit.AtlasAuditEntry.AuditOperation;
 import org.apache.atlas.model.instance.AtlasCheckStateRequest;
 import org.apache.atlas.model.instance.AtlasCheckStateResult;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -28,7 +29,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.model.instance.FailedEntity;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasEntityType;
 
@@ -227,12 +228,29 @@ public interface AtlasEntityStore {
      */
     EntityMutationResponse purgeByIds(Set<String> guids) throws AtlasBaseException;
 
+    /**
+     * Shared WIM worker purge path for REST and scheduled purge. Uses the transactional entity-store
+     * proxy ({@code PurgeBatchExecutor(self)}) so batch commits run inside {@code @GraphTransaction}.
+     */
+    EntityMutationResponse executePurgeWithWorkers(Set<String> originallyRequestedGuids,
+                                                          Set<String> validGuids,
+                                                          List<FailedEntity> preFailures,
+                                                          AuditOperation auditOperation) throws AtlasBaseException;
+
     /*
      * Returns set of auto-purged entity guids
      */
     EntityMutationResponse purgeEntitiesInBatch(Set<String> deletedVertices) throws AtlasBaseException;
 
-    Set<AtlasVertex> accumulateDeletionCandidates(Set<String> vertices) throws AtlasBaseException;
+    /*
+     * Resolves purge/delete dependency candidates for the given entity GUIDs.
+     *
+     * INCOMPATIBLE CHANGE (ATLAS-5317): return type changed from Set<AtlasVertex> to
+     * Set<String>. The method was added in ATLAS-4920; ATLAS-5317 returns GUIDs so
+     * worker-batch purge can enqueue candidates without leaking transaction-bound vertices.
+     * Custom AtlasEntityStore implementations must match this signature.
+     */
+    Set<String> accumulateDeletionCandidates(Set<String> vertices) throws AtlasBaseException;
 
     /**
      * Add classification(s)

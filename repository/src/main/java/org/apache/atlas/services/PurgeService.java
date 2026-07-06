@@ -20,19 +20,22 @@ package org.apache.atlas.services;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.DeleteType;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.AtlasService;
 import org.apache.atlas.annotation.Timed;
+import org.apache.atlas.model.audit.AtlasAuditEntry.AuditOperation;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.FailedEntity;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.pc.WorkItemBuilder;
 import org.apache.atlas.pc.WorkItemConsumer;
 import org.apache.atlas.pc.WorkItemManager;
+import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.purge.PurgeExecutionStats;
+import org.apache.atlas.repository.purge.PurgeUtils;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
@@ -53,15 +56,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PURGE;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
@@ -72,10 +73,11 @@ import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
 public class PurgeService implements Service {
     private static final Logger LOG       = LoggerFactory.getLogger(PurgeService.class);
     private static final Logger PERF_LOG  = AtlasPerfTracer.getPerfLogger("service.Purge");
-    private final AtlasGraph atlasGraph;
-    private static Configuration atlasProperties;
-    private final AtlasEntityStore entityStore;
-    private final AtlasTypeRegistry typeRegistry;
+    private final AtlasGraph            atlasGraph;
+    private static Configuration        atlasProperties;
+    private final AtlasEntityStore      entityStore;
+    private final AtlasTypeRegistry     typeRegistry;
+    private final AtlasAuditService     auditService;
 
     private static final String  ENABLE_PROCESS_SOFT_DELETION         = "atlas.enable.process.soft.delete";
     private static final boolean ENABLE_PROCESS_SOFT_DELETION_DEFAULT = false;
@@ -83,21 +85,16 @@ public class PurgeService implements Service {
     private static final String  SOFT_DELETE_ENABLED_PROCESS_TYPES    = "atlas.soft.delete.enabled.process.types";
     private static final String  PURGE_BATCH_SIZE                     = "atlas.purge.batch.size";
     private static final int     DEFAULT_PURGE_BATCH_SIZE             = 1000; // fetching limit at a time
-    private static final String  PURGE_WORKER_BATCH_SIZE              = "atlas.purge.worker.batch.size";
-    private static final int     DEFAULT_PURGE_WORKER_BATCH_SIZE      = 100;
     private static final String  CLEANUP_WORKER_BATCH_SIZE            = "atlas.cleanup.worker.batch.size";
     private static final int     DEFAULT_CLEANUP_WORKER_BATCH_SIZE    = 100;
     private static final String  PURGE_RETENTION_PERIOD               = "atlas.purge.deleted.entity.retention.days";
     private static final int     PURGE_RETENTION_PERIOD_DEFAULT       = 30; // days
-    private static final String  PURGE_WORKERS_COUNT                  = "atlas.purge.workers.count";
-    private static final int     DEFAULT_PURGE_WORKERS_COUNT          = 2;
     private static final String  CLEANUP_WORKERS_COUNT                = "atlas.cleanup.workers.count";
     private static final int     DEFAULT_CLEANUP_WORKERS_COUNT        = 2;
     private static final String  PROCESS_ENTITY_CLEANER_THREAD_NAME   = "Process-Entity-Cleaner";
     private final        String  indexSearchPrefix                    = AtlasGraphUtilsV2.getIndexSearchPrefix();
     private static final int     DEFAULT_CLEANUP_BATCH_SIZE           = 1000;
     private static final String  CLEANUP_WORKERS_NAME                 = "Process-Cleanup-Worker";
-    private static final String  PURGE_WORKERS_NAME                   = "Entity-Purge-Worker";
     private static final String  DELETED                              = "DELETED";
     private static final String  ACTIVE                               = "ACTIVE";
     private static final String  AND_STR                              = " AND ";
@@ -106,15 +103,17 @@ public class PurgeService implements Service {
         try {
             atlasProperties = ApplicationProperties.get();
         } catch (Exception e) {
-            LOG.info("Failed to load application properties", e);
+            LOG.warn("Failed to load application properties", e);
         }
     }
 
     @Inject
-    public PurgeService(AtlasGraph atlasgraph, AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
-        this.atlasGraph   = atlasgraph;
-        this.entityStore  = entityStore;
-        this.typeRegistry = typeRegistry;
+    public PurgeService(AtlasGraph atlasgraph, AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry,
+                        AtlasAuditService auditService) {
+        this.atlasGraph            = atlasgraph;
+        this.entityStore           = entityStore;
+        this.typeRegistry          = typeRegistry;
+        this.auditService          = auditService;
     }
 
     @Override
@@ -157,13 +156,9 @@ public class PurgeService implements Service {
     @SuppressWarnings("unchecked")
     @Timed
     public EntityMutationResponse purgeEntities() {
-        LOG.info("==> PurgeService.purgeEntities()");
-        // index query of specific batch size
+        LOG.info("purgeEntities: starting");
         AtlasPerfTracer perf = null;
         EntityMutationResponse entityMutationResponse = new EntityMutationResponse();
-        RequestContext requestContext = RequestContext.get();
-        requestContext.setDeleteType(DeleteType.HARD); // hard delete
-        requestContext.setPurgeRequested(true);
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
@@ -171,21 +166,19 @@ public class PurgeService implements Service {
             }
 
             Set<String> allEligibleTypes = getEntityTypes();
+            Set<String> originallyRequestedGuids = new LinkedHashSet<>();
 
             try {
-                //bring n number of entities like 1000 at point of type Processes
-                WorkItemsQualifier wiq = createQualifier(typeRegistry, entityStore, atlasGraph, getPurgeWorkerBatchSize(), getPurgeWorkersCount(), true);
-
                 String indexQuery = getBulkQueryString(allEligibleTypes, getPurgeRetentionPeriod());
                 Iterator<Result> itr = atlasGraph.indexQuery(VERTEX_INDEX, indexQuery).vertices(0, getPurgeBatchSize());
-                LOG.info("==>  fetched Deleted entities");
 
                 if (!itr.hasNext()) {
-                    LOG.info("==> no Purge Entities found");
+                    LOG.info("purgeEntities: no eligible entities found");
+                    PurgeExecutionStats stats = new PurgeExecutionStats(originallyRequestedGuids,
+                            originallyRequestedGuids.size());
+                    PurgeUtils.attachPurgeSummary(entityMutationResponse, stats);
                     return entityMutationResponse;
                 }
-
-                Set<String> producedDeletionCandidates = new HashSet<>(); // look up
 
                 while (itr.hasNext()) {
                     AtlasVertex vertex = itr.next().getVertex();
@@ -194,48 +187,43 @@ public class PurgeService implements Service {
                         continue;
                     }
 
-                    String guid = vertex.getProperty(GUID_PROPERTY_KEY, String.class);
-
-                    if (!producedDeletionCandidates.contains(guid)) {
-                        Set<String> instanceVertex = new HashSet<>();
-                        instanceVertex.add(guid);
-
-                        Set<AtlasVertex> deletionCandidates = entityStore.accumulateDeletionCandidates(instanceVertex);
-
-                        for (AtlasVertex deletionCandidate : deletionCandidates) {
-                            String deletionCandidateGuid = deletionCandidate.getProperty(GUID_PROPERTY_KEY, String.class);
-                            if (!producedDeletionCandidates.contains(deletionCandidateGuid)) {
-                                producedDeletionCandidates.add(deletionCandidateGuid);
-                                wiq.checkProduce(deletionCandidate);
-                            }
-                        }
+                    String guid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
+                    if (guid != null) {
+                        originallyRequestedGuids.add(guid);
                     }
                 }
 
-                wiq.shutdown();
-
-                // collecting all the results
-                Queue results = wiq.getResults();
-
-                LOG.info("==> Purged {} !", results.size());
-
-                while (!results.isEmpty()) {
-                    AtlasEntityHeader entityHeader = (AtlasEntityHeader) results.poll();
-                    if (entityHeader == null) {
-                        continue;
-                    }
-                    entityMutationResponse.addEntity(PURGE, entityHeader);
+                // Release the index-scan transaction before worker batches commit; an open read txn
+                // on this thread can block concurrent purge workers on graphindex write locks.
+                PurgeBatchOrchestrator.clearPurgeCandidateExpansionState();
+                try {
+                    atlasGraph.rollback();
+                } catch (Exception rollbackEx) {
+                    LOG.debug("purgeEntities: rollback after index scan ignored", rollbackEx);
                 }
+
+                List<FailedEntity> failedEntities = new ArrayList<>();
+                entityMutationResponse = entityStore.executePurgeWithWorkers(originallyRequestedGuids,
+                        originallyRequestedGuids, failedEntities, AuditOperation.AUTO_PURGE);
+
+                int resultCount = (entityMutationResponse.getPurgedEntities() != null ? entityMutationResponse.getPurgedEntities().size() : 0) +
+                        (entityMutationResponse.getFailedEntities() != null ? entityMutationResponse.getFailedEntities().size() : 0);
+
+                LOG.info("purgeEntities: completed resultCount={}, summary={}", resultCount,
+                        entityMutationResponse.getSummary());
             } catch (Exception ex) {
-                LOG.error("purge: failed!", ex);
-            } finally {
-                LOG.info("purge: Done!");
+                LOG.error("purgeEntities: failed", ex);
+                PurgeBatchOrchestrator.resetPurgeContext();
+                PurgeExecutionStats stats = new PurgeExecutionStats(originallyRequestedGuids,
+                        originallyRequestedGuids.size());
+                stats.markExecutionFailed();
+                PurgeUtils.attachPurgeSummary(entityMutationResponse, stats);
             }
         } finally {
             AtlasPerfTracer.log(perf);
         }
 
-        LOG.info("<== PurgeService.purgeEntities()");
+        LOG.info("purgeEntities: finished summary={}", entityMutationResponse.getSummary());
 
         return entityMutationResponse;
     }
@@ -318,7 +306,7 @@ public class PurgeService implements Service {
 
         @Override
         protected void processItem(AtlasVertex vertex) {
-            String guid =  vertex.getProperty(GUID_PROPERTY_KEY, String.class);
+            String guid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
             LOG.info("==> processing the entity {}", guid);
 
             try {
@@ -353,15 +341,10 @@ public class PurgeService implements Service {
             List<AtlasEntityHeader> results = Collections.emptyList();
 
             try {
-                if (isPurgeEnabled) {
-                    // purging not by directly
-                    res = entityStore.purgeEntitiesInBatch(batch);
-                } else {
-                    List<String> batchList = new ArrayList<>(batch);
-                    res = entityStore.deleteByIds(batchList);
-                }
+                List<String> batchList = new ArrayList<>(batch);
+                res = entityStore.deleteByIds(batchList);
 
-                results = isPurgeEnabled ? res.getPurgedEntities() : res.getDeletedEntities();
+                results = res.getDeletedEntities();
 
                 if (CollectionUtils.isEmpty(results)) {
                     return;
@@ -403,7 +386,7 @@ public class PurgeService implements Service {
 
     static class WorkItemsQualifier extends WorkItemManager<AtlasVertex, EntityQualifier> {
         public WorkItemsQualifier(WorkItemBuilder builder, int batchSize, int numWorkers, boolean isPurgeEnabled) {
-            super(builder, isPurgeEnabled ? PURGE_WORKERS_NAME : CLEANUP_WORKERS_NAME, batchSize, numWorkers, true);
+            super(builder, isPurgeEnabled ? PurgeBatchOrchestrator.PURGE_WORKERS_NAME : CLEANUP_WORKERS_NAME, batchSize, numWorkers, true);
         }
 
         @Override
@@ -507,25 +490,11 @@ public class PurgeService implements Service {
         return DEFAULT_PURGE_BATCH_SIZE;
     }
 
-    private int getPurgeWorkersCount() {
-        if (atlasProperties != null) {
-            return atlasProperties.getInt(PURGE_WORKERS_COUNT, DEFAULT_PURGE_WORKERS_COUNT);
-        }
-        return DEFAULT_PURGE_WORKERS_COUNT;
-    }
-
     private int getCleanUpWorkersCount() {
         if (atlasProperties != null) {
             return atlasProperties.getInt(CLEANUP_WORKERS_COUNT, DEFAULT_CLEANUP_WORKERS_COUNT);
         }
         return DEFAULT_CLEANUP_WORKERS_COUNT;
-    }
-
-    private int getPurgeWorkerBatchSize() {
-        if (atlasProperties != null) {
-            return atlasProperties.getInt(PURGE_WORKER_BATCH_SIZE, DEFAULT_PURGE_WORKER_BATCH_SIZE);
-        }
-        return DEFAULT_PURGE_WORKER_BATCH_SIZE;
     }
 
     private int getCleanupWorkerBatchSize() {

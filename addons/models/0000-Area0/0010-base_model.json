@@ -15,7 +15,8 @@
         { "ordinal": 6, "value": "TYPE_DEF_UPDATE" },
         { "ordinal": 7, "value": "TYPE_DEF_DELETE" },
         { "ordinal": 8, "value": "SERVER_START" },
-        { "ordinal": 9, "value": "SERVER_STATE_ACTIVE" }
+        { "ordinal": 9, "value": "SERVER_STATE_ACTIVE" },
+        { "ordinal": 10, "value": "AUTO_PURGE" }
       ]
     }
   ],

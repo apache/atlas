@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.GraphTransactionInterceptor;
@@ -32,6 +33,7 @@ import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.bulkimport.BulkImportResponse.ImportInfo;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.audit.AtlasAuditEntry.AuditOperation;
 import org.apache.atlas.model.instance.AtlasCheckStateRequest;
 import org.apache.atlas.model.instance.AtlasCheckStateResult;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -43,15 +45,21 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.FailedEntity;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.purge.PurgeExecutionStats;
+import org.apache.atlas.repository.purge.PurgeUtils;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEntityDiffResult;
+import org.apache.atlas.services.PurgeBatchExecutor;
+import org.apache.atlas.services.PurgeBatchOrchestrator;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -70,9 +78,11 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -81,6 +91,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -110,6 +122,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final EntityGraphRetriever       entityRetriever;
     private       EntityRenameHandler        entityRenameHandler;
     private       boolean                    storeDifferentialAudits;
+    @Inject
+    @Lazy
+    private AtlasEntityStore self;
+    @Inject
+    @Lazy
+    private Provider<AtlasAuditService> auditServiceProvider;
 
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, AtlasTypeRegistry typeRegistry, IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper) {
@@ -130,6 +148,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @VisibleForTesting
     public void setStoreDifferentialAudits(boolean val) {
         this.storeDifferentialAudits = val;
+    }
+
+    @VisibleForTesting
+    public void setSelf(AtlasEntityStore self) {
+        this.self = self;
     }
 
     @Override
@@ -547,79 +570,221 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     @Override
-    @GraphTransaction
     public EntityMutationResponse purgeByIds(Set<String> guids) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(guids)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
         }
 
+        int purgeApiMaxRequestSize = AtlasConfiguration.PURGE_API_MAX_REQUEST_SIZE.getInt();
+        if (guids.size() > purgeApiMaxRequestSize) {
+            throw new AtlasBaseException(AtlasErrorCode.PURGE_REQUEST_SIZE_EXCEEDS_LIMIT, String.valueOf(guids.size()), String.valueOf(purgeApiMaxRequestSize));
+        }
+
         AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_PURGE), "purge entity: guids=", guids);
 
-        Collection<AtlasVertex> purgeCandidates = new ArrayList<>();
+        LOG.info("purgeByIds: requested {} guid(s)", guids.size());
 
+        // Pre-scan all GUIDs — validate format + lookup
+        Set<String>                               validGuids     = new LinkedHashSet<>();
+        List<FailedEntity> failedEntities = new ArrayList<>();
+
+        preScanGuids(guids, validGuids, failedEntities);
+
+        LOG.info("purgeByIds: preScan valid={}, failed={}", validGuids.size(), failedEntities.size());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("purgeByIds: preScan validGuids={}, failedEntities={}", validGuids, failedEntities);
+        }
+
+        // If no valid GUIDs, return 400-level response with failed entities
+        if (validGuids.isEmpty()) {
+            return buildPreValidationOnlyResponse(guids, failedEntities);
+        }
+
+        // Iteratively expand deletion candidates per root GUID and feed workers (aligned with PurgeService)
+        return executePurgeWithWorkers(guids, validGuids, failedEntities, AuditOperation.PURGE);
+    }
+
+    @Override
+    public EntityMutationResponse executePurgeWithWorkers(Set<String> originallyRequestedGuids,
+                                                                 Set<String> validGuids,
+                                                                 List<FailedEntity> preFailures,
+                                                                 AuditOperation auditOperation) throws AtlasBaseException {
+        PurgeBatchOrchestrator.initializePurgeContext();
+        try {
+            PurgeBatchExecutor executor = new PurgeBatchExecutor(self);
+            AtlasAuditService auditService = auditServiceProvider != null ? auditServiceProvider.get() : null;
+            PurgeBatchOrchestrator orchestrator = new PurgeBatchOrchestrator(executor, auditService, auditOperation);
+
+            PurgeExecutionStats stats = new PurgeExecutionStats(originallyRequestedGuids, validGuids.size());
+            EntityMutationResponse response = orchestrator.executePurge(validGuids, preFailures, stats);
+
+            PurgeUtils.attachPurgeSummary(response, stats);
+
+            LOG.info("executePurgeWithWorkers: completed purged={}, failed={}, summary={}",
+                    response.getPurgedEntities() != null ? response.getPurgedEntities().size() : 0,
+                    response.getFailedEntities() != null ? response.getFailedEntities().size() : 0,
+                    response.getSummary());
+
+            return response;
+        } finally {
+            PurgeBatchOrchestrator.resetPurgeContext();
+        }
+    }
+
+    private void preScanGuids(Set<String> guids, Set<String> validGuids, List<FailedEntity> failedEntities) {
         for (String guid : guids) {
-            AtlasVertex vertex = AtlasGraphUtilsV2.findDeletedByGuid(graph, guid);
-
-            if (vertex == null) {
-                // Entity does not exist - treat as non-error, since the caller
-                // wanted to delete the entity and it's already gone.
-                LOG.warn("Purge request ignored for non-existent/active entity with guid {}", guid);
-
-                continue;
+            FailedEntity failure = validatePurgePreconditions(guid);
+            if (failure != null) {
+                failedEntities.add(failure);
+            } else {
+                validGuids.add(guid);
             }
+        }
+    }
 
-            purgeCandidates.add(vertex);
+    private FailedEntity validatePurgePreconditions(String guid) {
+        if (!isValidUuid(guid)) {
+            LOG.debug("Purge request ignored for invalid GUID format: {}", guid);
+            return createPreScanFailure(guid, AtlasErrorCode.INVALID_GUID, guid);
         }
 
-        if (purgeCandidates.isEmpty()) {
-            LOG.info("No purge candidate entities were found for guids: {} which is already deleted", guids);
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+
+        if (vertex == null) {
+            LOG.debug("Purge request ignored for non-existent entity: guid={}", guid);
+            return createPreScanFailure(guid, AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
-        EntityMutationResponse ret = purgeVertices(purgeCandidates);
+        if (AtlasGraphUtilsV2.getState(vertex) != Status.DELETED) {
+            LOG.debug("Purge request ignored for entity not in DELETED state: guid={}", guid);
+            return createPreScanFailure(guid, AtlasErrorCode.NOT_IN_DELETED_STATE, guid);
+        }
 
-        // Notify the change listeners
-        entityChangeNotifier.onEntitiesMutated(ret, false);
+        String typeName = AtlasGraphUtilsV2.getTypeName(vertex);
+        if (StringUtils.isBlank(typeName)) {
+            LOG.debug("Purge request ignored for entity with missing type name: guid={}", guid);
+            return createPreScanFailure(guid, AtlasErrorCode.TYPE_NAME_NOT_FOUND, "null");
+        }
+        if (!typeRegistry.isRegisteredType(typeName)) {
+            LOG.debug("Purge request ignored for entity with unregistered type: guid={}, typeName={}", guid, typeName);
+            return createPreScanFailure(guid, AtlasErrorCode.TYPE_NAME_NOT_FOUND, typeName);
+        }
 
-        return ret;
+        return null;
+    }
+
+    private EntityMutationResponse buildPreValidationOnlyResponse(Set<String> requestedGuids,
+                                                                  List<FailedEntity> failedEntities) {
+        EntityMutationResponse response = new EntityMutationResponse();
+        response.setFailedEntities(failedEntities);
+        PurgeExecutionStats stats = new PurgeExecutionStats(requestedGuids, 0);
+        stats.recordFailures(failedEntities);
+        PurgeUtils.attachPurgeSummary(response, stats);
+
+        if (auditServiceProvider != null && auditServiceProvider.get() != null) {
+            PurgeBatchOrchestrator.writeBatchAudit(auditServiceProvider.get(), AuditOperation.PURGE, requestedGuids, response);
+        }
+
+        return response;
+    }
+
+    private FailedEntity createPreScanFailure(String guid, AtlasErrorCode errorCode, String... messageArgs) {
+        return new FailedEntity(guid,
+                errorCode.getErrorCode(),
+                errorCode.getFormattedErrorMessage(messageArgs));
+    }
+
+    private void addPurgeBatchFailure(EntityMutationResponse response, String guid, AtlasErrorCode errorCode) {
+        if (response != null) {
+            response.addFailedEntity(new FailedEntity(guid, errorCode.getErrorCode(), errorCode.getFormattedErrorMessage(guid)));
+        }
+    }
+
+    private boolean isValidUuid(String guid) {
+        if (guid == null) {
+            return false;
+        }
+        try {
+            java.util.UUID.fromString(guid);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     @Override
     @GraphTransaction
     public EntityMutationResponse purgeEntitiesInBatch(Set<String> purgeCandidates) throws AtlasBaseException {
-        LOG.info("==> purgeEntitiesInBatch()");
+        LOG.debug("purgeEntitiesInBatch: batchSize={}", purgeCandidates.size());
 
         Collection<AtlasVertex> purgeVertices = new ArrayList<>();
-        EntityMutationResponse response      = new EntityMutationResponse();
+        EntityMutationResponse response = new EntityMutationResponse();
+        Map<AtlasVertex, AtlasEntityHeader> prePurgeHeaders = new IdentityHashMap<>();
 
         RequestContext requestContext = RequestContext.get();
         requestContext.setDeleteType(DeleteType.HARD); // hard deleter
         requestContext.setPurgeRequested(true);
 
+        if (CollectionUtils.isNotEmpty(purgeCandidates)) {
+            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(new ArrayList<>(purgeCandidates));
+            GraphTransactionInterceptor.clearCache();
+        }
         for (String guid : purgeCandidates) {
             AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
-            if (vertex != null) {
+            if (vertex == null || !vertex.exists()) {
+                LOG.debug("Purge batch skipped guid={} as vertex was already removed (likely by concurrent batch)", guid);
+                addPurgeBatchFailure(response, guid, AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
+                continue;
+            }
+
+            try {
+                if (AtlasGraphUtilsV2.getState(vertex) != Status.DELETED) {
+                    LOG.warn("Purge batch skipped guid={} as it is no longer in DELETED state", guid);
+                    addPurgeBatchFailure(response, guid, AtlasErrorCode.NOT_IN_DELETED_STATE);
+                    continue;
+                }
+
                 AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(vertex);
                 purgeVertices.add(vertex);
-                response.addEntity(PURGE, entityHeader);
+                prePurgeHeaders.put(vertex, entityHeader);
+            } catch (IllegalStateException e) {
+                LOG.debug("Purge batch skipped guid={} as vertex was already removed (likely by concurrent batch)", guid, e);
+                addPurgeBatchFailure(response, guid, AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
             }
         }
 
-        deleteDelegate.getHandler().deleteTraitsAndVertices(purgeVertices);
+        Collection<AtlasVertex> deletedVertices = deleteDelegate.getHandler().deleteTraitsAndVertices(purgeVertices);
+        Set<AtlasVertex> deletedVertexSet = Collections.newSetFromMap(new IdentityHashMap<>());
+        deletedVertexSet.addAll(deletedVertices);
 
-        entityChangeNotifier.onEntitiesMutated(response, false);
+        EntityMutationResponse notificationResponse = new EntityMutationResponse();
 
-        for (AtlasEntityHeader entity : response.getPurgedEntities()) {
-            LOG.info("Auto purged entity with guid {}", entity.getGuid());
+        for (Map.Entry<AtlasVertex, AtlasEntityHeader> entry : prePurgeHeaders.entrySet()) {
+            if (deletedVertexSet.contains(entry.getKey())) {
+                response.addEntity(PURGE, entry.getValue());
+                notificationResponse.addEntity(PURGE, entry.getValue());
+            } else {
+                String guid = entry.getValue().getGuid();
+                LOG.debug("Purge batch skipped guid={} as vertex was not deleted by this batch, assuming concurrently removed", guid);
+                addPurgeBatchFailure(response, guid, AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
+            }
         }
 
-        LOG.info("<== purgeEntitiesInBatch()");
+        // Notify listeners only for vertices hard-deleted in this batch. GUIDs removed by a concurrent
+        // batch (during pre-check or delete) are already purged, so do not trigger notifications again.
+        entityChangeNotifier.onEntitiesMutated(notificationResponse, false);
+
+        if (CollectionUtils.isNotEmpty(response.getPurgedEntities())) {
+            LOG.debug("purgeEntitiesInBatch: purged {} entity(ies)", response.getPurgedEntities().size());
+        }
 
         return response;
     }
 
     @Override
-    public Set<AtlasVertex> accumulateDeletionCandidates(Set<String> guids) throws AtlasBaseException {
-        LOG.info("==> accumulateDeletionCandidates() !");
+    @GraphTransaction
+    public Set<String> accumulateDeletionCandidates(Set<String> guids) throws AtlasBaseException {
+        LOG.debug("accumulateDeletionCandidates: guidCount={}", guids.size());
         Set<AtlasVertex> vertices = new HashSet<>();
 
         for (String guid : guids) {
@@ -627,7 +792,18 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             vertices.add(vertex);
         }
 
-        return deleteDelegate.getHandler().accumulateDeletionCandidates(vertices);
+        Set<AtlasVertex> deletionCandidates = deleteDelegate.getHandler().accumulateDeletionCandidates(vertices);
+        Set<String>      candidateGuids       = new LinkedHashSet<>();
+
+        for (AtlasVertex vertex : deletionCandidates) {
+            String candidateGuid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
+
+            if (candidateGuid != null) {
+                candidateGuids.add(candidateGuid);
+            }
+        }
+
+        return candidateGuids;
     }
 
     @Override

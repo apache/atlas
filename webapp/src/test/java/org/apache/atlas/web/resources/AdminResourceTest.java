@@ -42,6 +42,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.PurgeSummary;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.metrics.AtlasMetricsMapToChart;
 import org.apache.atlas.model.metrics.AtlasMetricsStat;
@@ -93,6 +94,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -246,6 +248,22 @@ public class AdminResourceTest {
         responseField.set(adminResource, httpServletResponse);
     }
 
+    private static PurgeSummary buildPurgeSummary(long requested, long purged, long purgedDeps,
+                                                                         long failed, long failedDeps, long skipped,
+                                                                         boolean executionFailed) {
+        return buildPurgeSummary(requested, purged, purgedDeps, failed, failedDeps, skipped, 0, executionFailed);
+    }
+
+    private static PurgeSummary buildPurgeSummary(long requested, long purged, long purgedDeps,
+                                                                         long failed, long failedDeps, long skipped,
+                                                                         long validGuidCount, boolean executionFailed) {
+        PurgeSummary summary =
+                new PurgeSummary(requested, purged, purgedDeps, failed, failedDeps, skipped);
+        summary.setValidGuidCount(validGuidCount);
+        summary.setExecutionFailed(executionFailed);
+        return summary;
+    }
+
     @Test
     public void testGetThreadDump() {
         AdminResource adminResource = createAdminResource();
@@ -342,7 +360,6 @@ public class AdminResourceTest {
     public void testPurgeByIds() throws Exception {
         Set<String> guids = new HashSet<>();
         guids.add("guid1");
-        guids.add("guid2");
 
         EntityMutationResponse mockResponse = mock(EntityMutationResponse.class);
         List<AtlasEntityHeader> purgedEntities = new ArrayList<>();
@@ -352,8 +369,11 @@ public class AdminResourceTest {
         when(entityStore.purgeByIds(guids)).thenReturn(mockResponse);
         when(mockResponse.getPurgedEntities()).thenReturn(purgedEntities);
         when(mockResponse.getPurgedEntitiesIds()).thenReturn(String.valueOf(new ArrayList<>(guids)));
+        when(mockResponse.getFailedEntities()).thenReturn(null);
+        when(mockResponse.getPurgeSummary()).thenReturn(new PurgeSummary(1, 1, 0, 0, 0));
 
         AdminResource adminResource = createAdminResource();
+        injectHttpServletResponse(adminResource);
 
         EntityMutationResponse result = adminResource.purgeByIds(guids);
 
@@ -370,12 +390,62 @@ public class AdminResourceTest {
         when(mockResponse.getPurgedEntities()).thenReturn(new ArrayList<>());
 
         AdminResource adminResource = createAdminResource();
+        injectHttpServletResponse(adminResource);
 
         EntityMutationResponse result = adminResource.purgeByIds(emptyGuids);
 
         assertNotNull(result);
         verify(entityStore).purgeByIds(emptyGuids);
-        // Should not call audit service for empty results
+    }
+
+    @Test
+    public void testPurgeByIdsRequestSizeExceedsLimit() throws Exception {
+        Set<String> guids = new LinkedHashSet<>();
+        for (int i = 0; i < 1001; i++) {
+            guids.add(String.format("11111111-1111-1111-1111-%012d", i));
+        }
+
+        when(entityStore.purgeByIds(guids)).thenThrow(new AtlasBaseException(
+                AtlasErrorCode.PURGE_REQUEST_SIZE_EXCEEDS_LIMIT,
+                String.valueOf(guids.size()), "1000"));
+
+        AdminResource adminResource = createAdminResource();
+        injectHttpServletResponse(adminResource);
+
+        try {
+            adminResource.purgeByIds(guids);
+            fail("Expected AtlasBaseException for request size exceeding limit");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.PURGE_REQUEST_SIZE_EXCEEDS_LIMIT);
+            assertTrue(e.getMessage().contains("1001"));
+            assertTrue(e.getMessage().contains("1000"));
+        }
+
+        verify(entityStore).purgeByIds(guids);
+        verify(httpServletResponse, never()).setStatus(anyInt());
+    }
+
+    @Test
+    public void testPurgeByIdsDoesNotWriteAggregateAudit() throws Exception {
+        Set<String> guids = new LinkedHashSet<>();
+        for (int i = 0; i < 15; i++) {
+            guids.add(String.format("11111111-1111-1111-1111-%012d", i));
+        }
+
+        EntityMutationResponse mockResponse = mock(EntityMutationResponse.class);
+        List<AtlasEntityHeader> purgedEntities = new ArrayList<>();
+        purgedEntities.add(mock(AtlasEntityHeader.class));
+
+        when(entityStore.purgeByIds(guids)).thenReturn(mockResponse);
+        when(mockResponse.getPurgedEntities()).thenReturn(purgedEntities);
+        when(mockResponse.getFailedEntities()).thenReturn(null);
+        when(mockResponse.getPurgeSummary()).thenReturn(new PurgeSummary(15, 15, 0, 0, 0));
+
+        AdminResource adminResource = createAdminResource();
+        injectHttpServletResponse(adminResource);
+
+        adminResource.purgeByIds(guids);
+
         verify(auditService, never()).add(any(), anyString(), any(), anyInt());
     }
 

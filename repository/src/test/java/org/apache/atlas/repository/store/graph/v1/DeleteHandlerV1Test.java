@@ -17,7 +17,9 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.DeleteType;
+import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
@@ -48,6 +50,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -132,7 +135,7 @@ public class DeleteHandlerV1Test extends AtlasTestBase {
         assertDoesNotThrow(() -> handler.isRelationshipEdge(managerEdge));
     }
 
-// ---------------------------------------------------------------
+    // ---------------------------------------------------------------
     // deleteTraitsAndVertices / deleteAllClassifications resilience
     // ---------------------------------------------------------------
 
@@ -155,12 +158,88 @@ public class DeleteHandlerV1Test extends AtlasTestBase {
 
         softDeleteGuids(Arrays.asList(mgrGuid, subGuid));
 
-        EntityMutationResponse purgeResp = purgeGuids(new HashSet<>(Arrays.asList(mgrGuid, subGuid)));
+        initRequestContext();
+        RequestContext.get().setDeleteType(DeleteType.HARD);
+        RequestContext.get().setPurgeRequested(true);
+
+        EntityMutationResponse purgeResp = entityStore.purgeEntitiesInBatch(new HashSet<>(Arrays.asList(mgrGuid, subGuid)));
         assertEquals(purgeResp.getPurgedEntities().size(), 2);
         assertNull(AtlasGraphUtilsV2.findByGuid(mgrGuid), "Entity should be removed from graph after purge");
 
         DeleteHandlerV1 handler = deleteDelegate.getHandler();
         handler.deleteTraitsAndVertices(Collections.singleton(mgrVertex));
+    }
+
+    /**
+     * {@link DeleteHandlerV1#deleteTraitsAndVertices} must return only vertices actually deleted.
+     * Stale handles for already-removed entities are skipped and excluded from the return value.
+     */
+    @Test
+    public void testDeleteTraitsAndVerticesReturnsOnlyDeletedVertices() throws Exception {
+        EntityMutationResponse createResp = createManagerWithSubordinates("delete_return", 1);
+        String                 mgrGuid    = getGuidForName(createResp, "delete_return_mgr");
+        String                 subGuid    = getGuidForName(createResp, "delete_return_sub1");
+
+        assertNotNull(mgrGuid);
+        assertNotNull(subGuid);
+
+        AtlasVertex mgrVertex = AtlasGraphUtilsV2.findByGuid(mgrGuid);
+        AtlasVertex subVertex = AtlasGraphUtilsV2.findByGuid(subGuid);
+        assertNotNull(mgrVertex);
+        assertNotNull(subVertex);
+
+        softDeleteGuids(Arrays.asList(mgrGuid, subGuid));
+
+        initRequestContext();
+        RequestContext.get().setDeleteType(DeleteType.HARD);
+        RequestContext.get().setPurgeRequested(true);
+
+        entityStore.purgeEntitiesInBatch(Collections.singleton(subGuid));
+
+        DeleteHandlerV1 handler = deleteDelegate.getHandler();
+        Collection<AtlasVertex> deletedVertices = handler.deleteTraitsAndVertices(
+                Arrays.asList(mgrVertex, subVertex));
+
+        assertEquals(deletedVertices.size(), 1);
+        assertTrue(deletedVertices.contains(mgrVertex));
+        assertNull(findByGuidFresh(subGuid));
+        assertNull(findByGuidFresh(mgrGuid));
+    }
+
+    /**
+     * When a batch contains an already-purged GUID, it must be recorded as a skippable failure
+     * rather than reported in {@code purgedEntities}.
+     */
+    @Test
+    public void testPurgeEntitiesInBatchDoesNotReportUnconfirmedDeletes() throws Exception {
+        EntityMutationResponse createResp = createManagerWithSubordinates("unconfirmed", 1);
+        String                 mgrGuid    = getGuidForName(createResp, "unconfirmed_mgr");
+        String                 subGuid    = getGuidForName(createResp, "unconfirmed_sub1");
+
+        assertNotNull(mgrGuid);
+        assertNotNull(subGuid);
+
+        softDeleteGuids(Arrays.asList(mgrGuid, subGuid));
+
+        initRequestContext();
+        RequestContext.get().setDeleteType(DeleteType.HARD);
+        RequestContext.get().setPurgeRequested(true);
+
+        EntityMutationResponse subPurge = entityStore.purgeEntitiesInBatch(Collections.singleton(subGuid));
+        assertEntityPurged(subGuid, subPurge);
+
+        EntityMutationResponse batchResp = entityStore.purgeEntitiesInBatch(
+                new LinkedHashSet<>(Arrays.asList(mgrGuid, subGuid)));
+
+        assertNotNull(batchResp.getPurgedEntities());
+        assertEquals(batchResp.getPurgedEntities().size(), 1);
+        assertEquals(batchResp.getPurgedEntities().get(0).getGuid(), mgrGuid);
+        assertNotNull(batchResp.getFailedEntities());
+        assertEquals(batchResp.getFailedEntities().size(), 1);
+        assertEquals(batchResp.getFailedEntities().get(0).getGuid(), subGuid);
+        assertEquals(batchResp.getFailedEntities().get(0).getErrorCode(),
+                AtlasErrorCode.INSTANCE_GUID_NOT_FOUND.getErrorCode());
+        assertNull(findByGuidFresh(mgrGuid));
     }
 
     // ---------------------------------------------------------------
@@ -208,10 +287,44 @@ public class DeleteHandlerV1Test extends AtlasTestBase {
 
         softDeleteGuids(guidsToPurge);
 
-        EntityMutationResponse purgeResp = purgeGuids(guidsToPurge);
+        initRequestContext();
+        RequestContext.get().setDeleteType(DeleteType.HARD);
+        RequestContext.get().setPurgeRequested(true);
+
+        // Single-transaction batch purge (not WIM workers) — exercises DeleteHandlerV1 edge
+        // iteration when manager and subordinates are removed in the same batch.
+        EntityMutationResponse purgeResp = entityStore.purgeEntitiesInBatch(guidsToPurge);
 
         assertEquals(purgeResp.getPurgedEntities().size(), guidsToPurge.size());
         assertEntitiesPurged(guidsToPurge, purgeResp);
+    }
+
+    /**
+     * Purge subordinates in a batch without the manager. The manager is soft-deleted but not
+     * included in the purge batch (as can happen when WIM workers split related entities).
+     * Inverse reference updates on the deleted manager must be skipped.
+     */
+    @Test
+    public void testPurgeSubordinatesWithoutManagerInSameBatch() throws Exception {
+        EntityMutationResponse createResp = createManagerWithSubordinates("sub_only_purge", 2);
+        String                 mgrGuid    = getGuidForName(createResp, "sub_only_purge_mgr");
+        String                 sub1Guid   = getGuidForName(createResp, "sub_only_purge_sub1");
+        String                 sub2Guid   = getGuidForName(createResp, "sub_only_purge_sub2");
+
+        Set<String> allGuids = new HashSet<>(Arrays.asList(mgrGuid, sub1Guid, sub2Guid));
+        softDeleteGuids(allGuids);
+
+        initRequestContext();
+        RequestContext.get().setDeleteType(DeleteType.HARD);
+        RequestContext.get().setPurgeRequested(true);
+
+        EntityMutationResponse purgeResp = entityStore.purgeEntitiesInBatch(new HashSet<>(Arrays.asList(sub1Guid, sub2Guid)));
+
+        assertEquals(purgeResp.getPurgedEntities().size(), 2);
+        assertEntitiesPurged(new HashSet<>(Arrays.asList(sub1Guid, sub2Guid)), purgeResp);
+        assertNotNull(AtlasGraphUtilsV2.findByGuid(mgrGuid), "Manager should remain until explicitly purged");
+
+        assertEntityPurged(mgrGuid, purgeGuids(Collections.singleton(mgrGuid)));
     }
 
     // ---------------------------------------------------------------
@@ -290,12 +403,18 @@ public class DeleteHandlerV1Test extends AtlasTestBase {
         }
     }
 
+    private AtlasVertex findByGuidFresh(String guid) {
+        // WIM purge runs on worker threads; main-thread guidVertexCache can retain stale handles.
+        GraphTransactionInterceptor.clearCache();
+        return AtlasGraphUtilsV2.findByGuid(guid);
+    }
+
     private void assertEntityPurged(String guid, EntityMutationResponse purgeResp) {
         assertNotNull(purgeResp);
         assertNotNull(purgeResp.getPurgedEntities());
         assertTrue(purgeResp.getPurgedEntities().stream().anyMatch(h -> guid.equals(h.getGuid())),
                 "Expected guid " + guid + " in purged entities");
-        assertNull(AtlasGraphUtilsV2.findByGuid(guid), "Entity should be removed from graph after purge");
+        assertNull(findByGuidFresh(guid), "Entity should be removed from graph after purge");
     }
 
     private void assertEntitiesPurged(Set<String> expectedGuids, EntityMutationResponse purgeResp) {
@@ -309,7 +428,7 @@ public class DeleteHandlerV1Test extends AtlasTestBase {
         assertEquals(purgedGuids, expectedGuids);
 
         for (String guid : expectedGuids) {
-            assertNull(AtlasGraphUtilsV2.findByGuid(guid), "Entity " + guid + " should be removed from graph after purge");
+            assertNull(findByGuidFresh(guid), "Entity " + guid + " should be removed from graph after purge");
         }
     }
 }
