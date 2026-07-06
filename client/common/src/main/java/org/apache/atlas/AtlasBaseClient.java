@@ -496,6 +496,14 @@ public abstract class AtlasBaseClient {
                         } catch (IOException e) {
                             throw new AtlasServiceException(api, e);
                         }
+                    } else if (isAtlasModelType(responseType.getRawClass())) {
+                        String stringEntity = clientResponse.getEntity(String.class);
+                        T      entity       = AtlasJson.fromJson(stringEntity, responseType.getRawClass());
+
+                        LOG.debug("Response     : {}", entity);
+                        LOG.debug("------------------------------------------------------");
+
+                        return entity;
                     } else {
                         T entity = clientResponse.getEntity(responseType);
 
@@ -655,6 +663,10 @@ public abstract class AtlasBaseClient {
     @VisibleForTesting
     void setConfiguration(Configuration configuration) {
         this.configuration = configuration;
+    }
+
+    private static boolean isAtlasModelType(Class<?> clazz) {
+        return clazz != null && clazz.getName().startsWith("org.apache.atlas.model.");
     }
 
     @VisibleForTesting

@@ -457,25 +457,25 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     public EntityMutationResponse createEntity(AtlasEntityWithExtInfo entity) throws AtlasServiceException {
-        return callAPI(API_V2.CREATE_ENTITY, EntityMutationResponse.class, entity);
+        return callAPI(API_V2.CREATE_ENTITY, EntityMutationResponse.class, AtlasType.toJson(entity));
     }
 
     public EntityMutationResponse createEntities(AtlasEntitiesWithExtInfo atlasEntities) throws AtlasServiceException {
-        return callAPI(API_V2.CREATE_ENTITIES, EntityMutationResponse.class, atlasEntities);
+        return callAPI(API_V2.CREATE_ENTITIES, EntityMutationResponse.class, AtlasType.toJson(atlasEntities));
     }
 
     public EntityMutationResponse updateEntity(AtlasEntityWithExtInfo entity) throws AtlasServiceException {
-        return callAPI(API_V2.UPDATE_ENTITY, EntityMutationResponse.class, entity);
+        return callAPI(API_V2.UPDATE_ENTITY, EntityMutationResponse.class, AtlasType.toJson(entity));
     }
 
     public EntityMutationResponse updateEntities(AtlasEntitiesWithExtInfo atlasEntities) throws AtlasServiceException {
-        return callAPI(API_V2.UPDATE_ENTITIES, EntityMutationResponse.class, atlasEntities);
+        return callAPI(API_V2.UPDATE_ENTITIES, EntityMutationResponse.class, AtlasType.toJson(atlasEntities));
     }
 
     public EntityMutationResponse updateEntityByAttribute(String typeName, Map<String, String> uniqAttributes, AtlasEntityWithExtInfo entityInfo) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = attributesToQueryParams(uniqAttributes);
 
-        return callAPI(API_V2.UPDATE_ENTITY_BY_ATTRIBUTE, EntityMutationResponse.class, entityInfo, queryParams, typeName);
+        return callAPI(API_V2.UPDATE_ENTITY_BY_ATTRIBUTE, EntityMutationResponse.class, AtlasType.toJson(entityInfo), queryParams, typeName);
     }
 
     public EntityMutationResponse partialUpdateEntityByGuid(String entityGuid, Object attrValue, String attrName) throws AtlasServiceException {

@@ -74,6 +74,12 @@ public final class AuthenticationUtil {
     }
 
     public static String[] getBasicAuthenticationInput() {
+        String envUser = System.getenv("ATLAS_USERNAME");
+        String envPass = System.getenv("ATLAS_PASSWORD");
+        if (envUser != null && !envUser.isEmpty() && envPass != null) {
+            return new String[] {envUser, envPass};
+        }
+
         String username = null;
         String password = null;
 
