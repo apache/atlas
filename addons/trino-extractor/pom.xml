@@ -35,6 +35,8 @@
     <properties>
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
         <checkstyle.skip>false</checkstyle.skip>
+        <!-- Live-stack ITs are opt-in via -Ptrino-extractor-it (default CI verify skips them). -->
+        <skipITs>true</skipITs>
     </properties>
 
     <dependencies>
@@ -109,6 +111,9 @@
     <profiles>
         <profile>
             <id>trino-extractor-it</id>
+            <properties>
+                <skipITs>false</skipITs>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -184,6 +189,13 @@
                                 <include>**/*IT.java</include>
                             </includes>
                         </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.maven.surefire</groupId>
+                                <artifactId>surefire-testng</artifactId>
+                                <version>${failsafe.version}</version>
+                            </dependency>
+                        </dependencies>
                         <executions>
                             <execution>
                                 <goals>

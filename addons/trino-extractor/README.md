@@ -4,6 +4,8 @@
 
 `TrinoExtractorIT` runs `./bin/run-trino-extractor.sh` from a **standalone tarball** (same `lib/` layout as distro), not the Maven test classpath. It skips automatically when no live stack is configured.
 
+**CI / default `mvn verify`:** integration tests are **skipped** (`skipITs=true`). Enable them with the `trino-extractor-it` profile below.
+
 **Run against Atlas + Trino lab** (e.g. ranger-docker Trino on `:8080`, Atlas on `:21000`):
 
 ```bash
