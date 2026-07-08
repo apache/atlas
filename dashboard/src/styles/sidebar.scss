@@ -212,16 +212,6 @@
   border-bottom: "1px solid rgba(25,255,255,0.1)";
 }
 
-.light-popover {
-  * {
-    color: #333333 !important;
-  }
-
-  img,
-  svg {
-    filter: invert(1) brightness(0.2) !important;
-  }
-}
 
 .sidebar-searchbar {
   background: #f1f1f1 !important;
