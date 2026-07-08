@@ -18,17 +18,18 @@ FROM atlas-base:latest
 
 ARG ATLAS_VERSION
 ARG KAFKA_VERSION
+ARG KAFKA_SCALA_VERSION=2.13
 
 COPY ./dist/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz /home/atlas/dist/
-COPY ./downloads/kafka_2.12-${KAFKA_VERSION}.tgz            /home/atlas/dist/
+COPY ./downloads/kafka_${KAFKA_SCALA_VERSION}-${KAFKA_VERSION}.tgz            /home/atlas/dist/
 
 COPY ./scripts/atlas-kafka-setup.sh               /home/atlas/scripts/
 COPY ./scripts/atlas-kafka.sh                     /home/atlas/scripts/
 COPY ./scripts/atlas-kafka-application.properties /home/atlas/scripts/
 
-RUN tar xvfz /home/atlas/dist/kafka_2.12-${KAFKA_VERSION}.tgz --directory=/opt/ && \
-    ln -s /opt/kafka_2.12-${KAFKA_VERSION} /opt/kafka && \
-    rm -f /home/atlas/dist/kafka_2.12-${KAFKA_VERSION}.tgz && \
+RUN tar xvfz /home/atlas/dist/kafka_${KAFKA_SCALA_VERSION}-${KAFKA_VERSION}.tgz --directory=/opt/ && \
+    ln -s /opt/kafka_${KAFKA_SCALA_VERSION}-${KAFKA_VERSION} /opt/kafka && \
+    rm -f /home/atlas/dist/kafka_${KAFKA_SCALA_VERSION}-${KAFKA_VERSION}.tgz && \
     tar xvfz /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz --directory=/opt/ && \
     ln -s /opt/apache-atlas-kafka-hook-${ATLAS_VERSION} /opt/apache-atlas-kafka-hook && \
     rm -f /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz && \

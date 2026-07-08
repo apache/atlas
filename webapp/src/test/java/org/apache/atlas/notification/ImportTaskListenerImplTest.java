@@ -117,7 +117,8 @@ public class ImportTaskListenerImplTest {
     }
 
     @AfterMethod
-    public void teardown() {
+    public void teardown() throws Exception {
+        shutdownImportExecutor(importTaskListener);
         Mockito.reset(asyncImportService, notificationHookConsumer, requestQueue, importRequest);
     }
 
@@ -295,6 +296,14 @@ public class ImportTaskListenerImplTest {
         Mockito.doReturn("import123").when(importRequest).getImportId();
         when(importRequest.getStatus()).thenReturn(WAITING);
         when(importRequest.getTopicName()).thenReturn("topic1");
+        when(asyncImportService.fetchImportRequestByImportId("import123")).thenReturn(importRequest);
+
+        CountDownLatch consumerStarted = new CountDownLatch(1);
+
+        doAnswer(invocation -> {
+            consumerStarted.countDown();
+            return null;
+        }).when(notificationHookConsumer).startAsyncImportConsumer(any(), anyString(), anyString());
 
         ExecutorService realExecutor  = java.util.concurrent.Executors.newSingleThreadExecutor();
         Field           executorField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
@@ -305,22 +314,21 @@ public class ImportTaskListenerImplTest {
 
         importTaskListener.onReceiveImportRequest(importRequest);
 
-        Thread.sleep(500);
+        assertTrue(consumerStarted.await(5, TimeUnit.SECONDS), "startAsyncImportConsumer was not invoked");
 
-        verify(notificationHookConsumer, atLeastOnce())
-                .startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, "import123", "topic1");
-
-        realExecutor.shutdownNow();
+        verify(notificationHookConsumer, times(1)).startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, "import123", "topic1");
     }
 
     @Test
     public void testStartImportConsumer_Failure() throws Exception {
+        when(importRequest.getImportId()).thenReturn("import123");
         when(importRequest.getStatus()).thenReturn(WAITING);
         when(importRequest.getTopicName()).thenReturn("topic1");
+        when(asyncImportService.fetchImportRequestByImportId("import123")).thenReturn(importRequest);
 
-        doThrow(new RuntimeException("Consumer failed"))
-                .when(notificationHookConsumer)
-                .startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, "import123", "topic1");
+        CountDownLatch consumerClosed = new CountDownLatch(1);
+
+        doThrow(new RuntimeException("Consumer failed")).when(notificationHookConsumer).startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, "import123", "topic1");
 
         doAnswer(invocation -> {
             Object newStatus = invocation.getArgument(0);
@@ -328,6 +336,11 @@ public class ImportTaskListenerImplTest {
             return null;
         }).when(importRequest).setStatus(any());
 
+        doAnswer(invocation -> {
+            consumerClosed.countDown();
+            return null;
+        }).when(notificationHookConsumer).closeImportConsumer(anyString(), anyString());
+
         ExecutorService realExecutor  = java.util.concurrent.Executors.newSingleThreadExecutor();
         Field           executorField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
 
@@ -338,12 +351,9 @@ public class ImportTaskListenerImplTest {
 
         importTaskListener.onReceiveImportRequest(importRequest);
 
-        Thread.sleep(500);
+        assertTrue(consumerClosed.await(5, TimeUnit.SECONDS), "closeImportConsumer was not invoked");
 
-        verify(notificationHookConsumer, times(1))
-                .closeImportConsumer("import123", "ATLAS_IMPORT_import123");
-
-        realExecutor.shutdownNow();
+        verify(notificationHookConsumer, times(1)).closeImportConsumer("import123", "ATLAS_IMPORT_import123");
     }
 
     @Test(dataProvider = "importQueueScenarios")
@@ -732,6 +742,20 @@ public class ImportTaskListenerImplTest {
         // Field should remain null
         assertNull(execField.get(importTaskListener));
         callers.shutdownNow();
+    }
+
+    private void shutdownImportExecutor(ImportTaskListenerImpl listener) throws Exception {
+        if (listener == null) {
+            return;
+        }
+        Field executorField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+        executorField.setAccessible(true);
+        ExecutorService exec = (ExecutorService) executorField.get(listener);
+        if (exec != null) {
+            exec.shutdownNow();
+            exec.awaitTermination(5, TimeUnit.SECONDS);
+            executorField.set(listener, null);
+        }
     }
 
     private void setExecutorServiceAndSemaphore(ImportTaskListenerImpl importTaskListener, ExecutorService mockExecutor, Semaphore mockSemaphore) {
