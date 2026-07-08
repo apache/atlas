@@ -242,6 +242,10 @@ const AdminAuditTable = () => {
                       <KeyboardArrowDownOutlinedIcon />
                     )
                   }
+                  sx={{
+                    marginTop: "13px !important",
+                    marginLeft: "13px !important"
+                  }}
                 >
                   Filters
                 </CustomButton>
