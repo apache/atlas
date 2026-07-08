@@ -35,6 +35,8 @@
     <properties>
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
         <checkstyle.skip>false</checkstyle.skip>
+        <!-- No live-stack ITs yet; avoid Failsafe/TestNG on default mvn verify (see ATLAS-5338). -->
+        <skipITs>true</skipITs>
     </properties>
 
     <dependencies>
