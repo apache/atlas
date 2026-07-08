@@ -17,6 +17,7 @@
 
 import { fetchApi } from "@api/apiMethods/fetchApi";
 import { getSessionApiUrl } from "@api/apiUrlLinks/sessionApiUrl";
+import { getVersion } from "@api/apiMethods/headerApiMethods";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { globalSession } from "@utils/Global";
 
@@ -24,6 +25,11 @@ type DynamicData = Record<any, any>;
 
 interface SessionState {
   sessionObj: {
+    loading: boolean;
+    data: DynamicData | null;
+    error: string | null;
+  };
+  versionData: {
     loading: boolean;
     data: DynamicData | null;
     error: string | null;
@@ -41,8 +47,21 @@ export const fetchSessionData = createAsyncThunk<DynamicData, void>(
   }
 );
 
+export const fetchVersionData = createAsyncThunk<DynamicData, void>(
+  "session/fetchVersionData",
+  async () => {
+    const response = await getVersion();
+    return response.data;
+  }
+);
+
 const sessionInitialState: SessionState = {
   sessionObj: {
+    loading: false,
+    data: null,
+    error: null
+  },
+  versionData: {
     loading: false,
     data: null,
     error: null
@@ -73,6 +92,30 @@ const sessionSlice = createSlice({
       ),
       builder.addCase(fetchSessionData.rejected, (state, action) => {
         state.sessionObj = {
+          loading: false,
+          data: null,
+          error: (action.payload as string) || action.error?.message || 'An error occurred'
+        };
+      }),
+      builder.addCase(fetchVersionData.pending, (state) => {
+        state.versionData = {
+          loading: true,
+          data: null,
+          error: null
+        };
+      }),
+      builder.addCase(
+        fetchVersionData.fulfilled,
+        (state, action: PayloadAction<DynamicData>) => {
+          state.versionData = {
+            loading: false,
+            data: action.payload,
+            error: null
+          };
+        }
+      ),
+      builder.addCase(fetchVersionData.rejected, (state, action) => {
+        state.versionData = {
           loading: false,
           data: null,
           error: (action.payload as string) || action.error?.message || 'An error occurred'

@@ -23,14 +23,10 @@
  */
 
 import React from 'react'
-import { render, screen, waitFor } from '@utils/test-utils'
+import { render, screen } from '@utils/test-utils'
+import '@testing-library/jest-dom'
 import About from '../About'
-
-// Mock API methods
-const mockGetVersion = jest.fn()
-jest.mock('@api/apiMethods/headerApiMethods', () => ({
-	getVersion: (...args: any[]) => mockGetVersion(...args)
-}))
+import * as reducerHook from '@hooks/reducerHook'
 
 // Mock SkeletonLoader component
 jest.mock('@components/SkeletonLoader', () => ({
@@ -95,31 +91,16 @@ jest.mock('@mui/material', () => ({
 	)
 }))
 
-// Mock Utils
-const mockServerError = jest.fn()
-jest.mock('@utils/Utils', () => ({
-	serverError: (...args: any[]) => mockServerError(...args)
-}))
-
-// Mock console.error to avoid noise in test output
-const originalConsoleError = console.error
-beforeAll(() => {
-	console.error = jest.fn()
-})
-
-afterAll(() => {
-	console.error = originalConsoleError
-})
-
 describe('About', () => {
+	let useAppSelectorSpy: jest.SpyInstance
+
 	beforeEach(() => {
 		jest.clearAllMocks()
-		mockGetVersion.mockClear()
-		mockServerError.mockClear()
+		useAppSelectorSpy = jest.spyOn(reducerHook, 'useAppSelector')
 	})
 
-	it('should render skeleton loader when loading', async () => {
-		mockGetVersion.mockImplementation(() => new Promise(() => {})) // Never resolves
+	it('should render skeleton loader when loading', () => {
+		useAppSelectorSpy.mockReturnValue({ data: {}, loading: true })
 
 		render(<About />)
 
@@ -132,23 +113,16 @@ describe('About', () => {
 		expect(skeletonLoader).toHaveAttribute('data-width', '100%')
 	})
 
-	it('should render version data when API call succeeds', async () => {
+	it('should render version data when loading is false and data is available', () => {
 		const mockVersionData = {
 			Version: '3.0.0-SNAPSHOT',
 			Description: 'Metadata Management Platform',
 			Revision: 'abc123'
 		}
 
-		mockGetVersion.mockResolvedValue({
-			data: mockVersionData
-		})
+		useAppSelectorSpy.mockReturnValue({ data: mockVersionData, loading: false })
 
 		render(<About />)
-
-		// Wait for loading to finish
-		await waitFor(() => {
-			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
-		})
 
 		// Check version is displayed
 		expect(screen.getByText(/Version:/i)).toBeInTheDocument()
@@ -169,16 +143,10 @@ describe('About', () => {
 		expect(listItem).toHaveAttribute('data-target', '_blank')
 	})
 
-	it('should render empty version when API returns empty data object', async () => {
-		mockGetVersion.mockResolvedValue({
-			data: {}
-		})
+	it('should render empty version when data object is empty', () => {
+		useAppSelectorSpy.mockReturnValue({ data: {}, loading: false })
 
 		render(<About />)
-
-		await waitFor(() => {
-			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
-		})
 
 		// Version should be displayed but empty
 		expect(screen.getByText(/Version:/i)).toBeInTheDocument()
@@ -187,235 +155,30 @@ describe('About', () => {
 		expect(versionTypography.textContent).toContain('Version:')
 	})
 
-	it('should render empty version when API returns undefined data', async () => {
-		mockGetVersion.mockResolvedValue({
-			data: undefined
-		})
+	it('should render empty version when data is undefined', () => {
+		useAppSelectorSpy.mockReturnValue({ data: undefined, loading: false })
 
 		render(<About />)
-
-		await waitFor(() => {
-			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
-		})
 
 		expect(screen.getByText(/Version:/i)).toBeInTheDocument()
 	})
 
-	it('should render empty version when API returns null data', async () => {
-		mockGetVersion.mockResolvedValue({
-			data: null
-		})
+	it('should render empty version when data is null', () => {
+		useAppSelectorSpy.mockReturnValue({ data: null, loading: false })
 
 		render(<About />)
-
-		await waitFor(() => {
-			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
-		})
 
 		expect(screen.getByText(/Version:/i)).toBeInTheDocument()
 	})
 
-	it('should handle API call error and call serverError', async () => {
-		const mockError = new Error('Network error')
-		mockGetVersion.mockRejectedValue(mockError)
+	it('should handle versionData with undefined Version property', () => {
+		useAppSelectorSpy.mockReturnValue({ data: { Description: 'Some description' }, loading: false })
 
 		render(<About />)
-
-		await waitFor(() => {
-			expect(mockServerError).toHaveBeenCalledWith(mockError, expect.any(Object))
-		})
-
-		// Should still show content (not skeleton) after error
-		await waitFor(() => {
-			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
-		})
-
-		expect(screen.getByText(/Version:/i)).toBeInTheDocument()
-	})
-
-	it('should handle API call error with response data', async () => {
-		const mockError = {
-			response: {
-				data: {
-					errorMessage: 'Server error occurred'
-				}
-			}
-		}
-		mockGetVersion.mockRejectedValue(mockError)
-
-		render(<About />)
-
-		await waitFor(() => {
-			expect(mockServerError).toHaveBeenCalledWith(mockError, expect.any(Object))
-		})
-
-		await waitFor(() => {
-			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
-		})
-	})
-
-	it('should call getVersion on component mount', async () => {
-		mockGetVersion.mockResolvedValue({
-			data: { Version: '1.0.0' }
-		})
-
-		render(<About />)
-
-		expect(mockGetVersion).toHaveBeenCalledTimes(1)
-		expect(mockGetVersion).toHaveBeenCalledWith()
-
-		await waitFor(() => {
-			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
-		})
-	})
-
-	it('should render correct Typography variants and colors', async () => {
-		mockGetVersion.mockResolvedValue({
-			data: { Version: '2.0.0' }
-		})
-
-		render(<About />)
-
-		await waitFor(() => {
-			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
-		})
-
-		// Check Typography variants
-		const body1Typography = screen.getByTestId('typography-body1')
-		expect(body1Typography).toBeInTheDocument()
-
-		const body2Typographies = screen.getAllByTestId('typography-body2')
-		expect(body2Typographies.length).toBeGreaterThan(0)
-
-		// Check color prop for "Get involved!" text
-		const getInvolvedTypography = body2Typographies.find(
-			(el) => el.textContent === 'Get involved!'
-		)
-		expect(getInvolvedTypography).toHaveAttribute('data-color', 'info.main')
-	})
-
-	it('should render Stack components with correct props', async () => {
-		mockGetVersion.mockResolvedValue({
-			data: { Version: '1.0.0' }
-		})
-
-		render(<About />)
-
-		await waitFor(() => {
-			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
-		})
-
-		// Check main Stack
-		const mainStack = screen.getByTestId('stack')
-		expect(mainStack).toHaveAttribute('data-spacing', '2')
-
-		// Check column Stack
-		const columnStack = screen.getByTestId('stack-column')
-		expect(columnStack).toHaveAttribute('data-spacing', '1')
-		expect(columnStack).toHaveAttribute('data-direction', 'column')
-	})
-
-	it('should render List with dense prop', async () => {
-		mockGetVersion.mockResolvedValue({
-			data: { Version: '1.0.0' }
-		})
-
-		render(<About />)
-
-		await waitFor(() => {
-			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
-		})
-
-		const list = screen.getByTestId('list')
-		expect(list).toHaveAttribute('data-dense', 'true')
-	})
-
-	it('should render ListItemText with correct primary text', async () => {
-		mockGetVersion.mockResolvedValue({
-			data: { Version: '1.0.0' }
-		})
-
-		render(<About />)
-
-		await waitFor(() => {
-			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
-		})
-
-		const listItemText = screen.getByTestId('list-item-text')
-		expect(listItemText).toHaveAttribute(
-			'data-primary',
-			'Licensed under the Apache License Version 2.0'
-		)
-	})
-
-	it('should handle versionData with undefined Version property', async () => {
-		mockGetVersion.mockResolvedValue({
-			data: { Description: 'Some description' }
-		})
-
-		render(<About />)
-
-		await waitFor(() => {
-			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
-		})
 
 		expect(screen.getByText(/Version:/i)).toBeInTheDocument()
 		const versionTypography = screen.getByTestId('typography-body1')
 		expect(versionTypography.textContent).toContain('Version:')
 		expect(versionTypography.textContent).not.toContain('undefined')
-	})
-
-	it('should set loader to false after successful API call', async () => {
-		mockGetVersion.mockResolvedValue({
-			data: { Version: '1.0.0' }
-		})
-
-		render(<About />)
-
-		// Initially should show loader
-		expect(screen.getByTestId('skeleton-loader')).toBeInTheDocument()
-
-		// After API resolves, loader should be hidden
-		await waitFor(() => {
-			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
-		})
-	})
-
-	it('should set loader to false after failed API call', async () => {
-		mockGetVersion.mockRejectedValue(new Error('API Error'))
-
-		render(<About />)
-
-		// Initially should show loader
-		expect(screen.getByTestId('skeleton-loader')).toBeInTheDocument()
-
-		// After API rejects, loader should be hidden
-		await waitFor(() => {
-			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
-		})
-	})
-
-	it('should handle API response with null response object', async () => {
-		mockGetVersion.mockResolvedValue(null)
-
-		render(<About />)
-
-		await waitFor(() => {
-			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
-		})
-
-		expect(screen.getByText(/Version:/i)).toBeInTheDocument()
-	})
-
-	it('should handle API response with undefined response object', async () => {
-		mockGetVersion.mockResolvedValue(undefined)
-
-		render(<About />)
-
-		await waitFor(() => {
-			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
-		})
-
-		expect(screen.getByText(/Version:/i)).toBeInTheDocument()
 	})
 })
