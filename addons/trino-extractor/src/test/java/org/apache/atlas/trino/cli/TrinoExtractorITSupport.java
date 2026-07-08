@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.EnumSet;
 import java.util.List;
@@ -140,7 +141,7 @@ final class TrinoExtractorITSupport {
         command.add("-cp");
         command.add(buildClasspath(workDir));
         command.add("org.apache.atlas.trino.cli.TrinoExtractor");
-        command.addAll(List.of(javaArgs));
+        command.addAll(Arrays.asList(javaArgs));
 
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.directory(workDir.toFile());
@@ -164,7 +165,7 @@ final class TrinoExtractorITSupport {
     static int runExtractorScript(Path workDir, LiveStackConfig config, String... extraArgs) throws IOException, InterruptedException {
         List<String> command = new ArrayList<>();
         command.add(workDir.resolve("bin").resolve("run-trino-extractor.sh").toString());
-        command.addAll(List.of(extraArgs));
+        command.addAll(Arrays.asList(extraArgs));
 
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.directory(workDir.toFile());
@@ -189,7 +190,7 @@ final class TrinoExtractorITSupport {
                 LOG.error("extractor log tail:\n{}", tailFile(logFile, 8000));
             }
         } else {
-            LOG.info("run-trino-extractor.sh {} completed successfully", List.of(extraArgs));
+            LOG.info("run-trino-extractor.sh {} completed successfully", Arrays.toString(extraArgs));
         }
 
         return exitCode;
@@ -459,7 +460,7 @@ final class TrinoExtractorITSupport {
         }
 
         Path moduleDir = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
-        List<Path> candidates = List.of(
+        List<Path> candidates = Arrays.asList(
                 moduleDir.resolve("target/trino-extractor-dist"),
                 moduleDir.resolve("../../distro/target").normalize());
 
