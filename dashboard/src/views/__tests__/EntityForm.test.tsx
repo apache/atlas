@@ -266,6 +266,20 @@ describe('EntityForm - 100% Coverage', () => {
 			expect(screen.getByTestId('modal-title')).toHaveTextContent('Create entity');
 		});
 
+		test('opens in create mode when isAdd=true even if URL has guid', async () => {
+			mockGuid = 'existing-guid-123';
+			const store = createStore(mockEntityData, mockSessionData, mockTypeHeaderData);
+			render(
+				<Provider store={store}>
+					<MemoryRouter>
+						<EntityForm open={true} onClose={jest.fn()} isAdd={true} />
+					</MemoryRouter>
+				</Provider>
+			);
+			expect(screen.getByTestId('modal-title')).toHaveTextContent('Create entity');
+			expect(mockGetEntity).not.toHaveBeenCalled();
+		});
+
 		test('does not render when open is false', () => {
 			const store = createStore(mockEntityData, mockSessionData, mockTypeHeaderData);
 			render(
