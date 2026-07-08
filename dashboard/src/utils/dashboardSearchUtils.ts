@@ -43,7 +43,6 @@ const buildSearchParams = (
 
 	if (type === "all_classifications") {
 		params.set("tag", extra?.tag ?? "_ALL_CLASSIFICATION_TYPES");
-		params.set("type", "");
 	} else {
 		params.set("type", extra?.type ?? "_ALL_ENTITY_TYPES");
 	}
