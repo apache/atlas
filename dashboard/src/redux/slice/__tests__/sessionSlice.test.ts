@@ -21,11 +21,15 @@
  */
 
 import { configureStore } from '@reduxjs/toolkit';
-import { fetchSessionData, sessionReducer } from '../sessionSlice';
+import { fetchSessionData, fetchVersionData, sessionReducer } from '../sessionSlice';
 
 // Mock API methods
 jest.mock('../../../api/apiMethods/fetchApi', () => ({
 	fetchApi: jest.fn()
+}));
+
+jest.mock('../../../api/apiMethods/headerApiMethods', () => ({
+	getVersion: jest.fn()
 }));
 
 jest.mock('../../../api/apiUrlLinks/sessionApiUrl', () => ({
@@ -149,6 +153,62 @@ describe('sessionSlice', () => {
 		await store.dispatch(fetchSessionData());
 
 		expect(globalSession).toHaveBeenCalledWith(mockData);
+	});
+
+	describe('fetchVersionData', () => {
+		it('should handle fetchVersionData.pending', () => {
+			const action = { type: fetchVersionData.pending.type };
+			const state = sessionReducer(undefined, action);
+	
+			expect(state.versionData.loading).toBe(true);
+			expect(state.versionData.data).toBeNull();
+			expect(state.versionData.error).toBeNull();
+		});
+	
+		it('should handle fetchVersionData.fulfilled', () => {
+			const mockVersionData = { Version: '3.0.0' };
+	
+			const action = {
+				type: fetchVersionData.fulfilled.type,
+				payload: mockVersionData
+			};
+			const state = sessionReducer(undefined, action);
+	
+			expect(state.versionData.loading).toBe(false);
+			expect(state.versionData.data).toEqual(mockVersionData);
+			expect(state.versionData.error).toBeNull();
+		});
+	
+		it('should handle fetchVersionData.rejected', () => {
+			const error = 'Error fetching version data';
+			const action = {
+				type: fetchVersionData.rejected.type,
+				payload: error
+			};
+			const state = sessionReducer(undefined, action);
+	
+			expect(state.versionData.loading).toBe(false);
+			expect(state.versionData.data).toBeNull();
+			expect(state.versionData.error).toBe(error);
+		});
+
+		it('should fetch version data successfully', async () => {
+			const { getVersion } = require('../../../api/apiMethods/headerApiMethods');
+			const mockVersionData = { Version: '3.0.0' };
+			getVersion.mockResolvedValue({ data: mockVersionData });
+	
+			const store = configureStore({
+				reducer: {
+					session: sessionReducer
+				}
+			});
+	
+			await store.dispatch(fetchVersionData());
+	
+			const state = store.getState().session;
+			expect(state.versionData.loading).toBe(false);
+			expect(state.versionData.data).toEqual(mockVersionData);
+		});
 	});
 });
 
