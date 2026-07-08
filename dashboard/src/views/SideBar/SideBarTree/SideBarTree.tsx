@@ -1092,6 +1092,7 @@ const BarTreeView: FC<{
                     {treeName === "Business MetaData" && <img src="/img/sidebar-icons/icon-business-metadata.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
                     {treeName === "Glossary" && <img src="/img/sidebar-icons/icon-glossary.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
                     {treeName === "CustomFilters" && <img src="/img/sidebar-icons/icon-custom-filters.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
+                    {treeName === "Relationships" && <img src="/img/sidebar-icons/icon-relationships.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
                     <Typography sx={{ fontWeight: "500", fontSize: "14px", color: "rgba(255, 255, 255, 0.9)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{displayTreeName}</Typography>
                   </Stack>
                   <Stack direction="row" alignItems="center" gap="0.375rem">

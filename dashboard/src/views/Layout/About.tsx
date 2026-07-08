@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { getVersion } from "@api/apiMethods/headerApiMethods";
+import { useAppSelector } from "@hooks/reducerHook";
 import SkeletonLoader from "@components/SkeletonLoader";
 import {
   List,
@@ -24,31 +24,9 @@ import {
   Stack,
   Typography
 } from "@mui/material";
-import { serverError } from "@utils/Utils";
-import { useEffect, useRef, useState } from "react";
 
 const About = () => {
-  const [versionData, setVersionData] = useState<any>({});
-  const [loader, setLoader] = useState(false);
-  const toastId = useRef(null);
-
-  useEffect(() => {
-    fetchVersionDetails();
-  }, []);
-
-  const fetchVersionDetails = async () => {
-    setLoader(true);
-    try {
-      const versionResp = await getVersion();
-      const { data = {} } = versionResp || {};
-      setVersionData(data);
-      setLoader(false);
-    } catch (error) {
-      setLoader(false);
-      console.error(`Error occur while fetching version details`, error);
-      serverError(error, toastId);
-    }
-  };
+  const { data: versionData, loading: loader } = useAppSelector((state: any) => state.session.versionData);
 
   return (
     <>
