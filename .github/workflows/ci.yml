@@ -126,7 +126,14 @@ jobs:
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
           docker compose -f docker-compose.atlas-base.yml build 
-          docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml -f docker-compose.atlas-hive.yml up -d --wait
+          if ! docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml -f docker-compose.atlas-hive.yml up -d --wait --wait-timeout 300; then
+            echo "=== compose up --wait failed; dumping service logs ==="
+            for container in atlas-hbase atlas-hadoop atlas-zk atlas-kafka atlas-db atlas-hive atlas; do
+              echo "--- logs: ${container} ---"
+              docker logs --tail 200 "${container}" 2>&1 || true
+            done
+            exit 1
+          fi
 
       - name: Check status of containers and remove them
         run: |
