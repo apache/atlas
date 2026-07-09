@@ -201,16 +201,14 @@ const AdminAuditTable = () => {
     <>
       <Grid container marginTop={0}>
         <Grid item md={12} p={2}>
-          <Stack alignItems="flex-start">
-            <div
-              style={{
-                height: !isEmpty(auditData) ? 0 : "32px"
-              }}
-            >
-              {!loader && (
+          <Stack>
+            <TableLayout
+              fetchData={fetchAuditResult}
+              customLeftButton={
                 <CustomButton
                   variant="outlined"
                   size="small"
+                  disabled={loader}
                   onClick={handleClickFilterPopover}
                   startIcon={
                     !filtersPopover ? (
@@ -219,20 +217,10 @@ const AdminAuditTable = () => {
                       <KeyboardArrowDownOutlinedIcon />
                     )
                   }
-                  sx={{
-                    zIndex: "99999",
-                    marginTop: "13px !important",
-                    marginLeft: "13px !important"
-                  }}
                 >
                   Filters
                 </CustomButton>
-              )}
-            </div>
-          </Stack>
-          <Stack>
-            <TableLayout
-              fetchData={fetchAuditResult}
+              }
               data={auditData || []}
               columns={defaultColumns}
               defaultColumnVisibility={defaultColumnVisibility(defaultColumns)}

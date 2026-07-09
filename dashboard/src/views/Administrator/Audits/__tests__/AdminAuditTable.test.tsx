@@ -129,7 +129,8 @@ jest.mock('@components/Table/TableLayout', () => ({
     tableFilters,
     expandRow,
     auditTableDetails,
-    queryBuilder
+    queryBuilder,
+    customLeftButton
   }: any) => {
     capturedFetchData = fetchData;
     capturedExpandRow = expandRow;
@@ -144,6 +145,7 @@ jest.mock('@components/Table/TableLayout', () => ({
 
     return (
       <div data-testid="table-layout">
+        <div data-testid="custom-left-button">{customLeftButton}</div>
         <div data-testid="table-fetching">{isFetching ? 'loading' : 'loaded'}</div>
         <div data-testid="table-data-count">{data?.length || 0}</div>
         <div data-testid="table-columns-count">{columns?.length || 0}</div>
@@ -281,12 +283,12 @@ describe('AdminAuditTable Component', () => {
       }, { timeout: 5000 });
     });
 
-    it('should not render filter button when loading', () => {
+    it('should disable filter button when loading', () => {
       render(<AdminAuditTable />);
 
-      // Initially loading, button should not be visible
-      const buttons = screen.queryAllByTestId('custom-button');
-      expect(buttons.length).toBe(0);
+      // Initially loading, button should be disabled
+      const button = screen.getByTestId('custom-button');
+      expect(button).toBeDisabled();
     });
   });
 
