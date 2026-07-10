@@ -208,7 +208,7 @@ const AdminAuditTable = () => {
                 <CustomButton
                   variant="outlined"
                   size="small"
-                  disabled={loader}
+                  disabled={loader || (isEmpty(auditData) && isEmpty(queryApiObj))}
                   onClick={handleClickFilterPopover}
                   startIcon={
                     !filtersPopover ? (
