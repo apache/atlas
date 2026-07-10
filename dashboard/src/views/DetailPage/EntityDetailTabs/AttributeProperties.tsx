@@ -33,6 +33,7 @@ import EntityForm from "@views/Entity/EntityForm";
 import { useAppSelector } from "@hooks/reducerHook";
 import { AntSwitch } from "@utils/Muiutils";
 import { cloneDeep } from "@utils/Helper";
+import { EntityStatus } from "@utils/EntityStatus";
 
 const AttributeProperties = ({
   entity,
@@ -202,7 +203,7 @@ const AttributeProperties = ({
                     inputProps={{ "aria-label": "controlled" }}
                   />
                 </LightTooltip>
-                {entityUpdate && (
+                {entityUpdate && !loading && entity?.status !== EntityStatus.DELETED && (
                   <LightTooltip title={"Edit Entity"}>
                     <CustomButton
                       variant="outlined"

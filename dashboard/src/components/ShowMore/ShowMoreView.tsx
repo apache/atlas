@@ -19,7 +19,7 @@ import Typography from "@mui/material/Typography";
 import Chip from "@mui/material/Chip";
 import MuiLink from "@mui/material/Link";
 import { LightTooltip } from "../muiComponents";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EllipsisText } from "../commonComponents";
 import { extractKeyValueFromEntity, isEmpty, serverError } from "@utils/Utils";
 import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
@@ -31,8 +31,9 @@ import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
 import { fetchGlossaryData } from "@redux/slice/glossarySlice";
 import { fetchGlossaryDetails } from "@redux/slice/glossaryDetailsSlice";
 import ShowMoreDrawer from "./ShowMoreDrawer";
-import { openDrawer } from "@redux/slice/drawerSlice";
+import { openDrawer, closeDrawer } from "@redux/slice/drawerSlice";
 import { cloneDeep } from "@utils/Helper";
+import { EntityStatus } from "@utils/EntityStatus";
 
 const CHIP_MAX_WIDTH = "200px";
 
@@ -72,6 +73,12 @@ const ShowMoreView = ({
   const searchParams = new URLSearchParams(location.search);
   const gType = searchParams.get("gtype");
   const dispatchApi = useAppDispatch();
+
+  useEffect(() => {
+    return () => {
+      dispatchApi(closeDrawer());
+    };
+  }, [dispatchApi]);
 
   const { classificationData = {} }: any = useAppSelector(
     (state: any) => state.classification
@@ -310,13 +317,13 @@ const ShowMoreView = ({
                   }
                   component="a"
                   onDelete={
-                    !isEmpty(removeApiMethod) && !isDeleteIcon
+                    !isEmpty(removeApiMethod) && !isDeleteIcon && currentEntity?.status !== EntityStatus.DELETED
                       ? () => {
                           // Handle undefined displayKey by extracting a string value
                           const deleteValue = obj[displayKey] || obj.displayText || obj.text || obj.name || '';
                           handleDelete(deleteValue);
                         }
-                      : isDeleteIcon && obj.count > 1
+                      : isDeleteIcon && obj.count > 1 && currentEntity?.status !== EntityStatus.DELETED
                       ? () => {
                           const searchParams = new URLSearchParams();
                           searchParams.set("tabActive", "classification");
