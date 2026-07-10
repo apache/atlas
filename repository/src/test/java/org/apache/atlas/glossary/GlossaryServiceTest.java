@@ -152,20 +152,15 @@ public class GlossaryServiceTest {
     @BeforeClass
     public void setupSampleGlossary() {
         try {
-            TestLoadModelUtils.loadAllModels("0000-Area0", typeDefStore, typeRegistry);
+            loadAllModelsWithRetry("0000-Area0");
         } catch (AtlasBaseException | IOException e) {
-            throw new SkipException("SubjectArea model loading failed");
+            throw new SkipException("SubjectArea model loading failed: " + e.getMessage());
         }
 
         try {
-            AtlasClassificationDef classificationDef = new AtlasClassificationDef("TestClassification", "Test only classification");
-            AtlasTypesDef          typesDef          = new AtlasTypesDef();
-
-            typesDef.setClassificationDefs(Collections.singletonList(classificationDef));
-
-            typeDefStore.createTypesDef(typesDef);
+            createTestClassificationWithRetry();
         } catch (AtlasBaseException e) {
-            throw new SkipException("Test classification creation failed");
+            throw new SkipException("Test classification creation failed: " + e.getMessage());
         }
 
         // Glossary
@@ -1413,6 +1408,68 @@ public class GlossaryServiceTest {
                     "Expected " + expectedPageCount + " pages but got " + actualPageCount);
         } catch (Exception e) {
             fail("Test failed due to exception: " + e.getMessage());
+        }
+    }
+
+    private void loadAllModelsWithRetry(String dirName) throws AtlasBaseException, IOException {
+        int maxAttempts = 5;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                TestLoadModelUtils.loadAllModels(dirName, typeDefStore, typeRegistry);
+                return;
+            } catch (AtlasBaseException e) {
+                if (attempt == maxAttempts || !isTransientGraphError(e)) {
+                    throw e;
+                }
+
+                LOG.warn("loadAllModels failed (attempt {}/{}), retrying: {}", attempt, maxAttempts, e.getMessage());
+                sleepBeforeRetry(attempt);
+            }
+        }
+    }
+
+    private void createTestClassificationWithRetry() throws AtlasBaseException {
+        AtlasClassificationDef classificationDef = new AtlasClassificationDef("TestClassification", "Test only classification");
+        AtlasTypesDef          typesDef          = new AtlasTypesDef();
+
+        typesDef.setClassificationDefs(Collections.singletonList(classificationDef));
+
+        int maxAttempts = 5;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                typeDefStore.createTypesDef(typesDef);
+                return;
+            } catch (AtlasBaseException e) {
+                if (attempt == maxAttempts || !isTransientGraphError(e)) {
+                    throw e;
+                }
+
+                LOG.warn("createTypesDef failed (attempt {}/{}), retrying: {}", attempt, maxAttempts, e.getMessage());
+                sleepBeforeRetry(attempt);
+            }
+        }
+    }
+
+    private static boolean isTransientGraphError(AtlasBaseException e) {
+        if (e == null || e.getMessage() == null) {
+            return false;
+        }
+
+        String message = e.getMessage().toLowerCase();
+
+        return message.contains("could not start new transaction")
+                || message.contains("cursor has been closed")
+                || message.contains("permanentlockingexception");
+    }
+
+    private static void sleepBeforeRetry(int attempt) throws AtlasBaseException {
+        try {
+            Thread.sleep(500L * attempt);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, ie);
         }
     }
 

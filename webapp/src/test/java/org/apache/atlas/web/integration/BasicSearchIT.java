@@ -57,6 +57,8 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class BasicSearchIT extends BaseResourceIT {
+    private static final String IMPORTED_DATA_QUALIFIED_NAME_MARKER = "default.";
+
     private AtlasUserSavedSearch userSavedSearch;
 
     @BeforeClass
@@ -141,14 +143,15 @@ public class BasicSearchIT extends BaseResourceIT {
                 LOG.info("TestDescription  :{}", testExpectation.testDescription);
                 LOG.info("SearchParameters :{}", testExpectation.searchParameters);
 
-                AtlasSearchResult searchResult = atlasClientV2.facetedSearch(testExpectation.searchParameters);
+                SearchParameters searchParameters = scopeToImportedDataset(testExpectation.searchParameters);
+                AtlasSearchResult  searchResult   = atlasClientV2.facetedSearch(searchParameters);
 
                 if (testExpectation.expectedCount > 0) {
                     assertNotNull(searchResult.getEntities());
                     assertEquals(searchResult.getEntities().size(), testExpectation.expectedCount);
                 }
 
-                if (testExpectation.searchParameters.getSortBy() != null && !testExpectation.searchParameters.getSortBy().isEmpty()) {
+                if (searchParameters.getSortBy() != null && !searchParameters.getSortBy().isEmpty()) {
                     assertNotNull(searchResult.getEntities());
                     assertEquals(searchResult.getEntities().get(0).getAttribute("name"), "testtable_3");
                 }
@@ -169,7 +172,7 @@ public class BasicSearchIT extends BaseResourceIT {
                 LOG.info("TestDescription  :{}", testExpectation.testDescription);
                 LOG.info("SearchParameters :{}", testExpectation.searchParameters);
 
-                SearchParameters parameters = testExpectation.getSearchParameters();
+                SearchParameters parameters = scopeToImportedDataset(testExpectation.getSearchParameters());
 
                 if (parameters.getEntityFilters() == null || parameters.getEntityFilters().getAttributeName() == null) {
                     continue;
@@ -204,7 +207,7 @@ public class BasicSearchIT extends BaseResourceIT {
                 LOG.info("TestDescription  :{}", testExpectation.testDescription);
                 LOG.info("SearchParameters :{}", testExpectation.searchParameters);
 
-                SearchParameters parameters = testExpectation.getSearchParameters();
+                SearchParameters parameters = scopeToImportedDataset(testExpectation.getSearchParameters());
 
                 AtlasUserSavedSearch savedSearch = new AtlasUserSavedSearch();
 
@@ -334,6 +337,42 @@ public class BasicSearchIT extends BaseResourceIT {
 
     private boolean containsAnyAttributeValue(SearchParameters.FilterCriteria filter) {
         return containsAnyMatchingCriteria(filter, fc -> StringUtils.isBlank(fc.getAttributeValue()));
+    }
+
+    private SearchParameters scopeToImportedDataset(SearchParameters parameters) {
+        if (parameters == null || parameters.getTypeName() == null) {
+            return parameters;
+        }
+
+        String typeName = parameters.getTypeName();
+
+        if (!"hive_table".equals(typeName) && !"hive_column".equals(typeName)) {
+            return parameters;
+        }
+
+        if (StringUtils.isNotBlank(parameters.getQuery()) || parameters.getOffset() > 0) {
+            return parameters;
+        }
+
+        SearchParameters.FilterCriteria importedDataFilter = new SearchParameters.FilterCriteria();
+
+        importedDataFilter.setAttributeName("qualifiedName");
+        importedDataFilter.setOperator(SearchParameters.Operator.CONTAINS);
+        importedDataFilter.setAttributeValue(IMPORTED_DATA_QUALIFIED_NAME_MARKER);
+
+        SearchParameters.FilterCriteria scopedFilter = new SearchParameters.FilterCriteria();
+
+        scopedFilter.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+
+        if (parameters.getEntityFilters() != null) {
+            scopedFilter.setCriterion(Arrays.asList(importedDataFilter, parameters.getEntityFilters()));
+        } else {
+            scopedFilter.setCriterion(Collections.singletonList(importedDataFilter));
+        }
+
+        parameters.setEntityFilters(scopedFilter);
+
+        return parameters;
     }
 
     @Test(dependsOnMethods = "testSavedSearch")

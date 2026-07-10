@@ -20,7 +20,6 @@ package org.apache.atlas.notification;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
@@ -43,6 +42,7 @@ import org.apache.atlas.notification.preprocessor.EntityPreprocessor;
 import org.apache.atlas.notification.preprocessor.GenericEntityPreprocessor;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.impexp.AsyncImporter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
@@ -73,8 +73,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import javax.ws.rs.core.Response;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -86,6 +84,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import static org.apache.atlas.AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_TYPENAME;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_UNIQUE_ATTRIBUTES;
@@ -124,9 +123,11 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
     private static final Logger LOG      = LoggerFactory.getLogger(SerialEntityProcessor.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger(NotificationHookConsumer.class);
 
-    private static final String EXCEPTION_CLASS_NAME_JANUSGRAPH_EXCEPTION       = "JanusGraphException";
-    private static final String EXCEPTION_CLASS_NAME_PERMANENTLOCKING_EXCEPTION = "PermanentLockingException";
-    private static final String THREADNAME_PREFIX                               = NotificationHookConsumer.class.getSimpleName();
+    private static final String EXCEPTION_CLASS_NAME_JANUSGRAPH_EXCEPTION        = "JanusGraphException";
+    private static final String EXCEPTION_CLASS_NAME_PERMANENTLOCKING_EXCEPTION  = "PermanentLockingException";
+    private static final String EXCEPTION_CLASS_NAME_TEMPORARY_BACKEND_EXCEPTION = "TemporaryBackendException";
+    private static final String EXCEPTION_CLASS_NAME_TEMPORARY_LOCKING_EXCEPTION = "TemporaryLockingException";
+    private static final String THREADNAME_PREFIX                                = NotificationHookConsumer.class.getSimpleName();
 
     private static final int    SC_OK                    = 200;
     private static final int    SC_BAD_REQUEST           = 400;
@@ -330,7 +331,76 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
 
     @Override
     public void shutdown() {
-        recordFailedMessages(failedMessages);
+    }
+
+    /**
+     * Classifies exceptions as retryable or non-retryable for better error handling.
+     *
+     * Retryable exceptions (temporary issues, will retry with fresh transaction):
+     * - JanusGraphException: General graph database errors (e.g., transaction conflicts)
+     * - PermanentLockingException: Optimistic locking failures
+     * - TemporaryBackendException: Temporary storage backend issues
+     * - TemporaryLockingException: Temporary lock conflicts
+     *
+     * Non-retryable exceptions (fail fast, no retry):
+     * - AtlasSchemaViolationException: Unique constraint violations (code bug or duplicate message)
+     * - IllegalStateException: Invalid application state
+     * - NullPointerException: Programming errors
+     * - AtlasBaseException with INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND: Entity not found (acceptable)
+     *
+     * @param e the exception to classify
+     * @return true if the exception is retryable, false otherwise
+     */
+    private boolean isRetryableException(Throwable e) {
+        if (e == null) {
+            return false;
+        }
+
+        // Non-retryable: Schema violations indicate code bugs or duplicate messages
+        if (e instanceof org.apache.atlas.repository.graphdb.AtlasSchemaViolationException) {
+            LOG.warn("Non-retryable exception: SchemaViolationException indicates unique constraint violation");
+            return false;
+        }
+
+        // Non-retryable: Programming errors
+        if (e instanceof IllegalStateException || e instanceof NullPointerException) {
+            LOG.warn("Non-retryable exception: {} indicates programming error", e.getClass().getSimpleName());
+            return false;
+        }
+
+        // Non-retryable: Entity not found is acceptable in some scenarios
+        if (e instanceof AtlasBaseException) {
+            AtlasBaseException baseException = (AtlasBaseException) e;
+            if (baseException.getAtlasErrorCode().equals(INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND)) {
+                LOG.warn("Non-retryable exception: INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND");
+                return false;
+            }
+        }
+
+        // Non-retryable: InterruptedException should terminate processing
+        if (e instanceof InterruptedException) {
+            LOG.error("Non-retryable exception: InterruptedException - thread interrupted");
+            return false;
+        }
+
+        // Retryable: Transaction conflicts and locking issues
+        if (isTransactionRelatedError(e)) {
+            return true;
+        }
+
+        // Default: Retry all other exceptions (conservative approach)
+        return true;
+    }
+
+    private boolean isTransactionRelatedError(Throwable e) {
+        String exceptionClassName = e.getClass().getSimpleName();
+        if (exceptionClassName.equals(EXCEPTION_CLASS_NAME_JANUSGRAPH_EXCEPTION) ||
+                exceptionClassName.equals(EXCEPTION_CLASS_NAME_PERMANENTLOCKING_EXCEPTION) ||
+                exceptionClassName.equals(EXCEPTION_CLASS_NAME_TEMPORARY_BACKEND_EXCEPTION) ||
+                exceptionClassName.equals(EXCEPTION_CLASS_NAME_TEMPORARY_LOCKING_EXCEPTION)) {
+            return true;
+        }
+        return false;
     }
 
     public TopicPartitionOffsetResult handleMessage(Ticket ticket) {
@@ -385,6 +455,8 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                 return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
             }
 
+            final String threadName = Thread.currentThread().getName();
+
             // Used for intermediate conversions during create and update
             String exceptionClassName = StringUtils.EMPTY;
             for (int numRetries = 0; numRetries < maxRetries; numRetries++) {
@@ -402,10 +474,16 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                     requestContext.setInNotificationProcessing(true);
                     requestContext.setCreateShellEntityForNonExistingReference(createShellEntityForNonExistingReference);
 
+                    LOG.debug("Parallel Processing-{}: Starting attempt={}/{} for message type={}, topic={}, offset={}, msgCreationTime={}",
+                            threadName, numRetries + 1, maxRetries, message.getType().name(),
+                            kafkaMsg.getTopic(), kafkaMsg.getOffset(), kafkaMsg.getMsgCreated());
+
                     switch (message.getType()) {
                         case ENTITY_CREATE: {
                             final HookNotificationV1.EntityCreateRequest createRequest = (HookNotificationV1.EntityCreateRequest) message;
                             final AtlasEntity.AtlasEntitiesWithExtInfo   entities      = instanceConverter.toAtlasEntities(createRequest.getEntities());
+
+                            requestContext.setCreateEventMsgTime(kafkaMsg.getMsgCreated());
 
                             if (auditLog == null) {
                                 auditLog = new AuditFilter.AuditLog(messageUser, THREADNAME_PREFIX,
@@ -440,6 +518,8 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
 
                         case ENTITY_DELETE: {
                             final HookNotificationV1.EntityDeleteRequest deleteRequest = (HookNotificationV1.EntityDeleteRequest) message;
+
+                            requestContext.setDeleteEventMsgTime(kafkaMsg.getMsgCreated());
 
                             if (auditLog == null) {
                                 auditLog = new AuditFilter.AuditLog(messageUser, THREADNAME_PREFIX,
@@ -477,6 +557,8 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                         case ENTITY_CREATE_V2: {
                             final EntityCreateRequestV2    createRequestV2 = (EntityCreateRequestV2) message;
                             final AtlasEntitiesWithExtInfo entities        = createRequestV2.getEntities();
+
+                            requestContext.setCreateEventMsgTime(kafkaMsg.getMsgCreated());
 
                             if (auditLog == null) {
                                 auditLog = new AuditFilter.AuditLog(messageUser, THREADNAME_PREFIX,
@@ -522,6 +604,8 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                         case ENTITY_DELETE_V2: {
                             final EntityDeleteRequestV2 deleteRequest = (EntityDeleteRequestV2) message;
                             final List<AtlasObjectId>   entities      = deleteRequest.getEntities();
+
+                            requestContext.setDeleteEventMsgTime(kafkaMsg.getMsgCreated());
 
                             try {
                                 for (AtlasObjectId entity : entities) {
@@ -596,61 +680,66 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                     RequestContext.get().resetEntityGuidUpdates();
                     exceptionClassName = e.getClass().getSimpleName();
 
-                    // don't retry in following conditions:
-                    //  1. number of retry attempts reached configured count
-                    //  2. notification processing failed due to invalid data (non-existing type, entity, ..)
-                    boolean        maxRetriesReached    = numRetries == (maxRetries - 1);
-                    AtlasErrorCode errorCode            = (e instanceof AtlasBaseException) ? ((AtlasBaseException) e).getAtlasErrorCode() : null;
-                    boolean        unrecoverableFailure = errorCode != null && (Response.Status.NOT_FOUND.equals(errorCode.getHttpCode()) || Response.Status.BAD_REQUEST.equals(errorCode.getHttpCode()));
+                    // Check if exception is retryable
+                    boolean isRetryable = isRetryableException(e);
 
-                    if (maxRetriesReached || unrecoverableFailure) {
-                        try {
-                            String strMessage = AbstractNotification.getMessageJson(message);
-
-                            if (unrecoverableFailure) {
-                                LOG.warn("Unrecoverable failure while processing message {}", strMessage, e);
-                            } else {
-                                LOG.warn("Max retries exceeded for message {}", strMessage, e);
-                            }
-
-                            stats.isFailedMsg = true;
-
-                            failedMessages.add(strMessage);
-
-                            if (failedMessages.size() >= failedMsgCacheSize) {
-                                recordFailedMessages(failedMessages);
-                            }
-                        } catch (Throwable t) {
-                            LOG.warn("error while recording failed message: type={}, topic={}, partition={}, offset={}",
-                                    message.getType(), kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset(), t);
-                        }
-
-                        return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
-                    } else if (e instanceof InterruptedException) {
-                        LOG.error("Interrupted!", e);
-                        return null;
-                    } else if (e instanceof org.apache.atlas.repository.graphdb.AtlasSchemaViolationException) {
-                        LOG.warn("{}: Continuing: {}", exceptionClassName, e.getMessage());
-                        return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
-                    } else if (exceptionClassName.equals(EXCEPTION_CLASS_NAME_JANUSGRAPH_EXCEPTION)
-                            || exceptionClassName.equals(EXCEPTION_CLASS_NAME_PERMANENTLOCKING_EXCEPTION)) {
-                        LOG.warn("{}: Offset: {}: Pausing & retry: Try: {}: Pause: {} ms. {}",
-                                exceptionClassName, kafkaMsg.getOffset(), numRetries, adaptiveWaiter.getWaitDuration(), e.getMessage());
-
-                        adaptiveWaiter.pause((Exception) e);
-                    } else if (e instanceof java.lang.IllegalStateException || e instanceof NullPointerException) {
-                        return null;
-                    } else {
-                        LOG.warn("Error handling message", e);
-
-                        try {
-                            LOG.info("Sleeping for {} ms before retry", consumerRetryInterval);
-
-                            Thread.sleep(consumerRetryInterval);
-                        } catch (InterruptedException ie) {
-                            LOG.error("Notification consumer thread sleep interrupted");
+                    if (!isRetryable) {
+                        // Non-retryable exceptions: fail fast and move to next message
+                        if (e instanceof InterruptedException) {
+                            LOG.error("Interrupted!", e);
+                            return null;
+                        } else if (e instanceof org.apache.atlas.repository.graphdb.AtlasSchemaViolationException) {
+                            LOG.warn("{} - {}: Non-retryable {}: Skipping message: {}",
+                                    kafkaMsg.getTopicPartition().toString(), kafkaMsg.getOffset(), exceptionClassName, e.getMessage());
+                            return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
+                        } else if (e instanceof AtlasBaseException) {
+                            AtlasBaseException baseException = (AtlasBaseException) e;
+                            LOG.warn("Error handling message: {}: {} - {} - {}",
+                                    ticket.getMessage().getMessage().getType(), baseException.getAtlasErrorCode(), baseException.getMessage(), ticket.getQualifiedNamesSet());
+                            return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
+                        } else {
+                            LOG.error("Non-retryable exception: {}", exceptionClassName, e);
+                            return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
                         }
                     }
+
+                    // Retryable exceptions: check if max retries exceeded
+                    if (numRetries == (maxRetries - 1)) {
+                        String strMessage = AbstractNotification.getMessageJson(message);
+
+                        LOG.warn("Offset: {}: Max retries: {} exceeded for message {}", kafkaMsg.getOffset(), maxRetries, strMessage, e);
+
+                        stats.isFailedMsg = true;
+
+                        failedMessages.add(strMessage);
+
+                        if (failedMessages.size() >= failedMsgCacheSize) {
+                            recordFailedMessages(kafkaMsg.getTopic(), failedMessages);
+                        }
+
+                        return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
+                    }
+
+                    if (isTransactionRelatedError(e)) {
+                        // Retryable exceptions: perform rollback, clear cache, and retry
+                        LOG.warn("{}: Offset: {}: Retryable exception: Try: {}/{}: Pause: {} ms. {}",
+                                exceptionClassName, kafkaMsg.getOffset(), numRetries + 1, maxRetries, adaptiveWaiter.getWaitDuration(), e.getMessage());
+
+                        try {
+                            LOG.info("Parallel Processing-{}: Rolling back failed transaction (attempt {}/{}) to enable fresh retry",
+                                    threadName, numRetries + 1, maxRetries);
+                            AtlasGraphProvider.getGraphInstance().rollback();
+                        } catch (Exception rollbackEx) {
+                            LOG.warn("Parallel Processing-{}: Error during transaction rollback: {}",
+                                    threadName, rollbackEx.getMessage());
+                        }
+                    } else {
+                        LOG.warn("Error handling message", e);
+                        LOG.info("Sleeping for {} ms before retry", adaptiveWaiter.getWaitDuration());
+                    }
+
+                    // Adaptive wait before retry
+                    adaptiveWaiter.pause((Exception) e);
                 } finally {
                     RequestContext.clear();
                 }
@@ -1160,10 +1249,10 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
         return ret;
     }
 
-    private void recordFailedMessages(List<String> failedMessages) {
+    private void recordFailedMessages(String topic, List<String> failedMessages) {
         //logging failed messages
         for (String message : failedMessages) {
-            failedMessageLog.error("[DROPPED_NOTIFICATION] {}", message);
+            failedMessageLog.error("[{}-DROPPED_NOTIFICATION] {}", topic, message);
         }
 
         failedMessages.clear();

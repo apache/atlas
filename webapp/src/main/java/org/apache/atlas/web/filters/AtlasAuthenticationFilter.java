@@ -427,7 +427,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             if (existingAuth == null) {
                 String authHeader = httpRequest.getHeader("Authorization");
 
-                if (authHeader != null && authHeader.startsWith("Basic")) {
+                if (authHeader != null && (authHeader.startsWith("Basic") || authHeader.startsWith("Bearer"))) {
                     filterChain.doFilter(request, response);
                 } else if (isKerberos) {
                     doKerberosAuth(request, response, filterChain);

@@ -30,6 +30,8 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -80,9 +82,11 @@ public class QuickStartIT extends BaseResourceIT {
         String timeDimTableId     = getTableId(QuickStart.TIME_DIM_TABLE);
         String salesFactDailyMVId = getTableId(QuickStart.SALES_FACT_DAILY_MV_TABLE);
 
-        assertEquals(salesFactTableId, inputs.get(0)._getId());
-        assertEquals(timeDimTableId, inputs.get(1)._getId());
-        assertEquals(salesFactDailyMVId, outputs.get(0)._getId());
+        Set<String> inputIds = inputs.stream().map(Id::_getId).collect(Collectors.toSet());
+
+        assertTrue(inputIds.contains(salesFactTableId));
+        assertTrue(inputIds.contains(timeDimTableId));
+        assertEquals(outputs.get(0)._getId(), salesFactDailyMVId);
     }
 
     @Test
@@ -138,10 +142,13 @@ public class QuickStartIT extends BaseResourceIT {
 
         assertEquals(columns.size(), 4);
 
-        Referenceable column = columns.get(0);
+        Referenceable timeIdColumn = columns.stream()
+                .filter(c -> QuickStart.TIME_ID_COLUMN.equals(c.get("name")))
+                .findFirst()
+                .orElse(null);
 
-        assertEquals(column.get("name"), QuickStart.TIME_ID_COLUMN);
-        assertEquals(column.get("dataType"), "int");
+        assertNotNull(timeIdColumn);
+        assertEquals(timeIdColumn.get("dataType"), "int");
     }
 
     private void verifyDBIsLinkedToTable(Referenceable table) throws AtlasServiceException {

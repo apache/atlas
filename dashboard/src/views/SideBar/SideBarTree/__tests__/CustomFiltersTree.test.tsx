@@ -316,7 +316,7 @@ describe('CustomFiltersTree', () => {
 			expect(treeData).toBeInTheDocument()
 		})
 
-		it('should handle savedSearchType false with savedSearchData', async () => {
+		it('should group savedSearchData under search-type parent nodes', async () => {
 			const mockSavedSearchData = [
 				{ name: 'Search1', searchType: 'BASIC' }
 			]
@@ -329,18 +329,14 @@ describe('CustomFiltersTree', () => {
 
 			await waitFor(() => {
 				const treeData = screen.getByTestId('tree-data')
-				expect(treeData).toBeInTheDocument()
+				const data = JSON.parse(treeData.textContent || '[]')
+				const basicNode = data.find((node: { label: string }) => node.label === 'Basic Search')
+				expect(basicNode).toBeDefined()
+				expect(basicNode.children.some((c: { label: string }) => c.label === 'Search1')).toBe(true)
 			})
 
-			const toggleButton = screen.getByTestId('toggle-empty-button')
-			await act(async () => {
-				toggleButton.click()
-			})
-
-			await waitFor(() => {
-				const treeData = screen.getByTestId('tree-data')
-				expect(treeData).toBeInTheDocument()
-			})
+			expect(screen.queryByTestId('toggle-empty-button')).not.toBeInTheDocument()
+			expect(screen.getByTestId('is-empty-service-type')).toHaveTextContent('true')
 		})
 	})
 
@@ -454,7 +450,7 @@ describe('CustomFiltersTree', () => {
 			expect(treeData).toBeInTheDocument()
 		})
 
-		it('should generate treeData with savedSearchType false', async () => {
+		it('should keep grouped treeData after refresh without view toggle', async () => {
 			const mockSavedSearchData = [
 				{ name: 'Search1', searchType: 'BASIC' }
 			]
@@ -467,17 +463,21 @@ describe('CustomFiltersTree', () => {
 
 			await waitFor(() => {
 				const treeData = screen.getByTestId('tree-data')
-				expect(treeData).toBeInTheDocument()
+				const data = JSON.parse(treeData.textContent || '[]')
+				expect(data.some((node: { label: string }) => node.label === 'Basic Search')).toBe(true)
 			})
 
-			const toggleButton = screen.getByTestId('toggle-empty-button')
+			expect(screen.queryByTestId('toggle-empty-button')).not.toBeInTheDocument()
+
+			const refreshButton = screen.getByTestId('refresh-button')
 			await act(async () => {
-				toggleButton.click()
+				refreshButton.click()
 			})
 
 			await waitFor(() => {
 				const treeData = screen.getByTestId('tree-data')
-				expect(treeData).toBeInTheDocument()
+				const data = JSON.parse(treeData.textContent || '[]')
+				expect(data.some((node: { label: string }) => node.label === 'Basic Search')).toBe(true)
 			})
 		})
 	})

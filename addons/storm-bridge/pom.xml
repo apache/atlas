@@ -33,6 +33,12 @@
     <description>Apache Atlas Storm Bridge Module</description>
 
     <dependencies>
+        <!-- apache atlas core dependencies -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.databind.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>commons-collections</groupId>
@@ -55,7 +61,7 @@
             <artifactId>metrics-graphite</artifactId>
             <version>${dropwizard-metrics}</version>
         </dependency>
-        <!-- apache atlas core dependencies -->
+
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-client-v1</artifactId>
@@ -132,7 +138,8 @@
 
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
         </dependency>
 
         <!-- Testing dependencies -->

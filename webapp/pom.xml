@@ -58,6 +58,19 @@
             <version>${jackson.version}</version>
         </dependency>
 
+        <!-- Jackson JAX-RS 2.12.7: last line compatible with Jersey 1.19 / JAX-RS 1.1; core Jackson is 2.16.2 via ${jackson.version}. Full unification -> ATLAS-5190 -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.jaxrs</groupId>
+            <artifactId>jackson-jaxrs-base</artifactId>
+            <version>2.12.7</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.jaxrs</groupId>
+            <artifactId>jackson-jaxrs-json-provider</artifactId>
+            <version>2.12.7</version>
+        </dependency>
+
         <dependency>
             <groupId>com.googlecode.json-simple</groupId>
             <artifactId>json-simple</artifactId>
@@ -66,7 +79,6 @@
         <dependency>
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
-            <version>9.37.3</version>
             <scope>compile</scope>
             <exclusions>
                 <exclusion>
@@ -126,6 +138,12 @@
         </dependency>
 
         <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>jsr311-api</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+
+        <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
         </dependency>
@@ -134,6 +152,12 @@
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
             <version>5.2.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-authn</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -185,6 +209,16 @@
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.jaxrs</groupId>
+                    <artifactId>jackson-jaxrs-base</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.jaxrs</groupId>
+                    <artifactId>jackson-jaxrs-json-provider</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -365,7 +399,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- PAM -->
+
         <dependency>
             <groupId>org.kohsuke</groupId>
             <artifactId>libpam4j</artifactId>
@@ -374,7 +408,8 @@
 
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
         </dependency>
 
         <!-- Required for Spring configuration processing -->
@@ -484,7 +519,7 @@
             <version>3.4</version>
             <scope>test</scope>
         </dependency>
-
+        <!-- PAM -->
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-testtools</artifactId>
@@ -570,9 +605,11 @@
                         <user.dir>${project.basedir}</user.dir>
                         <projectBaseDir>${project.basedir}/..</projectBaseDir>
                     </systemProperties>
-                    <forkMode>always</forkMode>
+                    <forkCount>${surefire.forkCount}</forkCount>
+                    <reuseForks>false</reuseForks>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <argLine>${argLine} -Djava.awt.headless=true -Dproject.version=${project.version}
+                    <argLine>${jdk.argLine}
+                        -Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir=${project.build.directory}/tmp-hadoop-${user.name}
                         -Xmx1024m</argLine>
                 </configuration>
@@ -785,11 +822,9 @@
                 <artifactId>enunciate-maven-plugin</artifactId>
                 <version>${enunciate-maven-plugin.version}</version>
                 <configuration>
-                    <configFile>${project.parent.basedir}/build-tools/src/main/resources/enunciate.xml</configFile>
+                    <configFile>${project.parent.basedir}/${enunciate.config.relative}</configFile>
                     <enunciateArtifactId />
                     <docsDir>${project.build.directory}/api/v2/</docsDir>
-                    <source>1.8</source>
-                    <target>1.8</target>
                     <skipEnunciate>${skipEnunciate}</skipEnunciate>
                 </configuration>
                 <dependencies>

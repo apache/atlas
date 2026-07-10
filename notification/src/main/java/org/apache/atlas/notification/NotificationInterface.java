@@ -110,6 +110,8 @@ public interface NotificationInterface {
      */
     default <T> void send(String topic, List<T> messages, MessageSource source) throws NotificationException {}
 
+    default <T> void send(String topic, List<T> messages, MessageSource source, long msgCreationTime) throws NotificationException {}
+
     /**
      * Associates the specified topic with the given notification type.
      *
@@ -155,6 +157,9 @@ public interface NotificationInterface {
 
         // Notifications to entity change consumers.
         ENTITIES(new EntityMessageDeserializer()),
+
+        // Notification to pre-process hook messages before sending to parallel topics
+        HOOK_PREPROCESS(new HookMessageDeserializer()),
 
         // Notifications from Atlas async importer
         ASYNC_IMPORT(new HookMessageDeserializer());

@@ -17,36 +17,29 @@
  */
 package org.apache.atlas.kafka;
 
-import kafka.server.KafkaConfig;
-import kafka.server.KafkaServer;
-import kafka.zookeeper.ZooKeeperClientException;
+import kafka.testkit.KafkaClusterTestKit;
+import kafka.testkit.TestKitNodes;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.util.CommandHandlerUtility;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.ConfigurationConverter;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.KafkaException;
-import org.apache.kafka.common.utils.Time;
-import org.apache.zookeeper.server.NIOServerCnxnFactory;
-import org.apache.zookeeper.server.ServerCnxnFactory;
-import org.apache.zookeeper.server.ZooKeeperServer;
+import org.apache.kafka.common.utils.Exit;
+import org.apache.kafka.common.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import scala.Option;
 
 import javax.inject.Inject;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.BindException;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Component
 @Order(3)
@@ -59,14 +52,16 @@ public class EmbeddedKafkaServer implements Service {
     private static final String ATLAS_KAFKA_DATA          = "data";
     private static final int    MAX_RETRY_TO_ACQUIRE_PORT = 3;
 
-    private final boolean           isEmbedded;
-    private final Properties        properties;
-    private       KafkaServer       kafkaServer;
-    private       ServerCnxnFactory factory;
+    private final boolean       isEmbedded;
+    private final Configuration applicationProperties;
+    private final Properties    properties;
+
+    private KafkaClusterTestKit cluster;
 
     @Inject
     public EmbeddedKafkaServer(Configuration applicationProperties) {
-        Configuration kafkaConf = ApplicationProperties.getSubsetConfiguration(applicationProperties, PROPERTY_PREFIX);
+        this.applicationProperties = applicationProperties;
+        Configuration kafkaConf    = ApplicationProperties.getSubsetConfiguration(applicationProperties, PROPERTY_PREFIX);
 
         this.isEmbedded = applicationProperties.getBoolean(PROPERTY_EMBEDDED, false);
         this.properties = ConfigurationConverter.getProperties(kafkaConf);
@@ -78,8 +73,7 @@ public class EmbeddedKafkaServer implements Service {
 
         if (isEmbedded) {
             try {
-                startZk();
-                startKafka();
+                startKraftBroker();
             } catch (Exception e) {
                 throw new AtlasException("Failed to start embedded kafka", e);
             }
@@ -94,90 +88,152 @@ public class EmbeddedKafkaServer implements Service {
     public void stop() {
         LOG.info("==> EmbeddedKafkaServer.stop(isEmbedded={})", isEmbedded);
 
-        if (kafkaServer != null) {
-            kafkaServer.shutdown();
-        }
-
-        if (factory != null) {
-            factory.shutdown();
-        }
+        shutdownClusterQuietly();
 
         LOG.info("<== EmbeddedKafka.stop(isEmbedded={})", isEmbedded);
     }
 
-    private String startZk() throws IOException, InterruptedException {
-        String zkValue = properties.getProperty("zookeeper.connect");
+    private void startKraftBroker() throws Exception {
+        overrideExitMethods();
 
-        LOG.info("Starting zookeeper at {}", zkValue);
+        File   logDir                = constructDir("kafka");
+        String configuredBootstrap   = properties.getProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG);
 
-        URL  zkAddress   = getURL(zkValue);
-        File snapshotDir = constructDir("zk/txn");
-        File logDir      = constructDir("zk/snap");
+        LOG.info("Starting embedded KRaft kafka (log.dir={}, bootstrap.servers={})", logDir.getAbsolutePath(), configuredBootstrap);
 
-        for (int attemptCount = 0; attemptCount < MAX_RETRY_TO_ACQUIRE_PORT; attemptCount++) {
+        for (int attempt = 0; attempt < MAX_RETRY_TO_ACQUIRE_PORT; attempt++) {
             try {
-                factory = NIOServerCnxnFactory.createFactory(new InetSocketAddress(zkAddress.getHost(), zkAddress.getPort()), 1024);
-                break;
-            } catch (BindException e) {
-                LOG.warn("Attempt {}: Starting zookeeper at {} failed", attemptCount, zkValue);
+                startKraftBrokerOnce(logDir, configuredBootstrap);
+                return;
+            } catch (Exception e) {
+                LOG.warn("Attempt {}: failed to start embedded KRaft kafka", attempt, e);
 
-                if (attemptCount == MAX_RETRY_TO_ACQUIRE_PORT - 1) {
+                shutdownClusterQuietly();
+
+                if (attempt == MAX_RETRY_TO_ACQUIRE_PORT - 1) {
                     throw e;
                 }
 
-                CommandHandlerUtility.tryKillingProcessUsingPort(zkAddress.getPort(), attemptCount != 0);
+                int port = parsePort(configuredBootstrap);
+
+                if (port > 0) {
+                    CommandHandlerUtility.tryKillingProcessUsingPort(port, attempt != 0);
+                }
             }
         }
-
-        factory.startup(new ZooKeeperServer(snapshotDir, logDir, 500));
-
-        String ret = factory.getLocalAddress().getAddress().toString();
-
-        LOG.info("Embedded zookeeper for Kafka started at {}", ret);
-
-        return ret;
     }
 
-    private void startKafka() throws IOException {
-        String kafkaValue = properties.getProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG);
+    private void startKraftBrokerOnce(File logDir, String configuredBootstrap) throws Exception {
+        KafkaClusterTestKit.Builder clusterBuilder = new KafkaClusterTestKit.Builder(
+                new TestKitNodes.Builder()
+                        .setCombined(true)
+                        .setNumBrokerNodes(1)
+                        .setNumControllerNodes(1)
+                        .build());
 
-        LOG.info("Starting kafka at {}", kafkaValue);
+        Properties brokerConfig = buildBrokerConfig(logDir, configuredBootstrap);
 
-        URL        kafkaAddress = getURL(kafkaValue);
-        Properties brokerConfig = properties;
+        brokerConfig.forEach((key, value) -> clusterBuilder.setConfigProp(key.toString(), value));
 
-        for (int attemptCount = 0; attemptCount < MAX_RETRY_TO_ACQUIRE_PORT; attemptCount++) {
-            try {
-                brokerConfig.setProperty("broker.id", "1");
-                brokerConfig.setProperty("host.name", kafkaAddress.getHost());
-                brokerConfig.setProperty("port", String.valueOf(kafkaAddress.getPort()));
-                brokerConfig.setProperty("log.dirs", constructDir("kafka").getAbsolutePath());
-                brokerConfig.setProperty("log.flush.interval.messages", String.valueOf(1));
+        cluster = clusterBuilder.build();
+        cluster.format();
+        cluster.startup();
+        cluster.waitForReadyBrokers();
 
-                kafkaServer = new KafkaServer(KafkaConfig.fromProps(brokerConfig), Time.SYSTEM, Option.apply(this.getClass().getName()), false);
+        String bootstrapServers = StringUtils.isNotEmpty(configuredBootstrap)
+                ? configuredBootstrap
+                : cluster.clientProperties().get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG).toString();
 
-                kafkaServer.startup();
-                break;
-            } catch (KafkaException | ZooKeeperClientException e) {
-                LOG.warn("Attempt {}: kafka server with broker config {} failed", attemptCount, brokerConfig);
+        LOG.info("Embedded KRaft kafka server started at {}", bootstrapServers);
 
-                if (attemptCount == MAX_RETRY_TO_ACQUIRE_PORT - 1) {
-                    throw e;
-                }
+        applicationProperties.setProperty(PROPERTY_PREFIX + ".bootstrap.servers", bootstrapServers);
+        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+    }
 
-                if (kafkaServer != null) {
-                    try {
-                        kafkaServer.shutdown();
-                    } catch (Exception ex) {
-                        LOG.info("Failed to shutdown kafka server", ex);
-                    }
-                }
+    private Properties buildBrokerConfig(File logDir, String configuredBootstrap) {
+        Properties brokerConfig = new Properties();
 
-                CommandHandlerUtility.tryKillingProcessUsingPort(kafkaAddress.getPort(), attemptCount != 0);
-            }
+        brokerConfig.setProperty("log.dir", logDir.getAbsolutePath());
+        brokerConfig.setProperty("delete.topic.enable", "true");
+        brokerConfig.setProperty("auto.create.topics.enable", "true");
+        brokerConfig.setProperty("group.initial.rebalance.delay.ms", "0");
+        brokerConfig.setProperty("offsets.topic.replication.factor", "1");
+        brokerConfig.setProperty("transaction.state.log.replication.factor", "1");
+        brokerConfig.setProperty("transaction.state.log.min.isr", "1");
+        brokerConfig.setProperty("num.partitions", "1");
+
+        String listener = toExternalListenerAddress(configuredBootstrap);
+
+        if (listener != null) {
+            brokerConfig.setProperty("listeners", listener + ",CONTROLLER://localhost:0");
+            brokerConfig.setProperty("advertised.listeners", listener);
         }
 
-        LOG.info("Embedded kafka server started with broker config {}", brokerConfig);
+        String replicationFactor = properties.getProperty("offsets.topic.replication.factor");
+
+        if (replicationFactor != null) {
+            brokerConfig.setProperty("offsets.topic.replication.factor", replicationFactor);
+        }
+
+        return brokerConfig;
+    }
+
+    private void shutdownClusterQuietly() {
+        if (cluster != null) {
+            AtomicReference<Throwable> shutdownFailure = new AtomicReference<>();
+
+            Utils.closeQuietly(cluster, "embedded Kafka cluster", shutdownFailure);
+
+            if (shutdownFailure.get() != null) {
+                LOG.warn("Failed to shut down embedded Kafka cluster", shutdownFailure.get());
+            }
+
+            cluster = null;
+        }
+    }
+
+    private static String toExternalListenerAddress(String bootstrapServers) {
+        if (StringUtils.isEmpty(bootstrapServers)) {
+            return null;
+        }
+
+        String hostPort = StringUtils.trim(bootstrapServers.split(",")[0]);
+
+        if (StringUtils.isEmpty(hostPort)) {
+            return null;
+        }
+
+        if (hostPort.contains("://")) {
+            return hostPort.replaceFirst("^PLAINTEXT://", "EXTERNAL://");
+        }
+
+        return "EXTERNAL://" + hostPort;
+    }
+
+    private static int parsePort(String bootstrapServers) {
+        if (StringUtils.isEmpty(bootstrapServers)) {
+            return -1;
+        }
+
+        String hostPort = StringUtils.trim(bootstrapServers.split(",")[0]);
+        int    colon    = hostPort.lastIndexOf(':');
+
+        if (colon < 0) {
+            return -1;
+        }
+
+        try {
+            return Integer.parseInt(hostPort.substring(colon + 1));
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    private void overrideExitMethods() {
+        Exit.setExitProcedure((statusCode, message) ->
+                LOG.warn("Kafka Exit.exit({}, {}) suppressed in embedded broker", statusCode, message));
+        Exit.setHaltProcedure((statusCode, message) ->
+                LOG.warn("Kafka Exit.halt({}, {}) suppressed in embedded broker", statusCode, message));
     }
 
     private File constructDir(String dirPrefix) {
@@ -188,13 +244,5 @@ public class EmbeddedKafkaServer implements Service {
         }
 
         return file;
-    }
-
-    private URL getURL(String url) throws MalformedURLException {
-        try {
-            return new URL(url);
-        } catch (MalformedURLException e) {
-            return new URL("http://" + url);
-        }
     }
 }
