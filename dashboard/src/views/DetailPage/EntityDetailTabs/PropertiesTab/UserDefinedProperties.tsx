@@ -50,6 +50,7 @@ import { useParams } from "react-router-dom";
 import { cloneDeep } from "@utils/Helper";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 import { enrichEntityPayloadForRelationshipSave } from "@utils/entityPayloadEnrichmentUtils";
+import { EntityStatus } from "@utils/EntityStatus";
 
 const defaultField = {
   key: "",
@@ -194,22 +195,24 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
 
                     <Stack direction="row" alignItems="center" gap="0.5rem">
                       {addLabel ? (
-                        <CustomButton
-                          key="edit-Add-button"
-                          variant="outlined"
-                          color="success"
-                          size="small"
-                          onClick={(e: { stopPropagation: () => void }) => {
-                            e.stopPropagation();
-                            setExpanded("userDefinedPanel");
-                            setAddLabel(false);
-                            if (!isEmpty(defaultFieldValues)) {
-                              reset({ customAttributes: defaultFieldValues });
-                            }
-                          }}
-                        >
-                          {!isEmpty(customAttributes) ? "Edit" : "Add"}
-                        </CustomButton>
+                        !loading && entity?.status !== EntityStatus.DELETED && (
+                          <CustomButton
+                            key="edit-Add-button"
+                            variant="outlined"
+                            color="success"
+                            size="small"
+                            onClick={(e: { stopPropagation: () => void }) => {
+                              e.stopPropagation();
+                              setExpanded("userDefinedPanel");
+                              setAddLabel(false);
+                              if (!isEmpty(defaultFieldValues)) {
+                                reset({ customAttributes: defaultFieldValues });
+                              }
+                            }}
+                          >
+                            {!isEmpty(customAttributes) ? "Edit" : "Add"}
+                          </CustomButton>
+                        )
                       ) : (
                         <>
                           <CustomButton
@@ -303,19 +306,25 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
                         })
                     ) : (
                       <span>
-                        No properties have been created yet. To add a
-                        property,click{" "}
-                        <Typography
-                          className="text-color-green cursor-pointer"
-                          component="span"
-                          onClick={(e: { stopPropagation: () => void }) => {
-                            e.stopPropagation();
-                            setAddLabel(false);
-                          }}
-                          style={{ textDecoration: "underline" }}
-                        >
-                          here
-                        </Typography>
+                        {entity?.status === EntityStatus.DELETED ? (
+                          "No properties have been created yet."
+                        ) : (
+                          <>
+                            No properties have been created yet. To add a
+                            property,click{" "}
+                            <Typography
+                              className="text-color-green cursor-pointer"
+                              component="span"
+                              onClick={(e: { stopPropagation: () => void }) => {
+                                e.stopPropagation();
+                                setAddLabel(false);
+                              }}
+                              style={{ textDecoration: "underline" }}
+                            >
+                              here
+                            </Typography>
+                          </>
+                        )}
                       </span>
                     )}
                   </Stack>

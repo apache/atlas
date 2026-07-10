@@ -42,6 +42,7 @@ import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import { isEntityPurged } from "@utils/Enum";
 import CustomModal from "@components/Modal";
 import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
+import { EntityStatus } from "@utils/EntityStatus";
 import { removeClassification } from "@api/apiMethods/classificationApiMethod";
 import { toast } from "react-toastify";
 import AttributeTable from "../AttributeTable";
@@ -255,7 +256,7 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
           let values = info.row.original;
           return (
             <Stack direction="row" gap={1}>
-              {(guid == values?.entityGuid ||
+              {!loading && entity?.status !== EntityStatus.DELETED && (guid == values?.entityGuid ||
                 (guid != values?.entityGuid &&
                   values.entityStatus == "DELETED")) && (
                   <LightTooltip title={"Delete Classification"}>
@@ -279,7 +280,7 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
                     </CustomButton>
                   </LightTooltip>
                 )}
-              {guid == values?.entityGuid && (
+              {!loading && entity?.status !== EntityStatus.DELETED && guid == values?.entityGuid && (
                 <LightTooltip title={"Edit Classification"}>
                   <CustomButton
                     variant="outlined"
@@ -305,7 +306,7 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
         enableSorting: false
       }
     ],
-    [updateTable]
+    [updateTable, entity]
   );
 
   return (

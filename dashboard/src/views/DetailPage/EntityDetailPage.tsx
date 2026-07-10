@@ -39,6 +39,7 @@ import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 import { normalizeSchemaElementsAttribute } from "@utils/schemaElementsAttributeUtils";
 import { SchemaTabCacheState } from "@models/schemaTabTypes";
 import React from "react";
+import { EntityStatus } from "@utils/EntityStatus";
 import AddTag from "@views/Classification/AddTag";
 import AssignTerm from "@views/Glossary/AssignTerm";
 import { removeTerm } from "@api/apiMethods/glossaryApiMethod";
@@ -115,14 +116,14 @@ const EntityDetailPage: React.FC = () => {
   let entityObj =
     !isEmpty(entityDefObj) && !isEmpty(entity)
       ? entityDefObj.find((obj: { name: string }) => {
-          return obj.name == entity.typeName;
-        })
+        return obj.name == entity.typeName;
+      })
       : {};
   let superTypes = !isEmpty(entityDefObj)
     ? getNestedSuperTypes({
-        data: entityObj,
-        collection: entityDefObj
-      })
+      data: entityObj,
+      collection: entityDefObj
+    })
     : [];
   let isLineageRender: boolean | null = superTypes.find((type) => {
     if (type === "DataSet" || type === "Process") {
@@ -327,7 +328,7 @@ const EntityDetailPage: React.FC = () => {
         className="detail-page-paper"
         variant="outlined"
       >
-        {loading ? (
+        {loading || detailPageData === null ? (
           <Stack direction="row" spacing={2} alignItems="center">
             <SkeletonLoader
               count={1}
@@ -387,7 +388,7 @@ const EntityDetailPage: React.FC = () => {
           }}
         >
           <Stack>
-            {loading ? (
+            {loading || detailPageData === null ? (
               <Stack direction="column" spacing={2} alignItems="left">
                 <SkeletonLoader
                   count={1}
@@ -408,20 +409,22 @@ const EntityDetailPage: React.FC = () => {
                   >
                     Classifications
                   </Typography>
-                  <LightTooltip title={"Add Classifications"}>
-                    <IconButton
-                      component="label"
-                      role={undefined}
-                      tabIndex={-1}
-                      size="small"
-                      color="primary"
-                      onClick={() => {
-                        setOpenAddTagModal(true);
-                      }}
-                    >
-                      <AddCircleOutlineIcon className="mr-0" fontSize="small" />{" "}
-                    </IconButton>
-                  </LightTooltip>
+                  {entity?.status !== EntityStatus.DELETED && (
+                    <LightTooltip title={"Add Classifications"}>
+                      <IconButton
+                        component="label"
+                        role={undefined}
+                        tabIndex={-1}
+                        size="small"
+                        color="primary"
+                        onClick={() => {
+                          setOpenAddTagModal(true);
+                        }}
+                      >
+                        <AddCircleOutlineIcon className="mr-0" fontSize="small" />{" "}
+                      </IconButton>
+                    </LightTooltip>
+                  )}
                 </Stack>
 
                 <Stack
@@ -448,7 +451,7 @@ const EntityDetailPage: React.FC = () => {
 
           {!entity?.typeName?.includes("AtlasGlossary") && (
             <Stack>
-              {loading ? (
+              {loading || detailPageData === null ? (
                 <Stack direction="column" spacing={2} alignItems="flex-start">
                   <SkeletonLoader
                     count={1}
@@ -469,28 +472,30 @@ const EntityDetailPage: React.FC = () => {
                     >
                       Terms
                     </Typography>
-                    <LightTooltip title="Add Term">
-                      <IconButton
-                        component="label"
-                        role={undefined}
-                        tabIndex={-1}
-                        size="small"
-                        color="primary"
-                        onClick={() => {
-                          if (!hasAnyGlossaryTerms) {
-                            toast.dismiss();
-                            toast.info("There are no available terms");
-                            return;
-                          }
-                          setOpenAddTermModal(true);
-                        }}
-                      >
-                        <AddCircleOutlineIcon
-                          className="mr-0"
-                          fontSize="small"
-                        />
-                      </IconButton>
-                    </LightTooltip>
+                    {entity?.status !== EntityStatus.DELETED && (
+                      <LightTooltip title="Add Term">
+                        <IconButton
+                          component="label"
+                          role={undefined}
+                          tabIndex={-1}
+                          size="small"
+                          color="primary"
+                          onClick={() => {
+                            if (!hasAnyGlossaryTerms) {
+                              toast.dismiss();
+                              toast.info("There are no available terms");
+                              return;
+                            }
+                            setOpenAddTermModal(true);
+                          }}
+                        >
+                          <AddCircleOutlineIcon
+                            className="mr-0"
+                            fontSize="small"
+                          />
+                        </IconButton>
+                      </LightTooltip>
+                    )}
                   </Stack>
 
                   <Stack
@@ -589,7 +594,7 @@ const EntityDetailPage: React.FC = () => {
                 <LinkTab
                   label={
                     entity.typeName == "hive_db" ||
-                    entity.typeName == "hbase_namespace"
+                      entity.typeName == "hbase_namespace"
                       ? "Tables"
                       : "Table"
                   }

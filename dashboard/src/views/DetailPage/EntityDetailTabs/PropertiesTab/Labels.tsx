@@ -43,10 +43,11 @@ import { useParams } from "react-router-dom";
 import { getLabels } from "@api/apiMethods/detailpageApiMethod";
 import { useAppDispatch } from "@hooks/reducerHook";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
+import { EntityStatus } from "@utils/EntityStatus";
 
 const filter = createFilterOptions<any>();
 
-const Labels = ({ loading, labels }: any) => {
+const Labels = ({ loading, labels, entity }: any) => {
   const { guid }: any = useParams();
   const toastId: any = useRef(null);
   const dispatchApi = useAppDispatch();
@@ -189,19 +190,21 @@ const Labels = ({ loading, labels }: any) => {
 
                   <Stack direction="row" alignItems="center" gap="0.5rem">
                     {addLabel ? (
-                      <CustomButton
-                        key="edit-Add-button"
-                        variant="outlined"
-                        color="success"
-                        size="small"
-                        onClick={(e: { stopPropagation: () => void }) => {
-                          e.stopPropagation();
-                          setExpanded("labelsPanel");
-                          setAddLabel(false);
-                        }}
-                      >
-                        {!isEmpty(labels) ? "Edit" : "Add"}
-                      </CustomButton>
+                      !loading && entity?.status !== EntityStatus.DELETED && (
+                        <CustomButton
+                          key="edit-Add-button"
+                          variant="outlined"
+                          color="success"
+                          size="small"
+                          onClick={(e: { stopPropagation: () => void }) => {
+                            e.stopPropagation();
+                            setExpanded("labelsPanel");
+                            setAddLabel(false);
+                          }}
+                        >
+                          {!isEmpty(labels) ? "Edit" : "Add"}
+                        </CustomButton>
+                      )
                     ) : (
                       <>
                         <CustomButton
@@ -275,18 +278,24 @@ const Labels = ({ loading, labels }: any) => {
                     })
                   ) : (
                     <span>
-                      No labels have been created yet. To add a labels, click{" "}
-                      <Typography
-                        className="text-color-green cursor-pointer"
-                        component="span"
-                        onClick={(e: { stopPropagation: () => void }) => {
-                          e.stopPropagation();
-                          setAddLabel(false);
-                        }}
-                        style={{ textDecoration: "underline" }}
-                      >
-                        here
-                      </Typography>
+                      {entity?.status === EntityStatus.DELETED ? (
+                        "No labels have been created yet."
+                      ) : (
+                        <>
+                          No labels have been created yet. To add a labels, click{" "}
+                          <Typography
+                            className="text-color-green cursor-pointer"
+                            component="span"
+                            onClick={(e: { stopPropagation: () => void }) => {
+                              e.stopPropagation();
+                              setAddLabel(false);
+                            }}
+                            style={{ textDecoration: "underline" }}
+                          >
+                            here
+                          </Typography>
+                        </>
+                      )}
                     </span>
                   )}
                 </>

@@ -41,6 +41,7 @@ const getDescriptionForDisplay = (desc: unknown): string => {
 };
 import { useState } from "react";
 import { useAppSelector } from "@hooks/reducerHook";
+import { EntityStatus } from "@utils/EntityStatus";
 import { toast } from "react-toastify";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { removeClassification } from "@api/apiMethods/classificationApiMethod";
@@ -147,7 +148,7 @@ const DetailPageAttribute = ({
                 {name}{" "}
               </Typography>
             </LightTooltip>
-            {isEmpty(bmguid) && (
+            {isEmpty(bmguid) && !loading && data?.status !== EntityStatus.DELETED && (
               <LightTooltip title={"Edit Classification"}>
                 <CustomButton
                   variant="outlined"
@@ -315,23 +316,25 @@ const DetailPageAttribute = ({
                       >
                         Classifications
                       </Typography>
-                      <LightTooltip title={"Add Classifications"}>
-                        <IconButton
-                          component="label"
-                          role={undefined}
-                          tabIndex={-1}
-                          size="small"
-                          color="primary"
-                          onClick={() => {
-                            setOpenAddTagModal(true);
-                          }}
-                        >
-                          <AddCircleOutlineIcon
-                            className="mr-0"
-                            fontSize="small"
-                          />{" "}
-                        </IconButton>
-                      </LightTooltip>
+                      {!loading && data?.status !== EntityStatus.DELETED && (
+                        <LightTooltip title={"Add Classifications"}>
+                          <IconButton
+                            component="label"
+                            role={undefined}
+                            tabIndex={-1}
+                            size="small"
+                            color="primary"
+                            onClick={() => {
+                              setOpenAddTagModal(true);
+                            }}
+                          >
+                            <AddCircleOutlineIcon
+                              className="mr-0"
+                              fontSize="small"
+                            />{" "}
+                          </IconButton>
+                        </LightTooltip>
+                      )}
                     </Stack>
                     <Stack
                       data-cy="tagListTerm"
@@ -383,28 +386,30 @@ const DetailPageAttribute = ({
                       >
                         Terms
                       </Typography>
-                      <LightTooltip title={"Add Term"}>
-                        <IconButton
-                          component="label"
-                          role={undefined}
-                          tabIndex={-1}
-                          size="small"
-                          color="primary"
-                          onClick={() => {
-                            if (!hasAnyGlossaryTerms) {
-                              toast.dismiss();
-                              toast.info("There are no available terms");
-                              return;
-                            }
-                            setOpenAddTermModal(true);
-                          }}
-                        >
-                          <AddCircleOutlineIcon
-                            className="mr-0"
-                            fontSize="small"
-                          />{" "}
-                        </IconButton>
-                      </LightTooltip>
+                      {!loading && data?.status !== EntityStatus.DELETED && (
+                        <LightTooltip title={"Add Term"}>
+                          <IconButton
+                            component="label"
+                            role={undefined}
+                            tabIndex={-1}
+                            size="small"
+                            color="primary"
+                            onClick={() => {
+                              if (!hasAnyGlossaryTerms) {
+                                toast.dismiss();
+                                toast.info("There are no available terms");
+                                return;
+                              }
+                              setOpenAddTermModal(true);
+                            }}
+                          >
+                            <AddCircleOutlineIcon
+                              className="mr-0"
+                              fontSize="small"
+                            />{" "}
+                          </IconButton>
+                        </LightTooltip>
+                      )}
                     </Stack>
                     <Stack
                       data-cy="termList"
