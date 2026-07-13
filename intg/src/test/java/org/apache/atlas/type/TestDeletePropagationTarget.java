@@ -28,7 +28,6 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class TestDeletePropagationTarget {
-
     @Test
     public void testConstructorAndGetters() {
         AtlasAttribute relAttr = mock(AtlasAttribute.class);
