@@ -47,7 +47,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 public class EntityDeletePropagationHandlerTest {
-
     @Mock private AtlasTypeRegistry typeRegistry;
 
     private EntityDeletePropagationHandler handler;
