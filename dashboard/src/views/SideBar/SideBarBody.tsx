@@ -21,13 +21,13 @@ import {
   useCallback,
   useEffect,
   useState,
-  ChangeEvent,
   KeyboardEvent,
   lazy,
   useRef,
   useMemo,
 } from "react";
 import TreeSkeletonLoader from "@components/TreeSkeletonLoader";
+import { SidebarSearchInput } from "@components/SidebarSearchInput";
 import atlasLogo from "/img/atlas_logo.svg";
 import apacheAtlasLogo from "/img/apache-atlas-logo.svg";
 import {
@@ -42,9 +42,7 @@ import Drawer from "@mui/material/Drawer";
 import CssBaseline from "@mui/material/CssBaseline";
 import { IconButton } from "@components/muiComponents";
 
-import ClearIcon from "@mui/icons-material/Clear";
-import { getVersion } from "@api/apiMethods/headerApiMethods";
-import { InputBase, Paper, Stack, Box, Popover, Typography, Tooltip, CircularProgress } from "@mui/material";
+import { Paper, Stack, Box, Popover, Typography, Tooltip, CircularProgress } from "@mui/material";
 import { globalSessionData, PathAssociateWithModule } from "@utils/Enum";
 import KeyboardDoubleArrowLeftIcon from "@mui/icons-material/KeyboardDoubleArrowLeft";
 import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight";
@@ -103,6 +101,7 @@ const DrawerHeader = styled("div")(({ theme }) => ({
   marginBottom: "1rem",
 }));
 
+
 const SideBarBody = (props: {
   handleOpenModal: any;
   handleOpenAboutModal: any;
@@ -143,6 +142,7 @@ const SideBarBody = (props: {
   const [popoverAnchor, setPopoverAnchor] = useState<HTMLButtonElement | null>(null);
   const [activePopover, setActivePopover] = useState<string | null>(null);
   const [popoverMaxHeight, setPopoverMaxHeight] = useState<string>('calc(100vh - 100px)');
+  const [isBottomHalf, setIsBottomHalf] = useState<boolean>(false);
 
   const handlePopoverOpen = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
     setPopoverAnchor(event.currentTarget);
@@ -150,9 +150,16 @@ const SideBarBody = (props: {
 
     // Calculate remaining screen height from the anchor to the bottom
     const rect = event.currentTarget.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.top - 24; // 24px margin from bottom
-    // Give it a minimum sensible height of 300px just in case, otherwise use available space
-    setPopoverMaxHeight(`${Math.max(300, spaceBelow)}px`);
+    const spaceBelow = window.innerHeight - rect.top - 24;
+    const isBottom = spaceBelow < 350;
+    setIsBottomHalf(isBottom);
+
+    if (isBottom) {
+      const spaceAbove = rect.bottom - 24;
+      setPopoverMaxHeight(`${Math.max(250, spaceAbove)}px`);
+    } else {
+      setPopoverMaxHeight(`${Math.max(250, spaceBelow)}px`);
+    }
   };
 
   const handlePopoverClose = () => {
@@ -163,31 +170,8 @@ const SideBarBody = (props: {
 
 
   const renderPopoverSearch = () => (
-    <div style={{ padding: "8px", borderBottom: "1px solid rgba(255,255,255,0.1)", marginBottom: "4px" }}>
-      <Paper className="sidebar-searchbar" sx={{ width: "100%", display: "flex", alignItems: "center", paddingLeft: "8px" }}>
-        <InputBase
-          fullWidth
-          sx={{ color: "rgba(0, 0, 0, 0.7)" }}
-          placeholder="Search"
-          value={searchTerm}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-          endAdornment={
-            <Stack direction="row" alignItems="center" gap="4px">
-              {searchTerm.length > 0 && (
-                <IconButton
-                  size="small"
-                  onClick={() => setSearchTerm("")}
-                  edge="end"
-                  sx={{ padding: "4px" }}
-                >
-                  <ClearIcon fontSize="small" sx={{ color: "rgba(0, 0, 0, 0.4)" }} />
-                </IconButton>
-              )}
-              <img src="/img/sidebar-icons/icon-search.svg" style={{ width: "16px", height: "16px", filter: "brightness(0.4)", opacity: 1, cursor: "pointer", marginLeft: "4px" }} alt="Search" />
-            </Stack>
-          }
-        />
-      </Paper>
+    <div className="sidebar-popover-search">
+      <SidebarSearchInput searchTerm={searchTerm} onChange={setSearchTerm} />
     </div>
   );
 
@@ -429,16 +413,26 @@ const SideBarBody = (props: {
                 <Box sx={{ display: "flex", justifyContent: "center", borderLeft: "4px solid transparent", borderRight: "4px solid transparent", background: "transparent" }}>
                   <Tooltip title="Search" placement="right">
                     <IconButton onClick={() => setOpen(true)} sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.1)' } }}>
-                      <img src="/img/sidebar-icons/icon-search.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="search" />
+                      <img src="/img/sidebar-icons/icon-search.svg" className="sidebar-module-icon" style={{ opacity: 1 }} alt="search" />
                     </IconButton>
                   </Tooltip>
                 </Box>
 
                 {modules.filter(m => m.isVisible).map(m => (
-                  <Box key={m.id} sx={{ display: "flex", justifyContent: "center", borderLeft: m.isActive ? "4px solid #2ccebb" : "4px solid transparent", borderRight: "4px solid transparent", background: m.isActive ? "rgba(255, 255, 255, 0.08)" : "transparent" }}>
+                  <Box
+                    key={m.id}
+                    className={m.isActive ? "sidebar-icon-active" : ""}
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      borderLeft: "4px solid transparent",
+                      borderRight: "4px solid transparent",
+                      background: "transparent"
+                    }}
+                  >
                     <Tooltip title={m.title} placement="right">
                       <IconButton onClick={(e) => handlePopoverOpen(e, m.id)} sx={{ color: m.isActive ? "white" : "rgba(255, 255, 255, 0.6)", '&:hover': { color: 'white', background: 'rgba(255, 255, 255, 0.1)' } }}>
-                        <img src={m.iconUrl} style={{ width: "20px", height: "20px", opacity: 1 }} alt={m.title.toLowerCase()} />
+                        <img src={m.iconUrl} className="sidebar-module-icon" style={{ opacity: 1 }} alt={m.title.toLowerCase()} />
                       </IconButton>
                     </Tooltip>
                   </Box>
@@ -446,13 +440,48 @@ const SideBarBody = (props: {
               </Stack>
 
               <Popover
-                marginThreshold={64}
+                marginThreshold={16}
                 open={Boolean(activePopover) && activePopover !== ""}
                 anchorEl={popoverAnchor}
                 onClose={handlePopoverClose}
-                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                PaperProps={{ sx: { ml: 1, width: 320, maxHeight: popoverMaxHeight, display: 'flex', flexDirection: 'column', backgroundColor: '#034858', borderRadius: 1, boxShadow: 6, pb: 2, overflow: 'visible', '&::before': { content: '""', display: 'block', position: 'absolute', top: 14, left: -8, width: 0, height: 0, borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderRight: '8px solid #034858' } } }}
+                anchorOrigin={{
+                  vertical: isBottomHalf ? 'bottom' : 'top',
+                  horizontal: 'right'
+                }}
+                transformOrigin={{
+                  vertical: isBottomHalf ? 'bottom' : 'top',
+                  horizontal: 'left'
+                }}
+                PaperProps={{
+                  sx: {
+                    ml: 2,
+                    width: 320,
+                    maxHeight: popoverMaxHeight,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    backgroundColor: '#034858',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: 1,
+                    boxShadow: 6,
+                    pb: 2,
+                    overflow: 'visible',
+                    '&::before': {
+                      content: '""',
+                      display: 'block',
+                      position: 'absolute',
+                      top: isBottomHalf ? 'auto' : 16,
+                      bottom: isBottomHalf ? 16 : 'auto',
+                      left: -6,
+                      width: 10,
+                      height: 10,
+                      backgroundColor: '#034858',
+                      borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
+                      transform: 'rotate(45deg)',
+                      zIndex: 1
+                    }
+                  }
+                }}
               >
                 {renderPopoverSearch()}
                 <div style={{ flex: 1, overflow: 'auto' }}>
@@ -497,40 +526,11 @@ const SideBarBody = (props: {
                     data-cy="atlas-logo"
                   />
                 </span>
-                <Paper
-                  sx={{
-                    width: "100%",
-                    paddingLeft: "8px"
-                  }}
-                  className="sidebar-searchbar"
-                >
-                  <InputBase
-                    fullWidth
-                    sx={{ color: "rgba(0, 0, 0, 0.7)" }}
-                    placeholder="Search"
-                    inputProps={{ "aria-label": "search" }}
-                    value={searchTerm}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      setSearchTerm(e.target.value);
-                    }}
-                    data-cy="searchNode"
-                    endAdornment={
-                      <Stack direction="row" alignItems="center" gap="4px">
-                        {searchTerm.length > 0 && (
-                          <IconButton
-                            size="small"
-                            onClick={() => setSearchTerm("")}
-                            edge="end"
-                            sx={{ padding: "4px" }}
-                          >
-                            <ClearIcon fontSize="small" sx={{ color: "rgba(0, 0, 0, 0.4)" }} />
-                          </IconButton>
-                        )}
-                        <img src="/img/sidebar-icons/icon-search.svg" style={{ width: "16px", height: "16px", filter: "brightness(0.4)", opacity: 1, cursor: "pointer", marginLeft: "4px" }} alt="Search" />
-                      </Stack>
-                    }
-                  />
-                </Paper>
+                <SidebarSearchInput
+                  searchTerm={searchTerm}
+                  onChange={setSearchTerm}
+                  dataCy="searchNode"
+                />
               </Stack>
             </DrawerHeader>
           )}
