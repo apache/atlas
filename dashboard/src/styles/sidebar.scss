@@ -238,3 +238,19 @@ button.MuiButtonBase-root.MuiIconButton-root.MuiIconButton-sizeSmall.tree-item-m
 .sidebar-menu-item {
   padding: 4px 10px !important;
 }
+
+.sidebar-module-icon {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.sidebar-popover-search {
+  padding: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 4px;
+}
+
+.sidebar-icon-active {
+  border-left: 4px solid #2ccebb !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
