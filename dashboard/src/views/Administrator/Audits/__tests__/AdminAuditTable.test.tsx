@@ -197,8 +197,8 @@ jest.mock('@mui/material', () => {
 });
 
 jest.mock('@components/muiComponents', () => ({
-  CustomButton: ({ children, onClick, startIcon, ...props }: any) => (
-    <button onClick={onClick} data-testid="custom-button" {...props}>
+  CustomButton: ({ children, onClick, disabled, startIcon, ...props }: any) => (
+    <button onClick={onClick} disabled={disabled} data-testid="custom-button" {...props}>
       {startIcon && <span data-testid="button-icon">{startIcon}</span>}
       {children}
     </button>
@@ -744,10 +744,10 @@ describe('AdminAuditTable Component', () => {
 
     it('should enable filter button when auditData is empty but filters are active', async () => {
       mockGetAuditData.mockResolvedValue({ data: [] });
-      // We simulate queryApiObj having active filters by making mockIsEmpty return false on the second call
+      // We simulate queryApiObj having active filters by making mockIsEmpty return false for objects
       mockIsEmpty.mockImplementation((val) => {
         if (Array.isArray(val)) return val.length === 0; // auditData
-        if (typeof val === 'object' && Object.keys(val).length > 0) return false; // active queryApiObj
+        if (typeof val === 'object' && val !== null) return false; // active queryApiObj
         return true;
       });
 
@@ -757,9 +757,24 @@ describe('AdminAuditTable Component', () => {
         expect(screen.getByTestId('table-data-count')).toHaveTextContent('0');
       }, { timeout: 5000 });
 
-      // Because mockIsEmpty returns false for queryApiObj (or we just assert on the button state directly if we set queryApiObj),
-      // we'd need to mock it properly. Since we can't easily set queryApiObj in this render test without interacting, 
-      // the test 'should disable filter button...' is the most important one.
+      const filterBtn = screen.getByText('Filters').closest('button');
+      expect(filterBtn).not.toBeDisabled();
+    });
+
+    it('renders Filters inside TableLayout customLeftButton slot', async () => {
+      render(<AdminAuditTable />);
+      await waitFor(() => {
+        expect(screen.getByTestId('custom-left-button')).toBeInTheDocument();
+        expect(screen.getByText('Filters')).toBeInTheDocument();
+      });
+    });
+
+    it('opens AuditFilters popover when Filters is enabled and clicked', async () => {
+      mockGetAuditData.mockResolvedValue({ data: mockAuditData });
+      render(<AdminAuditTable />);
+      await waitFor(() => expect(screen.getByText('Filters').closest('button')).not.toBeDisabled());
+      fireEvent.click(screen.getByText('Filters'));
+      expect(screen.getByTestId('audit-filters')).toBeInTheDocument();
     });
   });
 
