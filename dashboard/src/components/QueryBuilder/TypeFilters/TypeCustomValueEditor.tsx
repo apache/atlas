@@ -113,7 +113,7 @@ export const TypeCustomValueEditor = (props: ValueEditorProps) => {
         }}
         renderOption={(props, option) => (
           <li {...props} title={option} className={props.className}>
-             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", width: "100%" }}>
+             <span className="autocomplete-option-label">
                 {option}
              </span>
           </li>
@@ -128,7 +128,7 @@ export const TypeCustomValueEditor = (props: ValueEditorProps) => {
               ...params.inputProps,
               title: selectedValue,
               style: {
-                ...params.inputProps.style,
+                ...(params.inputProps?.style ?? {}),
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
                 overflow: "hidden"
@@ -161,7 +161,7 @@ export const TypeCustomValueEditor = (props: ValueEditorProps) => {
         }}
         renderOption={(props, option) => (
           <li {...props} title={option} className={props.className}>
-             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", width: "100%" }}>
+             <span className="autocomplete-option-label">
                 {option}
              </span>
           </li>
@@ -176,7 +176,7 @@ export const TypeCustomValueEditor = (props: ValueEditorProps) => {
               ...params.inputProps,
               title: selectedTypenameValue,
               style: {
-                ...params.inputProps.style,
+                ...(params.inputProps?.style ?? {}),
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
                 overflow: "hidden"

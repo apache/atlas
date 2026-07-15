@@ -400,7 +400,7 @@ const ClassificationForm = ({
                                   title={option.label}
                                   className={props.className}
                                 >
-                                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", width: "100%" }}>
+                                  <span className="autocomplete-option-label">
                                     {option.label}
                                   </span>
                                 </li>

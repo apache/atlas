@@ -57,10 +57,10 @@ export const TagCustomValueEditor = (props: ValueEditorProps) => {
 
   let tagOptions = !isEmpty(tagData)
     ? tagData
-        .map((obj: { name: any }) => {
-          return obj.name;
-        })
-        .sort()
+      .map((obj: { name: any }) => {
+        return obj.name;
+      })
+      .sort()
     : [];
 
   if (props.operator === "is_null" || props.operator === "not_null") {
@@ -88,9 +88,9 @@ export const TagCustomValueEditor = (props: ValueEditorProps) => {
         }}
         renderOption={(props, option) => (
           <li {...props} title={option} className={props.className}>
-             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", width: "100%" }}>
-                {option}
-             </span>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", width: "100%" }}>
+              {option}
+            </span>
           </li>
         )}
         renderInput={(params) => (
@@ -102,7 +102,7 @@ export const TagCustomValueEditor = (props: ValueEditorProps) => {
               ...params.inputProps,
               title: selectedTypenameValue,
               style: {
-                ...params.inputProps.style,
+                ...(params.inputProps?.style ?? {}),
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
                 overflow: "hidden"
