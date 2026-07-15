@@ -266,6 +266,54 @@ describe('EntityForm - 100% Coverage', () => {
 			expect(screen.getByTestId('modal-title')).toHaveTextContent('Create entity');
 		});
 
+		test('opens in Create mode when isAdd=true even if URL has guid', async () => {
+			mockGuid = 'detail-page-guid-123';
+			const store = createStore(mockEntityData, mockSessionData, mockTypeHeaderData);
+			render(
+				<Provider store={store}>
+					<MemoryRouter initialEntries={['/detailPage/detail-page-guid-123']}>
+						<EntityForm open={true} onClose={jest.fn()} isAdd={true} />
+					</MemoryRouter>
+				</Provider>
+			);
+			expect(screen.getByTestId('modal-title')).toHaveTextContent('Create entity');
+			expect(mockGetEntity).not.toHaveBeenCalled();
+		});
+
+		test('opens in Edit mode when isAdd=false and URL has guid (ensures edit behavior is unchanged)', async () => {
+			mockGuid = 'detail-page-guid-123';
+			
+			// Mock successful API response for Edit mode
+			mockGetEntity.mockResolvedValue({
+				data: {
+					entity: {
+						guid: 'detail-page-guid-123',
+						typeName: 'DataSet',
+						attributes: { name: 'Test Entity' }
+					}
+				}
+			});
+			mockGetTypedef.mockResolvedValue({
+				data: { attributeDefs: [], relationshipAttributeDefs: [] }
+			});
+
+			const store = createStore(mockEntityData, mockSessionData, mockTypeHeaderData);
+			render(
+				<Provider store={store}>
+					<MemoryRouter initialEntries={['/detailPage/detail-page-guid-123']}>
+						<EntityForm open={true} onClose={jest.fn()} isAdd={false} />
+					</MemoryRouter>
+				</Provider>
+			);
+
+			await waitFor(() => {
+				expect(mockGetEntity).toHaveBeenCalledWith('detail-page-guid-123', 'GET', {});
+			});
+			await waitFor(() => {
+				expect(screen.getByTestId('modal-title')).toHaveTextContent('Edit entity');
+			});
+		});
+
 		test('does not render when open is false', () => {
 			const store = createStore(mockEntityData, mockSessionData, mockTypeHeaderData);
 			render(
