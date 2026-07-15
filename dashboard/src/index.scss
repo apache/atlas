@@ -129,9 +129,6 @@ root {
   color: #37bb9b;
 }
 
-.text-grey {
-  color: #686868;
-}
 
 .text-blue {
   color: #1976d2;
@@ -333,12 +330,12 @@ textarea::placeholder {
   font-weight: 700 !important;
 }
 
-.text-left {
-  text-align: left !important;
-}
-
-.fw-600 {
-  font-weight: 600 !important;
+.autocomplete-option-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  width: 100%;
 }
 
 .min-w-0 {
