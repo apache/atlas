@@ -78,15 +78,18 @@ export function reducer(state: State, action: Action): State {
 
 const EntityForm = ({
   open,
-  onClose
+  onClose,
+  isAdd = false
 }: {
   open: boolean;
   onClose: () => void;
+  isAdd?: boolean;
 }) => {
   const key = "atlas.ui.editable.entity.types";
   const dispatchApi = useAppDispatch();
   const navigate = useNavigate();
-  const { guid }: any = useParams();
+  const { guid: urlGuid }: any = useParams();
+  const guid = isAdd ? undefined : urlGuid;
   const [_searchParams, setSearchParams] = useSearchParams();
 
   const { entityData = {} }: any = useAppSelector((state: any) => state.entity);

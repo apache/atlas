@@ -29,9 +29,9 @@ jest.mock('react-router-dom', () => ({
 
 jest.mock('@views/Entity/EntityForm', () => ({
 	__esModule: true,
-	default: ({ open, onClose }: { open: boolean; onClose: () => void }) =>
+	default: ({ open, onClose, isAdd }: { open: boolean; onClose: () => void; isAdd?: boolean }) =>
 		open ? (
-			<div data-testid="entity-form">
+			<div data-testid="entity-form" data-isadd={isAdd ? 'true' : 'false'}>
 				<button type="button" onClick={onClose}>
 					Close entity
 				</button>
@@ -84,6 +84,7 @@ describe('CreateDropdown (header Create menu)', () => {
 
 		fireEvent.click(screen.getByText('Entity'))
 		expect(await screen.findByTestId('entity-form')).toBeInTheDocument()
+		expect(screen.getByTestId('entity-form')).toHaveAttribute('data-isadd', 'true')
 
 		fireEvent.click(screen.getByText('Close entity'))
 		await waitFor(() => {
