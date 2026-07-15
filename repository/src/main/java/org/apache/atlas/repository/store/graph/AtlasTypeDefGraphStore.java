@@ -423,6 +423,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         }
 
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
+        validateClassificationDefsHaveNoSubTypes(typesDef);
         tryTypeCreation(typesDef, ttr);
 
         AtlasTypesDef ret = addToGraphStore(typesDef, ttr);
@@ -460,7 +461,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         }
 
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
-
+        validateClassificationDefsHaveNoSubTypes(typesDef);
         // Translate any NOT FOUND errors to BAD REQUEST
         try {
             ttr.updateTypes(typesDef);
@@ -491,6 +492,17 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         }
 
         return ret;
+    }
+
+    private void validateClassificationDefsHaveNoSubTypes(AtlasTypesDef typesDef) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(typesDef.getClassificationDefs())) {
+            for (AtlasClassificationDef classificationDef : typesDef.getClassificationDefs()) {
+                if (CollectionUtils.isNotEmpty(classificationDef.getSubTypes())) {
+                    LOG.info("ClassificationDef {}: subTypes is a derived field and cannot be specified during create/update. To establish a parent-child relationship, set superTypes on the child instead.", classificationDef.getName());
+                    throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATIONDEF_SUBTYPES_NOT_ALLOWED, classificationDef.getName());
+                }
+            }
+        }
     }
 
     @Override
