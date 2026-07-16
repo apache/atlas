@@ -129,7 +129,8 @@ jest.mock('@components/Table/TableLayout', () => ({
     tableFilters,
     expandRow,
     auditTableDetails,
-    queryBuilder
+    queryBuilder,
+    customLeftButton
   }: any) => {
     capturedFetchData = fetchData;
     capturedExpandRow = expandRow;
@@ -144,6 +145,7 @@ jest.mock('@components/Table/TableLayout', () => ({
 
     return (
       <div data-testid="table-layout">
+        <div data-testid="custom-left-button">{customLeftButton}</div>
         <div data-testid="table-fetching">{isFetching ? 'loading' : 'loaded'}</div>
         <div data-testid="table-data-count">{data?.length || 0}</div>
         <div data-testid="table-columns-count">{columns?.length || 0}</div>
@@ -195,8 +197,8 @@ jest.mock('@mui/material', () => {
 });
 
 jest.mock('@components/muiComponents', () => ({
-  CustomButton: ({ children, onClick, startIcon, ...props }: any) => (
-    <button onClick={onClick} data-testid="custom-button" {...props}>
+  CustomButton: ({ children, onClick, disabled, startIcon, ...props }: any) => (
+    <button onClick={onClick} disabled={disabled} data-testid="custom-button" {...props}>
       {startIcon && <span data-testid="button-icon">{startIcon}</span>}
       {children}
     </button>
@@ -281,12 +283,12 @@ describe('AdminAuditTable Component', () => {
       }, { timeout: 5000 });
     });
 
-    it('should not render filter button when loading', () => {
+    it('should disable filter button when loading', () => {
       render(<AdminAuditTable />);
 
-      // Initially loading, button should not be visible
-      const buttons = screen.queryAllByTestId('custom-button');
-      expect(buttons.length).toBe(0);
+      // Initially loading, button should be disabled
+      const button = screen.getByTestId('custom-button');
+      expect(button).toBeDisabled();
     });
   });
 
@@ -709,7 +711,7 @@ describe('AdminAuditTable Component', () => {
   });
 
   describe('Filter Button Visibility', () => {
-    it('should hide filter button when auditData is not empty', async () => {
+    it('should render filter button when auditData is not empty', async () => {
       mockGetAuditData.mockResolvedValue({ data: mockAuditData });
 
       render(<AdminAuditTable />);
@@ -718,23 +720,61 @@ describe('AdminAuditTable Component', () => {
         expect(screen.getByTestId('table-data-count')).toHaveTextContent('2');
       }, { timeout: 5000 });
 
-      // Button container should have height 0 when data is present
       const buttons = screen.queryAllByTestId('custom-button');
       expect(buttons.length).toBeGreaterThan(0);
+      
+      // Ensure the filter button is NOT disabled when data is present (and not loading)
+      const filterBtn = screen.getByText('Filters').closest('button');
+      expect(filterBtn).not.toHaveAttribute('disabled');
     });
 
-    it('should show filter button when auditData is empty', async () => {
+    it('should disable filter button when auditData is empty and no active filters', async () => {
       mockGetAuditData.mockResolvedValue({ data: [] });
+      mockIsEmpty.mockReturnValue(true); // both auditData and queryApiObj are empty
 
       render(<AdminAuditTable />);
 
       await waitFor(() => {
-        expect(mockGetAuditData).toHaveBeenCalled();
+        expect(screen.getByTestId('table-data-count')).toHaveTextContent('0');
       }, { timeout: 5000 });
+
+      const filterBtn = screen.getByText('Filters').closest('button');
+      expect(filterBtn).toHaveAttribute('disabled');
+    });
+
+    it('should enable filter button when auditData is empty but filters are active', async () => {
+      mockGetAuditData.mockResolvedValue({ data: [] });
+      // We simulate queryApiObj having active filters by making mockIsEmpty return false for objects
+      mockIsEmpty.mockImplementation((val) => {
+        if (Array.isArray(val)) return val.length === 0; // auditData
+        if (typeof val === 'object' && val !== null) return false; // active queryApiObj
+        return true;
+      });
+
+      render(<AdminAuditTable />);
 
       await waitFor(() => {
         expect(screen.getByTestId('table-data-count')).toHaveTextContent('0');
       }, { timeout: 5000 });
+
+      const filterBtn = screen.getByText('Filters').closest('button');
+      expect(filterBtn).not.toBeDisabled();
+    });
+
+    it('renders Filters inside TableLayout customLeftButton slot', async () => {
+      render(<AdminAuditTable />);
+      await waitFor(() => {
+        expect(screen.getByTestId('custom-left-button')).toBeInTheDocument();
+        expect(screen.getByText('Filters')).toBeInTheDocument();
+      });
+    });
+
+    it('opens AuditFilters popover when Filters is enabled and clicked', async () => {
+      mockGetAuditData.mockResolvedValue({ data: mockAuditData });
+      render(<AdminAuditTable />);
+      await waitFor(() => expect(screen.getByText('Filters').closest('button')).not.toBeDisabled());
+      fireEvent.click(screen.getByText('Filters'));
+      expect(screen.getByTestId('audit-filters')).toBeInTheDocument();
     });
   });
 
