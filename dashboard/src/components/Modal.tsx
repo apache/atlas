@@ -24,7 +24,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { CloseIcon, CustomButton } from "./muiComponents";
+import { CloseIcon, CustomButton, LightTooltip } from "./muiComponents";
 import { isEmpty } from "../utils/Utils";
 
 const BootstrapDialog = styled(Dialog)(() => ({
@@ -118,14 +118,26 @@ export const CustomModal: React.FC<CustomModalProps> = ({
               sx={{
                 padding: "0",
                 display: "flex",
-                alignItems: "center"
+                alignItems: "center",
+                flex: 1,
+                minWidth: 0
               }}
             >
-              <Stack direction="row" alignItems="center" gap="0.5rem">
+              <Stack direction="row" alignItems="center" gap="0.5rem" sx={{ flex: 1, minWidth: 0 }}>
                 {titleIcon != undefined && titleIcon}
-                <Typography className={"modal-title"} sx={{ color: "#333" }}>
-                  {title}
-                </Typography>
+                <LightTooltip title={title}>
+                  <Typography
+                    className={"modal-title"}
+                    sx={{
+                      color: "#333",
+                      display: "block",
+                      flex: 1,
+                      minWidth: 0
+                    }}
+                   noWrap>
+                    {title}
+                  </Typography>
+                </LightTooltip>
                 {postTitleIcon != undefined && postTitleIcon}
               </Stack>
             </DialogTitle>
@@ -201,11 +213,11 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                       }),
                       ...(primaryDisabled &&
                         !isLoading && {
-                          "&.Mui-disabled": {
-                            pointerEvents: "unset",
-                            cursor: "not-allowed"
-                          }
-                        })
+                        "&.Mui-disabled": {
+                          pointerEvents: "unset",
+                          cursor: "not-allowed"
+                        }
+                      })
                     }}
                     startIcon={
                       isLoading ? (

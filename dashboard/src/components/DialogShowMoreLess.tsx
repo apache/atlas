@@ -608,8 +608,14 @@ const DialogShowMoreLess = ({
             </Typography>
           ) : (
             <Typography fontSize={15}>
-              Remove: <b>{currentValue.selectedValue}</b> assignment from{" "}
-              <b>{currentValue.assetName}</b> ?
+              Remove:{" "}
+              <b
+                title={currentValue.selectedValue}
+                className="text-truncate-inline"
+              >
+                {currentValue.selectedValue}
+              </b>{" "}
+              assignment from <b>{currentValue.assetName}</b> ?
             </Typography>
           )}
         </CustomModal>

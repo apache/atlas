@@ -48,8 +48,8 @@ const RelationshipFilters = ({
   let attrTagObj =
     !isEmpty(relationshipDefs) && !isEmpty(relationshipParams)
       ? relationshipDefs.find((relationship: { name: string }) => {
-          return relationship.name == relationshipParams;
-        })
+        return relationship.name == relationshipParams;
+      })
       : {};
 
   if (attrTagObj) {
@@ -107,8 +107,8 @@ const RelationshipFilters = ({
 
   return (
     <Accordion defaultExpanded>
-      <AccordionSummary aria-controls="panel1-content" id="panel1-header">
-        <Typography className="text-color-green" fontWeight="600">
+      <AccordionSummary aria-controls="panel1-content" id="panel1-header" sx={{ '& .MuiAccordionSummary-content': { overflow: 'hidden' } }}>
+        <Typography className="text-color-green w-100" fontWeight="600" noWrap title={`Relationship: ${relationshipParams}`}>
           Relationship: {relationshipParams}
         </Typography>
       </AccordionSummary>
