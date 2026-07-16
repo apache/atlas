@@ -147,6 +147,11 @@ describe('AdministratorLayout Component', () => {
 		);
 	};
 
+	const waitForLazyTab = (testId: string) =>
+		waitFor(() => {
+			expect(screen.getByTestId(testId)).toBeInTheDocument();
+		});
+
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockLocation.pathname = '/administrator';
@@ -167,11 +172,11 @@ describe('AdministratorLayout Component', () => {
 	});
 
 	describe('Component Rendering', () => {
-		it('should render AdministratorLayout component', () => {
+		it('should render AdministratorLayout component', async () => {
 			renderComponent();
 			
 			expect(screen.getByTestId('item')).toBeInTheDocument();
-			expect(screen.getByTestId('business-metadata-tab')).toBeInTheDocument();
+			await waitForLazyTab('business-metadata-tab');
 		});
 
 		it('should render all tabs', () => {
@@ -183,24 +188,24 @@ describe('AdministratorLayout Component', () => {
 			expect(screen.getByTestId('link-tab-Type System')).toBeInTheDocument();
 		});
 
-		it('should render BusinessMetadataTab by default when no tabActive', () => {
+		it('should render BusinessMetadataTab by default when no tabActive', async () => {
 			renderComponent();
 			
-			expect(screen.getByTestId('business-metadata-tab')).toBeInTheDocument();
+			await waitForLazyTab('business-metadata-tab');
 			expect(screen.queryByTestId('enumerations-tab')).not.toBeInTheDocument();
 			expect(screen.queryByTestId('audit-table')).not.toBeInTheDocument();
 		});
 
-		it('should render BusinessMetadataTab when tabActive is undefined', () => {
+		it('should render BusinessMetadataTab when tabActive is undefined', async () => {
 			renderComponent(['/administrator'], '');
 			
-			expect(screen.getByTestId('business-metadata-tab')).toBeInTheDocument();
+			await waitForLazyTab('business-metadata-tab');
 		});
 
-		it('should render BusinessMetadataTab when tabActive is businessMetadata', () => {
+		it('should render BusinessMetadataTab when tabActive is businessMetadata', async () => {
 			renderComponent(['/administrator'], '?tabActive=businessMetadata');
 			
-			expect(screen.getByTestId('business-metadata-tab')).toBeInTheDocument();
+			await waitForLazyTab('business-metadata-tab');
 		});
 	});
 
@@ -441,21 +446,21 @@ describe('AdministratorLayout Component', () => {
 	});
 
 	describe('Tab Content Rendering', () => {
-		it('should render Enumerations tab when tabActive is enum', () => {
+		it('should render Enumerations tab when tabActive is enum', async () => {
 			renderComponent(['/administrator'], '?tabActive=enum');
 			
-			expect(screen.getByTestId('enumerations-tab')).toBeInTheDocument();
+			await waitForLazyTab('enumerations-tab');
 			expect(screen.queryByTestId('business-metadata-tab')).not.toBeInTheDocument();
 		});
 
-		it('should render AdminAuditTable when tabActive is audit', () => {
+		it('should render AdminAuditTable when tabActive is audit', async () => {
 			renderComponent(['/administrator'], '?tabActive=audit');
 			
-			expect(screen.getByTestId('audit-table')).toBeInTheDocument();
+			await waitForLazyTab('audit-table');
 			expect(screen.queryByTestId('business-metadata-tab')).not.toBeInTheDocument();
 		});
 
-		it('should render TypeSystemTreeView when tabActive is typeSystem and entityDefs exist', () => {
+		it('should render TypeSystemTreeView when tabActive is typeSystem and entityDefs exist', async () => {
 			mockUseAppSelector.mockImplementation((selector: any) => {
 				const state = {
 					entity: {
@@ -469,7 +474,7 @@ describe('AdministratorLayout Component', () => {
 			
 			renderComponent(['/administrator'], '?tabActive=typeSystem');
 			
-			expect(screen.getByTestId('type-system-tree-view')).toBeInTheDocument();
+			await waitForLazyTab('type-system-tree-view');
 			expect(screen.getByText(/1 entities/)).toBeInTheDocument();
 		});
 
@@ -520,9 +525,11 @@ describe('AdministratorLayout Component', () => {
 	});
 
 	describe('Form State Management', () => {
-		it('should render BusinessMetaDataForm when form is true', () => {
+		it('should render BusinessMetaDataForm when form is true', async () => {
 			renderComponent();
 			
+			await waitForLazyTab('business-metadata-tab');
+
 			// Click setForm button to trigger form display
 			const setFormBtn = screen.getByTestId('bm-set-form');
 			fireEvent.click(setFormBtn);
@@ -531,11 +538,10 @@ describe('AdministratorLayout Component', () => {
 			// The actual form rendering would require state management
 		});
 
-		it('should pass setForm and setBMAttribute to BusinessMetadataTab', () => {
+		it('should pass setForm and setBMAttribute to BusinessMetadataTab', async () => {
 			renderComponent();
 			
-			const bmTab = screen.getByTestId('business-metadata-tab');
-			expect(bmTab).toBeInTheDocument();
+			await waitForLazyTab('business-metadata-tab');
 			
 			// Verify buttons exist (which use the props)
 			expect(screen.getByTestId('bm-set-form')).toBeInTheDocument();
@@ -544,18 +550,18 @@ describe('AdministratorLayout Component', () => {
 	});
 
 	describe('Initial Tab Value', () => {
-		it('should set initial tab value to 0 when tabActive is empty', () => {
+		it('should set initial tab value to 0 when tabActive is empty', async () => {
 			renderComponent(['/administrator'], '');
 			
 			// Should render business metadata tab (index 0)
-			expect(screen.getByTestId('business-metadata-tab')).toBeInTheDocument();
+			await waitForLazyTab('business-metadata-tab');
 		});
 
-		it('should set initial tab value based on tabActive query param', () => {
+		it('should set initial tab value based on tabActive query param', async () => {
 			renderComponent(['/administrator'], '?tabActive=enum');
 			
 			// Should render enumerations tab
-			expect(screen.getByTestId('enumerations-tab')).toBeInTheDocument();
+			await waitForLazyTab('enumerations-tab');
 		});
 
 		it('should set initial tab value to -1 when tabActive is not found in allTabs', () => {
@@ -586,7 +592,7 @@ describe('AdministratorLayout Component', () => {
 	});
 
 	describe('Edge Cases', () => {
-		it('should handle empty entityData', () => {
+		it('should handle empty entityData', async () => {
 			mockUseAppSelector.mockImplementation((selector: any) => {
 				const state = {
 					entity: {
@@ -598,10 +604,10 @@ describe('AdministratorLayout Component', () => {
 			
 			renderComponent();
 			
-			expect(screen.getByTestId('business-metadata-tab')).toBeInTheDocument();
+			await waitForLazyTab('business-metadata-tab');
 		});
 
-		it('should handle undefined entityData (line 38)', () => {
+		it('should handle undefined entityData (line 38)', async () => {
 			mockUseAppSelector.mockImplementation((selector: any) => {
 				const state = {
 					entity: {
@@ -613,10 +619,10 @@ describe('AdministratorLayout Component', () => {
 			
 			renderComponent();
 			
-			expect(screen.getByTestId('business-metadata-tab')).toBeInTheDocument();
+			await waitForLazyTab('business-metadata-tab');
 		});
 
-		it('should handle undefined entityDefs (line 38)', () => {
+		it('should handle undefined entityDefs (line 38)', async () => {
 			mockUseAppSelector.mockImplementation((selector: any) => {
 				const state = {
 					entity: {
@@ -630,10 +636,10 @@ describe('AdministratorLayout Component', () => {
 			
 			renderComponent();
 			
-			expect(screen.getByTestId('business-metadata-tab')).toBeInTheDocument();
+			await waitForLazyTab('business-metadata-tab');
 		});
 
-		it('should handle null entityData (line 38)', () => {
+		it('should handle null entityData (line 38)', async () => {
 			mockUseAppSelector.mockImplementation((selector: any) => {
 				const state = {
 					entity: {
@@ -645,10 +651,10 @@ describe('AdministratorLayout Component', () => {
 			
 			renderComponent();
 			
-			expect(screen.getByTestId('business-metadata-tab')).toBeInTheDocument();
+			await waitForLazyTab('business-metadata-tab');
 		});
 
-		it('should handle null entityDefs (line 38)', () => {
+		it('should handle null entityDefs (line 38)', async () => {
 			mockUseAppSelector.mockImplementation((selector: any) => {
 				const state = {
 					entity: {
@@ -662,7 +668,7 @@ describe('AdministratorLayout Component', () => {
 			
 			renderComponent();
 			
-			expect(screen.getByTestId('business-metadata-tab')).toBeInTheDocument();
+			await waitForLazyTab('business-metadata-tab');
 		});
 
 		it('should handle multiple tab switches', async () => {
@@ -751,18 +757,17 @@ describe('AdministratorLayout Component', () => {
 	});
 
 	describe('Component Props', () => {
-		it('should pass correct props to BusinessMetadataTab', () => {
+		it('should pass correct props to BusinessMetadataTab', async () => {
 			renderComponent();
 			
-			const bmTab = screen.getByTestId('business-metadata-tab');
-			expect(bmTab).toBeInTheDocument();
+			await waitForLazyTab('business-metadata-tab');
 			
 			// Verify the component can use the props
 			const setFormBtn = screen.getByTestId('bm-set-form');
 			expect(setFormBtn).toBeInTheDocument();
 		});
 
-		it('should pass entityDefs to TypeSystemTreeView', () => {
+		it('should pass entityDefs to TypeSystemTreeView', async () => {
 			const mockEntityDefs = [
 				{ guid: '1', name: 'Entity1' },
 				{ guid: '2', name: 'Entity2' }
@@ -781,16 +786,16 @@ describe('AdministratorLayout Component', () => {
 			
 			renderComponent(['/administrator'], '?tabActive=typeSystem');
 			
-			expect(screen.getByTestId('type-system-tree-view')).toBeInTheDocument();
+			await waitForLazyTab('type-system-tree-view');
 			expect(screen.getByText(/2 entities/)).toBeInTheDocument();
 		});
 	});
 
 	describe('URL Search Params', () => {
-		it('should handle search params correctly', () => {
+		it('should handle search params correctly', async () => {
 			renderComponent(['/administrator'], '?tabActive=enum&other=value');
 			
-			expect(screen.getByTestId('enumerations-tab')).toBeInTheDocument();
+			await waitForLazyTab('enumerations-tab');
 		});
 
 		it('should update URL when tab changes', async () => {

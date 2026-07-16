@@ -27,6 +27,12 @@ dist/
 .vite/
 .env
 
+# Maven frontend-maven-plugin Node/npm install dir (persists across mvn clean)
+.frontend-toolchain/
+
+# Jest coverage output
+coverage/
+
 # Local Dependabot export for governance tests (optional)
 config/dependabot-alerts.local.json
 *.log
