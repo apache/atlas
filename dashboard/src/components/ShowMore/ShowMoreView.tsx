@@ -395,17 +395,33 @@ const ShowMoreView = ({
             Remove:{" "}
             <Typography
               component="span"
-              display="inline"
-              sx={{ fontWeight: 600 }}
-            >
+              title={currentValue.selectedValue}
+              sx={{
+                fontWeight: 600,
+                display: "inline-block",
+                maxWidth: "100%",
+                verticalAlign: "bottom"
+              }}
+             noWrap>
               {currentValue.selectedValue}
             </Typography>{" "}
             assignment from{" "}
             <Typography
               component="span"
-              display="inline"
-              sx={{ fontWeight: 600 }}
-            >
+              title={!isEmpty(currentEntity)
+                ? `${currentValue.assetName} ${
+                    !isEmpty(currentEntity?.typeName)
+                      ? `(${currentEntity.typeName})`
+                      : ""
+                  }`
+                : ""}
+              sx={{
+                fontWeight: 600,
+                display: "inline-block",
+                maxWidth: "100%",
+                verticalAlign: "bottom"
+              }}
+             noWrap>
               {!isEmpty(currentEntity)
                 ? `${currentValue.assetName} ${
                     !isEmpty(currentEntity?.typeName)

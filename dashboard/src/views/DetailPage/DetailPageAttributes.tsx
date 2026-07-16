@@ -134,17 +134,19 @@ const DetailPageAttribute = ({
           className="detail-page-paper"
           variant="outlined"
         >
-          <Stack direction="row" justifyContent="space-between">
-            <Typography
-              noWrap
-              fontWeight={600}
-              fontSize={"24px"}
-              component={"h1"}
-              data-id="title"
-              className="detail-page-enity-name mb-0 mt-0"
-            >
-              {name}{" "}
-            </Typography>
+          <Stack direction="row" justifyContent="space-between" gap="1rem" alignItems="flex-start">
+            <LightTooltip title={name}>
+              <Typography
+                noWrap
+                fontWeight={600}
+                fontSize={"24px"}
+                component={"h1"}
+                data-id="title"
+                className="detail-page-enity-name mb-0 mt-0"
+              >
+                {name}{" "}
+              </Typography>
+            </LightTooltip>
             {isEmpty(bmguid) && (
               <LightTooltip title={"Edit Classification"}>
                 <CustomButton
@@ -175,11 +177,11 @@ const DetailPageAttribute = ({
             style={{
               ...(isEmpty(bmguid)
                 ? {
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gridGap: "1rem 2rem",
-                    marginBottom: "0.75rem"
-                  }
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gridGap: "1rem 2rem",
+                  marginBottom: "0.75rem"
+                }
                 : {})
             }}
           >

@@ -24,7 +24,10 @@ const updateName = (entityName: string, entity: object) => {
     extractKeyValueFromEntity(entity);
   return (
     <>
-      <span className="audit-detail-name">
+      <span
+        className="audit-detail-name text-truncate-inline"
+        title={!isEmpty(entity) ? `${name} (${entityName})` : entityName}
+      >
         Name: {!isEmpty(entity) ? `${name} (${entityName})` : entityName}
       </span>
     </>
@@ -70,9 +73,13 @@ const AuditTableDetails = ({ componentProps, row }: any) => {
             let customAttr = parseDetailsObject.customAttributes;
             return (
               <>
-                {name == "-"
-                  ? parseDetailsObject.typeName
-                  : updateName(name, {})}
+                <div className="text-truncate d-inline-block w-100 align-bottom"
+                  title={name == "-" ? parseDetailsObject.typeName : name}
+                >
+                  {name == "-"
+                    ? parseDetailsObject.typeName
+                    : updateName(name, {})}
+                </div>
                 <Stack
                   direction={"row"}
                   gap={"1rem"}
