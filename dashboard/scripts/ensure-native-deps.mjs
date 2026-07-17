@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-#!/usr/bin/env node
-
 /**
  * Ensures platform-specific native binaries (Rollup, esbuild) are present.
  *

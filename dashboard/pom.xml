@@ -47,7 +47,6 @@
                     <groupId>com.github.eirslett</groupId>
                     <artifactId>frontend-maven-plugin</artifactId>
                     <configuration>
-                        <phase>validate</phase>
                         <workingDirectory>${project.basedir}</workingDirectory>
                         <installDirectory>${dashboard.frontend.toolchain.dir}</installDirectory>
                         <environmentVariables>

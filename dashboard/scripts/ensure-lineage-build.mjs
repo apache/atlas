@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-#!/usr/bin/env node
-
 /**
  * Opt-in via `npm run build:lineage`: build atlas-lineage webpack dist for legacy v2/v3.
  * Not used by default Vite build (React UI imports atlas-lineage/src directly).
