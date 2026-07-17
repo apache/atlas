@@ -15,39 +15,26 @@
  * limitations under the License.
  */
 
-.masonry-grid {
-  width: 100%;
-}
+import { Badge } from "@mui/material";
+import { numberFormatWithComma } from "@utils/Helper";
+import { formatedDate, millisecondsToTime } from "@utils/Utils";
 
-.masonry-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  display: flex;
-  flex-direction: column;
-  min-height: 0; /* allow children to shrink */
-  overflow: hidden;
-}
-
-.masonry-card__header {
-  background: #0a3d62;
-  color: #ffffff;
-  padding: 10px 12px;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.masonry-card__body {
-  padding: 12px;
-  overflow: auto; /* scroll within card when content exceeds maxBodyHeight */
-}
-
-.masonry-card__footer {
-  padding: 10px 12px;
-  border-top: 1px solid #e5e7eb;
-}
-
-
-
-
-
+export const getStatsValue = (options: { value: any; type: any }) => {
+	const { value, type } = options;
+	if (type == "time") {
+		return millisecondsToTime(value);
+	}
+	if (type == "day") {
+		return formatedDate({ date: value });
+	}
+	if (type == "number") {
+		return numberFormatWithComma(value);
+	}
+	if (type == "millisecond") {
+		return numberFormatWithComma(value) + " millisecond/s";
+	}
+	if (type == "status-html") {
+		return <Badge color="success" variant="dot"></Badge>;
+	}
+	return value;
+};
