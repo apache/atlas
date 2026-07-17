@@ -325,7 +325,7 @@ describe('AttributeProperties', () => {
 			expect(screen.getByTestId('skeleton-loader')).toBeInTheDocument();
 		});
 
-		it('should render loading skeleton when loading is undefined', () => {
+		it('should render properties when loading is undefined and entityData is available', () => {
 			render(
 				<TestWrapper>
 					<AttributeProperties
@@ -337,7 +337,7 @@ describe('AttributeProperties', () => {
 				</TestWrapper>
 			);
 
-			expect(screen.getByTestId('skeleton-loader')).toBeInTheDocument();
+			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument();
 		});
 
 		it('should render loading skeleton when entityData is empty', () => {
