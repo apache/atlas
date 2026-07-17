@@ -25,13 +25,24 @@ export default defineConfig({
   plugins: [react()],
   base: "",
   build: {
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 2000,
+    reportCompressedSize: false,
     outDir: "dist/n3",
     rollupOptions: {
       input: "./index.html",
       output: {
         manualChunks: {
-          react: ["react", "react-dom"]
+          react: ["react", "react-dom"],
+          mui: [
+            "@mui/material",
+            "@mui/icons-material",
+            "@emotion/react",
+            "@emotion/styled"
+          ],
+          redux: ["redux", "@reduxjs/toolkit", "react-redux"],
+          router: ["react-router-dom"],
+          d3: ["d3", "d3-tip", "dagre-d3"],
+          utils: ["moment-timezone"]
         }
       }
     }

@@ -294,22 +294,26 @@ describe('Layout Component', () => {
 			expect(screen.queryByTestId('statistics-modal')).not.toBeInTheDocument();
 		});
 
-		it('should open Statistics modal when handleOpenModal is called', () => {
+		it('should open Statistics modal when handleOpenModal is called', async () => {
 			renderWithRouter();
 			
 			const openModalBtn = screen.getByTestId('open-modal-btn');
 			fireEvent.click(openModalBtn);
 			
-			expect(screen.getByTestId('statistics-modal')).toBeInTheDocument();
+			await waitFor(() => {
+				expect(screen.getByTestId('statistics-modal')).toBeInTheDocument();
+			});
 		});
 
-		it('should close Statistics modal when handleCloseModal is called', () => {
+		it('should close Statistics modal when handleCloseModal is called', async () => {
 			renderWithRouter();
 			
 			const openModalBtn = screen.getByTestId('open-modal-btn');
 			fireEvent.click(openModalBtn);
 			
-			expect(screen.getByTestId('statistics-modal')).toBeInTheDocument();
+			await waitFor(() => {
+				expect(screen.getByTestId('statistics-modal')).toBeInTheDocument();
+			});
 			
 			const closeBtn = screen.getByTestId('close-statistics-btn');
 			fireEvent.click(closeBtn);
@@ -868,13 +872,15 @@ describe('Layout Component', () => {
 	});
 
 	describe('Edge Cases', () => {
-		it('should handle multiple modal opens and closes', () => {
+		it('should handle multiple modal opens and closes', async () => {
 			renderWithRouter();
 			
 			// Open Statistics modal
 			const openModalBtn = screen.getByTestId('open-modal-btn');
 			fireEvent.click(openModalBtn);
-			expect(screen.getByTestId('statistics-modal')).toBeInTheDocument();
+			await waitFor(() => {
+				expect(screen.getByTestId('statistics-modal')).toBeInTheDocument();
+			});
 			
 			// Close Statistics modal
 			const closeStatsBtn = screen.getByTestId('close-statistics-btn');
@@ -962,7 +968,7 @@ describe('Layout Component', () => {
 	});
 
 	describe('Component Integration', () => {
-		it('should pass correct handlers to SideBarBody', () => {
+		it('should pass correct handlers to SideBarBody', async () => {
 			renderWithRouter();
 			
 			const openModalBtn = screen.getByTestId('open-modal-btn');
@@ -972,7 +978,9 @@ describe('Layout Component', () => {
 			expect(openAboutModalBtn).toBeInTheDocument();
 			
 			fireEvent.click(openModalBtn);
-			expect(screen.getByTestId('statistics-modal')).toBeInTheDocument();
+			await waitFor(() => {
+				expect(screen.getByTestId('statistics-modal')).toBeInTheDocument();
+			});
 			
 			fireEvent.click(openAboutModalBtn);
 			expect(screen.getByTestId('custom-modal')).toBeInTheDocument();

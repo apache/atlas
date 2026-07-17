@@ -233,23 +233,23 @@ describe('EntityDetailPage', () => {
 		expect(screen.getByRole('tab', { name: /audits/i })).toBeTruthy();
 	});
 
-	it('should switch between tabs', () => {
+	it('should switch between tabs', async () => {
 		const store = createMockStore(mockDetailPageData, mockEntityData);
 		renderWithProviders(
 			<TestWrapper store={store} initialEntries={['/detailPage/test-guid?tabActive=relationship']} />
 		);
 
-		expect(screen.getByTestId('relationships-tab')).toBeTruthy();
+		expect(await screen.findByTestId('relationships-tab')).toBeInTheDocument();
 	});
 
-	it('should show lineage tab for DataSet entities', () => {
+	it('should show lineage tab for DataSet entities', async () => {
 		const store = createMockStore(mockDetailPageData, mockEntityData);
 		renderWithProviders(
 			<TestWrapper store={store} initialEntries={['/detailPage/test-guid?tabActive=lineage']} />
 		);
 
 		// Lineage tab should be available for DataSet
-		expect(screen.getByTestId('lineage-tab')).toBeTruthy();
+		expect(await screen.findByTestId('lineage-tab')).toBeInTheDocument();
 	});
 
 	it('should open add tag modal when add tag button is clicked', () => {
