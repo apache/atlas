@@ -38,11 +38,11 @@ const ClassificationDetailsLayout = () => {
     : {};
 
   const {
-    subTypes = {},
-    superTypes = {},
-    entityTypes = {},
-    attributeDefs = {},
-    description = {}
+    subTypes = [],
+    superTypes = [],
+    entityTypes = [],
+    attributeDefs = [],
+    description = ""
   } = tag || {};
   return (
     <Stack direction="column" gap="1rem">

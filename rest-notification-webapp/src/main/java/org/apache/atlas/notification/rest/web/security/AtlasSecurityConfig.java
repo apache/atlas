@@ -20,7 +20,7 @@ package org.apache.atlas.notification.rest.web.security;
 import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
 import org.apache.atlas.server.common.security.AtlasAuthenticationProvider;
 import org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;

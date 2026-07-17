@@ -24,12 +24,14 @@ import org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint;
 import org.apache.atlas.server.common.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.server.common.filters.AtlasDelegatingAuthenticationEntryPoint;
+import org.apache.atlas.web.filters.AtlasHeaderPreAuthFilter;
+import org.apache.atlas.web.filters.AtlasJwtAuthWrapper;
 import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
 import org.apache.atlas.server.common.security.AtlasAuthenticationProvider;
 import org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler;
 import org.apache.atlas.web.filters.StaleTransactionCleanupFilter;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.keycloak.adapters.AdapterDeploymentContext;
 import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.KeycloakDeployment;
@@ -103,6 +105,9 @@ import static org.testng.Assert.assertTrue;
 @SuppressWarnings("deprecation")
 public class AtlasSecurityConfigTest {
     @Mock
+    private AtlasHeaderPreAuthFilter mockHeaderPreAuthFilter;
+
+    @Mock
     private AtlasKnoxSSOAuthenticationFilter mockSsoAuthenticationFilter;
 
     @Mock
@@ -131,6 +136,9 @@ public class AtlasSecurityConfigTest {
 
     @Mock
     private ActiveServerFilter mockActiveServerFilter;
+
+    @Mock
+    private AtlasJwtAuthWrapper mockAtlasJwtAuthWrapper;
 
     @Mock
     private KeycloakConfigResolver mockKeycloakConfigResolver;
@@ -175,7 +183,9 @@ public class AtlasSecurityConfigTest {
                 mockAtlasAuthenticationEntryPoint,
                 mockConfiguration,
                 objectProvider(mockActiveServerFilter),
-                objectProvider(mockStaleTransactionCleanupFilter));
+                objectProvider(mockStaleTransactionCleanupFilter),
+                mockHeaderPreAuthFilter,
+                mockAtlasJwtAuthWrapper);
     }
 
     @Test
@@ -465,8 +475,10 @@ public class AtlasSecurityConfigTest {
         }
 
         // Verify standard filters are always added
+        verify(freshHttpSecurity, atLeastOnce()).addFilterBefore(eq(mockHeaderPreAuthFilter), any());
+        verify(freshHttpSecurity, atLeastOnce()).addFilterAfter(eq(mockSsoAuthenticationFilter), eq(AtlasHeaderPreAuthFilter.class));
+        verify(freshHttpSecurity, atLeastOnce()).addFilterAfter(eq(mockAtlasJwtAuthWrapper), eq(AtlasKnoxSSOAuthenticationFilter.class));
         verify(freshHttpSecurity, atLeastOnce()).addFilterAfter(eq(mockStaleTransactionCleanupFilter), any());
-        verify(freshHttpSecurity, atLeastOnce()).addFilterBefore(eq(mockSsoAuthenticationFilter), any());
         verify(freshHttpSecurity, atLeastOnce()).addFilterAfter(eq(mockAtlasAuthenticationFilter), any());
         verify(freshHttpSecurity, atLeastOnce()).addFilterAfter(eq(mockCsrfPreventionFilter), any());
 
@@ -795,7 +807,9 @@ public class AtlasSecurityConfigTest {
                 AtlasAuthenticationEntryPoint.class,
                 Configuration.class,
                 ObjectProvider.class,
-                ObjectProvider.class
+                ObjectProvider.class,
+                AtlasHeaderPreAuthFilter.class,
+                AtlasJwtAuthWrapper.class
         ).getAnnotation(Inject.class);
         assertNotNull(injectAnnotation);
     }

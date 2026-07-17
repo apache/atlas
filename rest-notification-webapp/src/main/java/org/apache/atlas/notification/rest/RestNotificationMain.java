@@ -26,8 +26,9 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.io.FileHandler;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +75,9 @@ public class RestNotificationMain {
 
     public static void main(String[] args) throws Exception {
         CommandLine cmd = parseArgs(args);
-        PropertiesConfiguration buildConfiguration = new PropertiesConfiguration("rest-notification-buildinfo.properties");
+        PropertiesConfiguration buildConfiguration = new PropertiesConfiguration();
+        FileHandler fileHandler = new FileHandler(buildConfiguration);
+        fileHandler.load("rest-notification-buildinfo.properties");
         String appPath = "rest-notification-webapp/target/rest-notification-webapp" /*\\+ getProjectVersion(buildConfiguration)*/;
 
         if (cmd.hasOption(APP_PATH)) {

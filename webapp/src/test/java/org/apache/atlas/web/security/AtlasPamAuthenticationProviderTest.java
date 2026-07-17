@@ -25,8 +25,8 @@ import org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvid
 import org.apache.atlas.server.common.security.AtlasAuthenticationException;
 import org.apache.atlas.server.common.security.AtlasPamAuthenticationProvider;
 import org.apache.atlas.server.common.security.UserAuthorityGranter;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationConverter;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.ConfigurationConverter;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;

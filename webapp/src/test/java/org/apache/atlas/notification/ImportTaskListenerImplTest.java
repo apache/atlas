@@ -49,8 +49,8 @@ import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.WAITING;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
@@ -91,10 +91,7 @@ public class ImportTaskListenerImplTest {
     public void setup() throws Exception {
         MockitoAnnotations.openMocks(this);
 
-        importRequest = mock(AtlasAsyncImportRequest.class);
-
-        when(importRequest.getImportId()).thenReturn("import123");
-        when(importRequest.getTopicName()).thenReturn("topic1");
+        importRequest = createImportRequestMock("import123", "topic1");
 
         requestQueue       = mock(BlockingDeque.class);
         asyncImportService = mock(AsyncImportService.class);
@@ -109,16 +106,16 @@ public class ImportTaskListenerImplTest {
     public void resetMocks() throws AtlasException {
         MockitoAnnotations.openMocks(this);
 
-        when(importRequest.getImportId()).thenReturn("import123");
-        when(importRequest.getTopicName()).thenReturn("topic1");
+        importRequest = createImportRequestMock("import123", "topic1");
         when(asyncImportService.fetchImportRequestByImportId(any(String.class))).thenReturn(importRequest);
 
         importTaskListener = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
     }
 
     @AfterMethod
-    public void teardown() {
-        Mockito.reset(asyncImportService, notificationHookConsumer, requestQueue, importRequest);
+    public void teardown() throws Exception {
+        shutdownImportExecutor(importTaskListener);
+        Mockito.reset(asyncImportService, notificationHookConsumer, requestQueue);
     }
 
     @Test
@@ -128,7 +125,8 @@ public class ImportTaskListenerImplTest {
         Thread.sleep(500);
 
         verify(requestQueue, times(1)).put("import123");
-        verify(asyncImportService, times(1)).updateImportRequest(importRequest);
+        verify(asyncImportService, times(1)).populateCache(importRequest);
+        verify(asyncImportService, times(1)).saveImport("import123");
     }
 
     @Test
@@ -152,7 +150,8 @@ public class ImportTaskListenerImplTest {
             importTaskListener.onReceiveImportRequest(importRequest);
         } finally {
             verify(requestQueue, times(1)).put("import123");
-            verify(asyncImportService, times(1)).updateImportRequest(importRequest);
+            verify(asyncImportService, times(1)).populateCache(importRequest);
+            verify(asyncImportService, times(1)).saveImport("import123");
         }
     }
 
@@ -290,57 +289,57 @@ public class ImportTaskListenerImplTest {
 
     @Test
     public void testStartImportConsumer_Successful() throws Exception {
-        when(importRequest.getStatus()).thenReturn(WAITING);
-        when(importRequest.getTopicName()).thenReturn("topic1");
+        AtlasAsyncImportRequest request = createImportRequestMock("import123", "topic1");
 
-        ExecutorService realExecutor  = java.util.concurrent.Executors.newSingleThreadExecutor();
-        Field           executorField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
-
-        executorField.setAccessible(true);
-        executorField.set(importTaskListener, realExecutor);
+        when(request.getStatus()).thenReturn(WAITING);
+        when(asyncImportService.fetchImportRequestByImportId("import123")).thenReturn(request);
         when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123");
 
-        importTaskListener.onReceiveImportRequest(importRequest);
+        CountDownLatch consumerStarted = new CountDownLatch(1);
 
-        Thread.sleep(500);
+        doAnswer(invocation -> {
+            consumerStarted.countDown();
+            return null;
+        }).when(notificationHookConsumer).startAsyncImportConsumer(any(), anyString(), anyString());
 
-        verify(notificationHookConsumer, atLeastOnce())
-                .startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, "import123", "topic1");
+        setExecutorService(importTaskListener, synchronousExecutor());
 
-        realExecutor.shutdownNow();
+        importTaskListener.onReceiveImportRequest(request);
+
+        assertTrue(consumerStarted.await(5, TimeUnit.SECONDS), "startAsyncImportConsumer was not invoked");
+
+        verify(notificationHookConsumer, times(1)).startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, "import123", "topic1");
     }
 
     @Test
     public void testStartImportConsumer_Failure() throws Exception {
-        when(importRequest.getStatus()).thenReturn(WAITING);
-        when(importRequest.getTopicName()).thenReturn("topic1");
+        AtlasAsyncImportRequest request = createImportRequestMock("import123", "topic1");
 
-        doThrow(new RuntimeException("Consumer failed"))
-                .when(notificationHookConsumer)
-                .startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, "import123", "topic1");
+        when(request.getStatus()).thenReturn(WAITING);
+        when(asyncImportService.fetchImportRequestByImportId("import123")).thenReturn(request);
+        when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123").thenReturn(null);
+
+        CountDownLatch consumerClosed = new CountDownLatch(1);
+
+        doThrow(new RuntimeException("Consumer failed")).when(notificationHookConsumer).startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, "import123", "topic1");
 
         doAnswer(invocation -> {
-            Object newStatus = invocation.getArgument(0);
-            when(importRequest.getStatus()).thenReturn((AtlasAsyncImportRequest.ImportStatus) newStatus);
+            when(request.getStatus()).thenReturn(invocation.getArgument(0));
             return null;
-        }).when(importRequest).setStatus(any());
+        }).when(request).setStatus(any());
 
-        ExecutorService realExecutor  = java.util.concurrent.Executors.newSingleThreadExecutor();
-        Field           executorField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+        doAnswer(invocation -> {
+            consumerClosed.countDown();
+            return null;
+        }).when(notificationHookConsumer).closeImportConsumer(anyString(), anyString());
 
-        executorField.setAccessible(true);
-        executorField.set(importTaskListener, realExecutor);
+        setExecutorService(importTaskListener, synchronousExecutor());
 
-        when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123");
+        importTaskListener.onReceiveImportRequest(request);
 
-        importTaskListener.onReceiveImportRequest(importRequest);
+        assertTrue(consumerClosed.await(5, TimeUnit.SECONDS), "closeImportConsumer was not invoked");
 
-        Thread.sleep(500);
-
-        verify(notificationHookConsumer, times(1))
-                .closeImportConsumer("import123", "ATLAS_IMPORT_import123");
-
-        realExecutor.shutdownNow();
+        verify(notificationHookConsumer, times(1)).closeImportConsumer("import123", "ATLAS_IMPORT_import123");
     }
 
     @Test(dataProvider = "importQueueScenarios")
@@ -571,18 +570,16 @@ public class ImportTaskListenerImplTest {
 
     @Test
     public void testImportNotProcessedWhenPassive() throws Exception {
+        Mockito.doReturn("import123").when(importRequest).getImportId();
         when(importRequest.getStatus()).thenReturn(WAITING);
         when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123");
         importTaskListener.instanceIsPassive();
         importTaskListener.onReceiveImportRequest(importRequest);
-        Thread.sleep(200);
         verify(notificationHookConsumer, never()).startAsyncImportConsumer(any(), anyString(), anyString());
     }
 
     @Test
     public void testExecutorNotRecreatedWhenPassive() throws Exception {
-        when(importRequest.getStatus()).thenReturn(WAITING);
-        when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123");
         when(importRequest.getStatus()).thenReturn(WAITING);
         when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123");
         importTaskListener.instanceIsPassive();
@@ -593,7 +590,6 @@ public class ImportTaskListenerImplTest {
             exec.shutdownNow();
         }
         importTaskListener.onReceiveImportRequest(importRequest);
-        Thread.sleep(200);
         ExecutorService execAfter = (ExecutorService) executorField.get(importTaskListener);
         // Should remain null when passive
         assertTrue(execAfter == null);
@@ -727,6 +723,48 @@ public class ImportTaskListenerImplTest {
         // Field should remain null
         assertNull(execField.get(importTaskListener));
         callers.shutdownNow();
+    }
+
+    private AtlasAsyncImportRequest createImportRequestMock(String importId, String topicName) {
+        AtlasAsyncImportRequest request = mock(AtlasAsyncImportRequest.class);
+
+        when(request.getImportId()).thenReturn(importId);
+        when(request.getTopicName()).thenReturn(topicName);
+
+        return request;
+    }
+
+    private ExecutorService synchronousExecutor() {
+        ExecutorService executor = mock(ExecutorService.class);
+
+        doAnswer(invocation -> {
+            Runnable task = invocation.getArgument(0);
+            task.run();
+            return null;
+        }).when(executor).submit(any(Runnable.class));
+
+        return executor;
+    }
+
+    private void setExecutorService(ImportTaskListenerImpl listener, ExecutorService executor) throws Exception {
+        Field executorField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+
+        executorField.setAccessible(true);
+        executorField.set(listener, executor);
+    }
+
+    private void shutdownImportExecutor(ImportTaskListenerImpl listener) throws Exception {
+        if (listener == null) {
+            return;
+        }
+        Field executorField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+        executorField.setAccessible(true);
+        ExecutorService exec = (ExecutorService) executorField.get(listener);
+        if (exec != null) {
+            exec.shutdownNow();
+            exec.awaitTermination(5, TimeUnit.SECONDS);
+            executorField.set(listener, null);
+        }
     }
 
     private void setExecutorServiceAndSemaphore(ImportTaskListenerImpl importTaskListener, ExecutorService mockExecutor, Semaphore mockSemaphore) {

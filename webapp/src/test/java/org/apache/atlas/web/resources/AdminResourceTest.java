@@ -69,7 +69,7 @@ import org.apache.atlas.util.SearchTracker;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.web.model.DebugMetrics;
 import org.apache.atlas.web.service.AtlasDebugMetricsSink;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
@@ -1261,7 +1261,7 @@ public class AdminResourceTest {
 
         AtlasImportResult mockResult = mock(AtlasImportResult.class);
         when(mockResult.getOperationStatus()).thenReturn(AtlasImportResult.OperationStatus.SUCCESS);
-        when(mockResult.getProcessedEntities()).thenReturn(new ArrayList<>());
+        when(mockResult.getProcessedEntities()).thenReturn(new HashSet<>());
         when(mockResult.getMetrics()).thenReturn(new HashMap<String, Integer>());
         when(mockResult.getExportResult()).thenReturn(mock(AtlasExportResult.class));
         when(mockResult.getExportResult().getRequest()).thenReturn(null);

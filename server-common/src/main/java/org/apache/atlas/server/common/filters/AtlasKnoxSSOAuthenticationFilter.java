@@ -28,7 +28,7 @@ import com.nimbusds.jwt.SignedJWT;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBridge;
 import org.apache.atlas.server.common.model.User;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.json.simple.JSONObject;
@@ -84,6 +84,7 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
     public static final String JWT_COOKIE_NAME                      = "atlas.sso.knox.cookiename";
     public static final String JWT_ORIGINAL_URL_QUERY_PARAM         = "atlas.sso.knox.query.param.originalurl";
     public static final String JWT_COOKIE_NAME_DEFAULT              = "hadoop-jwt";
+    public static final String JWT_AUDIENCES                        = "atlas.sso.knox.audiences";
     public static final String JWT_ORIGINAL_URL_QUERY_PARAM_DEFAULT = "originalUrl";
     public static final String DEFAULT_BROWSER_USERAGENT            = "Mozilla,Opera,Chrome";
     public static final String PROXY_ATLAS_URL_PATH                 = "/atlas";

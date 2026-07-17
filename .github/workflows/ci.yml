@@ -36,19 +36,24 @@ jobs:
   docker-build:
     runs-on: ubuntu-22.04
     timeout-minutes: 180
+
+    strategy:
+      matrix:
+        java: [ 8, 17 ]
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Delete huge unnecessary tools folder
         run: rm -rf /opt/hostedtoolcache
       - name: Cache for maven dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.m2/repository/*/*/*
             !~/.m2/repository/org/apache/atlas
-          key: maven-repo-${{ hashFiles('**/pom.xml') }}
+          key: maven-repo-${{ matrix.java }}-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            maven-repo-
+            maven-repo-${{ matrix.java }}-
 
       - name: Set up .m2 directory and permissions
         run: |
@@ -56,16 +61,24 @@ jobs:
           chmod -R 777 ~/.m2
           chmod -R 777 ./
       
-      - name: Set up JDK 8
-        uses: actions/setup-java@v4
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v5
         with:
-          java-version: '8'
+          java-version: ${{ matrix.java }}
           distribution: 'temurin'
+
+      - name: Set MAVEN_OPTS based on Java version
+        run: |
+          if [[ "${{ matrix.java }}" == "17" ]]; then
+            echo "MAVEN_OPTS=-Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3 --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED" >> $GITHUB_ENV
+          else
+            echo "MAVEN_OPTS=-Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3" >> $GITHUB_ENV
+          fi
 
       - name: Clean up Docker space
         run: docker system prune --all --force --volumes
 
-      - name: Build Atlas - JDK 8
+      - name: Build Atlas - JDK ${{ matrix.java }}
         run: |
           mvn -Pdist,embedded-solr-it -DskipTests=false -DskipDocs clean verify --no-transfer-progress -B -V
 
@@ -88,14 +101,14 @@ jobs:
           mv -f target/coverage dev-support/atlas-docker/dist/
 
       - name: Upload Code Coverage Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: coverage
+          name: coverage-java-${{ matrix.java }}
           path: dev-support/atlas-docker/dist/coverage/*
 
       - name: Cache downloaded archives
         if: success()
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: dev-support/atlas-docker/downloads
           key: ${{ runner.os }}-atlas-downloads-${{ hashFiles('dev-support/atlas-docker/.env') }}
@@ -113,7 +126,14 @@ jobs:
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
           docker compose -f docker-compose.atlas-base.yml build 
-          docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml -f docker-compose.atlas-hive.yml up -d --wait
+          if ! docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml -f docker-compose.atlas-hive.yml up -d --wait --wait-timeout 300; then
+            echo "=== compose up --wait failed; dumping service logs ==="
+            for container in atlas-hbase atlas-hadoop atlas-zk atlas-kafka atlas-db atlas-hive atlas; do
+              echo "--- logs: ${container} ---"
+              docker logs --tail 200 "${container}" 2>&1 || true
+            done
+            exit 1
+          fi
 
       - name: Check status of containers and remove them
         run: |
@@ -132,6 +152,9 @@ jobs:
               echo "All required containers are up and running";
               docker stop $(docker ps -q) && docker rm $(docker ps -aq);
           else
+              for container in "${containers[@]}"; do
+                  docker logs --tail 200 "$container" 2>&1 || true
+              done
               docker stop $(docker ps -q) && docker rm $(docker ps -aq);
               exit 1;
           fi

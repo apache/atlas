@@ -452,6 +452,7 @@ const AssignTerm = ({
         maxWidth="sm"
         button2Handler={relatedTerm ? handleSubmit(onSubmit) : assignTerm}
         disableButton2={isSubmitting}
+        button2Loading={isSubmitting}
         isDirty={!isEmpty(selectedNode)}
       >
         {relatedTerm ? (

@@ -201,6 +201,9 @@ define(['require',
                 _.extend(this, options.atlasPaginationOpts);
                 _.extend(this.gridOpts, options.gridOpts, { collection: this.collection, columns: this.columns });
                 _.extend(this.sortOpts, options.sortOpts);
+                /* Atlas schema / client pagination: block double-clicks while fetch runs. */
+                this._atlasPaginationBusy = false;
+                this._lastRenderAtlasPaginationOptions = {};
                 if (this.isApiSorting) {
                     //after audit sorting pagination values
                     if (this.offset === 0) {
@@ -420,15 +423,149 @@ define(['require',
                 }
             },
 
+            /**
+             * Optional merged approximate total (e.g. schema tab across relations).
+             * When set (number or function), footer and next/prev bounds use it like React
+             * TablePagination client mode.
+             */
+            resolveAtlasApproximateTotal: function() {
+                var v = this.atlasApproximateDatasetTotal;
+                if (_.isFunction(v)) {
+                    var n = v.call(this);
+                    return (_.isFinite(n) && n >= 0) ? n : null;
+                }
+                if (typeof v === 'number' && _.isFinite(v) && v >= 0) {
+                    return v;
+                }
+                return null;
+            },
+
+            getAtlasPaginationCeiling: function() {
+                var approx = this.resolveAtlasApproximateTotal();
+                if (approx !== null) {
+                    return approx;
+                }
+                return this.collection.fullCollection
+                    ? this.collection.fullCollection.length
+                    : this.collection.length;
+            },
+
+            /**
+             * While relationship/chunk fetch or grid rebuild is in progress, disable
+             * Next/Prev and Page Limit (schema tab double-click / stale nav).
+             * @param {boolean} busy
+             * @param {'next'|'prev'|'both'} [navHint] Which control triggered load — drives spinner
+             *   placement (Classic schema: user sees feedback like basic search).
+             */
+            setAtlasPaginationBusy: function(busy, navHint) {
+                this._atlasPaginationBusy = !!busy;
+                if (busy) {
+                    this._atlasPaginationBusyHint = navHint === 'next' || navHint === 'prev'
+                        ? navHint
+                        : 'both';
+                } else {
+                    this._atlasPaginationBusyHint = null;
+                }
+                if (!this.includeAtlasPagination || !this.ui || !this.ui.nextData || !this.ui.nextData.length) {
+                    return;
+                }
+                this.renderAtlasPagination(this._lastRenderAtlasPaginationOptions || {});
+            },
+
+            /**
+             * After renderAtlasPagination sets disabled props, show spinner + busy chrome so
+             * the user sees work in progress (disabled buttons do not get :hover cursor).
+             */
+            _syncAtlasPaginationBusyVisuals: function() {
+                if (!this.includeAtlasPagination || !this.ui || !this.ui.nextData || !this.ui.nextData.length) {
+                    return;
+                }
+                var nextBtn = this.ui.nextData;
+                var prevBtn = this.ui.previousData;
+                var ul = nextBtn.closest('ul');
+                var spinHtml = '<i class="fa fa-spinner fa-spin" aria-hidden="true"></i>';
+                var prevHtml = '<i class="fa fa-angle-left" aria-hidden="true"></i>';
+                var nextHtml = '<i class="fa fa-angle-right" aria-hidden="true"></i>';
+                var loadingTitle = 'Loading...';
+                if (this._atlasPaginationBusy) {
+                    ul.addClass('atlas-pagination-busy');
+                    ul.attr('aria-busy', 'true');
+                    var hint = this._atlasPaginationBusyHint || 'both';
+                    if (hint === 'next') {
+                        nextBtn.html(spinHtml);
+                        nextBtn.attr('title', loadingTitle);
+                        if (prevBtn && prevBtn.length) {
+                            prevBtn.html(prevHtml);
+                            prevBtn.attr('title', 'Previous');
+                        }
+                    } else if (hint === 'prev') {
+                        if (prevBtn && prevBtn.length) {
+                            prevBtn.html(spinHtml);
+                            prevBtn.attr('title', loadingTitle);
+                        }
+                        nextBtn.html(nextHtml);
+                        nextBtn.attr('title', 'Next');
+                    } else {
+                        nextBtn.html(spinHtml);
+                        nextBtn.attr('title', loadingTitle);
+                        if (prevBtn && prevBtn.length) {
+                            prevBtn.html(spinHtml);
+                            prevBtn.attr('title', loadingTitle);
+                        }
+                    }
+                } else {
+                    ul.removeClass('atlas-pagination-busy');
+                    ul.attr('aria-busy', 'false');
+                    nextBtn.html(nextHtml);
+                    nextBtn.attr('title', 'Next');
+                    if (prevBtn && prevBtn.length) {
+                        prevBtn.html(prevHtml);
+                        prevBtn.attr('title', 'Previous');
+                    }
+                }
+            },
+
             renderAtlasPagination: function(options) {
+                this._lastRenderAtlasPaginationOptions = options || {};
+                /*
+                 * Schema tab: Next updates collection.queryParams.offset before fetchCollection;
+                 * Pageable state can briefly leave this.offset stale so footer shows 1–100.
+                 */
+                if (this.clientAtlasPagination && this.collection && this.collection.queryParams) {
+                    var qo = parseInt(this.collection.queryParams.offset, 10);
+                    if (_.isFinite(qo) && qo >= 0) {
+                        this.offset = qo;
+                    }
+                    var ql = parseInt(this.collection.queryParams.limit, 10);
+                    if (_.isFinite(ql) && ql > 0) {
+                        this.limit = ql;
+                    }
+                    /*
+                     * Page Limit dropdown is authoritative. Stale queryParams.limit (e.g. after
+                     * relationship chunk size vs UI limit) made prev subtract the wrong step and
+                     * renderAtlasPagination's old "previous" branch used pageTo - limit with a
+                     * mismatched limit — wrong page number (e.g. 10 -> 7) and range (31-35).
+                     */
+                    if (this.ui && this.ui.showPage && this.ui.showPage.length) {
+                        var lp = parseInt(this.ui.showPage.val(), 10);
+                        if (_.isFinite(lp) && lp > 0) {
+                            this.limit = lp;
+                            this.collection.queryParams.limit = lp;
+                        }
+                    }
+                }
                 var isFirstPage = this.offset === 0,
                     dataLength = this.collection.length,
-                    goToPage = this.ui.gotoPage.val();
+                    goToPage = (this.ui.gotoPage && this.ui.gotoPage.length) ? this.ui.gotoPage.val() : '',
+                    ceiling = this.getAtlasPaginationCeiling(),
+                    approxTotal = this.resolveAtlasApproximateTotal();
 
                 /*Next button check.
                 It's outside of Previous button else condition
                 because when user comes from 2 page to 1 page than we need to check next button.*/
-                if (dataLength < this.limit) {
+                if (this.clientAtlasPagination && approxTotal !== null) {
+                    this.ui.nextData.attr('disabled', (this.offset + this.limit) >= ceiling);
+                } else if (dataLength < this.limit) {
                     this.ui.nextData.attr('disabled', true);
                 } else {
                     this.ui.nextData.attr('disabled', false);
@@ -443,27 +580,32 @@ define(['require',
                 // Previous button check.s
                 if (isFirstPage) {
                     this.ui.previousData.attr('disabled', true);
-                    this.pageFrom = 1;
-                    this.pageTo = this.limit;
+                    this.pageFrom = ceiling === 0 ? 0 : 1;
+                    this.pageTo = Math.min(this.limit, ceiling);
                 } else {
                     this.ui.previousData.attr('disabled', false);
                 }
 
-                if (options && options.next) {
-                    //on next click, adding "1" for showing the another records.
-                    this.pageTo = this.offset + this.limit;
+                if (!isFirstPage) {
+                    /* Next/Prev both: offset + limit are authoritative (set before fetchCollection). */
                     this.pageFrom = this.offset + 1;
-                } else if (!isFirstPage && options && options.previous) {
-                    this.pageTo = this.pageTo - this.limit;
-                    this.pageFrom = (this.pageTo - this.limit) + 1;
+                    this.pageTo = Math.min(this.offset + this.limit, ceiling);
                 }
                 if (this.isApiSorting && !this.pageTo && !this.pageFrom) {
                     this.limit = this.count;
                     this.pageTo = (this.offset + this.limit);
                     this.pageFrom = this.offset + 1;
                 }
-                this.ui.pageRecordText.html("Showing  <u>" + this.collection.length + " records</u> From " + this.pageFrom + " - " + this.pageTo);
-                this.activePage = Math.round(this.pageTo / this.limit);
+                var totalRecords = ceiling;
+                var displayTo = Math.min(this.pageTo, totalRecords);
+                var displayFrom = totalRecords === 0 ? 0 : Math.min(this.pageFrom, displayTo);
+                var totalLabel = (typeof totalRecords === 'number' && totalRecords.toLocaleString)
+                    ? totalRecords.toLocaleString('en-US')
+                    : totalRecords;
+                this.ui.pageRecordText.html("Showing  <u>" + totalLabel + " records</u> From " + displayFrom + " - " + displayTo);
+                this.activePage = (this.limit > 0)
+                    ? (Math.floor(this.offset / this.limit) + 1)
+                    : 1;
                 this.ui.activePage.attr('title', "Page " + this.activePage);
                 this.ui.activePage.text(this.activePage);
                 this.ui.showPage.val(this.limit).trigger('change', { "skipViewChange": true });
@@ -489,8 +631,26 @@ define(['require',
                         html: true,
                         content: Messages.search.noRecordForPage + '<b>' + Utils.getNumberSuffix({ number: pageNumber, sup: true }) + '</b> page'
                     });
+                    if (this._atlasPaginationBusy) {
+                        this.ui.nextData.prop('disabled', true);
+                        this.ui.previousData.prop('disabled', true);
+                        if (this.ui.showPage && this.ui.showPage.length) {
+                            this.ui.showPage.prop('disabled', true);
+                        }
+                    }
+                    this._syncAtlasPaginationBusyVisuals();
                     return;
                 }
+                if (this._atlasPaginationBusy) {
+                    this.ui.nextData.prop('disabled', true);
+                    this.ui.previousData.prop('disabled', true);
+                    if (this.ui.showPage && this.ui.showPage.length) {
+                        this.ui.showPage.prop('disabled', true);
+                    }
+                } else if (this.ui.showPage && this.ui.showPage.length) {
+                    this.ui.showPage.prop('disabled', false);
+                }
+                this._syncAtlasPaginationBusyVisuals();
             },
 
             /**
@@ -657,9 +817,22 @@ define(['require',
                 atlasNextBtn
             **/
             onClicknextData: function() {
+                if (this._atlasPaginationBusy) {
+                    return;
+                }
+                if (this.clientAtlasPagination && typeof this.atlasShowLoaderBeforeFetch === 'function') {
+                    this.atlasShowLoaderBeforeFetch();
+                }
+                if (this.clientAtlasPagination && this.ui && this.ui.showPage && this.ui.showPage.length) {
+                    var ln = parseInt(this.ui.showPage.val(), 10);
+                    if (_.isFinite(ln) && ln > 0) {
+                        this.limit = ln;
+                    }
+                }
                 this.offset = this.offset + this.limit;
                 _.extend(this.collection.queryParams, {
-                    offset: this.offset
+                    offset: this.offset,
+                    limit: this.limit
                 });
                 if (this.value) {
                     this.value.pageOffset = this.offset;
@@ -677,12 +850,25 @@ define(['require',
                 atlasPrevBtn
             **/
             onClickpreviousData: function() {
+                if (this._atlasPaginationBusy) {
+                    return;
+                }
+                if (this.clientAtlasPagination && typeof this.atlasShowLoaderBeforeFetch === 'function') {
+                    this.atlasShowLoaderBeforeFetch();
+                }
+                if (this.clientAtlasPagination && this.ui && this.ui.showPage && this.ui.showPage.length) {
+                    var lp = parseInt(this.ui.showPage.val(), 10);
+                    if (_.isFinite(lp) && lp > 0) {
+                        this.limit = lp;
+                    }
+                }
                 this.offset = this.offset - this.limit;
                 if (this.offset <= -1) {
                     this.offset = 0;
                 }
                 _.extend(this.collection.queryParams, {
-                    offset: this.offset
+                    offset: this.offset,
+                    limit: this.limit
                 });
                 if (this.value) {
                     this.value.pageOffset = this.offset;
@@ -701,6 +887,9 @@ define(['require',
             **/
             changePageLimit: function(e, obj) {
                 if (!obj || (obj && !obj.skipViewChange)) {
+                    if (this._atlasPaginationBusy) {
+                        return;
+                    }
                     var limit = parseInt(this.ui.showPage.val());
                     if (limit == 0) {
                         this.ui.showPage.data('select2').$container.addClass('has-error');
@@ -718,7 +907,8 @@ define(['require',
                         }
                     }
                     _.extend(this.collection.queryParams, { limit: this.limit, offset: this.offset });
-                    this.fetchCollection();
+                    /* Schema tab: Classic UI re-sorts cached rows by position when limit changes. */
+                    this.fetchCollection({ fromPageLimitChange: true });
                 }
             },
             /**

@@ -289,10 +289,12 @@ define(['require',
                         } else {
                             this.generateTag([]);
                         }
+                        /* Terms come from entity or header only. Do not call ensureRelationshipView here:
+                         * that prefetches every relationship search (columns, db, …) on Properties tab load.
+                         * Relationship cards load when the Relationships tab is opened (tab click / tabActive). */
                         if (collectionJSON && !_.startsWith(collectionJSON.typeName, "AtlasGlossary")) {
                             if (collectionJSON.relationshipAttributes && collectionJSON.relationshipAttributes.meanings && collectionJSON.relationshipAttributes.meanings.length) {
                                 this.generateTerm(collectionJSON.relationshipAttributes.meanings);
-                                this.ensureRelationshipView();
                             } else {
                                 $.ajax({
                                     url: UrlLinks.entityHeaderApiUrl(that.id),
@@ -316,7 +318,6 @@ define(['require',
                                             }
                                         }
                                         that.generateTerm(normalized);
-                                        that.ensureRelationshipView();
                                     }
                                 });
                             }
@@ -413,13 +414,16 @@ define(['require',
                         // To render Schema check attribute "schemaElementsAttribute"
                         var schemaOptions = this.activeEntityDef.get('options');
                         var schemaElementsAttribute = schemaOptions && schemaOptions.schemaElementsAttribute;
-                        if (!_.isEmpty(schemaElementsAttribute)) {
+                        var schemaRelationNames = Utils.normalizeSchemaElementsAttribute(schemaElementsAttribute);
+                        if (!_.isEmpty(schemaRelationNames)) {
                             this.$('.schemaTable').show();
                             var relA = collectionJSON.relationshipAttributes || {};
                             var attrA = collectionJSON.attributes || {};
+                            var firstRel = schemaRelationNames[0];
+                            var embeddedAttr = relA[firstRel] || attrA[firstRel] || [];
                             this.renderSchemaLayoutView(_.extend({}, obj, {
-                                attribute: relA[schemaElementsAttribute] ||
-                                    attrA[schemaElementsAttribute]
+                                schemaRelationNames: schemaRelationNames,
+                                attribute: embeddedAttr
                             }));
                         } else {
                             this.$('.schemaTable').hide();
@@ -825,6 +829,10 @@ define(['require',
                 var that = this;
                 require(['views/schema/SchemaLayoutView'], function(SchemaLayoutView) {
                     that.RSchemaTableLayoutView.show(new SchemaLayoutView(obj));
+                    /* After async require + show, sync URL tab (e.g. refresh on tabActive=schema) so schema pane is active. */
+                    if (that.value && that.value.tabActive === 'schema' && _.isFunction(that.updateTab)) {
+                        that.updateTab();
+                    }
                 });
             },
             renderAuditTableLayoutView: function(obj) {

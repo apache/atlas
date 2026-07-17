@@ -15,22 +15,13 @@
  * limitations under the License.
  */
 
-import {
-  Divider,
-  Grid,
-  Link,
-  List,
-  ListItem,
-  ListItemText,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Grid, Link, List, ListItem, ListItemText, Typography } from "@mui/material";
 import { auditAction, category } from "@utils/Enum";
-import { isArray, isEmpty, jsonParse } from "@utils/Utils";
+import { isEmpty, jsonParse } from "@utils/Utils";
 import CustomModal from "@components/Modal";
+import TypeDefAuditDetailModal from "@components/TypeDefAuditDetailModal";
 import { useState } from "react";
-import { getValues } from "@components/commonComponents";
-import { Item, StyledPaper } from "@utils/Muiutils";
+import { Item } from "@utils/Muiutils";
 import AuditsTab from "@views/DetailPage/EntityDetailTabs/AuditsTab";
 import ImportExportAudits from "./ImportExportAudits";
 
@@ -196,65 +187,12 @@ const AuditResults = ({ componentProps, row }: any) => {
         <ImportExportAudits auditObj={auditObj} />
       )}
 
-      <CustomModal
+      <TypeDefAuditDetailModal
         open={openModal}
         onClose={handleCloseModal}
-        title={`${category[currentResultObj.category]} Type Details: ${
-          currentResultObj.name
-        }`}
-        footer={false}
-        button1Handler={undefined}
-        button2Handler={undefined}
-      >
-        <StyledPaper variant="outlined">
-          {" "}
-          {!isEmpty(currentResultObj)
-            ? Object.entries(currentResultObj)
-                .sort()
-                .map(([keys, value]: [string, any]) => {
-                  return (
-                    <>
-                      <Stack
-                        direction="row"
-                        spacing={4}
-                        marginBottom={1}
-                        marginTop={1}
-                      >
-                        <div
-                          style={{
-                            flex: 1,
-                            wordBreak: "break-all",
-                            textAlign: "left",
-                            fontWeight: "600",
-                          }}
-                        >
-                          {`${keys} ${
-                            isArray(value) ? `(${value.length})` : ""
-                          }`}
-                        </div>
-                        <div
-                          style={{
-                            flex: 1,
-                            wordBreak: "break-all",
-                            textAlign: "left",
-                          }}
-                        >
-                          {getValues(
-                            value,
-                            undefined,
-                            undefined,
-                            undefined,
-                            "properties"
-                          )}
-                        </div>
-                      </Stack>
-                      <Divider />
-                    </>
-                  );
-                })
-            : "No Record Found"}
-        </StyledPaper>
-      </CustomModal>
+        detailObject={currentResultObj}
+        maxWidth="sm"
+      />
 
       {(operation == "PURGE" || operation == "AUTO_PURGE") && (
         <CustomModal

@@ -22,19 +22,27 @@ import com.google.common.base.Charsets;
 import org.apache.atlas.server.common.service.CuratorFactory;
 import org.apache.atlas.server.common.service.HighAvailability;
 import org.apache.atlas.server.common.service.HighAvailabilityProperties;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
+import org.apache.curator.framework.recipes.leader.LeaderLatch;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.zookeeper.data.ACL;
+import org.mockito.ArgumentMatcher;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -56,6 +64,9 @@ public class CuratorFactoryTest {
     @Mock
     private CuratorFrameworkFactory.Builder builder;
 
+    @Mock
+    private CuratorFramework curatorFramework;
+
     @BeforeMethod
     public void setup() {
         MockitoAnnotations.initMocks(this);
@@ -67,6 +78,23 @@ public class CuratorFactoryTest {
         return new CuratorFactory(configuration, highAvailability) {
             @Override
             protected void initializeCuratorFramework() {
+            }
+        };
+    }
+
+    private CuratorFactory buildCuratorFactoryWithCuratorFramework() {
+        when(highAvailability.isHAEnabled(configuration)).thenReturn(true);
+
+        return new CuratorFactory(configuration, highAvailability) {
+            @Override
+            protected void initializeCuratorFramework() {
+                try {
+                    Field field = CuratorFactory.class.getDeclaredField("curatorFramework");
+                    field.setAccessible(true);
+                    field.set(this, curatorFramework);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
         };
     }
@@ -101,7 +129,15 @@ public class CuratorFactoryTest {
         CuratorFactory curatorFactory = buildCuratorFactory();
         invokeEnhance(curatorFactory);
 
-        verify(builder).aclProvider(any(ACLProvider.class));
+        verify(builder).aclProvider(ArgumentMatchers.argThat(new ArgumentMatcher<ACLProvider>() {
+            @Override
+            public boolean matches(ACLProvider aclProvider) {
+                ACL acl = aclProvider.getDefaultAcl().get(0);
+
+                return "myclient@EXAMPLE.COM".equals(acl.getId().getId())
+                        && "sasl".equals(acl.getId().getScheme());
+            }
+        }));
     }
 
     @Test
@@ -119,6 +155,65 @@ public class CuratorFactoryTest {
     public void testDefaultConstructor() {
         CuratorFactory curatorFactory = buildCuratorFactory();
         assertNotNull(curatorFactory);
+    }
+
+    @Test
+    public void testClientInstance() {
+        CuratorFactory curatorFactory = buildCuratorFactoryWithCuratorFramework();
+
+        CuratorFramework result = curatorFactory.clientInstance();
+        assertEquals(result, curatorFramework);
+    }
+
+    @Test
+    public void testLeaderLatchInstance() {
+        CuratorFactory curatorFactory = buildCuratorFactoryWithCuratorFramework();
+
+        String serverId = "server1";
+        String zkRoot   = "/test";
+
+        LeaderLatch leaderLatch = curatorFactory.leaderLatchInstance(serverId, zkRoot);
+        assertNotNull(leaderLatch);
+    }
+
+    @Test
+    public void testLockInstance() {
+        CuratorFactory curatorFactory = buildCuratorFactoryWithCuratorFramework();
+
+        String zkRoot = "/test";
+
+        InterProcessMutex mutex = curatorFactory.lockInstance(zkRoot);
+        assertNotNull(mutex);
+    }
+
+    @Test
+    public void testClose() {
+        CuratorFactory curatorFactory = buildCuratorFactoryWithCuratorFramework();
+
+        doNothing().when(curatorFramework).close();
+        curatorFactory.close();
+        verify(curatorFramework).close();
+    }
+
+    @Test
+    public void testConstructorDoesNotInitializeWhenHAIsDisabled() {
+        when(highAvailability.isHAEnabled(configuration)).thenReturn(false);
+
+        CuratorFactory curatorFactory = new CuratorFactory(configuration, highAvailability) {
+            @Override
+            protected void initializeCuratorFramework() {
+                throw new AssertionError("initializeCuratorFramework() should not be called when HA is disabled");
+            }
+        };
+
+        assertNull(curatorFactory.clientInstance());
+    }
+
+    @Test
+    public void testConstructorInitializesWhenHAIsEnabled() {
+        CuratorFactory curatorFactory = buildCuratorFactoryWithCuratorFramework();
+
+        assertEquals(curatorFactory.clientInstance(), curatorFramework);
     }
 
     @Test

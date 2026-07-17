@@ -39,7 +39,7 @@ const AddUpdateCategoryForm = (props: {
   dataObj: any;
 }) => {
   const { open, onClose, isAdd, node, dataObj } = props;
-  const { id, parent, types } = node || {};
+  const { id, parent, types, cGuid } = node || {};
   const { guid: glossaryTypeGuid }: any = useParams();
   const dispatchApi = useAppDispatch();
   const toastId: any = useRef(null);
@@ -103,7 +103,7 @@ const AddUpdateCategoryForm = (props: {
     }
     data["name"] = name;
     if (types == "child") {
-      data["parentCategory"] = { ["categoryGuid"]: glossaryTypeGuid };
+      data["parentCategory"] = { ["categoryGuid"]: cGuid || glossaryTypeGuid };
     }
     data["shortDescription"] = !isEmpty(shortDescription)
       ? shortDescription
@@ -146,6 +146,7 @@ const AddUpdateCategoryForm = (props: {
         button1Handler={onClose}
         button2Label={isAdd ? "Create" : "Update"}
         disableButton2={isSubmitting}
+        button2Loading={isSubmitting}
         maxWidth="sm"
         button2Handler={handleSubmit(onSubmit)}
       >

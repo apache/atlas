@@ -108,6 +108,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final IAtlasEntityChangeNotifier entityChangeNotifier;
     private final EntityGraphMapper          entityGraphMapper;
     private final EntityGraphRetriever       entityRetriever;
+    private       EntityRenameHandler        entityRenameHandler;
     private       boolean                    storeDifferentialAudits;
 
     @Inject
@@ -119,6 +120,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.entityGraphMapper       = entityGraphMapper;
         this.entityRetriever         = new EntityGraphRetriever(graph, typeRegistry);
         this.storeDifferentialAudits = STORE_DIFFERENTIAL_AUDITS.getBoolean();
+    }
+
+    @Inject
+    public void setEntityRenameHandler(EntityRenameHandler entityRenameHandler) {
+        this.entityRenameHandler = entityRenameHandler;
     }
 
     @VisibleForTesting
@@ -1202,6 +1208,51 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
+    private void handleRenamePropagation(boolean isPartialUpdate, AtlasEntity entity, AtlasEntityType entityType,
+                                         AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
+        if (!isPartialUpdate || entityRenameHandler == null) {
+            return;
+        }
+
+        if (CollectionUtils.isEmpty(entityType.getRenamePropagationTargets())) {
+            return;
+        }
+
+        String entityGuid = StringUtils.isNotEmpty(entity.getGuid()) ? entity.getGuid() : AtlasGraphUtilsV2.getIdFromVertex(vertex);
+
+        try {
+            LOG.debug("handleRenamePropagation(): type={}; guid={}; renamePropagationTargetCount={}",
+                    entityType.getTypeName(), entityGuid, entityType.getRenamePropagationTargets().size());
+
+            String oldUniqueAttrValue = AtlasGraphUtilsV2.getProperty(vertex, entityType.getVertexPropertyName(AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME), String.class);
+            String newUniqueAttrValue = (String) entity.getAttribute(AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME);
+
+            if (StringUtils.isBlank(oldUniqueAttrValue) || StringUtils.isBlank(newUniqueAttrValue)) {
+                LOG.debug("handleRenamePropagation(): skip — missing qualifiedName on vertex or request (type={}; guid={})",
+                        entityType.getTypeName(), entityGuid);
+                return;
+            }
+
+            if (StringUtils.equals(oldUniqueAttrValue, newUniqueAttrValue)) {
+                LOG.debug("handleRenamePropagation(): skip — qualifiedName unchanged (type={}; guid={})",
+                        entityType.getTypeName(), entityGuid);
+                return;
+            }
+
+            LOG.info("Rename detected (qualifiedName changed): type={}; guid={}; oldQualifiedName={}; newQualifiedName={}; processing dependent entities for rename propagation",
+                    entityType.getTypeName(), entityGuid, oldUniqueAttrValue, newUniqueAttrValue);
+
+            entityRenameHandler.addDependentsToContext(context, entityType, vertex, entity);
+        } catch (AtlasBaseException e) {
+            LOG.error("handleRenamePropagation(): rename propagation failed for type={}; guid={}", entityType.getTypeName(), entityGuid, e);
+            throw e;
+        } catch (Exception e) {
+            LOG.error("handleRenamePropagation(): unexpected error during rename propagation for type={}; guid={}",
+                    entityType.getTypeName(), entityGuid, e);
+            throw new AtlasBaseException(e);
+        }
+    }
+
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("preCreateOrUpdate");
 
@@ -1251,6 +1302,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     }
                     if (!isEntityIncomplete(vertex)) { // In case of an import shell entities, skip updating to entitiesCreated, to avoid mapAttributesAndClassification // In case of hook shell entities, it will not reach to this case
                         context.addUpdated(guid, entity, entityType, vertex);
+
+                        handleRenamePropagation(isPartialUpdate, entity, entityType, vertex, context);
                     }
                 } else {
                     graphDiscoverer.validateAndNormalize(entity);

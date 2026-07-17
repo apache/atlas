@@ -183,11 +183,24 @@ tr.empty {
     >.disabled>a,
     >li>button[disabled] {
         color: $color_mountain_mist_approx;
+        cursor: not-allowed;
 
         &:hover {
             cursor: not-allowed;
             color: $white;
             background: $color_jungle_green_light !important;
+        }
+    }
+
+    /*
+     * Atlas client pagination (schema): fetch in progress — disabled buttons do not
+     * receive hover, so cursor + ul.atlas-pagination-busy show loading (see TableLayout).
+     */
+    &.atlas-pagination-busy {
+        cursor: wait;
+
+        > li > button {
+            cursor: wait !important;
         }
     }
 }

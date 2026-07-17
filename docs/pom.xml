@@ -126,8 +126,8 @@
                         </goals>
                         <phase>pre-site</phase>
                         <configuration>
-                            <nodeVersion>${node-for-v2.version}</nodeVersion>
-                            <npmVersion>${npm-for-v2.version}</npmVersion>
+                            <nodeVersion>${node-for-v1.version}</nodeVersion>
+                            <npmVersion>${npm-for-v1.version}</npmVersion>
                         </configuration>
                     </execution>
                     <execution>

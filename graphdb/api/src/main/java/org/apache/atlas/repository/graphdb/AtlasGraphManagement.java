@@ -48,6 +48,13 @@ public interface AtlasGraphManagement extends AutoCloseable {
     AtlasEdgeLabel makeEdgeLabel(String label);
 
     /**
+     * @param propertyName
+     * @param dataType
+     * @return true if the property key exists and has the given data type
+     */
+    boolean propertyKeyHasDataType(String propertyName, Class<?> dataType);
+
+    /**
      *  @param propertyKey
      *
      */
@@ -165,6 +172,14 @@ public interface AtlasGraphManagement extends AutoCloseable {
      * update valid SchemaStatus for all vertex and edge indexes.
      */
     void updateSchemaStatus();
+
+    /**
+     * Disable the index with the given name.
+     *
+     * @param indexName
+     * @throws Exception
+     */
+    void disableIndex(String indexName) throws Exception;
 
     /***
      * Re-index elements.

@@ -22,10 +22,12 @@ import org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint;
 import org.apache.atlas.server.common.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
+import org.apache.atlas.web.filters.AtlasHeaderPreAuthFilter;
+import org.apache.atlas.web.filters.AtlasJwtAuthWrapper;
 import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
 import org.apache.atlas.server.common.security.AtlasAuthenticationProvider;
 import org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.keycloak.adapters.AdapterDeploymentContext;
 import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.KeycloakDeployment;
@@ -101,6 +103,8 @@ public class AtlasSecurityConfig extends org.apache.atlas.server.common.security
 
     private final boolean                      keycloakEnabled;
     private final ObjectProvider<Filter>       staleTransactionCleanupFilterProvider;
+    private final AtlasHeaderPreAuthFilter     headerPreAuthFilter;
+    private final AtlasJwtAuthWrapper          atlasJwtAuthWrapper;
 
     @Value("${keycloak.configurationFile:WEB-INF/keycloak.json}")
     private Resource keycloakConfigFileResource;
@@ -118,11 +122,15 @@ public class AtlasSecurityConfig extends org.apache.atlas.server.common.security
                                AtlasAuthenticationEntryPoint atlasAuthenticationEntryPoint,
                                Configuration configuration,
                                ObjectProvider<ActiveServerFilter> activeServerFilterProvider,
-                               @Qualifier("staleTransactionCleanupFilter") ObjectProvider<Filter> staleTransactionCleanupFilterProvider) {
+                               @Qualifier("staleTransactionCleanupFilter") ObjectProvider<Filter> staleTransactionCleanupFilterProvider,
+                               AtlasHeaderPreAuthFilter headerPreAuthFilter,
+                               AtlasJwtAuthWrapper atlasJwtAuthWrapper) {
         super(ssoAuthenticationFilterProvider, csrfPreventionFilterProvider, atlasAuthenticationFilterProvider,
                 authenticationProvider, successHandler, failureHandler, atlasAuthenticationEntryPoint, configuration,
                 activeServerFilterProvider);
         this.staleTransactionCleanupFilterProvider = staleTransactionCleanupFilterProvider;
+        this.headerPreAuthFilter                    = headerPreAuthFilter;
+        this.atlasJwtAuthWrapper                    = atlasJwtAuthWrapper;
         this.keycloakEnabled = configuration.getBoolean(AtlasAuthenticationProvider.KEYCLOAK_AUTH_METHOD, false);
     }
 
@@ -146,7 +154,8 @@ public class AtlasSecurityConfig extends org.apache.atlas.server.common.security
                 "/js/**", "/n/js/**",
                 "/ieerror.html", "/migration-status.html",
                 "/api/atlas/admin/status",
-                "/api/atlas/admin/prometheus"));
+                "/api/atlas/admin/prometheus",
+                "/apidocs/**"));
 
         if (!keycloakEnabled) {
             matchers.add("/login.jsp");
@@ -161,12 +170,35 @@ public class AtlasSecurityConfig extends org.apache.atlas.server.common.security
         addWebUiFormLogin(httpSecurity);
         addHaAndMigrationGuards(httpSecurity);
 
+        // Header auth
+        httpSecurity.addFilterBefore(headerPreAuthFilter, BasicAuthenticationFilter.class);
+
+        // Knox SSO — after header pre-auth
+        AtlasKnoxSSOAuthenticationFilter ssoAuthenticationFilter = ssoAuthenticationFilterProvider.getIfAvailable();
+        if (ssoAuthenticationFilter != null) {
+            httpSecurity.addFilterAfter(ssoAuthenticationFilter, AtlasHeaderPreAuthFilter.class);
+        }
+
+        // JWT wrapper
+        httpSecurity.addFilterAfter(atlasJwtAuthWrapper, AtlasKnoxSSOAuthenticationFilter.class);
+
+        // Stale transaction cleanup (webapp-only filter)
         Filter staleTransactionCleanupFilter = staleTransactionCleanupFilterProvider.getIfAvailable();
         if (staleTransactionCleanupFilter != null) {
             httpSecurity.addFilterAfter(staleTransactionCleanupFilter, BasicAuthenticationFilter.class);
         }
 
-        addCommonAuthFilters(httpSecurity);
+        // Atlas auth filter
+        AtlasAuthenticationFilter atlasAuthenticationFilter = atlasAuthenticationFilterProvider.getIfAvailable();
+        if (atlasAuthenticationFilter != null) {
+            httpSecurity.addFilterAfter(atlasAuthenticationFilter, SecurityContextHolderAwareRequestFilter.class);
+        }
+
+        // CSRF filter
+        AtlasCSRFPreventionFilter csrfPreventionFilter = csrfPreventionFilterProvider.getIfAvailable();
+        if (csrfPreventionFilter != null && atlasAuthenticationFilter != null) {
+            httpSecurity.addFilterAfter(csrfPreventionFilter, AtlasAuthenticationFilter.class);
+        }
 
         if (keycloakEnabled) {
             httpSecurity.logout().addLogoutHandler(keycloakLogoutHandler()).and()

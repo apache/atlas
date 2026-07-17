@@ -29,7 +29,7 @@ import org.apache.atlas.server.common.service.HighAvailability;
 import org.apache.atlas.server.common.service.HighAvailabilityProperties;
 import org.apache.atlas.server.common.service.ServiceState;
 import org.apache.atlas.server.common.service.ServiceStateChangeHandler;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.mockito.InOrder;
 import org.mockito.Mock;
@@ -48,7 +48,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 public class ActiveInstanceElectorServiceTest {
@@ -128,7 +128,7 @@ public class ActiveInstanceElectorServiceTest {
 
         verify(serviceStateChangeHandler).onServerStart();
         verify(serviceStateChangeHandler).onServerActivation();
-        verifyZeroInteractions(curatorFactory);
+        verifyNoInteractions(curatorFactory);
     }
 
     @Test
@@ -164,7 +164,7 @@ public class ActiveInstanceElectorServiceTest {
         ActiveInstanceElectorService service = newElector(new HashSet<ActiveStateChangeHandler>());
         service.stop();
 
-        verifyZeroInteractions(curatorFactory);
+        verifyNoInteractions(curatorFactory);
     }
 
     @Test

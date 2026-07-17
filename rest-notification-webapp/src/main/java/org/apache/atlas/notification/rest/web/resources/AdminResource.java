@@ -23,7 +23,7 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.server.common.service.ServiceState;
 import org.apache.atlas.utils.AtlasJson;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

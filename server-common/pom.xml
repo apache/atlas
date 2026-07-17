@@ -61,10 +61,6 @@
             <artifactId>jersey-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>commons-configuration</groupId>
-            <artifactId>commons-configuration</artifactId>
-        </dependency>
-        <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
         </dependency>
@@ -101,6 +97,11 @@
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-server-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <version>${commons-conf2.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>

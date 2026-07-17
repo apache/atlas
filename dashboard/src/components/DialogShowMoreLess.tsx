@@ -16,7 +16,7 @@
  */
 
 import { LightTooltip } from "./muiComponents";
-import { Chip, IconButton, Menu, MenuItem, Typography } from "@mui/material";
+import { Chip, IconButton, Menu, MenuItem, Typography, Box } from "@mui/material";
 import { extractKeyValueFromEntity, isEmpty, serverError } from "@utils/Utils";
 import { useRef, useState } from "react";
 import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
@@ -37,8 +37,28 @@ import { fetchGlossaryDetails } from "@redux/slice/glossaryDetailsSlice";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 import { fetchGlossaryData } from "@redux/slice/glossarySlice";
 
-const CHIP_MAX_WIDTH = "200px";
+const CHIP_MAX_WIDTH = "6.25rem";
+const CLASSIFICATION = "Classification";
 const ITEM_HEIGHT = 48;
+
+export interface DialogShowMoreLessProps {
+  value: any;
+  readOnly?: boolean;
+  setUpdateTable?: any;
+  columnVal: string;
+  colName: string;
+  displayText: string;
+  optionalDisplayText?: string;
+  removeApiMethod?: any;
+  isShowMoreLess: boolean;
+  detailPage?: boolean;
+  entity?: any;
+  relatedTerm?: boolean;
+  /** Schema tab: GET affected column entity/ies and merge (after parent detail refresh). */
+  onSchemaChildEntityRefresh?: (
+    childGuids: string[]
+  ) => void | Promise<void>;
+}
 
 const DialogShowMoreLess = ({
   value,
@@ -52,21 +72,9 @@ const DialogShowMoreLess = ({
   isShowMoreLess,
   detailPage,
   entity,
-  relatedTerm
-}: {
-  value: any;
-  readOnly?: boolean;
-  setUpdateTable?: any;
-  columnVal: string;
-  colName: string;
-  displayText: string;
-  optionalDisplayText?: string;
-  removeApiMethod?: any;
-  isShowMoreLess: boolean;
-  detailPage?: boolean;
-  entity?: any;
-  relatedTerm?: boolean;
-}) => {
+  relatedTerm,
+  onSchemaChildEntityRefresh
+}: DialogShowMoreLessProps) => {
   const typedef: any = useAppSelector((state: any) => state.classification);
   const { classificationData }: any = typedef;
   const [openMenu, setOpenMenu] = useState<null | HTMLElement>(null);
@@ -106,6 +114,7 @@ const DialogShowMoreLess = ({
     setAttributeModal(false);
   };
   const handleCloseModal = () => {
+    setRemoveLoader(false);
     setOpenModal(false);
   };
 
@@ -116,7 +125,25 @@ const DialogShowMoreLess = ({
   const handleClose = () => {
     setOpenMenu(null);
   };
+  /**
+   * Same rules as search / classic `tagForTable`: show remove (X) only when the
+   * classification is on this entity; propagated tags use another entityGuid.
+   */
+  const canShowDeleteOnClassificationChip = (tag: any) => {
+    if (colName !== CLASSIFICATION) {
+      return true;
+    }
+    if (!tag) {
+      return false;
+    }
+    return (
+      value.guid === tag.entityGuid ||
+      (value.guid !== tag.entityGuid && tag.entityStatus === "DELETED")
+    );
+  };
+
   const handleDelete = (currentVal: string) => {
+    setRemoveLoader(false);
     let { name } = extractKeyValueFromEntity(detailPage ? entity : value);
     setCurrentValue({
       selectedValue: currentVal,
@@ -126,10 +153,10 @@ const DialogShowMoreLess = ({
     setOpenModal(true);
   };
 
-  const handleRemove = async () => {
+  const handleRemove = async (): Promise<void> => {
     try {
       setRemoveLoader(true);
-      if (colName == "Classification") {
+      if (colName == CLASSIFICATION) {
         await removeApiMethod(
           detailPage ? entity.guid : value.guid,
           currentValue.selectedValue
@@ -190,28 +217,47 @@ const DialogShowMoreLess = ({
       setOpenModal(false);
       toast.dismiss(toastId.current);
       toastId.current = toast.success(
-        `${colName} ${
-          colName == "Term" ? "association" : currentValue.selectedValue
+        `${colName} ${colName == "Term" ? "association" : currentValue.selectedValue
         } was removed successfully`
       );
+      const isSchemaClassificationFlow =
+        colName === CLASSIFICATION &&
+        typeof onSchemaChildEntityRefresh === "function";
       if (!isEmpty(guid)) {
-        let params: any = { gtype: gType, guid: guid };
-        dispatchApi(fetchGlossaryData());
-        dispatchApi(fetchGlossaryDetails(params));
-        dispatchApi(fetchDetailPageData(guid as string));
+        if (!isEmpty(gType)) {
+          const params: { gtype: string | null; guid: string } = {
+            gtype: gType,
+            guid: guid as string
+          };
+          dispatchApi(fetchGlossaryData());
+          dispatchApi(fetchGlossaryDetails(params));
+        }
+        if (!isSchemaClassificationFlow) {
+          await dispatchApi(fetchDetailPageData(guid as string)).unwrap();
+        }
+      }
+      if (isSchemaClassificationFlow && onSchemaChildEntityRefresh) {
+        const childGuid = detailPage ? entity?.guid : value?.guid;
+        if (childGuid) {
+          await Promise.resolve(
+            onSchemaChildEntityRefresh([childGuid as string])
+          );
+        }
       }
       !isEmpty(setUpdateTable) && setUpdateTable(moment.now());
     } catch (error) {
       setOpenModal(false);
       serverError(error, toastId);
+    } finally {
+      setRemoveLoader(false);
     }
   };
 
   const checkSuperTypes = (classificationName: string) => {
     let tagObj = !isEmpty(classificationData.classificationDefs)
       ? classificationData.classificationDefs.find((obj: { name: string }) => {
-          return obj.name == classificationName;
-        })
+        return obj.name == classificationName;
+      })
       : {};
 
     return !isEmpty(tagObj?.superTypes)
@@ -222,7 +268,10 @@ const DialogShowMoreLess = ({
   };
 
   const getLabel = (label: string, optionalLabel?: string) => {
-    if (columnVal == "Classifications" || columnVal == "self") {
+    if (colName == CLASSIFICATION) {
+      return checkSuperTypes(label);
+    } else if (colName == "Propagated Classification") {
+      // Re-using checkSuperTypes since it does the same as getTagParentList
       return checkSuperTypes(label);
     } else {
       return label || optionalLabel;
@@ -234,7 +283,7 @@ const DialogShowMoreLess = ({
     text: string | undefined,
     data: any | undefined
   ) => {
-    if (colName == "Classification" || colName == "Propagated Classification") {
+    if (colName == CLASSIFICATION || colName == "Propagated Classification") {
       let keys = Array.from(searchParams.keys());
       for (let i = 0; i < keys.length; i++) {
         // if (keys[i] != "searchType") {
@@ -284,7 +333,7 @@ const DialogShowMoreLess = ({
   };
 
   const assignTitle = () => {
-    if (colName == "Classification") {
+    if (colName == CLASSIFICATION) {
       return "Add Classification";
     } else if (colName == "Term") {
       return "Add Term";
@@ -292,7 +341,7 @@ const DialogShowMoreLess = ({
   };
 
   const removeTitle = () => {
-    if (colName == "Classification") {
+    if (colName == CLASSIFICATION) {
       return "Remove Classification Assignment";
     } else if (colName == "Term") {
       return "Remove Term Assignment";
@@ -304,9 +353,18 @@ const DialogShowMoreLess = ({
   return (
     <>
       {value?.[columnVal]?.length > 0 ? (
-        <div
+        <Box
           className="tag-list"
-          style={{ flexWrap: isShowMoreLess ? "nowrap" : "wrap" }}
+          sx={
+            isShowMoreLess
+              ? {
+                display: "grid",
+                gridTemplateColumns: "minmax(2.1875rem, max-content) max-content max-content",
+                alignItems: "center",
+                width: "100%"
+              }
+              : { display: "flex", flexWrap: "wrap", alignItems: "center" }
+          }
         >
           {isShowMoreLess && (
             <LightTooltip
@@ -324,35 +382,36 @@ const DialogShowMoreLess = ({
                       value[columnVal][0][displayText],
                       optionalDisplayText,
                       (colName == "Term" || colName == "Category") &&
-                        value[columnVal][0]
+                      value[columnVal][0]
                     )}
                   </EllipsisText>
                 }
                 onDelete={
                   !isEmpty(removeApiMethod) &&
-                  (colName !== "Classification" ||
-                    value.guid === value[columnVal][0].entityGuid ||
-                    (value.guid !== value[columnVal][0].entityGuid &&
-                      value[columnVal][0].entityStatus === "DELETED"))
+                    canShowDeleteOnClassificationChip(value[columnVal][0])
                     ? () => {
-                        handleDelete(value[columnVal][0][displayText]);
-                      }
+                      handleDelete(value[columnVal][0][displayText]);
+                    }
                     : undefined
                 }
                 size="small"
                 variant="outlined"
                 sx={{
                   "& .MuiChip-label": {
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
                     display: "block",
-                    overflow: "ellipsis",
-                    maxWidth: "145px"
+                    minWidth: 0,
+                    flexShrink: 1
                   },
-
-                  maxWidth: CHIP_MAX_WIDTH
+                  maxWidth: CHIP_MAX_WIDTH,
+                  minWidth: 0,
+                  overflow: "hidden"
                 }}
                 clickable
                 data-cy="tagClick"
-              />{" "}
+              />
             </LightTooltip>
           )}
           {!isShowMoreLess &&
@@ -371,31 +430,30 @@ const DialogShowMoreLess = ({
                           obj[displayText] || obj,
                           optionalDisplayText,
                           (colName == "Term" || colName == "Category") &&
-                            value[columnVal][index]
+                          value[columnVal][index]
                         )}
                       </EllipsisText>
                     }
                     onDelete={
                       !isEmpty(removeApiMethod) &&
-                      (colName !== "Classification" ||
-                        value.guid === obj.entityGuid ||
-                        (value.guid !== obj.entityGuid &&
-                          obj.entityStatus === "DELETED"))
+                        canShowDeleteOnClassificationChip(obj)
                         ? () => {
-                            handleDelete(obj[displayText] || obj);
-                          }
+                          handleDelete(obj[displayText] || obj);
+                        }
                         : undefined
                     }
                     size="small"
                     variant="outlined"
                     sx={{
                       "& .MuiChip-label": {
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
                         display: "block",
-                        overflow: "ellipsis",
-                        maxWidth: "180px"
+                        minWidth: 0
                       },
-
-                      maxWidth: CHIP_MAX_WIDTH
+                      maxWidth: CHIP_MAX_WIDTH,
+                      minWidth: 0
                     }}
                     clickable
                   />
@@ -411,7 +469,7 @@ const DialogShowMoreLess = ({
                 onClick={handleClick}
                 aria-controls={open ? "long-menu" : undefined}
                 aria-expanded={open ? "true" : undefined}
-                aria-haspopup="true"
+                sx={{ flexShrink: 0, padding: "2px" }}
               >
                 <MoreHorizIcon />
               </IconButton>
@@ -424,7 +482,7 @@ const DialogShowMoreLess = ({
                 color="primary"
                 size="small"
                 onClick={() => {
-                  if (colName == "Classification") {
+                  if (colName == CLASSIFICATION) {
                     setTagModal(true);
                   } else if (colName == "Term") {
                     setTermModal(true);
@@ -434,6 +492,7 @@ const DialogShowMoreLess = ({
                     setAttributeModal(true);
                   }
                 }}
+                sx={{ flexShrink: 0, padding: "2px" }}
               >
                 <AddCircleOutlineIcon fontSize="small" />
               </IconButton>
@@ -469,20 +528,17 @@ const DialogShowMoreLess = ({
                               obj[displayText],
                               optionalDisplayText,
                               (colName == "Term" || colName == "Category") &&
-                                value[columnVal][index]
+                              value[columnVal][index]
                             )}
                           </EllipsisText>
                         }
                         className="chip-items"
                         onDelete={
                           !isEmpty(removeApiMethod) &&
-                          (colName !== "Classification" ||
-                            value.guid === obj.entityGuid ||
-                            (value.guid !== obj.entityGuid &&
-                              obj.entityStatus === "DELETED"))
+                            canShowDeleteOnClassificationChip(obj)
                             ? () => {
-                                handleDelete(obj[displayText] || obj);
-                              }
+                              handleDelete(obj[displayText] || obj);
+                            }
                             : undefined
                         }
                         size="small"
@@ -490,11 +546,14 @@ const DialogShowMoreLess = ({
                         clickable
                         sx={{
                           "& .MuiChip-label": {
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
                             display: "block",
-                            overflow: "ellipsis",
-                            maxWidth: "180px"
+                            minWidth: 0
                           },
-                          maxWidth: CHIP_MAX_WIDTH
+                          maxWidth: CHIP_MAX_WIDTH,
+                          minWidth: 0
                         }}
                       />
                     </LightTooltip>
@@ -503,7 +562,7 @@ const DialogShowMoreLess = ({
               }
             })}
           </Menu>
-        </div>
+        </Box>
       ) : (
         !readOnly && (
           <LightTooltip title={assignTitle()}>
@@ -512,7 +571,7 @@ const DialogShowMoreLess = ({
               color="primary"
               size="small"
               onClick={() => {
-                if (colName == "Classification") {
+                if (colName == CLASSIFICATION) {
                   setTagModal(true);
                 } else if (colName == "Term") {
                   setTermModal(true);
@@ -522,6 +581,7 @@ const DialogShowMoreLess = ({
                   setAttributeModal(true);
                 }
               }}
+              sx={{ flexShrink: 0, padding: "2px" }}
             >
               <AddCircleOutlineIcon fontSize="small" />
             </IconButton>
@@ -539,6 +599,7 @@ const DialogShowMoreLess = ({
           button2Label="Remove"
           button2Handler={handleRemove}
           disableButton2={removeLoader}
+          button2Loading={removeLoader}
           isDirty={true}
         >
           {relatedTerm ? (
@@ -554,7 +615,7 @@ const DialogShowMoreLess = ({
         </CustomModal>
       )}
 
-      {tagModal && colName == "Classification" && (
+      {tagModal && colName == CLASSIFICATION && (
         <AddTag
           open={tagModal}
           isAdd={true}
@@ -562,6 +623,7 @@ const DialogShowMoreLess = ({
           onClose={handleCloseTagModal}
           setUpdateTable={setUpdateTable}
           setRowSelection={undefined}
+          onSchemaChildEntityRefresh={onSchemaChildEntityRefresh}
         />
       )}
       {termModal && colName == "Term" && !relatedTerm && (

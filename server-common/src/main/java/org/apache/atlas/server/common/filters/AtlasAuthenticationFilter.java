@@ -26,8 +26,8 @@ import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBri
 import org.apache.atlas.server.common.model.User;
 import org.apache.atlas.server.common.util.Servlets;
 import org.apache.commons.collections.iterators.IteratorEnumeration;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationConverter;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.ConfigurationConverter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -441,7 +441,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             if (existingAuth == null) {
                 String authHeader = httpRequest.getHeader("Authorization");
 
-                if (authHeader != null && authHeader.startsWith("Basic")) {
+                if (authHeader != null && (authHeader.startsWith("Basic") || authHeader.startsWith("Bearer"))) {
                     filterChain.doFilter(request, response);
                 } else if (isKerberos) {
                     doKerberosAuth(request, response, filterChain);

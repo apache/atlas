@@ -18,7 +18,7 @@
 package org.apache.atlas.server.common.service;
 
 import org.apache.atlas.AtlasException;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 
 /**
  * Interface to abstract High Availability (HA) configuration retrieval.

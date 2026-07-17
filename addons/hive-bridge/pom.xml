@@ -57,6 +57,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>${commons-text.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-annotations</artifactId>
         </dependency>
@@ -80,10 +86,6 @@
             </exclusions>
         </dependency>
 
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-        </dependency>
         <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -233,7 +235,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>4.11.0</version>
+            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -511,9 +513,14 @@
                                             <version>${jackson.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>commons-configuration</groupId>
-                                            <artifactId>commons-configuration</artifactId>
-                                            <version>${commons-conf.version}</version>
+                                            <groupId>org.apache.commons</groupId>
+                                            <artifactId>commons-configuration2</artifactId>
+                                            <version>${commons-conf2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.commons</groupId>
+                                            <artifactId>commons-text</artifactId>
+                                            <version>${commons-text.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>com.sun.jersey</groupId>
@@ -529,6 +536,16 @@
                                             <groupId>ch.qos.logback</groupId>
                                             <artifactId>logback-classic</artifactId>
                                             <version>${logback.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>ch.qos.logback</groupId>
+                                            <artifactId>logback-core</artifactId>
+                                            <version>${logback.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.slf4j</groupId>
+                                            <artifactId>slf4j-api</artifactId>
+                                            <version>${slf4j.version}</version>
                                         </artifactItem>
                                     </artifactItems>
                                 </configuration>

@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,6 +15,8 @@
  * limitations under the License.
  */
 
+// @ts-nocheck
+
 import { dateRangesMap, regex, systemAttributes } from "@utils/Enum";
 import { dateTimeFormat } from "@utils/Global";
 import { cloneDeep } from "@utils/Helper";
@@ -25,7 +25,8 @@ import moment from "moment";
 import type { Field, RuleType } from "react-querybuilder";
 import { toFullOption } from "react-querybuilder";
 
-export const validator = (r: RuleType) => !!r.value;
+export const validator = (r: RuleType) =>
+  r.value !== undefined && r.value !== null && r.value !== "";
 let defaultRange = "Last 7 Days";
 const getDateConfig = (ruleObj, name, operator) => {
   let valueObj = ruleObj
@@ -160,6 +161,10 @@ export const getObjDef = (
   groupType?: any,
   isSystemAttr?: any
 ): any => {
+  if (!allDataObj || !attrObj) {
+    return;
+  }
+
   const { enums } = allDataObj;
   let getLableWithType = function (label: string, name: string) {
     if (

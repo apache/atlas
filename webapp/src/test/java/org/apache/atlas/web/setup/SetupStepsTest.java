@@ -24,7 +24,7 @@ import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.server.common.service.CuratorFactory;
 import org.apache.atlas.setup.SetupException;
 import org.apache.atlas.setup.SetupStep;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CreateBuilder;
@@ -51,7 +51,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.testng.AssertJUnit.assertTrue;
 
@@ -245,7 +245,7 @@ public class SetupStepsTest {
             assertTrue(e instanceof SetupException);
         }
 
-        verifyZeroInteractions(setupStep1);
+        verifyNoInteractions(setupStep1);
     }
 
     private Pair<CreateBuilder, DeleteBuilder> setupSetupInProgressPathMocks(List<ACL> acls) throws Exception {

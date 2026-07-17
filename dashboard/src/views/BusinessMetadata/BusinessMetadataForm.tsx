@@ -12,7 +12,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License
+ * limitations under the License.
  */
 
 import { createEditBusinessMetadata } from "@api/apiMethods/typeDefApiMethods";
@@ -42,6 +42,7 @@ import BusinessMetadataAttributeForm from "./BusinessMetadataAtrributeForm";
 import { setEditBMAttribute } from "@redux/slice/createBMSlice";
 import { cloneDeep } from "@utils/Helper";
 import { fetchBusinessMetaData } from "@redux/slice/typeDefSlices/typedefBusinessMetadataSlice";
+import { fetchEntityData } from "@redux/slice/typeDefSlices/typedefEntitySlice";
 import { defaultType } from "@utils/Enum";
 import { getTypeName } from "@utils/CommonViewFunction";
 
@@ -237,7 +238,7 @@ const BusinessMetaDataForm = ({
   };
 
   const toastMssg = (bmName: string) => {
-    if (isEmpty(bmAttribute && isEmpty(editbmAttribute))) {
+    if (isEmpty(bmAttribute) && isEmpty(editbmAttribute)) {
       toast.success(`Business Metadata ${bmName} was created successfully`);
     } else {
       toast.success(
@@ -340,6 +341,7 @@ const BusinessMetaDataForm = ({
       let bmName = response?.data?.businessMetadataDefs?.[0]?.name;
       toastMssg(bmName);
       dispatchState(fetchBusinessMetaData());
+      dispatchState(fetchEntityData());
       setBMAttribute({});
       setForm(false);
     } catch (error) {

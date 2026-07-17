@@ -45,6 +45,7 @@ import { createEditBusinessMetadata } from "@api/apiMethods/typeDefApiMethods";
 import { cloneDeep } from "@utils/Helper";
 import { defaultAttrObj, defaultType } from "@utils/Enum";
 import { fetchBusinessMetaData } from "@redux/slice/typeDefSlices/typedefBusinessMetadataSlice";
+import { fetchEntityData } from "@redux/slice/typeDefSlices/typedefEntitySlice";
 import { getTypeName } from "@utils/CommonViewFunction";
 
 const BusinessMetadataDetailsLayout = () => {
@@ -59,7 +60,7 @@ const BusinessMetadataDetailsLayout = () => {
   const { businessMetadataDefs } = businessMetaData || {};
 
   const businessmetaDataObj = !isEmpty(businessMetadataDefs)
-    ? businessMetadataDefs.find((obj: { guid: string }) => obj.guid == bmguid)
+    ? businessMetadataDefs.find((obj: { guid: string }) => obj.guid == bmguid) || {}
     : {};
 
   const { description, attributeDefs, name } = businessmetaDataObj;
@@ -241,6 +242,7 @@ const BusinessMetadataDetailsLayout = () => {
     try {
       await createEditBusinessMetadata("business_metadata", "PUT", data);
       dispatchState(fetchBusinessMetaData());
+      dispatchState(fetchEntityData());
       toast.success(
         "One or more Business Metadata attributes were updated successfully"
       );

@@ -21,6 +21,7 @@ package org.apache.atlas.repository.store.graph.v1;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -57,6 +58,14 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
                 AtlasGraphUtilsV2.setEncodedProperty(instanceVertex, STATE_PROPERTY_KEY, DELETED.name());
                 AtlasGraphUtilsV2.setEncodedProperty(instanceVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
                 AtlasGraphUtilsV2.setEncodedProperty(instanceVertex, MODIFIED_BY_KEY, RequestContext.get().getUser());
+
+                // Store DELETE event Kafka message creation time for accurate lineage correlation
+                // This is the actual time when DELETE event was published in Kafka (not when Atlas processed it)
+                Long deleteEventMsgCreationTime = RequestContext.get().getDeleteEventMsgTime();
+                if (deleteEventMsgCreationTime != null) {
+                    AtlasGraphUtilsV2.setEncodedProperty(instanceVertex, Constants.ENTITY_DELETE_EVENT_TIME_PROPERTY_KEY, deleteEventMsgCreationTime);
+                    LOG.debug("Stored DELETE event Kafka message creation time {} for deleted entity {}", deleteEventMsgCreationTime, GraphHelper.getGuid(instanceVertex));
+                }
             }
         }
     }

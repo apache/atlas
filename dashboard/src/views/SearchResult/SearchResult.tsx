@@ -71,6 +71,9 @@ interface Params {
   classification: any;
   termName: string | null;
   relationshipFilters?: string | null;
+  sortBy?: string;
+  sortOrder?: string;
+  excludeHeaderAttributes?: boolean;
 }
 
 let defaultColumnsName: Array<string> = [
@@ -155,6 +158,15 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
           ? !searchParams.get("excludeST")
           : true,
         includeClassificationAttributes: true,
+        ...(!isEmpty(searchParams.get("sortBy")) && {
+          sortBy: searchParams.get("sortBy")
+        }),
+        ...(!isEmpty(searchParams.get("sortOrder")) && {
+          sortOrder: searchParams.get("sortOrder")
+        }),
+        ...(searchParams.get("excludeHeaderAttributes") === "true" && {
+          excludeHeaderAttributes: true
+        }),
         ...(isEmpty(classificationParams || glossaryTypeParams) && {
           entityFilters: !isEmpty(entityFilterParams)
             ? searchParamsAPiQuery(entityFilterParams)
@@ -350,8 +362,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
             <LightTooltip title={name}>
               {entity.guid != "-1" ? (
                 <Link
-                  className={`entity-name nav-link text-decoration-none ${
-                    entityDef.status && entityStateReadOnly[entityDef.status]
+                  className={`entity-name nav-link text-decoration-none ${entityDef.status && entityStateReadOnly[entityDef.status]
                       ? "text-red"
                       : "text-blue"
                   }`}
@@ -423,7 +434,8 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
       accessorKey: "owner",
       cell: (info: any) => <span>{info.getValue()}</span>,
       header: "Owner",
-      show: true
+      show: true,
+      size: 100
     },
     {
       accessorFn: (row: any) => row.attributes.description,
@@ -456,7 +468,8 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
         );
       },
       header: "Type",
-      show: true
+      show: true,
+      size: 100
     },
     {
       accessorFn: (row: any) => row.classificationNames[0],
@@ -1000,12 +1013,20 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
 
     return hideColumns;
   };
+  const latestEntitiesSortBy = searchParams.get("sortBy");
+  const latestEntitiesSortOrder = searchParams.get("sortOrder");
   const getDefaultSort = useMemo(() => {
     if (isDslAggregate) {
       return [] as any[]; // no default sorting for DSL aggregates
     }
-    return [{ id: "name", asc: true }];
-  }, [isDslAggregate]);
+    if (
+      latestEntitiesSortBy === "__timestamp" &&
+      latestEntitiesSortOrder === "DESCENDING"
+    ) {
+      return [{ id: "__timestamp", desc: true }];
+    }
+    return [{ id: "name", desc: false }];
+  }, [isDslAggregate, latestEntitiesSortBy, latestEntitiesSortOrder]);
 
   return (
     <Stack position="relative" gap={"1rem"}>
@@ -1058,6 +1079,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
         </Stack>
       )}
 
+      <div className="search-result-table-wrapper">
       <TableLayout
         fetchData={fetchSearchResult}
         data={
@@ -1075,7 +1097,10 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
                   const obj: any = { id: `dsl-row-${idx}` };
                   dslAttrNames.forEach((n: string, i: number) => {
                     const colKey = `dsl_${sanitize(n)}`
-                    obj[colKey] = Array.isArray(row) ? row[i] : row
+                    const value = Array.isArray(row)
+                      ? row[i]
+                      : row?.[n] ?? row?.[colKey] ?? row
+                    obj[colKey] = value
                   });
                   return obj;
                 });
@@ -1120,6 +1145,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
         showGoToPage={true}
         totalCount={totalCount}
       />
+      </div>
     </Stack>
   );
 };

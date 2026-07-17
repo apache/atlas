@@ -22,7 +22,7 @@ import org.apache.atlas.notification.rest.AtlasServerIdSelector;
 import org.apache.atlas.notification.rest.RestHAConfiguration;
 import org.apache.atlas.server.common.service.HighAvailabilityProperties;
 import org.apache.atlas.server.common.service.HighAvailability;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.springframework.stereotype.Component;
 
 /**

@@ -26,7 +26,7 @@ import org.apache.atlas.server.common.security.AtlasAuthenticationProvider;
 import org.apache.atlas.server.common.security.AtlasFileAuthenticationProvider;
 import org.apache.atlas.server.common.security.AtlasLdapAuthenticationProvider;
 import org.apache.atlas.server.common.security.AtlasPamAuthenticationProvider;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;

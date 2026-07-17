@@ -21,6 +21,7 @@ package org.apache.atlas.repository.graph;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.SearchIndexer;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
@@ -58,7 +59,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +77,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -101,7 +103,9 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_TEXT_KEY;
 import static org.apache.atlas.repository.Constants.CREATED_BY_KEY;
 import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.EDGE_INDEX;
+import static org.apache.atlas.repository.Constants.ENTITY_CREATE_EVENT_TIME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.ENTITY_DELETE_EVENT_TIME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.ENTITY_TEXT_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.FULLTEXT_INDEX;
@@ -143,6 +147,7 @@ import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPEOPTIONS_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPESERVICETYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPEVERSION_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPE_ATTR_DEF_OVERRIDES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPE_CATEGORY_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERSION_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
@@ -439,6 +444,14 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         if (propertyName != null) {
             AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
 
+            if (propertyKey != null && RequestContext.get().isImportInProgress()
+                    && !management.propertyKeyHasDataType(propertyName, propertyClass)) {
+                LOG.info("Recreating property key {} during import; data type changed to {}", propertyName, propertyClass.getName());
+
+                management.deletePropertyKey(propertyName);
+                propertyKey = null;
+            }
+
             if (propertyKey == null) {
                 propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
 
@@ -607,6 +620,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createPropertyKey(management, TYPEVERSION_PROPERTY_KEY, String.class, SINGLE);
             createPropertyKey(management, VERSION_PROPERTY_KEY, Long.class, SINGLE);
             createPropertyKey(management, TYPEOPTIONS_PROPERTY_KEY, String.class, SINGLE);
+            createPropertyKey(management, TYPE_ATTR_DEF_OVERRIDES_PROPERTY_KEY, String.class, SINGLE);
             createPropertyKey(management, IS_PROXY_KEY, Boolean.class, SINGLE);
             createPropertyKey(management, PROVENANCE_TYPE_KEY, Integer.class, SINGLE);
             createPropertyKey(management, HOME_ID_KEY, String.class, SINGLE);
@@ -617,6 +631,13 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createPropertyKey(management, RELATIONSHIPTYPE_CATEGORY_KEY, String.class, SINGLE);
             createPropertyKey(management, RELATIONSHIPTYPE_LABEL_KEY, String.class, SINGLE);
             createPropertyKey(management, RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, String.class, SINGLE);
+
+            // Parallel processing: entity timestamp tracking for temporal entity resolution
+            createCommonVertexIndex(management, ENTITY_CREATE_EVENT_TIME_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
+            createCommonVertexIndex(management, ENTITY_DELETE_EVENT_TIME_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
+
+            // Composite indexes for optimizing parallel processing queries
+            createParallelProcessingCompositeIndexes(management);
 
             management.setIsSuccess(true);
 
@@ -1054,6 +1075,85 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             LOG.info("Created composite index for property {} of type {} and {}", propertyKey.getName(), propertyClass.getName(), systemPropertyKey);
         }
+    }
+
+    /**
+     * Composite index creation for parallel processing.
+     */
+    private void createParallelProcessingCompositeIndexes(AtlasGraphManagement management) {
+        LOG.info("Creating enhanced composite indexes for parallel processing");
+
+        try {
+            // Get required property keys
+            AtlasPropertyKey entityTypeKey = management.getPropertyKey(ENTITY_TYPE_PROPERTY_KEY);
+            AtlasPropertyKey stateKey      = management.getPropertyKey(STATE_PROPERTY_KEY);
+            AtlasPropertyKey createTimeKey = management.getPropertyKey(ENTITY_CREATE_EVENT_TIME_PROPERTY_KEY);
+            AtlasPropertyKey deleteTimeKey = management.getPropertyKey(ENTITY_DELETE_EVENT_TIME_PROPERTY_KEY);
+
+            if (entityTypeKey == null || stateKey == null || createTimeKey == null || deleteTimeKey == null) {
+                LOG.warn("Failed to create parallel processing indexes: missing property keys. entityTypeKey={}, stateKey={}, createTimeKey={}, deleteTimeKey={}",
+                        entityTypeKey, stateKey, createTimeKey, deleteTimeKey);
+                return;
+            }
+
+            // Create enhanced per-entity-type indexes (qualifiedName always present)
+            int enhancedIndexesCreated = createEnhancedPerTypeIndexes(management, entityTypeKey, stateKey, createTimeKey, deleteTimeKey);
+
+            LOG.info("Enhanced index creation complete: {} per-type indexes created", enhancedIndexesCreated);
+        } catch (Exception e) {
+            LOG.error("Error creating enhanced parallel processing indexes", e);
+        }
+    }
+
+    /**
+     * Creates enhanced per-entity-type indexes.
+     */
+    private int createEnhancedPerTypeIndexes(AtlasGraphManagement management, AtlasPropertyKey entityTypeKey, AtlasPropertyKey stateKey, AtlasPropertyKey createTimeKey, AtlasPropertyKey deleteTimeKey) {
+        int                createdCount   = 0;
+        Collection<String> allEntityTypes = typeRegistry.getAllEntityDefNames();
+
+        for (String entityTypeName : allEntityTypes) {
+            try {
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityTypeName);
+
+                if (entityType != null) {
+                    Map<String, AtlasAttribute> uniqueAttributes = entityType.getUniqAttributes();
+
+                    // All entity types have qualifiedName, but verify for safety
+                    if (uniqueAttributes != null && uniqueAttributes.containsKey("qualifiedName")) {
+                        AtlasAttribute   qualifiedNameAttr = uniqueAttributes.get("qualifiedName");
+                        String           qualifiedNameProp = qualifiedNameAttr.getVertexPropertyName();
+                        AtlasPropertyKey qNameKey          = management.getPropertyKey(qualifiedNameProp);
+
+                        if (qNameKey != null) {
+                            String          sanitizedTypeName = entityTypeName.replaceAll("[^a-zA-Z0-9]", "");
+                            String          indexName         = String.format("parallel_processing_%s_index", sanitizedTypeName);
+                            AtlasGraphIndex existingIndex     = management.getGraphIndex(indexName);
+
+                            if (existingIndex == null) {
+                                // Create optimal 5-key composite index
+                                List<AtlasPropertyKey> indexKeys = Arrays.asList(
+                                        entityTypeKey,  // Filter 1: entityType (exact)
+                                        stateKey,       // Filter 2: state (exact)
+                                        qNameKey,       // Filter 3: qualifiedName (exact, highly selective)
+                                        createTimeKey,  // Filter 4: createTime (range)
+                                        deleteTimeKey); // Filter 5: deleteTime (range)
+
+                                management.createVertexCompositeIndex(indexName, false, indexKeys);
+                                LOG.info("Created enhanced temporal index '{}' for entity type '{}'", indexName, entityTypeName);
+                                createdCount++;
+                            }
+                        }
+                    } else {
+                        LOG.warn("Entity type '{}' does not have qualifiedName unique attribute - this should not happen!", entityTypeName);
+                    }
+                }
+            } catch (Exception e) {
+                LOG.warn("Error creating enhanced index for entity type '{}': {}", entityTypeName, e.getMessage());
+            }
+        }
+
+        return createdCount;
     }
 
     private boolean isIndexApplicable(Class<?> propertyClass, AtlasCardinality cardinality) {

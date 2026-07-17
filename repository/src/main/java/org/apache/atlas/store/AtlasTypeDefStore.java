@@ -102,6 +102,8 @@ public interface AtlasTypeDefStore {
 
     void deleteTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException;
 
+    void deleteTypesDef(AtlasTypesDef typesDef, boolean forceDelete) throws AtlasBaseException;
+
     AtlasTypesDef searchTypesDef(SearchFilter searchFilter) throws AtlasBaseException;
 
     /* Generic operation */

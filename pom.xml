@@ -54,6 +54,7 @@
         <module>addons/storm-bridge-shim</module>
         <module>addons/trino-extractor</module>
         <module>atlas-examples</module>
+        <module>authn</module>
         <module>authorization</module>
         <module>build-tools</module>
         <module>client</module>
@@ -100,7 +101,6 @@
         <commons-codec.version>1.14</commons-codec.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-collections4.version>4.4</commons-collections4.version>
-        <commons-conf.version>1.10</commons-conf.version>
         <commons-conf2.version>2.10.1</commons-conf2.version>
         <commons-el.version>1.0</commons-el.version>
         <commons-io.version>2.17.0</commons-io.version>
@@ -115,7 +115,8 @@
         <elasticsearch.version>7.17.8</elasticsearch.version>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
         <enunciate-maven-plugin.version>2.13.2</enunciate-maven-plugin.version>
-        <failsafe.version>2.18.1</failsafe.version>
+        <enunciate.config.relative>build-tools/src/main/resources/enunciate.xml</enunciate.config.relative>
+        <failsafe.version>3.5.3</failsafe.version>
         <falcon.version>0.8</falcon.version>
         <fastutil.version>6.5.16</fastutil.version>
         <graph.index.backend>solr</graph.index.backend>
@@ -131,14 +132,11 @@
         <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
         <httpcomponents-httpcore.version>4.4.13</httpcomponents-httpcore.version>
         <ivy.version>2.5.2</ivy.version>
-        <jackson.databind.version>2.12.7</jackson.databind.version>
-        <jackson.version>2.12.7</jackson.version>
+        <jackson.databind.version>2.16.2</jackson.databind.version>
+        <jackson.version>2.16.2</jackson.version>
         <jacoco.version>0.8.13</jacoco.version>
         <janusgraph.cassandra.version>0.5.3</janusgraph.cassandra.version>
         <janusgraph.version>1.1.0</janusgraph.version>
-        <java.version.required>1.8</java.version.required>
-        <javac.source.version>1.8</javac.source.version>
-        <javac.target.version>1.8</javac.target.version>
         <javax-inject.version>1</javax-inject.version>
         <javax.persistence.version>2.2.1</javax.persistence.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
@@ -146,21 +144,25 @@
         <jersey-spring.version>1.19.4</jersey-spring.version>
         <jersey.version>1.19</jersey.version>
         <jettison.version>1.5.4</jettison.version>
-        <jetty-maven-plugin.stopWait>10</jetty-maven-plugin.stopWait>
+        <jetty-maven-plugin.stopWait>30</jetty-maven-plugin.stopWait>
         <jetty.version>9.4.56.v20240826</jetty.version>
         <joda-time.version>2.10.6</joda-time.version>
         <json-simple.version>1.1.1</json-simple.version>
         <json.version>3.2.11</json.version>
         <jsr.version>1.1</jsr.version>
         <junit.version>4.13.2</junit.version>
-        <kafka.scala.binary.version>2.12</kafka.scala.binary.version>
-        <kafka.version>2.8.2</kafka.version>
+        <kafka.scala.binary.version>2.13</kafka.scala.binary.version>
+        <kafka.version>3.9.1</kafka.version>
         <keycloak.version>6.0.1</keycloak.version>
         <logback.version>1.3.15</logback.version>
         <lucene-solr.version>8.11.3</lucene-solr.version>
+        <maven-compiler-version>3.11.0</maven-compiler-version>
         <maven-plugin-sortpom.version>3.0.1</maven-plugin-sortpom.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
+        <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
+        <mockito.version>3.12.4</mockito.version>
         <netty.version>4.1.125.Final</netty.version>
+        <nimbus-jose-jwt.version>9.37.3</nimbus-jose-jwt.version>
         <node-for-v1.version>v22.14.0</node-for-v1.version>
         <node-for-v2.version>v12.16.0</node-for-v2.version>
         <npm-for-v1.version>10.9.2</npm-for-v1.version>
@@ -187,6 +189,7 @@
         <slf4j.version>2.0.16</slf4j.version>
         <solr-test-framework.version>8.11.3</solr-test-framework.version>
         <solr.version>8.11.3</solr.version>
+        <spotbugs-maven-plugin.version>4.4.2</spotbugs-maven-plugin.version>
         <spray.version>1.3.1</spray.version>
         <spring-ldap-core.version>2.4.4</spring-ldap-core.version>
         <spring.security.version>5.8.15</spring.security.version>
@@ -195,7 +198,7 @@
         <sqoop.version>1.4.7</sqoop.version>
         <storm.version>2.4.0</storm.version>
         <surefire.forkCount>2C</surefire.forkCount>
-        <surefire.version>3.0.0-M5</surefire.version>
+        <surefire.version>3.5.3</surefire.version>
         <testng.version>7.0.0</testng.version>
         <tinkerpop.version>3.7.5</tinkerpop.version>
         <woodstox-core.version>5.0.3</woodstox-core.version>
@@ -263,6 +266,12 @@
                         <artifactId>junit</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>${nimbus-jose-jwt.version}</version>
             </dependency>
 
             <dependency>
@@ -348,13 +357,6 @@
                 <groupId>commons-collections</groupId>
                 <artifactId>commons-collections</artifactId>
                 <version>${commons-collections.version}</version>
-            </dependency>
-
-            <!-- commons -->
-            <dependency>
-                <groupId>commons-configuration</groupId>
-                <artifactId>commons-configuration</artifactId>
-                <version>${commons-conf.version}</version>
             </dependency>
 
             <dependency>
@@ -997,8 +999,8 @@
 
             <dependency>
                 <groupId>org.mockito</groupId>
-                <artifactId>mockito-all</artifactId>
-                <version>1.8.5</version>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
                 <scope>test</scope>
             </dependency>
 
@@ -1110,17 +1112,13 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.7.0</version>
-                    <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
-                    </configuration>
+                    <version>${maven-compiler-version}</version>
                 </plugin>
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>2.4</version>
+                    <version>${maven-source-plugin.version}</version>
                 </plugin>
 
                 <plugin>
@@ -1172,9 +1170,9 @@
                 </plugin>
 
                 <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>findbugs-maven-plugin</artifactId>
-                    <version>3.0.5</version>
+                    <groupId>com.github.spotbugs</groupId>
+                    <artifactId>spotbugs-maven-plugin</artifactId>
+                    <version>${spotbugs-maven-plugin.version}</version>
                 </plugin>
 
                 <!-- Source code metrics: mvn javancss:report or mvn site -->
@@ -1273,13 +1271,8 @@
                                     <message>** MAVEN VERSION ERROR ** Maven 3.5.0 or above is required. See https://maven.apache.org/install.html</message>
                                 </requireMavenVersion>
                                 <requireJavaVersion>
-                                    <level>ERROR</level>
-                                    <version>[1.8.0-151,)</version>
-                                    <message>** JAVA VERSION ERROR ** Java 8 (Update 151) or above is required.</message>
-                                </requireJavaVersion>
-                                <requireJavaVersion>
                                     <level>WARN</level>
-                                    <version>(,1.9]</version>
+                                    <version>(,17]</version>
                                     <message>** JAVA VERSION WARNING ** Java 9 and above has not been tested with Atlas.</message>
                                 </requireJavaVersion>
                             </rules>
@@ -1327,7 +1320,8 @@
                     <forkCount>${surefire.forkCount}</forkCount>
                     <reuseForks>false</reuseForks>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <argLine>${argLine} -Djava.awt.headless=true -Dproject.version=${project.version}
+                    <argLine>${jdk.argLine} ${argLine}
+                        -Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir="${project.build.directory}/tmp-hadoop-${user.name}"
                         -Xmx1024m -Djava.net.preferIPv4Stack=true ${atlas.surefire.options}</argLine>
                     <skip>${skipUTs}</skip>
@@ -1355,7 +1349,8 @@
                         <embedded.solr.directory>${project.basedir}/target</embedded.solr.directory>
                     </systemPropertyVariables>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
+                    <argLine>${jdk.argLine}
+                        -Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir="${project.build.directory}/tmp-hadoop-${user.name}"
                         -Xmx1024m ${atlas.surefire.options}</argLine>
                     <skip>${skipITs}</skip>
@@ -1364,6 +1359,13 @@
                     <forkCount>0</forkCount>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-testng</artifactId>
+                        <version>${failsafe.version}</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>integration-test</id>
@@ -1535,8 +1537,8 @@
             </plugin>
 
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
                 <configuration>
                     <!--debug>true</debug -->
                     <xmlOutput>true</xmlOutput>
@@ -1547,7 +1549,7 @@
                     <execution>
                         <id>findbugs-check</id>
                         <goals>
-                            <goal>check</goal>
+                            <goal>spotbugs</goal>
                         </goals>
                         <phase>verify</phase>
                     </execution>
@@ -1842,6 +1844,16 @@
             <!--<organizationUrl>https://www.aetna.com</organizationUrl>-->
         </developer>
         <developer>
+            <id>fkhan</id>
+            <name>Farhan Khan</name>
+            <email>fkhan@apache.org</email>
+            <organization>Freestone Infotech</organization>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <timezone>Asia/Kolkata</timezone>
+        </developer>
+        <developer>
             <id>grahamwallis</id>
             <name>Graham Wallis</name>
             <email>grahamwallis@apache.org</email>
@@ -1950,12 +1962,12 @@
             <id>kbhatt</id>
             <name>Keval Bhatt</name>
             <email>kbhatt@apache.org</email>
-            <organization>Freestone Infotech</organization>
+            <organization>Oracle America Inc</organization>
             <roles>
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <timezone>Asia/Kolkata</timezone>
+            <timezone>America/Los_Angeles</timezone>
         </developer>
         <developer>
             <id>madhan</id>
@@ -2273,11 +2285,6 @@
             <url>https://repository.apache.org/content/groups/public/</url>
         </repository>
         <repository>
-            <id>java.net-Public</id>
-            <name>Maven Java Net Snapshots and Releases</name>
-            <url>https://maven.java.net/content/groups/public/</url>
-        </repository>
-        <repository>
             <id>repository.jboss.org-public</id>
             <name>JBoss repository</name>
             <url>https://repository.jboss.org/nexus/content/groups/public</url>
@@ -2324,6 +2331,35 @@
             </activation>
             <properties>
                 <skipDocs>false</skipDocs>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>jdk-17</id>
+            <activation>
+                <jdk>[17,)</jdk>
+            </activation>
+            <properties>
+                <enunciate-maven-plugin.version>2.15.0</enunciate-maven-plugin.version>
+                <enunciate.config.relative>build-tools/src/main/resources/enunciate-openapi3.xml</enunciate.config.relative>
+                <jdk.argLine>--add-opens=java.base/java.lang=ALL-UNNAMED
+                    --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+                    --add-opens=java.base/java.net=ALL-UNNAMED
+                    --add-opens=java.base/java.nio=ALL-UNNAMED</jdk.argLine>
+                <maven.compiler.source>17</maven.compiler.source>
+                <maven.compiler.target>17</maven.compiler.target>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>jdk-8</id>
+            <activation>
+                <jdk>(,17)</jdk>
+            </activation>
+            <properties>
+                <jdk.argLine />
+                <maven.compiler.source>1.8</maven.compiler.source>
+                <maven.compiler.target>1.8</maven.compiler.target>
             </properties>
         </profile>
 

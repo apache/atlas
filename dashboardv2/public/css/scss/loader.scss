@@ -61,6 +61,27 @@
     left: 50%;
     position: absolute;
     display: none;
+    z-index: 100;
+}
+
+/* Match SearchResultLayoutView: `.show` toggles visibility (Bootstrap or explicit). */
+.fontLoader.show {
+    display: block !important;
+}
+
+.tableOverlay.show {
+    display: block !important;
+}
+
+/* TableLayout grid spinner (schema uses manual collection push — not collection.request). */
+[data-id="r_tableSpinner"].show {
+    display: block !important;
+    z-index: 101;
+}
+
+/* Schema tab: give the overlay a box so it covers the grid while loading. */
+.schema-table-loader-wrap {
+    min-height: 280px;
 }
 
 .fontLoader-relative {
