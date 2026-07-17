@@ -151,6 +151,9 @@ jest.mock('@redux/slice/drawerSlice', () => ({
 	openDrawer: jest.fn((id: string) => ({
 		type: 'drawer/openDrawer',
 		payload: id
+	})),
+	closeDrawer: jest.fn(() => ({
+		type: 'drawer/closeDrawer'
 	}))
 }));
 
@@ -739,6 +742,26 @@ describe('ShowMoreView', () => {
 	});
 
 	describe('Delete Icon Functionality', () => {
+		it('should not show delete button when currentEntity status is DELETED', () => {
+			const dataWithCount = [
+				{ typeName: 'Tag1' }
+			];
+
+			render(
+				<TestWrapper>
+					<ShowMoreView
+						{...defaultProps}
+						data={dataWithCount}
+						removeApiMethod={jest.fn()}
+						currentEntity={{ guid: 'entity-guid-123', status: 'DELETED' }}
+					/>
+				</TestWrapper>
+			);
+
+			expect(screen.queryByTestId('chip-ondelete-button')).not.toBeInTheDocument();
+		});
+
+
 		it('should show count when isDeleteIcon is true and count > 1', () => {
 			const dataWithCount = [
 				{ typeName: 'Tag1', count: 2 },

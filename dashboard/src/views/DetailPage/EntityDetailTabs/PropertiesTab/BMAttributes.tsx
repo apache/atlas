@@ -57,6 +57,7 @@ import { toast } from "react-toastify";
 import { cloneDeep } from "@utils/Helper";
 import moment from "moment-timezone";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
+import { EntityStatus } from "@utils/EntityStatus";
 
 const defaultField = {
   key: null,
@@ -376,22 +377,24 @@ const BMAttributes = ({ loading, bmAttributes, entity }: any) => {
 
                       <Stack direction="row" alignItems="center" gap="0.5rem">
                         {addLabel ? (
-                          <CustomButton
-                            key="edit-Add-button"
-                            variant="outlined"
-                            color="success"
-                            size="small"
-                            onClick={(e: { stopPropagation: () => void }) => {
-                              e.stopPropagation();
-                              setExpanded("bmDataPanel");
-                              setAddLabel(false);
-                              if (!isEmpty(defaultFieldValues)) {
-                                reset({ businessMetadata: defaultFieldValues });
-                              }
-                            }}
-                          >
-                            {!isEmpty(bmAttributes) ? "Edit" : "Add"}
-                          </CustomButton>
+                          !loading && entity?.status !== EntityStatus.DELETED && (
+                            <CustomButton
+                              key="edit-Add-button"
+                              variant="outlined"
+                              color="success"
+                              size="small"
+                              onClick={(e: { stopPropagation: () => void }) => {
+                                e.stopPropagation();
+                                setExpanded("bmDataPanel");
+                                setAddLabel(false);
+                                if (!isEmpty(defaultFieldValues)) {
+                                  reset({ businessMetadata: defaultFieldValues });
+                                }
+                              }}
+                            >
+                              {!isEmpty(bmAttributes) ? "Edit" : "Add"}
+                            </CustomButton>
+                          )
                         ) : (
                           <>
                             <CustomButton
@@ -536,41 +539,49 @@ const BMAttributes = ({ loading, bmAttributes, entity }: any) => {
                         justifyContent="center"
                       >
                         <span>
-                          No properties have been created yet. To add a
-                          property, click{" "}
-                          <Typography
-                            className="text-color-green cursor-pointer"
-                            component="span"
-                            onClick={(e: { stopPropagation: () => void }) => {
-                              e.stopPropagation();
-                              setAddLabel(false);
-                            }}
-                            style={{ textDecoration: "underline" }}
-                          >
-                            here
-                          </Typography>
+                          {entity?.status === EntityStatus.DELETED ? (
+                            "No properties have been created yet."
+                          ) : (
+                            <>
+                              No properties have been created yet. To add a
+                              property, click{" "}
+                              <Typography
+                                className="text-color-green cursor-pointer"
+                                component="span"
+                                onClick={(e: { stopPropagation: () => void }) => {
+                                  e.stopPropagation();
+                                  setAddLabel(false);
+                                }}
+                                style={{ textDecoration: "underline" }}
+                              >
+                                here
+                              </Typography>
+                            </>
+                          )}
                         </span>
                       </Stack>
                     )}
                   </>
                 ) : (
                   <>
-                    <LightTooltip title={"Add New Attribute"}>
-                      <CustomButton
-                        sx={{
-                          alignSelf: "flex-start"
-                        }}
-                        variant="outlined"
-                        size="small"
-                        onClick={(e: any) => {
-                          e.stopPropagation();
-                          append(defaultField);
-                        }}
-                        startIcon={<AddIcon fontSize="small" />}
-                      >
-                        Add New Attributes
-                      </CustomButton>
-                    </LightTooltip>
+                    {!loading && entity?.status !== EntityStatus.DELETED && (
+                      <LightTooltip title={"Add New Attribute"}>
+                        <CustomButton
+                          sx={{
+                            alignSelf: "flex-start"
+                          }}
+                          variant="outlined"
+                          size="small"
+                          onClick={(e: any) => {
+                            e.stopPropagation();
+                            append(defaultField);
+                          }}
+                          startIcon={<AddIcon fontSize="small" />}
+                        >
+                          Add New Attributes
+                        </CustomButton>
+                      </LightTooltip>
+                    )}
                     {fields.map((field, index) => {
                       const keySelected = !isEmpty(
                         bmAttributesValues?.[index]?.key
