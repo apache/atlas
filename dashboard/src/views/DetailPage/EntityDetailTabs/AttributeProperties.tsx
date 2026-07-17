@@ -222,7 +222,7 @@ const AttributeProperties = ({
           </Stack>
         </AccordionSummary>
         <AccordionDetails>
-          {loading == undefined || loading || isEmpty(entityData) ? (
+          {loading === true || (!auditDetails && isEmpty(entityData)) ? (
             <>
               <SkeletonLoader count={3} animation="wave" />
             </>
