@@ -163,7 +163,7 @@
         <mockito.version>3.12.4</mockito.version>
         <netty.version>4.1.125.Final</netty.version>
         <nimbus-jose-jwt.version>9.37.3</nimbus-jose-jwt.version>
-        <node-for-v1.version>v22.14.0</node-for-v1.version>
+        <node-for-v1.version>v22.22.1</node-for-v1.version>
         <node-for-v2.version>v12.16.0</node-for-v2.version>
         <npm-for-v1.version>10.9.2</npm-for-v1.version>
         <npm-for-v2.version>6.13.7</npm-for-v2.version>

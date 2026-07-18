@@ -131,11 +131,20 @@ jest.mock('@utils/Utils', () => ({
 	serverError: jest.fn()
 }))
 
-jest.mock('../Statistics', () => ({
+jest.mock('../statsUtils', () => ({
 	getStatsValue: jest.fn(({ value, type }: any) => {
 		if (type === 'day') return `Formatted: ${value}`
+		if (type === 'time') return '00:00:00'
+		if (type === 'number') return String(value)
+		if (type === 'millisecond') return `${value} millisecond/s`
+		if (type === 'status-html') return null
 		return value
 	})
+}))
+
+jest.mock('../EntityStatsChart', () => ({
+	__esModule: true,
+	default: jest.requireActual('../EntityStatsChart').default
 }))
 
 jest.mock('moment', () => {

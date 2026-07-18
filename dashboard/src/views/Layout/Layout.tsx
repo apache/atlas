@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import SideBarBody from "../SideBar/SideBarBody";
 import { Navigate, useLocation } from "react-router-dom";
-import Statistics from "@views/Statistics/Statistics";
 import CustomModal from "@components/Modal";
 import About from "./About";
 import { useIdleTimer } from "react-idle-timer";
-import { Typography } from "@mui/material";
+import { CircularProgress, Typography } from "@mui/material";
 import { getBaseUrl } from "@utils/Utils";
 import { useAppSelector } from "@hooks/reducerHook";
+
+const Statistics = lazy(() => import("@views/Statistics/Statistics"));
 
 const Layout: React.FC = () => {
   const location = useLocation();
@@ -129,7 +130,22 @@ const Layout: React.FC = () => {
         </div>
       </div>
       {openModal && (
-        <Statistics open={openModal} handleClose={handleCloseModal} />
+        <Suspense
+          fallback={
+            <CustomModal
+              open={openModal}
+              onClose={handleCloseModal}
+              title="Statistics"
+              button1Handler={undefined}
+              button2Label="Cancel"
+              button2Handler={handleCloseModal}
+            >
+              <CircularProgress size={32} sx={{ display: "block", mx: "auto" }} />
+            </CustomModal>
+          }
+        >
+          <Statistics open={openModal} handleClose={handleCloseModal} />
+        </Suspense>
       )}
       {openAboutModal && (
         <CustomModal

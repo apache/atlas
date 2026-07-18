@@ -326,7 +326,7 @@ const RecentActivity = memo(() => {
 										"&:last-child": { borderBottom: "none" }
 									}}
 								>
-									<Typography component="span" sx={{ fontSize: "0.875rem", color: "#333" }}>
+									<Typography component="span" sx={{ fontSize: "0.875rem", color: "#333" }} title={entityName ? `${entityName} - ${actionPhrase}` : actionPhrase}>
 										{entityName ? (
 											<>
 												{typeDefPayload ? (
@@ -346,6 +346,12 @@ const RecentActivity = memo(() => {
 															padding: 0,
 															font: "inherit",
 															"&:hover": { textDecoration: "underline" },
+															display: "inline-block",
+															maxWidth: "300px",
+															textOverflow: "ellipsis",
+															overflow: "hidden",
+															whiteSpace: "nowrap",
+															verticalAlign: "bottom"
 														}}
 													>
 														{entityName}
@@ -357,13 +363,19 @@ const RecentActivity = memo(() => {
 														sx={{
 															color: "primary.main",
 															textDecoration: "none",
-															"&:hover": { textDecoration: "underline" }
+															"&:hover": { textDecoration: "underline" },
+															display: "inline-block",
+															maxWidth: "300px",
+															textOverflow: "ellipsis",
+															overflow: "hidden",
+															whiteSpace: "nowrap",
+															verticalAlign: "bottom"
 														}}
 													>
 														{entityName}
 													</Link>
 												) : (
-													entityName
+													<Box component="span" className="text-truncate recent-activity-truncate">{entityName}</Box>
 												)}
 												{" "}
 												{typeLabel} {actionPhrase} by{" "}

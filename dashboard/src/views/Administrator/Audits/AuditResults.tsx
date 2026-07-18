@@ -51,10 +51,10 @@ const AuditResults = ({ componentProps, row }: any) => {
   return (
     <>
       {operation != "PURGE" &&
-      operation != "AUTO_PURGE" &&
-      operation != "IMPORT" &&
-      operation != "EXPORT" &&
-      !isEmpty(resultObj) ? (
+        operation != "AUTO_PURGE" &&
+        operation != "IMPORT" &&
+        operation != "EXPORT" &&
+        !isEmpty(resultObj) ? (
         <Grid container spacing={2}>
           {params.split(",").length > 1 ? (
             <>
@@ -70,9 +70,8 @@ const AuditResults = ({ componentProps, row }: any) => {
                     >
                       <Typography
                         sx={{ padding: "1rem 0 0 1rem", textAlign: "left" }}
-                      >{`${category[param as any]} ${
-                        auditAction[operation]
-                      }`}</Typography>
+                      >{`${category[param as any]} ${auditAction[operation]
+                        }`}</Typography>
 
                       <List className="audit-results-list">
                         {resultObj[param as any].map(
@@ -88,6 +87,16 @@ const AuditResults = ({ componentProps, row }: any) => {
                                     onClick={() => {
                                       setOpenModal(true);
                                       setCurrentObj(obj);
+                                    }}
+                                    title={name}
+                                    sx={{
+                                      display: "inline-block",
+                                      maxWidth: "100%",
+                                      textOverflow: "ellipsis",
+                                      overflow: "hidden",
+                                      whiteSpace: "nowrap",
+                                      textAlign: "left",
+                                      verticalAlign: "bottom"
                                     }}
                                   >
                                     {name}
@@ -115,9 +124,8 @@ const AuditResults = ({ componentProps, row }: any) => {
                 >
                   <Typography
                     sx={{ padding: "1rem 0 0 1rem", textAlign: "left" }}
-                  >{`${category[params as any]} ${
-                    auditAction[operation]
-                  }`}</Typography>
+                  >{`${category[params as any]} ${auditAction[operation]
+                    }`}</Typography>
                   <List className="audit-results-list">
                     {resultObj[params].map((obj: { name: string }) => {
                       const { name } = obj;
@@ -131,6 +139,16 @@ const AuditResults = ({ componentProps, row }: any) => {
                               onClick={() => {
                                 setOpenModal(true);
                                 setCurrentObj(obj);
+                              }}
+                              title={name}
+                              sx={{
+                                display: "inline-block",
+                                maxWidth: "100%",
+                                textOverflow: "ellipsis",
+                                overflow: "hidden",
+                                whiteSpace: "nowrap",
+                                textAlign: "left",
+                                verticalAlign: "bottom"
                               }}
                             >
                               {name}
@@ -168,6 +186,16 @@ const AuditResults = ({ componentProps, row }: any) => {
                         onClick={() => {
                           setOpenPurgeModal(true);
                           setCurrentPurgeResultObj(obj);
+                        }}
+                        title={obj}
+                        sx={{
+                          display: "inline-block",
+                          maxWidth: "100%",
+                          textOverflow: "ellipsis",
+                          overflow: "hidden",
+                          whiteSpace: "nowrap",
+                          textAlign: "left",
+                          verticalAlign: "bottom"
                         }}
                       >
                         {obj}
