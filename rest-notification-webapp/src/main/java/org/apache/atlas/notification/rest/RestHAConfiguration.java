@@ -30,8 +30,6 @@ import java.util.Objects;
  * A wrapper for getting configuration entries related to HighAvailability.
  */
 public final class RestHAConfiguration {
-
-
     public static final String ATLAS_REST_SERVER_ZK_ROOT_DEFAULT = "/apache_atlas_rest";
 
     private RestHAConfiguration() {
@@ -154,8 +152,12 @@ public final class RestHAConfiguration {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
             ZookeeperProperties that = (ZookeeperProperties) o;
             return retriesSleepTimeMillis == that.retriesSleepTimeMillis &&
                     numRetries == that.numRetries &&

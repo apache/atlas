@@ -18,8 +18,8 @@
 package org.apache.atlas.server.common.security;
 
 import org.apache.atlas.server.common.filters.ActiveServerFilter;
-import org.apache.atlas.server.common.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint;
+import org.apache.atlas.server.common.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.server.common.filters.AtlasDelegatingAuthenticationEntryPoint;
 import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
@@ -48,6 +48,7 @@ import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import javax.inject.Inject;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -186,7 +187,7 @@ public abstract class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         if (atlasAuthenticationFilter != null) {
             httpSecurity.addFilterAfter(atlasAuthenticationFilter, SecurityContextHolderAwareRequestFilter.class);
         }
-        
+
         AtlasCSRFPreventionFilter csrfPreventionFilter = csrfPreventionFilterProvider.getIfAvailable();
         if (csrfPreventionFilter != null && atlasAuthenticationFilter != null) {
             httpSecurity.addFilterAfter(csrfPreventionFilter, AtlasAuthenticationFilter.class);

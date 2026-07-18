@@ -27,12 +27,12 @@ import javax.inject.Inject;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 @SuppressWarnings("deprecation")
 @Component
 public class AtlasAuthenticationEntryPoint extends LoginUrlAuthenticationEntryPoint {
-
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationEntryPoint.class);
 
     private String loginPath = "/login.jsp";
@@ -45,8 +45,6 @@ public class AtlasAuthenticationEntryPoint extends LoginUrlAuthenticationEntryPo
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
             throws IOException, ServletException {
-
-
         String ajaxRequestHeader = request.getHeader("X-Requested-With");
         response.setHeader("X-Frame-Options", "DENY");
 

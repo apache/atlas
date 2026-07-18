@@ -20,8 +20,8 @@ package org.apache.atlas.notification.rest.ha;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.notification.rest.AtlasServerIdSelector;
 import org.apache.atlas.notification.rest.RestHAConfiguration;
-import org.apache.atlas.server.common.service.HighAvailabilityProperties;
 import org.apache.atlas.server.common.service.HighAvailability;
+import org.apache.atlas.server.common.service.HighAvailabilityProperties;
 import org.apache.commons.configuration2.Configuration;
 import org.springframework.stereotype.Component;
 

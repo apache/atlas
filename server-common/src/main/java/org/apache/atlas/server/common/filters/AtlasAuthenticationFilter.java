@@ -21,10 +21,10 @@ package org.apache.atlas.server.common.filters;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.security.SecurityProperties;
-import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBridge;
 import org.apache.atlas.server.common.model.User;
 import org.apache.atlas.server.common.util.Servlets;
+import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.collections.iterators.IteratorEnumeration;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.ConfigurationConverter;
@@ -89,11 +89,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.apache.atlas.server.common.filters.RestUtil.constructForwardableURL;
-
-import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
-import org.apache.atlas.server.common.filters.HeadersUtil;
-import org.apache.atlas.server.common.filters.NullServletContext;
-import org.apache.atlas.server.common.filters.RestUtil;
 
 /**
  * This enforces authentication as part of the filter before processing the request.

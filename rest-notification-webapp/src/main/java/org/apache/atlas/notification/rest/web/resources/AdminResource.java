@@ -20,8 +20,8 @@ package org.apache.atlas.notification.rest.web.resources;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.server.common.service.ServiceState;
+import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -37,6 +37,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,7 +50,6 @@ import java.util.Map;
 @EnableScheduling
 public class AdminResource {
     private static final Logger LOG = LoggerFactory.getLogger(AdminResource.class);
-
 
     private static Configuration atlasProperties;
     private final  ServiceState  serviceState;
@@ -90,8 +90,8 @@ public class AdminResource {
         int nr = topThreadGroup.enumerate(threads);
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < nr; i++) {
-            builder.append(threads[i].getName()).append("\nState: ").
-                    append(threads[i].getState()).append("\n");
+            builder.append(threads[i].getName()).append("\nState: ")
+                    .append(threads[i].getState()).append("\n");
             String stackTrace = StringUtils.join(threads[i].getStackTrace(), "\n");
             builder.append(stackTrace);
         }
@@ -103,7 +103,6 @@ public class AdminResource {
         return builder.toString();
     }
 
-
     @GET
     @Path("status")
     @Produces(Servlets.JSON_MEDIA_TYPE)
@@ -112,9 +111,8 @@ public class AdminResource {
             LOG.debug("==> AdminResource.getStatus()");
         }
 
-        Map<String, Object> responseData = new HashMap() {{
-            put(AtlasClient.STATUS, serviceState.getState().toString());
-        }};
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put(AtlasClient.STATUS, serviceState.getState().toString());
 
         Response response = Response.ok(AtlasJson.toV1Json(responseData)).build();
 
@@ -124,6 +122,4 @@ public class AdminResource {
 
         return response;
     }
-
-
 }

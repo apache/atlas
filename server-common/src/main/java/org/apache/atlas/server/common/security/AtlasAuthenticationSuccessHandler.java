@@ -34,7 +34,7 @@ import java.io.IOException;
 
 @Component
 public class AtlasAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
-    private static Logger LOG = LoggerFactory.getLogger(AuthenticationSuccessHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AtlasAuthenticationSuccessHandler.class);
 
     public static final  String LOCALLOGIN = "locallogin";
 
@@ -47,7 +47,7 @@ public class AtlasAuthenticationSuccessHandler implements AuthenticationSuccessH
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
-        LOG.debug("Login Success {}", authentication.getPrincipal());
+        LOGGER.debug("Login Success {}", authentication.getPrincipal());
 
         JSONObject json = new JSONObject();
 

@@ -36,26 +36,11 @@ import org.apache.atlas.repository.impexp.AsyncImporter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasTypeDefGraphStore;
 import org.apache.atlas.repository.store.graph.EntityCorrelationStore;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
-import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
-import org.apache.atlas.server.common.filters.AuditFilter;
-import org.apache.atlas.server.common.filters.AuditFilter.AuditLog;
 import org.apache.atlas.server.common.service.ServiceState;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AdaptiveWaiter;
 import org.apache.atlas.util.AtlasMetricsUtil;
-import org.apache.atlas.util.AtlasMetricsUtil.NotificationStat;
-import org.apache.atlas.utils.AtlasJson;
-import org.apache.atlas.utils.AtlasPerfTracer;
-import org.apache.atlas.utils.LruCache;
-import org.apache.atlas.v1.model.instance.Referenceable;
-import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
-import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
-import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityPartialUpdateRequest;
-import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.map.PassiveExpiringMap;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -85,11 +70,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.atlas.notification.NotificationInterface.NotificationType.ASYNC_IMPORT;
-import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
-import static org.apache.atlas.model.instance.AtlasObjectId.KEY_TYPENAME;
-import static org.apache.atlas.model.instance.AtlasObjectId.KEY_UNIQUE_ATTRIBUTES;
-import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.TYPE_HIVE_PROCESS;
-import static org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI;
 
 /**
  * Consumer of notifications from hooks e.g., hive hook etc.

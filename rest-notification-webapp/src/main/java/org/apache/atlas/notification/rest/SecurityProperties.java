@@ -19,7 +19,6 @@
 package org.apache.atlas.notification.rest;
 
 public final class SecurityProperties {
-
     private SecurityProperties() {
     }
 
@@ -28,5 +27,4 @@ public final class SecurityProperties {
     public static final String KEYSTORE_PASSWORD_KEY = "keystore.password";
     public static final String TRUSTSTORE_PASSWORD_KEY = "truststore.password";
     public static final String SERVER_CERT_PASSWORD_KEY = "password";
-
 }

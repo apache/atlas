@@ -22,7 +22,6 @@ package org.apache.atlas.server.common.service;
  * Used to decouple core service logic.
  */
 public interface ServiceStateChangeHandler {
-
     /**
      * Invoked when the server process begins its initialization.
      */

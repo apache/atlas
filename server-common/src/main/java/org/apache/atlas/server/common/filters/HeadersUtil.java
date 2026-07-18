@@ -58,6 +58,7 @@ public class HeadersUtil {
     private HeadersUtil() {
         // to block instantiation
     }
+
     public static String getHeaderMap(String header) {
         return HEADER_MAP.get(header);
     }

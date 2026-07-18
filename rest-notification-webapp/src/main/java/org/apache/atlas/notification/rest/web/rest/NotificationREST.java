@@ -21,9 +21,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.authorize.AtlasAdminAccessRequest;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
-import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.kafka.KafkaNotification;
@@ -46,6 +43,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -100,14 +98,12 @@ public class NotificationREST {
         try {
             KafkaNotification  notifier  = (KafkaNotification) notificationInterface;
             notifier.sendInternal(topicName, messages, AtlasHook.isHookMsgsSortEnabled);
-
         } catch (NotificationException exception) {
             List<String> failedMessages      = exception.getFailedMessages();
             String       concatenatedMessage = StringUtils.join(failedMessages, "\n");
 
             throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_EXCEPTION, exception, concatenatedMessage);
         }
-
     }
 
     private List<String> getMessagesToNotify(String messagesAsJson) {
@@ -124,5 +120,4 @@ public class NotificationREST {
 
         return messages;
     }
-
 }
