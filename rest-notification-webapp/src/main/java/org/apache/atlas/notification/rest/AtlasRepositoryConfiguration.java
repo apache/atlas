@@ -31,15 +31,15 @@ import java.util.List;
  *
  */
 public class AtlasRepositoryConfiguration {
-
-    private static Logger LOG = LoggerFactory.getLogger(AtlasRepositoryConfiguration.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AtlasRepositoryConfiguration.class);
 
     public  static final String  AUDIT_EXCLUDED_OPERATIONS                              = "atlas.audit.excludes";
     public  static final String  SEPARATOR                                              = ":";
 
+    private static List<String>  skippedOperations;
 
-    private static List<String>  skippedOperations                  = null;
-
+    private AtlasRepositoryConfiguration() {
+    }
 
     /**
      * Get the list of operations which are configured to be skipped from auditing
@@ -53,7 +53,7 @@ public class AtlasRepositoryConfiguration {
                 try {
                     config = ApplicationProperties.get();
                 } catch (AtlasException e) {
-                    LOG.error(" Error reading operations for auditing ", e);
+                    LOGGER.error(" Error reading operations for auditing ", e);
                     throw e;
                 }
             }
@@ -65,10 +65,10 @@ public class AtlasRepositoryConfiguration {
             if (skipAuditForOperations != null && skipAuditForOperations.length > 0) {
                 for (String skippedOperation : skipAuditForOperations) {
                     String[] excludedOperations = skippedOperation.trim().toLowerCase().split(SEPARATOR);
-                    if (excludedOperations!= null && excludedOperations.length == 2) {
+                    if (excludedOperations != null && excludedOperations.length == 2) {
                         skippedOperations.add(skippedOperation.toLowerCase());
                     } else {
-                        LOG.error("Invalid format for skipped operation {}. Valid format is HttpMethod:URL eg: GET:Version", skippedOperation);
+                        LOGGER.error("Invalid format for skipped operation {}. Valid format is HttpMethod:URL eg: GET:Version", skippedOperation);
                     }
                 }
             }
@@ -84,5 +84,4 @@ public class AtlasRepositoryConfiguration {
             return false;
         }
     }
-
 }

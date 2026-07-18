@@ -36,7 +36,7 @@ public class AtlasAuthenticationProvider extends AtlasAbstractAuthenticationProv
             .getLogger(AtlasAuthenticationProvider.class);
 
     private boolean fileAuthenticationMethodEnabled = true;
-    private boolean pamAuthenticationEnabled = false;
+    private boolean pamAuthenticationEnabled;
     private boolean keycloakAuthenticationEnabled;
     private String ldapType = "NONE";
     public static final String FILE_AUTH_METHOD = "atlas.authentication.method.file";
@@ -72,16 +72,14 @@ public class AtlasAuthenticationProvider extends AtlasAbstractAuthenticationProv
     @Override
     public Authentication authenticate(Authentication authentication)
             throws AuthenticationException {
-
-        if(ssoEnabled){
-            if (authentication != null){
+        if (ssoEnabled) {
+            if (authentication != null) {
                 authentication = getSSOAuthentication(authentication);
-                if(authentication!=null && authentication.isAuthenticated()){
+                if (authentication != null && authentication.isAuthenticated()) {
                     return authentication;
                 }
             }
         } else {
-
             if (ldapType.equalsIgnoreCase("LDAP")) {
                 try {
                     authentication = ldapAuthenticationProvider.authenticate(authentication);

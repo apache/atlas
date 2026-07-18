@@ -26,7 +26,6 @@ import org.apache.commons.configuration2.Configuration;
  * dependencies on application-specific configuration classes.
  */
 public interface HighAvailability {
-
     /**
      * Determines if HA mode is active based on the provided configuration.
      */

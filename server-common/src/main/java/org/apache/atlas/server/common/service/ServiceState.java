@@ -61,7 +61,7 @@ public class ServiceState implements ServiceStateProvider {
 
         state = !highAvailability.isHAEnabled(configuration) ? ServiceStateValue.ACTIVE : ServiceStateValue.PASSIVE;
 
-        if(!StringUtils.isEmpty(configuration.getString(ATLAS_MIGRATION_MODE_FILENAME, ""))) {
+        if (!StringUtils.isEmpty(configuration.getString(ATLAS_MIGRATION_MODE_FILENAME, ""))) {
             state = ServiceStateValue.MIGRATING;
         }
     }

@@ -142,7 +142,6 @@ public class RestNotificationMain {
         return local;
     }
 
-
     static int getApplicationPort(CommandLine cmd, String enableTLSFlag, Configuration configuration) {
         String optionValue = cmd.hasOption(APP_PORT) ? cmd.getOptionValue(APP_PORT) : null;
 
@@ -158,11 +157,12 @@ public class RestNotificationMain {
         return appPort;
     }
 
-
     private static int getPortValue(Configuration configuration, String enableTLSFlag) {
         int appPort;
 
-        assert configuration != null;
+        if (configuration == null) {
+            throw new IllegalStateException("Configuration must not be null");
+        }
         appPort = StringUtils.isEmpty(enableTLSFlag) || enableTLSFlag.equals("true") ?
                 configuration.getInt(REST_SERVER_HTTPS_PORT, 41443) :
                 configuration.getInt(REST_SERVER_HTTP_PORT, 41000);
@@ -174,7 +174,6 @@ public class RestNotificationMain {
                 System.getProperty(org.apache.atlas.security.SecurityProperties.TLS_ENABLED, (appPort % 1000) == 443 ? "true" : "false") : enableTLSFlag);
     }
 
-
     private static void showStartupInfo(PropertiesConfiguration buildConfiguration, boolean enableTLS, int appPort) {
         StringBuilder buffer = new StringBuilder();
         buffer.append("\n############################################");
@@ -185,8 +184,8 @@ public class RestNotificationMain {
             final Iterator<String> keys = buildConfiguration.getKeys();
             while (keys.hasNext()) {
                 String key = keys.next();
-                buffer.append('\n').append('\t').append(key).
-                        append(":\t").append(buildConfiguration.getProperty(key));
+                buffer.append('\n').append('\t').append(key)
+                        .append(":\t").append(buildConfiguration.getProperty(key));
             }
         } catch (Throwable e) {
             buffer.append("*** Unable to get build info ***");
@@ -207,5 +206,4 @@ public class RestNotificationMain {
         // the initialization phase of your application
         SLF4JBridgeHandler.install();
     }
-
 }

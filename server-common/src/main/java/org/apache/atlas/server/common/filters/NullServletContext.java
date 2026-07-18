@@ -37,8 +37,7 @@ import java.util.Set;
 /**
  */
 public class NullServletContext implements ServletContext {
-    public void setSessionTrackingModes(
-            Set<SessionTrackingMode> sessionTrackingModes) {
+    public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes) {
     }
 
     public boolean setInitParameter(String name, String value) {
@@ -62,6 +61,27 @@ public class NullServletContext implements ServletContext {
 
     public String getVirtualServerName() {
         return null;
+    }
+
+    public int getSessionTimeout() {
+        return 0;
+    }
+
+    public void setSessionTimeout(int i) {
+    }
+
+    public String getRequestCharacterEncoding() {
+        return "";
+    }
+
+    public void setRequestCharacterEncoding(String s) {
+    }
+
+    public String getResponseCharacterEncoding() {
+        return "";
+    }
+
+    public void setResponseCharacterEncoding(String s) {
     }
 
     public SessionCookieConfig getSessionCookieConfig() {
@@ -191,33 +211,31 @@ public class NullServletContext implements ServletContext {
     public void declareRoles(String... roleNames) {
     }
 
-    public <T extends Servlet> T createServlet(Class<T> clazz)
-            throws ServletException {
+    public <T extends Servlet> T createServlet(Class<T> clazz) throws ServletException {
         return null;
     }
 
-    public <T extends EventListener> T createListener(Class<T> clazz)
-            throws ServletException {
+    public <T extends EventListener> T createListener(Class<T> clazz) throws ServletException {
         return null;
     }
 
-    public <T extends Filter> T createFilter(Class<T> clazz)
-            throws ServletException {
+    public <T extends Filter> T createFilter(Class<T> clazz) throws ServletException {
         return null;
     }
 
-    public javax.servlet.ServletRegistration.Dynamic addServlet(
-            String servletName, Class<? extends Servlet> servletClass) {
+    public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass) {
         return null;
     }
 
-    public javax.servlet.ServletRegistration.Dynamic addServlet(
-            String servletName, Servlet servlet) {
+    public ServletRegistration.Dynamic addJspFile(String s, String s1) {
         return null;
     }
 
-    public javax.servlet.ServletRegistration.Dynamic addServlet(
-            String servletName, String className) {
+    public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet) {
+        return null;
+    }
+
+    public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, String className) {
         return null;
     }
 
@@ -230,8 +248,7 @@ public class NullServletContext implements ServletContext {
     public void addListener(String className) {
     }
 
-    public Dynamic addFilter(String filterName,
-                             Class<? extends Filter> filterClass) {
+    public Dynamic addFilter(String filterName, Class<? extends Filter> filterClass) {
         return null;
     }
 

@@ -29,28 +29,19 @@ import java.io.Console;
 import java.io.IOException;
 import java.util.Arrays;
 
+import static org.apache.atlas.notification.rest.SecurityProperties.KEYSTORE_PASSWORD_KEY;
+import static org.apache.atlas.notification.rest.SecurityProperties.SERVER_CERT_PASSWORD_KEY;
+import static org.apache.atlas.notification.rest.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
 
-import  static org.apache.atlas.notification.rest.SecurityProperties.KEYSTORE_PASSWORD_KEY;
-import  static org.apache.atlas.notification.rest.SecurityProperties.SERVER_CERT_PASSWORD_KEY;
-import  static org.apache.atlas.notification.rest.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
 /**
  * A utility class for generating a credential provider containing the entries required for supporting the SSL
  * implementation
  * of the DGC server.
  */
 public class CredentialProviderUtility {
-    private static final String[] KEYS = new String[] { KEYSTORE_PASSWORD_KEY, TRUSTSTORE_PASSWORD_KEY, SERVER_CERT_PASSWORD_KEY };
-    public static abstract class TextDevice {
-        public abstract void printf(String fmt, Object... params);
-
-        public abstract String readLine(String fmt, Object... args);
-
-        public abstract char[] readPassword(String fmt, Object... args);
-
-    }
-
-    private static TextDevice DEFAULT_TEXT_DEVICE = new TextDevice() {
-        Console console = System.console();
+    private static final String[]   KEYS                = new String[] {KEYSTORE_PASSWORD_KEY, TRUSTSTORE_PASSWORD_KEY, SERVER_CERT_PASSWORD_KEY};
+    private static final TextDevice DEFAULT_TEXT_DEVICE = new TextDevice() {
+        final Console console = System.console();
 
         @Override
         public void printf(String fmt, Object... params) {
@@ -69,6 +60,10 @@ public class CredentialProviderUtility {
     };
 
     public static TextDevice textDevice = DEFAULT_TEXT_DEVICE;
+
+    private CredentialProviderUtility() {
+        // to block instantiation
+    }
 
     public static void main(String[] args) throws IOException {
         try {
@@ -122,7 +117,7 @@ public class CredentialProviderUtility {
         // prompt for the provider name
         CredentialProvider provider = getCredentialProvider(textDevice);
 
-        if(provider != null) {
+        if (provider != null) {
             for (String key : KEYS) {
                 char[] cred = getPassword(textDevice, key);
 
@@ -223,5 +218,13 @@ public class CredentialProviderUtility {
         }
 
         return null;
+    }
+
+    public abstract static class TextDevice {
+        public abstract void printf(String fmt, Object... params);
+
+        public abstract String readLine(String fmt, Object... args);
+
+        public abstract char[] readPassword(String fmt, Object... args);
     }
 }

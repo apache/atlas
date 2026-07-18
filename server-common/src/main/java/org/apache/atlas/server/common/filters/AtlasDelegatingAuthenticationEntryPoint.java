@@ -30,8 +30,8 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 
 public class AtlasDelegatingAuthenticationEntryPoint extends DelegatingAuthenticationEntryPoint {
-    public static final  String SESSION_TIMEOUT = "Session Timeout";
-    private static final Logger LOG             = LoggerFactory.getLogger(AtlasDelegatingAuthenticationEntryPoint.class);
+    public static final String SESSION_TIMEOUT = "Session Timeout";
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasDelegatingAuthenticationEntryPoint.class);
 
     public AtlasDelegatingAuthenticationEntryPoint(LinkedHashMap<RequestMatcher, AuthenticationEntryPoint> entryPoints) {
         super(entryPoints);

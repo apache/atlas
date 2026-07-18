@@ -41,8 +41,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.atlas.server.common.security.PamPrincipal;
-
 public class PamLoginModule implements LoginModule {
     private static final Logger LOG = LoggerFactory.getLogger(PamLoginModule.class);
 
