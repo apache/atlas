@@ -69,18 +69,27 @@ export const LegalFooter = props => {
 								width="10"
 							/>
 						</LinkStyled>
-						Copyright © 2011-2018 The Apache Software Foundation.
+						Copyright © 2011-2026 The Apache Software Foundation.
 						Licensed under the{" "}
 						<LinkStyled href="https://www.apache.org/licenses/LICENSE-2.0">
 							Apache License, Version 2.0
 						</LinkStyled>
-						.Apache Atlas, Atlas, Apache, the Apache feather logo
+						. Apache Atlas, Atlas, Apache, the Apache logo
 						are trademarks of the{" "}
 						<LinkStyled href="https://www.apache.org">
 							Apache Software Foundation
 						</LinkStyled>
 						.All other marks mentioned may be trademarks or
 						registered trademarks of their respective owners.
+					</ParagraphFooter>
+					<ParagraphFooter>
+						<LinkStyled href="https://www.apache.org/">Foundation</LinkStyled>{" | "}
+						<LinkStyled href="https://www.apache.org/events/current-event.html">Events</LinkStyled>{" | "}
+						<LinkStyled href="https://www.apache.org/licenses/">License</LinkStyled>{" | "}
+						<LinkStyled href="https://www.apache.org/security/">Security</LinkStyled>{" | "}
+						<LinkStyled href="https://www.apache.org/foundation/sponsorship.html">Sponsorship</LinkStyled>{" | "}
+						<LinkStyled href="https://www.apache.org/foundation/thanks.html">Thanks</LinkStyled>{" | "}
+						<LinkStyled href="https://privacy.apache.org/policies/privacy-policy-public.html">Privacy</LinkStyled>
 					</ParagraphFooter>
 				</div>
 			</div>
