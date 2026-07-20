@@ -73,28 +73,14 @@
                 </executions>
             </plugin>
 
-            <!-- Repack the jar -->
+            <!-- Repack unpacked hbase-shaded-client as the main project artifact -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.4</version>
-                <executions>
-                    <execution>
-                        <id>default-jar</id>
-                        <phase>none</phase>
-                    </execution>
-                    <execution>
-                        <id>repack-fixed-hbase-shaded-client</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <classesDirectory>${project.build.directory}/unpacked</classesDirectory>
-                            <finalName>hbase-shaded-client-${hbase.version}-hadoop3-fixed</finalName>
-                        </configuration>
-                    </execution>
-                </executions>
+                <configuration>
+                    <classesDirectory>${project.build.directory}/unpacked</classesDirectory>
+                </configuration>
             </plugin>
         </plugins>
     </build>

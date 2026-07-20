@@ -144,7 +144,7 @@ public class AtlasGraphProvider implements IAtlasGraphProvider {
     private static Long getRetrySleepTime() {
         initApplicationProperties();
 
-        return (applicationProperties == null) ? 30000 : applicationProperties.getLong(GRAPH_REPOSITORY_RETRY_SLEEPTIME, 30000);
+        return (applicationProperties == null) ? 30000L : applicationProperties.getLong(GRAPH_REPOSITORY_RETRY_SLEEPTIME, 30000L);
     }
 
     private static void initApplicationProperties() {
