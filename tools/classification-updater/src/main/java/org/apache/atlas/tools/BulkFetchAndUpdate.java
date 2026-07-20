@@ -18,7 +18,6 @@
 
 package org.apache.atlas.tools;
 
-import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasException;
@@ -44,6 +43,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 
 import java.io.BufferedReader;
@@ -453,7 +453,7 @@ public class BulkFetchAndUpdate {
         }
 
         private List<AtlasClassificationDef> getAllClassificationsDefs() throws Exception {
-            MultivaluedMap<String, String> searchParams = new MultivaluedMapImpl();
+            MultivaluedMap<String, String> searchParams = new MultivaluedHashMap();
             searchParams.add(SearchFilter.PARAM_TYPE, "CLASSIFICATION");
             SearchFilter searchFilter = new SearchFilter(searchParams);
 
