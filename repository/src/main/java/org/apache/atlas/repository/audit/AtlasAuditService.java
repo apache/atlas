@@ -18,8 +18,10 @@
 
 package org.apache.atlas.repository.audit;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.AtlasService;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
@@ -31,8 +33,10 @@ import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.PurgeSummary;
 import org.apache.atlas.repository.ogm.AtlasAuditEntryDTO;
 import org.apache.atlas.repository.ogm.DataAccess;
+import org.apache.atlas.repository.purge.PurgeUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -45,7 +49,9 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @AtlasService
 public class AtlasAuditService {
@@ -68,13 +74,21 @@ public class AtlasAuditService {
     }
 
     public void add(AuditOperation operation, String params, String result, long resultCount) throws AtlasBaseException {
+        add(operation, params, result, resultCount, null);
+    }
+
+    public void add(AuditOperation operation, String params, String result, long resultCount, String runId) throws AtlasBaseException {
         final Date startTime = new Date(RequestContext.get().getRequestTime());
         final Date endTime   = new Date();
 
-        add(operation, startTime, endTime, params, result, resultCount);
+        add(operation, startTime, endTime, params, result, resultCount, runId);
     }
 
     public void add(AuditOperation operation, Date startTime, Date endTime, String params, String result, long resultCount) throws AtlasBaseException {
+        add(operation, startTime, endTime, params, result, resultCount, null);
+    }
+
+    public void add(AuditOperation operation, Date startTime, Date endTime, String params, String result, long resultCount, String runId) throws AtlasBaseException {
         String userName = RequestContext.get().getCurrentUser();
         String clientId = RequestContext.get().getClientIPAddress();
 
@@ -88,10 +102,14 @@ public class AtlasAuditService {
             }
         }
 
-        add(userName, operation, clientId, startTime, endTime, params, result, resultCount);
+        add(userName, operation, clientId, startTime, endTime, params, result, resultCount, runId);
     }
 
     public void add(String userName, AuditOperation operation, String clientId, Date startTime, Date endTime, String params, String result, long resultCount) throws AtlasBaseException {
+        add(userName, operation, clientId, startTime, endTime, params, result, resultCount, null);
+    }
+
+    public void add(String userName, AuditOperation operation, String clientId, Date startTime, Date endTime, String params, String result, long resultCount, String runId) throws AtlasBaseException {
         LOG.debug("==> AtlasAuditService.add()");
 
         AtlasAuditEntry entry = new AtlasAuditEntry();
@@ -104,6 +122,7 @@ public class AtlasAuditService {
         entry.setParams(params);
         entry.setResult(result);
         entry.setResultCount(resultCount);
+        entry.setRunId(runId);
 
         save(entry);
 
@@ -112,6 +131,85 @@ public class AtlasAuditService {
 
             LOG.debug("<== AtlasAuditService.add()");
         }
+    }
+
+    public List<String> getPurgedEntityGuidsForRun(AtlasAuditEntry summaryEntry) throws AtlasBaseException {
+        List<AtlasAuditEntry> batchRows = getPurgeBatchAuditEntriesForRun(summaryEntry);
+        List<String>          purgedGuids = PurgeUtils.collectPurgedGuidsFromBatchEntries(batchRows);
+
+        PurgeSummary summary = PurgeUtils.parsePurgeSummary(summaryEntry);
+        if (summary != null) {
+            long expectedPurgedGuids = summary.getPurgedCount() + summary.getPurgedDependenciesCount();
+            if (expectedPurgedGuids > 0 && purgedGuids.size() < expectedPurgedGuids) {
+                LOG.warn("Purged entity GUID count {} is less than summary expected {} for runId={}",
+                        purgedGuids.size(), expectedPurgedGuids, PurgeUtils.resolveRunId(summaryEntry));
+            }
+        }
+
+        return purgedGuids;
+    }
+
+    public List<String> getPurgeBatchAuditGuidsForRun(AtlasAuditEntry summaryEntry) throws AtlasBaseException {
+        return getPurgeBatchAuditEntriesForRun(summaryEntry).stream()
+                .map(AtlasAuditEntry::getGuid)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    private List<AtlasAuditEntry> getPurgeBatchAuditEntriesForRun(AtlasAuditEntry summaryEntry) throws AtlasBaseException {
+        String runId = PurgeUtils.resolveRunId(summaryEntry);
+        if (StringUtils.isBlank(runId)) {
+            return new ArrayList<>();
+        }
+
+        return PurgeUtils.filterPurgeBatchAudits(getAuditEntriesByPurgeRunId(runId));
+    }
+
+    private List<AtlasAuditEntry> getAuditEntriesByPurgeRunId(String runId) throws AtlasBaseException {
+        if (StringUtils.isBlank(runId)) {
+            return new ArrayList<>();
+        }
+
+        int                      pageSize = AtlasConfiguration.SEARCH_MAX_LIMIT.getInt();
+        int                      offset   = 0;
+        List<AtlasAuditEntry>    all      = new ArrayList<>();
+
+        while (true) {
+            SearchParameters searchParameters = new SearchParameters();
+            searchParameters.setTypeName(ENTITY_TYPE_AUDIT_ENTRY);
+            searchParameters.setEntityFilters(buildPurgeRunIdFilter(runId));
+            searchParameters.setLimit(pageSize);
+            searchParameters.setOffset(offset);
+            searchParameters.setSortBy(AtlasAuditEntryDTO.ATTRIBUTE_START_TIME);
+            searchParameters.setSortOrder(SortOrder.ASCENDING);
+            searchParameters.setAttributes(getAuditEntityAttributes());
+
+            List<AtlasAuditEntry> page = toAtlasAuditEntries(discoveryService.searchWithParameters(searchParameters));
+
+            if (CollectionUtils.isEmpty(page)) {
+                break;
+            }
+
+            all.addAll(page);
+
+            if (page.size() < pageSize) {
+                break;
+            }
+
+            offset += pageSize;
+        }
+
+        return all;
+    }
+
+    private SearchParameters.FilterCriteria buildPurgeRunIdFilter(String runId) throws AtlasBaseException {
+        SearchParameters.FilterCriteria root = new SearchParameters.FilterCriteria();
+        root.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+        root.setCriterion(new ArrayList<>());
+
+        addParameterIfValueNotEmpty(root, "runId", SearchParameters.Operator.EQ, runId);
+
+        return getNonEmptyFilter(root);
     }
 
     public AtlasAuditEntry get(AtlasAuditEntry entry) throws AtlasBaseException {

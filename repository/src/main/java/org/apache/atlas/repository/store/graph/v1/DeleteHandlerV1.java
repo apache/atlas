@@ -221,7 +221,8 @@ public abstract class DeleteHandlerV1 {
     /*
         actually delete traits and then the vertex along its references
     */
-    public void deleteTraitsAndVertices(Collection<AtlasVertex> deletionCandidateVertices) throws AtlasBaseException {
+    public Collection<AtlasVertex> deleteTraitsAndVertices(Collection<AtlasVertex> deletionCandidateVertices) throws AtlasBaseException {
+        Collection<AtlasVertex> deletedVertices = new ArrayList<>();
         for (AtlasVertex deletionCandidateVertex : deletionCandidateVertices) {
             if (deletionCandidateVertex == null) {
                 continue;
@@ -235,10 +236,12 @@ public abstract class DeleteHandlerV1 {
             try {
                 deleteAllClassifications(deletionCandidateVertex);
                 deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
+                deletedVertices.add(deletionCandidateVertex);
             } catch (IllegalStateException e) {
                 LOG.warn("deleteTraitsAndVertices(): skipping vertex - already removed", e);
             }
         }
+        return deletedVertices;
     }
 
     public void addUpstreamProcessEntities(AtlasVertex entityVertex, Set<AtlasVertex> deletionCandidateVertices, Set<String> instanceVertexGuids) throws AtlasBaseException {
@@ -1157,7 +1160,7 @@ public abstract class DeleteHandlerV1 {
             LOG.debug("Removing edge from {} to {} with attribute name {}", string(outVertex), string(inVertex), attribute.getName());
         }
 
-        if (skipVertexForDelete(outVertex)) {
+        if (skipVertexForDelete(outVertex) || isDeletedEntity(outVertex)) {
             return;
         }
 
@@ -1433,13 +1436,10 @@ public abstract class DeleteHandlerV1 {
                 final RequestContext reqContext = RequestContext.get();
                 final String         guid       = AtlasGraphUtilsV2.getIdFromVertex(vertex);
 
-                if (guid != null && !reqContext.isDeletedEntity(guid)) {
-                    final AtlasEntity.Status vertexState = getState(vertex);
-                    if (reqContext.isPurgeRequested()) {
-                        ret = vertexState == ACTIVE; // skip purging ACTIVE vertices
-                    } else {
-                        ret = vertexState == DELETED; // skip deleting DELETED vertices
-                    }
+                if (reqContext.isPurgeRequested()) {
+                    ret = getState(vertex) == ACTIVE; // skip purging ACTIVE vertices
+                } else if (guid != null && !reqContext.isDeletedEntity(guid)) {
+                    ret = getState(vertex) == DELETED; // skip deleting DELETED vertices
                 }
             } catch (IllegalStateException excp) {
                 LOG.warn("skipVertexForDelete(): failed guid/state for the vertex", excp);

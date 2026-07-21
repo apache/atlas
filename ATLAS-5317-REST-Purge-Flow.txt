@@ -1,0 +1,540 @@
+ATLAS-5317: REST Purge Flow — Request to Response
+==================================================
+
+Companion to: ATLAS-5317-Resilient-Bulk-Purge-In-Atlas-DESIGN.txt
+             ATLAS-5317-Resilient-Bulk-Purge-In-Atlas-IMPLEMENTATION_NOTES.txt
+
+This document explains the REST purge path (PUT /admin/purge) from the HTTP request
+through to the JSON response. It starts with a high-level view and drills down layer
+by layer.
+
+Endpoint:  PUT /api/atlas/v2/admin/purge  (AdminResource @Path("admin") + @Path("/purge"))
+Body:      JSON array of entity GUIDs (Set<String>)
+Response:  EntityMutationResponse with mutatedEntities.PURGE, failedEntities, summary
+
+
+================================================================================
+LEVEL 1 — High-Level View (30-second picture)
+================================================================================
+
+  Client                    Atlas Server                         Graph DB
+    |                            |                                  |
+    |  PUT /admin/purge          |                                  |
+    |  [guid1, guid2, ...]       |                                  |
+    |--------------------------->|                                  |
+    |                            |  1. Validate & authorize         |
+    |                            |  2. Pre-scan each GUID             |
+    |                            |  3. Expand dependencies            |
+    |                            |  4. Purge in parallel mini-batches |
+    |                            |--------------------------------->|
+    |                            |<---------------------------------|
+    |                            |  5. Aggregate results + summary  |
+    |  HTTP 200                  |                                  |
+    |  EntityMutationResponse    |                                  |
+    |<---------------------------|                                  |
+    |                            |                                  |
+
+What the client receives:
+  - mutatedEntities.PURGE  — list of successfully hard-deleted entities
+  - failedEntities         — per-GUID failures (guid, errorCode, errorMessage)
+  - summary (PurgeSummary) — count totals for monitoring and client logic
+
+
+================================================================================
+LEVEL 2 — Component Map
+================================================================================
+
+  +-------------------------------------------------------------------------+
+  |  webapp: AdminResource.purgeByIds()                                     |
+  |    PUT /admin/purge — empty/size/auth checks, param length validation   |
+  +-------------------------------------------------------------------------+
+                                    |
+                                    v
+  +-------------------------------------------------------------------------+
+  |  repository: PurgeService.purgeByIds()                                  |
+  |    pre-scan via PurgeUtils, early-exit for all-invalid requests         |
+  +-------------------------------------------------------------------------+
+                                    |
+                                    v
+  +-------------------------------------------------------------------------+
+  |  repository: PurgeService.executePurgeWithWorkers()                     |
+  |    creates PurgeBatchExecutor + PurgeBatchOrchestrator                    |
+  |    owns PurgeExecutionStats for the run                                 |
+  +-------------------------------------------------------------------------+
+                                    |
+                                    v
+  +-------------------------------------------------------------------------+
+  |  repository: PurgeBatchOrchestrator.executePurge()                      |
+  |    main thread: expand dependencies, enqueue GUIDs to workers           |
+  |    worker threads: mini-batch hard deletes                              |
+  +-------------------------------------------------------------------------+
+                                    |
+                    +---------------+---------------+
+                    v                               v
+  +-----------------------------+   +-----------------------------+
+  |  PurgeBatchExecutor         |   |  PurgeBatchConsumer         |
+  |  retry on lock conflicts    |   |  (WorkItemManager workers)  |
+  +-----------------------------+   +-----------------------------+
+                    |
+                    v
+  +-------------------------------------------------------------------------+
+  |  repository: AtlasEntityStoreV2.purgeEntitiesInBatch()                  |
+  |    @GraphTransaction — lock GUIDs, deleteTraitsAndVertices, notify    |
+  +-------------------------------------------------------------------------+
+                                    |
+                                    v
+  +-------------------------------------------------------------------------+
+  |  repository: executePurgeWithWorkers() (after orchestrator returns)     |
+  |    PurgeUtils.attachPurgeSummary() + PurgeAuditWriter.finishRun()       |
+  |    resetPurgeContext() in finally                                       |
+  +-------------------------------------------------------------------------+
+
+
+================================================================================
+LEVEL 3 — Request Gatekeeping (AdminResource + PurgeService.purgeByIds)
+================================================================================
+
+  PUT /admin/purge [guid1, guid2, guid3]
+           |
+           v
+  +---------------------+
+  | AdminResource       |
+  | purgeByIds(guids)   |
+  +---------------------+
+           |
+           +---> Empty guids?  ---------> throw 400 INVALID_PARAMETERS
+           |
+           +---> Size > atlas.purge.api.max.request.size?
+           |                              throw 400 PURGE_REQUEST_SIZE_EXCEEDS_LIMIT
+           |
+           +---> Authorize ADMIN_PURGE privilege
+           |
+           |  validate GUID string length (Servlets.validateQueryParamLength)
+           v
+  +---------------------+
+  | PurgeService        |
+  | purgeByIds(guids)   |
+  +---------------------+
+           |
+           v
+  +---------------------+
+  | PurgeUtils          |
+  | preScanGuids()      |   (no write transaction yet)
+  +---------------------+
+           |
+           |  for each GUID:
+           |    validatePurgePreconditions()
+           v
+     +-----+-----+
+     |           |
+   VALID       INVALID  --> add to failedEntities list
+     |           |         (still returned in response, not sent to workers)
+     v           |
+  validGuids     |
+     |           |
+     +-----+-----+
+           |
+           +---> validGuids empty?  --> buildPreValidationOnlyResponse()
+           |                            (HTTP 200, failedEntities + summary, no workers)
+           |                            (also writes a single audit entry if audit enabled)
+           |
+           v
+     executePurgeWithWorkers()  ----->  (see Level 4)
+
+
+Pre-scan checks per GUID (validatePurgePreconditions):
+
+  GUID
+   |
+   +-- invalid UUID format?          --> failedEntities  (INVALID_GUID)
+   +-- entity not in graph?          --> failedEntities  (INSTANCE_GUID_NOT_FOUND) *
+   +-- state != DELETED?              --> failedEntities  (NOT_IN_DELETED_STATE) *
+   +-- type name missing/unregistered? --> failedEntities  (TYPE_NAME_NOT_FOUND)
+   |
+   v
+  VALID — added to validGuids
+
+  * These codes are "skippable" — they count toward skippedCount in summary,
+    not failedCount. See Level 7.
+
+
+================================================================================
+LEVEL 4 — Worker Orchestration (executePurgeWithWorkers + Orchestrator)
+================================================================================
+
+  executePurgeWithWorkers(originallyRequestedGuids, validGuids, preFailures)
+           |
+           |  PurgeBatchOrchestrator.initializePurgeContext()
+           |    RequestContext: DeleteType.HARD, purgeRequested=true
+           v
+  +------------------------------------------+
+  | PurgeBatchOrchestrator.executePurge()    |
+  +------------------------------------------+
+           |
+           |  read config:
+           |    atlas.purge.worker.batch.size  (default 100)
+           |    atlas.purge.workers.count      (default 2)
+           |
+           |  create WorkItemManager + N worker threads
+           v
+  +----------------------------------------------------------+
+  | MAIN THREAD — for each valid root GUID:                  |
+  |                                                          |
+  |   expandDeletionCandidatesAndProduce(rootGuid)           |
+  |     |                                                    |
+  |     +--> entityStore.accumulateDeletionCandidates()      |
+  |     |      (DeleteHandlerV1 walks dependency graph)        |
+  |     |                                                    |
+  |     +--> for each candidate GUID:                        |
+  |     |      producedDeletionCandidates.add(guid)          |
+  |     |      manager.checkProduce(guid)  ------+           |
+  |     |                                        |           |
+  |     +--> also produce rootGuid if not yet    |           |
+  |          in producedDeletionCandidates       |           |
+  |                                              |           |
+  |   clearPurgeCandidateExpansionState()        |           |
+  |     (clear graph cache + request cache)      |           |
+  |                                              |           |
+  |   on expansion error: add to failedEntities  |           |
+  +----------------------------------------------|-----------+
+                                                 |
+                    +----------------------------+
+                    |  GUIDs flow to worker queue (workers start immediately)
+                    v
+  +----------------------------------------------------------+
+  | WORKER THREADS (atlas.purge.workers.count)               |
+  |                                                          |
+  |   PurgeBatchConsumer accumulates GUIDs until batch full  |
+  |     --> PurgeBatchExecutor.executeBatch(batchGuids)      |
+  |           --> purgeEntitiesInBatch()  (see Level 5)      |
+  |     --> writeBatchAudit() per committed batch              |
+  |     --> addResult(PurgeBatchResult) to results queue       |
+  +----------------------------------------------------------+
+                    |
+                    |  all roots expanded and enqueued
+                    v
+           manager.shutdown()
+                    |
+                    v
+  +----------------------------------------------------------+
+  | AGGREGATION (main thread, in orchestrator finally block) |
+  |                                                          |
+  |   aggregateBatchResults()                                |
+  |     - recordFailure() for preFailures + expansion errors |
+  |     - recordBatchOutcome() per worker batch              |
+  |     - merge purgedEntities + failedEntities into response|
+  |                                                          |
+  |   reconcileUnprocessedGuids()                            |
+  |     - GUIDs produced but never accounted for             |
+  |     - marked failed: "Not processed during purge shutdown"|
+  +----------------------------------------------------------+
+                    |
+                    v
+         return response to executePurgeWithWorkers()
+                    |
+                    v
+           PurgeUtils.attachPurgeSummary(response, stats)
+                    |
+                    v
+           PurgeBatchOrchestrator.resetPurgeContext()  (in finally)
+                    |
+                    v
+              return response to AdminResource
+
+
+Parallelism note:
+  Workers begin purging as soon as GUIDs are enqueued. The main thread does NOT
+  wait for all expansion to finish before workers start. This is intentional —
+  it avoids stale JanusGraph vertex handles when deletes run in parallel.
+
+
+================================================================================
+LEVEL 5 — Batch Execution (one mini-batch transaction)
+================================================================================
+
+  PurgeBatchConsumer.attemptCommit()
+           |
+           v
+  PurgeBatchExecutor.executeBatch(batchGuids)
+           |
+           |  withRetry (up to 3 attempts, 500/1000/1500 ms backoff)
+           |    retryable: PermanentLockingException, LockTimeoutException,
+           |               DeadlockException, PermanentBackendException
+           v
+  AtlasEntityStoreV2.purgeEntitiesInBatch(batchGuids)   [@GraphTransaction]
+           |
+           +--> lock all GUIDs in batch (GraphTransactionInterceptor)
+           +--> clear graph cache
+           |
+           |  for each guid in batch:
+           |    resolve vertex by GUID
+           |    skip if vertex gone or not DELETED  --> failedEntities (skippable)
+           |    collect vertex + AtlasEntityHeader
+           |
+           +--> deleteDelegate.deleteTraitsAndVertices(purgeVertices)
+           |      (hard delete from graph)
+           |
+           +--> for each pre-captured header:
+           |      if vertex was deleted  --> add to purgedEntities
+           |      else                     --> failedEntities (concurrent removal)
+           |
+           +--> entityChangeNotifier.onEntitiesMutated()  (listeners)
+           |
+           v
+  return EntityMutationResponse (purged + failed for this batch only)
+           |
+           v
+  wrapped in PurgeBatchResult --> results queue --> aggregated in Level 4
+
+
+Each batch is an independent transaction:
+  - Batch 3 failure does NOT roll back batches 1 and 2
+  - Lock conflict retries only the affected batch, not the whole request
+
+
+================================================================================
+LEVEL 6 — Response Assembly
+================================================================================
+
+  Two parallel structures are built during the run:
+
+  1. EntityMutationResponse (what the client reads per-GUID)
+       mutatedEntities.PURGE  — AtlasEntityHeader for each purged entity
+       failedEntities         — FailedEntity(guid, errorCode, errorMessage) per failure
+
+  2. PurgeExecutionStats (internal counter ledger, main thread only)
+       updated during aggregation; never exposed directly
+
+  At the end:
+       PurgeUtils.attachPurgeSummary(response, stats)
+         --> builds PurgeSummary from stats counters
+         --> validates balance invariants (logs warnings on mismatch)
+         --> response.setSummary(purgeSummary)
+
+  HTTP status:
+       200 — purge completed (outcome is in body, including partial success and
+              all-invalid pre-scan where every GUID failed validation)
+       400 — empty input or request exceeds atlas.purge.api.max.request.size
+       403 — authorization failure (ADMIN_PURGE privilege not granted)
+
+
+================================================================================
+LEVEL 7 — Summary Counts (how PurgeSummary is built)
+================================================================================
+
+Counter ledger:  PurgeExecutionStats  (mutable, during run)
+Response field:  PurgeSummary         (immutable snapshot at end)
+
+                    buildPurgeSummary(stats)
+  PurgeExecutionStats  --------------------------------->  PurgeSummary
+                                                           (response.summary)
+
+
+Two axes for every outcome:
+
+  Axis 1 — Scope:
+    Originally requested GUID  vs  Dependency-expanded GUID
+
+  Axis 2 — Outcome:
+    Purged  |  Failed (hard)  |  Skipped (benign)
+
+
+Summary fields:
+
+  REQUEST SCOPE (originally requested GUIDs only)
+  -----------------------------------------------------------------------
+  requestedCount          Size of original request (set at build time)
+  purgedCount             Requested GUIDs successfully hard-deleted
+  failedCount             Non-skippable failures on requested GUIDs
+  skippedRequestedCount   Skippable failures on requested GUIDs
+
+  DEPENDENCY SCOPE (expanded beyond the request)
+  -----------------------------------------------------------------------
+  purgedDependenciesCount     Dependencies successfully purged
+  failedDependenciesCount     Non-skippable failures on dependencies
+  skippedDependenciesCount    Skippable failures on dependencies
+
+  DERIVED / OPERATIONAL
+  -----------------------------------------------------------------------
+  skippedCount            skippedRequestedCount + skippedDependenciesCount
+  validGuidCount          GUIDs that passed pre-scan
+  expandedEntityCount     Total GUIDs enqueued to workers (roots + deps)
+  batchCount              Worker batches processed
+  unprocessedCount        Shutdown-reconciled GUIDs never accounted for
+  executionFailed         true if any EXECUTION_FAILURE category error occurred
+                            (PRE_VALIDATION failures count in failedCount but do
+                            not set executionFailed)
+
+
+When counters are updated:
+
+  Phase          Event                              Stats method
+  -----------    --------------------------------   ---------------------------
+  Pre-scan       Invalid GUID found                 (deferred — not yet in stats)
+  Aggregation    Pre-scan failures merged           recordFailure()
+  Expansion      Dependency walk error              recordFailure() (via aggregate)
+  Worker batch   Batch succeeds                     recordBatchOutcome()
+  Worker batch   Batch throws                       recordBatchThrowable()
+  Shutdown       GUID produced but unaccounted      recordReconciledUnprocessed()
+                                                 + recordFailure()
+  Final          Copy counters to response          buildPurgeSummary()
+
+
+Failure code classification (PurgeUtils.classifyPurgeFailureCode):
+
+  Error code                        Category                  Counts toward
+  --------------------------------  ------------------------  ------------------
+  INSTANCE_GUID_NOT_FOUND           SKIPPABLE                 skipped*
+  NOT_IN_DELETED_STATE              SKIPPABLE                 skipped*
+  INVALID_GUID                      PRE_VALIDATION_FAILURE    failedCount
+  TYPE_NAME_NOT_FOUND               PRE_VALIDATION_FAILURE    failedCount
+  INTERNAL_ERROR, others            EXECUTION_FAILURE         failed* + executionFailed=true
+  (pre-scan INVALID_GUID,           PRE_VALIDATION_FAILURE    failedCount only
+   TYPE_NAME_NOT_FOUND)              (no executionFailed)
+
+
+Balance formulas (validated at end; warnings logged on mismatch):
+
+  Request scope:
+    requestedCount = purgedCount + failedCount + skippedRequestedCount
+
+  Expanded scope (when expandedEntityCount > 0):
+    expandedEntityCount = purgedCount + purgedDependenciesCount
+                        + failedCount + failedDependenciesCount
+                        + skippedRequestedCount + skippedDependenciesCount
+
+  Note: unprocessedCount is a breakdown of shutdown failures already included
+  in failedCount / failedDependenciesCount — not an extra term in the balance.
+
+
+Deduplication:
+  Each GUID is counted at most once (accountedOutcomeGuids set). If a GUID is
+  first recorded as failed/skipped and later purged (e.g. concurrent batch),
+  recordPurged() decrements the prior counter and increments purgedCount.
+
+
+================================================================================
+LEVEL 8 — End-to-End Timeline (single request)
+================================================================================
+
+  Time -->
+  |
+  |  [REST] AdminResource receives PUT /admin/purge
+  |  [GATE] Size check, auth, pre-scan all GUIDs
+  |         preFailures collected; validGuids separated
+  |
+  |  [INIT]  PurgeExecutionStats created
+  |          WorkItemManager + workers started
+  |
+  |  [EXPAND] For each valid root GUID (main thread):
+  |            accumulateDeletionCandidates -> enqueue GUIDs
+  |            workers may already be purging earlier GUIDs
+  |
+  |  [WORK]  Workers commit mini-batches (100 GUIDs default)
+  |          each batch: own transaction, retry on lock conflict
+  |          per-batch audit written
+  |
+  |  [SHUTDOWN] manager.shutdown() — drain remaining batches
+  |
+  |  [AGGREGATE] merge all PurgeBatchResults into response
+  |             recordFailure for pre-scan + expansion errors
+  |             reconcileUnprocessedGuids
+  |
+  |  [SUMMARY] attachPurgeSummary -> PurgeSummary on response
+  |
+  |  [REST] HTTP 200 + EntityMutationResponse returned to client
+  v
+
+
+================================================================================
+Configuration Keys (REST path)
+================================================================================
+
+  Key                              Default   Used by
+  -------------------------------  --------  ---------------------------------
+  atlas.purge.api.max.request.size 1000      AdminResource — max GUIDs per request
+  atlas.purge.worker.batch.size    100       PurgeBatchConsumer — GUIDs per txn
+  atlas.purge.workers.count        2         WorkItemManager — parallel workers
+
+
+================================================================================
+Key Classes Quick Reference
+================================================================================
+
+  Class / Method                          Responsibility
+  --------------------------------------  -------------------------------------
+  AdminResource.purgeByIds()              REST entry; size/auth/validation; delegates to PurgeService
+  PurgeService.purgeByIds()               Pre-scan, pre-validation-only path, route to workers
+  PurgeService.executePurgeWithWorkers()  Owns stats; wraps orchestrator and summary audit
+  PurgeUtils.preScanGuids()               Pre-validation without writes
+  AtlasEntityStoreV2.accumulateDeletionCandidates()  Dependency expansion (graph primitive)
+  AtlasEntityStoreV2.purgeEntitiesInBatch()  Hard delete in one transaction (graph primitive)
+  PurgeBatchOrchestrator                  Expand, enqueue, aggregate, reconcile
+  PurgeBatchExecutor                      Batch execution with lock retry
+  PurgeBatchConsumer                      Worker thread; accumulates mini-batches
+  PurgeExecutionStats                     Mutable counter ledger during run
+  PurgeUtils.attachPurgeSummary()         Stats -> PurgeSummary on response
+  PurgeSummary                            Immutable count snapshot in JSON response
+  EntityMutationResponse                  REST response body (purged, failed, summary)
+
+
+================================================================================
+Sample Response Shape
+================================================================================
+
+  {
+    "mutatedEntities": {
+      "PURGE": [
+        { "guid": "abc-...", "typeName": "hive_table", ... }
+      ]
+    },
+    "failedEntities": [
+      { "guid": "bad-guid", "errorCode": "ATLAS-404-...", "errorMessage": "..." }
+    ],
+    "summary": {
+      "requestedCount": 3,
+      "validGuidCount": 2,
+      "purgedCount": 1,
+      "purgedDependenciesCount": 2,
+      "failedCount": 1,
+      "failedDependenciesCount": 0,
+      "skippedCount": 0,
+      "skippedRequestedCount": 0,
+      "skippedDependenciesCount": 0,
+      "expandedEntityCount": 3,
+      "batchCount": 1,
+      "unprocessedCount": 0,
+      "executionFailed": false
+    }
+  }
+
+Reading tips:
+  - Use summary for counts; use failedEntities for per-GUID detail.
+  - skippedCount > 0 means benign skips (already gone / not DELETED).
+  - failedCount / failedDependenciesCount mean real failures.
+  - executionFailed=true signals execution-time errors worth alerting on.
+  - Do not rely on HTTP status alone for partial-success semantics (always 200
+    for completed purge runs, including all-invalid pre-scan responses).
+
+
+================================================================================
+Cross-Verification Notes (code-aligned as of ATLAS-5317 implementation)
+================================================================================
+
+Verified against:
+  AdminResource.java, AtlasEntityStoreV2.java, PurgeBatchOrchestrator.java,
+  PurgeBatchExecutor.java, PurgeExecutionStats.java, PurgeUtils.java,
+  AtlasConfiguration.java (defaults)
+
+Confirmed accurate:
+  - PUT endpoint, component chain, pre-scan checks and error codes
+  - Worker overlap during expansion (workers start on first checkProduce)
+  - Config keys and defaults (1000 / 100 / 2)
+  - Batch retry: 3 attempts, 500/1000/1500 ms backoff, lock-conflict types
+  - Summary balance formulas and deduplication via accountedOutcomeGuids
+  - originallyRequestedGuids vs validGuids distinction for summary scope
+  - reconcileUnprocessedGuids message and unprocessedCount semantics
+
+Implementation note (differs from design doc Section REST flow step 6):
+  All-invalid pre-scan does NOT throw HTTP 400; it returns HTTP 200 with
+  failedEntities and summary via buildPreValidationOnlyResponse().
