@@ -516,5 +516,34 @@ def convertCygwinPath(path, isClasspath=False):
     windowsPath = windowsPath.strip()
     return windowsPath
 
+def get_java_version():
+    try:
+        output = subprocess.check_output(["java", "-version"], stderr=subprocess.STDOUT).decode()
+        if "version" in output:
+            version_line = output.splitlines()[0]
+            version_str = version_line.split('"')[1]
+            if version_str.startswith("1."):
+                return version_str.split('.')[1]
+            else:
+                return version_str.split('.')[0]
+    except Exception:
+        return "unknown"
+
+def get_expected_jvm_opts(java_version):
+    jvm_opts = []
+
+    try:
+        if java_version != "unknown" and int(java_version) >= 9:
+            jvm_opts.extend([
+                "--add-opens=java.base/java.lang=ALL-UNNAMED",
+                "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+                "--add-opens=java.base/java.net=ALL-UNNAMED",
+                "--add-opens=java.base/java.nio=ALL-UNNAMED"
+            ])
+    except Exception as e:
+        print("Warning: Invalid Java version '{}': {}".format(java_version, e))
+
+    return jvm_opts
+
 
 

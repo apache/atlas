@@ -31,7 +31,11 @@ DEFAULT_JVM_OPTS="-Dlogback.configurationFile=rest-logback.xml -Djava.security.a
 
 ATLAS_COMMAND_OPTS="-Datlas.home=%s"
 
-
+def get_default_jvm_opts():
+    java_version = mc.get_java_version()
+    opts = DEFAULT_JVM_OPTS.strip().split()
+    opts.extend(mc.get_expected_jvm_opts(java_version))
+    return " ".join(opts)
 
 def main():
 
@@ -77,7 +81,7 @@ def main():
     if rest_server_jvm_opts:
         jvm_opts_list.extend(rest_server_jvm_opts.split())
 
-    rest_jvm_opts = os.environ.get(mc.REST_OPTS, DEFAULT_JVM_OPTS)
+    rest_jvm_opts = os.environ.get(mc.REST_OPTS, get_default_jvm_opts())
     jvm_opts_list.extend(rest_jvm_opts.split())
 
     #expand web app dir

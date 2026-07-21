@@ -21,6 +21,7 @@ services:
         condition: service_started
     environment:
       - ATLAS_VERSION
+      - REST_SERVER_OPTS=--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED
     command:
       - /home/atlas/scripts/atlas-rest.sh
 
