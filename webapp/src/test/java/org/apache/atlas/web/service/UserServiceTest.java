@@ -18,10 +18,11 @@
 
 package org.apache.atlas.web.service;
 
-import org.apache.atlas.web.dao.UserDao;
-import org.apache.atlas.web.model.User;
+import org.apache.atlas.server.common.dao.UserDao;
+import org.apache.atlas.server.common.service.UserService;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -38,7 +39,7 @@ public class UserServiceTest {
     private UserDao userDao;
 
     @Mock
-    private User user;
+    private UserDetails user;
 
     private UserService userService;
 
@@ -63,7 +64,7 @@ public class UserServiceTest {
         String username = "testuser";
         when(userDao.loadUserByUsername(username)).thenReturn(user);
 
-        User result = userService.loadUserByUsername(username);
+        UserDetails result = userService.loadUserByUsername(username);
 
         assertEquals(result, user);
         verify(userDao).loadUserByUsername(username);
@@ -74,7 +75,7 @@ public class UserServiceTest {
         String username = "anotheruser";
         when(userDao.loadUserByUsername(username)).thenReturn(user);
 
-        User result = userService.loadUserByUsername(username);
+        UserDetails result = userService.loadUserByUsername(username);
 
         assertEquals(result, user);
         verify(userDao).loadUserByUsername(username);
@@ -85,7 +86,7 @@ public class UserServiceTest {
         String username = "";
         when(userDao.loadUserByUsername(username)).thenReturn(user);
 
-        User result = userService.loadUserByUsername(username);
+        UserDetails result = userService.loadUserByUsername(username);
 
         assertEquals(result, user);
         verify(userDao).loadUserByUsername(username);
@@ -96,7 +97,7 @@ public class UserServiceTest {
         String username = null;
         when(userDao.loadUserByUsername(username)).thenReturn(user);
 
-        User result = userService.loadUserByUsername(username);
+        UserDetails result = userService.loadUserByUsername(username);
 
         assertEquals(result, user);
         verify(userDao).loadUserByUsername(username);
@@ -115,7 +116,7 @@ public class UserServiceTest {
         String username = "user@domain.com";
         when(userDao.loadUserByUsername(username)).thenReturn(user);
 
-        User result = userService.loadUserByUsername(username);
+        UserDetails result = userService.loadUserByUsername(username);
 
         assertEquals(result, user);
         verify(userDao).loadUserByUsername(username);
@@ -126,7 +127,7 @@ public class UserServiceTest {
         String username = "12345";
         when(userDao.loadUserByUsername(username)).thenReturn(user);
 
-        User result = userService.loadUserByUsername(username);
+        UserDetails result = userService.loadUserByUsername(username);
 
         assertEquals(result, user);
         verify(userDao).loadUserByUsername(username);
@@ -137,7 +138,7 @@ public class UserServiceTest {
         String username = "verylongusernamethatexceedsnormallimits";
         when(userDao.loadUserByUsername(username)).thenReturn(user);
 
-        User result = userService.loadUserByUsername(username);
+        UserDetails result = userService.loadUserByUsername(username);
 
         assertEquals(result, user);
         verify(userDao).loadUserByUsername(username);
@@ -148,7 +149,7 @@ public class UserServiceTest {
         String username = "user name";
         when(userDao.loadUserByUsername(username)).thenReturn(user);
 
-        User result = userService.loadUserByUsername(username);
+        UserDetails result = userService.loadUserByUsername(username);
 
         assertEquals(result, user);
         verify(userDao).loadUserByUsername(username);
@@ -159,7 +160,7 @@ public class UserServiceTest {
         String username = " testuser ";
         when(userDao.loadUserByUsername(username)).thenReturn(user);
 
-        User result = userService.loadUserByUsername(username);
+        UserDetails result = userService.loadUserByUsername(username);
 
         assertEquals(result, user);
         verify(userDao).loadUserByUsername(username);
@@ -170,14 +171,14 @@ public class UserServiceTest {
         String username1 = "user1";
         String username2 = "user2";
 
-        User user1 = user;
-        User user2 = user;
+        UserDetails user1 = user;
+        UserDetails user2 = user;
 
         when(userDao.loadUserByUsername(username1)).thenReturn(user1);
         when(userDao.loadUserByUsername(username2)).thenReturn(user2);
 
-        User result1 = userService.loadUserByUsername(username1);
-        User result2 = userService.loadUserByUsername(username2);
+        UserDetails result1 = userService.loadUserByUsername(username1);
+        UserDetails result2 = userService.loadUserByUsername(username2);
 
         assertEquals(result1, user1);
         assertEquals(result2, user2);
@@ -207,7 +208,7 @@ public class UserServiceTest {
 
         Object result = userService.loadUserByUsername(username);
 
-        assertTrue(result instanceof User);
+        assertTrue(result instanceof UserDetails);
         assertEquals(result, user);
     }
 

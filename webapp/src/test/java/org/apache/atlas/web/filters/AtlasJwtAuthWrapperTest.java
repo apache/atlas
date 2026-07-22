@@ -18,6 +18,7 @@
  */
 package org.apache.atlas.web.filters;
 
+import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mockito;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.web.filters;
 
+import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
+import org.apache.atlas.server.common.filters.HeadersUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

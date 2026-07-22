@@ -570,6 +570,7 @@ public class ImportTaskListenerImplTest {
 
     @Test
     public void testImportNotProcessedWhenPassive() throws Exception {
+        Mockito.doReturn("import123").when(importRequest).getImportId();
         when(importRequest.getStatus()).thenReturn(WAITING);
         when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123");
         importTaskListener.instanceIsPassive();

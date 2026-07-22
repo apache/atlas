@@ -19,6 +19,7 @@ package org.apache.atlas.web.filters;
 
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.server.common.filters.AuditFilter;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mock;

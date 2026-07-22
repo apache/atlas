@@ -47,6 +47,7 @@ import org.apache.atlas.repository.impexp.AsyncImporter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.server.common.filters.AuditFilter;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -59,7 +60,6 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.utils.LruCache;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.notification.HookNotificationV1;
-import org.apache.atlas.web.filters.AuditFilter;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration2.Configuration;
@@ -117,7 +117,7 @@ import static org.apache.atlas.notification.NotificationHookConsumer.DUMMY_DATAB
 import static org.apache.atlas.notification.NotificationHookConsumer.DUMMY_TABLE;
 import static org.apache.atlas.notification.NotificationHookConsumer.VALUES_TMP_TABLE_NAME_PREFIX;
 import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.TYPE_HIVE_PROCESS;
-import static org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI;
+import static org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI;
 
 public class SerialEntityProcessor implements NotificationEntityProcessor {
     private static final Logger LOG      = LoggerFactory.getLogger(SerialEntityProcessor.class);

@@ -19,6 +19,7 @@
 
 package org.apache.atlas.web.security;
 
+import org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.mockito.Mock;

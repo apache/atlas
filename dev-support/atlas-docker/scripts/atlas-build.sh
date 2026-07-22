@@ -107,7 +107,9 @@ for f in \
   "distro/target/apache-atlas-${ATLAS_VERSION}-server.tar.gz" \
   "distro/target/apache-atlas-${ATLAS_VERSION}-hive-hook.tar.gz" \
   "distro/target/apache-atlas-${ATLAS_VERSION}-hbase-hook.tar.gz" \
-  "distro/target/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz"
+  "distro/target/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz" \
+  "distro/target/apache-atlas-${ATLAS_VERSION}-rest-server.tar.gz"
+
 do
   if [ -f "${f}" ]; then
     mv -f "${f}" /home/atlas/dist/

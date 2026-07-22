@@ -243,6 +243,11 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-server-common</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
         </dependency>
@@ -387,19 +392,7 @@
             <artifactId>javax.el</artifactId>
         </dependency>
 
-        <!-- Keycloak -->
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-spring-security-adapter</artifactId>
-            <version>${keycloak.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
+        <!-- PAM -->
         <dependency>
             <groupId>org.kohsuke</groupId>
             <artifactId>libpam4j</artifactId>
