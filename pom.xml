@@ -152,7 +152,7 @@
         <kafka.scala.binary.version>2.13</kafka.scala.binary.version>
         <kafka.version>3.9.1</kafka.version>
         <keycloak.version>6.0.1</keycloak.version>
-        <logback.version>1.3.15</logback.version>
+        <logback.version>1.5.25</logback.version>
         <lucene-solr.version>8.11.3</lucene-solr.version>
         <maven-compiler-version>3.11.0</maven-compiler-version>
         <maven-plugin-sortpom.version>3.0.1</maven-plugin-sortpom.version>
