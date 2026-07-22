@@ -268,8 +268,10 @@ public class AdminResource {
     @GET
     @Path("stack")
     @Produces(MediaType.TEXT_PLAIN)
-    public String getThreadDump() {
+    public String getThreadDump() throws AtlasBaseException {
         LOG.debug("==> AdminResource.getThreadDump()");
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "thread dump");
 
         ThreadGroup topThreadGroup = Thread.currentThread().getThreadGroup();
 
@@ -360,8 +362,10 @@ public class AdminResource {
     @GET
     @Path("session")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response getUserProfile(@Context HttpServletRequest request) {
+    public Response getUserProfile(@Context HttpServletRequest request) throws AtlasBaseException {
         LOG.debug("==> AdminResource.getUserProfile()");
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ), "session");
 
         Response response;
 
@@ -735,6 +739,8 @@ public class AdminResource {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(MediaType.APPLICATION_JSON)
     public void abortAsyncImport(@PathParam("importId") String importId) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "abort async import");
+
         importService.abortAsyncImport(importId);
     }
 
@@ -748,6 +754,8 @@ public class AdminResource {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAsyncImportStatus()");
             }
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "async import status");
 
             return importService.getAsyncImportsStatus(offset, limit);
         } finally {
@@ -765,6 +773,8 @@ public class AdminResource {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAsyncImportStatusById(importId=" + importId + ")");
             }
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "async import status by id");
 
             return importService.getAsyncImportRequest(importId);
         } finally {
@@ -923,6 +933,8 @@ public class AdminResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "cluster.getServer(" + serverName + ")");
             }
 
+            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "get server");
+
             AtlasServer cluster = new AtlasServer(serverName, serverName);
 
             return atlasServerService.get(cluster);
@@ -945,6 +957,8 @@ public class AdminResource {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "getExportImportAudit(" + serverName + ")");
             }
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "export import audit");
 
             return exportImportAuditService.get(userName, operation, serverName, startTime, endTime, limit, offset);
         } finally {
@@ -1018,6 +1032,8 @@ public class AdminResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAuditDetails(" + auditGuid + ", " + limit + ", " + offset + ")");
             }
 
+            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_AUDITS), "audit details");
+
             List<AtlasEntityHeader> ret = new ArrayList<>();
 
             AtlasAuditEntry auditEntry = auditService.toAtlasAuditEntry(entityStore.getById(auditGuid, false, true));
@@ -1050,14 +1066,18 @@ public class AdminResource {
     @GET
     @Path("activeSearches")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Set<String> getActiveSearches() {
+    public Set<String> getActiveSearches() throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "active searches");
+
         return activeSearches.getActiveSearches();
     }
 
     @DELETE
     @Path("activeSearches/{id}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public boolean terminateActiveSearch(@PathParam("id") String searchId) {
+    public boolean terminateActiveSearch(@PathParam("id") String searchId) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "terminate active search");
+
         SearchContext terminate = activeSearches.terminate(searchId);
 
         return null != terminate;
@@ -1075,6 +1095,8 @@ public class AdminResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "checkState(" + request + ")");
             }
 
+            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ), "check state");
+
             return entityStore.checkState(request);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -1084,8 +1106,10 @@ public class AdminResource {
     @GET
     @Path("patches")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasPatches getAtlasPatches() {
+    public AtlasPatches getAtlasPatches() throws AtlasBaseException {
         LOG.debug("==> AdminResource.getAtlasPatches()");
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "patches");
 
         AtlasPatches ret = patchManager.getAllPatches();
 
@@ -1098,6 +1122,8 @@ public class AdminResource {
     @Path("/tasks")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public List<AtlasTask> getTaskStatus(@QueryParam("guids") List<String> guids) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_PURGE), "tasks");
+
         return CollectionUtils.isNotEmpty(guids) ? taskManagement.getByGuids(guids) : taskManagement.getAll();
     }
 
@@ -1105,6 +1131,8 @@ public class AdminResource {
     @Path("/tasks")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public void deleteTask(@QueryParam("guids") List<String> guids) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_PURGE), "delete tasks");
+
         if (CollectionUtils.isNotEmpty(guids)) {
             taskManagement.deleteByGuids(guids);
         }
@@ -1113,7 +1141,9 @@ public class AdminResource {
     @GET
     @Path("/debug/metrics")
     @Produces(MediaType.APPLICATION_JSON)
-    public Map<String, DebugMetrics> getDebugMetrics() {
+    public Map<String, DebugMetrics> getDebugMetrics() throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "debug metrics");
+
         return debugMetricsRESTSink.getMetrics();
     }
 
