@@ -204,3 +204,99 @@ example, an ETL process that transforms a hive table with raw data to another hi
 be a specific type that extends the Process type. A Process type has two specific attributes, inputs and outputs. Both
 inputs and outputs are arrays of DataSet entities. Thus, an instance of a Process type can use these inputs and outputs
 to capture how the lineage of a DataSet evolves.
+
+## Relationship propagation model extensions
+
+Atlas supports automatic propagation of rename and delete operations through relationships. This is driven by fields on
+**entity type definitions** and **relationship end definitions** in the model JSON.
+
+### Entity definition: attributeDefOverrides
+
+An entity type can declare `attributeDefOverrides` to specify how its unique attribute (qualifiedName) is composed from
+related entities. The `autoComputeFormat` template tells Atlas how to parse and rebuild the qualifiedName when an
+upstream entity is renamed.
+
+<SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
+{`"entityDefs": [{
+    "name": "trino_table",
+    "superTypes": ["DataSet"],
+    "attributeDefOverrides": [
+        {
+            "name": "qualifiedName",
+            "autoComputeFormat": "{trinoschema.catalog.name}.{trinoschema.name}.{name}@{trinoschema.catalog.instance.name}"
+        }
+    ]
+}]`}
+</SyntaxHighlighter>
+
+Each `{placeholder}` maps to an attribute path: `{name}` refers to this entity's own name, while dotted paths like
+`{trinoschema.catalog.name}` traverse relationship attributes to reach a related entity's name.
+
+### Relationship end definition: propagateRename
+
+Setting `propagateRename: true` on a relationship end marks that end as the **trigger** for rename propagation. When an
+entity on that end is renamed, Atlas traverses the relationship to dependent entities and recomputes their qualifiedName
+using their `autoComputeFormat`.
+
+<SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
+{`"relationshipDefs": [{
+    "name": "trino_table_hive_table",
+    "endDef1": {
+        "type": "hive_table",
+        "name": "trinoTables",
+        "propagateRename": true
+    },
+    "endDef2": {
+        "type": "trino_table",
+        "name": "hiveTable"
+    }
+}]`}
+</SyntaxHighlighter>
+
+An optional `propagateAttributes` list on the same end can map source attributes to target attributes for cases where
+simple template substitution is not sufficient:
+
+<SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
+{`"endDef1": {
+    "type": "hive_table",
+    "name": "trinoTables",
+    "propagateRename": true,
+    "propagateAttributes": [
+        { "source": "name", "target": "hiveTableName" }
+    ]
+}`}
+</SyntaxHighlighter>
+
+### Relationship end definition: propagateDelete
+
+Setting `propagateDelete: true` on a relationship end marks that end as the **trigger** for delete propagation. When an
+entity on that end is deleted, Atlas propagates the deletion to dependent entities reached through the relationship.
+
+<SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
+{`"relationshipDefs": [{
+    "name": "trino_table_hive_table",
+    "endDef1": {
+        "type": "hive_table",
+        "name": "trinoTables",
+        "propagateRename": true,
+        "propagateDelete": true
+    },
+    "endDef2": {
+        "type": "trino_table",
+        "name": "hiveTable"
+    }
+}]`}
+</SyntaxHighlighter>
+
+In this example, deleting a `hive_table` entity will automatically propagate deletion to any linked `trino_table`
+entities. If those targets also have delete propagation configured on their own relationships (e.g.,
+`trino_table_columns`), the propagation continues recursively.
+
+### Summary of propagation fields
+
+| Field | Location | Purpose |
+|-------|----------|---------|
+| `attributeDefOverrides.autoComputeFormat` | Entity definition | Template for computing qualifiedName from related entities |
+| `propagateRename` | Relationship end definition | Triggers qualifiedName recomputation on dependents when this end is renamed |
+| `propagateAttributes` | Relationship end definition | Maps source attributes to target attributes during rename |
+| `propagateDelete` | Relationship end definition | Triggers propagation of deletion to dependents when this end is deleted |
