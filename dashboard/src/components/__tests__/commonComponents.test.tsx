@@ -25,7 +25,8 @@ import { render, screen } from '@testing-library/react'
 let mockReduxState = { typeHeader: { typeHeaderData: [] } }
 
 jest.mock('react-redux', () => ({
-	useSelector: (fn: any) => fn(mockReduxState)
+	useSelector: (fn: any) => fn(mockReduxState),
+	useDispatch: () => jest.fn()
 }))
 
 jest.mock('react-router-dom', () => ({

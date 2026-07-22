@@ -23,8 +23,8 @@
   min-height: 90px !important;
 }
 
-/* Prevent duplicate toolbars in ReactQuill */
-.classification-form-editor .ql-toolbar:not(:first-of-type) {
+/* Prevent duplicate toolbars in ReactQuill by hiding the zombie toolbars that precede the active one */
+.classification-form-editor .ql-toolbar:has(~ .ql-toolbar) {
   display: none !important;
 }
 

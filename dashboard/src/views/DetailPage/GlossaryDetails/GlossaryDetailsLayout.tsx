@@ -56,6 +56,7 @@ const GlossaryDetailLayout = () => {
 
   useEffect(() => {
     let params: any = { gtype: gtype, guid: guid };
+
     dispatchApi(fetchGlossaryDetails(params));
   }, [guid]);
 
