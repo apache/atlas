@@ -19,8 +19,9 @@
 package org.apache.atlas.web.service;
 
 import com.google.common.base.Charsets;
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.server.common.service.CuratorFactory;
+import org.apache.atlas.server.common.service.HighAvailability;
+import org.apache.atlas.server.common.service.HighAvailabilityProperties;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -44,6 +45,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -54,7 +56,10 @@ public class CuratorFactoryTest {
     private Configuration configuration;
 
     @Mock
-    private HAConfiguration.ZookeeperProperties zookeeperProperties;
+    private HighAvailability highAvailability;
+
+    @Mock
+    private HighAvailabilityProperties zookeeperProperties;
 
     @Mock
     private CuratorFrameworkFactory.Builder builder;
@@ -67,36 +72,63 @@ public class CuratorFactoryTest {
         MockitoAnnotations.initMocks(this);
     }
 
+    private CuratorFactory buildCuratorFactory() {
+        when(highAvailability.isHAEnabled(configuration)).thenReturn(true);
+
+        return new CuratorFactory(configuration, highAvailability) {
+            @Override
+            protected void initializeCuratorFramework() {
+            }
+        };
+    }
+
+    private CuratorFactory buildCuratorFactoryWithCuratorFramework() {
+        when(highAvailability.isHAEnabled(configuration)).thenReturn(true);
+
+        return new CuratorFactory(configuration, highAvailability) {
+            @Override
+            protected void initializeCuratorFramework() {
+                try {
+                    Field field = CuratorFactory.class.getDeclaredField("curatorFramework");
+                    field.setAccessible(true);
+                    field.set(this, curatorFramework);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
+    }
+
+    private void invokeEnhance(CuratorFactory curatorFactory) throws Exception {
+        Method method = CuratorFactory.class.getDeclaredMethod("enhanceBuilderWithSecurityParameters",
+                HighAvailabilityProperties.class, CuratorFrameworkFactory.Builder.class);
+        method.setAccessible(true);
+        method.invoke(curatorFactory, zookeeperProperties, builder);
+    }
+
     @Test
-    public void shouldAddAuthorization() {
+    public void shouldAddAuthorization() throws Exception {
         when(zookeeperProperties.hasAcl()).thenReturn(true);
         when(zookeeperProperties.getAcl()).thenReturn("sasl:myclient@EXAMPLE.COM");
         when(zookeeperProperties.hasAuth()).thenReturn(true);
         when(zookeeperProperties.getAuth()).thenReturn("sasl:myclient@EXAMPLE.COM");
 
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-            }
-        };
-
-        curatorFactory.enhanceBuilderWithSecurityParameters(zookeeperProperties, builder);
+        CuratorFactory curatorFactory = buildCuratorFactory();
+        invokeEnhance(curatorFactory);
 
         verify(builder).aclProvider(any(ACLProvider.class));
         verify(builder).authorization(eq("sasl"), eq("myclient@EXAMPLE.COM".getBytes(Charsets.UTF_8)));
     }
 
     @Test
-    public void shouldAddAclProviderWithRightACL() {
+    public void shouldAddAclProviderWithRightACL() throws Exception {
         when(zookeeperProperties.hasAcl()).thenReturn(true);
         when(zookeeperProperties.getAcl()).thenReturn("sasl:myclient@EXAMPLE.COM");
         when(zookeeperProperties.hasAuth()).thenReturn(false);
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-            }
-        };
-        curatorFactory.enhanceBuilderWithSecurityParameters(zookeeperProperties, builder);
+
+        CuratorFactory curatorFactory = buildCuratorFactory();
+        invokeEnhance(curatorFactory);
+
         verify(builder).aclProvider(ArgumentMatchers.argThat(new ArgumentMatcher<ACLProvider>() {
             @Override
             public boolean matches(ACLProvider aclProvider) {
@@ -109,49 +141,25 @@ public class CuratorFactoryTest {
     }
 
     @Test
-    public void shouldNotAddAnySecureParameters() {
+    public void shouldNotAddAnySecureParameters() throws Exception {
         when(zookeeperProperties.hasAcl()).thenReturn(false);
         when(zookeeperProperties.hasAuth()).thenReturn(false);
 
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-            }
-        };
+        CuratorFactory curatorFactory = buildCuratorFactory();
+        invokeEnhance(curatorFactory);
 
-        curatorFactory.enhanceBuilderWithSecurityParameters(zookeeperProperties, builder);
-
-        verify(builder, never()).aclProvider(any(ACLProvider.class));
-        verify(builder, never()).authorization(anyString(), any(byte[].class));
+        verifyNoInteractions(builder);
     }
 
     @Test
-    public void testDefaultConstructor() throws AtlasException {
-        CuratorFactory curatorFactory = new CuratorFactory() {
-            @Override
-            protected void initializeCuratorFramework() {
-            }
-        };
+    public void testDefaultConstructor() {
+        CuratorFactory curatorFactory = buildCuratorFactory();
         assertNotNull(curatorFactory);
     }
 
     @Test
     public void testClientInstance() {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, true)).thenReturn(true);
-
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-                try {
-                    Field field = CuratorFactory.class.getDeclaredField("curatorFramework");
-                    field.setAccessible(true);
-                    field.set(this, curatorFramework);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        };
+        CuratorFactory curatorFactory = buildCuratorFactoryWithCuratorFramework();
 
         CuratorFramework result = curatorFactory.clientInstance();
         assertEquals(result, curatorFramework);
@@ -159,24 +167,10 @@ public class CuratorFactoryTest {
 
     @Test
     public void testLeaderLatchInstance() {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, true)).thenReturn(true);
-
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-                try {
-                    Field field = CuratorFactory.class.getDeclaredField("curatorFramework");
-                    field.setAccessible(true);
-                    field.set(this, curatorFramework);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        };
+        CuratorFactory curatorFactory = buildCuratorFactoryWithCuratorFramework();
 
         String serverId = "server1";
-        String zkRoot = "/test";
+        String zkRoot   = "/test";
 
         LeaderLatch leaderLatch = curatorFactory.leaderLatchInstance(serverId, zkRoot);
         assertNotNull(leaderLatch);
@@ -184,21 +178,7 @@ public class CuratorFactoryTest {
 
     @Test
     public void testLockInstance() {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, true)).thenReturn(true);
-
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-                try {
-                    Field field = CuratorFactory.class.getDeclaredField("curatorFramework");
-                    field.setAccessible(true);
-                    field.set(this, curatorFramework);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        };
+        CuratorFactory curatorFactory = buildCuratorFactoryWithCuratorFramework();
 
         String zkRoot = "/test";
 
@@ -208,21 +188,7 @@ public class CuratorFactoryTest {
 
     @Test
     public void testClose() {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, true)).thenReturn(true);
-
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-                try {
-                    Field field = CuratorFactory.class.getDeclaredField("curatorFramework");
-                    field.setAccessible(true);
-                    field.set(this, curatorFramework);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        };
+        CuratorFactory curatorFactory = buildCuratorFactoryWithCuratorFramework();
 
         doNothing().when(curatorFramework).close();
         curatorFactory.close();
@@ -230,25 +196,10 @@ public class CuratorFactoryTest {
     }
 
     @Test
-    public void testConstructorDoesNotInitializeWhenHAKeyIsMissing() {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(false);
-
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-                throw new AssertionError("initializeCuratorFramework() should not be called when HA key is missing");
-            }
-        };
-
-        assertNull(curatorFactory.clientInstance());
-    }
-
-    @Test
     public void testConstructorDoesNotInitializeWhenHAIsDisabled() {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, true)).thenReturn(false);
+        when(highAvailability.isHAEnabled(configuration)).thenReturn(false);
 
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
+        CuratorFactory curatorFactory = new CuratorFactory(configuration, highAvailability) {
             @Override
             protected void initializeCuratorFramework() {
                 throw new AssertionError("initializeCuratorFramework() should not be called when HA is disabled");
@@ -260,198 +211,120 @@ public class CuratorFactoryTest {
 
     @Test
     public void testConstructorInitializesWhenHAIsEnabled() {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, true)).thenReturn(true);
-
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-                try {
-                    Field field = CuratorFactory.class.getDeclaredField("curatorFramework");
-                    field.setAccessible(true);
-                    field.set(this, curatorFramework);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        };
+        CuratorFactory curatorFactory = buildCuratorFactoryWithCuratorFramework();
 
         assertEquals(curatorFactory.clientInstance(), curatorFramework);
     }
 
     @Test
     public void testGetIdForLoggingSaslScheme() throws Exception {
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-            }
-        };
-
+        CuratorFactory curatorFactory = buildCuratorFactory();
         Method method = CuratorFactory.class.getDeclaredMethod("getIdForLogging", String.class, String.class);
         method.setAccessible(true);
-
         String result = (String) method.invoke(curatorFactory, "sasl", "user@EXAMPLE.COM");
         assertEquals(result, "user@EXAMPLE.COM");
     }
 
     @Test
     public void testGetIdForLoggingIpScheme() throws Exception {
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-            }
-        };
-
+        CuratorFactory curatorFactory = buildCuratorFactory();
         Method method = CuratorFactory.class.getDeclaredMethod("getIdForLogging", String.class, String.class);
         method.setAccessible(true);
-
         String result = (String) method.invoke(curatorFactory, "ip", "192.168.1.1");
         assertEquals(result, "192.168.1.1");
     }
 
     @Test
     public void testGetIdForLoggingWorldScheme() throws Exception {
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-            }
-        };
-
+        CuratorFactory curatorFactory = buildCuratorFactory();
         Method method = CuratorFactory.class.getDeclaredMethod("getIdForLogging", String.class, String.class);
         method.setAccessible(true);
-
         String result = (String) method.invoke(curatorFactory, "world", "anyone");
         assertEquals(result, "anyone");
     }
 
     @Test
     public void testGetIdForLoggingAuthScheme() throws Exception {
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-            }
-        };
-
+        CuratorFactory curatorFactory = buildCuratorFactory();
         Method method = CuratorFactory.class.getDeclaredMethod("getIdForLogging", String.class, String.class);
         method.setAccessible(true);
-
         String result = (String) method.invoke(curatorFactory, "auth", "user:password");
         assertEquals(result, "user");
     }
 
     @Test
     public void testGetIdForLoggingDigestScheme() throws Exception {
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-            }
-        };
-
+        CuratorFactory curatorFactory = buildCuratorFactory();
         Method method = CuratorFactory.class.getDeclaredMethod("getIdForLogging", String.class, String.class);
         method.setAccessible(true);
-
         String result = (String) method.invoke(curatorFactory, "digest", "user:password");
         assertEquals(result, "user");
     }
 
     @Test
     public void testGetIdForLoggingUnknownScheme() throws Exception {
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-            }
-        };
-
+        CuratorFactory curatorFactory = buildCuratorFactory();
         Method method = CuratorFactory.class.getDeclaredMethod("getIdForLogging", String.class, String.class);
         method.setAccessible(true);
-
         String result = (String) method.invoke(curatorFactory, "unknown", "somevalue");
         assertEquals(result, "unknown");
     }
 
     @Test
     public void testGetCurrentUser() throws Exception {
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-            }
-        };
-
+        CuratorFactory curatorFactory = buildCuratorFactory();
         Method method = CuratorFactory.class.getDeclaredMethod("getCurrentUser");
         method.setAccessible(true);
-
         String result = (String) method.invoke(curatorFactory);
         assertNotNull(result);
     }
 
     @Test
     public void testGetAclProviderWithoutAcl() throws Exception {
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-            }
-        };
-
+        CuratorFactory curatorFactory = buildCuratorFactory();
         when(zookeeperProperties.hasAcl()).thenReturn(false);
 
-        Method method = CuratorFactory.class.getDeclaredMethod("getAclProvider", HAConfiguration.ZookeeperProperties.class);
+        Method method = CuratorFactory.class.getDeclaredMethod("getAclProvider", HighAvailabilityProperties.class);
         method.setAccessible(true);
-
         ACLProvider result = (ACLProvider) method.invoke(curatorFactory, zookeeperProperties);
         assertNull(result);
     }
 
     @Test
     public void testGetBuilderMethod() throws Exception {
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-            }
-        };
-
+        CuratorFactory curatorFactory = buildCuratorFactory();
         when(zookeeperProperties.getConnectString()).thenReturn("localhost:2181");
         when(zookeeperProperties.getSessionTimeout()).thenReturn(30000);
         when(zookeeperProperties.getRetriesSleepTimeMillis()).thenReturn(1000);
         when(zookeeperProperties.getNumRetries()).thenReturn(3);
 
-        Method method = CuratorFactory.class.getDeclaredMethod("getBuilder", HAConfiguration.ZookeeperProperties.class);
+        Method method = CuratorFactory.class.getDeclaredMethod("getBuilder", HighAvailabilityProperties.class);
         method.setAccessible(true);
-
         CuratorFrameworkFactory.Builder result = (CuratorFrameworkFactory.Builder) method.invoke(curatorFactory, zookeeperProperties);
         assertNotNull(result);
     }
 
     @Test
-    public void testEnhanceBuilderWithSecurityParametersWithAclOnly() {
+    public void testEnhanceBuilderWithSecurityParametersWithAclOnly() throws Exception {
         when(zookeeperProperties.hasAcl()).thenReturn(true);
         when(zookeeperProperties.getAcl()).thenReturn("digest:user:password");
         when(zookeeperProperties.hasAuth()).thenReturn(false);
 
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-            }
-        };
-
-        curatorFactory.enhanceBuilderWithSecurityParameters(zookeeperProperties, builder);
+        CuratorFactory curatorFactory = buildCuratorFactory();
+        invokeEnhance(curatorFactory);
 
         verify(builder).aclProvider(any(ACLProvider.class));
         verify(builder, never()).authorization(anyString(), any(byte[].class));
     }
 
     @Test
-    public void testEnhanceBuilderWithSecurityParametersWithAuthOnly() {
+    public void testEnhanceBuilderWithSecurityParametersWithAuthOnly() throws Exception {
         when(zookeeperProperties.hasAcl()).thenReturn(false);
         when(zookeeperProperties.hasAuth()).thenReturn(true);
         when(zookeeperProperties.getAuth()).thenReturn("digest:user:password");
 
-        CuratorFactory curatorFactory = new CuratorFactory(configuration) {
-            @Override
-            protected void initializeCuratorFramework() {
-            }
-        };
-
-        curatorFactory.enhanceBuilderWithSecurityParameters(zookeeperProperties, builder);
+        CuratorFactory curatorFactory = buildCuratorFactory();
+        invokeEnhance(curatorFactory);
 
         verify(builder, never()).aclProvider(any(ACLProvider.class));
         verify(builder, never()).authorization(anyString(), any(byte[].class));

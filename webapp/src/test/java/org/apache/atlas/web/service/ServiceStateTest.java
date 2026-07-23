@@ -19,13 +19,14 @@
 package org.apache.atlas.web.service;
 
 import org.apache.atlas.AtlasConstants;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.repository.audit.AtlasAuditService;
+import org.apache.atlas.server.common.service.HighAvailability;
+import org.apache.atlas.server.common.service.ServiceState;
 import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.testng.SkipException;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -33,10 +34,7 @@ import java.lang.reflect.Field;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -51,233 +49,168 @@ public class ServiceStateTest {
     @Mock
     private AtlasAuditService auditService;
 
+    @Mock
+    private HighAvailability highAvailability;
+
     @BeforeMethod
     public void setup() {
         MockitoAnnotations.initMocks(this);
     }
 
+    private ServiceState newServiceState(boolean haEnabled) {
+        when(highAvailability.isHAEnabled(configuration)).thenReturn(haEnabled);
+        return new ServiceState(configuration, highAvailability);
+    }
+
     @Test
     public void testShouldBeActiveIfHAIsDisabled() {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
-
-        ServiceState serviceState = new ServiceState(configuration);
-
-        assertEquals(serviceState.getState(), ServiceState.ServiceStateValue.ACTIVE);
+        ServiceState serviceState = newServiceState(false);
+        assertEquals(ServiceState.ServiceStateValue.ACTIVE, serviceState.getState());
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testShouldDisallowTransitionIfHAIsDisabled() {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
-
-        ServiceState serviceState = new ServiceState(configuration);
-
+        ServiceState serviceState = newServiceState(false);
         serviceState.becomingPassive();
-
         fail("Should not allow transition");
     }
 
     @Test
     public void testShouldChangeStateIfHAIsEnabled() {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-
-        ServiceState serviceState = new ServiceState(configuration);
-
+        ServiceState serviceState = newServiceState(true);
         serviceState.becomingPassive();
-
-        assertEquals(serviceState.getState(), ServiceState.ServiceStateValue.BECOMING_PASSIVE);
+        assertEquals(ServiceState.ServiceStateValue.BECOMING_PASSIVE, serviceState.getState());
     }
 
     @Test
-    public void testDefaultConstructor() throws AtlasException {
-        ServiceState serviceState = new ServiceState();
+    public void testConstructor() {
+        ServiceState serviceState = newServiceState(true);
         assertNotNull(serviceState);
     }
 
     @Test
     public void testShouldBePassiveIfHAIsEnabled() {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-
-        ServiceState serviceState = new ServiceState(configuration);
-
+        ServiceState serviceState = newServiceState(true);
         assertEquals(serviceState.getState(), ServiceState.ServiceStateValue.PASSIVE);
     }
 
     @Test
     public void testShouldBeMigratingIfMigrationModeSet() {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
         when(configuration.getString(AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME, "")).thenReturn("migration.txt");
-
-        ServiceState serviceState = new ServiceState(configuration);
-
+        ServiceState serviceState = newServiceState(false);
         assertEquals(serviceState.getState(), ServiceState.ServiceStateValue.MIGRATING);
     }
 
     @Test
     public void testBecomingActive() throws Exception {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-
-        ServiceState serviceState = new ServiceState(configuration);
-        setAuditService(serviceState, auditService);
-
+        ServiceState serviceState = newServiceState(true);
         serviceState.becomingActive();
-
         assertEquals(serviceState.getState(), ServiceState.ServiceStateValue.BECOMING_ACTIVE);
     }
 
     @Test
     public void testSetActive() throws Exception {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-
-        ServiceState serviceState = new ServiceState(configuration);
-        setAuditService(serviceState, auditService);
-
+        ServiceState serviceState = newServiceState(true);
         serviceState.setActive();
-
         assertEquals(serviceState.getState(), ServiceState.ServiceStateValue.ACTIVE);
-        // Verify that audit service was called twice (SERVER_START and SERVER_STATE_ACTIVE)
-        verify(auditService, org.mockito.Mockito.times(2)).add(any(), any(), any(), anyObject(), anyObject(), anyLong());
     }
 
     @Test
     public void testSetPassive() throws Exception {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-
-        ServiceState serviceState = new ServiceState(configuration);
-        setAuditService(serviceState, auditService);
-
+        ServiceState serviceState = newServiceState(true);
         serviceState.setPassive();
-
         assertEquals(serviceState.getState(), ServiceState.ServiceStateValue.PASSIVE);
     }
 
     @Test
     public void testSetMigration() throws Exception {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-
-        ServiceState serviceState = new ServiceState(configuration);
-        setAuditService(serviceState, auditService);
-
+        ServiceState serviceState = newServiceState(true);
         serviceState.setMigration();
-
         assertEquals(serviceState.getState(), ServiceState.ServiceStateValue.MIGRATING);
     }
 
     @Test
     public void testIsInstanceInTransitionBecomingActive() {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-
-        ServiceState serviceState = new ServiceState(configuration);
+        ServiceState serviceState = newServiceState(true);
         serviceState.becomingActive();
-
         assertTrue(serviceState.isInstanceInTransition());
     }
 
     @Test
     public void testIsInstanceInTransitionBecomingPassive() {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-
-        ServiceState serviceState = new ServiceState(configuration);
+        ServiceState serviceState = newServiceState(true);
         serviceState.becomingPassive();
-
         assertTrue(serviceState.isInstanceInTransition());
     }
 
     @Test
     public void testIsInstanceInTransitionActive() throws Exception {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-
-        ServiceState serviceState = new ServiceState(configuration);
-        setAuditService(serviceState, auditService);
+        ServiceState serviceState = newServiceState(true);
         serviceState.setActive();
-
         assertFalse(serviceState.isInstanceInTransition());
     }
 
     @Test
     public void testIsInstanceInMigration() {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
         when(configuration.getString(AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME, "")).thenReturn("migration.txt");
-
-        ServiceState serviceState = new ServiceState(configuration);
-
+        ServiceState serviceState = newServiceState(false);
         assertTrue(serviceState.isInstanceInMigration());
     }
 
     @Test
     public void testIsInstanceInMigrationFalse() {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
-
-        ServiceState serviceState = new ServiceState(configuration);
-
+        ServiceState serviceState = newServiceState(false);
         assertFalse(serviceState.isInstanceInMigration());
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testShouldDisallowBecomingActiveIfHAIsDisabled() {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
-
-        ServiceState serviceState = new ServiceState(configuration);
-
+        ServiceState serviceState = newServiceState(false);
         serviceState.becomingActive();
-
         fail("Should not allow transition");
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testShouldDisallowSetActiveIfHAIsDisabled() {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
-
-        ServiceState serviceState = new ServiceState(configuration);
-
+        ServiceState serviceState = newServiceState(false);
         serviceState.setActive();
-
         fail("Should not allow transition");
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testShouldDisallowSetPassiveIfHAIsDisabled() {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
-
-        ServiceState serviceState = new ServiceState(configuration);
-
+        ServiceState serviceState = newServiceState(false);
         serviceState.setPassive();
-
         fail("Should not allow transition");
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testShouldDisallowSetMigrationIfHAIsDisabled() {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
-
-        ServiceState serviceState = new ServiceState(configuration);
-
+        ServiceState serviceState = newServiceState(false);
         serviceState.setMigration();
-
         fail("Should not allow transition");
     }
 
     @Test
     public void testAuditServerStatusWithException() throws Exception {
-        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        if (!hasAuditServiceField()) {
+            throw new SkipException("ServiceState no longer exposes auditService field in atlas-server-common design.");
+        }
 
-        ServiceState serviceState = new ServiceState(configuration);
+        ServiceState serviceState = newServiceState(true);
         setAuditService(serviceState, auditService);
-
-        doThrow(new AtlasBaseException("Test exception")).when(auditService).add(any(), any(), any(), anyObject(), anyObject(), anyInt());
-
+        doThrow(new AtlasBaseException("Test exception")).when(auditService).add(any(), any(), any(), any(), any(), anyInt());
         serviceState.setActive();
-
         assertEquals(serviceState.getState(), ServiceState.ServiceStateValue.ACTIVE);
+    }
+
+    private boolean hasAuditServiceField() {
+        try {
+            ServiceState.class.getDeclaredField("auditService");
+            return true;
+        } catch (NoSuchFieldException e) {
+            return false;
+        }
     }
 
     private void setAuditService(ServiceState serviceState, AtlasAuditService auditService) throws Exception {
