@@ -1488,6 +1488,13 @@
                         <exclude>**/.docz/**</exclude>
                         <exclude>**/*.svg</exclude>
 
+                        <!-- Python client local environments and build artifacts -->
+                        <exclude>**/.tox/**</exclude>
+                        <exclude>**/.venv*/**</exclude>
+                        <exclude>**/__pycache__/**</exclude>
+                        <exclude>**/.mypy_cache/**</exclude>
+                        <exclude>**/*.egg-info/**</exclude>
+
                     </excludes>
                 </configuration>
                 <executions>
