@@ -344,6 +344,12 @@
             <artifactId>httpclient</artifactId>
         </dependency>
 
+        <!-- Required at runtime for glossary XLSX export (Apache POI XSSFWorkbook). -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper</artifactId>

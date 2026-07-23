@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.glossary;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
@@ -24,14 +25,20 @@ import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.bulkimport.BulkImportResponse.ImportInfo;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.AtlasSearchResultDownloadStatus;
+import org.apache.atlas.model.discovery.AtlasSearchResultDownloadStatus.AtlasSearchDownloadRecord;
 import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
+import org.apache.atlas.model.glossary.GlossaryExportParameters;
+import org.apache.atlas.model.glossary.GlossarySearchParameters;
+import org.apache.atlas.model.glossary.GlossarySearchResult;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -40,6 +47,7 @@ import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryDTO;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.FileUtils;
 import org.apache.atlas.utils.AtlasJson;
@@ -51,10 +59,16 @@ import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +78,7 @@ import java.util.stream.Collectors;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
+import static org.apache.atlas.AtlasErrorCode.PENDING_TASKS_ALREADY_IN_PROGRESS;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.SUCCESS;
 import static org.apache.atlas.glossary.GlossaryUtils.getAtlasGlossaryCategorySkeleton;
@@ -93,15 +108,18 @@ public class GlossaryService {
     private final AtlasTypeRegistry         atlasTypeRegistry;
     private final AtlasEntityChangeNotifier entityChangeNotifier;
     private final AtlasGlossaryDTO          glossaryDTO;
+    private final TaskManagement            taskManagement;
 
     @Inject
-    public GlossaryService(DataAccess dataAccess, final AtlasRelationshipStore relationshipStore, final AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier, final AtlasGlossaryDTO glossaryDTO) {
+    public GlossaryService(DataAccess dataAccess, final AtlasRelationshipStore relationshipStore, final AtlasTypeRegistry typeRegistry,
+                           AtlasEntityChangeNotifier entityChangeNotifier, final AtlasGlossaryDTO glossaryDTO, TaskManagement taskManagement) {
         this.dataAccess           = dataAccess;
         atlasTypeRegistry         = typeRegistry;
         glossaryTermUtils         = new GlossaryTermUtils(relationshipStore, typeRegistry, dataAccess);
         glossaryCategoryUtils     = new GlossaryCategoryUtils(relationshipStore, typeRegistry, dataAccess);
         this.entityChangeNotifier = entityChangeNotifier;
         this.glossaryDTO          = glossaryDTO;
+        this.taskManagement       = taskManagement;
     }
 
     public static boolean isNameInvalid(String name) {
@@ -950,6 +968,103 @@ public class GlossaryService {
         }
 
         return ret;
+    }
+
+    @GraphTransaction
+    public void exportGlossary(GlossaryExportParameters parameters, OutputStream outputStream) throws AtlasBaseException {
+        LOG.debug("==> GlossaryService.exportGlossary({})", parameters);
+
+        if (parameters == null || parameters.getFormat() == null) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Export format (CSV or XLSX) is required");
+        }
+
+        GlossaryExportDataCollector collector = new GlossaryExportDataCollector(this);
+        GlossaryExportFilter        filter    = new GlossaryExportFilter();
+        GlossaryExportWriter        writer    = new GlossaryExportWriter();
+
+        List<org.apache.atlas.model.glossary.GlossaryExportRow> rows = filter.apply(collector.collect(parameters), parameters);
+
+        GlossaryExportUtils.sortRows(rows, parameters.getSortBy(), parameters.getSortOrder());
+
+        int maxRows = AtlasConfiguration.GLOSSARY_EXPORT_MAX_ROWS.getInt();
+
+        if (rows.size() > maxRows) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
+                    "Export row count (" + rows.size() + ") exceeds maximum allowed (" + maxRows + ")");
+        }
+
+        try {
+            writer.write(outputStream, rows, parameters.getFormat(), parameters.getMode());
+        } catch (IOException e) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Failed to write glossary export: " + e.getMessage());
+        }
+
+        LOG.debug("<== GlossaryService.exportGlossary(): {} rows exported", rows.size());
+    }
+
+    @GraphTransaction
+    public GlossarySearchResult searchGlossary(GlossarySearchParameters parameters) throws AtlasBaseException {
+        LOG.debug("==> GlossaryService.searchGlossary({})", parameters);
+
+        GlossarySearchBuilder builder = new GlossarySearchBuilder(this);
+        GlossarySearchResult  result  = builder.search(parameters != null ? parameters : new GlossarySearchParameters());
+
+        LOG.debug("<== GlossaryService.searchGlossary(): {} glossaries, {} total rows", result.getGlossary().size(), result.getApproximateCount());
+
+        return result;
+    }
+
+    @GraphTransaction
+    public void createAndQueueGlossaryExportDownloadTask(Map<String, Object> taskParams) throws AtlasBaseException {
+        List<AtlasTask> pendingTasks = taskManagement.getPendingTasksByType(GlossaryExportDownloadTaskFactory.GLOSSARY_EXPORT_DOWNLOAD);
+
+        if (CollectionUtils.isNotEmpty(pendingTasks) && pendingTasks.size() > GlossaryExportDownloadTaskFactory.MAX_PENDING_TASKS_ALLOWED) {
+            throw new AtlasBaseException(PENDING_TASKS_ALREADY_IN_PROGRESS, String.valueOf(pendingTasks.size()));
+        }
+
+        AtlasTask task = taskManagement.createTask(GlossaryExportDownloadTaskFactory.GLOSSARY_EXPORT_DOWNLOAD,
+                RequestContext.getCurrentUser(), taskParams);
+
+        RequestContext.get().queueTask(task);
+    }
+
+    public AtlasSearchResultDownloadStatus getGlossaryExportDownloadStatus() throws IOException {
+        List<AtlasTask> pendingTasks = taskManagement.getPendingTasksByType(GlossaryExportDownloadTaskFactory.GLOSSARY_EXPORT_DOWNLOAD);
+        List<AtlasTask> currentUserPendingTasks = pendingTasks.stream()
+                .filter(task -> task.getCreatedBy().equals(RequestContext.getCurrentUser()))
+                .collect(Collectors.toList());
+        List<AtlasSearchDownloadRecord> downloadRecords = new ArrayList<>();
+
+        for (AtlasTask pendingTask : currentUserPendingTasks) {
+            String fileName = (String) pendingTask.getParameters().get(GlossaryExportDownloadTask.FILE_NAME_KEY);
+            AtlasSearchDownloadRecord record = new AtlasSearchDownloadRecord(pendingTask.getStatus(), fileName,
+                    pendingTask.getCreatedBy(), pendingTask.getCreatedTime(), pendingTask.getStartTime());
+
+            downloadRecords.add(record);
+        }
+
+        File fileDir = new File(GlossaryExportDownloadTask.DOWNLOAD_DIR_PATH, RequestContext.getCurrentUser());
+
+        if (fileDir.exists()) {
+            File[] currentUserFiles = fileDir.listFiles();
+
+            if (currentUserFiles != null) {
+                for (File file : currentUserFiles) {
+                    BasicFileAttributes attr           = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+                    Date                createdTime      = new Date(attr.creationTime().toMillis());
+                    AtlasSearchDownloadRecord record = new AtlasSearchDownloadRecord(AtlasTask.Status.COMPLETE,
+                            file.getName(), RequestContext.getCurrentUser(), createdTime);
+
+                    downloadRecords.add(record);
+                }
+            }
+        }
+
+        AtlasSearchResultDownloadStatus result = new AtlasSearchResultDownloadStatus();
+
+        result.setSearchDownloadRecords(downloadRecords);
+
+        return result;
     }
 
     private boolean glossaryExists(AtlasGlossary atlasGlossary) {

@@ -20,21 +20,30 @@ package org.apache.atlas.web.rest;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.glossary.GlossaryExportDownloadTask;
+import org.apache.atlas.glossary.GlossaryExportParameterMapper;
 import org.apache.atlas.glossary.GlossaryService;
 import org.apache.atlas.glossary.GlossaryTermUtils;
+import org.apache.atlas.model.discovery.AtlasSearchResultDownloadStatus;
 import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
+import org.apache.atlas.model.glossary.GlossaryExportParameters;
+import org.apache.atlas.model.glossary.GlossarySearchParameters;
+import org.apache.atlas.model.glossary.GlossarySearchResult;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.server.common.util.Servlets;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 
@@ -50,9 +59,15 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -1018,6 +1033,93 @@ public class GlossaryREST {
     }
 
     /**
+     * Search glossary terms and categories for UI display (JSON).
+     * Uses the same server-side filter semantics as async glossary export ({@link GlossaryExportParameters}).
+     * Pagination and sort apply to the flat term/category row set, then results are grouped by glossary.
+     *
+     * @param parameters limit, offset, sort, and filter criteria
+     * @return nested glossary structure with terms and/or categories
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful search
+     */
+    @POST
+    @Path("/search")
+    @Timed
+    public GlossarySearchResult searchGlossary(GlossarySearchParameters parameters) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryREST.searchGlossary()");
+            }
+
+            return glossaryService.searchGlossary(parameters);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Queue a glossary export file (CSV or XLSX), mirroring Basic Search
+     * {@code POST /api/atlas/v2/search/basic/download/create_file}.
+     * Accepts either {@code exportParameters} or the same JSON body as {@link #searchGlossary(GlossarySearchParameters)}
+     */
+    @POST
+    @Path("/download/create_file")
+    @Timed
+    public void glossaryExportCreateFile(Map<String, Object> parameterMap) throws AtlasBaseException {
+        glossaryExportCreateFileInternal(parameterMap);
+    }
+
+    /**
+     * Alias for {@link #glossaryExportCreateFile(Map)} — supports UI paths that call {@code /glossary/create_file}.
+     */
+    @POST
+    @Path("/create_file")
+    @Timed
+    public void glossaryExportCreateFileAlias(Map<String, Object> parameterMap) throws AtlasBaseException {
+        glossaryExportCreateFileInternal(parameterMap);
+    }
+
+    /**
+     * Returns pending and completed glossary export download records for the current user.
+     * Response shape matches Basic Search {@code GET /api/atlas/v2/search/download/status}.
+     */
+    @GET
+    @Path("/download/status")
+    @Timed
+    public AtlasSearchResultDownloadStatus getGlossaryExportDownloadStatus() throws IOException {
+        return glossaryService.getGlossaryExportDownloadStatus();
+    }
+
+    /**
+     * Download a completed glossary export file for the current user.
+     */
+    @GET
+    @Path("/download/{filename}")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    @Timed
+    public Response downloadGlossaryExportFile(@PathParam("filename") String fileName) {
+        File dir        = new File(GlossaryExportDownloadTask.DOWNLOAD_DIR_PATH, RequestContext.getCurrentUser());
+        File exportFile = new File(dir, fileName);
+
+        if (!exportFile.exists()) {
+            return Response.noContent().build();
+        }
+
+        return Response.ok(exportFile)
+                .header("Content-Disposition", "attachment; filename=\"" + fileName + "\"")
+                .build();
+    }
+
+    @POST
+    @Path("/export")
+    @Timed
+    public Response exportGlossaryRemoved() {
+        return Response.status(Response.Status.NOT_FOUND).build();
+    }
+
+    /**
      * Upload glossary file for creating AtlasGlossaryTerms in bulk
      *
      * @param inputStream InputStream of file
@@ -1062,5 +1164,50 @@ public class GlossaryREST {
         }
 
         return ret;
+    }
+
+    private String buildExportFileName(GlossaryExportParameters parameters) {
+        GlossaryExportParameters.ExportFormat format = parameters.getFormat();
+        String extension = format == GlossaryExportParameters.ExportFormat.XLSX ? "xlsx" : "csv";
+        String timestamp = StringUtils.isNotEmpty(parameters.getExportTimestamp())
+                ? parameters.getExportTimestamp()
+                : new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
+        String user = RequestContext.getCurrentUser();
+
+        return user + "_GLOSSARY_EXPORT_" + timestamp + "." + extension;
+    }
+
+    private void glossaryExportCreateFileInternal(Map<String, Object> parameterMap) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryREST.glossaryExportCreateFile(" + parameterMap + ")");
+            }
+
+            GlossaryExportParameters parameters = GlossaryExportParameterMapper.fromCreateFileRequest(parameterMap);
+            validateExportParameters(parameters);
+
+            Map<String, Object> taskParams = populateGlossaryExportTaskParams(parameters);
+            glossaryService.createAndQueueGlossaryExportDownloadTask(taskParams);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    private void validateExportParameters(GlossaryExportParameters parameters) throws AtlasBaseException {
+        if (parameters == null || parameters.getFormat() == null) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Export format (CSV or XLSX) is required");
+        }
+    }
+
+    private Map<String, Object> populateGlossaryExportTaskParams(GlossaryExportParameters parameters) {
+        Map<String, Object> taskParams = new HashMap<>();
+        String fileName = buildExportFileName(parameters);
+
+        taskParams.put(GlossaryExportDownloadTask.EXPORT_PARAMETERS_JSON_KEY, AtlasJson.toJson(parameters));
+        taskParams.put(GlossaryExportDownloadTask.FILE_NAME_KEY, fileName);
+
+        return taskParams;
     }
 }
