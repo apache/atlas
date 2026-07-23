@@ -308,6 +308,10 @@ export const fields = (allDataObj) => {
   }
   if (!isEmpty(auditEntryAttributeDefs)) {
     for (const attributes in auditEntryAttributeDefs) {
+      if (auditEntryAttributeDefs[attributes]?.name === "auditRowKind") {
+        continue; // Backend-only field, do not display in UI filter
+      }
+
       let returnObj: any = getObjDef(
         allDataObj,
         auditEntryAttributeDefs[attributes],

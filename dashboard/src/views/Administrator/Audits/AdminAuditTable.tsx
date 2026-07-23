@@ -65,7 +65,7 @@ const AdminAuditTable = () => {
       try {
         setLoader(true);
         let searchResp = await getAuditData(params);
-        setAuditData(searchResp.data);
+        setAuditData(searchResp.data || []);
         setLoader(false);
       } catch (error: any) {
         console.error("Error fetching data:", error.response.data.errorMessage);

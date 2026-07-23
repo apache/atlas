@@ -25,7 +25,7 @@ define(['require',
     'utils/CommonViewFunction',
     'utils/Enums',
     'moment'
-], function(require, Backbone, AdminAuditTableLayoutView_tmpl, VEntityList, Utils, UrlLinks, CommonViewFunction, Enums, moment) {
+], function (require, Backbone, AdminAuditTableLayoutView_tmpl, VEntityList, Utils, UrlLinks, CommonViewFunction, Enums, moment) {
     'use strict';
 
     var AdminAuditTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -53,21 +53,23 @@ define(['require',
 
             },
             /** ui events hash */
-            events: function() {
+            events: function () {
                 var events = {},
                     that = this;
                 events["click " + this.ui.adminPurgedEntityClick] = "onClickAdminPurgedEntity";
                 events["click " + this.ui.adminAuditEntityDetails] = "showAdminAuditEntity";
-                events["click " + this.ui.attrFilter] = function(e) {
+                events["click [data-id='drawerSummaryTrigger']"] = "onSummaryCardClick";
+                events["click [data-id='copyRunIdMain']"] = "onCopyRunIdMain";
+                events["click " + this.ui.attrFilter] = function (e) {
                     this.ui.attrFilter.find('.fa-angle-right').toggleClass('fa-angle-down');
                     this.$('.attributeResultContainer').addClass("overlay");
                     this.$('.attribute-filter-container, .attr-filter-overlay').toggleClass('hide');
                     this.onClickAttrFilter();
                 };
-                events["click " + this.ui.attrClose] = function(e) {
+                events["click " + this.ui.attrClose] = function (e) {
                     that.closeAttributeModel();
                 };
-                events["click " + this.ui.attrApply] = function(e) {
+                events["click " + this.ui.attrApply] = function (e) {
                     that.okAttrFilterButton(e);
                 };
                 return events;
@@ -76,7 +78,7 @@ define(['require',
              * intialize a new AdminTableLayoutView Layout
              * @constructs
              */
-            initialize: function(options) {
+            initialize: function (options) {
                 _.extend(this, _.pick(options, 'searchTableFilters', 'entityDefCollection', 'enumDefCollection'));
                 this.entityCollection = new VEntityList();
                 this.limit = 25;
@@ -119,33 +121,33 @@ define(['require',
                 this.isFilters = null;
                 this.adminAuditEntityData = {};
             },
-            onRender: function() {
+            onRender: function () {
                 this.ui.adminRegion.hide();
                 this.getAdminCollection();
-                this.entityCollection.comparator = function(model) {
+                this.entityCollection.comparator = function (model) {
                     return -model.get('timestamp');
                 }
                 this.renderTableLayoutView();
             },
-            onShow: function() {
+            onShow: function () {
                 this.$('.fontLoader').show();
                 this.$('.tableOverlay').show();
             },
-            bindEvents: function() {},
-            closeAttributeModel: function() {
+            bindEvents: function () { },
+            closeAttributeModel: function () {
                 var that = this;
                 that.$('.attributeResultContainer').removeClass("overlay");
                 that.ui.attrFilter.find('.fa-angle-right').toggleClass('fa-angle-down');
                 that.$('.attribute-filter-container, .attr-filter-overlay').toggleClass('hide');
             },
-            onClickAttrFilter: function() {
+            onClickAttrFilter: function () {
                 var that = this;
                 this.ui.adminRegion.show();
-                require(['views/search/QueryBuilderView'], function(QueryBuilderView) {
+                require(['views/search/QueryBuilderView'], function (QueryBuilderView) {
                     that.RQueryBuilderAdmin.show(new QueryBuilderView({ adminAttrFilters: true, searchTableFilters: that.searchTableFilters, entityDefCollection: that.entityDefCollection, enumDefCollection: that.enumDefCollection }));
                 });
             },
-            okAttrFilterButton: function(options) {
+            okAttrFilterButton: function (options) {
                 var that = this,
                     isFilterValidate = true,
                     queryBuilderRef = that.RQueryBuilderAdmin.currentView.ui.builder;
@@ -164,18 +166,18 @@ define(['require',
                     that.getAdminCollection();
                 }
             },
-            getAdminCollection: function(option) {
+            getAdminCollection: function (option) {
                 var that = this,
                     auditFilters = CommonViewFunction.attributeFilter.generateAPIObj(that.ruleUrl);
                 $.extend(that.entityCollection.queryParams, { auditFilters: that.isFilters ? auditFilters : null, limit: that.entityCollection.queryParams.limit || that.limit, offset: that.entityCollection.queryParams.offset || that.offset, sortBy: "startTime", sortOrder: "DESCENDING" });
                 var apiObj = {
                     sort: false,
                     data: _.pick(that.entityCollection.queryParams, 'auditFilters', 'limit', 'offset', 'sortBy', 'sortOrder'),
-                    success: function(dataOrCollection, response) {
+                    success: function (dataOrCollection, response) {
                         that.entityCollection.state.pageSize = that.entityCollection.queryParams.limit || 25;
                         that.entityCollection.fullCollection.reset(dataOrCollection, option);
                     },
-                    complete: function() {
+                    complete: function () {
                         that.$('.fontLoader').hide();
                         that.$('.tableOverlay').hide();
                         that.$('.auditTable').show();
@@ -184,20 +186,20 @@ define(['require',
                 }
                 this.entityCollection.getAdminData(apiObj);
             },
-            renderTableLayoutView: function() {
+            renderTableLayoutView: function () {
                 var that = this;
                 this.ui.showDefault.hide();
-                require(['utils/TableLayout'], function(TableLayout) {
+                require(['utils/TableLayout'], function (TableLayout) {
                     var cols = new Backgrid.Columns(that.getAuditTableColumns());
                     that.RAuditTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         columns: cols
                     })));
                 });
             },
-            createTableWithValues: function(tableDetails, isAdminAudit) {
+            createTableWithValues: function (tableDetails, isAdminAudit) {
                 var attrTable = CommonViewFunction.propertyTable({
                     scope: this,
-                    getValue: function(val, key) {
+                    getValue: function (val, key) {
                         if (key && key.toLowerCase().indexOf("time") > 0) {
                             return Utils.formatDate({ date: val });
                         } else {
@@ -209,7 +211,7 @@ define(['require',
                 });
                 return attrTable;
             },
-            getAuditTableColumns: function() {
+            getAuditTableColumns: function () {
                 var that = this;
                 return this.entityCollection.constructor.getTableCols({
                     result: {
@@ -222,14 +224,14 @@ define(['require',
                         accordion: false,
                         alwaysVisible: true,
                         renderable: true,
-                        isExpandVisible: function(el, model) {
+                        isExpandVisible: function (el, model) {
                             if (Enums.serverAudits[model.get('operation')]) {
                                 return false;
                             } else {
                                 return true;
                             }
                         },
-                        expand: function(el, model) {
+                        expand: function (el, model) {
                             var operation = model.get('operation'),
                                 results = model.get('result') || null,
                                 adminText = 'No records found',
@@ -279,7 +281,7 @@ define(['require',
                         renderable: true,
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                            fromRaw: function(rawValue, model) {
+                            fromRaw: function (rawValue, model) {
                                 if (Enums.serverAudits[model.get('operation')]) {
                                     return "N/A"
                                 } else {
@@ -294,7 +296,7 @@ define(['require',
                         renderable: true,
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                            fromRaw: function(rawValue, model) {
+                            fromRaw: function (rawValue, model) {
                                 return Utils.formatDate({ date: rawValue });
                             }
                         })
@@ -305,7 +307,7 @@ define(['require',
                         renderable: true,
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                            fromRaw: function(rawValue, model) {
+                            fromRaw: function (rawValue, model) {
                                 return Utils.formatDate({ date: rawValue });
                             }
                         })
@@ -317,7 +319,7 @@ define(['require',
                         editable: false,
                         sortable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                            fromRaw: function(rawValue, model) {
+                            fromRaw: function (rawValue, model) {
                                 var startTime = model.get('startTime') ? parseInt(model.get('startTime')) : null,
                                     endTime = model.get('endTime') ? parseInt(model.get('endTime')) : null;
                                 if (_.isNumber(startTime) && _.isNumber(endTime)) {
@@ -331,11 +333,11 @@ define(['require',
                     }
                 }, this.entityCollection);
             },
-            defaultPagination: function() {
+            defaultPagination: function () {
                 $.extend(this.entityCollection.queryParams, { limit: this.limit, offset: this.offset });
                 this.renderTableLayoutView();
             },
-            showAdminAuditEntity: function(e) {
+            showAdminAuditEntity: function (e) {
                 var typeDefObj = this.adminAuditEntityData[e.target.dataset.auditentityid],
                     typeDetails = this.createTableWithValues(typeDefObj, true),
                     view = '<table class="table admin-audit-details bold-key" ><tbody >' + typeDetails + '</tbody></table>',
@@ -349,25 +351,95 @@ define(['require',
                     };
                 this.showModal(modalData);
             },
-            displayPurgeAndImportAudits: function(obj) {
+            displayPurgeAndImportAudits: function (obj) {
+                var adminTypDetails = Enums.category[obj.operation];
+
+                // If it's a new JSON string (from new API changes), parse it.
+                var isJson = false;
+                var summaryData = {};
+                try {
+                    summaryData = JSON.parse(obj.results);
+                    if (summaryData && typeof summaryData === 'object' && !Array.isArray(summaryData)) {
+                        isJson = true;
+                    }
+                } catch (e) {
+                    isJson = false;
+                }
+
+                if (isJson) {
+                    // It's the new Summary format
+                    var runId = summaryData.runId || obj.model.get('runId') || '';
+                    var paramsArr = obj.model.get('params') ? obj.model.get('params').split(',') : [];
+
+                    var reqCount = summaryData.requestedCount !== undefined ? summaryData.requestedCount : paramsArr.length;
+                    var purgedCount = summaryData.purgedCount !== undefined ? summaryData.purgedCount : 0;
+                    var purgedDependenciesCount = summaryData.purgedDependenciesCount || 0;
+                    var totalPurgedCount = purgedCount + purgedDependenciesCount;
+                    var failedCount = summaryData.failedCount || 0;
+                    var skippedCount = summaryData.skippedCount || 0;
+
+                    var html = '<div class="row"><div class="attr-details">';
+
+                    html += '<div class="purge-summary-wrapper">';
+                    if (runId) {
+                        html += '<div class="purge-run-id-row"><strong>Run Id:</strong> <span data-id="runIdValue">' + _.escape(runId) + '</span> <i class="fa fa-copy purge-run-id-copy" data-id="copyRunIdMain" title="Copy to clipboard"></i></div>';
+                    }
+                    if (summaryData.executionFailed) {
+                        html += '<div class="alert alert-warning purge-warning-alert"><i class="fa fa-exclamation-triangle"></i> Partial success: Some entities failed to purge. Check backend logs for details.</div>';
+                    }
+
+                    html += '<div class="purge-summary-container">';
+
+                    // Requested
+                    html += '<div class="purge-summary-card card-blue clickable" data-id="drawerSummaryTrigger" data-type="requested" data-runid="' + _.escape(runId) + '" data-guid="' + _.escape(obj.model.get('guid')) + '" data-params="' + _.escape(obj.model.get('params')) + '">';
+                    html += '<div class="card-label">REQUESTED</div><div class="card-value">' + reqCount + '</div></div>';
+
+                    // Total Purged
+                    html += '<div class="purge-summary-card card-green ' + (totalPurgedCount > 0 ? 'clickable' : '') + '" ' + (totalPurgedCount > 0 ? 'data-id="drawerSummaryTrigger" data-type="purged" data-runid="' + _.escape(runId) + '" data-guid="' + _.escape(obj.model.get('guid')) + '"' : '') + '>';
+                    html += '<div class="card-label">TOTAL PURGED</div><div class="card-value">' + totalPurgedCount + '</div></div>';
+
+                    // Failed
+                    html += '<div class="purge-summary-card card-red ' + (failedCount > 0 ? 'has-count' : '') + '" title="Check <ATLAS_HOME>/logs/purgefailure.log for details">';
+                    html += '<div class="card-label">FAILED</div><div class="card-value">' + failedCount + '</div></div>';
+
+                    // Skipped
+                    html += '<div class="purge-summary-card card-amber ' + (skippedCount > 0 ? 'has-count' : '') + '" title="Check <ATLAS_HOME>/logs/purgefailure.log for details">';
+                    html += '<div class="card-label">SKIPPED</div><div class="card-value">' + skippedCount + '</div></div>';
+
+                    html += '</div></div></div></div>';
+                    return html;
+                }
+
+                // Legacy render format
                 var adminValues = '<ul class="col-sm-6">',
-                    guids = null,
-                    adminTypDetails = Enums.category[obj.operation];
+                    guids = [];
                 if (obj.operation == "PURGE" || obj.operation == "AUTO_PURGE") {
                     guids = obj.results ? obj.results.replace('[', '').replace(']', '').split(',') : guids;
+
+                    var legacyPurgedCount = guids.length;
+                    if (legacyPurgedCount === 1 && guids[0] === "") {
+                        legacyPurgedCount = 0;
+                    }
+
+                    var html = '<div class="row"><div class="attr-details">';
+                    html += '<div class="purge-summary-container">';
+                    html += '<div class="purge-summary-card card-legacy card-green ' + (legacyPurgedCount > 0 ? 'clickable' : '') + '" ' + (legacyPurgedCount > 0 ? 'data-id="drawerSummaryTrigger" data-type="legacy-purged" data-runid="" data-guid="' + _.escape(obj.model.get('guid')) + '" data-results="' + _.escape(obj.results) + '"' : '') + '>';
+                    html += '<div class="card-label">PURGED ENTITIES</div><div class="card-value">' + legacyPurgedCount + '</div></div>';
+                    html += '</div></div></div>';
+                    return html;
                 } else {
                     guids = obj.model.get('params') ? obj.model.get('params').split(',') : guids;
                 }
-                _.each(guids, function(adminGuid, index) {
+                _.each(guids, function (adminGuid, index) {
                     if (index % 5 == 0 && index != 0) {
                         adminValues += '</ul><ul class="col-sm-6">';
                     }
                     adminValues += '<li class="blue-link" data-id="adminPurgedEntity" data-operation=' + obj.operation + '>' + adminGuid.trim() + '</li>';
                 })
                 adminValues += '</ul>';
-                return '<div class="row"><div class="attr-details"><h4 style="word-break: break-word;">' + adminTypDetails + '</h4>' + adminValues + '</div></div>';
+                return '<div class="row"><div class="attr-details">' + adminValues + '</div></div>';
             },
-            displayExportAudits: function(obj) {
+            displayExportAudits: function (obj) {
                 var adminValues = "",
                     adminTypDetails = (obj.operation === 'IMPORT') ? Enums.category[obj.operation] : Enums.category[obj.operation] + " And Options",
                     resultData = obj.results ? JSON.parse(obj.results) : null,
@@ -380,15 +452,15 @@ define(['require',
                     adminValues += this.showImportExportTable(_.extend(paramsData, { "paramsCount": obj.model.get('paramsCount') }));
                 }
                 adminValues = adminValues ? adminValues : obj.adminText;
-                return '<div class="row"><div class="attr-details"><h4 style="word-break: break-word;">' + adminTypDetails + '</h4>' + adminValues + '</div></div>';
+                return '<div class="row"><div class="attr-details"><h4 class="audit-type-details-title">' + adminTypDetails + '</h4>' + adminValues + '</div></div>';
             },
-            showImportExportTable: function(obj, operations) {
+            showImportExportTable: function (obj, operations) {
                 var that = this,
                     typeDetails = "",
                     view = '<ul class="col-sm-5 import-export"><table class="table admin-audit-details bold-key" ><tbody >';
                 if (operations && operations === "IMPORT") {
                     var importKeys = Object.keys(obj);
-                    _.each(importKeys, function(key, index) {
+                    _.each(importKeys, function (key, index) {
                         var newObj = {};
                         newObj[key] = obj[key];
                         if (index % 5 === 0 && index != 0) {
@@ -401,17 +473,17 @@ define(['require',
                 }
                 return view += '</tbody></table></ul>';;
             },
-            displayCreateUpdateAudits: function(obj) {
+            displayCreateUpdateAudits: function (obj) {
                 var that = this,
                     resultData = JSON.parse(obj.results),
                     typeName = obj.model ? obj.model.get('params').split(',') : null,
                     typeContainer = '';
-                _.each(typeName, function(name) {
+                _.each(typeName, function (name) {
                     var typeData = resultData[name],
                         adminValues = (typeName.length == 1) ? '<ul class="col-sm-4">' : '<ul>',
                         adminTypDetails = Enums.category[name] + " " + Enums.auditAction[obj.operation];
                     typeContainer += '<div class="attr-type-container"><h4 style="word-break: break-word;">' + adminTypDetails + '</h4>';
-                    _.each(typeData, function(typeDefObj, index) {
+                    _.each(typeData, function (typeDefObj, index) {
                         if (index % 5 == 0 && index != 0 && typeName.length == 1) {
                             adminValues += '</ul><ul class="col-sm-4">';
                         }
@@ -425,17 +497,17 @@ define(['require',
                 var typeClass = (typeName.length == 1) ? null : "admin-audit-details";
                 return '<div class="row"><div class="attr-details ' + typeClass + '">' + typeContainer + '</div></div>';
             },
-            onClickAdminPurgedEntity: function(e) {
+            onClickAdminPurgedEntity: function (e) {
                 var that = this;
-                require(['views/audit/AuditTableLayoutView'], function(AuditTableLayoutView) {
+                require(['views/audit/AuditTableLayoutView'], function (AuditTableLayoutView) {
                     const titles = {
                         PURGE: "Purged Entity Details",
                         AUTO_PURGE: "Auto Purge Entity Details"
                     };
                     var obj = {
-                            guid: $(e.target).text(),
-                            titleText: (titles[e.target.dataset.operation] || "Import Details") + ": "
-                        },
+                        guid: $(e.target).text(),
+                        titleText: (titles[e.target.dataset.operation] || "Import Details") + ": "
+                    },
                         modalData = {
                             title: obj.titleText + obj.guid,
                             content: new AuditTableLayoutView(obj),
@@ -446,17 +518,181 @@ define(['require',
                     that.showModal(modalData);
                 });
             },
-            showModal: function(modalObj, title) {
+            onCopyRunIdMain: function (e) {
+                var $temp = $("<input>");
+                $("body").append($temp);
+                var runIdText = $(e.currentTarget).siblings('[data-id="runIdValue"]').text();
+                $temp.val(runIdText).select();
+                document.execCommand("copy");
+                $temp.remove();
+                Utils.notifySuccess({
+                    content: "Run Id copied to clipboard"
+                });
+            },
+            onSummaryCardClick: function (e) {
+                var that = this;
+                var $target = $(e.currentTarget);
+                var type = $target.data('type');
+                var runId = $target.data('runid');
+                var guid = $target.data('guid');
+                var params = $target.data('params');
+                var totalCount = parseInt($target.find('.card-value').text(), 10) || 0;
+
+                require(['views/audit/DrawerView'], function (DrawerView) {
+                    if (type === 'requested') {
+                        var items = [];
+                        if (params) {
+                            if (Array.isArray(params)) {
+                                items = params.map(function (item) {
+                                    return typeof item === "string" ? item : (item.guid || String(item));
+                                });
+                            } else {
+                                try {
+                                    var parsedParams = JSON.parse(params);
+                                    if (Array.isArray(parsedParams)) {
+                                        items = parsedParams.map(function (item) {
+                                            return typeof item === "string" ? item : (item.guid || String(item));
+                                        });
+                                    } else if (typeof params === "string") {
+                                        items = params.replace(/^\[|\]$/g, "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+                                    }
+                                } catch (e) {
+                                    if (typeof params === "string") {
+                                        items = params.replace(/^\[|\]$/g, "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+                                    }
+                                }
+                            }
+                        }
+                        var drawerView = new DrawerView({
+                            title: 'Requested Entities',
+                            items: items,
+                            totalCount: items.length,
+                            runId: runId,
+                            actionType: 'requested',
+                            onItemClickCb: function (clickedGuid) {
+                                require(['views/audit/AuditTableLayoutView'], function (AuditTableLayoutView) {
+                                    var obj = {
+                                        guid: clickedGuid,
+                                        titleText: "Entity Audit Details: "
+                                    };
+                                    var modalData = {
+                                        title: obj.titleText + obj.guid,
+                                        content: new AuditTableLayoutView(obj),
+                                        mainClass: "modal-full-screen",
+                                        okCloses: true,
+                                        showFooter: false,
+                                    };
+                                    that.showModal(modalData);
+                                });
+                            }
+                        });
+                        drawerView.render();
+                    } else if (type === 'legacy-purged') {
+                        var resultsData = $target.data('results');
+                        var items = [];
+                        if (resultsData) {
+                            if (Array.isArray(resultsData)) {
+                                items = resultsData.map(function (item) {
+                                    return typeof item === "string" ? item : (item.guid || String(item));
+                                });
+                            } else {
+                                try {
+                                    var parsed = JSON.parse(resultsData);
+                                    if (Array.isArray(parsed)) {
+                                        items = parsed.map(function (item) {
+                                            return typeof item === "string" ? item : (item.guid || String(item));
+                                        });
+                                    } else if (typeof resultsData === "string") {
+                                        items = resultsData.replace(/^\[|\]$/g, "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+                                    }
+                                } catch (e) {
+                                    if (typeof resultsData === "string") {
+                                        items = resultsData.replace(/^\[|\]$/g, "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+                                    }
+                                }
+                            }
+                        }
+                        var drawerView = new DrawerView({
+                            title: 'Purged Entities',
+                            items: items,
+                            totalCount: items.length,
+                            runId: runId,
+                            actionType: 'purged',
+                            onItemClickCb: function (clickedGuid) {
+                                require(['views/audit/AuditTableLayoutView'], function (AuditTableLayoutView) {
+                                    var obj = {
+                                        guid: clickedGuid,
+                                        titleText: "Purged Entity Details: "
+                                    };
+                                    var modalData = {
+                                        title: obj.titleText + obj.guid,
+                                        content: new AuditTableLayoutView(obj),
+                                        mainClass: "modal-full-screen",
+                                        okCloses: true,
+                                        showFooter: false,
+                                    };
+                                    that.showModal(modalData);
+                                });
+                            }
+                        });
+                        drawerView.render();
+                    } else if (type === 'purged') {
+                        var drawerView = new DrawerView({
+                            title: 'Purged Entities',
+                            runId: runId,
+                            totalCount: totalCount,
+                            fetchData: function (limit, offset, cb) {
+                                var url = UrlLinks.baseUrl + '/admin/audit/' + guid + '/purgedEntities?limit=' + limit + '&offset=' + offset;
+                                $.ajax({
+                                    url: url,
+                                    type: 'GET',
+                                    success: function (response) {
+                                        var guids = [];
+                                        if (response && Array.isArray(response)) {
+                                            guids = response.map(function (item) {
+                                                return typeof item === "string" ? item : (item.guid || String(item));
+                                            });
+                                        }
+                                        cb(guids);
+                                    },
+                                    error: function () {
+                                        cb([]);
+                                    }
+                                });
+                            },
+                            actionType: 'purged',
+                            onItemClickCb: function (clickedGuid) {
+                                require(['views/audit/AuditTableLayoutView'], function (AuditTableLayoutView) {
+                                    var obj = {
+                                        guid: clickedGuid,
+                                        titleText: "Purged Entity Details: "
+                                    };
+                                    var modalData = {
+                                        title: obj.titleText + obj.guid,
+                                        content: new AuditTableLayoutView(obj),
+                                        mainClass: "modal-full-screen",
+                                        okCloses: true,
+                                        showFooter: false,
+                                    };
+                                    that.showModal(modalData);
+                                });
+                            }
+                        });
+                        drawerView.render();
+                    }
+                });
+            },
+            showModal: function (modalObj, title) {
                 var that = this;
                 require([
                     'modules/Modal'
-                ], function(Modal) {
+                ], function (Modal) {
                     var modal = new Modal(modalObj).open();
-                    modal.on('closeModal', function() {
+                    modal.on('closeModal', function () {
                         $('.modal').css({ 'padding-right': '0px !important' });
                         modal.trigger('cancel');
                     });
-                    modal.$el.on('click', 'td a', function() {
+                    modal.$el.on('click', 'td a', function () {
                         modal.trigger('cancel');
                     });
                 });

@@ -1395,5 +1395,38 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         return parts.join('&');
     };
 
+    Utils.virtualizeList = function(options) {
+        var items = options.items || [];
+        var scrollTop = options.scrollTop || 0;
+        var itemHeight = options.itemHeight || 37;
+        var overscan = options.overscan || 10;
+        var visibleCount = options.visibleCount || 40;
+
+        var totalItems = items.length;
+        if (totalItems === 0) {
+            return {
+                visibleItems: [],
+                paddingTop: 0,
+                paddingBottom: 0,
+                startIndex: 0
+            };
+        }
+
+        var startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
+        var endIndex = Math.min(totalItems - 1, Math.floor(scrollTop / itemHeight) + visibleCount + overscan);
+        
+        var visibleItems = items.slice(startIndex, endIndex + 1);
+        
+        var paddingTop = startIndex * itemHeight;
+        var paddingBottom = Math.max(0, (totalItems - 1 - endIndex) * itemHeight);
+
+        return {
+            visibleItems: visibleItems,
+            paddingTop: paddingTop,
+            paddingBottom: paddingBottom,
+            startIndex: startIndex
+        };
+    };
+
     return Utils;
 });
