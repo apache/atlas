@@ -123,7 +123,6 @@ const Layout: React.FC = () => {
       <div className="row">
         <div className="column layout-sidebar">
           <SideBarBody
-            loading={false}
             handleOpenModal={handleOpenModal}
             handleOpenAboutModal={handleOpenAboutModal}
           />
