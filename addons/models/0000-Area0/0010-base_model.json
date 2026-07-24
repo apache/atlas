@@ -15,7 +15,19 @@
         { "ordinal": 6, "value": "TYPE_DEF_UPDATE" },
         { "ordinal": 7, "value": "TYPE_DEF_DELETE" },
         { "ordinal": 8, "value": "SERVER_START" },
-        { "ordinal": 9, "value": "SERVER_STATE_ACTIVE" }
+        { "ordinal": 9, "value": "SERVER_STATE_ACTIVE" },
+        { "ordinal": 10, "value": "AUTO_PURGE" }
+      ]
+    },
+    {
+      "name":        "audit_row_kind",
+      "description": "Distinguishes single, summary, and batch rows in a correlated audit run",
+      "typeVersion": "1.0",
+      "serviceType": "atlas_core",
+      "elementDefs": [
+        { "ordinal": 0, "value": "SINGLE" },
+        { "ordinal": 1, "value": "SUMMARY" },
+        { "ordinal": 2, "value": "BATCH" }
       ]
     }
   ],
@@ -165,7 +177,9 @@
         { "name": "clientId",    "typeName": "string",          "cardinality": "SINGLE", "isIndexable": true,  "isOptional": true,  "isUnique": false },
         { "name": "params",      "typeName": "string",          "cardinality": "SINGLE", "isIndexable": true,  "isOptional": true,  "isUnique": false },
         { "name": "result",      "typeName": "string",          "cardinality": "SINGLE", "isIndexable": false, "isOptional": true,  "isUnique": false },
-        { "name": "resultCount", "typeName": "long",            "cardinality": "SINGLE", "isIndexable": true,  "isOptional": true,  "isUnique": false }
+        { "name": "resultCount", "typeName": "long",            "cardinality": "SINGLE", "isIndexable": true,  "isOptional": true,  "isUnique": false },
+        { "name": "runId",        "typeName": "string",          "cardinality": "SINGLE", "isIndexable": true,  "isOptional": true,  "isUnique": false },
+        { "name": "auditRowKind", "typeName": "audit_row_kind",  "cardinality": "SINGLE", "isIndexable": true,  "isOptional": true,  "isUnique": false }
       ]
     },
     {

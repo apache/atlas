@@ -272,6 +272,12 @@ public class TestAtlasAuditEntry {
         assertEquals(action, EntityAuditEventV2.EntityAuditActionV2.ENTITY_PURGE);
     }
 
+    @Test
+    public void testAuditOperationToEntityAuditActionV2AutoPurge() throws AtlasBaseException {
+        EntityAuditEventV2.EntityAuditActionV2 action = AtlasAuditEntry.AuditOperation.AUTO_PURGE.toEntityAuditActionV2();
+        assertEquals(action, EntityAuditEventV2.EntityAuditActionV2.ENTITY_PURGE);
+    }
+
     @Test(expectedExceptions = AtlasBaseException.class)
     public void testAuditOperationToEntityAuditActionV2InvalidOperation() throws AtlasBaseException {
         AtlasAuditEntry.AuditOperation.SERVER_START.toEntityAuditActionV2();

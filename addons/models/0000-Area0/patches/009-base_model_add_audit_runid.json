@@ -1,0 +1,16 @@
+{
+  "patches": [
+    {
+      "id":              "TYPEDEF_PATCH_0009_001",
+      "description":     "Add runId attribute to __AtlasAuditEntry for purge audit correlation",
+      "action":          "ADD_ATTRIBUTE",
+      "typeName":        "__AtlasAuditEntry",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "params":          null,
+      "attributeDefs": [
+        { "name": "runId", "typeName": "string", "cardinality": "SINGLE", "isIndexable": true, "isOptional": true, "isUnique": false }
+      ]
+    }
+  ]
+}

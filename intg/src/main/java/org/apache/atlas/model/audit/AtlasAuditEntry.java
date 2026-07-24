@@ -46,6 +46,8 @@ public class AtlasAuditEntry extends AtlasBaseModelObject implements Serializabl
     private String         clientId;
     private String         result;
     private long           resultCount;
+    private String         runId;
+    private AuditRowKind   auditRowKind;
 
     public AtlasAuditEntry() {
     }
@@ -120,6 +122,22 @@ public class AtlasAuditEntry extends AtlasBaseModelObject implements Serializabl
         this.resultCount = resultCount;
     }
 
+    public String getRunId() {
+        return runId;
+    }
+
+    public void setRunId(String runId) {
+        this.runId = runId;
+    }
+
+    public AuditRowKind getAuditRowKind() {
+        return auditRowKind;
+    }
+
+    public void setAuditRowKind(AuditRowKind auditRowKind) {
+        this.auditRowKind = auditRowKind;
+    }
+
     @Override
     public StringBuilder toString(StringBuilder sb) {
         sb.append(", userName: ").append(userName);
@@ -130,8 +148,16 @@ public class AtlasAuditEntry extends AtlasBaseModelObject implements Serializabl
         sb.append(", endTime: ").append(endTime);
         sb.append(", result: ").append(result);
         sb.append(", resultCount: ").append(resultCount);
+        sb.append(", runId: ").append(runId);
+        sb.append(", auditRowKind: ").append(auditRowKind);
 
         return sb;
+    }
+
+    public enum AuditRowKind {
+        SINGLE,
+        SUMMARY,
+        BATCH
     }
 
     public enum AuditOperation {
@@ -155,6 +181,7 @@ public class AtlasAuditEntry extends AtlasBaseModelObject implements Serializabl
         public EntityAuditEventV2.EntityAuditActionV2 toEntityAuditActionV2() throws AtlasBaseException {
             switch (this.type) {
                 case "PURGE":
+                case "AUTO_PURGE":
                     return EntityAuditEventV2.EntityAuditActionV2.ENTITY_PURGE;
                 default:
                     try {
