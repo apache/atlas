@@ -1,0 +1,16 @@
+{
+  "patches": [
+    {
+      "id":              "TYPEDEF_PATCH_0010_001",
+      "description":     "Add auditRowKind attribute to __AtlasAuditEntry for batch/summary audit correlation",
+      "action":          "ADD_ATTRIBUTE",
+      "typeName":        "__AtlasAuditEntry",
+      "applyToVersion":  "1.1",
+      "updateToVersion": "1.2",
+      "params":          null,
+      "attributeDefs": [
+        { "name": "auditRowKind", "typeName": "audit_row_kind", "cardinality": "SINGLE", "isIndexable": true, "isOptional": true, "isUnique": false }
+      ]
+    }
+  ]
+}
