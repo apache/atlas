@@ -50,6 +50,12 @@ public class AtlasSimpleAuthorizerTest {
     private static final String USER_FINANCE_PII      = "financePII";
     private static final String USER_IN_ADMIN_GROUP   = "admin-group-user";
     private static final String USER_IN_UNKNOWN_GROUP = "unknown-group-user";
+    private static final String USER_REL_READER       = "relreader";
+    private static final String USER_RANGER_TAG_SYNC  = "rangertagsync";
+
+    private static final String SALES_FACT_TABLE_QN        = "sales_fact@cl1";
+    private static final String SALES_FACT_SALES_COLUMN_QN = "Sales.sales_fact.sales@cl1";
+    private static final String SALES_FACT_TIME_COLUMN_QN  = "Sales.sales_fact.time_id@cl1";
 
     private static final Map<String, Set<String>> USER_GROUPS       = new HashMap<>();
     private static final List<AtlasPrivilege>     ENTITY_PRIVILEGES = new ArrayList<>();
@@ -336,6 +342,92 @@ public class AtlasSimpleAuthorizerTest {
         }
     }
 
+    @Test
+    public void testRelationshipRead_AllowsWhenWildcardEntityIdsPermitBothEnds() {
+        assertRelationshipReadAllowed(USER_RANGER_TAG_SYNC, SALES_FACT_TABLE_QN, SALES_FACT_SALES_COLUMN_QN);
+    }
+
+    @Test
+    public void testRelationshipRead_AllowsWhenPartialEntityIdsPermitBothEnds() {
+        assertRelationshipReadAllowed(USER_REL_READER, SALES_FACT_TABLE_QN, SALES_FACT_SALES_COLUMN_QN);
+    }
+
+    @Test
+    public void testRelationshipRead_DeniesWhenPartialEntityIdsPermitOnlyTableEnd() {
+        assertEntityReadAllowed(USER_REL_READER, "Table", SALES_FACT_TABLE_QN);
+        assertEntityReadDenied(USER_REL_READER, "Column", SALES_FACT_TIME_COLUMN_QN);
+        assertRelationshipReadDenied(USER_REL_READER, SALES_FACT_TABLE_QN, SALES_FACT_TIME_COLUMN_QN);
+    }
+
+    @Test
+    public void testRelationshipRead_DeniesWhenPartialEntityIdsPermitOnlyColumnEnd() {
+        assertEntityReadDenied(USER_REL_READER, "Table", "other_table@cl1");
+        assertEntityReadAllowed(USER_REL_READER, "Column", SALES_FACT_SALES_COLUMN_QN);
+        assertRelationshipReadDenied(USER_REL_READER, "other_table@cl1", SALES_FACT_SALES_COLUMN_QN);
+    }
+
+    @Test
+    public void testRelationshipRead_DeniesWhenUserHasNoEntityRead() {
+        assertEntityReadDenied(USER_IN_UNKNOWN_GROUP, "Table", SALES_FACT_TABLE_QN);
+        assertEntityReadDenied(USER_IN_UNKNOWN_GROUP, "Column", SALES_FACT_SALES_COLUMN_QN);
+        assertRelationshipReadDenied(USER_IN_UNKNOWN_GROUP, SALES_FACT_TABLE_QN, SALES_FACT_SALES_COLUMN_QN);
+    }
+
+    private void assertRelationshipReadAllowed(String userName, String end1QualifiedName, String end2QualifiedName) {
+        assertEntityReadAllowed(userName, "Table", end1QualifiedName);
+        assertEntityReadAllowed(userName, "Column", end2QualifiedName);
+
+        AssertJUnit.assertTrue("user " + userName + " should be allowed relationship read on "
+                        + end1QualifiedName + " and " + end2QualifiedName,
+                isRelationshipReadAllowed(userName, end1QualifiedName, end2QualifiedName));
+    }
+
+    private void assertRelationshipReadDenied(String userName, String end1QualifiedName, String end2QualifiedName) {
+        AssertJUnit.assertFalse("user " + userName + " should be denied relationship read on "
+                        + end1QualifiedName + " and " + end2QualifiedName,
+                isRelationshipReadAllowed(userName, end1QualifiedName, end2QualifiedName));
+    }
+
+    private void assertEntityReadAllowed(String userName, String typeName, String qualifiedName) {
+        AssertJUnit.assertTrue("user " + userName + " should have entity-read on " + qualifiedName,
+                isEntityReadAllowed(userName, typeName, qualifiedName));
+    }
+
+    private void assertEntityReadDenied(String userName, String typeName, String qualifiedName) {
+        AssertJUnit.assertFalse("user " + userName + " should not have entity-read on " + qualifiedName,
+                isEntityReadAllowed(userName, typeName, qualifiedName));
+    }
+
+    private boolean isRelationshipReadAllowed(String userName, String end1QualifiedName, String end2QualifiedName) {
+        return isEntityReadAllowed(userName, "Table", end1QualifiedName)
+                && isEntityReadAllowed(userName, "Column", end2QualifiedName);
+    }
+
+    private boolean isEntityReadAllowed(String userName, String typeName, String qualifiedName) {
+        try {
+            AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, AtlasPrivilege.ENTITY_READ,
+                    createEntityHeader(typeName, qualifiedName));
+
+            setUser(request, userName);
+
+            return authorizer.isAccessAllowed(request);
+        } catch (Exception e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+
+            return false;
+        }
+    }
+
+    private AtlasEntityHeader createEntityHeader(String typeName, String qualifiedName) {
+        Map<String, Object> attributes = new HashMap<>();
+
+        attributes.put("qualifiedName", qualifiedName);
+
+        return new AtlasEntityHeader(typeName, attributes);
+    }
+
     private void setUser(AtlasAccessRequest request, String userName) {
         Set<String> userGroups = USER_GROUPS.get(userName);
 
@@ -351,6 +443,8 @@ public class AtlasSimpleAuthorizerTest {
         USER_GROUPS.put(USER_FINANCE_PII, Collections.singleton("FINANCE_PII"));
         USER_GROUPS.put(USER_IN_ADMIN_GROUP, Collections.singleton("ROLE_ADMIN"));
         USER_GROUPS.put(USER_IN_UNKNOWN_GROUP, Collections.singleton("UNKNOWN_GROUP"));
+        USER_GROUPS.put(USER_REL_READER, Collections.singleton("REL_PARTIAL_READ"));
+        USER_GROUPS.put(USER_RANGER_TAG_SYNC, Collections.singleton("RANGER_TAG_SYNC"));
 
         ENTITY_PRIVILEGES.add(AtlasPrivilege.ENTITY_CREATE);
         ENTITY_PRIVILEGES.add(AtlasPrivilege.ENTITY_UPDATE);
