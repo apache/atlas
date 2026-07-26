@@ -1112,13 +1112,6 @@ public class GlossaryREST {
                 .build();
     }
 
-    @POST
-    @Path("/export")
-    @Timed
-    public Response exportGlossaryRemoved() {
-        return Response.status(Response.Status.NOT_FOUND).build();
-    }
-
     /**
      * Upload glossary file for creating AtlasGlossaryTerms in bulk
      *
