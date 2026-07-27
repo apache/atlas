@@ -81,26 +81,32 @@ import { IconButton } from "@components/muiComponents";
 import TreeSkeletonLoader from "@components/TreeSkeletonLoader";
 
 type CustomContentRootProps = HTMLAttributes<HTMLDivElement> & {
-  selectedNodeType?: any;
-  selectedNodeTag?: any;
-  selectedNodeRelationship?: any;
-  selectedNodeBM?: any;
-  selectedNodeTerm?: any;
-  selectedNodeCustomFilter?: any;
-  node?: any;
-  selectedNode?: any;
+  selectedNodeType?: string | null;
+  selectedNodeTag?: string | null;
+  selectedNodeRelationship?: string | null;
+  selectedNodeBM?: string | null;
+  selectedNodeTerm?: string | null;
+  selectedNodeCustomFilter?: string | null;
+  node?: Record<string, unknown> | null;
+  selectedNode?: Record<string, unknown> | null;
 };
 
-const HoverableTreeItemContainer = ({ children, ...props }: any) => {
+import { Box } from "@mui/material";
+
+type HoverableProps = HTMLAttributes<HTMLDivElement> & {
+  children?: React.ReactNode | ((isHovered: boolean) => React.ReactNode);
+};
+
+const HoverableTreeItemContainer = ({ children, ...props }: HoverableProps) => {
   const [isHovered, setIsHovered] = useState(false);
   return (
-    <div
+    <Box
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       {...props}
     >
       {typeof children === "function" ? children(isHovered) : children}
-    </div>
+    </Box>
   );
 };
 
@@ -312,8 +318,8 @@ const BarTreeView: FC<{
   loader,
   isPopover,
 }) => {
-    const { savedSearchData }: any = useAppSelector(
-      (state: any) => state.savedSearch
+    const { savedSearchData } = useAppSelector(
+      (state) => state.savedSearch
     );
     const { bmguid } = useParams();
     const dispatch = useAppDispatch();
@@ -343,8 +349,8 @@ const BarTreeView: FC<{
     const [expandedItems, setExpandedItems] = useState<string[]>([]);
     const [tagModal, setTagModal] = useState<boolean>(false);
     const [glossaryModal, setGlossaryModal] = useState<boolean>(false);
-    const { businessMetaData }: any = useAppSelector(
-      (state: any) => state.businessMetaData
+    const { businessMetaData } = useAppSelector(
+      (state) => state.businessMetaData as { businessMetaData?: { businessMetadataDefs?: EnumTypeDefData[] } }
     );
 
     const filteredData = useMemo(() => {
@@ -370,7 +376,7 @@ const BarTreeView: FC<{
         const parts = text.split(new RegExp(`(${searchTerm})`, "gi"));
         return parts.map((part, index) =>
           part.toLowerCase() === searchTerm.toLowerCase() ? (
-            <span key={index} style={{ color: "#D3D3D3", fontWeight: "600" }}>
+            <span key={index} className="sidebar-tree-highlight">
               {part}
             </span>
           ) : (
@@ -960,10 +966,7 @@ const BarTreeView: FC<{
         <LightTooltip title={label} disableHoverListener={!isOverflown}>
           <span
             ref={labelRef}
-            className="tree-item-label"
-            style={{
-              whiteSpace: "nowrap",
-            }}
+            className="tree-item-label sidebar-tree-label-nowrap"
           >
             {highlightText(label)}
           </span>
@@ -1089,12 +1092,12 @@ const BarTreeView: FC<{
                   className="tree-item-parent-label"
                 >
                   <Stack flexGrow={1} direction="row" alignItems="center" gap="12px">
-                    {treeName === "Entities" && <img src="/img/sidebar-icons/icon-entities.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
-                    {treeName === "Classifications" && <img src="/img/sidebar-icons/icon-classifications.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
-                    {treeName === "Business MetaData" && <img src="/img/sidebar-icons/icon-business-metadata.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
-                    {treeName === "Glossary" && <img src="/img/sidebar-icons/icon-glossary.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
-                    {treeName === "CustomFilters" && <img src="/img/sidebar-icons/icon-custom-filters.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
-                    {treeName === "Relationships" && <img src="/img/sidebar-icons/icon-relationships.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
+                    {treeName === "Entities" && <img src="/img/sidebar-icons/icon-entities.svg" className="sidebar-tree-icon" alt="" />}
+                    {treeName === "Classifications" && <img src="/img/sidebar-icons/icon-classifications.svg" className="sidebar-tree-icon" alt="" />}
+                    {treeName === "Business MetaData" && <img src="/img/sidebar-icons/icon-business-metadata.svg" className="sidebar-tree-icon" alt="" />}
+                    {treeName === "Glossary" && <img src="/img/sidebar-icons/icon-glossary.svg" className="sidebar-tree-icon" alt="" />}
+                    {treeName === "CustomFilters" && <img src="/img/sidebar-icons/icon-custom-filters.svg" className="sidebar-tree-icon" alt="" />}
+                    {treeName === "Relationships" && <img src="/img/sidebar-icons/icon-relationships.svg" className="sidebar-tree-icon" alt="" />}
                     <Typography sx={{ fontWeight: "500", fontSize: "14px", color: "rgba(255, 255, 255, 0.9)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{displayTreeName}</Typography>
                   </Stack>
                   <Stack direction="row" alignItems="center" gap="0.375rem">
