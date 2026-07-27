@@ -254,3 +254,89 @@ button.MuiButtonBase-root.MuiIconButton-root.MuiIconButton-sizeSmall.tree-item-m
   border-left: 4px solid #2ccebb !important;
   background: rgba(255, 255, 255, 0.08) !important;
 }
+.layout-header-container {
+  display: flex;
+  justify-content: space-between;
+  background-color: white;
+  height: 56px;
+  align-items: center;
+  padding: 16px;
+}
+
+.layout-content-container {
+  padding: 16px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.layout-loading-container {
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: calc(100vh - 88px);
+  position: relative;
+}
+
+.collapsed-logo-container {
+  width: 100%;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  cursor: pointer;
+  box-sizing: border-box;
+  margin-bottom: 1rem;
+}
+
+.collapsed-logo-img {
+  width: 29px;
+  height: auto;
+  max-width: 100%;
+  display: block;
+}
+
+.sidebar-module-icon-container {
+  flex: 1;
+  overflow: auto;
+}
+
+.sidebar-toggle-container {
+  width: 100%;
+  padding: 8px;
+  position: sticky;
+  bottom: 0px;
+  z-index: 9;
+  left: 0;
+  background: #034858;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-toggle-open {
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 0px;
+}
+
+.sidebar-toggle-closed {
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.sidebar-tree-highlight {
+  color: #D3D3D3;
+  font-weight: 600;
+}
+
+.sidebar-tree-icon {
+  width: 20px;
+  height: 20px;
+  opacity: 1;
+}
+
+.sidebar-tree-label-nowrap {
+  white-space: nowrap;
+}
