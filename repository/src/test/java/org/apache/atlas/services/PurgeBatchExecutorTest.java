@@ -23,9 +23,9 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.locking.PermanentLockingException;
 import org.mockito.MockedStatic;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
@@ -44,16 +44,6 @@ import static org.testng.Assert.expectThrows;
 
 public class PurgeBatchExecutorTest {
     private static final Set<String> BATCH = Collections.singleton("guid1");
-
-    @DataProvider(name = "retryableLockConflictExceptionClassNames")
-    public Object[][] retryableLockConflictExceptionClassNames() {
-        return new Object[][] {
-                {"org.janusgraph.diskstorage.locking.PermanentLockingException"},
-                {"com.sleepycat.je.LockTimeoutException"},
-                {"com.sleepycat.je.DeadlockException"},
-                {"org.janusgraph.diskstorage.PermanentBackendException"}
-        };
-    }
 
     @Test
     public void testExecuteBatchSuccess() throws Exception {
@@ -79,6 +69,20 @@ public class PurgeBatchExecutorTest {
     }
 
     @Test
+    public void testIsRetryableLockConflictReturnsFalseForPermanentBackendException() {
+        PermanentBackendException backendException = new PermanentBackendException("backend failure");
+
+        assertFalse(PurgeBatchExecutor.isRetryableLockConflict(backendException));
+    }
+
+    @Test
+    public void testIsRetryableLockConflictMatchesPermanentLockingException() {
+        PermanentLockingException ple = new PermanentLockingException("lock conflict");
+
+        assertTrue(PurgeBatchExecutor.isRetryableLockConflict(ple));
+    }
+
+    @Test
     public void testIsRetryableLockConflictMatchesWrappedCause() {
         PermanentLockingException ple = new PermanentLockingException("lock conflict");
         RuntimeException wrapped = new RuntimeException(new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, ple));
@@ -86,23 +90,12 @@ public class PurgeBatchExecutorTest {
         assertTrue(PurgeBatchExecutor.isRetryableLockConflict(wrapped));
     }
 
-    @Test(dataProvider = "retryableLockConflictExceptionClassNames")
-    public void testIsRetryableLockConflictMatchesKnownTypes(String className) throws Exception {
-        Exception conflict = newExceptionByClassName(className, "lock conflict");
-
-        assertTrue(PurgeBatchExecutor.RETRYABLE_LOCK_CONFLICT_EXCEPTION_CLASS_NAMES.contains(className));
-        assertTrue(PurgeBatchExecutor.isRetryableLockConflict(conflict));
-        // Use message+cause form: RuntimeException(Throwable) calls cause.toString(), which NPEs on
-        // partially-initialized Berkeley JE DatabaseException instances created for this test.
-        assertTrue(PurgeBatchExecutor.isRetryableLockConflict(wrapWithCause(conflict)));
-    }
-
     @Test
     public void testExecuteBatchClearsCachesBeforeRetry() throws Exception {
         AtlasEntityStore mockStore = mock(AtlasEntityStore.class);
         EntityMutationResponse mockResponse = new EntityMutationResponse();
-        PermanentLockingException ple         = new PermanentLockingException("lock conflict");
-        AtlasBaseException wrappedException   = new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, ple);
+        PermanentLockingException ple       = new PermanentLockingException("lock conflict");
+        AtlasBaseException wrappedException = new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, ple);
 
         when(mockStore.purgeEntitiesInBatch(BATCH))
                 .thenThrow(wrappedException)
@@ -149,24 +142,6 @@ public class PurgeBatchExecutorTest {
         assertTrue(duration >= 1000, "Expected backoff delays but finished in " + duration + " ms");
     }
 
-    @Test(dataProvider = "retryableLockConflictExceptionClassNames")
-    public void testExecuteBatchRetriesOnKnownLockConflictTypes(String className) throws Exception {
-        AtlasEntityStore mockStore = mock(AtlasEntityStore.class);
-        EntityMutationResponse mockResponse = new EntityMutationResponse();
-        Exception conflict = newExceptionByClassName(className, "lock conflict");
-        AtlasBaseException wrappedException = new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, conflict);
-
-        when(mockStore.purgeEntitiesInBatch(BATCH))
-                .thenThrow(wrappedException)
-                .thenReturn(mockResponse);
-
-        PurgeBatchExecutor executor = new PurgeBatchExecutor(mockStore);
-        EntityMutationResponse response = executor.executeBatch(BATCH);
-
-        assertEquals(response, mockResponse);
-        verify(mockStore, times(2)).purgeEntitiesInBatch(BATCH);
-    }
-
     @Test
     public void testExecuteBatchFailsAfterMaxLockingConflicts() throws Exception {
         AtlasEntityStore mockStore = mock(AtlasEntityStore.class);
@@ -199,27 +174,19 @@ public class PurgeBatchExecutorTest {
         verify(mockStore, times(1)).purgeEntitiesInBatch(BATCH);
     }
 
-    private static RuntimeException wrapWithCause(Throwable cause) {
-        return new RuntimeException("wrapped", cause);
-    }
+    @Test
+    public void testExecuteBatchNoRetryOnPermanentBackendException() throws Exception {
+        AtlasEntityStore mockStore = mock(AtlasEntityStore.class);
+        PermanentBackendException backendException = new PermanentBackendException("backend failure");
+        AtlasBaseException wrappedException = new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, backendException);
 
-    private static Exception newExceptionByClassName(String className, String message) throws Exception {
-        try {
-            Class<?> clazz = Class.forName(className);
-            try {
-                return (Exception) clazz.getConstructor(String.class).newInstance(message);
-            } catch (NoSuchMethodException e) {
-                try {
-                    return (Exception) clazz.getConstructor().newInstance();
-                } catch (NoSuchMethodException e2) {
-                    java.lang.reflect.Field f = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-                    f.setAccessible(true);
-                    sun.misc.Unsafe unsafe = (sun.misc.Unsafe) f.get(null);
-                    return (Exception) unsafe.allocateInstance(clazz);
-                }
-            }
-        } catch (ClassNotFoundException e) {
-            throw new org.testng.SkipException("Required exception class not on classpath: " + className);
-        }
+        when(mockStore.purgeEntitiesInBatch(BATCH)).thenThrow(wrappedException);
+
+        PurgeBatchExecutor executor = new PurgeBatchExecutor(mockStore);
+
+        AtlasBaseException ex = expectThrows(AtlasBaseException.class, () -> executor.executeBatch(BATCH));
+
+        assertEquals(ex.getAtlasErrorCode(), AtlasErrorCode.INTERNAL_ERROR);
+        verify(mockStore, times(1)).purgeEntitiesInBatch(BATCH);
     }
 }

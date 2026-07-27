@@ -26,7 +26,6 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -39,19 +38,15 @@ public class PurgeBatchExecutor {
     private static final int BASE_BACKOFF_MS = 500;
 
     /**
-     * Fully-qualified class names treated as retryable lock or backend conflicts during purge batch
-     * execution. Names are matched against the throwable cause chain to avoid a compile-time dependency
-     * on JanusGraph or Berkeley JE types in the service layer.
+     * Fully-qualified class names treated as retryable lock conflicts during purge batch execution.
+     * Names are matched against the throwable cause chain to avoid a compile-time dependency on
+     * JanusGraph types in the service layer.
      * <p>
-     * Design default: {@code PermanentLockingException}. Berkeley JE lock timeouts/deadlocks and
-     * {@code PermanentBackendException} are included for the embedded Berkeley backend.
+     * Design default: {@code PermanentLockingException} (see ATLAS-5317 retry strategy).
      */
     static final Set<String> RETRYABLE_LOCK_CONFLICT_EXCEPTION_CLASS_NAMES = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList(
-                    "org.janusgraph.diskstorage.locking.PermanentLockingException",
-                    "com.sleepycat.je.LockTimeoutException",
-                    "com.sleepycat.je.DeadlockException",
-                    "org.janusgraph.diskstorage.PermanentBackendException")));
+            new HashSet<>(Collections.singletonList(
+                    "org.janusgraph.diskstorage.locking.PermanentLockingException")));
 
     private final AtlasEntityStore entityStore;
 
@@ -69,7 +64,7 @@ public class PurgeBatchExecutor {
 
     /**
      * Returns {@code true} when {@code throwable} or any of its causes matches a known retryable
-     * lock or backend conflict type.
+     * lock conflict type.
      */
     static boolean isRetryableLockConflict(Throwable throwable) {
         if (throwable == null) {
