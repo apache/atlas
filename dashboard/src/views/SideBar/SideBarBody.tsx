@@ -103,8 +103,8 @@ const DrawerHeader = styled("div")(({ theme }) => ({
 
 
 const SideBarBody = (props: {
-  handleOpenModal: any;
-  handleOpenAboutModal: any;
+  handleOpenModal: () => void;
+  handleOpenAboutModal: () => void;
 }) => {
   const location = useLocation();
   const routes = useRoutes(AppRoutes as RouteObject[]);
@@ -115,7 +115,7 @@ const SideBarBody = (props: {
   const { relationshipSearch = {} } = globalSessionData || {};
   const [open, setOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const { data: versionData } = useAppSelector((state: any) => state.session?.versionData || {});
+  const { data: versionData } = useAppSelector((state) => state.session?.versionData || {});
   const searchParams = new URLSearchParams(location.search);
 
   const isCustomFilterActive = searchParams.get("isCF") === "true";
@@ -258,16 +258,7 @@ const SideBarBody = (props: {
 
   const rightSideContent = useMemo(() => (
     <Stack height="auto" minHeight="100%">
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          backgroundColor: "white",
-          height: "56px",
-          alignItems: "center",
-          padding: "16px",
-        }}
-      >
+      <div className="layout-header-container">
         <Suspense fallback={null}>
           <Header
             handleOpenModal={handleOpenModal}
@@ -275,26 +266,11 @@ const SideBarBody = (props: {
           />
         </Suspense>
       </div>
-      <div
-        style={{
-          padding: "16px",
-          display: "flex",
-          flex: "1",
-          flexDirection: "column",
-        }}
-      >
+      <div className="layout-content-container">
         {isMatched || location.pathname.includes("!") ? (
           <Suspense
             fallback={
-              <div
-                style={{
-                  left: 0,
-                  top: 0,
-                  width: "100%",
-                  height: "calc(100vh - 88px)",
-                  position: "relative",
-                }}
-              >
+              <div className="layout-loading-container">
                 <CircularProgress
                   color="primary"
                   sx={{
@@ -377,17 +353,7 @@ const SideBarBody = (props: {
               sx={{ width: "100%", flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", boxSizing: "border-box", pb: "60px" }}
             >
               <div
-                style={{
-                  width: "100%",
-                  textAlign: "center",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  minHeight: "64px",
-                  cursor: "pointer",
-                  boxSizing: "border-box",
-                  marginBottom: "1rem",
-                }}
+                className="collapsed-logo-container"
                 role="button"
                 tabIndex={0}
                 aria-label="Atlas home — refresh dashboard"
@@ -398,12 +364,7 @@ const SideBarBody = (props: {
                 <img
                   src={apacheAtlasLogo}
                   alt="Apache Atlas logo"
-                  style={{
-                    width: "29px",
-                    height: "auto",
-                    maxWidth: "100%",
-                    display: "block",
-                  }}
+                  className="collapsed-logo-img"
                 />
               </div>
 
@@ -413,7 +374,7 @@ const SideBarBody = (props: {
                 <Box sx={{ display: "flex", justifyContent: "center", borderLeft: "4px solid transparent", borderRight: "4px solid transparent", background: "transparent" }}>
                   <Tooltip title="Search" placement="right">
                     <IconButton onClick={() => setOpen(true)} sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.1)' } }}>
-                      <img src="/img/sidebar-icons/icon-search.svg" className="sidebar-module-icon" style={{ opacity: 1 }} alt="search" />
+                      <img src="/img/sidebar-icons/icon-search.svg" className="sidebar-module-icon" alt="search" />
                     </IconButton>
                   </Tooltip>
                 </Box>
@@ -432,7 +393,7 @@ const SideBarBody = (props: {
                   >
                     <Tooltip title={m.title} placement="right">
                       <IconButton onClick={(e) => handlePopoverOpen(e, m.id)} sx={{ color: m.isActive ? "white" : "rgba(255, 255, 255, 0.6)", '&:hover': { color: 'white', background: 'rgba(255, 255, 255, 0.1)' } }}>
-                        <img src={m.iconUrl} className="sidebar-module-icon" style={{ opacity: 1 }} alt={m.title.toLowerCase()} />
+                        <img src={m.iconUrl} className="sidebar-module-icon" alt={m.title.toLowerCase()} />
                       </IconButton>
                     </Tooltip>
                   </Box>
@@ -484,9 +445,9 @@ const SideBarBody = (props: {
                 }}
               >
                 {renderPopoverSearch()}
-                <div style={{ flex: 1, overflow: 'auto' }}>
+                <div className="sidebar-module-icon-container">
                   <Suspense fallback={<TreeSkeletonLoader count={2} />}>
-                    <div className="sidebar-treeview-container" style={{ padding: '8px' }}>
+                    <div className="sidebar-treeview-container sidebar-toolbar">
                       {modules.filter(m => m.isVisible && activePopover === m.id).map(m => {
                         const Component = m.Component;
                         return <Component key={m.id} sideBarOpen={true} searchTerm={searchTerm} isPopover={true} />;
@@ -631,20 +592,7 @@ const SideBarBody = (props: {
             )}
           </Paper>
           <div
-            style={{
-              width: "100%",
-              padding: "8px",
-              position: "sticky",
-              bottom: "0px",
-              zIndex: "9",
-              left: "0",
-              background: "#034858",
-              display: "flex",
-              flexDirection: open ? "row" : "column",
-              justifyContent: open ? "space-between" : "center",
-              alignItems: "center",
-              gap: open ? "0px" : "4px"
-            }}
+            className={`sidebar-toggle-container ${open ? 'sidebar-toggle-open' : 'sidebar-toggle-closed'}`}
           >
             {open && (
               <Box display="flex" flexDirection="column" gap="4px" alignItems="flex-start" pl="4px">
