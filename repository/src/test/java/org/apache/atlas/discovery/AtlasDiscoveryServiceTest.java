@@ -19,6 +19,7 @@ package org.apache.atlas.discovery;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.BasicTestSetup;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.TestModules;
@@ -29,6 +30,7 @@ import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.QuickSearchParameters;
 import org.apache.atlas.model.discovery.RelationshipSearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -109,6 +111,26 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         SearchParameters params = new SearchParameters();
 
         params.setTermName(SALES_TERM + "@" + SALES_GLOSSARY);
+
+        assertSearchProcessorWithoutMarker(params, 10);
+    }
+
+    @Test
+    public void termSearchAfterGlossaryUpdate() throws AtlasBaseException {
+        List<AtlasGlossary> glossaries = glossaryService.getGlossaries(100, 0, SortOrder.ASCENDING);
+        AtlasGlossary       glossary   = glossaries.stream()
+                .filter(g -> SALES_GLOSSARY.equals(g.getName()))
+                .findFirst()
+                .orElseThrow(() -> new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Glossary not found: " + SALES_GLOSSARY));
+
+        SearchParameters params = new SearchParameters();
+
+        params.setTermName(SALES_TERM + "@" + SALES_GLOSSARY);
+
+        assertSearchProcessorWithoutMarker(params, 10);
+
+        glossary.setShortDescription("updated after glossary update");
+        glossaryService.updateGlossary(glossary);
 
         assertSearchProcessorWithoutMarker(params, 10);
     }
