@@ -364,6 +364,40 @@ describe('AttributeProperties', () => {
 			expect(screen.getByTestId('skeleton-loader')).toBeInTheDocument();
 		});
 
+		it('should not render skeleton in auditDetails mode when loading is undefined', () => {
+			mockUseSelector.mockImplementation((selector: any) =>
+				selector({ entity: { entityData: {} } })
+			);
+			render(
+				<TestWrapper>
+					<AttributeProperties
+						entity={defaultMockEntity}
+						referredEntities={defaultMockReferredEntities}
+						loading={undefined}
+						auditDetails={true}
+						propertiesName="Technical"
+					/>
+				</TestWrapper>
+			);
+			expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument();
+			expect(screen.getByText('Technical Properties')).toBeInTheDocument();
+		});
+
+		it('should render skeleton in auditDetails mode when loading is true', () => {
+			render(
+				<TestWrapper>
+					<AttributeProperties
+						entity={defaultMockEntity}
+						referredEntities={defaultMockReferredEntities}
+						loading={true}
+						auditDetails={true}
+						propertiesName="Technical"
+					/>
+				</TestWrapper>
+			);
+			expect(screen.getByTestId('skeleton-loader')).toBeInTheDocument();
+		});
+
 		it('should render "No Record Found" when properties are empty', () => {
 			const emptyEntity = {
 				typeName: 'DataSet',
