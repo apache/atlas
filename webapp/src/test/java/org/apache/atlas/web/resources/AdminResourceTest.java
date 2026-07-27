@@ -308,20 +308,14 @@ public class AdminResourceTest {
         // Inject the mocked request
         injectHttpServletRequest(adminResource);
 
-        withAuthorizationBypass(() -> {
-            try {
-                Response response = adminResource.getUserProfile(httpServletRequest);
+        Response response = adminResource.getUserProfile(httpServletRequest);
 
-                assertNotNull(response);
-                assertEquals(response.getStatus(), HttpServletResponse.SC_OK);
+        assertNotNull(response);
+        assertEquals(response.getStatus(), HttpServletResponse.SC_OK);
 
-                String responseEntity = (String) response.getEntity();
-                assertNotNull(responseEntity);
-                assertTrue(responseEntity.contains("CSRF_TOKEN") || responseEntity.contains("atlas.rest-csrf.enabled"));
-            } catch (AtlasBaseException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        String responseEntity = (String) response.getEntity();
+        assertNotNull(responseEntity);
+        assertTrue(responseEntity.contains("CSRF_TOKEN") || responseEntity.contains("atlas.rest-csrf.enabled"));
     }
 
     @Test
@@ -420,19 +414,13 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        withAuthorizationBypass(() -> {
-            try {
-                Set<String> result = adminResource.getActiveSearches();
+        Set<String> result = adminResource.getActiveSearches();
 
-                assertNotNull(result);
-                assertEquals(result.size(), 2);
-                assertTrue(result.contains("search1"));
-                assertTrue(result.contains("search2"));
-                verify(activeSearches).getActiveSearches();
-            } catch (AtlasBaseException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        assertNotNull(result);
+        assertEquals(result.size(), 2);
+        assertTrue(result.contains("search1"));
+        assertTrue(result.contains("search2"));
+        verify(activeSearches).getActiveSearches();
     }
 
     @Test
@@ -444,16 +432,10 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        withAuthorizationBypass(() -> {
-            try {
-                boolean result = adminResource.terminateActiveSearch(searchId);
+        boolean result = adminResource.terminateActiveSearch(searchId);
 
-                assertTrue(result);
-                verify(activeSearches).terminate(searchId);
-            } catch (AtlasBaseException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        assertTrue(result);
+        verify(activeSearches).terminate(searchId);
     }
 
     @Test
@@ -464,16 +446,10 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        withAuthorizationBypass(() -> {
-            try {
-                boolean result = adminResource.terminateActiveSearch(searchId);
+        boolean result = adminResource.terminateActiveSearch(searchId);
 
-                assertFalse(result);
-                verify(activeSearches).terminate(searchId);
-            } catch (AtlasBaseException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        assertFalse(result);
+        verify(activeSearches).terminate(searchId);
     }
 
     @Test
@@ -804,20 +780,14 @@ public class AdminResourceTest {
         try (MockedStatic<SecurityContextHolder> mockedStatic = mockStatic(SecurityContextHolder.class)) {
             mockedStatic.when(SecurityContextHolder::getContext).thenReturn(securityContext);
 
-            withAuthorizationBypass(() -> {
-                try {
-                    Response response = adminResource.getUserProfile(httpServletRequest);
+            Response response = adminResource.getUserProfile(httpServletRequest);
 
-                    assertNotNull(response);
-                    assertEquals(response.getStatus(), HttpServletResponse.SC_OK);
+            assertNotNull(response);
+            assertEquals(response.getStatus(), HttpServletResponse.SC_OK);
 
-                    String responseEntity = (String) response.getEntity();
-                    assertNotNull(responseEntity);
-                    assertTrue(responseEntity.contains("userName") || responseEntity.contains("groups"));
-                } catch (AtlasBaseException e) {
-                    throw new RuntimeException(e);
-                }
-            });
+            String responseEntity = (String) response.getEntity();
+            assertNotNull(responseEntity);
+            assertTrue(responseEntity.contains("userName") || responseEntity.contains("groups"));
         }
     }
 

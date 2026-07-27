@@ -362,10 +362,8 @@ public class AdminResource {
     @GET
     @Path("session")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response getUserProfile(@Context HttpServletRequest request) throws AtlasBaseException {
+    public Response getUserProfile(@Context HttpServletRequest request) {
         LOG.debug("==> AdminResource.getUserProfile()");
-
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ), "session");
 
         Response response;
 
@@ -1066,18 +1064,14 @@ public class AdminResource {
     @GET
     @Path("activeSearches")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Set<String> getActiveSearches() throws AtlasBaseException {
-        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "active searches");
-
+    public Set<String> getActiveSearches() {
         return activeSearches.getActiveSearches();
     }
 
     @DELETE
     @Path("activeSearches/{id}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public boolean terminateActiveSearch(@PathParam("id") String searchId) throws AtlasBaseException {
-        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "terminate active search");
-
+    public boolean terminateActiveSearch(@PathParam("id") String searchId) {
         SearchContext terminate = activeSearches.terminate(searchId);
 
         return null != terminate;
