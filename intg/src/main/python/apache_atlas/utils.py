@@ -112,12 +112,20 @@ def type_coerce_dict_list(obj, objType):
 
 
 class API:
-    def __init__(self, path, method, expected_status, consumes=APPLICATION_JSON, produces=APPLICATION_JSON):
+    def __init__(self, path, method, expected_status, consumes=APPLICATION_JSON, produces=APPLICATION_JSON,
+                 alternate_expected_statuses=None):
         self.path = path
         self.method = method
         self.expected_status = expected_status
         self.consumes = consumes
         self.produces = produces
+        self.alternate_expected_statuses = alternate_expected_statuses or []
+
+    def matches_expected_status(self, status_code):
+        if status_code == self.expected_status:
+            return True
+
+        return status_code in self.alternate_expected_statuses
 
     def multipart_urljoin(self, base_path, *path_elems):
         """Join a base path and multiple context path elements. Handle single
@@ -136,11 +144,13 @@ class API:
         return reduce(urljoin_pair, path_elems, base_path)
 
     def format_path(self, params):
-        return API(self.path.format(**params), self.method, self.expected_status, self.consumes, self.produces)
+        return API(self.path.format(**params), self.method, self.expected_status, self.consumes, self.produces,
+                   self.alternate_expected_statuses)
 
     def format_path_with_params(self, *params):
         request_path = self.multipart_urljoin(self.path, *params)
-        return API(request_path, self.method, self.expected_status, self.consumes, self.produces)
+        return API(request_path, self.method, self.expected_status, self.consumes, self.produces,
+                   self.alternate_expected_statuses)
 
 
 class HTTPMethod(enum.Enum):
@@ -152,5 +162,6 @@ class HTTPMethod(enum.Enum):
 
 class HTTPStatus:
     OK = 200
+    MULTI_STATUS = 207
     NO_CONTENT = 204
     SERVICE_UNAVAILABLE = 503

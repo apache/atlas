@@ -21,10 +21,10 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -33,9 +33,11 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -50,13 +52,18 @@ public class EntityMutationResponse implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private Map<EntityOperation, List<AtlasEntityHeader>> mutatedEntities;
+    @JsonIgnore
+    private transient Map<EntityOperation, Set<String>>   entityGuidsPerOp;
     private Map<String, String>                           guidAssignments;
+    private List<FailedEntity>                            failedEntities;
+    private MutationSummary                               summary;
 
     public EntityMutationResponse() {
     }
 
     public EntityMutationResponse(final Map<EntityOperation, List<AtlasEntityHeader>> mutatedEntities) {
         this.mutatedEntities = mutatedEntities;
+        rebuildEntityGuidsPerOp();
     }
 
     public Map<EntityOperation, List<AtlasEntityHeader>> getMutatedEntities() {
@@ -65,6 +72,7 @@ public class EntityMutationResponse implements Serializable {
 
     public void setMutatedEntities(final Map<EntityOperation, List<AtlasEntityHeader>> mutatedEntities) {
         this.mutatedEntities = mutatedEntities;
+        rebuildEntityGuidsPerOp();
     }
 
     public Map<String, String> getGuidAssignments() {
@@ -73,6 +81,40 @@ public class EntityMutationResponse implements Serializable {
 
     public void setGuidAssignments(Map<String, String> guidAssignments) {
         this.guidAssignments = guidAssignments;
+    }
+
+    public List<FailedEntity> getFailedEntities() {
+        return failedEntities;
+    }
+
+    public void setFailedEntities(List<FailedEntity> failedEntities) {
+        this.failedEntities = failedEntities;
+    }
+
+    public MutationSummary getSummary() {
+        return summary;
+    }
+
+    @JsonDeserialize(as = PurgeSummary.class)
+    public void setSummary(MutationSummary summary) {
+        this.summary = summary;
+    }
+
+    @JsonIgnore
+    public PurgeSummary getPurgeSummary() {
+        return summary instanceof PurgeSummary ? (PurgeSummary) summary : null;
+    }
+
+    public void addFailedEntity(FailedEntity failedEntity) {
+        if (failedEntity == null) {
+            return;
+        }
+
+        if (failedEntities == null) {
+            failedEntities = new ArrayList<>();
+        }
+
+        failedEntities.add(failedEntity);
     }
 
     @JsonIgnore
@@ -228,9 +270,14 @@ public class EntityMutationResponse implements Serializable {
 
     @JsonIgnore
     public void addEntity(EntityOperation op, AtlasEntityHeader header) {
-        // if an entity is already included in CREATE, update the header, to capture propagated classifications
+        if (header == null) {
+            return;
+        }
+
+        // Duplicate GUID under CREATE: keep the first header, ignore later additions
+        String guid = header.getGuid();
         if (op == EntityOperation.UPDATE || op == EntityOperation.PARTIAL_UPDATE) {
-            if (entityHeaderExists(getCreatedEntities(), header.getGuid())) {
+            if (entityHeaderExists(EntityOperation.CREATE, guid)) {
                 op = EntityOperation.CREATE;
             }
         }
@@ -241,7 +288,12 @@ public class EntityMutationResponse implements Serializable {
 
         List<AtlasEntityHeader> opEntities = mutatedEntities.computeIfAbsent(op, k -> new ArrayList<>());
 
-        if (!entityHeaderExists(opEntities, header.getGuid())) {
+        if (guid == null) {
+            opEntities.add(header);
+            return;
+        }
+
+        if (getGuidsForOperation(op).add(guid)) {
             opEntities.add(header);
         }
     }
@@ -258,7 +310,7 @@ public class EntityMutationResponse implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(mutatedEntities, guidAssignments);
+        return Objects.hash(mutatedEntities, guidAssignments, failedEntities, summary);
     }
 
     @Override
@@ -272,7 +324,9 @@ public class EntityMutationResponse implements Serializable {
         EntityMutationResponse that = (EntityMutationResponse) o;
 
         return Objects.equals(mutatedEntities, that.mutatedEntities) &&
-                Objects.equals(guidAssignments, that.guidAssignments);
+                Objects.equals(guidAssignments, that.guidAssignments) &&
+                Objects.equals(failedEntities, that.failedEntities) &&
+                Objects.equals(summary, that.summary);
     }
 
     @Override
@@ -280,19 +334,39 @@ public class EntityMutationResponse implements Serializable {
         return toString(new StringBuilder()).toString();
     }
 
-    private boolean entityHeaderExists(List<AtlasEntityHeader> entityHeaders, String guid) {
-        boolean ret = false;
-
-        if (CollectionUtils.isNotEmpty(entityHeaders) && guid != null) {
-            for (AtlasEntityHeader entityHeader : entityHeaders) {
-                if (StringUtils.equals(entityHeader.getGuid(), guid)) {
-                    ret = true;
-                    break;
-                }
-            }
+    private Set<String> getGuidsForOperation(EntityOperation op) {
+        if (entityGuidsPerOp == null) {
+            rebuildEntityGuidsPerOp();
         }
 
-        return ret;
+        return entityGuidsPerOp.computeIfAbsent(op, k -> new HashSet<>());
+    }
+
+    private void rebuildEntityGuidsPerOp() {
+        entityGuidsPerOp = new HashMap<>();
+
+        if (mutatedEntities == null) {
+            return;
+        }
+
+        for (Map.Entry<EntityOperation, List<AtlasEntityHeader>> entry : mutatedEntities.entrySet()) {
+            Set<String> guids = new HashSet<>();
+            List<AtlasEntityHeader> headers = entry.getValue();
+
+            if (headers != null) {
+                for (AtlasEntityHeader header : headers) {
+                    if (header.getGuid() != null) {
+                        guids.add(header.getGuid());
+                    }
+                }
+            }
+
+            entityGuidsPerOp.put(entry.getKey(), guids);
+        }
+    }
+
+    private boolean entityHeaderExists(EntityOperation op, String guid) {
+        return guid != null && getGuidsForOperation(op).contains(guid);
     }
 
     private AtlasEntityHeader getFirstEntityByType(List<AtlasEntityHeader> entitiesByOperation, String typeName) {

@@ -38,6 +38,25 @@ public class AtlasBaseExceptionMapperTest {
     }
 
     @Test
+    public void testPurgeRequestSizeExceedsLimitMapsToHttp400() {
+        AtlasBaseException exception = new AtlasBaseException(
+                AtlasErrorCode.PURGE_REQUEST_SIZE_EXCEEDS_LIMIT, "1001", "1000");
+
+        Response response = atlasBaseExceptionMapper.toResponse(exception);
+
+        assertNotNull(response);
+        assertEquals(response.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
+        assertNotNull(response.getEntity());
+
+        String entity = (String) response.getEntity();
+        assertTrue(entity.contains(AtlasErrorCode.PURGE_REQUEST_SIZE_EXCEEDS_LIMIT.getErrorCode()));
+        assertTrue(entity.contains("errorCode"));
+        assertTrue(entity.contains("errorMessage"));
+        assertTrue(entity.contains("1001"));
+        assertTrue(entity.contains("1000"));
+    }
+
+    @Test
     public void testToResponse() {
         // Test the toResponse method execution
         // This tests the main functionality including exception handling and response building
