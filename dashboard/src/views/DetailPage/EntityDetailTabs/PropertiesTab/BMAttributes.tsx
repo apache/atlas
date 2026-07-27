@@ -64,21 +64,27 @@ const defaultField = {
   value: ""
 };
 
-const BMAttributes = ({ loading, bmAttributes, entity }: any) => {
+type BMAttributesProps = {
+  loading: boolean | undefined;
+  bmAttributes: Record<string, any>;
+  entity: any;
+};
+
+const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
   const dispatchApi = useAppDispatch();
-  const { guid }: any = useParams();
-  const toastId: any = useRef(null);
-  const { entityData }: any = useAppSelector((state: any) => state.entity);
+  const { guid } = useParams();
+  const toastId = useRef<number | string | null>(null);
+  const { entityData } = useAppSelector((state: any) => state.entity);
   const { entityDefs } = entityData || {};
   let filterEntityData = cloneDeep(entityDefs);
-  const { businessMetaData }: any = useAppSelector(
+  const { businessMetaData } = useAppSelector(
     (state: any) => state.businessMetaData
   );
   const { businessMetadataDefs } = businessMetaData || {};
 
   let businessAttributes = cloneDeep(bmAttributes);
   let bmAttributesData = Object.entries(businessAttributes).map(
-    ([key, value]: any) => {
+    ([key, value]: [string, any]) => {
       let foundBusinessMetadata = businessMetadataDefs.find(
         (obj: { name: any }) => obj.name == key
       );
@@ -212,7 +218,7 @@ const BMAttributes = ({ loading, bmAttributes, entity }: any) => {
     control
   });
 
-  const onSubmit = async (values: { businessMetadata: any }) => {
+  const onSubmit = async (values: { businessMetadata: any[] }) => {
     let formData = { ...values };
     const { businessMetadata } = formData;
     let data: Record<string, any> = {};
@@ -301,7 +307,7 @@ const BMAttributes = ({ loading, bmAttributes, entity }: any) => {
     handleSubmit(onSubmit)();
   };
 
-  const renderValues = (values: any) => {
+  const renderValues = (values: { value: any; typeName: string }) => {
     const { value, typeName } = values;
 
     if (
@@ -480,7 +486,7 @@ const BMAttributes = ({ loading, bmAttributes, entity }: any) => {
                                 </Stack>
                               </AccordionSummary>
 
-                              {Object.entries(obj).map(([key, value]: any) => {
+                              {Object.entries(obj).map(([key, value]: [string, any]) => {
                                 return (
                                   <>
                                     {key !=
@@ -552,7 +558,7 @@ const BMAttributes = ({ loading, bmAttributes, entity }: any) => {
                                   e.stopPropagation();
                                   setAddLabel(false);
                                 }}
-                                style={{ textDecoration: "underline" }}
+                                className="text-color-green cursor-pointer text-underline"
                               >
                                 here
                               </Typography>
@@ -572,7 +578,7 @@ const BMAttributes = ({ loading, bmAttributes, entity }: any) => {
                           }}
                           variant="outlined"
                           size="small"
-                          onClick={(e: any) => {
+                          onClick={(e: React.MouseEvent) => {
                             e.stopPropagation();
                             append(defaultField);
                           }}

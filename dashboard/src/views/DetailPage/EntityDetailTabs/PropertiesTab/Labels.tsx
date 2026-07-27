@@ -45,11 +45,18 @@ import { useAppDispatch } from "@hooks/reducerHook";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 import { EntityStatus } from "@utils/EntityStatus";
 
-const filter = createFilterOptions<any>();
+type LabelOption = string | { inputValue?: string; value?: string };
+const filter = createFilterOptions<LabelOption>();
 
-const Labels = ({ loading, labels, entity }: any) => {
-  const { guid }: any = useParams();
-  const toastId: any = useRef(null);
+type LabelsProps = {
+  loading: boolean | undefined;
+  labels: string[];
+  entity: any;
+};
+
+const Labels = ({ loading, labels, entity }: LabelsProps) => {
+  const { guid } = useParams();
+  const toastId = useRef<number | string | null>(null);
   const dispatchApi = useAppDispatch();
   const [addLabel, setAddLabel] = useState<boolean>(true);
   const [expanded, setExpanded] = useState<string | false>(false);
@@ -101,7 +108,7 @@ const Labels = ({ loading, labels, entity }: any) => {
     setLoader(false);
     setOpen(false);
   };
-  const onInputChange = (_event: any, value: string) => {
+  const onInputChange = (_event: React.SyntheticEvent, value: string) => {
     if (value) {
       setOpen(true);
       setLoader(true);
@@ -136,7 +143,7 @@ const Labels = ({ loading, labels, entity }: any) => {
     return out;
   };
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: Record<string, any>) => {
     const formData = { ...values };
     const payload = normalizeLabelsPayload(formData.labels);
     if (payload.length === 0 && (!labels || labels.length === 0)) {
@@ -290,7 +297,7 @@ const Labels = ({ loading, labels, entity }: any) => {
                               e.stopPropagation();
                               setAddLabel(false);
                             }}
-                            style={{ textDecoration: "underline" }}
+                            className="text-color-green cursor-pointer text-underline"
                           >
                             here
                           </Typography>
