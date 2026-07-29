@@ -232,7 +232,7 @@ const AuditResults = ({ componentProps, row }: any) => {
           button2Handler={undefined}
           maxWidth="lg"
         >
-          <AuditsTab auditResultGuid={currentPurgeResultObj} />
+          <AuditsTab auditResultGuid={currentPurgeResultObj} loading={false} />
         </CustomModal>
       )}
     </>

@@ -412,17 +412,16 @@ public class DiscoveryREST {
     @Timed
     @Path("download/{filename}")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public Response downloadSearchResultFile(@PathParam("filename") String fileName) {
+    public Response downloadSearchResultFile(@PathParam("filename") String fileName) throws AtlasBaseException {
         File dir     = new File(SearchResultDownloadTask.DOWNLOAD_DIR_PATH, RequestContext.getCurrentUser());
-        File csvFile = new File(dir, fileName);
+        File csvFile = SearchDownloadFileValidator.resolveDownloadFile(fileName, dir);
 
-        if (!csvFile.exists()) {
+        if (!csvFile.exists() || !csvFile.isFile()) {
             return Response.noContent().build();
         }
 
         Response.ResponseBuilder response = Response.ok(csvFile);
-
-        response.header("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+        response.header("Content-Disposition", "attachment; filename=\"" + csvFile.getName() + "\"");
 
         return response.build();
     }

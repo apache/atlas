@@ -112,8 +112,8 @@ jest.mock('@utils/Muiutils', () => ({
 
 jest.mock('@views/DetailPage/EntityDetailTabs/AuditsTab', () => ({
   __esModule: true,
-  default: ({ auditResultGuid }: any) => (
-    <div data-testid="audits-tab">AuditsTab - {auditResultGuid}</div>
+  default: ({ auditResultGuid, loading }: any) => (
+    <div data-testid="audits-tab" data-loading={loading}>AuditsTab - {auditResultGuid}</div>
   )
 }));
 
@@ -425,6 +425,7 @@ describe('AuditResults Component', () => {
 
       expect(screen.getByTestId('modal-title')).toHaveTextContent('Purged Entity Details: guid-1');
       expect(screen.getByTestId('audits-tab')).toBeInTheDocument();
+      expect(screen.getByTestId('audits-tab')).toHaveAttribute('data-loading', 'false');
     });
 
     it('should open auto purge modal with correct title', async () => {
