@@ -20,7 +20,6 @@ package org.apache.atlas.web.resources;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.authorize.AtlasAdminAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.discovery.SearchContext;
