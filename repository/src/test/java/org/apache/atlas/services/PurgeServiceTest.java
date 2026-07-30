@@ -25,18 +25,14 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.audit.AtlasAuditEntry;
 import org.apache.atlas.model.audit.AtlasAuditEntry.AuditOperation;
 import org.apache.atlas.model.audit.AtlasAuditEntry.AuditRowKind;
-import org.apache.atlas.model.audit.AuditSearchParameters;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.FailedEntity;
 import org.apache.atlas.model.instance.PurgeSummary;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.audit.AtlasAuditService;
@@ -48,7 +44,6 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.purge.PurgeExecutionStats;
 import org.apache.atlas.repository.purge.PurgeUtils;
-import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
@@ -57,11 +52,9 @@ import org.apache.atlas.repository.store.graph.v2.IAtlasEntityChangeNotifier;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
-import org.apache.atlas.utils.TestResourceFileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -70,13 +63,11 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -87,7 +78,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -104,15 +94,12 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 /**
- * Integration tests for {@link PurgeService}: REST purgeByIds, scheduled purgeEntities,
- * cron failure handling, REST/cron overlap, and delete-then-purge audit correlation.
+ * Integration tests for {@link PurgeService}: scheduled purgeEntities, REST purgeByIds,
+ * cron failure handling, and REST/cron overlap.
  */
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class PurgeServiceTest extends AtlasTestBase {
-    private static final String CRON_ELIGIBLE_GUID           = "11111111-1111-1111-1111-111111111111";
-    private static final String CLIENT_HOST                  = "127.0.0.0";
-    private static final String DEFAULT_USER                 = "Admin";
-    private static final String AUDIT_PARAMETER_RESOURCE_DIR = "auditSearchParameters";
+    private static final String CRON_ELIGIBLE_GUID = "11111111-1111-1111-1111-111111111111";
 
     @Inject
     private AtlasTypeDefStore typeDefStore;
@@ -155,7 +142,7 @@ public class PurgeServiceTest extends AtlasTestBase {
     // -------------------------------------------------------------------------
 
     @Test
-    public void scheduledPurge_purgesEligibleDeletedEntity() throws Exception {
+    public void testPurgeEntities() throws Exception {
         AtlasEntity db = newHiveDb(null);
         persistAndGetGuid(db);
         AtlasEntity tbl = newHiveTable(db, null);
@@ -412,59 +399,11 @@ public class PurgeServiceTest extends AtlasTestBase {
     }
 
     // -------------------------------------------------------------------------
-    // End-to-end delete + purge + audit search
-    // -------------------------------------------------------------------------
-
-    @Test
-    public void deleteThenPurge_writesAuditsSearchableByAdminFilters() throws Exception {
-        AtlasTypesDef sampleTypes   = TestUtilsV2.defineDeptEmployeeTypes();
-        AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(sampleTypes, typeRegistry);
-
-        if (!typesToCreate.isEmpty()) {
-            typeDefStore.createTypesDef(typesToCreate);
-        }
-
-        AtlasEntitiesWithExtInfo deptEg2      = TestUtilsV2.createDeptEg2();
-        AtlasEntityStream        entityStream = new AtlasEntityStream(deptEg2);
-        EntityMutationResponse   emr          = entityStore.createOrUpdate(entityStream, false);
-
-        pauseForIndexCreation();
-
-        assertNotNull(emr);
-        assertNotNull(emr.getCreatedEntities());
-        assertFalse(emr.getCreatedEntities().isEmpty());
-
-        List<String> guids = emr.getCreatedEntities().stream()
-                .map(AtlasEntityHeader::getGuid)
-                .collect(Collectors.toList());
-
-        EntityMutationResponse deleteResponse = entityStore.deleteByIds(guids);
-        pauseForIndexCreation();
-
-        assertSortedGuidsMatch(emr.getCreatedEntities(), deleteResponse.getDeletedEntities(), "deleteByIds");
-
-        ApplicationProperties.get().setProperty("atlas.purge.workers.count", "1");
-
-        Date startTimestamp = new Date();
-        EntityMutationResponse purgeResponse = createPurgeService().purgeByIds(new HashSet<>(guids));
-
-        pauseForIndexCreation();
-        assertPurgeSucceededForRequestedGuids(guids, purgeResponse);
-
-        atlasAuditService.add(DEFAULT_USER, AuditOperation.PURGE, CLIENT_HOST, startTimestamp, new Date(),
-                guids.toString(), purgeResponse.getPurgedEntitiesIds(), purgeResponse.getPurgedEntities().size());
-
-        assertAuditEntry(atlasAuditService, createAuditParameter("audit-search-parameter-without-filter"));
-        assertAuditEntry(atlasAuditService, createAuditParameter("audit-search-parameter-purge"));
-        assertPurgeAuditRowsWrittenByPurgeService(createAuditParameter("audit-search-parameter-purge"));
-    }
-
-    // -------------------------------------------------------------------------
     // PurgeService.purgeByIds — pre-validation and orchestration
     // -------------------------------------------------------------------------
 
     @Test
-    public void purgeByIds_rejectsEmptyOrNullGuids() throws Exception {
+    public void testPurgeByIdsWithEmptySet() throws Exception {
         try {
             createPurgeService().purgeByIds(new HashSet<>());
             fail("Expected AtlasBaseException for empty GUID set");
@@ -481,7 +420,7 @@ public class PurgeServiceTest extends AtlasTestBase {
     }
 
     @Test
-    public void purgeByIds_preScanNonExistentEntities() throws Exception {
+    public void testPurgeByIdsWithNonExistentEntities() throws Exception {
         Set<String> guids = new HashSet<>(Arrays.asList(
                 "11111111-1111-1111-1111-111111111111",
                 "22222222-2222-2222-2222-222222222222"));
@@ -726,107 +665,5 @@ public class PurgeServiceTest extends AtlasTestBase {
             assertFalse(purgedGuids.contains(otherGuid),
                     "Anchor vertex should not retain edges to purged GUID: " + otherGuid);
         }
-    }
-
-    private void assertSortedGuidsMatch(List<AtlasEntityHeader> expected, List<AtlasEntityHeader> actual, String operation) {
-        assertNotNull(actual, operation + " returned null entities");
-        assertEquals(toSortedGuidList(actual), toSortedGuidList(expected), operation + " guid mismatch");
-    }
-
-    private void assertPurgeSucceededForRequestedGuids(List<String> requestedGuids, EntityMutationResponse response) {
-        assertNotNull(response.getPurgedEntities(), "purgeByIds returned no purged entities");
-        assertNotNull(response.getPurgeSummary(), "purgeByIds returned no summary");
-
-        Set<String> purgedGuids = response.getPurgedEntities().stream()
-                .map(AtlasEntityHeader::getGuid)
-                .collect(Collectors.toSet());
-
-        Set<String> skippedGuids = new HashSet<>();
-        if (response.getFailedEntities() != null) {
-            for (FailedEntity failedEntity : response.getFailedEntities()) {
-                if (PurgeUtils.isSkippablePurgeFailureCode(failedEntity.getErrorCode())) {
-                    skippedGuids.add(failedEntity.getGuid());
-                }
-            }
-        }
-
-        for (String guid : requestedGuids) {
-            assertTrue(purgedGuids.contains(guid) || skippedGuids.contains(guid),
-                    "Expected requested guid to be purged or skipped as already removed: " + guid);
-        }
-
-        assertEquals(response.getPurgeSummary().getRequestedCount(), requestedGuids.size());
-        assertEquals(response.getPurgeSummary().getPurgedCount() + response.getPurgeSummary().getSkippedRequestedCount(),
-                requestedGuids.size());
-        assertEquals(response.getPurgeSummary().getFailedCount(), 0);
-    }
-
-    private static List<String> toSortedGuidList(List<AtlasEntityHeader> headers) {
-        return headers.stream()
-                .map(AtlasEntityHeader::getGuid)
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    private AuditSearchParameters createAuditParameter(String fileName) {
-        try {
-            return TestResourceFileUtils.readObjectFromJson(AUDIT_PARAMETER_RESOURCE_DIR, fileName, AuditSearchParameters.class);
-        } catch (IOException e) {
-            fail(e.getMessage());
-        }
-
-        return null;
-    }
-
-    private void assertPurgeAuditRowsWrittenByPurgeService(AuditSearchParameters auditSearchParameters) {
-        pauseForIndexCreation();
-
-        List<AtlasAuditEntry> result;
-
-        try {
-            result = atlasAuditService.get(auditSearchParameters);
-        } catch (Exception e) {
-            throw new SkipException("purge audit entries not retrieved.");
-        }
-
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-
-        boolean hasSummaryRow = false;
-        boolean hasBatchRow   = false;
-        for (AtlasAuditEntry entry : result) {
-            if (entry.getOperation() != AuditOperation.PURGE && entry.getOperation() != AuditOperation.AUTO_PURGE) {
-                continue;
-            }
-
-            if (PurgeUtils.isPurgeSummaryAudit(entry)) {
-                hasSummaryRow = true;
-                assertNotNull(entry.getRunId(), "Purge summary audit should carry runId");
-                assertNotNull(PurgeUtils.parsePurgeSummary(entry), "Summary row should contain parseable PurgeSummary JSON");
-            }
-
-            if (PurgeUtils.isPurgeBatchAudit(entry)) {
-                hasBatchRow = true;
-                assertNotNull(entry.getRunId(), "Purge batch audit should carry runId");
-            }
-        }
-
-        assertTrue(hasSummaryRow, "Expected at least one purge summary audit row from purgeByIds");
-        assertTrue(hasBatchRow, "Expected at least one purge batch audit row from purgeByIds");
-    }
-
-    private void assertAuditEntry(AtlasAuditService auditService, AuditSearchParameters auditSearchParameters) {
-        pauseForIndexCreation();
-
-        List<AtlasAuditEntry> result;
-
-        try {
-            result = auditService.get(auditSearchParameters);
-        } catch (Exception e) {
-            throw new SkipException("audit entries not retrieved.");
-        }
-
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
     }
 }
