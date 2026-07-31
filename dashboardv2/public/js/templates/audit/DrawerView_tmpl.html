@@ -19,21 +19,21 @@
 <div class="drawer-panel">
     <div class="drawer-header">
         <h4 data-id="drawerTitle">{{title}}</h4>
-        <div class="close-drawer" data-id="closeDrawer">
-            <i class="fa fa-times"></i>
+        <div class="close-drawer" data-id="closeDrawer" aria-label="Close drawer" role="button" tabindex="0">
+            <i class="fa fa-times" aria-hidden="true"></i>
         </div>
     </div>
     <div class="drawer-body">
         {{#if runId}}
         <div class="drawer-run-id">
             <span class="run-id-text">Run Id: <span class="run-id-value">{{runId}}</span></span>
-            <i class="fa fa-copy" data-id="copyRunId" title="Copy to clipboard"></i>
+            <i class="fa fa-copy" data-id="copyRunId" title="Copy to clipboard" aria-label="Copy Run Id to clipboard" role="button" tabindex="0"></i>
         </div>
         {{/if}}
         <div class="drawer-search">
             <div class="search-input-wrapper">
-                <i class="fa fa-search"></i>
-                <input type="text" data-id="searchInput" placeholder="Search GUIDs..." />
+                <i class="fa fa-search" aria-hidden="true"></i>
+                <input type="text" data-id="searchInput" placeholder="Search GUIDs..." aria-label="Search GUIDs" />
             </div>
         </div>
         <div class="drawer-list" data-id="drawerScrollRegion">
@@ -52,7 +52,7 @@
             Showing 0 of 0
         </div>
         <div class="drawer-limit">
-            Limit <input type="number" data-id="limitInput" min="1" value="{{limit}}" />
+            Limit <input type="number" data-id="limitInput" min="1" value="{{limit}}" aria-label="Limit results" />
         </div>
     </div>
 </div>

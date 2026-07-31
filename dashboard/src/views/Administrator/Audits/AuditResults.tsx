@@ -20,14 +20,15 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import SearchIcon from "@mui/icons-material/Search";
 import { auditAction, category, AuditOperation, PurgeActiveView } from "@utils/Enum";
 import { isEmpty, jsonParse } from "@utils/Utils";
-import { useVirtualization } from '@hooks/useVirtualization';
+import { useVirtualization } from "@hooks/useVirtualization";
 import CustomModal from "@components/Modal";
 import TypeDefAuditDetailModal from "@components/TypeDefAuditDetailModal";
 import { useRef, useState } from "react";
 import AuditsTab from "@views/DetailPage/EntityDetailTabs/AuditsTab";
 import ImportExportAudits from "./ImportExportAudits";
-import { LightTooltip } from '@components/muiComponents';
-
+import { LightTooltip } from "@components/muiComponents";
+import { toast } from "react-toastify";
+import { fetchApi } from "@api/apiMethods/fetchApi";
 interface AuditEntry {
   guid: string;
   operation: string;
@@ -101,7 +102,7 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
           typeof item === "string" ? item : (item as { guid?: string }).guid || String(item)
         );
       }
-    } catch (e) {
+    } catch (_e) {
       if (typeof result === "string" && !result.startsWith("{")) {
         legacyPurgedList = result.replace(/^\[|\]$/g, "").split(",").map(s => s.trim()).filter(Boolean);
       }
@@ -115,7 +116,7 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
         } else if (typeof params === "string") {
           requestedEntitiesList = params.replace(/^\[|\]$/g, "").split(",").map(s => s.trim()).filter(Boolean);
         }
-      } catch (e) {
+      } catch (_e) {
         requestedEntitiesList = typeof params === "string"
           ? params.replace(/^\[|\]$/g, "").split(",").map(s => s.trim()).filter(Boolean)
           : [];
@@ -124,7 +125,7 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
   } else {
     try {
       summary = jsonParse(result) as Record<string, unknown>;
-    } catch (e) {
+    } catch (_e) {
       summary = {};
     }
   }
@@ -156,16 +157,18 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
       setPurgedApiGuids([]);
     }
 
-    fetch(`/api/atlas/admin/audit/${summaryGuid}/purgedEntities?limit=${pageSize}&offset=${offset}`, {
+    fetchApi(`/api/atlas/admin/audit/${summaryGuid}/purgedEntities?limit=${pageSize}&offset=${offset}`, {
+      method: "GET",
       headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
     })
-      .then(res => res.ok ? res.json() : [])
-      .then((data: string[]) => {
+      .then(res => {
+        const data = res.data;
         if (Array.isArray(data)) {
           setPurgedApiGuids(prev => append ? [...prev, ...data] : data);
         }
+      }).catch(() => {
+        toast.error("Failed to fetch purged entities");
       })
-      .catch(() => { })
       .finally(() => {
         setLoadingPurgedApi(false);
       });
@@ -451,294 +454,358 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
           </Box>
 
           {/* Right Side Drawer — server-side pagination for Purged, client-side for Requested */}
-          {(() => {
-            // For REQUESTED view: client-side filter + paginate
-            // For PURGED view: server-side paginate, client-side search on current page
-            const isPurgedView = activePurgeView === PurgeActiveView.PURGED;
-            const isServerSidePagination = isPurgedView && isSummaryRow;
-
-            // Determine the raw list for the current view
-            const rawListForView: string[] = activePurgeView === PurgeActiveView.REQUESTED
-              ? requestedEntitiesList
-              : purgedApiGuids; // full list for non-summary, page list for summary
-
-            // Client-side search filter (on current page for purged, on full list for requested)
-            const filteredList = rawListForView.filter((guidStr: string) => {
-              if (!drawerSearchText) return true;
-              return guidStr.toLowerCase().includes(drawerSearchText.trim().toLowerCase());
-            });
-
-            // For client-side pagination (requested OR non-summary purged)
-            const clientSideItems = !isServerSidePagination
-              ? filteredList.slice(0, drawerPage * drawerPageSize)
-              : [];
-
-            const displayItems = isServerSidePagination ? filteredList : clientSideItems;
-
-            const { visibleItems, paddingTop, paddingBottom, startIndex } = useVirtualization({
-                items: displayItems,
-                scrollTop,
-                itemHeight: 37
-            });
-
-            // ---- Purged: server-side pages ----
-            // Server side infinite scroll handles data loading, we just display what we have
-            const displayTotal = isServerSidePagination ? purgedTotalCount : filteredList.length;
-
-            const handleDrawerScroll = (e: React.UIEvent<HTMLUListElement>) => {
-              setScrollTop(e.currentTarget.scrollTop);
-              if (drawerScrollTimerRef.current) return;
-
-              // If it's a wheel event and they are scrolling up, ignore it
-              const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-              const isNearBottom = scrollHeight - scrollTop - clientHeight < 20;
-              if (isNearBottom) {
-                drawerScrollTimerRef.current = setTimeout(() => {
-                  drawerScrollTimerRef.current = null;
-                  if (isServerSidePagination && !loadingPurgedApi && purgedApiGuids.length < displayTotal) {
-                    fetchPurged(true);
-                  } else if (!isServerSidePagination && visibleItems.length < displayTotal) {
-                    setDrawerPage(prev => prev + 1);
-                  }
-                }, 250);
-              }
-            };
-
-            return (
-              <Drawer
-                anchor="right"
-                open={activePurgeView !== PurgeActiveView.NONE}
-                onClose={() => {
-                  setActivePurgeView(PurgeActiveView.NONE);
-                  setDrawerSearchText('');
-                  setDrawerPage(1);
-                  setScrollTop(0);
-                }}
-                PaperProps={{ sx: { width: '460px', p: 2.5, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' } }}
-              >
-                {/* 1. Drawer Header */}
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                  <Typography sx={{ fontWeight: 600, color: 'text.primary', fontSize: '20px' }}>
-                    {activePurgeView === PurgeActiveView.REQUESTED ? 'Requested Entities' : 'Purged Entities'}
-                  </Typography>
-                  <IconButton
-                    onClick={() => {
-                      setActivePurgeView(PurgeActiveView.NONE);
-                      setDrawerSearchText('');
-                      setDrawerPage(1);
-                      setScrollTop(0);
-                    }}
-                    size="small"
-                  >
-                    ✕
-                  </IconButton>
-                </Stack>
-
-                {/* 2. Run Id Header inside Drawer */}
-                {runId !== 'N/A' && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, py: 1, px: 1.5, bgcolor: '#f8fafc', borderRadius: 1.5, border: '1px solid #e2e8f0' }}>
-                    <Typography variant="caption" color="textSecondary" sx={{ fontSize: '12px' }}>
-                      <strong>Run Id:</strong> {runId}
-                    </Typography>
-                    <Tooltip title={copiedRunId ? "Copied!" : "Copy Run Id"}>
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          if (navigator.clipboard) {
-                            navigator.clipboard.writeText(runId);
-                          } else {
-                            const textField = document.createElement('textarea');
-                            textField.innerText = runId;
-                            document.body.appendChild(textField);
-                            textField.select();
-                            document.execCommand('copy');
-                            textField.remove();
-                          }
-                          setCopiedRunId(true);
-                          setTimeout(() => setCopiedRunId(false), 2000);
-                        }}
-                        sx={{ p: 0.5, ml: 'auto' }}
-                      >
-                        <ContentCopyIcon sx={{ fontSize: '15px', color: copiedRunId ? 'success.main' : 'text.secondary' }} />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                )}
-
-                {/* 3. Search Bar */}
-                {(activePurgeView === 'requested' ? requestedEntitiesList.length > 0 : purgedApiGuids.length > 0 || loadingPurgedApi) && (
-                  <Box sx={{ mb: 2 }}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      placeholder="Search GUIDs..."
-                      value={drawerSearchText}
-                      onChange={(e) => {
-                        setDrawerSearchText(e.target.value);
-                        setDrawerPage(1);
-                        setScrollTop(0);
-                        // For purged view: re-fetch page 1 with new search is not supported server-side;
-                        // search is applied client-side on the current page's data
-                      }}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                          </InputAdornment>
-                        ),
-                        endAdornment: drawerSearchText ? (
-                          <InputAdornment position="end">
-                            <IconButton size="small" onClick={() => {
-                              setDrawerSearchText('');
-                              setDrawerPage(1);
-                              setScrollTop(0);
-                            }}>
-                              ✕
-                            </IconButton>
-                          </InputAdornment>
-                        ) : null
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 2,
-                          bgcolor: '#fff'
-                        }
-                      }}
-                    />
-                  </Box>
-                )}
-
-                <Divider sx={{ mb: 2 }} />
-
-                {/* 4. GUID List */}
-                {isPurgedView && loadingPurgedApi && purgedApiGuids.length === 0 ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
-                    <CircularProgress size={30} />
-                  </Box>
-                ) : (
-                  <List dense sx={{ overflowY: 'scroll', flexGrow: 1, minHeight: 0 }} onScroll={handleDrawerScroll} onWheel={handleDrawerScroll}>
-                    {(() => {
-                      if (displayItems.length === 0) {
-                        return (
-                          <Typography variant="body2" color="textSecondary" sx={{ py: 3, textAlign: 'center' }}>
-                            No matching GUIDs found
-                          </Typography>
-                        );
-                      }
-
-                      return (
-                        <>
-                          {paddingTop > 0 && <div style={{ height: paddingTop }} />}
-                          {visibleItems.map((guidStr: string, localIndex: number) => {
-                            const index = startIndex + localIndex;
-                            const globalIndex = index + 1;
-                            return (
-                              <ListItem key={guidStr + index} sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1, height: '37px', boxSizing: 'border-box' }}>
-                                <Typography variant="body2" sx={{ mr: 1, minWidth: '24px', color: 'text.secondary' }}>{globalIndex}.</Typography>
-                                <Link
-                                  component="button"
-                                  variant="body2"
-                                  underline="hover"
-                                  onClick={() => {
-                                    setOpenPurgeModal(true);
-                                    setCurrentPurgeResultObj(guidStr);
-                                  }}
-                                  title={guidStr}
-                                  sx={{
-                                    display: "inline-block",
-                                    maxWidth: "100%",
-                                    textOverflow: "ellipsis",
-                                    overflow: "hidden",
-                                    whiteSpace: "nowrap",
-                                    textAlign: "left"
-                                  }}
-                                >
-                                  {guidStr}
-                                </Link>
-                              </ListItem>
-                            );
-                          })}
-                          {paddingBottom > 0 && <div style={{ height: paddingBottom }} />}
-                        </>
-                      );
-                    })()}
-
-                    {displayItems.length > 0 && displayItems.length < displayTotal && (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 2, gap: 1 }}>
-                        {isPurgedView && loadingPurgedApi && <CircularProgress size={16} />}
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ fontStyle: 'italic', cursor: 'default' }}
-                        >
-                          {isPurgedView && loadingPurgedApi ? 'Loading more...' : 'Scroll to load more data'}
-                        </Typography>
-                      </Box>
-                    )}
-                  </List>
-                )}
-
-                {/* 5. Relationship-card-style Footer: Showing X of Y | Limit [input] */}
-                {displayTotal > 0 && (
-                  <Box sx={{
-                    mt: 'auto',
-                    pt: 1.5,
-                    borderTop: '1px solid #e2e8f0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexShrink: 0
-                  }}>
-                    <Typography variant="caption" color="textSecondary">
-                      Showing {displayItems.length} of {displayTotal}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                      <Typography variant="caption" color="textSecondary">Limit</Typography>
-                      <Box
-                        component="input"
-                        type="number"
-                        min={1}
-                        value={drawerPageSizeInput}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                          setDrawerPageSizeInput(e.target.value);
-                        }}
-                        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                          if (e.key === 'Enter') {
-                            const parsed = parseInt((e.target as HTMLInputElement).value, 10);
-                            if (Number.isFinite(parsed) && parsed > 0) {
-                              const clamped = Math.min(parsed, displayTotal);
-                              setDrawerPageSize(clamped);
-                              setDrawerPageSizeInput(String(clamped));
-                              setDrawerPage(1);
-                              if (isServerSidePagination) {
-                                fetchPurged(false, clamped);
-                              }
-                            }
-                          }
-                        }}
-                        sx={{
-                          width: '56px',
-                          fontSize: '12px',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '4px',
-                          px: 0.75,
-                          py: 0.25,
-                          textAlign: 'center',
-                          outline: 'none',
-                          '&:focus': { borderColor: '#90caf9' }
-                        }}
-                      />
-                    </Box>
-                  </Box>
-                )}
-              </Drawer>
-            );
-          })()}
+<PurgeEntitiesDrawer
+            activePurgeView={activePurgeView}
+            setActivePurgeView={setActivePurgeView}
+            isSummaryRow={isSummaryRow}
+            requestedEntitiesList={requestedEntitiesList}
+            purgedApiGuids={purgedApiGuids}
+            drawerSearchText={drawerSearchText}
+            setDrawerSearchText={setDrawerSearchText}
+            drawerPage={drawerPage}
+            setDrawerPage={setDrawerPage}
+            drawerPageSize={drawerPageSize}
+            setDrawerPageSize={setDrawerPageSize}
+            scrollTop={scrollTop}
+            setScrollTop={setScrollTop}
+            purgedTotalCount={purgedTotalCount}
+            drawerScrollTimerRef={drawerScrollTimerRef}
+            loadingPurgedApi={loadingPurgedApi}
+            fetchPurged={fetchPurged}
+            runId={runId}
+            copiedRunId={copiedRunId}
+            setCopiedRunId={setCopiedRunId}
+            setOpenPurgeModal={setOpenPurgeModal}
+            setCurrentPurgeResultObj={setCurrentPurgeResultObj}
+            drawerPageSizeInput={drawerPageSizeInput}
+            setDrawerPageSizeInput={setDrawerPageSizeInput}
+          />
         </Box>
       ) : null}
     </>
   );
 };
 
+
+interface PurgeEntitiesDrawerProps {
+  activePurgeView: PurgeActiveView;
+  setActivePurgeView: (view: PurgeActiveView) => void;
+  isSummaryRow: boolean;
+  requestedEntitiesList: string[];
+  purgedApiGuids: string[];
+  drawerSearchText: string;
+  setDrawerSearchText: (text: string) => void;
+  drawerPage: number;
+  setDrawerPage: React.Dispatch<React.SetStateAction<number>>;
+  drawerPageSize: number;
+  setDrawerPageSize: React.Dispatch<React.SetStateAction<number>>;
+  scrollTop: number;
+  setScrollTop: (top: number) => void;
+  purgedTotalCount: number;
+  drawerScrollTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
+  loadingPurgedApi: boolean;
+  fetchPurged: (append: boolean, limitOverride?: number) => void;
+  runId: string;
+  copiedRunId: boolean;
+  setCopiedRunId: (copied: boolean) => void;
+  setOpenPurgeModal: (open: boolean) => void;
+  setCurrentPurgeResultObj: (guid: string) => void;
+  drawerPageSizeInput: string;
+  setDrawerPageSizeInput: (input: string) => void;
+}
+
+const PurgeEntitiesDrawer: React.FC<PurgeEntitiesDrawerProps> = ({
+  activePurgeView,
+  setActivePurgeView,
+  isSummaryRow,
+  requestedEntitiesList,
+  purgedApiGuids,
+  drawerSearchText,
+  setDrawerSearchText,
+  drawerPage,
+  setDrawerPage,
+  drawerPageSize,
+  setDrawerPageSize,
+  scrollTop,
+  setScrollTop,
+  purgedTotalCount,
+  drawerScrollTimerRef,
+  loadingPurgedApi,
+  fetchPurged,
+  runId,
+  copiedRunId,
+  setCopiedRunId,
+  setOpenPurgeModal,
+  setCurrentPurgeResultObj,
+  drawerPageSizeInput,
+  setDrawerPageSizeInput,
+}) => {
+  const isPurgedView = activePurgeView === PurgeActiveView.PURGED;
+  const isServerSidePagination = isPurgedView && isSummaryRow;
+
+  const rawListForView: string[] = activePurgeView === PurgeActiveView.REQUESTED
+    ? requestedEntitiesList
+    : purgedApiGuids;
+
+  const filteredList = rawListForView.filter((guidStr: string) => {
+    if (!drawerSearchText) return true;
+    return guidStr.toLowerCase().includes(drawerSearchText.trim().toLowerCase());
+  });
+
+  const clientSideItems = !isServerSidePagination
+    ? filteredList.slice(0, drawerPage * drawerPageSize)
+    : [];
+
+  const displayItems = isServerSidePagination ? filteredList : clientSideItems;
+
+  const { visibleItems, paddingTop, paddingBottom, startIndex } = useVirtualization({
+    items: displayItems,
+    scrollTop,
+    itemHeight: 37
+  });
+
+  const displayTotal = isServerSidePagination ? purgedTotalCount : filteredList.length;
+
+  const handleDrawerScroll = (e: React.UIEvent<HTMLUListElement>) => {
+    setScrollTop(e.currentTarget.scrollTop);
+    if (drawerScrollTimerRef.current) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 20;
+    if (isNearBottom) {
+      drawerScrollTimerRef.current = setTimeout(() => {
+        drawerScrollTimerRef.current = null;
+        if (isServerSidePagination && !loadingPurgedApi && purgedApiGuids.length < displayTotal) {
+          fetchPurged(true);
+        } else if (!isServerSidePagination && visibleItems.length < displayTotal) {
+          setDrawerPage(prev => prev + 1);
+        }
+      }, 250);
+    }
+  };
+
+  return (
+    <Drawer
+      anchor="right"
+      open={activePurgeView !== PurgeActiveView.NONE}
+      onClose={() => {
+        setActivePurgeView(PurgeActiveView.NONE);
+        setDrawerSearchText('');
+        setDrawerPage(1);
+        setScrollTop(0);
+      }}
+      PaperProps={{ sx: { width: '460px', p: 2.5, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' } }}
+    >
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+        <Typography sx={{ fontWeight: 600, color: 'text.primary', fontSize: '20px' }}>
+          {activePurgeView === PurgeActiveView.REQUESTED ? 'Requested Entities' : 'Purged Entities'}
+        </Typography>
+        <IconButton
+          onClick={() => {
+            setActivePurgeView(PurgeActiveView.NONE);
+            setDrawerSearchText('');
+            setDrawerPage(1);
+            setScrollTop(0);
+          }}
+          size="small"
+        >
+          ✕
+        </IconButton>
+      </Stack>
+
+      {runId !== 'N/A' && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, py: 1, px: 1.5, bgcolor: '#f8fafc', borderRadius: 1.5, border: '1px solid #e2e8f0' }}>
+          <Typography variant="caption" color="textSecondary" sx={{ fontSize: '12px' }}>
+            <strong>Run Id:</strong> {runId}
+          </Typography>
+          <Tooltip title={copiedRunId ? "Copied!" : "Copy Run Id"}>
+            <IconButton
+              size="small"
+              onClick={() => {
+                if (navigator.clipboard) {
+                  navigator.clipboard.writeText(runId);
+                } else {
+                  const textField = document.createElement('textarea');
+                  textField.innerText = runId;
+                  document.body.appendChild(textField);
+                  textField.select();
+                  document.execCommand('copy');
+                  textField.remove();
+                }
+                setCopiedRunId(true);
+                setTimeout(() => setCopiedRunId(false), 2000);
+              }}
+              sx={{ p: 0.5, ml: 'auto' }}
+            >
+              <ContentCopyIcon sx={{ fontSize: '15px', color: copiedRunId ? 'success.main' : 'text.secondary' }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )}
+
+      {(activePurgeView === 'requested' ? requestedEntitiesList.length > 0 : purgedApiGuids.length > 0 || loadingPurgedApi) && (
+        <Box sx={{ mb: 2 }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search GUIDs..."
+            value={drawerSearchText}
+            onChange={(e) => {
+              setDrawerSearchText(e.target.value);
+              setDrawerPage(1);
+              setScrollTop(0);
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                </InputAdornment>
+              ),
+              endAdornment: drawerSearchText ? (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={() => {
+                    setDrawerSearchText('');
+                    setDrawerPage(1);
+                    setScrollTop(0);
+                  }}>
+                    ✕
+                  </IconButton>
+                </InputAdornment>
+              ) : null
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                bgcolor: '#fff'
+              }
+            }}
+          />
+        </Box>
+      )}
+
+      <Divider sx={{ mb: 2 }} />
+
+      {isPurgedView && loadingPurgedApi && purgedApiGuids.length === 0 ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
+          <CircularProgress size={30} />
+        </Box>
+      ) : (
+        <List dense sx={{ overflowY: 'scroll', flexGrow: 1, minHeight: 0 }} onScroll={handleDrawerScroll} onWheel={handleDrawerScroll}>
+          {(() => {
+            if (displayItems.length === 0) {
+              return (
+                <Typography variant="body2" color="textSecondary" sx={{ py: 3, textAlign: 'center' }}>
+                  No matching GUIDs found
+                </Typography>
+              );
+            }
+
+            return (
+              <>
+                {paddingTop > 0 && <div style={{ height: paddingTop }} />}
+                {visibleItems.map((guidStr: string, localIndex: number) => {
+                  const index = startIndex + localIndex;
+                  const globalIndex = index + 1;
+                  return (
+                    <ListItem key={guidStr + index} sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1, height: '37px', boxSizing: 'border-box' }}>
+                      <Typography variant="body2" sx={{ mr: 1, minWidth: '24px', color: 'text.secondary' }}>{globalIndex}.</Typography>
+                      <Link
+                        component="button"
+                        variant="body2"
+                        underline="hover"
+                        onClick={() => {
+                          setOpenPurgeModal(true);
+                          setCurrentPurgeResultObj(guidStr);
+                        }}
+                        title={guidStr}
+                        sx={{
+                          display: "inline-block",
+                          maxWidth: "100%",
+                          textOverflow: "ellipsis",
+                          overflow: "hidden",
+                          whiteSpace: "nowrap",
+                          textAlign: "left"
+                        }}
+                      >
+                        {guidStr}
+                      </Link>
+                    </ListItem>
+                  );
+                })}
+                {paddingBottom > 0 && <div style={{ height: paddingBottom }} />}
+              </>
+            );
+          })()}
+
+          {displayItems.length > 0 && displayItems.length < displayTotal && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 2, gap: 1 }}>
+              {isPurgedView && loadingPurgedApi && <CircularProgress size={16} />}
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontStyle: 'italic', cursor: 'default' }}
+              >
+                {isPurgedView && loadingPurgedApi ? 'Loading more...' : 'Scroll to load more data'}
+              </Typography>
+            </Box>
+          )}
+        </List>
+      )}
+
+      {displayTotal > 0 && (
+        <Box sx={{
+          mt: 'auto',
+          pt: 1.5,
+          borderTop: '1px solid #e2e8f0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexShrink: 0
+        }}>
+          <Typography variant="caption" color="textSecondary">
+            Showing {displayItems.length} of {displayTotal}
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Typography variant="caption" color="textSecondary">Limit</Typography>
+            <Box
+              component="input"
+              type="number"
+              min={1}
+              value={drawerPageSizeInput}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setDrawerPageSizeInput(e.target.value);
+              }}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === 'Enter') {
+                  const parsed = parseInt((e.target as HTMLInputElement).value, 10);
+                  if (Number.isFinite(parsed) && parsed > 0) {
+                    const clamped = Math.min(parsed, displayTotal);
+                    setDrawerPageSize(clamped);
+                    setDrawerPageSizeInput(String(clamped));
+                    setDrawerPage(1);
+                    if (isServerSidePagination) {
+                      fetchPurged(false, clamped);
+                    }
+                  }
+                }
+              }}
+              sx={{
+                width: '56px',
+                fontSize: '12px',
+                border: '1px solid #cbd5e1',
+                borderRadius: '4px',
+                px: 0.75,
+                py: 0.25,
+                textAlign: 'center',
+                outline: 'none',
+                '&:focus': { borderColor: '#90caf9' }
+              }}
+            />
+          </Box>
+        </Box>
+      )}
+    </Drawer>
+  );
+};
+
 export default AuditResults;
-// trigger hmr

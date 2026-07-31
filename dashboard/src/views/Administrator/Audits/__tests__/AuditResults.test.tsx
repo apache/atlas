@@ -28,6 +28,8 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import AuditResults from '../AuditResults';
+import { toast } from 'react-toastify';
+jest.mock('react-toastify', () => ({ toast: { error: jest.fn() } }));
 
 // Mock dependencies
 const mockIsEmpty = jest.fn((val: any) => {
@@ -56,13 +58,11 @@ jest.mock('@utils/Utils', () => ({
   jsonParse: (...args: any[]) => mockJsonParse(...args)
 }));
 
-// Mock global fetch so tests that trigger API calls don't crash
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve([])
-  })
-) as jest.Mock;
+// Mock fetchApi so tests that trigger API calls don't crash
+jest.mock('@api/apiMethods/fetchApi', () => ({
+  fetchApi: jest.fn(() => Promise.resolve({ data: [] }))
+}));
+import { fetchApi } from '@api/apiMethods/fetchApi';
 
 // Mock Enum
 jest.mock('@utils/Enum', () => ({
@@ -152,7 +152,7 @@ jest.mock('@mui/material', () => {
         {children}
       </button>
     ),
-    Drawer: ({ children, open, ...props }: any) => open ? <div data-testid="drawer" {...props}>{children}</div> : null,
+    Drawer: ({ children, open, PaperProps, ...props }: any) => open ? <div data-testid="drawer" {...props}>{children}</div> : null,
     List: ({ children, ...props }: any) => <ul data-testid="list" {...props}>{children}</ul>,
     ListItem: ({ children, ...props }: any) => <li data-testid="list-item" {...props}>{children}</li>,
     ListItemText: ({ primary, ...props }: any) => <div data-testid="list-item-text" {...props}>{primary}</div>,
@@ -216,9 +216,9 @@ describe('AuditResults Component', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset fetch mock before each test
-    (global.fetch as jest.Mock).mockImplementation(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve([]) })
+    // Reset fetchApi mock before each test
+    (fetchApi as jest.Mock).mockImplementation(() =>
+      Promise.resolve({ data: [] })
     );
     mockIsEmpty.mockImplementation((val: any) => {
       if (val === null || val === undefined || val === '') return true;
@@ -1371,5 +1371,56 @@ describe('AuditResults Component', () => {
       expect(screen.getByText('2')).toBeInTheDocument();
     });
   });
-});
 
+  describe('New Purge Drawer Features', () => {
+    it('should trigger toast.error on API failure when fetching purged entities', async () => {
+      const componentProps = {
+        auditData: [{
+          guid: 'audit-purge-api-fail',
+          operation: 'PURGE',
+          params: '',
+          result: JSON.stringify({ summary: { purgedCount: 5, runId: 'run-123' } })
+        }]
+      };
+      const row = { original: { guid: 'audit-purge-api-fail' } };
+
+      // Mock fetch failure
+      (fetchApi as jest.Mock).mockImplementationOnce(() => Promise.reject(new Error('API failed')));
+
+      render(<AuditResults componentProps={componentProps} row={row} />);
+      
+      const purgedCard = screen.getByText('Total Purged');
+      fireEvent.click(purgedCard);
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Failed to fetch purged entities');
+      });
+    });
+
+    it('should copy Run ID to clipboard', async () => {
+      const componentProps = {
+        auditData: [{
+          guid: 'audit-purge-runid',
+          operation: 'PURGE',
+          params: '',
+          result: JSON.stringify({ summary: { purgedCount: 5, runId: 'run-456' } })
+        }]
+      };
+      const row = { original: { guid: 'audit-purge-runid' } };
+      
+      const mockClipboard = {
+        writeText: jest.fn()
+      };
+      Object.assign(navigator, {
+        clipboard: mockClipboard
+      });
+
+      render(<AuditResults componentProps={componentProps} row={row} />);
+      
+      const copyButton = screen.getAllByTestId('ContentCopyIcon')[0].closest('button');
+      fireEvent.click(copyButton!);
+
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith('run-456');
+    });
+  });
+});
