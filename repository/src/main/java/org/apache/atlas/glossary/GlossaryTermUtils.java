@@ -182,6 +182,12 @@ public class GlossaryTermUtils extends GlossaryUtils {
         GLOSSARY_TERM_Q_NAME_GUID_CACHE.get().clear();
     }
 
+    public void cacheImportedTermGuid(String qualifiedName, String termGuid) {
+        if (StringUtils.isNotBlank(qualifiedName) && StringUtils.isNotBlank(termGuid)) {
+            GLOSSARY_TERM_Q_NAME_GUID_CACHE.get().put(qualifiedName, termGuid);
+        }
+    }
+
     public void updateGlossaryTermRelations(AtlasGlossaryTerm updatedGlossaryTerm) {
         if (GLOSSARY_TERM_Q_NAME_GUID_CACHE.get().containsKey(updatedGlossaryTerm.getQualifiedName())) {
             try {
@@ -320,41 +326,94 @@ public class GlossaryTermUtils extends GlossaryUtils {
 
             String[] csvRecordArray = csvRecord.split(FileUtils.ESCAPE_CHARACTER + FileUtils.PIPE_CHARACTER);
 
-            AtlasRelatedTermHeader relatedTermHeader;
-
             for (String data : csvRecordArray) {
-                String[] dataArray = data.split(FileUtils.ESCAPE_CHARACTER + FileUtils.COLON_CHARACTER);
+                if (StringUtils.isBlank(data)) {
+                    continue;
+                }
 
-                if (dataArray.length == 2) {
-                    String relatedTermQualifiedName = dataArray[1] + INVALID_NAME_CHARS[0] + dataArray[0];
-                    String currTermQualifiedName    = termName + INVALID_NAME_CHARS[0] + glossaryName;
+                RelatedTermReference relatedTermReference = resolveRelatedTermReference(data.trim(), glossaryName, failedTermMsgs, termName);
 
-                    if (relatedTermQualifiedName.equalsIgnoreCase(currTermQualifiedName)) {
-                        failedTermMsgs.add("Invalid relationship specified for Term. Term cannot have a relationship with self");
-                    } else {
-                        AtlasVertex vertex = AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME, GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME + INVALID_NAME_CHARS[1] + QUALIFIED_NAME_ATTR, relatedTermQualifiedName);
+                if (relatedTermReference == null || StringUtils.isBlank(relatedTermReference.getQualifiedName())) {
+                    continue;
+                }
 
-                        if (vertex != null) {
-                            String glossaryTermGuid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
+                String relatedTermQualifiedName = relatedTermReference.getQualifiedName();
+                String currTermQualifiedName    = termName + INVALID_NAME_CHARS[0] + glossaryName;
 
-                            relatedTermHeader = new AtlasRelatedTermHeader();
-
-                            relatedTermHeader.setTermGuid(glossaryTermGuid);
-
-                            cacheRelatedTermQNameGuid(currTermQualifiedName, relatedTermQualifiedName, glossaryTermGuid);
-
-                            ret.add(relatedTermHeader);
-                        } else {
-                            failedTermMsgs.add("The provided Reference " + dataArray[1] + "@" + dataArray[0] + " does not exist at Atlas referred at record with TermName  : " + termName + " and GlossaryName : " + glossaryName);
-                        }
-                    }
+                if (relatedTermQualifiedName.equalsIgnoreCase(currTermQualifiedName)) {
+                    failedTermMsgs.add("Invalid relationship specified for Term. Term cannot have a relationship with self");
                 } else {
-                    failedTermMsgs.add("Incorrect relation data specified for the term : " + termName + "@" + glossaryName);
+                    String glossaryTermGuid = lookupGlossaryTermGuid(relatedTermQualifiedName);
+
+                    if (StringUtils.isNotEmpty(glossaryTermGuid)) {
+                        AtlasRelatedTermHeader relatedTermHeader = new AtlasRelatedTermHeader();
+
+                        relatedTermHeader.setTermGuid(glossaryTermGuid);
+
+                        cacheRelatedTermQNameGuid(currTermQualifiedName, relatedTermQualifiedName, glossaryTermGuid);
+
+                        ret.add(relatedTermHeader);
+                    } else if (relatedTermReference.isExplicitReference()) {
+                        failedTermMsgs.add("The provided Reference " + relatedTermQualifiedName + " does not exist in Atlas for TermName : " + termName + " and GlossaryName : " + glossaryName);
+                    } else {
+                        LOG.debug("Skipping unresolved same-glossary reference '{}' for term {}", data.trim(), termName);
+                    }
                 }
             }
         }
 
         return ret;
+    }
+
+    protected RelatedTermReference resolveRelatedTermReference(String relationReference, String glossaryName, List<String> failedTermMsgs, String termName) {
+        if (StringUtils.isBlank(relationReference)) {
+            return null;
+        }
+
+        String trimmedReference = relationReference.trim();
+
+        // Format: TermName@GlossaryName (Atlas qualified name)
+        if (StringUtils.contains(trimmedReference, String.valueOf(INVALID_NAME_CHARS[0]))) {
+            String[] atParts = trimmedReference.split(FileUtils.ESCAPE_CHARACTER + INVALID_NAME_CHARS[0], 2);
+
+            if (atParts.length == 2 && StringUtils.isNotBlank(atParts[0]) && StringUtils.isNotBlank(atParts[1])) {
+                return new RelatedTermReference(atParts[0] + INVALID_NAME_CHARS[0] + atParts[1], true);
+            }
+        }
+
+        // Format: GlossaryName:TermName
+        String[] colonParts = trimmedReference.split(FileUtils.ESCAPE_CHARACTER + FileUtils.COLON_CHARACTER, 2);
+
+        if (colonParts.length == 2 && StringUtils.isNotBlank(colonParts[0]) && StringUtils.isNotBlank(colonParts[1])) {
+            return new RelatedTermReference(colonParts[1] + INVALID_NAME_CHARS[0] + colonParts[0], true);
+        }
+
+        // Format: TermName (same glossary shorthand — best-effort, not a hard failure if unresolved)
+        if (!StringUtils.contains(trimmedReference, FileUtils.COLON_CHARACTER) && !StringUtils.contains(trimmedReference, String.valueOf(INVALID_NAME_CHARS[0]))) {
+            return new RelatedTermReference(trimmedReference + INVALID_NAME_CHARS[0] + glossaryName, false);
+        }
+
+        failedTermMsgs.add("Incorrect relation data '" + trimmedReference + "' for term " + termName + INVALID_NAME_CHARS[0] + glossaryName
+                + ". Expected GlossaryName:TermName, TermName@GlossaryName, or TermName");
+
+        return null;
+    }
+
+    protected String resolveRelatedTermQualifiedName(String relationReference, String glossaryName, List<String> failedTermMsgs, String termName) {
+        RelatedTermReference relatedTermReference = resolveRelatedTermReference(relationReference, glossaryName, failedTermMsgs, termName);
+
+        return relatedTermReference != null ? relatedTermReference.getQualifiedName() : null;
+    }
+
+    protected String lookupGlossaryTermGuid(String relatedTermQualifiedName) {
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME,
+                GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME + INVALID_NAME_CHARS[1] + QUALIFIED_NAME_ATTR, relatedTermQualifiedName);
+
+        if (vertex != null) {
+            return AtlasGraphUtilsV2.getIdFromVertex(vertex);
+        }
+
+        return GLOSSARY_TERM_Q_NAME_GUID_CACHE.get().get(relatedTermQualifiedName);
     }
 
     protected AtlasGlossaryTerm populateGlossaryTermObject(List<String> failedTermMsgList, String[] record, String glossaryGuid, boolean populateRelations) {
@@ -973,6 +1032,24 @@ public class GlossaryTermUtils extends GlossaryUtils {
             } else {
                 toGlossaryTerm.setValidValuesFor(fromGlossaryTerm.getValidValuesFor());
             }
+        }
+    }
+
+    protected static class RelatedTermReference {
+        private final String  qualifiedName;
+        private final boolean explicitReference;
+
+        protected RelatedTermReference(String qualifiedName, boolean explicitReference) {
+            this.qualifiedName      = qualifiedName;
+            this.explicitReference = explicitReference;
+        }
+
+        protected String getQualifiedName() {
+            return qualifiedName;
+        }
+
+        protected boolean isExplicitReference() {
+            return explicitReference;
         }
     }
 }

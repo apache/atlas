@@ -39,6 +39,11 @@ import ListItemText from "@mui/material/ListItemText";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import { postGlossaryImportFormData } from "@utils/glossaryImportFlow";
 import { getApiErrorToastMessage } from "@utils/apiErrorToastMessage";
+import {
+  buildGlossaryImportFailureSummary,
+  formatGlossaryImportFailure,
+  GlossaryImportFailure
+} from "@utils/glossaryImportUtils";
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   "& .MuiDialogContent-root": {
@@ -113,7 +118,7 @@ export const ImportDialog: React.FC<CustomModalProps> = ({
         if (importResp.data.failedImportInfoList != undefined) {
           toast.dismiss(toastId.current);
           toastId.current = toast.error(
-            importResp.data.failedImportInfoList[0].remarks
+            buildGlossaryImportFailureSummary(importResp.data)
           );
 
           setErrorDetails(true);
@@ -200,17 +205,15 @@ export const ImportDialog: React.FC<CustomModalProps> = ({
               >
                 <List>
                   {importData.failedImportInfoList.map(
-                    (
-                      value: {
-                        index: number;
-                        remarks: string;
-                      },
-                      index: number
-                    ) => (
-                      <ListItem key={value.index} disableGutters disablePadding>
+                    (value: GlossaryImportFailure, index: number) => (
+                      <ListItem
+                        key={`${value.childObjectName || "term"}-${index}`}
+                        disableGutters
+                        disablePadding
+                      >
                         <ListItemText
                           className="dropzone-listitem"
-                          primary={`${index + 1}. ${value.remarks}`}
+                          primary={`${index + 1}. ${formatGlossaryImportFailure(value)}`}
                         />
                       </ListItem>
                     )
