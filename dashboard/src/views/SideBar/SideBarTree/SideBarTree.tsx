@@ -350,7 +350,7 @@ const BarTreeView: FC<{
     const [tagModal, setTagModal] = useState<boolean>(false);
     const [glossaryModal, setGlossaryModal] = useState<boolean>(false);
     const { businessMetaData } = useAppSelector(
-      (state) => state.businessMetaData as { businessMetaData?: { businessMetadataDefs?: EnumTypeDefData[] } }
+      (state) => state.businessMetaData as unknown as { businessMetaData?: { businessMetadataDefs?: EnumTypeDefData[] } }
     );
 
     const filteredData = useMemo(() => {
@@ -428,7 +428,7 @@ const BarTreeView: FC<{
           }
         })
         : {};
-      const { name = "" } = bmObj || {};
+      const { name = "" } = (bmObj || {}) as { name?: string };
 
       setSelectedNode({
         type: nodeIdFromParamsType,
