@@ -16,7 +16,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@utils/test-utils';
+import { render, screen, fireEvent, waitFor, act } from '@utils/test-utils';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import UserDefinedProperties from '../UserDefinedProperties';
@@ -103,7 +103,7 @@ describe('UserDefinedProperties Component', () => {
   it('switches to edit mode on Edit button click', () => {
     render(<TestWrapper><UserDefinedProperties {...defaultProps} /></TestWrapper>);
     
-    const editBtn = screen.getByRole('button', { name: /edit/i });
+    const editBtn = screen.getByText('Edit').closest('button')!;
     fireEvent.click(editBtn);
 
     expect(screen.getByDisplayValue('key1')).toBeInTheDocument();
@@ -114,7 +114,7 @@ describe('UserDefinedProperties Component', () => {
     render(<TestWrapper><UserDefinedProperties {...defaultProps} /></TestWrapper>);
     
     // Edit mode
-    fireEvent.click(screen.getAllByRole('button', { name: /edit/i })[0]);
+    fireEvent.click(screen.getByText('Edit').closest('button')!);
     
     // Should have 2 inputs initially for keys
     let keyInputs = screen.getAllByPlaceholderText('key');
@@ -138,7 +138,7 @@ describe('UserDefinedProperties Component', () => {
   it('validates unique keys', async () => {
     render(<TestWrapper><UserDefinedProperties {...defaultProps} /></TestWrapper>);
     
-    fireEvent.click(screen.getAllByRole('button', { name: /edit/i })[0]);
+    fireEvent.click(screen.getByText('Edit').closest('button')!);
     
     const keyInputs = screen.getAllByPlaceholderText('key');
     // Change second key to 'key1' to cause duplicate
@@ -146,10 +146,10 @@ describe('UserDefinedProperties Component', () => {
     
     // Form submission
     const saveBtn = screen.getAllByRole('button', { name: /save/i })[0];
-    fireEvent.click(saveBtn);
+    await act(async () => { fireEvent.submit(saveBtn.closest('form')!); });
     
     await waitFor(() => {
-      expect(screen.getByText('Key must be unique')).toBeInTheDocument();
+      expect(screen.getAllByText('Key must be unique')[0]).toBeInTheDocument();
       expect(mockCreateEntity).not.toHaveBeenCalled();
     });
   });
@@ -159,10 +159,10 @@ describe('UserDefinedProperties Component', () => {
     
     render(<TestWrapper><UserDefinedProperties {...defaultProps} /></TestWrapper>);
     
-    fireEvent.click(screen.getAllByRole('button', { name: /edit/i })[0]);
+    fireEvent.click(screen.getByText('Edit').closest('button')!);
     
     const saveBtn = screen.getAllByRole('button', { name: /save/i })[0];
-    fireEvent.click(saveBtn);
+    await act(async () => { fireEvent.submit(saveBtn.closest('form')!); });
     
     await waitFor(() => {
       expect(mockCreateEntity).toHaveBeenCalledWith({
@@ -179,10 +179,10 @@ describe('UserDefinedProperties Component', () => {
     
     render(<TestWrapper><UserDefinedProperties {...defaultProps} /></TestWrapper>);
     
-    fireEvent.click(screen.getAllByRole('button', { name: /edit/i })[0]);
+    fireEvent.click(screen.getByText('Edit').closest('button')!);
     
     const saveBtn = screen.getAllByRole('button', { name: /save/i })[0];
-    fireEvent.click(saveBtn);
+    await act(async () => { fireEvent.submit(saveBtn.closest('form')!); });
     
     await waitFor(() => {
       expect(mockCreateEntity).toHaveBeenCalled();

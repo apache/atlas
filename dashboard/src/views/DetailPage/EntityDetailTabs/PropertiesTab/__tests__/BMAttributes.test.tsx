@@ -16,7 +16,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@utils/test-utils';
+import { render, screen, fireEvent, waitFor, act } from '@utils/test-utils';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import BMAttributes from '../BMAttributes';
@@ -146,7 +146,7 @@ describe('BMAttributes Component', () => {
   it('switches to edit mode on Edit button click', () => {
     render(<TestWrapper><BMAttributes {...defaultProps} /></TestWrapper>);
     
-    const editBtn = screen.getAllByRole('button', { name: /edit/i })[0];
+    const editBtn = screen.getByText('Edit').closest('button')!;
     fireEvent.click(editBtn);
 
     expect(screen.getAllByTestId('bm-fields-mock')).toHaveLength(2);
@@ -157,9 +157,9 @@ describe('BMAttributes Component', () => {
   it('adds new attribute dynamically', async () => {
     render(<TestWrapper><BMAttributes {...defaultProps} /></TestWrapper>);
     
-    fireEvent.click(screen.getAllByRole('button', { name: /edit/i })[0]);
+    fireEvent.click(screen.getByText('Edit').closest('button')!);
     
-    const addAttrBtn = screen.getByRole('button', { name: /Add New Attributes/i });
+    const addAttrBtn = screen.getByRole('button', { name: /Add New Attribute/i });
     fireEvent.click(addAttrBtn);
     
     // There should be 3 items now
@@ -172,10 +172,10 @@ describe('BMAttributes Component', () => {
     
     render(<TestWrapper><BMAttributes {...defaultProps} /></TestWrapper>);
     
-    fireEvent.click(screen.getAllByRole('button', { name: /edit/i })[0]);
+    fireEvent.click(screen.getByText('Edit').closest('button')!);
     
     const saveBtn = screen.getAllByRole('button', { name: /save/i })[0];
-    fireEvent.click(saveBtn);
+    await act(async () => { fireEvent.submit(saveBtn.closest('form')!); });
     
     await waitFor(() => {
       expect(mockGetEntityBusinessMetadata).toHaveBeenCalledWith('test-guid-123', expect.any(Object));
@@ -188,10 +188,10 @@ describe('BMAttributes Component', () => {
     
     render(<TestWrapper><BMAttributes {...defaultProps} /></TestWrapper>);
     
-    fireEvent.click(screen.getAllByRole('button', { name: /edit/i })[0]);
+    fireEvent.click(screen.getByText('Edit').closest('button')!);
     
     const saveBtn = screen.getAllByRole('button', { name: /save/i })[0];
-    fireEvent.click(saveBtn);
+    await act(async () => { fireEvent.submit(saveBtn.closest('form')!); });
     
     await waitFor(() => {
       expect(mockGetEntityBusinessMetadata).toHaveBeenCalled();

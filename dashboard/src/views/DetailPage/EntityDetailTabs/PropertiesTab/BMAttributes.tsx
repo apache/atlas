@@ -552,13 +552,12 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
                               No properties have been created yet. To add a
                               property, click{" "}
                               <Typography
-                                className="text-color-green cursor-pointer"
-                                component="span"
-                                onClick={(e: { stopPropagation: () => void }) => {
-                                  e.stopPropagation();
-                                  setAddLabel(false);
-                                }}
                                 className="text-color-green cursor-pointer text-underline"
+                              component="span"
+                              onClick={(e: { stopPropagation: () => void }) => {
+                                e.stopPropagation();
+                                setAddLabel(false);
+                              }}
                               >
                                 here
                               </Typography>

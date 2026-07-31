@@ -16,7 +16,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@utils/test-utils';
+import { render, screen, fireEvent, waitFor, act } from '@utils/test-utils';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import Labels from '../Labels';
@@ -102,7 +102,7 @@ describe('Labels Component', () => {
   it('allows clicking edit to show autocomplete form', async () => {
     render(<TestWrapper><Labels {...defaultProps} /></TestWrapper>);
     
-    const editBtn = screen.getByTestId('edit-label');
+    const editBtn = screen.getByText('Edit').closest('button')!;
     fireEvent.click(editBtn);
 
     expect(await screen.findByPlaceholderText('Select Label')).toBeInTheDocument();
@@ -123,11 +123,11 @@ describe('Labels Component', () => {
     render(<TestWrapper><Labels {...defaultProps} /></TestWrapper>);
     
     // Click Edit
-    fireEvent.click(screen.getAllByRole('button', { name: /edit/i })[0]);
+    fireEvent.click(screen.getByText('Edit').closest('button')!);
     
     // Since autocomplete already has default value, let's just save
     const saveBtn = screen.getAllByRole('button', { name: /save/i })[0];
-    fireEvent.click(saveBtn);
+    await act(async () => { fireEvent.submit(saveBtn.closest('form')!); });
     
     await waitFor(() => {
       expect(mockGetLabels).toHaveBeenCalledWith('test-guid-123', ['Label1', 'Label2']);
@@ -141,11 +141,11 @@ describe('Labels Component', () => {
     render(<TestWrapper><Labels {...defaultProps} /></TestWrapper>);
     
     // Click Edit
-    fireEvent.click(screen.getAllByRole('button', { name: /edit/i })[0]);
+    fireEvent.click(screen.getByText('Edit').closest('button')!);
     
     // Save
     const saveBtn = screen.getAllByRole('button', { name: /save/i })[0];
-    fireEvent.click(saveBtn);
+    await act(async () => { fireEvent.submit(saveBtn.closest('form')!); });
     
     await waitFor(() => {
       expect(mockGetLabels).toHaveBeenCalled();
@@ -162,7 +162,7 @@ describe('Labels Component', () => {
     render(<TestWrapper><Labels {...defaultProps} /></TestWrapper>);
     
     // Click Edit
-    fireEvent.click(screen.getAllByRole('button', { name: /edit/i })[0]);
+    fireEvent.click(screen.getByText('Edit').closest('button')!);
     
     const input = await screen.findByPlaceholderText('Select Label');
     fireEvent.mouseDown(input);

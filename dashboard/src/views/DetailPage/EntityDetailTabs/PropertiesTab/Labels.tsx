@@ -150,8 +150,8 @@ const Labels = ({ loading, labels, entity }: LabelsProps) => {
       return;
     }
     try {
-      await getLabels(guid, payload);
-      toast.dismiss(toastId.current);
+      await getLabels(guid as string, payload);
+      if (toastId.current) { toast.dismiss(toastId.current); }
       toastId.current = toast.success(
         "One or more labels were updated successfully"
       );
@@ -162,7 +162,7 @@ const Labels = ({ loading, labels, entity }: LabelsProps) => {
 
       setAddLabel(true);
     } catch (error) {
-      toast.dismiss(toastId.current);
+      if (toastId.current) { toast.dismiss(toastId.current); }
       serverError(error, toastId);
     }
   };
@@ -291,7 +291,6 @@ const Labels = ({ loading, labels, entity }: LabelsProps) => {
                         <>
                           No labels have been created yet. To add a labels, click{" "}
                           <Typography
-                            className="text-color-green cursor-pointer"
                             component="span"
                             onClick={(e: { stopPropagation: () => void }) => {
                               e.stopPropagation();
