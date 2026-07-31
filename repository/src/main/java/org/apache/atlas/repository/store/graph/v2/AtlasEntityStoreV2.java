@@ -600,9 +600,22 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 response.addEntity(PURGE, entry.getValue());
                 notificationResponse.addEntity(PURGE, entry.getValue());
             } else {
-                String guid = entry.getValue().getGuid();
-                LOG.debug("Purge batch skipped guid={} as vertex was not deleted by this batch, assuming concurrently removed", guid);
-                addPurgeBatchFailure(response, guid, AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
+                String      guid   = entry.getValue().getGuid();
+                AtlasVertex vertex = entry.getKey();
+                try {
+                    if (!vertex.exists()) {
+                        // Hard-deleted while processing an earlier vertex in this batch (ATLAS-4766).
+                        // Count as purged using the header captured at batch start; do not notify again.
+                        LOG.debug("Purge batch counted guid={} as purged after concurrent removal within batch", guid);
+                        response.addEntity(PURGE, entry.getValue());
+                    } else {
+                        LOG.debug("Purge batch skipped guid={} as vertex was not deleted by this batch", guid);
+                        addPurgeBatchFailure(response, guid, AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
+                    }
+                } catch (IllegalStateException e) {
+                    LOG.debug("Purge batch counted guid={} as purged; batch vertex handle no longer valid", guid, e);
+                    response.addEntity(PURGE, entry.getValue());
+                }
             }
         }
 
