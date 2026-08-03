@@ -20,6 +20,7 @@ package org.apache.atlas.web.errors;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.server.common.errors.AtlasBaseExceptionMapper;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -62,5 +63,18 @@ public class AtlasBaseExceptionMapperTest {
             // Exception is acceptable as it might be thrown by the utility methods
             assertTrue(true);
         }
+    }
+
+    @Test
+    public void testUnauthorizedAccessResponse() {
+        AtlasBaseException testException = new AtlasBaseException(
+                AtlasErrorCode.UNAUTHORIZED_ACCESS, "testuser", "post on rest notification service");
+
+        Response response = atlasBaseExceptionMapper.toResponse(testException);
+
+        assertEquals(response.getStatus(), Response.Status.FORBIDDEN.getStatusCode());
+        String entity = (String) response.getEntity();
+        assertTrue(entity.contains("ATLAS-403-00-001"));
+        assertTrue(entity.contains("not authorized to perform post on rest notification service"));
     }
 }
