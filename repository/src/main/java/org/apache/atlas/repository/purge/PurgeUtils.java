@@ -42,7 +42,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -188,10 +187,7 @@ public final class PurgeUtils {
     }
 
     public static String buildGuidParams(Collection<String> guids) {
-        return guids.stream()
-                .filter(Objects::nonNull)
-                .sorted()
-                .collect(Collectors.joining(","));
+        return guids == null ? "[]" : guids.toString();
     }
 
     public static boolean isPurgeSummaryAudit(AtlasAuditEntry entry) {
@@ -289,16 +285,6 @@ public final class PurgeUtils {
         auditSearchParameters.setAuditFilters(newFilters);
     }
 
-    public static List<String> paginateStringList(List<String> values, int limit, int offset) {
-        if (values == null || values.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        int from = Math.min(Math.max(offset, 0), values.size());
-        int to   = Math.min(from + Math.max(limit, 0), values.size());
-        return new ArrayList<>(values.subList(from, to));
-    }
-
     public static boolean hasRunIdFilter(SearchParameters.FilterCriteria auditFilters) {
         if (auditFilters == null) {
             return false;
@@ -334,6 +320,30 @@ public final class PurgeUtils {
         }
 
         return orderedEntityGuids;
+    }
+
+    /**
+     * Read-time transform for SUMMARY purge rows returned from audit listing.
+     * Params are stored in legacy bracket form at write time; only result/resultCount are built here.
+     */
+    public static void buildPurgeSummaryResult(AtlasAuditEntry entry, List<String> guids) {
+        if (entry == null) {
+            return;
+        }
+
+        List<String> purgedGuids = guids != null ? guids : new ArrayList<>();
+        entry.setResult(buildGuidResult(purgedGuids));
+        entry.setResultCount(purgedGuids.size());
+    }
+
+    public static String buildGuidResult(Collection<String> guids) {
+        if (guids == null || guids.isEmpty()) {
+            return "";
+        }
+
+        return guids.stream()
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.joining(","));
     }
 
     private static void appendPurgedGuidsFromBatchResult(String result, List<String> orderedEntityGuids, Set<String> seen) {

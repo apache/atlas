@@ -78,7 +78,7 @@ public final class PurgeAuditWriter {
             result      = "";
             resultCount = 0;
         } else {
-            result = PurgeUtils.buildGuidParams(purgedEntities.stream()
+            result = PurgeUtils.buildGuidResult(purgedEntities.stream()
                     .map(AtlasEntityHeader::getGuid)
                     .collect(Collectors.toList()));
             resultCount = purgedEntities.size();

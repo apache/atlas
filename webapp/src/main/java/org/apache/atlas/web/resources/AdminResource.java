@@ -1058,12 +1058,25 @@ public class AdminResource {
 
             if (summaryOnlyListing) {
                 // Defensive post-filter for BATCH rows still returned by the index.
-                return PurgeUtils.excludeBatchRowsFromResults(auditEntries);
+                auditEntries = PurgeUtils.excludeBatchRowsFromResults(auditEntries);
             }
 
+            buildPurgeSummaryResults(auditEntries);
             return auditEntries;
         } finally {
             AtlasPerfTracer.log(perf);
+        }
+    }
+
+    private void buildPurgeSummaryResults(List<AtlasAuditEntry> auditEntries) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(auditEntries)) {
+            return;
+        }
+
+        for (AtlasAuditEntry entry : auditEntries) {
+            if (PurgeUtils.isPurgeSummaryAudit(entry)) {
+                PurgeUtils.buildPurgeSummaryResult(entry, auditService.getPurgedEntityGuidsForRun(entry));
+            }
         }
     }
 
@@ -1085,24 +1098,24 @@ public class AdminResource {
 
             AtlasAuditEntry auditEntry = auditService.toAtlasAuditEntry(entityStore.getById(auditGuid, false, true));
 
-            // Summary purge audit rows store PurgeSummary JSON in result, not entity GUIDs.
-            if (auditEntry != null && PurgeUtils.isPurgeSummaryAudit(auditEntry)) {
-                return ret;
-            }
+            if (auditEntry != null) {
+                boolean isSummaryPurgeAudit = PurgeUtils.isPurgeSummaryAudit(auditEntry);
 
-            if (auditEntry != null && StringUtils.isNotEmpty(auditEntry.getResult())) {
-                String[]            listOfResultGuid = auditEntry.getResult().split(",");
-                EntityAuditActionV2 auditAction      = auditEntry.getOperation().toEntityAuditActionV2();
+                if (isSummaryPurgeAudit || StringUtils.isNotEmpty(auditEntry.getResult())) {
+                    String[] listOfResultGuid = isSummaryPurgeAudit
+                            ? auditService.getPurgedEntityGuidsForRun(auditEntry).toArray(new String[0])
+                            : auditEntry.getResult().split(",");
+                    EntityAuditActionV2 auditAction = auditEntry.getOperation().toEntityAuditActionV2();
 
-                if (offset <= listOfResultGuid.length) {
-                    for (int index = offset; index < listOfResultGuid.length && index < (offset + limit); index++) {
-                        List<EntityAuditEventV2> events = auditRepository.listEventsV2(listOfResultGuid[index], auditAction, null, (short) 1);
+                    if (offset <= listOfResultGuid.length) {
+                        for (int index = offset; index < listOfResultGuid.length && index < (offset + limit); index++) {
+                            List<EntityAuditEventV2> events = auditRepository.listEventsV2(listOfResultGuid[index], auditAction, null, (short) 1);
 
-                        for (EntityAuditEventV2 event : events) {
-                            AtlasEntityHeader entityHeader = event.getEntityHeader();
-
-                            if (entityHeader != null) {
-                                ret.add(entityHeader);
+                            for (EntityAuditEventV2 event : events) {
+                                AtlasEntityHeader entityHeader = event.getEntityHeader();
+                                if (entityHeader != null) {
+                                    ret.add(entityHeader);
+                                }
                             }
                         }
                     }
@@ -1116,20 +1129,19 @@ public class AdminResource {
     }
 
     @GET
-    @Path("/audit/{auditGuid}/purgedEntities")
+    @Path("/audit/{auditGuid}/summary")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public List<String> getPurgeAuditPurgedEntities(@PathParam("auditGuid") String auditGuid,
-                                                    @QueryParam("limit") @DefaultValue("100") int limit,
-                                                    @QueryParam("offset") @DefaultValue("0") int offset) throws AtlasBaseException {
+    public PurgeSummary getPurgeAuditSummary(@PathParam("auditGuid") String auditGuid) throws AtlasBaseException {
         AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_AUDITS), "Admin Audits");
 
-        AtlasAuditEntry auditEntry = loadPurgeAuditEntry(auditGuid);
+        AtlasAuditEntry auditEntry = loadSummaryPurgeAuditEntry(auditGuid);
+        PurgeSummary    summary    = PurgeUtils.parsePurgeSummary(auditEntry);
 
-        List<String> purgedGuids = PurgeUtils.isPurgeSummaryAudit(auditEntry)
-                ? auditService.getPurgedEntityGuidsForRun(auditEntry)
-                : PurgeUtils.collectPurgedGuidsFromBatchEntries(Collections.singletonList(auditEntry));
+        if (summary == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "No purge summary for audit: " + auditGuid);
+        }
 
-        return PurgeUtils.paginateStringList(purgedGuids, limit, offset);
+        return summary;
     }
 
     @GET
