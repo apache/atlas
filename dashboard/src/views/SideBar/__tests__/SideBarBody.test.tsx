@@ -26,6 +26,7 @@ import * as rootClassificationSlice from '@redux/slice/rootClassificationSlice';
 import * as typeDefHeaderSlice from '@redux/slice/typeDefSlices/typeDefHeaderSlice';
 import * as allEntityTypesSlice from '@redux/slice/allEntityTypesSlice';
 import * as metricsSlice from '@redux/slice/metricsSlice';
+import * as sessionSlice from '@redux/slice/sessionSlice';
 
 // Mock react-quill-new
 jest.mock('react-quill-new', () => {
@@ -136,6 +137,7 @@ jest.mock('@redux/slice/rootClassificationSlice');
 jest.mock('@redux/slice/typeDefSlices/typeDefHeaderSlice');
 jest.mock('@redux/slice/allEntityTypesSlice');
 jest.mock('@redux/slice/metricsSlice');
+jest.mock('@redux/slice/sessionSlice');
 
 // Mock utils
 jest.mock('@utils/Enum', () => ({
@@ -154,7 +156,7 @@ const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
-  useLocation: () => ({ pathname: '/search' }),
+  useLocation: () => (global as any).mockLocation || { pathname: '/search', search: '' },
   useRoutes: () => null,
   matchRoutes: () => [{ route: { path: '/search' } }],
   Outlet: () => <div data-testid="outlet">Outlet Content</div>
@@ -212,6 +214,7 @@ describe('SideBarBody', () => {
     (typeDefHeaderSlice.fetchTypeHeaderData as jest.Mock) = jest.fn().mockReturnValue(mockDispatch);
     (allEntityTypesSlice.fetchRootEntity as jest.Mock) = jest.fn().mockReturnValue(mockDispatch);
     (metricsSlice.fetchMetricEntity as jest.Mock) = jest.fn().mockReturnValue(mockDispatch);
+    (sessionSlice.fetchVersionData as jest.Mock) = jest.fn().mockReturnValue(mockDispatch);
   });
 
   afterEach(() => {
@@ -459,6 +462,12 @@ describe('SideBarBody', () => {
       expect(metricsSlice.fetchMetricEntity).toHaveBeenCalled();
     });
 
+    it('should dispatch fetchVersionData on mount', () => {
+      renderWithProviders();
+      
+      expect(sessionSlice.fetchVersionData).toHaveBeenCalled();
+    });
+
     it('should pass loading state to tree components', () => {
       const store = createMockStore({ loading: true });
       renderWithProviders(defaultProps, { store });
@@ -688,18 +697,6 @@ describe('SideBarBody', () => {
       });
     });
 
-    it('should apply active state markers correctly', async () => {
-      // Since our mock route is /search, isEntitiesActive should be true if type param exists, etc.
-      // But we can just test if the style is applied correctly to the container box based on the current state.
-      // We will look at the border color for the entities box which is active if type param is present.
-      // For this test, let's verify the tooltips exist and the buttons are rendered.
-      const entitiesIcon = screen.getByAltText('entities');
-      expect(entitiesIcon).toBeInTheDocument();
-      
-      const classificationsIcon = screen.getByAltText('classifications');
-      expect(classificationsIcon).toBeInTheDocument();
-    });
-
     it('should close popover when clicking outside', async () => {
       // Open glossary popover
       const glossaryIcon = screen.getByAltText('glossary');
@@ -720,6 +717,36 @@ describe('SideBarBody', () => {
       await waitFor(() => {
         expect(screen.queryByTestId('glossary-tree')).not.toBeInTheDocument();
       });
+    });
+  });
+
+  describe('Active State Markers', () => {
+    it('should apply active state markers correctly', async () => {
+      // Test Entities active (type param present but isCF is not true)
+      (global as any).mockLocation = { pathname: '/search', search: '?type=table' };
+      const { unmount: unmount1 } = renderWithProviders();
+      let toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
+      fireEvent.click(toggleButton!);
+      
+      let entitiesIcon = screen.getByAltText('entities');
+      expect(entitiesIcon.closest('.sidebar-icon-active')).toBeInTheDocument();
+      unmount1();
+
+      // Test Custom Filters active (isCF=true)
+      (global as any).mockLocation = { pathname: '/search', search: '?isCF=true&type=myFilter' };
+      const { unmount: unmount2 } = renderWithProviders();
+      toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
+      fireEvent.click(toggleButton!);
+      
+      let customFiltersIcon = screen.getByAltText('custom filters');
+      expect(customFiltersIcon.closest('.sidebar-icon-active')).toBeInTheDocument();
+      
+      // Entities should NOT be active if isCF=true
+      entitiesIcon = screen.getByAltText('entities');
+      expect(entitiesIcon.closest('.sidebar-icon-active')).not.toBeInTheDocument();
+      unmount2();
+
+      (global as any).mockLocation = undefined;
     });
   });
 });

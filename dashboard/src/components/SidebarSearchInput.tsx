@@ -67,7 +67,6 @@ export const SidebarSearchInput: React.FC<SidebarSearchInputProps> = ({
               height: "16px",
               filter: "brightness(0.4)",
               opacity: 1,
-              cursor: "pointer",
               marginLeft: "4px"
             }}
             alt="Search"

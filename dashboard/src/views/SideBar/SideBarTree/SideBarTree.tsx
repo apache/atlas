@@ -354,15 +354,32 @@ const BarTreeView: FC<{
     );
 
     const filteredData = useMemo(() => {
-      return treeData.filter((node) => {
-        return (
-          node.label?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (node.children &&
-            node.children.some((child) =>
-              child.label?.toLowerCase().includes(searchTerm.toLowerCase())
-            ))
-        );
-      });
+      if (!searchTerm) return treeData;
+      
+      const lowerTerm = searchTerm.toLowerCase();
+
+      const filterNodes = (nodes: TreeNode[]): TreeNode[] => {
+        return nodes.reduce((acc: TreeNode[], node) => {
+          const isMatch = node.label?.toLowerCase().includes(lowerTerm);
+          let filteredChildren: TreeNode[] | undefined = undefined;
+          
+          if (node.children) {
+            filteredChildren = filterNodes(node.children);
+          }
+          
+          const hasMatchingChildren = filteredChildren && filteredChildren.length > 0;
+          
+          if (isMatch || hasMatchingChildren) {
+            acc.push({
+              ...node,
+              children: isMatch ? node.children : filteredChildren
+            });
+          }
+          return acc;
+        }, []);
+      };
+
+      return filterNodes(treeData);
     }, [treeData, searchTerm]);
 
     const displayTreeName = useMemo(() => {
@@ -373,7 +390,8 @@ const BarTreeView: FC<{
       return (text: string) => {
         if (!searchTerm) return text;
 
-        const parts = text.split(new RegExp(`(${searchTerm})`, "gi"));
+        const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const parts = text.split(new RegExp(`(${escapedSearchTerm})`, "gi"));
         return parts.map((part, index) =>
           part.toLowerCase() === searchTerm.toLowerCase() ? (
             <span key={index} className="sidebar-tree-highlight">

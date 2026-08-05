@@ -18,13 +18,21 @@
 import { Avatar } from "@mui/material";
 import { getEntityIconPath } from "../utils/Utils";
 
+interface DisplayImageProps {
+  entity: Record<string, any>;
+  width?: string | number;
+  height?: string | number;
+  avatarDisplay?: boolean;
+  isProcess?: boolean;
+}
+
 const DisplayImage = ({
   entity,
   width,
   height,
   avatarDisplay,
   isProcess
-}: any) => {
+}: DisplayImageProps) => {
   const entityData = { ...entity, isProcess: isProcess };
   
   const primaryUrl = getEntityIconPath({ entityData }) || "";

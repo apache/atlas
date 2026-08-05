@@ -181,4 +181,17 @@ describe('About', () => {
 		expect(versionTypography.textContent).toContain('Version:')
 		expect(versionTypography.textContent).not.toContain('undefined')
 	})
+
+	it('should render gracefully on Redux error state', () => {
+		useAppSelectorSpy.mockReturnValue({ data: null, loading: false, error: 'Network error' })
+
+		render(<About />)
+
+		// Verify no skeleton is stuck
+		expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
+		
+		// Verify no crash, UI still renders
+		expect(screen.getByText(/Version:/i)).toBeInTheDocument()
+		expect(screen.getByText('Get involved!')).toBeInTheDocument()
+	})
 })
