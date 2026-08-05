@@ -120,6 +120,12 @@ jest.mock('@components/SkeletonLoader', () => {
 	}
 })
 
+jest.mock('@components/TreeSkeletonLoader', () => {
+	return function MockTreeSkeletonLoader(props: any) {
+		return <div data-testid="tree-skeleton-loader" data-count={props.count}>Loading Tree Skeleton...</div>
+	}
+})
+
 // Mock MUI X Tree components - following pattern from FormTreeView.test.tsx
 jest.mock('@mui/x-tree-view', () => {
 	const React = require('react')
@@ -167,7 +173,7 @@ jest.mock('@components/muiComponents', () => ({
 	MoreVertIcon: ({ onClick, ...props }: any) => (
 		<div data-testid="more-vert-icon" onClick={onClick} {...props}>More</div>
 	),
-	LightTooltip: ({ children, title }: any) => <div title={title}>{children}</div>,
+	LightTooltip: ({ children, title, disableHoverListener }: any) => <div title={title} data-testid="light-tooltip" data-disabled={disableHoverListener}>{children}</div>,
 	FileDownloadIcon: () => <div data-testid="file-download-icon">Download</div>,
 	FormatListBulletedIcon: () => <div data-testid="format-list-icon">List</div>,
 	AccountTreeIcon: ({ onClick, ...props }: any) => (
@@ -332,7 +338,7 @@ describe('SideBarTree', () => {
 			renderComponent({ loader: true })
 
 			await waitFor(() => {
-				expect(screen.getAllByTestId('skeleton-loader').length).toBeGreaterThan(0)
+				expect(screen.getAllByTestId('tree-skeleton-loader').length).toBeGreaterThan(0)
 			})
 		})
 
@@ -340,7 +346,7 @@ describe('SideBarTree', () => {
 			renderComponent({ loader: false })
 
 			await waitFor(() => {
-				expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
+				expect(screen.queryByTestId('tree-skeleton-loader')).not.toBeInTheDocument()
 			})
 		})
 	})
@@ -2180,6 +2186,78 @@ describe('SideBarTree', () => {
 			expect(screen.queryByTestId('account-tree-icon')).not.toBeInTheDocument()
 			expect(screen.queryByTestId('ant-switch')).not.toBeInTheDocument()
 			expect(mockSetIsEmptyServicetype).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('Reviewer Requested Tests', () => {
+		it('should render skeleton loader with 2 rows when isPopover is true', async () => {
+			renderComponent({ loader: true, isPopover: true })
+
+			await waitFor(() => {
+				const loader = screen.getByTestId('tree-skeleton-loader')
+				expect(loader).toBeInTheDocument()
+				expect(loader).toHaveAttribute('data-count', '2')
+			})
+		})
+
+		it('should persist selected state from URL params for custom filters when reopened in popover', async () => {
+			const treeData = [
+				{ id: 'customFilter1', label: 'Custom Filter 1', children: [] }
+			]
+			renderComponent({ 
+				treeData, 
+				treeName: 'CustomFilters', 
+				isPopover: true 
+			}, {}, ['/search/searchResult?searchType=BASIC&isCF=true&type=customFilter1'])
+
+			await waitFor(() => {
+				const treeView = screen.getByTestId('simple-tree-view')
+				expect(treeView).toBeInTheDocument()
+				const expandedItems = JSON.parse(treeView.getAttribute('data-expanded-items') || '[]')
+				expect(expandedItems).toContain('customFilter1')
+			})
+		})
+
+		it('should enable tooltip when text overflows (scrollWidth > clientWidth)', async () => {
+			// Mock HTMLElement properties
+			const originalScrollWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollWidth')
+			const originalClientWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth')
+
+			Object.defineProperty(HTMLElement.prototype, 'scrollWidth', { configurable: true, value: 200 })
+			Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 100 })
+
+			renderComponent({ treeData: [{ id: 'node1', label: 'Long Text Node', children: [] }] })
+
+			await waitFor(() => {
+				const tooltips = screen.getAllByTestId('light-tooltip')
+				const tooltip = tooltips.find(t => t.getAttribute('title') === 'Long Text Node')
+				expect(tooltip).toBeDefined()
+				expect(tooltip).toHaveAttribute('data-disabled', 'false')
+			})
+
+			// Restore
+			if (originalScrollWidth) Object.defineProperty(HTMLElement.prototype, 'scrollWidth', originalScrollWidth)
+			if (originalClientWidth) Object.defineProperty(HTMLElement.prototype, 'clientWidth', originalClientWidth)
+		})
+
+		it('should disable tooltip when text fits (scrollWidth <= clientWidth)', async () => {
+			const originalScrollWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollWidth')
+			const originalClientWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth')
+
+			Object.defineProperty(HTMLElement.prototype, 'scrollWidth', { configurable: true, value: 100 })
+			Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 100 })
+
+			renderComponent({ treeData: [{ id: 'node1', label: 'Short Text Node', children: [] }] })
+
+			await waitFor(() => {
+				const tooltips = screen.getAllByTestId('light-tooltip')
+				const tooltip = tooltips.find(t => t.getAttribute('title') === 'Short Text Node')
+				expect(tooltip).toBeDefined()
+				expect(tooltip).toHaveAttribute('data-disabled', 'true')
+			})
+
+			if (originalScrollWidth) Object.defineProperty(HTMLElement.prototype, 'scrollWidth', originalScrollWidth)
+			if (originalClientWidth) Object.defineProperty(HTMLElement.prototype, 'clientWidth', originalClientWidth)
 		})
 	})
 })
