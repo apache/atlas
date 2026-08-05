@@ -32,14 +32,6 @@
             com.sun.jersey.spi.spring.container.servlet.SpringServlet
         </servlet-class>
         <init-param>
-            <param-name>com.sun.jersey.config.property.resourceClassNames</param-name>
-            <param-value>org.apache.atlas.notification.rest.web.rest.NotificationREST;org.apache.atlas.notification.rest.web.resources.AdminResource</param-value>
-        </init-param>
-        <init-param>
-            <param-name>com.sun.jersey.config.property.provider.classnames</param-name>
-            <param-value>org.apache.atlas.server.common.errors.AtlasBaseExceptionMapper;org.apache.atlas.server.common.errors.AllExceptionMapper;org.apache.atlas.server.common.errors.NotFoundExceptionMapper</param-value>
-        </init-param>
-        <init-param>
             <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
             <param-value>true</param-value>
         </init-param>
