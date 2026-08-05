@@ -145,20 +145,32 @@ const SideBarBody = (props: {
   const [isBottomHalf, setIsBottomHalf] = useState<boolean>(false);
 
   const handlePopoverOpen = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
-    setPopoverAnchor(event.currentTarget);
-    setActivePopover(id);
+    const target = event.currentTarget;
 
-    // Calculate remaining screen height from the anchor to the bottom
-    const rect = event.currentTarget.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.top - 24;
-    const isBottom = spaceBelow < 350;
-    setIsBottomHalf(isBottom);
+    const openNewPopover = () => {
+      setPopoverAnchor(target);
+      setActivePopover(id);
 
-    if (isBottom) {
-      const spaceAbove = rect.bottom - 24;
-      setPopoverMaxHeight(`${Math.max(250, spaceAbove)}px`);
+      // Calculate remaining screen height from the anchor to the bottom
+      const rect = target.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.top - 24;
+      const isBottom = spaceBelow < 350;
+      setIsBottomHalf(isBottom);
+
+      if (isBottom) {
+        const spaceAbove = rect.bottom - 24;
+        setPopoverMaxHeight(`${Math.max(250, spaceAbove)}px`);
+      } else {
+        setPopoverMaxHeight(`${Math.max(250, spaceBelow)}px`);
+      }
+    };
+
+    // If a different popover is already open, close it first to ensure clean unmount
+    if (activePopover && activePopover !== id) {
+      handlePopoverClose();
+      setTimeout(openNewPopover, 0);
     } else {
-      setPopoverMaxHeight(`${Math.max(250, spaceBelow)}px`);
+      openNewPopover();
     }
   };
 
@@ -175,34 +187,7 @@ const SideBarBody = (props: {
     </div>
   );
 
-  const [position, setPosition] = useState<string | number>(defaultDrawerWidth);
-  const draggerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
-  const windowWidth = window.innerWidth;
-  const minPosition = 300;
-  const maxPosition = windowWidth * 0.6;
-
-  const handleMouseMove = (e: MouseEvent) => {
-    let newPosition = e.clientX;
-
-    if (newPosition < minPosition) {
-      newPosition = minPosition;
-    } else if (newPosition > maxPosition) {
-      newPosition = maxPosition;
-    }
-
-    setPosition(newPosition);
-  };
-
-  const handleMouseUp = () => {
-    window.removeEventListener("mousemove", handleMouseMove);
-    window.removeEventListener("mouseup", handleMouseUp);
-  };
-
-  const handleMouseDown = () => {
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-  };
 
   useEffect(() => {
     dispatch(fetchTypeHeaderData());
@@ -234,15 +219,7 @@ const SideBarBody = (props: {
     [handleAtlasLogoClick]
   );
 
-  useEffect(() => {
-    const draggerElement = draggerRef.current;
 
-    draggerElement?.addEventListener("mousedown", handleMouseDown);
-
-    return () => {
-      draggerElement?.removeEventListener("mousedown", handleMouseDown);
-    };
-  }, []);
 
   const routeConfig = Object.keys(PathAssociateWithModule).map((key) => {
     return {
@@ -308,7 +285,7 @@ const SideBarBody = (props: {
 
       <Drawer
         sx={{
-          width: open ? position : "60px",
+          width: open ? defaultDrawerWidth : "60px",
           flexShrink: 0,
           minHeight: "calc(100vh - 64px)",
           minWidth: "60px",
@@ -324,7 +301,7 @@ const SideBarBody = (props: {
             position: "fixed",
             top: "0",
             left: "0",
-            width: open ? position : "60px",
+            width: open ? defaultDrawerWidth : "60px",
             transition: "width 0.2s",
             ...(!open && {
               transform: "none !important",
@@ -333,7 +310,7 @@ const SideBarBody = (props: {
           },
         }}
         PaperProps={{
-          style: { width: open ? position : "60px", minWidth: "60px" },
+          style: { width: open ? defaultDrawerWidth : "60px", minWidth: "60px" },
         }}
         variant="persistent"
         anchor="left"
@@ -373,7 +350,7 @@ const SideBarBody = (props: {
                 {/* Search */}
                 <Box sx={{ display: "flex", justifyContent: "center", borderLeft: "4px solid transparent", borderRight: "4px solid transparent", background: "transparent" }}>
                   <Tooltip title="Search" placement="right">
-                    <IconButton onClick={() => setOpen(true)} sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.1)' } }}>
+                    <IconButton aria-expanded={open} onClick={() => setOpen(true)} sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.1)' } }}>
                       <img src="/img/sidebar-icons/icon-search.svg" className="sidebar-module-icon" alt="search" />
                     </IconButton>
                   </Tooltip>
@@ -502,7 +479,7 @@ const SideBarBody = (props: {
               overflowX: "hidden",
               overflowY: "auto",
               paddingBottom: "48px", // Added space so it doesn't touch the bottom toggle button
-              ...(open == false && {
+              ...(!open && {
                 overflow: "hidden",
                 display: "none",
               }),
