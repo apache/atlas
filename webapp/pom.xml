@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.apache.atlas</groupId>
         <artifactId>apache-atlas</artifactId>
-        <version>2.6.0-SNAPSHOT</version>
+        <version>2.6.0</version>
     </parent>
 
     <artifactId>atlas-webapp</artifactId>
@@ -32,7 +32,7 @@
     <description>Apache Atlas Web Application</description>
 
     <properties>
-        <atlas.testtools.scope>test</atlas.testtools.scope>
+        <atlas.testtools.scope>runtime</atlas.testtools.scope>
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
         <checkstyle.skip>false</checkstyle.skip>
         <debug.jetty.daemon>true</debug.jetty.daemon>
@@ -533,7 +533,7 @@
                             <addClasspath>true</addClasspath>
                         </manifest>
                     </archive>
-                    <packagingExcludes>WEB-INF/lib/hbase-shaded-client-${hbase.version}-hadoop3.jar,WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/jsp-api*.jar,${packages.to.exclude}</packagingExcludes>
+                    <packagingExcludes>WEB-INF/lib/hbase-shaded-client-${hbase.version}-hadoop3.jar,WEB-INF/lib/hbase-shaded-mapreduce-${hbase.version}-hadoop3.jar,WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/jsp-api*.jar,${packages.to.exclude}</packagingExcludes>
                 </configuration>
             </plugin>
 
@@ -823,17 +823,6 @@
             </activation>
             <properties>
                 <packages.to.exclude>${distro.exclude.packages}</packages.to.exclude>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>embedded-solr-it</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <atlas.testtools.scope>runtime</atlas.testtools.scope>
-                <packages.to.exclude>WEB-INF/lib/dom4j-*.jar</packages.to.exclude>
             </properties>
         </profile>
 
