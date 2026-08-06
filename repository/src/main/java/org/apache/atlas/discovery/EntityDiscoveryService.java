@@ -101,6 +101,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -652,7 +653,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 AtlasVertex       vertex        = entityRetriever.getEntityVertex(endVertexGuid);
 
                 if (vertex != null) {
-                    AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(vertex, searchParameters.getAttributes());
+                    Set<String> requestedAttributes = CollectionUtils.isEmpty(searchParameters.getAttributes())
+                            ? Collections.emptySet()
+                            : searchParameters.getAttributes();
+                    AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(vertex, requestedAttributes);
 
                     if (searchParameters.getIncludeClassificationAttributes()) {
                         entity.setClassifications(entityRetriever.getAllClassifications(vertex));
@@ -990,7 +994,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 Collection<List<Object>>                values                = new ArrayList<>();
                 AtlasSearchResult.AttributeSearchResult attributeSearchResult = new AtlasSearchResult.AttributeSearchResult();
 
-                attributeSearchResult.setName(new ArrayList<>(attributes));
+                attributeSearchResult.setName(attributes == null ? null : new ArrayList<>(attributes));
 
                 for (AtlasVertex vertex : resultList) {
                     List<Object> row = new ArrayList<>();
@@ -1016,7 +1020,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             // By default any attribute that shows up in the search parameter should be sent back in the response
             // If additional values are requested then the entityAttributes will be a superset of the all search attributes
             // and the explicitly requested attribute(s)
-            Set<String> resultAttributes = new HashSet<>();
+            Set<String> resultAttributes = new LinkedHashSet<>();
             Set<String> entityAttributes = new HashSet<>();
 
             if (CollectionUtils.isNotEmpty(searchParameters.getAttributes())) {

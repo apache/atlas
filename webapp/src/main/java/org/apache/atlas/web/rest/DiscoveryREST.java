@@ -74,7 +74,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType.BASIC;
 import static org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType.DSL;
@@ -535,7 +534,7 @@ public class DiscoveryREST {
     @Timed
     public AtlasSearchResult searchRelatedEntities(@QueryParam("guid") String guid,
             @QueryParam("relation") String relation,
-            @QueryParam("attributes") Set<String> attributes,
+            @QueryParam("attributes") List<String> attributes,
             @QueryParam("sortBy") String sortByAttribute,
             @QueryParam("sortOrder") SortOrder sortOrder,
             @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
