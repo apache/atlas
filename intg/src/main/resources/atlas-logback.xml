@@ -67,6 +67,19 @@
     </rollingPolicy>
   </appender>
 
+  <appender name="PURGE_FAILURE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${atlas.log.dir}/purgefailure.log</file>
+    <append>true</append>
+    <encoder>
+      <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${atlas.log.dir}/purgefailure-%d.log</fileNamePattern>
+      <maxHistory>20</maxHistory>
+      <cleanHistoryOnStart>false</cleanHistoryOnStart>
+    </rollingPolicy>
+  </appender>
+
   <logger name="org.apache.atlas" additivity="false" level="info">
     <appender-ref ref="FILE"/>
   </logger>
@@ -89,6 +102,10 @@
 
   <logger name="FAILED" additivity="false" level="info">
     <appender-ref ref="FAILED"/>
+  </logger>
+
+  <logger name="PURGE_FAILURE" additivity="false" level="info">
+    <appender-ref ref="PURGE_FAILURE"/>
   </logger>
 
   <logger name="AUDIT" additivity="false" level="info">
