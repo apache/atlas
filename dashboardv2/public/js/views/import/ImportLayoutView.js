@@ -120,7 +120,9 @@ define([
                                 failedCount = response.failedImportInfoList.length,
                                 successCount = (response.successImportInfoList && response.successImportInfoList.length) || 0,
                                 totalCount = failedCount + successCount,
-                                notificationMsg = 'Glossary import completed with ' + failedCount + ' failure(s) out of ' + totalCount + ' term(s). See error details.';
+                                notificationMsg = that.isGlossary
+                                    ? 'Glossary import completed with ' + failedCount + ' failure(s) out of ' + totalCount + ' term(s). See error details.'
+                                    : 'Import completed with ' + failedCount + ' failure(s) out of ' + totalCount + ' item(s). See error details.';
                             success = false;
                             that.ui.errorDetails.empty();
                             Utils.notifyError({
@@ -128,11 +130,19 @@ define([
                             });
                             var modalTitle = '<div class="back-button importBackBtn" title="Back to import file"><i class="fa fa-angle-left "></i> </div> <div class="modal-name">Error Details</div>';
                             _.each(response.failedImportInfoList, function(err_obj, index) {
-                                var termLabel = err_obj.childObjectName || 'Unknown term';
-                                if (err_obj.parentObjectName) {
-                                    termLabel = err_obj.childObjectName + '@' + err_obj.parentObjectName;
+                                var termLabel = 'Unknown term',
+                                    errorLine = '';
+                                if (that.isGlossary) {
+                                    if (err_obj.childObjectName && err_obj.parentObjectName) {
+                                        termLabel = err_obj.childObjectName + '@' + err_obj.parentObjectName;
+                                    } else if (err_obj.childObjectName) {
+                                        termLabel = err_obj.childObjectName;
+                                    }
+                                    errorLine = (index + 1) + '. ' + _.escape(termLabel) + ': ' + _.escape(err_obj.remarks || '');
+                                } else {
+                                    errorLine = (index + 1) + '. ' + _.escape(err_obj.remarks || 'Import failed');
                                 }
-                                errorStr += '<li>' + (index + 1) + '. ' + _.escape(termLabel) + ': ' + _.escape(err_obj.remarks || '') + '</li>';
+                                errorStr += '<li>' + errorLine + '</li>';
                             });
                             that.ui.errorDetails.append(errorStr);
                             that.toggleErrorAndDropZoneView({ title: modalTitle, isErrorView: true });

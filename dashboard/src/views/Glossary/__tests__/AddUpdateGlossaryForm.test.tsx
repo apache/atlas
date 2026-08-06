@@ -32,8 +32,11 @@ const mockEditGlossary = jest.fn();
 const mockFetchGlossaryData = jest.fn();
 const mockOnClose = jest.fn();
 const mockToastSuccess = jest.fn();
+const mockToastError = jest.fn();
 const mockToastDismiss = jest.fn();
 const mockServerError = jest.fn();
+const mockPostGlossaryImportFormData = jest.fn();
+const mockDownloadGlossaryImportTemplate = jest.fn();
 
 // Mock glossary data
 const mockGlossaryData = [
@@ -57,8 +60,31 @@ const mockGlossaryData = [
 jest.mock('react-toastify', () => ({
 	toast: {
 		success: (...args: any[]) => mockToastSuccess(...args),
+		error: (...args: any[]) => mockToastError(...args),
 		dismiss: (...args: any[]) => mockToastDismiss(...args)
 	}
+}));
+
+jest.mock('@utils/glossaryImportFlow', () => ({
+	postGlossaryImportFormData: (...args: any[]) =>
+		mockPostGlossaryImportFormData(...args),
+	downloadGlossaryImportTemplate: (...args: any[]) =>
+		mockDownloadGlossaryImportTemplate(...args)
+}));
+
+jest.mock('@views/SideBar/Import/ImportLayout', () => ({
+	__esModule: true,
+	default: ({ setFileData, setProgress }: any) => (
+		<button
+			data-testid="select-import-file"
+			onClick={() => {
+				setFileData(new File(['term'], 'terms.csv', { type: 'text/csv' }));
+				setProgress(50);
+			}}
+		>
+			Select import file
+		</button>
+	)
 }));
 
 // Mock API methods
@@ -156,10 +182,10 @@ jest.mock('@utils/Utils', () => {
 // Mock Modal component
 jest.mock('@components/Modal', () => ({
 	__esModule: true,
-	default: ({ open, onClose, children, title, button1Label, button1Handler, button2Label, button2Handler, disableButton2 }: any) =>
+	default: ({ open, onClose, children, title, titleIcon, button1Label, button1Handler, button2Label, button2Handler, disableButton2 }: any) =>
 		open ? (
 			<div data-testid="modal">
-				<div data-testid="modal-title">{title}</div>
+				<div data-testid="modal-title">{titleIcon}{title}</div>
 				<div data-testid="modal-content">{children}</div>
 				<button data-testid="cancel-btn" onClick={button1Handler}>
 					{button1Label}
@@ -1363,6 +1389,84 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			await waitFor(() => {
 				expect(mockFetchGlossaryData).toHaveBeenCalled();
 			}, { timeout: 3000 });
+		});
+	});
+
+	describe('Glossary import failure handling', () => {
+		const switchToImportTab = () => {
+			fireEvent.click(screen.getByText('Import glossary terms'));
+		};
+
+		test('shows glossary summary toast and formatted error list on import failure', async () => {
+			mockPostGlossaryImportFormData.mockResolvedValue({
+				data: {
+					failedImportInfoList: [
+						{
+							childObjectName: 'Patient',
+							parentObjectName: 'Healthcare Glossary',
+							remarks: 'Invalid relation'
+						}
+					]
+				}
+			});
+
+			render(
+				<AddUpdateGlossaryForm
+					open={true}
+					onClose={mockOnClose}
+					isAdd={true}
+					node={undefined}
+				/>
+			);
+
+			switchToImportTab();
+			fireEvent.click(screen.getByTestId('select-import-file'));
+			fireEvent.click(screen.getByTestId('submit-btn'));
+
+			await waitFor(() => {
+				expect(mockPostGlossaryImportFormData).toHaveBeenCalled();
+				expect(mockToastError).toHaveBeenCalledWith(
+					'Glossary import completed with 1 failure(s) out of 1 term(s). See error details.'
+				);
+			});
+
+			expect(screen.getByTestId('modal-title')).toHaveTextContent('Error Details');
+			expect(
+				screen.getByText('1. Patient@Healthcare Glossary: Invalid relation')
+			).toBeInTheDocument();
+		});
+
+		test('returns to upload view when back is clicked from import error details', async () => {
+			mockPostGlossaryImportFormData.mockResolvedValue({
+				data: {
+					failedImportInfoList: [{ remarks: 'Bad row' }]
+				}
+			});
+
+			render(
+				<AddUpdateGlossaryForm
+					open={true}
+					onClose={mockOnClose}
+					isAdd={true}
+					node={undefined}
+				/>
+			);
+
+			switchToImportTab();
+			fireEvent.click(screen.getByTestId('select-import-file'));
+			fireEvent.click(screen.getByTestId('submit-btn'));
+
+			await waitFor(() => {
+				expect(screen.getByTestId('modal-title')).toHaveTextContent('Error Details');
+			});
+
+			fireEvent.click(
+				screen.getByRole('button', { name: 'Back to import file' })
+			);
+
+			expect(screen.getByTestId('modal-title')).toHaveTextContent('Create Glossary');
+			expect(screen.getByTestId('select-import-file')).toBeInTheDocument();
+			expect(screen.getByTestId('submit-btn')).toHaveTextContent('Upload');
 		});
 	});
 });

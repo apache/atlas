@@ -27,17 +27,27 @@ export interface GlossaryImportResponse {
 	successImportInfoList?: GlossaryImportFailure[];
 }
 
+/** Glossary-only: term label for TermName@GlossaryName when both names exist. */
+export const getGlossaryImportTermLabel = (
+	failure: GlossaryImportFailure
+): string => {
+	if (failure.childObjectName && failure.parentObjectName) {
+		return `${failure.childObjectName}@${failure.parentObjectName}`;
+	}
+	if (failure.childObjectName) {
+		return failure.childObjectName;
+	}
+	return "Unknown term";
+};
+
+/** Glossary-only: one formatted failure line (term label + reason). */
 export const formatGlossaryImportFailure = (
 	failure: GlossaryImportFailure
 ): string => {
-	const termLabel =
-		failure.childObjectName && failure.parentObjectName
-			? `${failure.childObjectName}@${failure.parentObjectName}`
-			: failure.childObjectName || "Unknown term";
-
-	return `${termLabel}: ${failure.remarks || "Import failed"}`;
+	return `${getGlossaryImportTermLabel(failure)}: ${failure.remarks || "Import failed"}`;
 };
 
+/** Glossary-only: summary toast for bulk glossary term import failures. */
 export const buildGlossaryImportFailureSummary = (
 	response: GlossaryImportResponse
 ): string => {
@@ -46,4 +56,50 @@ export const buildGlossaryImportFailureSummary = (
 	const totalCount = failedCount + successCount;
 
 	return `Glossary import completed with ${failedCount} failure(s) out of ${totalCount} term(s). See error details.`;
+};
+
+/** Generic import (e.g. Business Metadata): use raw remarks, not glossary @ labels. */
+export const formatGenericImportFailure = (
+	failure: GlossaryImportFailure
+): string => {
+	return failure.remarks || "Import failed";
+};
+
+/** Generic import summary when multiple failures exist (non-glossary imports). */
+export const buildGenericImportFailureSummary = (
+	response: GlossaryImportResponse
+): string => {
+	const failedCount = response.failedImportInfoList?.length || 0;
+	const successCount = response.successImportInfoList?.length || 0;
+	const totalCount = failedCount + successCount;
+
+	return `Import completed with ${failedCount} failure(s) out of ${totalCount} item(s). See error details.`;
+};
+
+/** Pick toast message based on import type — glossary vs shared/BM dialog. */
+export const getImportFailureToastMessage = (
+	isGlossaryImport: boolean,
+	response: GlossaryImportResponse
+): string => {
+	if (isGlossaryImport) {
+		return buildGlossaryImportFailureSummary(response);
+	}
+
+	const failedList = response.failedImportInfoList;
+	if (failedList && failedList.length === 1) {
+		return failedList[0]?.remarks ?? "Import failed";
+	}
+
+	return buildGenericImportFailureSummary(response);
+};
+
+/** Pick error-detail line based on import type. */
+export const formatImportFailureForDisplay = (
+	isGlossaryImport: boolean,
+	failure: GlossaryImportFailure
+): string => {
+	if (isGlossaryImport) {
+		return formatGlossaryImportFailure(failure);
+	}
+	return formatGenericImportFailure(failure);
 };

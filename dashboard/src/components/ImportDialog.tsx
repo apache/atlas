@@ -40,8 +40,8 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import { postGlossaryImportFormData } from "@utils/glossaryImportFlow";
 import { getApiErrorToastMessage } from "@utils/apiErrorToastMessage";
 import {
-  buildGlossaryImportFailureSummary,
-  formatGlossaryImportFailure,
+  formatImportFailureForDisplay,
+  getImportFailureToastMessage,
   GlossaryImportFailure
 } from "@utils/glossaryImportUtils";
 
@@ -79,6 +79,7 @@ export const ImportDialog: React.FC<CustomModalProps> = ({
   const [errorDetails, setErrorDetails] = useState(false);
   const [importData, setImportData] = useState<any>(null);
   const toastId: any = useRef(null);
+  const isGlossaryImport = title !== "Import Business Metadata";
 
   const onUpload = async () => {
     if (fileData) {
@@ -118,7 +119,7 @@ export const ImportDialog: React.FC<CustomModalProps> = ({
         if (importResp.data.failedImportInfoList != undefined) {
           toast.dismiss(toastId.current);
           toastId.current = toast.error(
-            buildGlossaryImportFailureSummary(importResp.data)
+            getImportFailureToastMessage(isGlossaryImport, importResp.data)
           );
 
           setErrorDetails(true);
@@ -213,7 +214,7 @@ export const ImportDialog: React.FC<CustomModalProps> = ({
                       >
                         <ListItemText
                           className="dropzone-listitem"
-                          primary={`${index + 1}. ${formatGlossaryImportFailure(value)}`}
+                          primary={`${index + 1}. ${formatImportFailureForDisplay(isGlossaryImport, value)}`}
                         />
                       </ListItem>
                     )
