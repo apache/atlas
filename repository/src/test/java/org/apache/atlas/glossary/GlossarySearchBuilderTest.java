@@ -33,6 +33,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -125,5 +127,16 @@ public class GlossarySearchBuilderTest {
         assertEquals(result.getApproximateCount(), 2);
         assertEquals(result.getGlossary().size(), 1);
         assertEquals(result.getGlossary().get(0).getTerms().size() + result.getGlossary().get(0).getCategories().size(), 1);
+    }
+
+    @Test
+    public void testSearchLoadsDetailedGlossaryOncePerRequest() throws AtlasBaseException {
+        GlossarySearchParameters parameters = new GlossarySearchParameters();
+        parameters.setLimit(25);
+        parameters.setOffset(0);
+
+        builder.search(parameters);
+
+        verify(mockGlossaryService, times(1)).getDetailedGlossary(anyString());
     }
 }

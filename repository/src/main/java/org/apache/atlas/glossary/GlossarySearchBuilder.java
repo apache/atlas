@@ -58,7 +58,8 @@ public class GlossarySearchBuilder {
         GlossaryExportDataCollector collector       = new GlossaryExportDataCollector(glossaryService);
         GlossaryExportFilter        filter          = new GlossaryExportFilter();
 
-        List<GlossaryExportRow> rows = filter.apply(collector.collect(exportParameters), exportParameters);
+        GlossaryExportDataCollector.CollectResult collected = collector.collectWithExtInfo(exportParameters);
+        List<GlossaryExportRow> rows = filter.apply(collected.getRows(), exportParameters);
         rows = filterByGlossaryName(rows, parameters);
         sort(rows, parameters);
 
@@ -67,7 +68,7 @@ public class GlossarySearchBuilder {
 
         LOG.debug("Glossary search matched {} rows, returning page of {}", totalCount, pageRows.size());
 
-        return buildResult(pageRows, totalCount, parameters);
+        return buildResult(pageRows, totalCount, parameters, collected.getExtInfoByGuid());
     }
 
     private GlossaryExportParameters toExportParameters(GlossarySearchParameters parameters) {
@@ -166,8 +167,8 @@ public class GlossarySearchBuilder {
         return new ArrayList<>(rows.subList(offset, end));
     }
 
-    private GlossarySearchResult buildResult(List<GlossaryExportRow> pageRows, long totalCount, GlossarySearchParameters parameters)
-            throws AtlasBaseException {
+    private GlossarySearchResult buildResult(List<GlossaryExportRow> pageRows, long totalCount, GlossarySearchParameters parameters,
+            Map<String, AtlasGlossary.AtlasGlossaryExtInfo> extInfoByGuid) throws AtlasBaseException {
         GlossarySearchResult result = new GlossarySearchResult();
         result.setApproximateCount(totalCount);
 
@@ -177,13 +178,12 @@ public class GlossarySearchBuilder {
         }
 
         Map<String, GlossarySearchResult.GlossaryDetail> glossaryByGuid = new LinkedHashMap<>();
-        Map<String, AtlasGlossary.AtlasGlossaryExtInfo> extByGuid     = new LinkedHashMap<>();
 
         boolean includeTerms      = parameters.getGlossaryType() != GlossarySearchParameters.GlossaryType.CATEGORY;
         boolean includeCategories = parameters.getGlossaryType() != GlossarySearchParameters.GlossaryType.TERM;
 
         for (GlossaryExportRow row : pageRows) {
-            AtlasGlossary.AtlasGlossaryExtInfo ext = extByGuid.computeIfAbsent(row.getGlossaryGuid(), this::loadExtInfoSafely);
+            AtlasGlossary.AtlasGlossaryExtInfo ext = extInfoByGuid.get(row.getGlossaryGuid());
 
             if (ext == null) {
                 continue;
@@ -209,15 +209,6 @@ public class GlossarySearchBuilder {
 
         result.setGlossary(new ArrayList<>(glossaryByGuid.values()));
         return result;
-    }
-
-    private AtlasGlossary.AtlasGlossaryExtInfo loadExtInfoSafely(String glossaryGuid) {
-        try {
-            return glossaryService.getDetailedGlossary(glossaryGuid);
-        } catch (AtlasBaseException e) {
-            LOG.warn("Failed to load detailed glossary for guid {}", glossaryGuid, e);
-            return null;
-        }
     }
 
     private GlossarySearchResult.GlossaryDetail buildGlossaryDetail(AtlasGlossary.AtlasGlossaryExtInfo ext) {

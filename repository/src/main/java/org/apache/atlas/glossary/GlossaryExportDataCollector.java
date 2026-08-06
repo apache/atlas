@@ -33,7 +33,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class GlossaryExportDataCollector {
     private static final Logger LOG = LoggerFactory.getLogger(GlossaryExportDataCollector.class);
@@ -44,9 +46,32 @@ public class GlossaryExportDataCollector {
         this.glossaryService = glossaryService;
     }
 
+    public static class CollectResult {
+        private final List<GlossaryExportRow>                         rows;
+        private final Map<String, AtlasGlossary.AtlasGlossaryExtInfo> extInfoByGuid;
+
+        public CollectResult(List<GlossaryExportRow> rows, Map<String, AtlasGlossary.AtlasGlossaryExtInfo> extInfoByGuid) {
+            this.rows          = rows;
+            this.extInfoByGuid = extInfoByGuid;
+        }
+
+        public List<GlossaryExportRow> getRows() {
+            return rows;
+        }
+
+        public Map<String, AtlasGlossary.AtlasGlossaryExtInfo> getExtInfoByGuid() {
+            return extInfoByGuid;
+        }
+    }
+
     public List<GlossaryExportRow> collect(GlossaryExportParameters parameters) throws AtlasBaseException {
-        List<GlossaryExportRow> ret           = new ArrayList<>();
-        List<String>          glossaryGuids = resolveGlossaryGuids(parameters);
+        return collectWithExtInfo(parameters).getRows();
+    }
+
+    public CollectResult collectWithExtInfo(GlossaryExportParameters parameters) throws AtlasBaseException {
+        List<GlossaryExportRow>                         ret           = new ArrayList<>();
+        Map<String, AtlasGlossary.AtlasGlossaryExtInfo> extInfoByGuid = new LinkedHashMap<>();
+        List<String>                                    glossaryGuids = resolveGlossaryGuids(parameters);
 
         LOG.debug("Collecting glossary export rows for {} glossaries", glossaryGuids.size());
 
@@ -56,6 +81,8 @@ public class GlossaryExportDataCollector {
             if (glossaryExt == null) {
                 continue;
             }
+
+            extInfoByGuid.put(glossaryGuid, glossaryExt);
 
             String glossaryName = glossaryExt.getName();
 
@@ -74,7 +101,7 @@ public class GlossaryExportDataCollector {
 
         LOG.debug("Collected {} glossary export rows before filtering", ret.size());
 
-        return ret;
+        return new CollectResult(ret, extInfoByGuid);
     }
 
     private List<String> resolveGlossaryGuids(GlossaryExportParameters parameters) throws AtlasBaseException {
