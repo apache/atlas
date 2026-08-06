@@ -394,8 +394,8 @@ public class PurgeServiceTest extends AtlasTestBase {
         assertNotNull(summary.getRunId());
         assertTrue(summary.getRequestedCount() > 0);
 
-        verify(mockAuditService).add(eq(AuditOperation.AUTO_PURGE), eq(CRON_ELIGIBLE_GUID), anyString(),
-                eq(0L), eq(summary.getRunId()), eq(AuditRowKind.SUMMARY));
+        verify(mockAuditService).add(eq(AuditOperation.AUTO_PURGE), eq(PurgeUtils.buildGuidParams(originallyRequestedGuids)),
+                anyString(), eq(0L), eq(summary.getRunId()), eq(AuditRowKind.SUMMARY));
     }
 
     // -------------------------------------------------------------------------

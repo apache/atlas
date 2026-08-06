@@ -189,7 +189,7 @@ public class AtlasAuditServiceTest {
         verify(mockAuditService).add(eq(AuditOperation.PURGE), batchParamsCaptor.capture(), batchResultCaptor.capture(),
                 eq(2L), eq(TEST_RUN_ID), eq(AuditRowKind.BATCH));
 
-        assertEquals(batchParamsCaptor.getValue(), "guid1,guid2");
+        assertEquals(batchParamsCaptor.getValue(), PurgeUtils.buildGuidParams(batchGuids));
         assertEquals(batchResultCaptor.getValue(), "guid1,guid2");
 
         AtlasAuditEntry batchEntry = new AtlasAuditEntry();
@@ -213,7 +213,7 @@ public class AtlasAuditServiceTest {
         verify(mockAuditService).add(eq(AuditOperation.PURGE), summaryParamsCaptor.capture(), summaryResultCaptor.capture(),
                 eq(1L), eq(TEST_RUN_ID), eq(AuditRowKind.SUMMARY));
 
-        assertEquals(summaryParamsCaptor.getValue(), "11111111-1111-1111-1111-111111111111,22222222-2222-2222-2222-222222222222");
+        assertEquals(summaryParamsCaptor.getValue(), PurgeUtils.buildGuidParams(originallyRequestedGuids));
 
         PurgeSummary summary = AtlasJson.fromJson(summaryResultCaptor.getValue(), PurgeSummary.class);
         assertEquals(summary.getRunId(), TEST_RUN_ID);
@@ -237,7 +237,7 @@ public class AtlasAuditServiceTest {
         verify(mockAuditService).add(eq(AuditOperation.PURGE), emptyBatchParamsCaptor.capture(),
                 emptyBatchResultCaptor.capture(), eq(0L), eq(TEST_RUN_ID), eq(AuditRowKind.BATCH));
 
-        assertEquals(emptyBatchParamsCaptor.getValue(), "guid-a,guid-b");
+        assertEquals(emptyBatchParamsCaptor.getValue(), PurgeUtils.buildGuidParams(emptyBatchGuids));
         assertEquals(emptyBatchResultCaptor.getValue(), "");
 
         AtlasAuditEntry emptyBatchEntry = new AtlasAuditEntry();
