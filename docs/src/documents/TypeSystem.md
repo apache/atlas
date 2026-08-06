@@ -232,6 +232,65 @@ upstream entity is renamed.
 Each `{placeholder}` maps to an attribute path: `{name}` refers to this entity's own name, while dotted paths like
 `{trinoschema.catalog.name}` traverse relationship attributes to reach a related entity's name.
 
+#### Placeholder syntax
+
+- Use **curly braces** for each slot: `{segmentKey}`.
+- **Literals** between placeholders (e.g. `.`, `/`, `@`) act as **delimiters**. When parsing an existing qualifiedName,
+  the character immediately after each `}` marks where that slot ends in the stored string. The **last** placeholder
+  consumes the rest of the string. Choose delimiters that do not appear inside real slot values to avoid ambiguity.
+- **Dots inside a key** (e.g. `{table.db.name}`) are part of the key string — they represent relationship hops, not
+  JSON nesting.
+
+#### How to design autoComputeFormat for a new entity type
+
+Start from **one real qualifiedName string** your connector already produces (e.g. `sales.orders@prod`). Notice how it
+is built from smaller parts and which **fixed characters** separate those parts (here `.` and `@`).
+
+1. Write the **same separators in the same order** in `autoComputeFormat`.
+2. Replace each **variable part** with a `{placeholder}`:
+   - **`{name}`** — this entity's own `name` attribute.
+   - **`{db.name}`**, **`{table.db.name}`**, etc. — each segment before the final `.name` is one **relationship hop**
+     (the relationship attribute name on the typedef at that step). Together they navigate to a related entity; the
+     trailing `.name` means "use that entity's `name` attribute."
+   - **`{clusterName}`** (single word, no dots) — a plain attribute on **this** entity, not a relationship hop.
+
+##### Example: table under a database (Hive-style)
+
+If `my_table` links to a database via relationship attribute `db` and carries a cluster label `clusterName`:
+
+<SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
+{`"attributeDefOverrides": [
+    {
+        "name": "qualifiedName",
+        "autoComputeFormat": "{db.name}.{name}@{clusterName}"
+    }
+]`}
+</SyntaxHighlighter>
+
+- `{db.name}` — the database's `name`, reached through relationship attribute `db`.
+- `{name}` — this table's own `name`.
+- `@{clusterName}` — literal `@` followed by this entity's `clusterName` attribute.
+
+##### Example: deeper chain (Trino column)
+
+For `trino_column`, the qualifiedName chains catalog, schema, table, column, and instance:
+
+<SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
+{`"attributeDefOverrides": [
+    {
+        "name": "qualifiedName",
+        "autoComputeFormat": "{table.trinoschema.catalog.name}.{table.trinoschema.name}.{table.name}.{name}@{table.trinoschema.catalog.instance.name}"
+    }
+]`}
+</SyntaxHighlighter>
+
+- `{table.trinoschema.catalog.name}` — from this column, follow `table` → `trinoschema` → `catalog`, use that entity's `name`.
+- `{table.trinoschema.name}` — schema `name` along the same path.
+- `{table.name}` — the parent table's `name`.
+- `{name}` — this column's own `name`.
+- `@{table.trinoschema.catalog.instance.name}` — after `@`, follow `instance` from the catalog and use its `name`.
+
+
 ### Relationship end definition: propagateRename
 
 Setting `propagateRename: true` on a relationship end marks that end as the **trigger** for rename propagation. When an
