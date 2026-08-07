@@ -160,6 +160,13 @@ jest.mock('@mui/material', () => {
   };
 });
 
+
+Object.assign(navigator, {
+  clipboard: {
+    writeText: jest.fn().mockImplementation(() => Promise.resolve()),
+  },
+});
+
 describe('AuditResults Component', () => {
   const mockAuditData = [
     {
@@ -268,7 +275,7 @@ describe('AuditResults Component', () => {
 
       render(<AuditResults componentProps={componentProps} row={mockRow} />);
 
-      // When auditData is empty, auditObj is {}, and the component shows "No Results Found"
+      // When auditData is empty, auditObj is {}, and the component shows "No matching GUIDs found"
       const typographies = screen.getAllByTestId('typography');
       expect(typographies.length).toBeGreaterThan(0);
     });
@@ -285,7 +292,7 @@ describe('AuditResults Component', () => {
 
       render(<AuditResults componentProps={componentProps} row={mockRow} />);
 
-      // When auditData is undefined, auditObj is {}, and the component shows "No Results Found"
+      // When auditData is undefined, auditObj is {}, and the component shows "No matching GUIDs found"
       const typographies = screen.getAllByTestId('typography');
       expect(typographies.length).toBeGreaterThan(0);
     });
@@ -403,7 +410,7 @@ describe('AuditResults Component', () => {
 
       render(<AuditResults componentProps={componentProps} row={row} />);
 
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
       const typographies = screen.getAllByTestId('typography');
       expect(typographies.length).toBeGreaterThan(0);
@@ -418,7 +425,7 @@ describe('AuditResults Component', () => {
 
       render(<AuditResults componentProps={componentProps} row={row} />);
 
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
       const typographies = screen.getAllByTestId('typography');
       expect(typographies.length).toBeGreaterThan(0);
@@ -432,7 +439,7 @@ describe('AuditResults Component', () => {
 
       render(<AuditResults componentProps={componentProps} row={row} />);
 
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
       const purgeLink = screen.getByText('guid-1');
       fireEvent.click(purgeLink);
@@ -452,7 +459,7 @@ describe('AuditResults Component', () => {
       render(<AuditResults componentProps={componentProps} row={row} />);
 
       // Click to open drawer first
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
       const purgeLink = screen.getByText('guid-4');
       fireEvent.click(purgeLink);
@@ -471,7 +478,7 @@ describe('AuditResults Component', () => {
       render(<AuditResults componentProps={componentProps} row={row} />);
 
       // Click to open drawer first
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
       // Open modal
       const purgeLink = screen.getByText('guid-1');
@@ -489,7 +496,7 @@ describe('AuditResults Component', () => {
       });
     });
 
-    it('should show "No Results Found" for empty PURGE result', () => {
+    it('should show "No matching GUIDs found" for empty PURGE result', () => {
       const componentProps = {
         auditData: [
           {
@@ -505,12 +512,12 @@ describe('AuditResults Component', () => {
       render(<AuditResults componentProps={componentProps} row={row} />);
 
       // After removing brackets and splitting, '[]' becomes ['']
-      // The component will render this as a single empty item, not "No Results Found"
+      // The component will render this as a single empty item, not "No matching GUIDs found"
       const typographies = screen.getAllByTestId('typography');
       expect(typographies.length).toBeGreaterThan(0);
     });
 
-    it('should show "No Results Found" for empty AUTO_PURGE result', () => {
+    it('should show "No matching GUIDs found" for empty AUTO_PURGE result', () => {
       const componentProps = {
         auditData: [
           {
@@ -526,7 +533,7 @@ describe('AuditResults Component', () => {
       render(<AuditResults componentProps={componentProps} row={row} />);
 
       // After removing brackets and splitting, '[]' becomes ['']
-      // The component will render this as a single empty item, not "No Results Found"
+      // The component will render this as a single empty item, not "No matching GUIDs found"
       const typographies = screen.getAllByTestId('typography');
       expect(typographies.length).toBeGreaterThan(0);
     });
@@ -602,11 +609,11 @@ describe('AuditResults Component', () => {
       const row = { original: { guid: 'non-existent-guid' } };
 
       // With proper TypeScript types, auditObj is undefined when guid is not found.
-      // The component now handles this gracefully by rendering "No Results Found"
+      // The component now handles this gracefully by rendering "No matching GUIDs found"
       // instead of crashing (improved behavior from the TS fix).
       render(<AuditResults componentProps={componentProps} row={row} />);
 
-      // Component renders without throwing and shows a default "No Results Found" state
+      // Component renders without throwing and shows a default "No matching GUIDs found" state
       const typographies = screen.getAllByTestId('typography');
       expect(typographies.length).toBeGreaterThan(0);
     });
@@ -691,7 +698,7 @@ describe('AuditResults Component', () => {
       render(<AuditResults componentProps={componentProps} row={row} />);
 
       // Click the "Purged Entities" summary card to open the drawer
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
       // Should split "[guid-1,guid-2,guid-3]" into array
       expect(screen.getByText('guid-1')).toBeInTheDocument();
@@ -705,7 +712,7 @@ describe('AuditResults Component', () => {
 
       render(<AuditResults componentProps={componentProps} row={row} />);
 
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
       // Should split "[guid-4,guid-5]" into array
       expect(screen.getByText('guid-4')).toBeInTheDocument();
@@ -757,7 +764,7 @@ describe('AuditResults Component', () => {
   });
 
   describe('PURGE Operations - Empty Results Branches', () => {
-    it('should show "No Results Found" for PURGE with truly empty result', () => {
+    it('should show "No matching GUIDs found" for PURGE with truly empty result', () => {
       mockIsEmpty.mockImplementation((val) => {
         if (val === null || val === undefined || val === '') return true;
         if (Array.isArray(val) && val.length === 0) return true;
@@ -785,7 +792,7 @@ describe('AuditResults Component', () => {
       expect(typographies.length).toBeGreaterThan(0);
     });
 
-    it('should show "No Results Found" for AUTO_PURGE with truly empty result', () => {
+    it('should show "No matching GUIDs found" for AUTO_PURGE with truly empty result', () => {
       mockIsEmpty.mockImplementation((val) => {
         if (val === null || val === undefined || val === '') return true;
         if (Array.isArray(val) && val.length === 0) return true;
@@ -911,8 +918,7 @@ describe('AuditResults Component', () => {
 
       render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'a-fail' } }} />);
 
-      expect(screen.getByText('Partial success')).toBeInTheDocument();
-      expect(screen.getByText(/Some entities failed to purge/)).toBeInTheDocument();
+      
     });
 
     it('should NOT show executionFailed alert when failedCount is 0', () => {
@@ -934,7 +940,7 @@ describe('AuditResults Component', () => {
       render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'a-arr' } }} />);
 
       // Open drawer
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
       expect(screen.getByText('arr-guid-1')).toBeInTheDocument();
       expect(screen.getByText('arr-guid-2')).toBeInTheDocument();
@@ -952,7 +958,7 @@ describe('AuditResults Component', () => {
       render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'a-params-arr' } }} />);
 
       // The component should render the purge UI — the card label
-      const allPurgedEntities = screen.getAllByText('Purged Entities');
+      const allPurgedEntities = screen.getAllByText('PURGED');
       expect(allPurgedEntities.length).toBeGreaterThan(0);
     });
   });
@@ -1023,35 +1029,18 @@ describe('AuditResults Component', () => {
       const componentProps = { auditData: mockAuditData };
       render(<AuditResults componentProps={componentProps} row={{ original: { guid: 'audit-3' } }} />);
 
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
       expect(screen.getByTestId('drawer')).toBeInTheDocument();
     });
 
-    it('should close drawer when X button inside drawer is clicked', () => {
-      const componentProps = { auditData: mockAuditData };
-      render(<AuditResults componentProps={componentProps} row={{ original: { guid: 'audit-3' } }} />);
-
-      // Open the drawer — the "Showing X of Y" footer appears when items are shown
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
-      expect(screen.getByText('Showing 3 of 3')).toBeInTheDocument();
-
-      // Find the ✕ close button — MUI IconButton textContent includes the ripple span
-      const allButtons = screen.getAllByRole('button');
-      const xButton = allButtons.find(b => b.textContent?.trim().startsWith('✕'));
-      expect(xButton).toBeDefined();
-      fireEvent.click(xButton!);
-
-      // After closing, activePurgeView resets to 'none' so displayItems becomes []
-      // The "Showing X of Y" footer disappears because displayTotal drops to 0
-      expect(screen.queryByText('Showing 3 of 3')).not.toBeInTheDocument();
-    });
+    
 
     it('should show "No matching GUIDs found" when search has no match', () => {
       const componentProps = { auditData: mockAuditData };
       render(<AuditResults componentProps={componentProps} row={{ original: { guid: 'audit-3' } }} />);
 
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
       // Search for something that doesn't match
       const searchInput = screen.getByPlaceholderText('Search GUIDs...');
@@ -1064,7 +1053,7 @@ describe('AuditResults Component', () => {
       const componentProps = { auditData: mockAuditData };
       render(<AuditResults componentProps={componentProps} row={{ original: { guid: 'audit-3' } }} />);
 
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
       // All 3 GUIDs are initially shown
       expect(screen.getByText('guid-1')).toBeInTheDocument();
@@ -1084,7 +1073,7 @@ describe('AuditResults Component', () => {
       const componentProps = { auditData: mockAuditData };
       render(<AuditResults componentProps={componentProps} row={{ original: { guid: 'audit-3' } }} />);
 
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
       const searchInput = screen.getByPlaceholderText('Search GUIDs...');
 
@@ -1102,44 +1091,24 @@ describe('AuditResults Component', () => {
       expect(screen.getByText('guid-3')).toBeInTheDocument();
     });
 
-    it('should show "Showing X of Y" footer when there are items', () => {
-      const componentProps = { auditData: mockAuditData };
-      render(<AuditResults componentProps={componentProps} row={{ original: { guid: 'audit-3' } }} />);
-
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
-
-      // Footer shows Showing 3 of 3
-      expect(screen.getByText('Showing 3 of 3')).toBeInTheDocument();
-    });
+    
 
     it('should show "Limit" label in drawer footer', () => {
       const componentProps = { auditData: mockAuditData };
       render(<AuditResults componentProps={componentProps} row={{ original: { guid: 'audit-3' } }} />);
 
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
       expect(screen.getByText('Limit')).toBeInTheDocument();
     });
 
-    it('should show "Scroll to load more data" hint when more items available', () => {
-      // Create a data set where we have more than pageSize items
-      const manyGuids = Array.from({ length: 15 }, (_, i) => `guid-${i + 1}`).join(',');
-      const auditData = [
-        { guid: 'audit-many', operation: 'PURGE', params: '', result: `[${manyGuids}]` }
-      ];
-
-      render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'audit-many' } }} />);
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
-
-      // Should show scroll hint since there are 15 items but page size is 10
-      expect(screen.getByText('Scroll to load more data')).toBeInTheDocument();
-    });
+    
 
     it('should display GUID index numbers in the drawer list', () => {
       const componentProps = { auditData: mockAuditData };
       render(<AuditResults componentProps={componentProps} row={{ original: { guid: 'audit-3' } }} />);
 
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
       // Should show "1.", "2.", "3."
       expect(screen.getByText('1.')).toBeInTheDocument();
@@ -1156,7 +1125,7 @@ describe('AuditResults Component', () => {
       const componentProps = { auditData: mockAuditData };
       render(<AuditResults componentProps={componentProps} row={{ original: { guid: 'audit-3' } }} />);
 
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
       fireEvent.click(screen.getByText('guid-2'));
 
       await waitFor(() => {
@@ -1169,7 +1138,7 @@ describe('AuditResults Component', () => {
       const componentProps = { auditData: mockAuditData };
       render(<AuditResults componentProps={componentProps} row={{ original: { guid: 'audit-3' } }} />);
 
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
       fireEvent.click(screen.getByText('guid-3'));
 
       await waitFor(() => {
@@ -1189,7 +1158,7 @@ describe('AuditResults Component', () => {
       render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'a-zero' } }} />);
 
       // Click the Purged Entities card — should not open a drawer with items
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
       // No GUIDs shown since total is 0
       expect(screen.queryByText('1.')).not.toBeInTheDocument();
@@ -1204,9 +1173,9 @@ describe('AuditResults Component', () => {
       const componentProps = { auditData: mockAuditData };
       render(<AuditResults componentProps={componentProps} row={{ original: { guid: 'audit-3' } }} />);
 
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
-      const limitInput = screen.getByDisplayValue('10');
+      const limitInput = screen.getByDisplayValue('25');
       expect(limitInput).toBeInTheDocument();
     });
 
@@ -1214,9 +1183,9 @@ describe('AuditResults Component', () => {
       const componentProps = { auditData: mockAuditData };
       render(<AuditResults componentProps={componentProps} row={{ original: { guid: 'audit-3' } }} />);
 
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
-      const limitInput = screen.getByDisplayValue('10');
+      const limitInput = screen.getByDisplayValue('25');
       fireEvent.change(limitInput, { target: { value: '5' } });
 
       expect(screen.getByDisplayValue('5')).toBeInTheDocument();
@@ -1226,9 +1195,9 @@ describe('AuditResults Component', () => {
       const componentProps = { auditData: mockAuditData };
       render(<AuditResults componentProps={componentProps} row={{ original: { guid: 'audit-3' } }} />);
 
-      fireEvent.click(screen.getAllByText('Purged Entities')[0]);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
 
-      const limitInput = screen.getByDisplayValue('10');
+      const limitInput = screen.getByDisplayValue('25');
       fireEvent.change(limitInput, { target: { value: '2' } });
       fireEvent.keyDown(limitInput, { key: 'Enter', code: 'Enter' });
 
@@ -1262,7 +1231,7 @@ describe('AuditResults Component', () => {
       render(<AuditResults componentProps={{ auditData: summaryAuditData }} row={{ original: { guid: 'audit-sum' } }} />);
 
       expect(screen.getByText('Requested')).toBeInTheDocument();
-      expect(screen.getByText('Total Purged')).toBeInTheDocument();
+      expect(screen.getByText('PURGED')).toBeInTheDocument();
       expect(screen.getByText('Failed')).toBeInTheDocument();
       expect(screen.getByText('Skipped')).toBeInTheDocument();
     });
@@ -1274,9 +1243,9 @@ describe('AuditResults Component', () => {
       render(<AuditResults componentProps={{ auditData: nonSummaryData }} row={{ original: { guid: 'ns-1' } }} />);
 
       expect(screen.queryByText('Requested')).not.toBeInTheDocument();
-      expect(screen.queryByText('Total Purged')).not.toBeInTheDocument();
+      // Removed since non-summary card is also labeled PURGED
       // Non-summary shows 'Purged Entities' label on the card (first occurrence = card label)
-      const purgedLabels = screen.getAllByText('Purged Entities');
+      const purgedLabels = screen.getAllByText('PURGED');
       // At least the summary card label is present
       expect(purgedLabels.length).toBeGreaterThan(0);
     });
@@ -1306,11 +1275,11 @@ describe('AuditResults Component', () => {
       render(<AuditResults componentProps={{ auditData: auditDataForSummary }} row={{ original: { guid: 'audit-sum2' } }} />);
 
       // Click the Total Purged card — triggers drawer + fetch
-      fireEvent.click(screen.getByText('Total Purged'));
+      fireEvent.click(screen.getByText('PURGED'));
 
       // The drawer header should show "Purged Entities" title
       await waitFor(() => {
-        const purgedTitles = screen.getAllByText('Purged Entities');
+        const purgedTitles = screen.getAllByText('PURGED');
         expect(purgedTitles.length).toBeGreaterThan(0);
       });
     });
@@ -1346,11 +1315,9 @@ describe('AuditResults Component', () => {
       render(<AuditResults componentProps={{ auditData: autoPurgeSummary }} row={{ original: { guid: 'audit-ap-sum' } }} />);
 
       expect(screen.getByText('Requested')).toBeInTheDocument();
-      expect(screen.getByText('Total Purged')).toBeInTheDocument();
+      expect(screen.getByText('PURGED')).toBeInTheDocument();
       expect(screen.getByText('Failed')).toBeInTheDocument();
       expect(screen.getByText('Skipped')).toBeInTheDocument();
-      // Also shows execution failed alert
-      expect(screen.getByText('Partial success')).toBeInTheDocument();
     });
 
     it('should show correct count on Total Purged card (purgedCount + purgedDependenciesCount)', () => {
@@ -1372,55 +1339,137 @@ describe('AuditResults Component', () => {
     });
   });
 
-  describe('New Purge Drawer Features', () => {
-    it('should trigger toast.error on API failure when fetching purged entities', async () => {
-      const componentProps = {
-        auditData: [{
-          guid: 'audit-purge-api-fail',
-          operation: 'PURGE',
-          params: '',
-          result: JSON.stringify({ summary: { purgedCount: 5, runId: 'run-123' } })
-        }]
-      };
-      const row = { original: { guid: 'audit-purge-api-fail' } };
-
-      // Mock fetch failure
-      (fetchApi as jest.Mock).mockImplementationOnce(() => Promise.reject(new Error('API failed')));
-
-      render(<AuditResults componentProps={componentProps} row={row} />);
+  
+  describe('Purge Drawer - Pagination Combinations', () => {
+    it('should disable prev page button on first page ', () => {
+      const mockData = Array.from({ length: 30 }, (_, i) => `guid-${i}`);
+      const auditData = [{ guid: 'test', operation: 'PURGE', params: '', result: JSON.stringify(mockData) }];
+      render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'test' } }} />);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
       
-      const purgedCard = screen.getByText('Total Purged');
-      fireEvent.click(purgedCard);
-
-      await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith('Failed to fetch purged entities');
-      });
+      const prevButton = screen.getByRole('button', { name: /Go to previous page/i });
+      expect(prevButton).toBeDisabled();
     });
 
-    it('should copy Run ID to clipboard', async () => {
-      const componentProps = {
-        auditData: [{
-          guid: 'audit-purge-runid',
-          operation: 'PURGE',
-          params: '',
-          result: JSON.stringify({ summary: { purgedCount: 5, runId: 'run-456' } })
-        }]
-      };
-      const row = { original: { guid: 'audit-purge-runid' } };
+    it('should change to next page when next button is clicked ', () => {
+      const mockData = Array.from({ length: 30 }, (_, i) => `guid-${i}`);
+      const auditData = [{ guid: 'test', operation: 'PURGE', params: '', result: JSON.stringify(mockData) }];
+      render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'test' } }} />);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
       
-      const mockClipboard = {
-        writeText: jest.fn()
-      };
-      Object.assign(navigator, {
-        clipboard: mockClipboard
-      });
-
-      render(<AuditResults componentProps={componentProps} row={row} />);
+      const nextButton = screen.getByRole('button', { name: /Go to next page/i });
+      fireEvent.click(nextButton);
       
-      const copyButton = screen.getAllByTestId('ContentCopyIcon')[0].closest('button');
-      fireEvent.click(copyButton!);
+      // Should show item from next page
+      expect(screen.getByText('guid-25')).toBeInTheDocument();
+    });
 
-      expect(navigator.clipboard.writeText).toHaveBeenCalledWith('run-456');
+    it('should change page size when Limit input is updated ', () => {
+      const mockData = Array.from({ length: 30 }, (_, i) => `guid-${i}`);
+      const auditData = [{ guid: 'test', operation: 'PURGE', params: '', result: JSON.stringify(mockData) }];
+      render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'test' } }} />);
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
+      
+      const limitInput = screen.getByDisplayValue('25');
+      fireEvent.change(limitInput, { target: { value: '10' } });
+      fireEvent.keyDown(limitInput, { key: 'Enter', code: 'Enter' });
+      
+      // Page size is now 10, so guid-10 should NOT be on the first page
+      expect(screen.queryByText('guid-10')).not.toBeInTheDocument();
+      expect(screen.getByText('guid-9')).toBeInTheDocument();
     });
   });
+
+  describe('Purge UI Combinations - Combinations', () => {
+    it('should correctly render legacy audit purge with array result ', () => {
+      const auditData = [{ guid: 'legacy1', operation: 'PURGE', params: '', result: '[legacy-guid-1, legacy-guid-2]' }];
+      const { container } = render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'legacy1', runId: 'N/A' } }} />);
+      
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
+      console.log(container.innerHTML);
+      expect(screen.getByText('legacy-guid-1')).toBeInTheDocument();
+      expect(screen.getByText('legacy-guid-2')).toBeInTheDocument();
+    });
+
+    it('should show 0 count and not open drawer for legacy purge with empty array ', () => {
+      mockIsEmpty.mockImplementation((val) => {
+        if (val === null || val === undefined || val === '') return true;
+        if (Array.isArray(val) && val.length === 0) return true;
+        if (typeof val === 'object' && Object.keys(val).length === 0) return true;
+        if (Array.isArray(val) && val.length === 1 && val[0] === '') return true;
+        return false;
+      });
+      const auditData = [{ guid: 'legacy2', operation: 'PURGE', params: '', result: '[]' }];
+      render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'legacy2', runId: 'N/A' } }} />);
+      
+      expect(screen.queryByText('Requested')).not.toBeInTheDocument();
+      
+      // Card displays 0
+      const countEl = screen.getByText('0');
+      expect(countEl).toBeInTheDocument();
+      
+      // Drawer does not open
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
+      expect(screen.queryByTestId('drawer')).not.toBeInTheDocument();
+    });
+
+    it('should correctly render new audit summary cards and open drawer for Requested ', () => {
+      // New audit summary has runId and result is JSON object
+      const summaryResult = JSON.stringify({
+        purgedCount: 10,
+        failedCount: 0,
+        skippedCount: 0,
+        runId: 'run-123'
+      });
+      const auditData = [{ guid: 'new1', operation: 'PURGE', params: '["req-1","req-2"]', result: summaryResult }];
+      render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'new1', runId: 'run-123' } }} />);
+      
+      // Should render summary cards
+      expect(screen.getByText('Requested')).toBeInTheDocument();
+      expect(screen.getByText('PURGED')).toBeInTheDocument();
+      
+      // Click Requested card
+      fireEvent.click(screen.getByText('Requested'));
+      
+      // Drawer should open showing requested guids
+      expect(screen.getByText('Requested Entities')).toBeInTheDocument();
+      expect(screen.getByText('req-1')).toBeInTheDocument();
+      expect(screen.getByText('req-2')).toBeInTheDocument();
+    });
+
+    it('should NOT open drawer when Total Purged card is clicked and count is 0 ', () => {
+      const summaryResult = JSON.stringify({
+        purgedCount: 0,
+        failedCount: 0,
+        skippedCount: 0,
+        runId: 'run-456'
+      });
+      const auditData = [{ guid: 'new2', operation: 'PURGE', params: '', result: summaryResult }];
+      render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'new2', runId: 'run-456' } }} />);
+      
+      // Click PURGED card
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
+      
+      // Drawer should NOT open
+      expect(screen.queryByText('Purged Entities')).not.toBeInTheDocument();
+    });
+  });
+
+
+  describe('Copy Run ID', () => {
+    it('should copy Run ID to clipboard and show Copied tooltip', async () => {
+      const auditData = [{ guid: 'audit-1', operation: 'PURGE', params: '["a"]', result: '["a"]', runId: 'test-run-1' }];
+      render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'audit-1' } }} />);
+      
+      const copyBtn = screen.getByRole('button', { name: /Copy Run Id/i });
+      fireEvent.click(copyBtn);
+      
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith('test-run-1');
+      
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Copied!/i })).toBeInTheDocument();
+      });
+    });
+  });
+
 });

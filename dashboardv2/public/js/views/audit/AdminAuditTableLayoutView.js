@@ -169,6 +169,29 @@ define(['require',
             getAdminCollection: function (option) {
                 var that = this,
                     auditFilters = CommonViewFunction.attributeFilter.generateAPIObj(that.ruleUrl);
+
+                if (that.isFilters && auditFilters && (auditFilters.criterion || auditFilters.attributeName)) {
+                    var hasRunId = false;
+                    var checkRunId = function (crit) {
+                        if (!crit) return;
+                        if (crit.attributeName === 'runId') hasRunId = true;
+                        if (crit.criterion && Array.isArray(crit.criterion)) {
+                            crit.criterion.forEach(checkRunId);
+                        }
+                    };
+                    checkRunId(auditFilters);
+
+                    if (hasRunId) {
+                        auditFilters = {
+                            "condition": "AND",
+                            "criterion": [
+                                auditFilters,
+                                { "attributeName": "auditRowKind", "operator": "eq", "attributeValue": "SUMMARY" }
+                            ]
+                        };
+                    }
+                }
+
                 $.extend(that.entityCollection.queryParams, { auditFilters: that.isFilters ? auditFilters : null, limit: that.entityCollection.queryParams.limit || that.limit, offset: that.entityCollection.queryParams.offset || that.offset, sortBy: "startTime", sortOrder: "DESCENDING" });
                 var apiObj = {
                     sort: false,
@@ -244,17 +267,35 @@ define(['require',
                                     adminTypDetails: adminTypDetails
                                 };
                             el.attr('colspan', '8');
+                            var $container = $('<div>').html(adminText);
+                            $(el).append($container);
+
                             if (results) {
-                                var adminValues = null;
                                 if (operation == "PURGE" || operation == "AUTO_PURGE") {
-                                    adminText = that.displayPurgeAndImportAudits(auditData);
+                                    $container.html('<div class="purge-spinner-container"><i class="fa fa-spinner fa-spin fa-2x"></i></div>');
+                                    var summaryGuid = model.get('guid');
+                                    $.ajax({
+                                        url: UrlLinks.baseUrl + '/admin/audit/' + summaryGuid + '/summary',
+                                        type: 'GET',
+                                        success: function (response) {
+                                            if (response) {
+                                                auditData.originalResults = auditData.results;
+                                                auditData.results = response;
+                                            }
+                                            $container.html(that.displayPurgeAndImportAudits(auditData));
+                                        },
+                                        error: function () {
+                                            $container.html(that.displayPurgeAndImportAudits(auditData));
+                                        }
+                                    });
                                 } else if (operation == "EXPORT" || operation == "IMPORT") {
                                     adminText = that.displayExportAudits(auditData);
+                                    $container.html(adminText);
                                 } else {
                                     adminText = that.displayCreateUpdateAudits(auditData);
+                                    $container.html(adminText);
                                 }
                             }
-                            $(el).append($('<div>').html(adminText));
                         }
                     },
                     userName: {
@@ -358,7 +399,7 @@ define(['require',
                 var isJson = false;
                 var summaryData = {};
                 try {
-                    summaryData = JSON.parse(obj.results);
+                    summaryData = typeof obj.results === 'string' ? JSON.parse(obj.results) : obj.results;
                     if (summaryData && typeof summaryData === 'object' && !Array.isArray(summaryData)) {
                         isJson = true;
                     }
@@ -395,8 +436,9 @@ define(['require',
                     html += '<div class="card-label">REQUESTED</div><div class="card-value">' + reqCount + '</div></div>';
 
                     // Total Purged
-                    html += '<div class="purge-summary-card card-green ' + (totalPurgedCount > 0 ? 'clickable' : '') + '" ' + (totalPurgedCount > 0 ? 'data-id="drawerSummaryTrigger" data-type="purged" data-runid="' + _.escape(runId) + '" data-guid="' + _.escape(obj.model.get('guid')) + '"' : '') + '>';
-                    html += '<div class="card-label">TOTAL PURGED</div><div class="card-value">' + totalPurgedCount + '</div></div>';
+                    var rawResults = obj.originalResults ? obj.originalResults : (typeof obj.results === 'string' ? obj.results : JSON.stringify(obj.results));
+                    html += '<div class="purge-summary-card card-green ' + (totalPurgedCount > 0 ? 'clickable' : '') + '" ' + (totalPurgedCount > 0 ? 'data-id="drawerSummaryTrigger" data-type="purged" data-runid="' + _.escape(runId) + '" data-guid="' + _.escape(obj.model.get('guid')) + '" data-results="' + _.escape(rawResults) + '"' : '') + '>';
+                    html += '<div class="card-label">PURGED</div><div class="card-value">' + totalPurgedCount + '</div></div>';
 
                     // Failed
                     html += '<div class="purge-summary-card card-red ' + (failedCount > 0 ? 'has-count' : '') + '" title="Check <ATLAS_HOME>/logs/purgefailure.log for details">';
@@ -482,7 +524,7 @@ define(['require',
                     var typeData = resultData[name],
                         adminValues = (typeName.length == 1) ? '<ul class="col-sm-4">' : '<ul>',
                         adminTypDetails = Enums.category[name] + " " + Enums.auditAction[obj.operation];
-                    typeContainer += '<div class="attr-type-container"><h4 style="word-break: break-word;">' + adminTypDetails + '</h4>';
+                    typeContainer += '<div class="attr-type-container"><h4 class="attr-type-header">' + adminTypDetails + '</h4>';
                     _.each(typeData, function (typeDefObj, index) {
                         if (index % 5 == 0 && index != 0 && typeName.length == 1) {
                             adminValues += '</ul><ul class="col-sm-4">';
@@ -587,7 +629,7 @@ define(['require',
                             }
                         });
                         drawerView.render();
-                    } else if (type === 'legacy-purged') {
+                    } else if (type === 'legacy-purged' || type === 'purged') {
                         var resultsData = $target.data('results');
                         var items = [];
                         if (resultsData) {
@@ -617,49 +659,6 @@ define(['require',
                             items: items,
                             totalCount: items.length,
                             runId: runId,
-                            actionType: 'purged',
-                            onItemClickCb: function (clickedGuid) {
-                                require(['views/audit/AuditTableLayoutView'], function (AuditTableLayoutView) {
-                                    var obj = {
-                                        guid: clickedGuid,
-                                        titleText: "Purged Entity Details: "
-                                    };
-                                    var modalData = {
-                                        title: obj.titleText + obj.guid,
-                                        content: new AuditTableLayoutView(obj),
-                                        mainClass: "modal-full-screen",
-                                        okCloses: true,
-                                        showFooter: false,
-                                    };
-                                    that.showModal(modalData);
-                                });
-                            }
-                        });
-                        drawerView.render();
-                    } else if (type === 'purged') {
-                        var drawerView = new DrawerView({
-                            title: 'Purged Entities',
-                            runId: runId,
-                            totalCount: totalCount,
-                            fetchData: function (limit, offset, cb) {
-                                var url = UrlLinks.baseUrl + '/admin/audit/' + guid + '/purgedEntities?limit=' + limit + '&offset=' + offset;
-                                $.ajax({
-                                    url: url,
-                                    type: 'GET',
-                                    success: function (response) {
-                                        var guids = [];
-                                        if (response && Array.isArray(response)) {
-                                            guids = response.map(function (item) {
-                                                return typeof item === "string" ? item : (item.guid || String(item));
-                                            });
-                                        }
-                                        cb(guids);
-                                    },
-                                    error: function () {
-                                        cb([]);
-                                    }
-                                });
-                            },
                             actionType: 'purged',
                             onItemClickCb: function (clickedGuid) {
                                 require(['views/audit/AuditTableLayoutView'], function (AuditTableLayoutView) {

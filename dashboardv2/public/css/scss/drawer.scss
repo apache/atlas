@@ -154,9 +154,10 @@
 .drawer-panel {
     position: fixed;
     top: 0;
-    right: -450px;
-    width: 450px;
+    right: -400px;
+    width: 400px;
     height: 100vh;
+    overflow: hidden;
     background-color: #fff;
     box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
     z-index: 1038;
@@ -170,8 +171,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 15px 20px;
-        border-bottom: 1px solid #e5e7eb;
+        padding: 8px 12px;
         flex-shrink: 0;
         h4 { margin: 0; font-size: 16px; font-weight: 600; }
         .close-drawer { cursor: pointer; font-size: 18px; color: #6b7280; &:hover { color: #111827; } }
@@ -185,38 +185,37 @@
         flex-direction: column;
 
         .drawer-search, .drawer-run-id {
-            margin: 15px; /* Even margin all around */
+            margin: 4px 12px;
             flex-shrink: 0;
         }
 
         .drawer-search {
-            padding-bottom: 15px;
-            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 8px;
             .search-input-wrapper {
                 position: relative;
                 i { position: absolute; left: 12px; top: 10px; color: #9ca3af; }
                 input {
                     width: 100%;
-                    padding: 8px 12px 8px 35px;
-                    border: 1px solid #d1d5db;
-                    border-radius: 8px;
-                    &:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }
+                    padding: 8px 12px 8px 32px;
+                    border: none;
+                    border-bottom: 1px solid #d1d5db;
+                    border-radius: 0;
+                    font-size: 13px;
+                    outline: none;
+                    background-color: transparent;
+                    &:focus { border-bottom-color: #3b82f6; }
                 }
             }
         }
 
         .drawer-run-id {
-            margin: 15px 15px 0 15px; /* Added margin, 0 bottom */
-            background-color: #fafafa;
-            border: 1px solid rgba(0,0,0,0.08);
-            border-radius: 8px;
-            padding: 12px 16px;
+            padding: 4px 0;
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
             align-items: center;
             .run-id-text { font-size: 13px; color: #4b5563; font-weight: 500; }
-            .run-id-value { color: #6b7280; font-weight: normal; margin-left: 4px; }
-            i { cursor: pointer; color: #6b7280; }
+            .run-id-value { color: #6b7280; font-weight: normal; margin-left: 4px; margin-right: 12px;}
+            i { cursor: pointer; color: #6b7280; font-size: 14px; &:hover { color: #111827; } }
         }
 
         .drawer-list {
@@ -225,7 +224,7 @@
             min-height: 0;
             margin: 0 15px;
             padding-right: 5px;
-            padding-bottom: 60px; /* Ensure enough scroll height to force a scrollbar when Run Id box is missing */
+            
 
             /* Custom scrollbar to match modern React UI */
             &::-webkit-scrollbar {
@@ -295,6 +294,68 @@
         .drawer-observer { height: 20px; width: 100%; }
     }
 
+    .drawer-pagination-footer {
+        padding: 8px 12px;
+        background-color: #fff;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+
+        .drawer-showing {
+            font-size: 13px;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+
+        .drawer-pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            
+            .drawer-btn-page {
+                background: none;
+                border: none;
+                cursor: pointer;
+                min-width: 24px;
+                height: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 12px;
+                font-size: 13px;
+                color: #4b5563;
+                padding: 0;
+                
+                &:hover:not(:disabled) { background-color: rgba(0,0,0,0.04); }
+                &:disabled { color: #d1d5db; cursor: default; }
+                &.active { background-color: rgba(59, 130, 246, 0.08); color: #1976d2; font-weight: 600; }
+            }
+        }
+
+        .drawer-limit-control {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            
+            span { font-size: 13px; color: #6b7280; }
+            
+            input {
+                width: 48px;
+                height: 24px;
+                box-sizing: border-box;
+                font-size: 13px;
+                border: 1px solid #cbd5e1;
+                border-radius: 4px;
+                padding: 0 4px;
+                text-align: center;
+                outline: none;
+                &:focus { border-color: #90caf9; }
+            }
+        }
+    }
+
     .drawer-footer {
         padding: 12px 20px;
         border-top: 1px solid #e2e8f0;
@@ -319,4 +380,35 @@
             }
         }
     }
+}
+
+body.drawer-open-lock { overflow: hidden \!important; }
+
+body.drawer-open-lock { overflow: hidden \!important; }
+
+.drawer-list-item {
+    height: 24px;
+    box-sizing: border-box;
+    padding: 0;
+}
+.item-index {
+    margin-right: 8px;
+}
+.fontLoader {
+    &.table-loader {
+        display: block;
+        position: relative;
+        min-height: 50px;
+        z-index: 0;
+    }
+}
+.attr-type-container {
+    h4.attr-type-header {
+        word-break: break-word;
+    }
+}
+
+.purge-spinner-container {
+    padding: 20px;
+    text-align: center;
 }

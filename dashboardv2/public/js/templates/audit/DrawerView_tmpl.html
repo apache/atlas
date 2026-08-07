@@ -20,7 +20,7 @@
     <div class="drawer-header">
         <h4 data-id="drawerTitle">{{title}}</h4>
         <div class="close-drawer" data-id="closeDrawer" aria-label="Close drawer" role="button" tabindex="0">
-            <i class="fa fa-times" aria-hidden="true"></i>
+            ✕
         </div>
     </div>
     <div class="drawer-body">
@@ -39,7 +39,7 @@
         <div class="drawer-list" data-id="drawerScrollRegion">
             <ol class="drawer-items-list" data-id="drawerList"></ol>
             <div class="drawer-empty" data-id="drawerEmpty">
-                No Data Found
+                No matching GUIDs found
             </div>
             <div class="drawer-loading" data-id="drawerLoading">
                 Loading...
@@ -47,12 +47,20 @@
             <div class="drawer-observer" data-id="drawerObserver"></div>
         </div>
     </div>
-    <div class="drawer-footer">
+    <div class="drawer-pagination-footer">
         <div class="drawer-showing" data-id="showingText">
-            Showing 0 of 0
+            0-0 of 0
         </div>
-        <div class="drawer-limit">
-            Limit <input type="number" data-id="limitInput" min="1" value="{{limit}}" aria-label="Limit results" />
+        <div class="drawer-pagination-controls">
+            <button data-id="btnFirstPage" class="drawer-btn-page"><i class="fa fa-angle-double-left"></i></button>
+            <button data-id="btnPrevPage" class="drawer-btn-page"><i class="fa fa-angle-left"></i></button>
+            <button data-id="btnCurrentPage" class="drawer-btn-page active" disabled>1</button>
+            <button data-id="btnNextPage" class="drawer-btn-page"><i class="fa fa-angle-right"></i></button>
+            <button data-id="btnLastPage" class="drawer-btn-page"><i class="fa fa-angle-double-right"></i></button>
+        </div>
+        <div class="drawer-limit-control">
+            <span>Limit</span>
+            <input type="number" data-id="limitInput" min="1" value="25" />
         </div>
     </div>
 </div>

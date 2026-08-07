@@ -40,7 +40,12 @@ define(['require',
             showingText: "[data-id='showingText']",
             copyRunId: "[data-id='copyRunId']",
             drawerLoading: "[data-id='drawerLoading']",
-            drawerObserver: "[data-id='drawerObserver']"
+            drawerObserver: "[data-id='drawerObserver']",
+            btnFirstPage: "[data-id='btnFirstPage']",
+            btnPrevPage: "[data-id='btnPrevPage']",
+            btnCurrentPage: "[data-id='btnCurrentPage']",
+            btnNextPage: "[data-id='btnNextPage']",
+            btnLastPage: "[data-id='btnLastPage']"
         },
 
         events: function () {
@@ -48,19 +53,20 @@ define(['require',
             events["click " + this.ui.closeBtn] = "closeDrawer";
             events["click " + this.ui.overlay] = "closeDrawer";
             events["keyup " + this.ui.searchInput] = "onSearch";
-            events["keyup " + this.ui.limitInput] = function (e) {
-                if (e.keyCode === 13) {
-                    this.onLimitChange();
-                }
-            };
             events["click .blue-link"] = "onItemClick";
             events["click " + this.ui.copyRunId] = "onCopyRunId";
+            events["click " + this.ui.btnFirstPage] = "goToFirstPage";
+            events["click " + this.ui.btnPrevPage] = "goToPrevPage";
+            events["click " + this.ui.btnNextPage] = "goToNextPage";
+            events["click " + this.ui.btnLastPage] = "goToLastPage";
+            events["keyup " + this.ui.limitInput] = "onLimitInput";
             return events;
         },
 
         initialize: function (options) {
             _.extend(this, _.pick(options, 'title', 'items', 'fetchData', 'onItemClickCb', 'actionType', 'runId', 'totalCount'));
-            this.limit = 10;
+            this.drawerPageSize = 25;
+            this.limit = 25; // fallback
             this.searchText = "";
             this.displayItems = [];
             this.offset = 0;
@@ -68,6 +74,7 @@ define(['require',
             this.hasMore = true;
             this.isLoading = false;
             this.scrollTop = 0;
+            this.totalFilteredCount = 0;
         },
 
         onRender: function () {
@@ -77,6 +84,7 @@ define(['require',
             setTimeout(function () {
                 that.ui.overlay.addClass('open');
                 that.ui.panel.addClass('open');
+                $('body').addClass('drawer-open-lock');
             }, 10);
 
             // Scroll events don't bubble, so we must bind directly to the UI element
@@ -84,139 +92,106 @@ define(['require',
                 var el = this;
                 that.scrollTop = el.scrollTop;
                 that.renderList(); // re-render the visible chunk
-
-                var isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 20;
-                if (isNearBottom && that.hasMore && !that.isLoading) {
-                    if (that.scrollTimer) clearTimeout(that.scrollTimer);
-                    that.scrollTimer = setTimeout(function () {
-                        that.loadMore();
-                    }, 250);
-                }
             });
-
-            // Only use IntersectionObserver for requested entities to preserve existing behavior
-            if (this.actionType !== 'purged') {
-                this.setupObserver();
-            }
 
             this.loadData();
         },
 
-        setupObserver: function () {
-            var that = this;
-            if (this.observer) {
-                this.observer.disconnect();
-            }
-
-            // Using IntersectionObserver is more reliable than manual scroll math
-            this.observer = new IntersectionObserver(function (entries) {
-                if (entries[0].isIntersecting && that.hasMore && !that.isLoading) {
-                    that.loadMore();
-                }
-            }, {
-                root: this.ui.drawerScrollRegion[0],
-                rootMargin: '0px',
-                threshold: 0.1
-            });
-
-            if (this.ui.drawerObserver.length) {
-                this.observer.observe(this.ui.drawerObserver[0]);
-            }
-        },
-
         onBeforeDestroy: function () {
-            if (this.observer) {
-                this.observer.disconnect();
-            }
-            if (this.scrollTimer) {
-                clearTimeout(this.scrollTimer);
-            }
             if (this.ui && this.ui.drawerScrollRegion) {
                 this.ui.drawerScrollRegion.off('scroll');
             }
         },
 
         loadData: function () {
-            this.offset = 0;
             this.page = 1;
-            this.hasMore = true;
             this.displayItems = [];
 
             if (this.fetchData) {
-                // Server-side: paginate via API calls
-                this.items = [];
-            }
-            this.loadMore();
-        },
-
-        loadMore: function () {
-            var that = this;
-            if (this.isLoading || !this.hasMore) return;
-
-            this.isLoading = true;
-            this.ui.drawerLoading.show(); // Show loading indicator
-
-            if (this.fetchData) {
-                // Server-side pagination via API
-                this.fetchData(this.limit, this.offset, function (data) {
+                // If there's an API, load it all or handle server pagination. 
+                // For this UI port, we assume we load what's needed.
+                var that = this;
+                this.isLoading = true;
+                this.ui.drawerLoading.show();
+                this.fetchData(10000, 0, function (data) {
                     that.isLoading = false;
-                    that.ui.drawerLoading.hide(); // Hide loading indicator
-
+                    that.ui.drawerLoading.hide();
                     if (data && data.length > 0) {
-                        that.items = that.items.concat(data);
-                        that.offset += data.length;
-                        // If we received fewer items than requested, we've likely hit the end
-                        if (data.length < that.limit) {
-                            that.hasMore = false;
-                        }
-                    } else {
-                        that.hasMore = false;
+                        that.items = data;
                     }
-                    that.displayItems = that.items;
                     that.renderList();
                 });
             } else {
-                // Client-side: Paginate and render
-                this.isLoading = false;
-                this.ui.drawerLoading.hide();
-                if (this.displayItems.length > 0) {
-                    this.page += 1;
-                }
                 this.renderList();
             }
         },
 
-        renderList: function () {
-            var total = this.totalCount || 0;
+        goToFirstPage: function () {
+            this.page = 1;
+            this.scrollTop = 0;
+            this.renderList();
+        },
 
-            if (!this.fetchData) {
-                var fullList = this.items || [];
-                if (this.searchText) {
-                    var lowerSearch = this.searchText.toLowerCase();
-                    fullList = fullList.filter(function (item) {
-                        return item.toLowerCase().indexOf(lowerSearch) !== -1;
-                    });
+        goToPrevPage: function () {
+            if (this.page > 1) {
+                this.page -= 1;
+                this.scrollTop = 0;
+                this.renderList();
+            }
+        },
+
+        goToNextPage: function () {
+            var maxPage = Math.ceil(this.totalFilteredCount / this.drawerPageSize) || 1;
+            if (this.page < maxPage) {
+                this.page += 1;
+                this.scrollTop = 0;
+                this.renderList();
+            }
+        },
+
+        goToLastPage: function () {
+            var maxPage = Math.ceil(this.totalFilteredCount / this.drawerPageSize) || 1;
+            this.page = maxPage;
+            this.scrollTop = 0;
+            this.renderList();
+        },
+
+        onLimitInput: function (e) {
+            if (e.keyCode === 13) {
+                var parsed = parseInt($(e.currentTarget).val(), 10);
+                if (Number.isFinite(parsed) && parsed > 0) {
+                    this.drawerPageSize = parsed;
+                    this.page = 1;
+                    this.scrollTop = 0;
+                    this.renderList();
                 }
-                total = fullList.length;
-                this.displayItems = fullList.slice(0, this.page * this.limit);
-                this.hasMore = this.displayItems.length < fullList.length;
-            } else if (this.fetchData && this.searchText) {
-                // Server-side search: still need to rely on offset/limit
-                // Re-using existing logic
-                var fullList = this.items || [];
+            }
+        },
+
+        renderList: function () {
+            var fullList = this.items || [];
+            if (this.searchText) {
                 var lowerSearch = this.searchText.toLowerCase();
                 fullList = fullList.filter(function (item) {
-                    return item.toLowerCase().indexOf(lowerSearch) !== -1;
+                    var nameStr = (typeof item === 'object' && item.attributes && item.attributes.name) ? item.attributes.name : "";
+                    var guidStr = (typeof item === 'object' && item.guid) ? item.guid : item;
+                    return (nameStr.toLowerCase().indexOf(lowerSearch) !== -1) || 
+                           (guidStr.toLowerCase().indexOf(lowerSearch) !== -1);
                 });
-                this.displayItems = fullList.slice(0, Math.min(this.offset, fullList.length));
             }
+
+            this.totalFilteredCount = fullList.length;
+
+            var startIndex = (this.page - 1) * this.drawerPageSize;
+            var endIndex = Math.min(startIndex + this.drawerPageSize, this.totalFilteredCount);
+            this.displayItems = fullList.slice(startIndex, endIndex);
 
             var listHtml = "";
 
             var virtualizedData = Utils.virtualizeList({
                 items: this.displayItems,
                 scrollTop: this.scrollTop,
-                itemHeight: 37,
+                itemHeight: 24,
                 overscan: 10,
                 visibleCount: 40
             });
@@ -226,8 +201,14 @@ define(['require',
             }
 
             _.each(virtualizedData.visibleItems, function (item, index) {
-                var globalIndex = virtualizedData.startIndex + index + 1;
-                listHtml += '<li class="drawer-list-item" style="height: 37px; box-sizing: border-box;"><span class="item-index">' + globalIndex + '.</span> <a class="blue-link" title="' + _.escape(item) + '" data-guid="' + _.escape(item) + '">' + _.escape(item) + '</a></li>';
+                var globalIndex = startIndex + virtualizedData.startIndex + index + 1;
+                var isObj = typeof item === 'object' && item !== null;
+                var guidStr = isObj ? item.guid : item;
+                var typeName = isObj && item.typeName ? '[' + _.escape(item.typeName) + '] ' : '';
+                var entityName = isObj && item.attributes && item.attributes.name ? _.escape(item.attributes.name) : _.escape(guidStr);
+                var displayName = isObj && item.attributes && item.attributes.name ? typeName + entityName : _.escape(guidStr);
+                
+                listHtml += '<li class="drawer-list-item" ><span class="item-index" >' + globalIndex + '.</span> <a class="blue-link" title="' + _.escape(guidStr) + '" data-guid="' + _.escape(guidStr) + '">' + displayName + '</a></li>';
             });
             
             if (virtualizedData.paddingBottom > 0) {
@@ -235,12 +216,6 @@ define(['require',
             }
 
             this.ui.drawerItemsList.html(listHtml);
-
-            // Show 'Scroll to load more'
-            if (this.hasMore && this.displayItems.length > 0) {
-                this.ui.drawerItemsList.append('<li class="drawer-load-more">Scroll to load more data</li>');
-            }
-
             this.ui.drawerLoading.hide();
 
             if (this.displayItems.length === 0) {
@@ -249,11 +224,28 @@ define(['require',
                 this.ui.drawerEmpty.hide();
             }
 
-            var showing = this.displayItems.length;
-            if (!this.fetchData) {
-                this.ui.showingText.text("Showing " + showing + " of " + total);
+            // Update Pagination UI
+            var showingStart = Math.min(startIndex + 1, this.totalFilteredCount);
+            var showingEnd = endIndex;
+            this.ui.showingText.text(showingStart + "-" + showingEnd + " of " + this.totalFilteredCount);
+            this.ui.btnCurrentPage.text(this.page);
+            
+            var maxPage = Math.ceil(this.totalFilteredCount / this.drawerPageSize) || 1;
+            
+            if (this.page <= 1) {
+                this.ui.btnFirstPage.prop("disabled", true);
+                this.ui.btnPrevPage.prop("disabled", true);
             } else {
-                this.ui.showingText.text("Showing " + showing + " of " + total);
+                this.ui.btnFirstPage.prop("disabled", false);
+                this.ui.btnPrevPage.prop("disabled", false);
+            }
+            
+            if (this.page >= maxPage) {
+                this.ui.btnNextPage.prop("disabled", true);
+                this.ui.btnLastPage.prop("disabled", true);
+            } else {
+                this.ui.btnNextPage.prop("disabled", false);
+                this.ui.btnLastPage.prop("disabled", false);
             }
         },
 
@@ -261,20 +253,6 @@ define(['require',
             this.searchText = $(e.currentTarget).val().trim();
             this.scrollTop = 0;
             this.loadData();
-        },
-
-        onLimitChange: function () {
-            var newLimit = parseInt(this.ui.limitInput.val(), 10);
-            var maxLimit = this.totalCount || 0;
-            if (newLimit > 0) {
-                if (maxLimit > 0) {
-                    newLimit = Math.min(newLimit, maxLimit);
-                    this.ui.limitInput.val(newLimit);
-                }
-                this.limit = newLimit;
-                this.scrollTop = 0;
-                this.loadData();
-            }
         },
 
         onItemClick: function (e) {
@@ -299,6 +277,7 @@ define(['require',
             var that = this;
             this.ui.overlay.removeClass('open');
             this.ui.panel.removeClass('open');
+            $('body').removeClass('drawer-open-lock');
 
             setTimeout(function () {
                 that.destroy();
@@ -308,7 +287,6 @@ define(['require',
         templateHelpers: function () {
             return {
                 title: this.title || 'Entities',
-                limit: this.limit,
                 runId: this.runId,
                 fetchData: this.fetchData
             };

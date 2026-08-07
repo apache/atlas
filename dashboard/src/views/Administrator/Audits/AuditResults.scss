@@ -1,0 +1,322 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.purge-audit-view {
+    margin-top: 16px;
+    margin-bottom: 16px;
+}
+
+.purge-summary-container {
+    padding: 20px;
+    border-radius: 8px;
+    background-color: #f0f4f8;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.purge-runid-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.runid-text {
+    font-family: monospace;
+}
+
+.card-title {
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    font-size: 11px;
+    display: block;
+}
+
+.card-count {
+    font-weight: bold;
+    margin-top: 4px;
+}
+
+.purge-card {
+    padding: 12px;
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.purge-card-requested {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    cursor: pointer;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        border-color: #60a5fa;
+    }
+}
+
+.purge-card-purged {
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+
+    &.clickable {
+        cursor: pointer;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
+            border-color: #4ade80;
+        }
+    }
+}
+
+.purge-card-failed {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    cursor: default;
+}
+
+.purge-card-failed-empty {
+    background-color: #fafafa;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    cursor: default;
+}
+
+.purge-card-skipped {
+    background-color: #fffbeb;
+    border: 1px solid #fef08a;
+    cursor: default;
+}
+
+.purge-card-skipped-empty {
+    background-color: #fafafa;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    cursor: default;
+}
+
+.purge-alert-container {
+    margin-top: 16px;
+}
+
+.purge-alert-title {
+    font-weight: bold;
+    font-size: 13px;
+}
+
+.drawer-paper {
+    width: 400px;
+}
+
+.drawer-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+}
+
+.drawer-title {
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.87);
+    font-size: 16px;
+}
+
+.drawer-runid-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 12px;
+    padding: 4px 0;
+}
+
+.drawer-runid-text {
+    font-size: 12px;
+}
+
+.drawer-search-container {
+    margin: 4px 12px;
+    padding-bottom: 8px;
+}
+
+.drawer-search-input {
+    width: 100%;
+    border-bottom: 1px solid #d1d5db;
+    padding-bottom: 4px;
+}
+
+.drawer-loader {
+    display: flex;
+    justify-content: center;
+    padding: 40px 0;
+}
+
+.drawer-list-container {
+    overflow-y: scroll;
+    flex-grow: 1;
+    min-height: 0;
+    margin: 0 15px;
+    padding-right: 5px;
+}
+
+.drawer-list-empty {
+    padding: 24px 0;
+    text-align: center;
+}
+
+.drawer-list-item {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    padding: 0 0 0 10px;
+    height: 24px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+}
+
+.drawer-list-index {
+    margin-right: 8px;
+    min-width: 24px;
+    color: rgba(0, 0, 0, 0.6);
+    text-align: right;
+}
+
+.drawer-list-link {
+    display: inline-block;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    text-align: left;
+    margin-left: 12px;
+}
+
+.drawer-footer {
+    margin-top: auto;
+    padding: 8px 12px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    background-color: #fff;
+}
+
+.drawer-footer-count {
+    white-space: nowrap;
+    margin-right: 8px;
+    font-size: 13px;
+}
+
+.drawer-pagination-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.drawer-limit-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.drawer-limit-label {
+    font-size: 13px;
+}
+
+.drawer-limit-input {
+    width: 48px;
+    height: 24px;
+    box-sizing: border-box;
+    font-size: 13px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 0 4px;
+    text-align: center;
+    outline: none;
+
+    &:focus {
+        border-color: #90caf9;
+    }
+}
+
+.audit-list-header {
+    padding: 16px 0 0 16px;
+    text-align: left;
+}
+
+.audit-list-link {
+    display: inline-block;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    text-align: left;
+    vertical-align: bottom;
+}
+
+.copy-icon {
+    font-size: 15px;
+    color: rgba(0, 0, 0, 0.6);
+
+    &.copied {
+        color: #2e7d32;
+    }
+}
+
+.drawer-copy-btn {
+    padding: 2px;
+}
+
+.drawer-copy-icon {
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.6);
+
+    &.copied {
+        color: #2e7d32;
+    }
+}
+
+.drawer-search-icon {
+    font-size: 16px;
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.purge-pagination {
+    .MuiPaginationItem-root {
+        min-width: 24px;
+        height: 24px;
+        margin: 0 2px;
+        font-size: 13px;
+    }
+
+    .MuiPaginationItem-ellipsis {
+        display: none;
+    }
+
+    .MuiPaginationItem-page:not(.Mui-selected) {
+        display: none;
+    }
+}
