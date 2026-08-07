@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { Grid, Link, List, ListItem, ListItemText, Typography, Box, Drawer, IconButton, Stack, Tooltip, TextField, InputAdornment, CircularProgress, Pagination, PaginationItem, Skeleton } from "@mui/material";
+import { Grid, Link, List, ListItem, ListItemText, Typography, Box, Drawer, IconButton, Stack, Tooltip, TextField, InputAdornment, Pagination, PaginationItem, Skeleton } from "@mui/material";
 import KeyboardDoubleArrowLeftIcon from "@mui/icons-material/KeyboardDoubleArrowLeft";
 import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -68,11 +68,8 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
   const [scrollTop, setScrollTop] = useState<number>(0);
   const [copiedRunId, setCopiedRunId] = useState<boolean>(false);
   const [purgedApiGuids, setPurgedApiGuids] = useState<string[]>([]);
-  const [loadingPurgedApi, setLoadingPurgedApi] = useState<boolean>(false);
-  const [purgedTotalCount, setPurgedTotalCount] = useState<number>(0);
   const [summaryData, setSummaryData] = useState<Record<string, unknown> | null>(null);
   const [loadingSummary, setLoadingSummary] = useState<boolean>(false);
-  const drawerScrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
   const handleCloseModal = () => {
@@ -94,24 +91,37 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
   const summaryGuid = auditObj?.guid ?? row.original.guid;
 
   useEffect(() => {
+    const controller = new AbortController();
+
     if (isPurgeOperation && summaryGuid) {
       setLoadingSummary(true);
       fetchApi(`/api/atlas/admin/audit/${summaryGuid}/summary`, {
         method: "GET",
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        signal: controller.signal
       })
         .then(res => {
-          if (res.data && typeof res.data === 'object') {
-            setSummaryData(res.data);
+          if (!controller.signal.aborted) {
+            if (res.data && !Array.isArray(res.data) && typeof res.data === 'object') {
+              setSummaryData(res.data);
+            }
           }
         })
         .catch(err => {
-          console.error("Failed to fetch purge summary", err);
+          if (!controller.signal.aborted && err.name !== 'AbortError' && err.name !== 'CanceledError') {
+            console.error("Failed to fetch purge summary", err);
+          }
         })
         .finally(() => {
-          setLoadingSummary(false);
+          if (!controller.signal.aborted) {
+            setLoadingSummary(false);
+          }
         });
     }
+
+    return () => {
+      controller.abort();
+    };
   }, [isPurgeOperation, summaryGuid]);
 
   let summary: Record<string, unknown> = summaryData || {};
@@ -171,6 +181,7 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
 
   const isSummaryRow = (runId !== 'N/A') && isPurgeOperation;
 
+
   const requestedCount = (summary?.requestedCount as number | undefined) ?? requestedEntitiesList.length;
   const purgedCount = (summary?.purgedCount as number | undefined) ?? legacyPurgedList.length;
   const purgedDependenciesCount = (summary?.purgedDependenciesCount as number | undefined) ?? 0;
@@ -181,22 +192,13 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
   const skippedCount = (summary?.skippedCount as number | undefined) ?? 0;
   const executionFailed = (summary?.executionFailed as boolean | undefined) || (totalFailedCount) > 0;
 
-  // Fetching purged entities from an API is disabled for now.
-  // We simply use the raw `result` string as requested.
-  const fetchPurged = () => {
-    // Disabled. The UI will just use the `result` string.
-  };
-
-  // Handle clicking Total Purged card: opens drawer and fetches first page
   const handleOpenPurgedDrawer = () => {
     if (totalPurgedCount === 0) return;
-    setPurgedTotalCount(totalPurgedCount);
     setActivePurgeView(PurgeActiveView.PURGED);
     setDrawerPage(1);
     setScrollTop(0);
     // As requested, Total Purged simply uses the raw `result` object string (legacyPurgedList)
     setPurgedApiGuids(legacyPurgedList);
-    setLoadingPurgedApi(false);
   };
 
   return (
@@ -362,7 +364,7 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
                       <LightTooltip
                         title={
                           totalFailedCount > 0 || executionFailed
-                            ? "Some entities failed to purge. Please check ${atlas.log.dir}/purgefailure.log for details."
+                            ? "Some entities failed to purge. Please check purgefailure.log for details."
                             : "No failed entities during this purge operation."
                         }
                         arrow
@@ -386,7 +388,7 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
                       <LightTooltip
                         title={
                           skippedCount > 0 || executionFailed
-                            ? "Some entities were skipped during purge. Please check ${atlas.log.dir}/purgefailure.log for details."
+                            ? "Some entities were skipped during purge. Please check purgefailure.log for details."
                             : "No skipped entities during this purge operation."
                         }
                         arrow
@@ -414,7 +416,6 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
           <PurgeEntitiesDrawer
             activePurgeView={activePurgeView}
             setActivePurgeView={setActivePurgeView}
-            isSummaryRow={isSummaryRow}
             requestedEntitiesList={requestedEntitiesList}
             purgedApiGuids={purgedApiGuids}
             drawerSearchText={drawerSearchText}
@@ -425,10 +426,6 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
             setDrawerPageSize={setDrawerPageSize}
             scrollTop={scrollTop}
             setScrollTop={setScrollTop}
-            purgedTotalCount={purgedTotalCount}
-            drawerScrollTimerRef={drawerScrollTimerRef}
-            loadingPurgedApi={loadingPurgedApi}
-            fetchPurged={fetchPurged}
             runId={runId}
             copiedRunId={copiedRunId}
             setCopiedRunId={setCopiedRunId}
@@ -447,8 +444,7 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
 interface PurgeEntitiesDrawerProps {
   activePurgeView: PurgeActiveView;
   setActivePurgeView: (view: PurgeActiveView) => void;
-  isSummaryRow: boolean;
-requestedEntitiesList: string[];
+  requestedEntitiesList: string[];
   purgedApiGuids: string[];
   drawerSearchText: string;
   setDrawerSearchText: (text: string) => void;
@@ -458,10 +454,6 @@ requestedEntitiesList: string[];
   setDrawerPageSize: React.Dispatch<React.SetStateAction<number>>;
   scrollTop: number;
   setScrollTop: React.Dispatch<React.SetStateAction<number>>;
-  purgedTotalCount: number;
-  drawerScrollTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
-  loadingPurgedApi: boolean;
-  fetchPurged: (append: boolean, limitOverride?: number) => void;
   runId: string;
   copiedRunId: boolean;
   setCopiedRunId: (copied: boolean) => void;
@@ -484,7 +476,6 @@ const PurgeEntitiesDrawer: React.FC<PurgeEntitiesDrawerProps> = ({
   setDrawerPageSize,
   scrollTop,
   setScrollTop,
-  loadingPurgedApi,
   runId,
   copiedRunId,
   setCopiedRunId,
@@ -502,11 +493,11 @@ const PurgeEntitiesDrawer: React.FC<PurgeEntitiesDrawerProps> = ({
   }, [drawerPage, drawerSearchText, activePurgeView]);
 
   const isPurgedView = activePurgeView === PurgeActiveView.PURGED;
-  const rawListForView: any[] = activePurgeView === PurgeActiveView.REQUESTED
+  const rawListForView: (string | Record<string, any>)[] = activePurgeView === PurgeActiveView.REQUESTED
     ? requestedEntitiesList
     : purgedApiGuids;
 
-  const filteredList = rawListForView.filter((item: any) => {
+  const filteredList = rawListForView.filter((item: string | Record<string, any>) => {
     if (!drawerSearchText) return true;
     const guidStr = typeof item === 'object' && item !== null ? item.guid : item;
     const nameStr = typeof item === 'object' && item !== null ? item.attributes?.name : '';
@@ -589,7 +580,7 @@ const PurgeEntitiesDrawer: React.FC<PurgeEntitiesDrawerProps> = ({
           </Box>
         )}
 
-        {(activePurgeView === 'requested' ? requestedEntitiesList.length > 0 : purgedApiGuids.length > 0 || loadingPurgedApi) && (
+        {(activePurgeView === 'requested' ? requestedEntitiesList.length > 0 : purgedApiGuids.length > 0) && (
           <Box className="drawer-search-container">
             <TextField
               fullWidth
@@ -628,56 +619,50 @@ const PurgeEntitiesDrawer: React.FC<PurgeEntitiesDrawerProps> = ({
 
 
 
-        {isPurgedView && loadingPurgedApi && purgedApiGuids.length === 0 ? (
-          <Box className="drawer-loader">
-            <CircularProgress size={30} />
-          </Box>
-        ) : (
-          <List dense className="drawer-list-container" onScroll={handleDrawerScroll} onWheel={handleDrawerScroll} ref={listRef}>
-            {(() => {
-              if (displayItems.length === 0) {
-                return (
-                  <Typography variant="body2" color="textSecondary" className="drawer-list-empty">
-                    No matching GUIDs found
-                  </Typography>
-                );
-              }
-
+        <List dense className="drawer-list-container" onScroll={handleDrawerScroll} onWheel={handleDrawerScroll} ref={listRef}>
+          {(() => {
+            if (displayItems.length === 0) {
               return (
-                <>
-                  {paddingTop > 0 && <div style={{ height: paddingTop }} />}
-                  {visibleItems.map((item: string | Record<string, any>, localIndex: number) => {
-                    const index = startIndex + localIndex;
-                    const globalIndex = (drawerPage - 1) * drawerPageSize + index + 1;
-                    const isObj = typeof item === 'object' && item !== null;
-                    const guidStr = isObj ? item.guid : item;
-                    return (
-                      <ListItem key={guidStr + index} className="drawer-list-item">
-                        <Typography variant="body2" className="drawer-list-index">{globalIndex}.</Typography>
-                        <Link
-                          component="button"
-                          variant="body2"
-                          underline="hover"
-                          onClick={() => {
-                            setOpenPurgeModal(true);
-                            setCurrentPurgeResultObj(guidStr);
-                          }}
-                          title={guidStr}
-                          className="drawer-list-link"
-                        >
-                          {guidStr}
-                        </Link>
-                      </ListItem>
-                    );
-                  })}
-                  {paddingBottom > 0 && <div style={{ height: paddingBottom }} />}
-                </>
+                <Typography variant="body2" color="textSecondary" className="drawer-list-empty">
+                  No matching GUIDs found
+                </Typography>
               );
-            })()}
+            }
+
+            return (
+              <>
+                {paddingTop > 0 && <div style={{ height: paddingTop }} />}
+                {visibleItems.map((item: string | Record<string, any>, localIndex: number) => {
+                  const index = startIndex + localIndex;
+                  const globalIndex = (drawerPage - 1) * drawerPageSize + index + 1;
+                  const isObj = typeof item === 'object' && item !== null;
+                  const guidStr = isObj ? item.guid : item;
+                  return (
+                    <ListItem key={guidStr + index} className="drawer-list-item">
+                      <Typography variant="body2" className="drawer-list-index">{globalIndex}.</Typography>
+                      <Link
+                        component="button"
+                        variant="body2"
+                        underline="hover"
+                        onClick={() => {
+                          setOpenPurgeModal(true);
+                          setCurrentPurgeResultObj(guidStr);
+                        }}
+                        title={guidStr}
+                        className="drawer-list-link"
+                      >
+                        {guidStr}
+                      </Link>
+                    </ListItem>
+                  );
+                })}
+                {paddingBottom > 0 && <div style={{ height: paddingBottom }} />}
+              </>
+            );
+          })()}
 
 
-          </List>
-        )}
+        </List>
 
         {displayTotal > 0 && (
           <Box className="drawer-footer">

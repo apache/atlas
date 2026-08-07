@@ -909,28 +909,29 @@ describe('AuditResults Component', () => {
       expect(screen.getByText('5')).toBeInTheDocument();
     });
 
-    it('should show executionFailed alert when failedCount > 0', () => {
-      const failedResult = JSON.stringify({
-        requestedCount: 3, purgedCount: 1, purgedDependenciesCount: 0,
-        failedCount: 2, skippedCount: 0, executionFailed: true, runId: 'test'
+    describe('Purge Failure States', () => {
+      it('should apply failure styling when failedCount > 0 or executionFailed is true', () => {
+        const failedResult = JSON.stringify({
+          requestedCount: 3, purgedCount: 1, purgedDependenciesCount: 0,
+          failedCount: 2, skippedCount: 0, executionFailed: true, runId: 'test'
+        });
+        const auditData = [{ guid: 'a-fail', operation: 'PURGE', params: '', result: failedResult }];
+        const { container } = render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'a-fail' } }} />);
+        
+        expect(container.querySelector('.purge-card-failed')).toBeInTheDocument();
       });
-      const auditData = [{ guid: 'a-fail', operation: 'PURGE', params: '', result: failedResult }];
 
-      render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'a-fail' } }} />);
-
-      
-    });
-
-    it('should NOT show executionFailed alert when failedCount is 0', () => {
-      const okResult = JSON.stringify({
-        requestedCount: 3, purgedCount: 3, purgedDependenciesCount: 0,
-        failedCount: 0, skippedCount: 0, executionFailed: false, runId: 'test'
+      it('should NOT apply failure styling when failedCount is 0 and executionFailed is false', () => {
+        const okResult = JSON.stringify({
+          requestedCount: 3, purgedCount: 3, purgedDependenciesCount: 0,
+          failedCount: 0, skippedCount: 0, executionFailed: false, runId: 'test'
+        });
+        const auditData = [{ guid: 'a-ok', operation: 'PURGE', params: '', result: okResult }];
+        const { container } = render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'a-ok' } }} />);
+        
+        expect(container.querySelector('.purge-card-failed')).not.toBeInTheDocument();
+        expect(container.querySelector('.purge-card-failed-empty')).toBeInTheDocument();
       });
-      const auditData = [{ guid: 'a-ok', operation: 'PURGE', params: '', result: okResult }];
-
-      render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'a-ok' } }} />);
-
-      expect(screen.queryByText('Partial success')).not.toBeInTheDocument();
     });
 
     it('should show PURGE with JSON array result (not object)', () => {
@@ -1115,6 +1116,25 @@ describe('AuditResults Component', () => {
       expect(screen.getByText('2.')).toBeInTheDocument();
       expect(screen.getByText('3.')).toBeInTheDocument();
     });
+
+    it('should handle pagination correctly in the drawer', () => {
+      const largeList = Array.from({ length: 30 }, (_, i) => `guid-page-${i + 1}`);
+      const largeAuditData = [
+        { guid: 'audit-large', operation: 'PURGE', params: '', result: JSON.stringify(largeList) }
+      ];
+      render(<AuditResults componentProps={{ auditData: largeAuditData }} row={{ original: { guid: 'audit-large' } }} />);
+
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
+
+      expect(screen.getByText('guid-page-1')).toBeInTheDocument();
+      expect(screen.queryByText('guid-page-30')).not.toBeInTheDocument();
+
+      const nextPageBtn = screen.getByRole('button', { name: /Go to next page/i });
+      fireEvent.click(nextPageBtn);
+
+      expect(screen.queryByText('guid-page-1')).not.toBeInTheDocument();
+      expect(screen.getByText('guid-page-30')).toBeInTheDocument();
+    });
   });
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1169,7 +1189,7 @@ describe('AuditResults Component', () => {
   // PURGE — Limit input (change page size)
   // ─────────────────────────────────────────────────────────────────────────────
   describe('Drawer — Limit input behaviour', () => {
-    it('should render the limit input with default value of 10', () => {
+    it('should render the limit input with default value of 25', () => {
       const componentProps = { auditData: mockAuditData };
       render(<AuditResults componentProps={componentProps} row={{ original: { guid: 'audit-3' } }} />);
 

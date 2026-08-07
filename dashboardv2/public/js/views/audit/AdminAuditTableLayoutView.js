@@ -441,11 +441,11 @@ define(['require',
                     html += '<div class="card-label">PURGED</div><div class="card-value">' + totalPurgedCount + '</div></div>';
 
                     // Failed
-                    html += '<div class="purge-summary-card card-red ' + (failedCount > 0 ? 'has-count' : '') + '" title="Check <ATLAS_HOME>/logs/purgefailure.log for details">';
+                    html += '<div class="purge-summary-card card-red ' + (failedCount > 0 ? 'has-count' : '') + '" title="Some entities failed to purge. Please check purgefailure.log for details.">';
                     html += '<div class="card-label">FAILED</div><div class="card-value">' + failedCount + '</div></div>';
 
                     // Skipped
-                    html += '<div class="purge-summary-card card-amber ' + (skippedCount > 0 ? 'has-count' : '') + '" title="Check <ATLAS_HOME>/logs/purgefailure.log for details">';
+                    html += '<div class="purge-summary-card card-amber ' + (skippedCount > 0 ? 'has-count' : '') + '" title="Some entities were skipped during purge. Please check purgefailure.log for details.">';
                     html += '<div class="card-label">SKIPPED</div><div class="card-value">' + skippedCount + '</div></div>';
 
                     html += '</div></div></div></div>';
