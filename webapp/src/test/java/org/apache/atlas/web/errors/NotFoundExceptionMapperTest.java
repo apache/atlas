@@ -19,6 +19,7 @@
 package org.apache.atlas.web.errors;
 
 import org.apache.atlas.exception.NotFoundException;
+import org.apache.atlas.server.common.errors.NotFoundExceptionMapper;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
