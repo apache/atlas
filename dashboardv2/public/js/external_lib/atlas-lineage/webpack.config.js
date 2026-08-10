@@ -41,7 +41,7 @@ const config = {
 		platform: "platform",
 		dagre: "dagre",
 		graphlib: "graphlib",
-		underscore: "_"
+		underscore: "underscore"
 	},
 	module: {
 		rules: [
