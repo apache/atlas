@@ -39,6 +39,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasUniqueKeyHandler;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.EntityDeletePropagationHandler;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.tasks.TaskManagement;
@@ -143,6 +144,7 @@ public abstract class DeleteHandlerV1 {
     private final boolean              softDelete;
     private final TaskManagement       taskManagement;
     private final AtlasUniqueKeyHandler uniqueKeyHandler;
+    private final EntityDeletePropagationHandler deletePropagationHandler;
 
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement) {
         this.typeRegistry                  = typeRegistry;
@@ -152,6 +154,7 @@ public abstract class DeleteHandlerV1 {
         this.softDelete                    = softDelete;
         this.taskManagement                = taskManagement;
         this.uniqueKeyHandler              = graph.getUniqueKeyHandler();
+        this.deletePropagationHandler      = new EntityDeletePropagationHandler(typeRegistry);
     }
 
     /**
@@ -215,7 +218,44 @@ public abstract class DeleteHandlerV1 {
                 getColumnLineageEntities(instanceVertex, deletionCandidateVertices);
             }
         }
+
+        // Propagation applies only during delete (ACTIVE→DELETED), not purge (cleanup of already-DELETED entities)
+        if (!requestContext.isPurgeRequested()) {
+            collectDeletePropagationCandidates(requestContext, deletionCandidateVertices, instanceVertexGuids);
+        }
+
         return deletionCandidateVertices;
+    }
+
+    private void collectDeletePropagationCandidates(RequestContext requestContext, Set<AtlasVertex> deletionCandidateVertices,
+                                                    Set<String> visitedGuids) throws AtlasBaseException {
+        Set<AtlasVertex> propagationSources = new HashSet<>(deletionCandidateVertices);
+
+        for (AtlasVertex vertex : propagationSources) {
+            String          typeName   = GraphHelper.getTypeName(vertex);
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+            if (entityType == null || CollectionUtils.isEmpty(entityType.getDeletePropagationTargets())) {
+                continue;
+            }
+
+            LOG.debug("collectDeletePropagationCandidates(): checking propagation targets for entity type='{}', guid='{}'",
+                    typeName, AtlasGraphUtilsV2.getIdFromVertex(vertex));
+
+            Set<AtlasVertex> propagatedVertices = deletePropagationHandler.collectPropagatedVertices(vertex, entityType, visitedGuids);
+
+            for (AtlasVertex propagatedVertex : propagatedVertices) {
+                for (GraphHelper.VertexInfo vertexInfo : getOwnedVertices(propagatedVertex)) {
+                    requestContext.recordEntityDelete(vertexInfo.getEntity());
+                    deletionCandidateVertices.add(vertexInfo.getVertex());
+                }
+            }
+        }
+
+        if (deletionCandidateVertices.size() > propagationSources.size()) {
+            LOG.info("collectDeletePropagationCandidates(): added {} entities via delete propagation",
+                    deletionCandidateVertices.size() - propagationSources.size());
+        }
     }
 
     /*
