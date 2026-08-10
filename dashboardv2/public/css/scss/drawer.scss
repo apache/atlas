@@ -16,18 +16,23 @@
 
 /* Purge Summary Wrapper to match React */
 .purge-summary-wrapper {
-    background-color: #fafafa;
-    border: 1px solid #e0e0e0;
+    margin-top: 16px;
+    margin-bottom: 16px;
+    padding: 20px;
     border-radius: 8px;
-    padding: 16px;
-    margin-top: 15px;
-    margin-bottom: 20px;
+    background-color: #f0f4f8;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 }
 
 .purge-run-id-row {
     margin-bottom: 15px;
     font-size: 14px;
     font-weight: 500;
+}
+
+.runid-text {
+    font-family: monospace;
 }
 
 .purge-run-id-copy {
@@ -91,7 +96,7 @@
     }
 
     .card-value {
-        font-size: 24px;
+        font-size: 14px;
         font-weight: 500;
         color: #111827;
         /* textPrimary */

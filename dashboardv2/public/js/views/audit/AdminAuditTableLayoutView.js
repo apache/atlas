@@ -435,7 +435,7 @@ define(['require',
 
                     html += '<div class="purge-summary-wrapper">';
                     if (runId) {
-                        html += '<div class="purge-run-id-row"><strong>Run Id:</strong> <span data-id="runIdValue">' + _.escape(runId) + '</span> <i class="fa fa-copy purge-run-id-copy" data-id="copyRunIdMain" title="Copy to clipboard"></i></div>';
+                        html += '<div class="purge-run-id-row"><strong>Run Id:</strong> <span class="runid-text" data-id="runIdValue">' + _.escape(runId) + '</span> <i class="fa fa-copy purge-run-id-copy" data-id="copyRunIdMain" title="Copy to clipboard"></i></div>';
                     }
 
                     html += '<div class="purge-summary-container">';
