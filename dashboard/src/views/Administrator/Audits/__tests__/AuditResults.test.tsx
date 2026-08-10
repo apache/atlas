@@ -53,6 +53,7 @@ const mockJsonParse = jest.fn((val: any) => {
 });
 
 jest.mock('@utils/Utils', () => ({
+  ...jest.requireActual('@utils/Utils'),
   isArray: (...args: any[]) => mockIsArray(...args),
   isEmpty: (...args: any[]) => mockIsEmpty(...args),
   jsonParse: (...args: any[]) => mockJsonParse(...args)
@@ -511,10 +512,8 @@ describe('AuditResults Component', () => {
 
       render(<AuditResults componentProps={componentProps} row={row} />);
 
-      // After removing brackets and splitting, '[]' becomes ['']
-      // The component will render this as a single empty item, not "No matching GUIDs found"
-      const typographies = screen.getAllByTestId('typography');
-      expect(typographies.length).toBeGreaterThan(0);
+      const countElement = screen.getByText('0', { selector: '.card-count' });
+      expect(countElement).toBeInTheDocument();
     });
 
     it('should show "No matching GUIDs found" for empty AUTO_PURGE result', () => {
@@ -532,10 +531,8 @@ describe('AuditResults Component', () => {
 
       render(<AuditResults componentProps={componentProps} row={row} />);
 
-      // After removing brackets and splitting, '[]' becomes ['']
-      // The component will render this as a single empty item, not "No matching GUIDs found"
-      const typographies = screen.getAllByTestId('typography');
-      expect(typographies.length).toBeGreaterThan(0);
+      const countElement = screen.getByText('0', { selector: '.card-count' });
+      expect(countElement).toBeInTheDocument();
     });
   });
 
@@ -787,9 +784,8 @@ describe('AuditResults Component', () => {
       const row = { original: { guid: 'audit-purge-truly-empty' } };
 
       render(<AuditResults componentProps={componentProps} row={row} />);
-
-      const typographies = screen.getAllByTestId('typography');
-      expect(typographies.length).toBeGreaterThan(0);
+      const countElement = screen.getByText('0', { selector: '.card-count' });
+      expect(countElement).toBeInTheDocument();
     });
 
     it('should show "No matching GUIDs found" for AUTO_PURGE with truly empty result', () => {
@@ -816,8 +812,8 @@ describe('AuditResults Component', () => {
 
       render(<AuditResults componentProps={componentProps} row={row} />);
 
-      const typographies = screen.getAllByTestId('typography');
-      expect(typographies.length).toBeGreaterThan(0);
+      const countElement = screen.getByText('0', { selector: '.card-count' });
+      expect(countElement).toBeInTheDocument();
     });
   });
 
@@ -917,7 +913,7 @@ describe('AuditResults Component', () => {
         });
         const auditData = [{ guid: 'a-fail', operation: 'PURGE', params: '', result: failedResult }];
         const { container } = render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'a-fail' } }} />);
-        
+
         expect(container.querySelector('.purge-card-failed')).toBeInTheDocument();
       });
 
@@ -928,7 +924,7 @@ describe('AuditResults Component', () => {
         });
         const auditData = [{ guid: 'a-ok', operation: 'PURGE', params: '', result: okResult }];
         const { container } = render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'a-ok' } }} />);
-        
+
         expect(container.querySelector('.purge-card-failed')).not.toBeInTheDocument();
         expect(container.querySelector('.purge-card-failed-empty')).toBeInTheDocument();
       });
@@ -1035,7 +1031,7 @@ describe('AuditResults Component', () => {
       expect(screen.getByTestId('drawer')).toBeInTheDocument();
     });
 
-    
+
 
     it('should show "No matching GUIDs found" when search has no match', () => {
       const componentProps = { auditData: mockAuditData };
@@ -1092,7 +1088,7 @@ describe('AuditResults Component', () => {
       expect(screen.getByText('guid-3')).toBeInTheDocument();
     });
 
-    
+
 
     it('should show "Limit" label in drawer footer', () => {
       const componentProps = { auditData: mockAuditData };
@@ -1103,7 +1099,7 @@ describe('AuditResults Component', () => {
       expect(screen.getByText('Limit')).toBeInTheDocument();
     });
 
-    
+
 
     it('should display GUID index numbers in the drawer list', () => {
       const componentProps = { auditData: mockAuditData };
@@ -1319,7 +1315,7 @@ describe('AuditResults Component', () => {
       fireEvent.click(screen.getByText('PURGED'));
 
       await waitFor(() => {
-        expect(screen.getByText('Entity list not available for summary audits — see purgefailure.log')).toBeInTheDocument();
+        expect(screen.getByText('No matching GUIDs found')).toBeInTheDocument();
       });
     });
 
@@ -1378,14 +1374,34 @@ describe('AuditResults Component', () => {
     });
   });
 
-  
+
   describe('Purge Drawer - Pagination Combinations', () => {
+    it('should gracefully handle invalid limit inputs', () => {
+      const auditData = [{ guid: 'test-limit', operation: 'PURGE', params: '', result: '["a", "b"]' }];
+      render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'test-limit', runId: 'N/A' } }} />);
+      
+      fireEvent.click(screen.getAllByText('PURGED')[0]);
+      
+      const limitInput = screen.getByDisplayValue('25');
+      
+      // Invalid input (empty)
+      fireEvent.change(limitInput, { target: { value: '' } });
+      fireEvent.keyDown(limitInput, { key: 'Enter', code: 'Enter' });
+      // Usually it defaults to something or ignores, let's just make sure it doesn't crash
+      expect(screen.getByText('a')).toBeInTheDocument();
+
+      // Negative input
+      fireEvent.change(limitInput, { target: { value: '-10' } });
+      fireEvent.keyDown(limitInput, { key: 'Enter', code: 'Enter' });
+      expect(screen.getByText('a')).toBeInTheDocument();
+    });
+
     it('should disable prev page button on first page ', () => {
       const mockData = Array.from({ length: 30 }, (_, i) => `guid-${i}`);
       const auditData = [{ guid: 'test', operation: 'PURGE', params: '', result: JSON.stringify(mockData) }];
       render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'test' } }} />);
       fireEvent.click(screen.getAllByText('PURGED')[0]);
-      
+
       const prevButton = screen.getByRole('button', { name: /Go to previous page/i });
       expect(prevButton).toBeDisabled();
     });
@@ -1395,10 +1411,10 @@ describe('AuditResults Component', () => {
       const auditData = [{ guid: 'test', operation: 'PURGE', params: '', result: JSON.stringify(mockData) }];
       render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'test' } }} />);
       fireEvent.click(screen.getAllByText('PURGED')[0]);
-      
+
       const nextButton = screen.getByRole('button', { name: /Go to next page/i });
       fireEvent.click(nextButton);
-      
+
       // Should show item from next page
       expect(screen.getByText('guid-25')).toBeInTheDocument();
     });
@@ -1408,11 +1424,11 @@ describe('AuditResults Component', () => {
       const auditData = [{ guid: 'test', operation: 'PURGE', params: '', result: JSON.stringify(mockData) }];
       render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'test' } }} />);
       fireEvent.click(screen.getAllByText('PURGED')[0]);
-      
+
       const limitInput = screen.getByDisplayValue('25');
       fireEvent.change(limitInput, { target: { value: '10' } });
       fireEvent.keyDown(limitInput, { key: 'Enter', code: 'Enter' });
-      
+
       // Page size is now 10, so guid-10 should NOT be on the first page
       expect(screen.queryByText('guid-10')).not.toBeInTheDocument();
       expect(screen.getByText('guid-9')).toBeInTheDocument();
@@ -1423,9 +1439,8 @@ describe('AuditResults Component', () => {
     it('should correctly render legacy audit purge with array result ', () => {
       const auditData = [{ guid: 'legacy1', operation: 'PURGE', params: '', result: '[legacy-guid-1, legacy-guid-2]' }];
       const { container } = render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'legacy1', runId: 'N/A' } }} />);
-      
+
       fireEvent.click(screen.getAllByText('PURGED')[0]);
-      console.log(container.innerHTML);
       expect(screen.getByText('legacy-guid-1')).toBeInTheDocument();
       expect(screen.getByText('legacy-guid-2')).toBeInTheDocument();
     });
@@ -1440,13 +1455,13 @@ describe('AuditResults Component', () => {
       });
       const auditData = [{ guid: 'legacy2', operation: 'PURGE', params: '', result: '[]' }];
       render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'legacy2', runId: 'N/A' } }} />);
-      
+
       expect(screen.queryByText('Requested')).not.toBeInTheDocument();
-      
+
       // Card displays 0
       const countEl = screen.getByText('0');
       expect(countEl).toBeInTheDocument();
-      
+
       // Drawer does not open
       fireEvent.click(screen.getAllByText('PURGED')[0]);
       expect(screen.queryByTestId('drawer')).not.toBeInTheDocument();
@@ -1462,14 +1477,14 @@ describe('AuditResults Component', () => {
       });
       const auditData = [{ guid: 'new1', operation: 'PURGE', params: '["req-1","req-2"]', result: summaryResult }];
       render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'new1', runId: 'run-123' } }} />);
-      
+
       // Should render summary cards
       expect(screen.getByText('Requested')).toBeInTheDocument();
       expect(screen.getByText('PURGED')).toBeInTheDocument();
-      
+
       // Click Requested card
       fireEvent.click(screen.getByText('Requested'));
-      
+
       // Drawer should open showing requested guids
       expect(screen.getByText('Requested Entities')).toBeInTheDocument();
       expect(screen.getByText('req-1')).toBeInTheDocument();
@@ -1485,10 +1500,10 @@ describe('AuditResults Component', () => {
       });
       const auditData = [{ guid: 'new2', operation: 'PURGE', params: '', result: summaryResult }];
       render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'new2', runId: 'run-456' } }} />);
-      
+
       // Click PURGED card
       fireEvent.click(screen.getAllByText('PURGED')[0]);
-      
+
       // Drawer should NOT open
       expect(screen.queryByText('Purged Entities')).not.toBeInTheDocument();
     });
@@ -1550,7 +1565,7 @@ describe('AuditResults Component', () => {
 
     it('(4) AbortController cancels on unmount', () => {
       const abortSpy = jest.spyOn(AbortController.prototype, 'abort');
-      
+
       const auditData = [{ guid: 'fetch-test-4', operation: 'PURGE', params: '[]', result: 'run-fetch-4' }];
       const { unmount } = render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'fetch-test-4' } }} />);
 
@@ -1565,12 +1580,12 @@ describe('AuditResults Component', () => {
     it('should copy Run ID to clipboard and show Copied tooltip', async () => {
       const auditData = [{ guid: 'audit-1', operation: 'PURGE', params: '["a"]', result: '["a"]', runId: 'test-run-1' }];
       render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'audit-1' } }} />);
-      
+
       const copyBtn = screen.getByRole('button', { name: /Copy Run Id/i });
       fireEvent.click(copyBtn);
-      
+
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith('test-run-1');
-      
+
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /Copied!/i })).toBeInTheDocument();
       });

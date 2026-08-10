@@ -16,6 +16,7 @@
  */
 
 import { useMemo } from 'react';
+import { virtualizeList } from '../utils/Utils';
 
 interface UseVirtualizationProps<T> {
   items: T[];
@@ -25,38 +26,8 @@ interface UseVirtualizationProps<T> {
   visibleCount?: number;
 }
 
-export const useVirtualization = <T>({
-  items,
-  scrollTop,
-  itemHeight = 37,
-  overscan = 10,
-  visibleCount = 40,
-}: UseVirtualizationProps<T>) => {
+export const useVirtualization = <T>(options: UseVirtualizationProps<T>) => {
   return useMemo(() => {
-    const totalItems = items.length;
-
-    if (totalItems === 0) {
-      return {
-        visibleItems: [],
-        paddingTop: 0,
-        paddingBottom: 0,
-        startIndex: 0,
-      };
-    }
-
-    const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
-    const endIndex = Math.min(totalItems - 1, Math.floor(scrollTop / itemHeight) + visibleCount + overscan);
-
-    const visibleItems = items.slice(startIndex, endIndex + 1);
-
-    const paddingTop = startIndex * itemHeight;
-    const paddingBottom = Math.max(0, (totalItems - 1 - endIndex) * itemHeight);
-
-    return {
-      visibleItems,
-      paddingTop,
-      paddingBottom,
-      startIndex,
-    };
-  }, [items, scrollTop, itemHeight, overscan, visibleCount]);
+    return virtualizeList(options);
+  }, [options.items, options.scrollTop, options.itemHeight, options.overscan, options.visibleCount]);
 };

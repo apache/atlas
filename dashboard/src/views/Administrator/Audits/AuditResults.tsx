@@ -37,7 +37,17 @@ interface AuditEntry {
   params?: string;
   result?: string;
   runId?: string;
-  [key: string]: unknown;
+}
+
+interface PurgeSummary {
+  runId?: string;
+  requestedCount?: number;
+  purgedCount?: number;
+  purgedDependenciesCount?: number;
+  failedCount?: number;
+  failedDependenciesCount?: number;
+  skippedCount?: number;
+  executionFailed?: boolean;
 }
 
 interface AuditResultsProps {
@@ -48,12 +58,11 @@ interface AuditResultsProps {
     original: {
       guid: string;
       runId?: string;
-      [key: string]: unknown;
     };
   };
 }
 
-const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
+const AuditResults: React.FC<AuditResultsProps> = ({ componentProps, row }) => {
   const { auditData } = componentProps || {};
   const [openModal, setOpenModal] = useState<boolean>(false);
   const [openPurgeModal, setOpenPurgeModal] = useState<boolean>(false);
@@ -77,6 +86,21 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
   };
   const handleClosePurgeModal = () => {
     setOpenPurgeModal(false);
+  };
+
+  const handleCopyRunId = (idToCopy: string, setCopied: (val: boolean) => void) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(idToCopy);
+    } else {
+      const textField = document.createElement('textarea');
+      textField.innerText = idToCopy;
+      document.body.appendChild(textField);
+      textField.select();
+      document.execCommand('copy');
+      textField.remove();
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const auditObj: AuditEntry | undefined = !isEmpty(auditData)
@@ -174,23 +198,23 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
     }
   }
 
-  const runId = (row.original.runId as string | undefined)
-    ?? (summary?.runId as string | undefined)
-    ?? (auditObj?.runId as string | undefined)
+  const purgeSummary = summary as PurgeSummary;
+  const runId = row.original.runId
+    ?? purgeSummary?.runId
+    ?? auditObj?.runId
     ?? 'N/A';
 
   const isSummaryRow = (runId !== 'N/A') && isPurgeOperation;
 
-
-  const requestedCount = (summary?.requestedCount as number | undefined) ?? requestedEntitiesList.length;
-  const purgedCount = (summary?.purgedCount as number | undefined) ?? legacyPurgedList.length;
-  const purgedDependenciesCount = (summary?.purgedDependenciesCount as number | undefined) ?? 0;
-  const totalPurgedCount = (purgedCount as number) + (purgedDependenciesCount as number);
-  const failedCount = (summary?.failedCount as number | undefined) ?? 0;
-  const failedDependenciesCount = (summary?.failedDependenciesCount as number | undefined) ?? 0;
+  const requestedCount = purgeSummary?.requestedCount ?? requestedEntitiesList.length;
+  const purgedCount = purgeSummary?.purgedCount ?? legacyPurgedList.length;
+  const purgedDependenciesCount = purgeSummary?.purgedDependenciesCount ?? 0;
+  const totalPurgedCount = purgedCount + purgedDependenciesCount;
+  const failedCount = purgeSummary?.failedCount ?? 0;
+  const failedDependenciesCount = purgeSummary?.failedDependenciesCount ?? 0;
   const totalFailedCount = failedCount + failedDependenciesCount;
-  const skippedCount = (summary?.skippedCount as number | undefined) ?? 0;
-  const executionFailed = (summary?.executionFailed as boolean | undefined) || (totalFailedCount) > 0;
+  const skippedCount = purgeSummary?.skippedCount ?? 0;
+  const executionFailed = !!purgeSummary?.executionFailed || totalFailedCount > 0;
 
   const handleOpenPurgedDrawer = () => {
     if (totalPurgedCount === 0) return;
@@ -297,20 +321,7 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
                   <Tooltip title={copiedRunId ? "Copied!" : "Copy Run Id"}>
                     <IconButton
                       size="small"
-                      onClick={() => {
-                        if (navigator.clipboard) {
-                          navigator.clipboard.writeText(runId);
-                        } else {
-                          const textField = document.createElement('textarea');
-                          textField.innerText = runId;
-                          document.body.appendChild(textField);
-                          textField.select();
-                          document.execCommand('copy');
-                          textField.remove();
-                        }
-                        setCopiedRunId(true);
-                        setTimeout(() => setCopiedRunId(false), 2000);
-                      }}
+                      onClick={() => handleCopyRunId(runId, setCopiedRunId)}
                       className="purge-runid-copy"
                     >
                       <ContentCopyIcon className={`copy-icon ${copiedRunId ? "copied" : ""}`} />
@@ -325,10 +336,21 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
                 {isSummaryRow && (
                   <Grid item xs={6} sm={3}>
                     <Box
+                      role="button"
+                      tabIndex={0}
+                      aria-label="View Requested Entities"
                       onClick={() => {
                         setActivePurgeView(PurgeActiveView.REQUESTED);
                         setDrawerPage(1);
                         setScrollTop(0);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setActivePurgeView(PurgeActiveView.REQUESTED);
+                          setDrawerPage(1);
+                          setScrollTop(0);
+                        }
                       }}
                       className="purge-card purge-card-requested"
                     >
@@ -345,7 +367,16 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
                 {/* 2. Clickable Total Purged Card */}
                 <Grid item xs={isSummaryRow ? 6 : 12} sm={isSummaryRow ? 3 : 4}>
                   <Box
+                    role={totalPurgedCount > 0 ? "button" : undefined}
+                    tabIndex={totalPurgedCount > 0 ? 0 : undefined}
+                    aria-label="View Purged Entities"
                     onClick={handleOpenPurgedDrawer}
+                    onKeyDown={(e) => {
+                      if (totalPurgedCount > 0 && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        handleOpenPurgedDrawer();
+                      }
+                    }}
                     className={`purge-card purge-card-purged ${totalPurgedCount > 0 ? "clickable" : ""}`}
                   >
                     <Typography variant="caption" color="success.main" display="block" className="card-title">
@@ -427,8 +458,7 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
             scrollTop={scrollTop}
             setScrollTop={setScrollTop}
             runId={runId}
-            copiedRunId={copiedRunId}
-            setCopiedRunId={setCopiedRunId}
+            handleCopyRunId={handleCopyRunId}
             setOpenPurgeModal={setOpenPurgeModal}
             setCurrentPurgeResultObj={setCurrentPurgeResultObj}
             drawerPageSizeInput={drawerPageSizeInput}
@@ -455,8 +485,7 @@ interface PurgeEntitiesDrawerProps {
   scrollTop: number;
   setScrollTop: React.Dispatch<React.SetStateAction<number>>;
   runId: string;
-  copiedRunId: boolean;
-  setCopiedRunId: (copied: boolean) => void;
+  handleCopyRunId: (id: string, setCopied: (val: boolean) => void) => void;
   setOpenPurgeModal: (open: boolean) => void;
   setCurrentPurgeResultObj: (guid: string) => void;
   drawerPageSizeInput: string;
@@ -477,13 +506,13 @@ const PurgeEntitiesDrawer: React.FC<PurgeEntitiesDrawerProps> = ({
   scrollTop,
   setScrollTop,
   runId,
-  copiedRunId,
-  setCopiedRunId,
+  handleCopyRunId,
   setOpenPurgeModal,
   setCurrentPurgeResultObj,
   drawerPageSizeInput,
   setDrawerPageSizeInput,
 }) => {
+  const [drawerCopiedRunId, setDrawerCopiedRunId] = useState<boolean>(false);
   const listRef = useRef<HTMLUListElement | null>(null);
 
   useEffect(() => {
@@ -554,26 +583,13 @@ const PurgeEntitiesDrawer: React.FC<PurgeEntitiesDrawerProps> = ({
             <Typography variant="caption" color="textSecondary" className="drawer-runid-text">
               <strong>Run Id:</strong> {runId}
             </Typography>
-            <Tooltip title={copiedRunId ? "Copied!" : "Copy Run Id"}>
+            <Tooltip title={drawerCopiedRunId ? "Copied!" : "Copy Run Id"}>
               <IconButton
                 size="small"
-                onClick={() => {
-                  if (navigator.clipboard) {
-                    navigator.clipboard.writeText(runId);
-                  } else {
-                    const textField = document.createElement('textarea');
-                    textField.innerText = runId;
-                    document.body.appendChild(textField);
-                    textField.select();
-                    document.execCommand('copy');
-                    textField.remove();
-                  }
-                  setCopiedRunId(true);
-                  setTimeout(() => setCopiedRunId(false), 2000);
-                }}
-                className="drawer-copy-btn"
+                onClick={() => handleCopyRunId(runId, setDrawerCopiedRunId)}
+                className="drawer-runid-copy"
               >
-                <ContentCopyIcon className={`drawer-copy-icon ${copiedRunId ? "copied" : ""}`} />
+                <ContentCopyIcon className={`copy-icon ${drawerCopiedRunId ? "copied" : ""}`} />
               </IconButton>
             </Tooltip>
           </Box>
@@ -623,9 +639,7 @@ const PurgeEntitiesDrawer: React.FC<PurgeEntitiesDrawerProps> = ({
             if (displayItems.length === 0) {
               return (
                 <Typography variant="body2" color="textSecondary" className="drawer-list-empty">
-                  {activePurgeView === PurgeActiveView.PURGED && purgedApiGuids.length === 0 && !drawerSearchText
-                    ? "Entity list not available for summary audits — see purgefailure.log"
-                    : "No matching GUIDs found"}
+                  {"No matching GUIDs found"}
                 </Typography>
               );
             }

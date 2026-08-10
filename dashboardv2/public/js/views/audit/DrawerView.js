@@ -219,11 +219,7 @@ define(['require',
             this.ui.drawerLoading.hide();
 
             if (this.displayItems.length === 0) {
-                if (this.items.length === 0 && !this.searchText && this.actionType === 'purged') {
-                    this.ui.drawerEmpty.html("Entity list not available for summary audits — see purgefailure.log");
-                } else {
-                    this.ui.drawerEmpty.html("No matching GUIDs found");
-                }
+                this.ui.drawerEmpty.html("No matching GUIDs found");
                 this.ui.drawerEmpty.show();
             } else {
                 this.ui.drawerEmpty.hide();

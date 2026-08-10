@@ -61,20 +61,20 @@ const AdminAuditTable = () => {
         if (filtersStr.includes('"attributeName":"runId"')) {
           // Remove any existing auditRowKind to prevent duplicates/conflicts
           const removeAuditRowKind = (node: Record<string, any>) => {
-             if (node && node.criterion) {
-                 node.criterion = node.criterion.filter((c: Record<string, any>) => c.attributeName !== 'auditRowKind');
-                 node.criterion.forEach(removeAuditRowKind);
-             }
+            if (node && node.criterion) {
+              node.criterion = node.criterion.filter((c: Record<string, any>) => c.attributeName !== 'auditRowKind');
+              node.criterion.forEach(removeAuditRowKind);
+            }
           };
           removeAuditRowKind(auditFilters);
-          
+
           // Force append SUMMARY by wrapping the existing filter
           auditFilters = {
-             condition: "AND",
-             criterion: [
-                 auditFilters,
-                 { attributeName: "auditRowKind", operator: "eq", attributeValue: "SUMMARY" }
-             ]
+            condition: "AND",
+            criterion: [
+              auditFilters,
+              { attributeName: "auditRowKind", operator: "eq", attributeValue: "SUMMARY" }
+            ]
           };
         }
       }
