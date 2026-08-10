@@ -213,7 +213,7 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
       <CustomModal
         open={openPurgeModal}
         onClose={handleClosePurgeModal}
-        title={`Purged Entity Details: ${currentPurgeResultObj}`}
+        title={operation === "AUTO_PURGE" ? `Auto Purge Entity Details: ${currentPurgeResultObj}` : `Purged Entity Details: ${currentPurgeResultObj}`}
         button1Handler={undefined}
         button2Handler={undefined}
         maxWidth="md"
@@ -492,10 +492,10 @@ const PurgeEntitiesDrawer: React.FC<PurgeEntitiesDrawerProps> = ({
     }
   }, [drawerPage, drawerSearchText, activePurgeView]);
 
-  const rawListForView: (string | Record<string, any>)[] =
+  const rawListForView: (string | { guid: string; attributes?: { name?: string } })[] =
     activePurgeView === PurgeActiveView.REQUESTED ? requestedEntitiesList : purgedApiGuids;
 
-  const filteredList = rawListForView.filter((item: string | Record<string, any>) => {
+  const filteredList = rawListForView.filter((item: string | { guid: string; attributes?: { name?: string } }) => {
     if (!drawerSearchText) return true;
     const guidStr = typeof item === 'object' && item !== null ? item.guid : item;
     const nameStr = typeof item === 'object' && item !== null ? item.attributes?.name : '';
@@ -633,7 +633,7 @@ const PurgeEntitiesDrawer: React.FC<PurgeEntitiesDrawerProps> = ({
             return (
               <>
                 {paddingTop > 0 && <div style={{ height: paddingTop }} />}
-                {visibleItems.map((item: string | Record<string, any>, localIndex: number) => {
+                {visibleItems.map((item: string | { guid: string; attributes?: { name?: string } }, localIndex: number) => {
                   const index = startIndex + localIndex;
                   const globalIndex = (drawerPage - 1) * drawerPageSize + index + 1;
                   const isObj = typeof item === 'object' && item !== null;

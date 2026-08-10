@@ -468,7 +468,7 @@ describe('AuditResults Component', () => {
         expect(screen.getByTestId('custom-modal')).toBeInTheDocument();
       });
 
-      expect(screen.getByTestId('modal-title')).toHaveTextContent('Purged Entity Details: guid-4');
+      expect(screen.getByTestId('modal-title')).toHaveTextContent('Auto Purge Entity Details: guid-4');
     });
 
     it('should close purge modal when close button is clicked', async () => {
@@ -1304,6 +1304,25 @@ describe('AuditResults Component', () => {
       });
     });
 
+    it('should show empty-drawer fallback message when PURGED count > 0 but GUID list is empty', async () => {
+      const auditDataForSummary = [{
+        guid: 'audit-empty-sum',
+        operation: 'PURGE',
+        params: JSON.stringify(['req-1']),
+        result: JSON.stringify({
+          requestedCount: 1, purgedCount: 5, purgedDependenciesCount: 0,
+          failedCount: 0, skippedCount: 0, executionFailed: false, runId: 'test-empty'
+        })
+      }];
+      render(<AuditResults componentProps={{ auditData: auditDataForSummary }} row={{ original: { guid: 'audit-empty-sum' } }} />);
+
+      fireEvent.click(screen.getByText('PURGED'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Entity list not available for summary audits — see purgefailure.log')).toBeInTheDocument();
+      });
+    });
+
     it('should NOT trigger action when Failed card is clicked (display only)', () => {
       render(<AuditResults componentProps={{ auditData: summaryAuditData }} row={{ original: { guid: 'audit-sum' } }} />);
 
@@ -1475,6 +1494,72 @@ describe('AuditResults Component', () => {
     });
   });
 
+
+  describe('Summary fetch logic (useEffect)', () => {
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('(1) successful summary fetch populates cards', async () => {
+      (fetchApi as jest.Mock).mockResolvedValueOnce({
+        data: {
+          requestedCount: 10, purgedCount: 8, purgedDependenciesCount: 2, failedCount: 0, skippedCount: 0, executionFailed: false, runId: 'run-fetch-1'
+        }
+      });
+
+      const auditData = [{ guid: 'fetch-test-1', operation: 'PURGE', params: '[]' }];
+      render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'fetch-test-1' } }} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByText('10').length).toBeGreaterThan(0);
+      });
+    });
+
+    it('(2) fetch failure falls back to parsed result', async () => {
+      (fetchApi as jest.Mock).mockRejectedValueOnce(new Error('Fetch failed'));
+
+      const fallbackResult = JSON.stringify({
+        requestedCount: 5, purgedCount: 5, purgedDependenciesCount: 0,
+        failedCount: 0, skippedCount: 0, executionFailed: false, runId: 'run-fallback'
+      });
+      const auditData = [{ guid: 'fetch-test-2', operation: 'PURGE', params: '[]', result: fallbackResult }];
+      render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'fetch-test-2' } }} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByText('5').length).toBeGreaterThan(0);
+      });
+    });
+
+    it('(3) loading skeleton shows while fetching', async () => {
+      let resolvePromise: any;
+      const promise = new Promise((resolve) => {
+        resolvePromise = resolve;
+      });
+      (fetchApi as jest.Mock).mockReturnValueOnce(promise);
+
+      const auditData = [{ guid: 'fetch-test-3', operation: 'PURGE', params: '[]' }];
+      render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'fetch-test-3' } }} />);
+
+      expect(document.querySelector('.MuiSkeleton-root')).not.toBeNull();
+
+      resolvePromise({ data: {} });
+      await waitFor(() => {
+        expect(document.querySelector('.MuiSkeleton-root')).toBeNull();
+      });
+    });
+
+    it('(4) AbortController cancels on unmount', () => {
+      const abortSpy = jest.spyOn(AbortController.prototype, 'abort');
+      
+      const auditData = [{ guid: 'fetch-test-4', operation: 'PURGE', params: '[]', result: 'run-fetch-4' }];
+      const { unmount } = render(<AuditResults componentProps={{ auditData }} row={{ original: { guid: 'fetch-test-4' } }} />);
+
+      unmount();
+
+      expect(abortSpy).toHaveBeenCalled();
+      abortSpy.mockRestore();
+    });
+  });
 
   describe('Copy Run ID', () => {
     it('should copy Run ID to clipboard and show Copied tooltip', async () => {

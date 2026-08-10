@@ -182,6 +182,16 @@ define(['require',
                     checkRunId(auditFilters);
 
                     if (hasRunId) {
+                        // Remove any existing auditRowKind to prevent duplicates/conflicts
+                        var removeAuditRowKind = function (node) {
+                            if (node.criterion && Array.isArray(node.criterion)) {
+                                node.criterion = node.criterion.filter(function (c) {
+                                    return c.attributeName !== 'auditRowKind';
+                                });
+                                node.criterion.forEach(removeAuditRowKind);
+                            }
+                        };
+                        removeAuditRowKind(auditFilters);
                         auditFilters = {
                             "condition": "AND",
                             "criterion": [
@@ -440,11 +450,13 @@ define(['require',
                     html += '<div class="card-label">PURGED</div><div class="card-value">' + totalPurgedCount + '</div></div>';
 
                     // Failed
-                    html += '<div class="purge-summary-card card-red ' + (totalFailedCount > 0 ? 'has-count' : '') + '" title="Some entities failed to purge. Please check purgefailure.log for details.">';
+                    var failedTitle = (totalFailedCount > 0 || summaryData.executionFailed) ? 'Some entities failed to purge. Please check purgefailure.log for details.' : 'No failed entities during this purge operation.';
+                    html += '<div class="purge-summary-card card-red ' + (totalFailedCount > 0 ? 'has-count' : '') + '" title="' + failedTitle + '">';
                     html += '<div class="card-label">FAILED</div><div class="card-value">' + totalFailedCount + '</div></div>';
 
                     // Skipped
-                    html += '<div class="purge-summary-card card-amber ' + (skippedCount > 0 ? 'has-count' : '') + '" title="Some entities were skipped during purge. Please check purgefailure.log for details.">';
+                    var skippedTitle = (skippedCount > 0 || summaryData.executionFailed) ? 'Some entities were skipped during purge. Please check purgefailure.log for details.' : 'No skipped entities during this purge operation.';
+                    html += '<div class="purge-summary-card card-amber ' + (skippedCount > 0 ? 'has-count' : '') + '" title="' + skippedTitle + '">';
                     html += '<div class="card-label">SKIPPED</div><div class="card-value">' + skippedCount + '</div></div>';
 
                     html += '</div></div></div></div>';
