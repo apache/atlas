@@ -27,6 +27,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
+import org.apache.atlas.model.glossary.AtlasGlossaryTermHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
@@ -53,9 +54,12 @@ import javax.inject.Inject;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -945,6 +949,8 @@ public class GlossaryService {
             List<AtlasGlossaryTerm> glossaryTermsWithRelations = glossaryTermUtils.getGlossaryTermDataWithRelations(fileData, ret);
 
             updateGlossaryTermsRelation(glossaryTermsWithRelations, ret);
+
+            reconcileBulkImportResponse(ret);
         } finally {
             glossaryTermUtils.clearImportCache();
         }
@@ -1181,7 +1187,20 @@ public class GlossaryService {
             String glossaryName     = getGlossaryName(glossaryTerm);
 
             try {
+                if (termExists2(glossaryTerm)) {
+                    String existingTermGuid = getExistingTermGuid(glossaryTerm);
+
+                    glossaryTermUtils.cacheImportedTermGuid(glossaryTerm.getQualifiedName(), existingTermGuid);
+
+                    bulkImportResponse.addToSuccessImportInfoList(new ImportInfo(glossaryName, glossaryTermName, SUCCESS,
+                            AtlasJson.toJson(getGlossaryTermHeader(existingTermGuid, glossaryTerm.getQualifiedName()))));
+
+                    continue;
+                }
+
                 AtlasGlossaryTerm createdTerm = createTerm(glossaryTerm);
+
+                glossaryTermUtils.cacheImportedTermGuid(createdTerm.getQualifiedName(), createdTerm.getGuid());
 
                 bulkImportResponse.addToSuccessImportInfoList(new ImportInfo(glossaryName, glossaryTermName, SUCCESS, AtlasJson.toJson(createdTerm.getGlossaryTermHeader())));
             } catch (AtlasBaseException e) {
@@ -1192,6 +1211,20 @@ public class GlossaryService {
         }
 
         checkForSuccessImports(bulkImportResponse);
+    }
+
+    private String getExistingTermGuid(AtlasGlossaryTerm glossaryTerm) {
+        Map<String, Object> uniqAttr = new HashMap<>();
+
+        uniqAttr.put(QUALIFIED_NAME_ATTR, glossaryTerm.getQualifiedName());
+
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(atlasTypeRegistry.getEntityTypeByName(GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME), uniqAttr);
+
+        return vertex != null ? AtlasGraphUtilsV2.getIdFromVertex(vertex) : null;
+    }
+
+    private AtlasGlossaryTermHeader getGlossaryTermHeader(String termGuid, String qualifiedName) {
+        return new AtlasGlossaryTermHeader(termGuid, qualifiedName);
     }
 
     private void updateGlossaryTermsRelation(List<AtlasGlossaryTerm> glossaryTerms, BulkImportResponse bulkImportResponse) {
@@ -1230,6 +1263,61 @@ public class GlossaryService {
         if (CollectionUtils.isEmpty(bulkImportResponse.getSuccessImportInfoList())) {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_IMPORT_FAILED);
         }
+    }
+
+    private void reconcileBulkImportResponse(BulkImportResponse bulkImportResponse) {
+        if (CollectionUtils.isEmpty(bulkImportResponse.getFailedImportInfoList())) {
+            return;
+        }
+
+        Map<String, ImportInfo> mergedFailures = new LinkedHashMap<>();
+
+        for (ImportInfo failedInfo : bulkImportResponse.getFailedImportInfoList()) {
+            String termKey = getImportTermKey(failedInfo);
+
+            if (StringUtils.isBlank(termKey)) {
+                mergedFailures.put("row-" + failedInfo.getRemarks(), failedInfo);
+                continue;
+            }
+
+            ImportInfo existingFailure = mergedFailures.get(termKey);
+
+            if (existingFailure == null) {
+                mergedFailures.put(termKey, failedInfo);
+            } else {
+                existingFailure.setRemarks(mergeImportRemarks(existingFailure.getRemarks(), failedInfo.getRemarks()));
+            }
+        }
+
+        bulkImportResponse.setFailedImportInfoList(new ArrayList<>(mergedFailures.values()));
+
+        Set<String> failedTermKeys = mergedFailures.keySet();
+
+        bulkImportResponse.getSuccessImportInfoList().removeIf(successInfo -> failedTermKeys.contains(getImportTermKey(successInfo)));
+    }
+
+    private String getImportTermKey(ImportInfo importInfo) {
+        if (importInfo == null || StringUtils.isBlank(importInfo.getChildObjectName())) {
+            return StringUtils.EMPTY;
+        }
+
+        return importInfo.getParentObjectName() + "|" + importInfo.getChildObjectName();
+    }
+
+    private String mergeImportRemarks(String existingRemarks, String newRemarks) {
+        if (StringUtils.isBlank(existingRemarks)) {
+            return newRemarks;
+        }
+
+        if (StringUtils.isBlank(newRemarks) || StringUtils.equals(existingRemarks, newRemarks)) {
+            return existingRemarks;
+        }
+
+        Set<String> uniqueRemarks = new HashSet<>(Arrays.asList(existingRemarks.split(System.lineSeparator())));
+
+        uniqueRemarks.add(newRemarks);
+
+        return String.join(System.lineSeparator(), uniqueRemarks);
     }
 
     static class PaginationHelper<T> {

@@ -53,14 +53,14 @@ jest.mock('../muiComponents', () => ({
 }))
 
 const uploadMock = jest.fn()
-const glossaryMock = jest.fn()
+const glossaryImportMock = jest.fn()
 
 jest.mock('../../api/apiMethods/entitiesApiMethods', () => ({
 	getBusinessMetadataImport: (...args: any[]) => uploadMock(...args)
 }))
 
-jest.mock('../../api/apiMethods/glossaryApiMethod', () => ({
-	getGlossaryImport: (...args: any[]) => glossaryMock(...args)
+jest.mock('@utils/glossaryImportFlow', () => ({
+	postGlossaryImportFormData: (...args: any[]) => glossaryImportMock(...args)
 }))
 
 jest.mock('../../views/SideBar/Import/ImportLayout', () => ({
@@ -100,10 +100,16 @@ describe('ImportDialog', () => {
 		})
 	})
 
-	it('shows error details when import returns failed info', async () => {
-		glossaryMock.mockResolvedValue({
+	it('shows glossary-specific error details when glossary import returns failed info', async () => {
+		glossaryImportMock.mockResolvedValue({
 			data: {
-				failedImportInfoList: [{ index: 1, remarks: 'Bad row' }]
+				failedImportInfoList: [
+					{
+						childObjectName: 'Patient',
+						parentObjectName: 'Healthcare Glossary',
+						remarks: 'Bad row'
+					}
+				]
 			}
 		})
 
@@ -113,12 +119,48 @@ describe('ImportDialog', () => {
 		fireEvent.click(screen.getByText('Upload'))
 
 		await waitFor(() => {
-			expect(glossaryMock).toHaveBeenCalled()
-			expect(toastError).toHaveBeenCalledWith('Bad row')
+			expect(glossaryImportMock).toHaveBeenCalled()
+			expect(toastError).toHaveBeenCalledWith(
+				'Glossary import completed with 1 failure(s) out of 1 term(s). See error details.'
+			)
 		})
 
 		expect(screen.getByText('Error Details')).toBeTruthy()
-		expect(screen.getByText('1. Bad row')).toBeTruthy()
+		expect(
+			screen.getByText('1. Patient@Healthcare Glossary: Bad row')
+		).toBeTruthy()
+	})
+
+	it('shows business metadata errors without glossary formatting', async () => {
+		uploadMock.mockResolvedValue({
+			data: {
+				failedImportInfoList: [
+					{
+						parentObjectName: 'guid-123',
+						childObjectName: 'attr1',
+						remarks: 'Invalid attribute'
+					}
+				]
+			}
+		})
+
+		render(
+			<ImportDialog open={true} onClose={jest.fn()} title="Import Business Metadata" />
+		)
+
+		fireEvent.click(screen.getByText('Select File'))
+		fireEvent.click(screen.getByText('Upload'))
+
+		await waitFor(() => {
+			expect(uploadMock).toHaveBeenCalled()
+			expect(toastError).toHaveBeenCalledWith('Invalid attribute')
+		})
+
+		expect(screen.getByText('Error Details')).toBeTruthy()
+		expect(screen.getByText('1. Invalid attribute')).toBeTruthy()
+		expect(
+			screen.queryByText('1. attr1@guid-123: Invalid attribute')
+		).toBeNull()
 	})
 
 	it('handles upload errors', async () => {
@@ -147,9 +189,9 @@ describe('ImportDialog', () => {
 	})
 
 	it('returns to upload view when back is clicked', async () => {
-		glossaryMock.mockResolvedValue({
+		glossaryImportMock.mockResolvedValue({
 			data: {
-				failedImportInfoList: [{ index: 1, remarks: 'Bad row' }]
+				failedImportInfoList: [{ remarks: 'Bad row' }]
 			}
 		})
 

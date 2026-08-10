@@ -28,6 +28,11 @@ import {
 	postGlossaryImportFormData
 } from "@utils/glossaryImportFlow";
 import { getApiErrorToastMessage } from "@utils/apiErrorToastMessage";
+import {
+	buildGlossaryImportFailureSummary,
+	formatGlossaryImportFailure,
+	GlossaryImportFailure
+} from "@utils/glossaryImportUtils";
 import { toast } from "react-toastify";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
@@ -163,7 +168,7 @@ const AddUpdateGlossaryForm = (props: {
 			if (importResp.data.failedImportInfoList != undefined) {
 				toast.dismiss(toastId.current);
 				toastId.current = toast.error(
-					importResp.data.failedImportInfoList[0].remarks
+					buildGlossaryImportFailureSummary(importResp.data)
 				);
 				setImportErrorDetails(true);
 			}
@@ -361,17 +366,15 @@ const AddUpdateGlossaryForm = (props: {
 						>
 							<List>
 								{importData.failedImportInfoList.map(
-									(
-										value: {
-											index: number;
-											remarks: string;
-										},
-										index: number
-									) => (
-										<ListItem key={value.index} disableGutters disablePadding>
+									(value: GlossaryImportFailure, index: number) => (
+										<ListItem
+											key={`${value.childObjectName || "term"}-${index}`}
+											disableGutters
+											disablePadding
+										>
 											<ListItemText
 												className="dropzone-listitem"
-												primary={`${index + 1}. ${value.remarks}`}
+												primary={`${index + 1}. ${formatGlossaryImportFailure(value)}`}
 											/>
 										</ListItem>
 									)

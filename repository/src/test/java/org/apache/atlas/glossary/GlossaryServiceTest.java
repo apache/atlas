@@ -1271,6 +1271,13 @@ public class GlossaryServiceTest {
             assertNotNull(bulkImportResponse2);
             assertEquals(bulkImportResponse2.getSuccessImportInfoList().size(), 3);
             assertEquals(bulkImportResponse2.getFailedImportInfoList().size(), 0);
+
+            InputStream        inputStream3        = getFile(CSV_FILES, "glossary_healthcare_filled.csv");
+            BulkImportResponse bulkImportResponse3 = glossaryService.importGlossaryData(inputStream3, "glossary_healthcare_filled.csv");
+
+            assertNotNull(bulkImportResponse3);
+            assertEquals(bulkImportResponse3.getSuccessImportInfoList().size(), 20);
+            assertEquals(bulkImportResponse3.getFailedImportInfoList().size(), 0);
         } catch (AtlasBaseException e) {
             fail("The GlossaryTerm should have been created " + e);
         }
@@ -1322,9 +1329,9 @@ public class GlossaryServiceTest {
         try {
             BulkImportResponse bulkImportResponse = glossaryService.importGlossaryData(inputStream, "incorrectFile.csv");
 
-            assertEquals(bulkImportResponse.getSuccessImportInfoList().size(), 1);
+            // Term is created in pass 1 but relation fails in pass 2; reconcile removes it from success
+            assertEquals(bulkImportResponse.getSuccessImportInfoList().size(), 0);
 
-            //Due to invalid Relation we get Failed message even the import succeeded for the term
             assertEquals(bulkImportResponse.getFailedImportInfoList().size(), 1);
         } catch (AtlasBaseException e) {
             fail("The incorrect file exception should have handled " + e);
