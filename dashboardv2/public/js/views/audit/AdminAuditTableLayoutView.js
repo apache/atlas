@@ -417,6 +417,8 @@ define(['require',
                     var purgedDependenciesCount = summaryData.purgedDependenciesCount || 0;
                     var totalPurgedCount = purgedCount + purgedDependenciesCount;
                     var failedCount = summaryData.failedCount || 0;
+                    var failedDependenciesCount = summaryData.failedDependenciesCount || 0;
+                    var totalFailedCount = failedCount + failedDependenciesCount;
                     var skippedCount = summaryData.skippedCount || 0;
 
                     var html = '<div class="row"><div class="attr-details">';
@@ -424,9 +426,6 @@ define(['require',
                     html += '<div class="purge-summary-wrapper">';
                     if (runId) {
                         html += '<div class="purge-run-id-row"><strong>Run Id:</strong> <span data-id="runIdValue">' + _.escape(runId) + '</span> <i class="fa fa-copy purge-run-id-copy" data-id="copyRunIdMain" title="Copy to clipboard"></i></div>';
-                    }
-                    if (summaryData.executionFailed) {
-                        html += '<div class="alert alert-warning purge-warning-alert"><i class="fa fa-exclamation-triangle"></i> Partial success: Some entities failed to purge. Check backend logs for details.</div>';
                     }
 
                     html += '<div class="purge-summary-container">';
@@ -441,8 +440,8 @@ define(['require',
                     html += '<div class="card-label">PURGED</div><div class="card-value">' + totalPurgedCount + '</div></div>';
 
                     // Failed
-                    html += '<div class="purge-summary-card card-red ' + (failedCount > 0 ? 'has-count' : '') + '" title="Some entities failed to purge. Please check purgefailure.log for details.">';
-                    html += '<div class="card-label">FAILED</div><div class="card-value">' + failedCount + '</div></div>';
+                    html += '<div class="purge-summary-card card-red ' + (totalFailedCount > 0 ? 'has-count' : '') + '" title="Some entities failed to purge. Please check purgefailure.log for details.">';
+                    html += '<div class="card-label">FAILED</div><div class="card-value">' + totalFailedCount + '</div></div>';
 
                     // Skipped
                     html += '<div class="purge-summary-card card-amber ' + (skippedCount > 0 ? 'has-count' : '') + '" title="Some entities were skipped during purge. Please check purgefailure.log for details.">';
@@ -466,7 +465,7 @@ define(['require',
                     var html = '<div class="row"><div class="attr-details">';
                     html += '<div class="purge-summary-container">';
                     html += '<div class="purge-summary-card card-legacy card-green ' + (legacyPurgedCount > 0 ? 'clickable' : '') + '" ' + (legacyPurgedCount > 0 ? 'data-id="drawerSummaryTrigger" data-type="legacy-purged" data-runid="" data-guid="' + _.escape(obj.model.get('guid')) + '" data-results="' + _.escape(obj.results) + '"' : '') + '>';
-                    html += '<div class="card-label">PURGED ENTITIES</div><div class="card-value">' + legacyPurgedCount + '</div></div>';
+                    html += '<div class="card-label">PURGED</div><div class="card-value">' + legacyPurgedCount + '</div></div>';
                     html += '</div></div></div>';
                     return html;
                 } else {

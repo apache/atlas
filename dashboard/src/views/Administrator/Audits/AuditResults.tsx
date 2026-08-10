@@ -412,7 +412,7 @@ const AuditResults = ({ componentProps, row }: AuditResultsProps) => {
             </Box>
           )}
 
-          {/* Right Side Drawer — server-side pagination for Purged, client-side for Requested */}
+          {/* Right Side Drawer — client-side pagination for both Purged and Requested */}
           <PurgeEntitiesDrawer
             activePurgeView={activePurgeView}
             setActivePurgeView={setActivePurgeView}
@@ -492,10 +492,8 @@ const PurgeEntitiesDrawer: React.FC<PurgeEntitiesDrawerProps> = ({
     }
   }, [drawerPage, drawerSearchText, activePurgeView]);
 
-  const isPurgedView = activePurgeView === PurgeActiveView.PURGED;
-  const rawListForView: (string | Record<string, any>)[] = activePurgeView === PurgeActiveView.REQUESTED
-    ? requestedEntitiesList
-    : purgedApiGuids;
+  const rawListForView: (string | Record<string, any>)[] =
+    activePurgeView === PurgeActiveView.REQUESTED ? requestedEntitiesList : purgedApiGuids;
 
   const filteredList = rawListForView.filter((item: string | Record<string, any>) => {
     if (!drawerSearchText) return true;
@@ -538,6 +536,7 @@ const PurgeEntitiesDrawer: React.FC<PurgeEntitiesDrawerProps> = ({
             {activePurgeView === PurgeActiveView.REQUESTED ? 'Requested Entities' : 'Purged Entities'}
           </Typography>
           <IconButton
+            aria-label="Close drawer"
             onClick={() => {
               setActivePurgeView(PurgeActiveView.NONE);
               setDrawerSearchText('');
@@ -580,7 +579,7 @@ const PurgeEntitiesDrawer: React.FC<PurgeEntitiesDrawerProps> = ({
           </Box>
         )}
 
-        {(activePurgeView === 'requested' ? requestedEntitiesList.length > 0 : purgedApiGuids.length > 0) && (
+        {(activePurgeView === PurgeActiveView.REQUESTED ? requestedEntitiesList.length > 0 : purgedApiGuids.length > 0) && (
           <Box className="drawer-search-container">
             <TextField
               fullWidth
@@ -624,7 +623,9 @@ const PurgeEntitiesDrawer: React.FC<PurgeEntitiesDrawerProps> = ({
             if (displayItems.length === 0) {
               return (
                 <Typography variant="body2" color="textSecondary" className="drawer-list-empty">
-                  No matching GUIDs found
+                  {activePurgeView === PurgeActiveView.PURGED && purgedApiGuids.length === 0 && !drawerSearchText
+                    ? "Entity list not available for summary audits — see purgefailure.log"
+                    : "No matching GUIDs found"}
                 </Typography>
               );
             }
