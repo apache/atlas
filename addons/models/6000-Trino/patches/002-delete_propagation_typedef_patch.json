@@ -1,0 +1,37 @@
+{
+  "patches": [
+    {
+      "id": "TYPEDEF_PATCH_6000_002_A",
+      "description": "Set propagateDelete=true on trino_table_hive_table endDef1 (hive_table → trino_table)",
+      "action": "SET_PROPAGATE_DELETE",
+      "typeName": "trino_table_hive_table",
+      "applyToVersion": "1.1",
+      "updateToVersion": "1.2",
+      "params": {
+        "endDefToken": "endDef1"
+      }
+    },
+    {
+      "id": "TYPEDEF_PATCH_6000_002_B",
+      "description": "Set propagateDelete=true on trino_schema_hive_db endDef1 (hive_db → trino_schema)",
+      "action": "SET_PROPAGATE_DELETE",
+      "typeName": "trino_schema_hive_db",
+      "applyToVersion": "1.0",
+      "updateToVersion": "1.1",
+      "params": {
+        "endDefToken": "endDef1"
+      }
+    },
+    {
+      "id": "TYPEDEF_PATCH_6000_002_C",
+      "description": "Set propagateDelete=true on trino_table_schema endDef2 (trino_schema → trino_table)",
+      "action": "SET_PROPAGATE_DELETE",
+      "typeName": "trino_table_schema",
+      "applyToVersion": "1.0",
+      "updateToVersion": "1.1",
+      "params": {
+        "endDefToken": "endDef2"
+      }
+    }
+  ]
+}
