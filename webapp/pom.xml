@@ -683,6 +683,38 @@
                             </tasks>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>fix-enunciate-css</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <tasks>
+                                <!-- Copy CSS -->
+                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/css/bootstrap.min.css" todir="${project.build.directory}/api/v2/css" />
+                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/css/bootstrap.min.css" todir="${project.build.directory}/api/v2/apidocs/css" />
+                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/css/bootstrap.min.css" todir="${project.build.directory}/api/v2/apidocs/ui/css" />
+
+                                <!-- Copy JS -->
+                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/jquery-1.12.2.min.js" todir="${project.build.directory}/api/v2/js" />
+                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/bootstrap.min.js" todir="${project.build.directory}/api/v2/js" />
+                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/run_prettify.js" todir="${project.build.directory}/api/v2/js" />
+                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/jquery-1.12.2.min.js" todir="${project.build.directory}/api/v2/apidocs/js" />
+                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/bootstrap.min.js" todir="${project.build.directory}/api/v2/apidocs/js" />
+                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/run_prettify.js" todir="${project.build.directory}/api/v2/apidocs/js" />
+                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/jquery-1.12.2.min.js" todir="${project.build.directory}/api/v2/apidocs/ui/js" />
+                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/bootstrap.min.js" todir="${project.build.directory}/api/v2/apidocs/ui/js" />
+                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/run_prettify.js" todir="${project.build.directory}/api/v2/apidocs/ui/js" />
+
+                                <!-- Replace URLs -->
+                                <replace dir="${project.build.directory}/api/v2" includes="**/*.html" token="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" value="css/bootstrap.min.css" />
+                                <replace dir="${project.build.directory}/api/v2" includes="**/*.html" token="https://code.jquery.com/jquery-1.12.2.min.js" value="js/jquery-1.12.2.min.js" />
+                                <replace dir="${project.build.directory}/api/v2" includes="**/*.html" token="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js" value="js/bootstrap.min.js" />
+                                <replace dir="${project.build.directory}/api/v2" includes="**/*.html" token="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js" value="js/run_prettify.js" />
+                            </tasks>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
