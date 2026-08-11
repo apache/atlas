@@ -1300,7 +1300,7 @@ describe('AuditResults Component', () => {
       });
     });
 
-    it('should show empty-drawer fallback message when PURGED count > 0 but GUID list is empty', async () => {
+    it('should show "No matching GUIDs found" when PURGED count > 0 but GUID list is empty', async () => {
       const auditDataForSummary = [{
         guid: 'audit-empty-sum',
         operation: 'PURGE',
