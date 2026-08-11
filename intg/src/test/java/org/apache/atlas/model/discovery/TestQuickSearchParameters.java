@@ -19,10 +19,12 @@ package org.apache.atlas.model.discovery;
 
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
+import org.apache.atlas.utils.AtlasJson;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -500,5 +502,25 @@ public class TestQuickSearchParameters {
         assertEquals(searchParameters.getSortOrder(), SortOrder.DESCENDING);
         assertFalse(searchParameters.getExcludeHeaderAttributes());
         assertNotNull(searchParameters.getEntityFilters());
+    }
+
+    @Test
+    public void testAttributesJsonDeserializationPreservesOrder() {
+        String json = "{\"query\":\"*\",\"typeName\":\"hive_table\",\"attributes\":[\"qualifiedName\",\"createTime\"]}";
+
+        QuickSearchParameters params = AtlasJson.fromJson(json, QuickSearchParameters.class);
+
+        assertEquals(params.getAttributes(), new LinkedHashSet<>(Arrays.asList("qualifiedName", "createTime")));
+        assertEquals(new ArrayList<>(params.getAttributes()), Arrays.asList("qualifiedName", "createTime"));
+    }
+
+    @Test
+    public void testAttributesJsonDeserializationDedupes() {
+        String json = "{\"query\":\"*\",\"typeName\":\"hive_table\",\"attributes\":[\"qualifiedName\",\"createTime\",\"qualifiedName\"]}";
+
+        QuickSearchParameters params = AtlasJson.fromJson(json, QuickSearchParameters.class);
+
+        assertEquals(params.getAttributes(), new LinkedHashSet<>(Arrays.asList("qualifiedName", "createTime")));
+        assertEquals(new ArrayList<>(params.getAttributes()), Arrays.asList("qualifiedName", "createTime"));
     }
 }
