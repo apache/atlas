@@ -111,6 +111,20 @@ export const auditAction: { [key: string]: string } = {
   AUTO_PURGE : "Auto Purged Entities"
 };
 
+
+export enum AuditOperation {
+  PURGE = "PURGE",
+  AUTO_PURGE = "AUTO_PURGE",
+  IMPORT = "IMPORT",
+  EXPORT = "EXPORT"
+}
+
+export enum PurgeActiveView {
+  NONE = "none",
+  REQUESTED = "requested",
+  PURGED = "purged"
+}
+
 export const stats: any = {
   generalData: {
     collectionTime: "day"
