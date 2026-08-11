@@ -27,6 +27,7 @@ import {
   useRef,
   useState,
   useMemo,
+  useCallback,
   SyntheticEvent,
   memo,
 } from "react";
@@ -418,14 +419,14 @@ const BarTreeView: FC<{
       setExpandedItems(expandedItemsMemo);
     }, [expandedItemsMemo]);
 
-    const getNodeId = (node: TreeNode) => {
+    const getNodeId = useCallback((node: TreeNode) => {
       if (treeName == "Classifications" && node.types == "parent") {
         return node.label;
       } else if (treeName == "Classifications" && node.types == "child") {
         return `${node.id}@${node.label}`;
       }
       return !isEmpty(node?.parent) ? `${node.id}@${node?.parent}` : node.id;
-    };
+    }, [treeName]);
 
     useEffect(() => {
       const searchParams = new URLSearchParams(location.search);
@@ -490,7 +491,7 @@ const BarTreeView: FC<{
           customFilter: null,
         });
       }
-    }, [location.search, treeData, treeName, businessMetaData, bmguid]);
+    }, [location.search, location.pathname, treeData, treeName, businessMetaData, bmguid, getNodeId]);
 
     const getEmptyTypesTitle = () => {
       switch (treeName) {
@@ -978,7 +979,7 @@ const BarTreeView: FC<{
         if (el) {
           setIsOverflown(el.scrollWidth > el.clientWidth);
         }
-      }, [label, searchTerm]);
+      }, [label]);
 
       return (
         <LightTooltip title={label} disableHoverListener={!isOverflown}>
