@@ -397,6 +397,9 @@ define(['require',
                     }
                     if (auditEntryAttributeDefs) {
                         _.each(auditEntryAttributeDefs, function(attributes) {
+                            if (attributes.name === "auditRowKind") {
+                                return; // Skip backend-only field
+                            }
                             var returnObj = that.getObjDef(attributes, rules_widgets);
                             if (returnObj) {
                                 filters.push(returnObj);

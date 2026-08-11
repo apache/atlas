@@ -97,7 +97,18 @@ jest.mock('../AuditsFilter/AuditFilters', () => ({
       </button>
       <button
         onClick={() => {
-          setQueryApiObj({ userName: 'testUser' });
+          // If we add a window.mockRunId it will set runId
+          if ((window as any).mockRunId) {
+             setQueryApiObj({ 
+                condition: "AND",
+                criterion: [
+                  { attributeName: "runId", operator: "eq", attributeValue: "test-run-id" },
+                  { attributeName: "auditRowKind", operator: "eq", attributeValue: "DETAIL" }
+                ] 
+             });
+          } else {
+             setQueryApiObj({ userName: 'testUser' });
+          }
           setupdateTable(moment.now());
         }}
         data-testid="apply-filters"
@@ -905,4 +916,113 @@ describe('AdminAuditTable Component', () => {
       }, { timeout: 5000 });
     });
   });
+
+  describe('RunId Filtering Combinations', () => {
+    afterEach(() => {
+      delete (window as any).mockRunId;
+    });
+
+    it('should inject auditRowKind=SUMMARY when runId filter is present ', async () => {
+      mockGetAuditData.mockResolvedValue({ data: [] });
+      mockIsEmpty.mockImplementation((val: any) => {
+        if (Array.isArray(val)) return val.length === 0;
+        if (typeof val === 'object' && val !== null) return false;
+        return true;
+      });
+
+      render(<AdminAuditTable />);
+      
+      await waitFor(() => {
+        expect(capturedFetchData).toBeDefined();
+      });
+
+      // Enable the mock runId logic
+      (window as any).mockRunId = true;
+
+      fireEvent.click(screen.getByTestId('custom-button')); // open filters
+      
+      await waitFor(() => {
+        expect(screen.getByTestId('audit-filters')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('apply-filters')); // apply filters with runId
+
+      // Component re-renders and should trigger fetchData
+      // capturedFetchData is called automatically when queryApiObj changes because of the mock TableLayout
+      // wait, our mock TableLayout only calls fetchData on mount! 
+      // But AdminAuditTable passes `tableFilters` as queryApiObj. 
+      // AdminAuditTable has a `fetchAuditResult` function that is passed to TableLayout as `fetchData`.
+      // We can directly invoke `capturedFetchData` again!
+      
+      await capturedFetchData({ pagination: { pageSize: 25, pageIndex: 0 } });
+
+      await waitFor(() => {
+        expect(mockGetAuditData).toHaveBeenCalled();
+        const callArgs = mockGetAuditData.mock.calls[mockGetAuditData.mock.calls.length - 1][0];
+        
+        // Assert that the filter contains the injected SUMMARY condition
+        const filtersStr = JSON.stringify(callArgs.auditFilters);
+        expect(filtersStr).toContain('"attributeValue":"SUMMARY"');
+        
+        // And assert it removed the old auditRowKind (DETAIL)
+        expect(filtersStr).not.toContain('"attributeValue":"DETAIL"');
+      });
+    });
+
+    it('should NOT inject auditRowKind=SUMMARY when runId filter is NOT present ', async () => {
+      mockGetAuditData.mockResolvedValue({ data: [] });
+      mockIsEmpty.mockImplementation((val: any) => {
+        if (Array.isArray(val)) return val.length === 0;
+        if (typeof val === 'object' && val !== null) return false;
+        return true;
+      });
+
+      render(<AdminAuditTable />);
+      
+      await waitFor(() => {
+        expect(capturedFetchData).toBeDefined();
+      });
+
+      // NO mockRunId here
+      
+      fireEvent.click(screen.getByTestId('custom-button'));
+      
+      await waitFor(() => {
+        expect(screen.getByTestId('audit-filters')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('apply-filters')); // apply normal filter (userName)
+
+      await capturedFetchData({ pagination: { pageSize: 25, pageIndex: 0 } });
+
+      await waitFor(() => {
+        expect(mockGetAuditData).toHaveBeenCalled();
+        const callArgs = mockGetAuditData.mock.calls[mockGetAuditData.mock.calls.length - 1][0];
+        
+        // Assert that the filter does NOT contain the injected SUMMARY condition
+        const filtersStr = JSON.stringify(callArgs.auditFilters);
+        expect(filtersStr).not.toContain('"attributeValue":"SUMMARY"');
+        expect(filtersStr).toContain('userName');
+      });
+    });
+
+    it('should handle API failure gracefully', async () => {
+      mockGetAuditData.mockRejectedValue({ response: { data: { errorMessage: 'Internal Server Error' } } });
+      
+      render(<AdminAuditTable />);
+      
+      await waitFor(() => {
+        expect(capturedFetchData).toBeDefined();
+      });
+      
+      // Trigger fetch
+      await capturedFetchData({ pagination: { pageSize: 25, pageIndex: 0 } });
+      
+      // We are just making sure it doesn't crash and console.error is called
+      await waitFor(() => {
+        expect(mockGetAuditData).toHaveBeenCalled();
+      });
+    });
+  });
+
 });
