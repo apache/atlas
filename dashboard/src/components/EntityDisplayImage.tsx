@@ -19,7 +19,7 @@ import { Avatar } from "@mui/material";
 import { getEntityIconPath } from "../utils/Utils";
 
 interface DisplayImageProps {
-  entity: Record<string, any>;
+  entity: Record<string, unknown>;
   width?: string | number;
   height?: string | number;
   avatarDisplay?: boolean;
@@ -48,11 +48,11 @@ const DisplayImage = ({
 
   return (
     <div className="search-result-table-name-col" data-cy="entityIcon">
-      {avatarDisplay == undefined ? (
+      {avatarDisplay === undefined ? (
         <img
           className="search-result-table-img"
-          id={entity.guid}
-          data-cy={entity.guid}
+          id={entity.guid as string}
+          data-cy={entity.guid as string}
           src={primaryUrl}
           alt="Entity Icon"
           onError={handleError}

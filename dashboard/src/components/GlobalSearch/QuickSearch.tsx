@@ -576,7 +576,7 @@ const QuickSearch = () => {
 											}
 										>
 											{types === "Entities" && !isEmpty(entityObj) && (
-												<DisplayImage entity={entityObj} />
+												<DisplayImage entity={entityObj || {}} />
 											)}
 											{types === "Entities" && !isEmpty(entityObj)
 												? parts.map((part, index) => (
