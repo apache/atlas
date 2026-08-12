@@ -17,6 +17,7 @@
 
 import { memo, useCallback } from "react";
 import { Paper, Stack, Typography, Link, List, ListItem, Box } from "@mui/material";
+import { OverflowTooltip } from "@components/muiComponents";
 import { Link as RouterLink } from "react-router-dom";
 import moment from "moment";
 import { useNavigate } from "react-router-dom";
@@ -27,6 +28,7 @@ import {
 	resolveLatestEntityGuid,
 	resolveLatestEntityTypeName
 } from "./latestEntitiesList.utils";
+import "./LatestEntitiesList.scss";
 
 interface EntityItem extends LatestEntityRowModel {
 	createTime?: number | Date | string;
@@ -104,30 +106,30 @@ const formatCreatedRelativeFromMs = (ms: number): string => {
 	const deltaMs = now - ms;
 	if (!Number.isFinite(deltaMs)) return INVALID_TS_LABEL;
 	if (deltaMs < 0) {
-		return `Created ${moment(ms).fromNow()}`;
+		return moment(ms).fromNow();
 	}
 	const totalSec = Math.floor(deltaMs / 1000);
 	if (totalSec < 1) {
-		return "Created just now";
+		return "Just now";
 	}
 	if (totalSec < 60) {
 		return totalSec === 1
-			? "Created 1 second ago"
-			: `Created ${totalSec} seconds ago`;
+			? "1 second ago"
+			: `${totalSec} seconds ago`;
 	}
 	const totalMin = Math.floor(totalSec / 60);
 	if (totalMin < 60) {
 		return totalMin === 1
-			? "Created 1 minute ago"
-			: `Created ${totalMin} minutes ago`;
+			? "1 minute ago"
+			: `${totalMin} minutes ago`;
 	}
 	const totalHr = Math.floor(totalMin / 60);
 	if (totalHr < 24) {
 		return totalHr === 1
-			? "Created 1 hour ago"
-			: `Created ${totalHr} hours ago`;
+			? "1 hour ago"
+			: `${totalHr} hours ago`;
 	}
-	return `Created ${moment(ms).fromNow()}`;
+	return moment(ms).fromNow();
 };
 
 const formatRelativeTime = (raw: unknown): string => {
@@ -146,54 +148,37 @@ const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesL
 	if (isLoading) return null;
 
 	return (
-		<Paper
-			elevation={1}
-			sx={{
-				padding: 2,
-				borderRadius: 2,
-				minHeight: 340,
-				minWidth: 0,
-				width: "100%",
-				flex: 1,
-				boxSizing: "border-box",
-				transition: "box-shadow 0.3s ease",
-				"&:hover": { boxShadow: 4 }
-			}}
-		>
-			<Box sx={{ pb: 2, borderBottom: "1px solid", borderColor: "divider" }}>
+		<Paper elevation={1} className="latest-entities-paper">
+			<Box className="latest-entities-header">
 				<Stack direction="row" justifyContent="space-between" alignItems="center">
-					<Typography sx={{ fontSize: "1rem", fontWeight: 600, color: "#1a1a1a" }}>
+					<Typography className="latest-entities-title">
 						Latest Entities Created
 					</Typography>
 					<Link
 						component="button"
 						onClick={handleViewAll}
-						sx={{
-							fontSize: "0.875rem",
-							cursor: "pointer",
-							textDecoration: "none",
-							color: "primary.main"
-						}}
+						className="latest-entities-view-all"
 						aria-label="View all entities"
+						color="primary.main"
 					>
 						View All
 					</Link>
 				</Stack>
 			</Box>
 			{error ? (
-				<Stack alignItems="center" justifyContent="center" height={200} sx={{ pt: 2 }}>
+				<Stack alignItems="center" justifyContent="center" height={200} className="latest-entities-empty">
 					<Typography variant="body2" color="error">
 						{error}
 					</Typography>
 				</Stack>
 			) : !entities || entities.length === 0 ? (
-				<Stack alignItems="center" justifyContent="center" height={200} sx={{ pt: 2 }}>
+				<Stack alignItems="center" justifyContent="center" height={200} className="latest-entities-empty">
 					<Typography variant="body2" color="text.secondary">
 						No recent entities
 					</Typography>
 				</Stack>
 			) : (
-				<List disablePadding sx={{ pt: 2 }}>
+				<List disablePadding className="latest-entities-list">
 					{entities.slice(0, 7).map((entity) => {
 						const displayName = resolveLatestEntityDisplayName(entity);
 						const entityGuid = resolveLatestEntityGuid(entity);
@@ -207,55 +192,40 @@ const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesL
 							<ListItem
 								key={entityGuid || displayName}
 								disablePadding
-								sx={{
-									py: 1,
-									borderBottom: "1px solid",
-									borderColor: "divider",
-									"&:last-child": { borderBottom: "none" }
-								}}
+								className="latest-entities-list-item"
 							>
 								<Stack width="100%" direction="row" justifyContent="space-between" alignItems="center">
-									<Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap" flex={1} minWidth={0} mr={1}>
+									<Stack direction="row" spacing={0.5} alignItems="center" flexWrap="nowrap" flex={1} minWidth={0} mr={1}>
 										{detailHref ? (
-											<Link
-												component={RouterLink}
-												to={detailHref}
-												underline="hover"
-												color="primary"
-												sx={{
-													fontSize: "0.875rem",
-													overflow: "hidden",
-													textOverflow: "ellipsis",
-													cursor: "pointer",
-													maxWidth: "100%"
-												}}
-											>
-												{displayName}
-											</Link>
+											<OverflowTooltip title={displayName} arrow placement="top">
+												<Link
+													component={RouterLink}
+													to={detailHref}
+													underline="hover"
+													color="primary"
+													className="latest-entities-entity-name latest-entities-entity-name-link"
+												>
+													{displayName}
+												</Link>
+											</OverflowTooltip>
 										) : (
-											<Typography
-												component="span"
-												sx={{
-													fontSize: "0.875rem",
-													fontWeight: 500,
-													color: "text.primary"
-												}}
-											>
-												{displayName}
-											</Typography>
+											<OverflowTooltip title={displayName} arrow placement="top">
+												<Typography
+													component="span"
+													className="latest-entities-entity-name latest-entities-entity-name-fallback"
+												>
+													{displayName}
+												</Typography>
+											</OverflowTooltip>
 										)}
 										<Typography
 											component="span"
-											sx={{
-												fontSize: "0.875rem",
-												color: "#6c757d",
-												flexShrink: 0
-											}}
+											className="latest-entities-type-name"
 										>
 											({typeName})
 										</Typography>
 									</Stack>
-									<Typography sx={{ fontSize: "0.8125rem", color: "#6c757d", flexShrink: 0, ml: 1 }}>
+									<Typography className="latest-entities-timestamp">
 										{formatRelativeTime(timestamp)}
 									</Typography>
 								</Stack>

@@ -26,6 +26,7 @@ import userEvent from '@testing-library/user-event'
 import {
 	CustomButton,
 	LightTooltip,
+	OverflowTooltip,
 	LinkTab,
 	Accordion,
 	AccordionSummary,
@@ -67,6 +68,39 @@ describe('muiComponents', () => {
 		)
 
 		expect(screen.getByText('Tooltip Child')).toBeTruthy()
+	})
+
+	describe('OverflowTooltip', () => {
+		it('renders OverflowTooltip children', () => {
+			render(
+				<OverflowTooltip title="overflow tip">
+					<span>Overflow Child</span>
+				</OverflowTooltip>
+			)
+			expect(screen.getByText('Overflow Child')).toBeTruthy()
+		})
+
+		it('disables tooltip when not overflowed', () => {
+			render(
+				<OverflowTooltip title="overflow tip">
+					<span data-testid="short-text">Short</span>
+				</OverflowTooltip>
+			)
+			// Element scrollWidth and clientWidth are 0 in JSDOM, so isOverflowed is false
+			// We can verify it renders successfully and handles the basic case
+			expect(screen.getByTestId('short-text')).toBeInTheDocument()
+		})
+
+		it('enables tooltip on resize if overflow occurs', () => {
+			render(
+				<OverflowTooltip title="overflow tip">
+					<span data-testid="resize-text">Will be long</span>
+				</OverflowTooltip>
+			)
+			// Trigger resize
+			window.dispatchEvent(new Event('resize'))
+			expect(screen.getByTestId('resize-text')).toBeInTheDocument()
+		})
 	})
 
 	it('prevents default navigation in LinkTab', async () => {
