@@ -57,14 +57,22 @@ const hasSelectedImportFile = (fileData: unknown): boolean => {
 		return true;
 	return false;
 };
+import { useLocation, useParams } from "react-router-dom";
+import { fetchGlossaryDetails } from "@redux/slice/glossaryDetailsSlice";
+import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 
 const AddUpdateGlossaryForm = (props: {
 	open: any;
 	onClose: any;
 	isAdd: any;
 	node: Record<string, any> | undefined;
+	dataObj?: any;
 }) => {
-	const { open, onClose, isAdd, node } = props;
+	const { open, onClose, isAdd, node, dataObj } = props;
+	const { guid: glossaryGuid } = useParams();
+	const location = useLocation();
+	const searchParams = new URLSearchParams(location.search);
+	const gType: string | undefined | null = searchParams.get("gtype");
 	const dispatch = useAppDispatch();
 	const toastId: any = useRef(null);
 	const { glossaryData }: any = useAppSelector((state: any) => state.glossary);
@@ -75,314 +83,325 @@ const AddUpdateGlossaryForm = (props: {
 		glossaryObj = glossaryData.find((obj: { name: string }) => {
 			return obj.name == id;
 		});
-		const { name, shortDescription, longDescription } = glossaryObj || {};
+		const { name, shortDescription } = glossaryObj || {};
+		const longDescription = dataObj?.longDescription || glossaryObj?.longDescription || "";
 
 		defaultValue["name"] = name;
 		defaultValue["shortDescription"] = shortDescription;
 		defaultValue["longDescription"] = longDescription;
 	}
-	const {
-		control,
-		handleSubmit,
-		setValue,
-		formState: { isSubmitting }
-	} = useForm({
-		defaultValues: isAdd ? {} : defaultValue,
-		mode: "onChange",
-		shouldUnregister: true
-	});
+		const {
+			control,
+			handleSubmit,
+			setValue,
+			formState: { isSubmitting }
+		} = useForm({
+			defaultValues: isAdd ? {} : defaultValue,
+			mode: "onChange",
+			shouldUnregister: true
+		});
 
-	const [glossaryCreateTab, setGlossaryCreateTab] =
-		useState<GlossaryCreateTab>("create");
-	const [importFileData, setImportFileData] = useState<any>([]);
-	const [importProgress, setImportProgress] = useState(0);
-	const [importErrorDetails, setImportErrorDetails] = useState(false);
-	const [importData, setImportData] = useState<any>(null);
-	const [importUploading, setImportUploading] = useState(false);
+		const [glossaryCreateTab, setGlossaryCreateTab] =
+			useState<GlossaryCreateTab>("create");
+		const [importFileData, setImportFileData] = useState<any>([]);
+		const [importProgress, setImportProgress] = useState(0);
+		const [importErrorDetails, setImportErrorDetails] = useState(false);
+		const [importData, setImportData] = useState<any>(null);
+		const [importUploading, setImportUploading] = useState(false);
 
-	const resetImportUi = useCallback(() => {
-		setGlossaryCreateTab("create");
-		setImportFileData([]);
-		setImportProgress(0);
-		setImportErrorDetails(false);
-		setImportData(null);
-		setImportUploading(false);
-	}, []);
-
-	const handleModalClose = useCallback(() => {
-		resetImportUi();
-		onClose();
-	}, [onClose, resetImportUi]);
-
-	useEffect(() => {
-		if (!open) {
-			resetImportUi();
-		}
-	}, [open, resetImportUi]);
-
-	const handleGlossaryCreateTabChange = (
-		_event: MouseEvent<HTMLElement>,
-		next: GlossaryCreateTab | null
-	) => {
-		if (next == null) return;
-		setGlossaryCreateTab(next);
-		if (next === "create") {
+		const resetImportUi = useCallback(() => {
+			setGlossaryCreateTab("create");
 			setImportFileData([]);
 			setImportProgress(0);
 			setImportErrorDetails(false);
 			setImportData(null);
-		}
-	};
+			setImportUploading(false);
+		}, []);
 
-	const handleDownloadTemplate = async () => {
-		try {
-			await downloadGlossaryImportTemplate();
-		} catch {
-			toast.dismiss(toastId.current);
-			toastId.current = toast.error("Could not download template");
-		}
-	};
+		const handleModalClose = useCallback(() => {
+			resetImportUi();
+			onClose();
+		}, [onClose, resetImportUi]);
 
-	const handleImportUpload = async () => {
-		if (!hasSelectedImportFile(importFileData)) return;
-		setImportUploading(true);
-		try {
-			const importResp = await postGlossaryImportFormData(
-				importFileData,
-				(pct) => setImportProgress(pct)
-			);
-			if (importResp.data.failedImportInfoList == undefined) {
+		useEffect(() => {
+			if (!open) {
+				resetImportUi();
+			}
+		}, [open, resetImportUi]);
+
+		const handleGlossaryCreateTabChange = (
+			_event: MouseEvent<HTMLElement>,
+			next: GlossaryCreateTab | null
+		) => {
+			if (next == null) return;
+			setGlossaryCreateTab(next);
+			if (next === "create") {
+				setImportFileData([]);
+				setImportProgress(0);
+				setImportErrorDetails(false);
+				setImportData(null);
+			}
+		};
+
+		const handleDownloadTemplate = async () => {
+			try {
+				await downloadGlossaryImportTemplate();
+			} catch {
+				toast.dismiss(toastId.current);
+				toastId.current = toast.error("Could not download template");
+			}
+		};
+
+		const handleImportUpload = async () => {
+			if (!hasSelectedImportFile(importFileData)) return;
+			setImportUploading(true);
+			try {
+				const importResp = await postGlossaryImportFormData(
+					importFileData,
+					(pct) => setImportProgress(pct)
+				);
+				if (importResp.data.failedImportInfoList == undefined) {
+					toast.dismiss(toastId.current);
+					toastId.current = toast.success(
+						`File: ${importFileData.name} imported successfully`
+					);
+					await dispatch(fetchGlossaryData());
+					handleModalClose();
+					return;
+				}
+				if (importResp.data.failedImportInfoList != undefined) {
+					toast.dismiss(toastId.current);
+					toastId.current = toast.error(
+						importResp.data.failedImportInfoList[0].remarks
+					);
+					setImportErrorDetails(true);
+				}
+				setImportData(importResp.data);
+			} catch (error) {
+				const message = getApiErrorToastMessage(error);
+				if (message === null) {
+					return;
+				}
+				toast.dismiss(toastId.current);
+				toastId.current = toast.error(message);
+			} finally {
+				setImportUploading(false);
+			}
+		};
+
+		const onSubmit = async (formValues: any) => {
+			let formData = { ...formValues };
+			const { guid, qualifiedName } = glossaryObj;
+			const {
+				name,
+				shortDescription,
+				longDescription
+			}: { name: string; shortDescription: string; longDescription: string } =
+				formData;
+			let data: Record<string, string> = {};
+			if (!isAdd) {
+				data["guid"] = guid;
+				data["qualifiedName"] = qualifiedName;
+			}
+			data["name"] = name;
+			data["shortDescription"] = !isEmpty(shortDescription)
+				? shortDescription
+				: "";
+			data["longDescription"] = !isEmpty(longDescription) ? longDescription : "";
+
+			try {
+				if (isAdd) {
+					await createGlossary(data);
+				} else {
+					await editGlossary(guid, data);
+				}
+
+				await dispatch(fetchGlossaryData());
+
+				if (!isAdd && glossaryGuid) {
+					let params: any = { gtype: gType, guid: glossaryGuid };
+					dispatch(fetchGlossaryDetails(params));
+					dispatch(fetchDetailPageData(glossaryGuid as string));
+				}
+
 				toast.dismiss(toastId.current);
 				toastId.current = toast.success(
-					`File: ${importFileData.name} imported successfully`
+					`Glossary ${name} was ${isAdd ? "created" : "updated"} successfully`
 				);
-				await dispatch(fetchGlossaryData());
 				handleModalClose();
-				return;
-			}
-			if (importResp.data.failedImportInfoList != undefined) {
-				toast.dismiss(toastId.current);
-				toastId.current = toast.error(
-					importResp.data.failedImportInfoList[0].remarks
+			} catch (error) {
+				console.log(
+					`Error occur while ${isAdd ? "created" : "updated"} Glossary`,
+					error
 				);
-				setImportErrorDetails(true);
+				serverError(error, toastId);
 			}
-			setImportData(importResp.data);
-		} catch (error) {
-			const message = getApiErrorToastMessage(error);
-			if (message === null) {
-				return;
-			}
-			toast.dismiss(toastId.current);
-			toastId.current = toast.error(message);
-		} finally {
-			setImportUploading(false);
-		}
-	};
+		};
 
-	const onSubmit = async (formValues: any) => {
-		let formData = { ...formValues };
-		const { guid, qualifiedName } = glossaryObj;
-		const {
-			name,
-			shortDescription,
-			longDescription
-		}: { name: string; shortDescription: string; longDescription: string } =
-			formData;
-		let data: Record<string, string> = {};
-		if (!isAdd) {
-			data["guid"] = guid;
-			data["qualifiedName"] = qualifiedName;
-		}
-		data["name"] = name;
-		data["shortDescription"] = !isEmpty(shortDescription)
-			? shortDescription
-			: "";
-		data["longDescription"] = !isEmpty(longDescription) ? longDescription : "";
+		const showImportError = isAdd && glossaryCreateTab === "import" && importErrorDetails;
 
-		try {
-			if (isAdd) {
-				await createGlossary(data);
-			} else {
-				await editGlossary(guid, data);
-			}
+		const modalTitle = showImportError
+			? "Error Details"
+			: isAdd
+				? "Create Glossary"
+				: "Edit Glossary";
 
-			await dispatch(fetchGlossaryData());
-			toast.dismiss(toastId.current);
-			toastId.current = toast.success(
-				`Glossary ${name} was ${isAdd ? "created" : "updated"} successfully`
-			);
-			handleModalClose();
-		} catch (error) {
-			serverError(error, toastId);
-		}
-	};
+		const titleIconNode =
+			showImportError ? (
+				<IconButton
+					aria-label="Back to import file"
+					onClick={(e) => {
+						e.stopPropagation();
+						setImportErrorDetails(false);
+					}}
+					size="small"
+					sx={{ color: (theme) => theme.palette.grey[500] }}
+				>
+					<LightTooltip title="Back to import file">
+						<ArrowBackIosNewIcon sx={{ fontSize: "1.25rem" }} />
+					</LightTooltip>
+				</IconButton>
+			) : undefined;
 
-	const showImportError = isAdd && glossaryCreateTab === "import" && importErrorDetails;
+		const isImportMode = isAdd && glossaryCreateTab === "import" && !importErrorDetails;
 
-	const modalTitle = showImportError
-		? "Error Details"
-		: isAdd
-			? "Create Glossary"
-			: "Edit Glossary";
+		const button2Label = (() => {
+			if (!isAdd) return "Update";
+			if (glossaryCreateTab === "create") return "Create";
+			if (importErrorDetails) return "";
+			return "Upload";
+		})();
 
-	const titleIconNode =
-		showImportError ? (
-			<IconButton
-				aria-label="Back to import file"
-				onClick={(e) => {
-					e.stopPropagation();
-					setImportErrorDetails(false);
-				}}
-				size="small"
-				sx={{ color: (theme) => theme.palette.grey[500] }}
-			>
-				<LightTooltip title="Back to import file">
-					<ArrowBackIosNewIcon sx={{ fontSize: "1.25rem" }} />
-				</LightTooltip>
-			</IconButton>
-		) : undefined;
+		const button2Handler = (() => {
+			if (!isAdd || glossaryCreateTab === "create") return handleSubmit(onSubmit);
+			if (importErrorDetails) return () => { };
+			return handleImportUpload;
+		})();
 
-	const isImportMode = isAdd && glossaryCreateTab === "import" && !importErrorDetails;
+		const disableButton2 = (() => {
+			if (!isAdd) return isSubmitting;
+			if (glossaryCreateTab === "create") return isSubmitting;
+			if (importErrorDetails) return true;
+			return !hasSelectedImportFile(importFileData);
+		})();
 
-	const button2Label = (() => {
-		if (!isAdd) return "Update";
-		if (glossaryCreateTab === "create") return "Create";
-		if (importErrorDetails) return "";
-		return "Upload";
-	})();
+		const button2Loading =
+			isAdd && glossaryCreateTab === "import" && !importErrorDetails
+				? importUploading
+				: isSubmitting;
 
-	const button2Handler = (() => {
-		if (!isAdd || glossaryCreateTab === "create") return handleSubmit(onSubmit);
-		if (importErrorDetails) return () => {};
-		return handleImportUpload;
-	})();
-
-	const disableButton2 = (() => {
-		if (!isAdd) return isSubmitting;
-		if (glossaryCreateTab === "create") return isSubmitting;
-		if (importErrorDetails) return true;
-		return !hasSelectedImportFile(importFileData);
-	})();
-
-	const button2Loading =
-		isAdd && glossaryCreateTab === "import" && !importErrorDetails
-			? importUploading
-			: isSubmitting;
-
-	const hideButton2 = Boolean(
-		isAdd && glossaryCreateTab === "import" && importErrorDetails
-	);
-
-	return (
-		<>
-			<CustomModal
-				open={open}
-				onClose={handleModalClose}
-				title={modalTitle}
-				titleIcon={titleIconNode}
-				button1Label="Cancel"
-				button1Handler={handleModalClose}
-				button2Label={button2Label}
-				maxWidth="sm"
-				button2Handler={button2Handler}
-				disableButton2={disableButton2}
-				button2Loading={button2Loading}
-				hideButton2={hideButton2}
-			>
-				<Stack>
-					{isAdd && (
-						<Stack marginBottom="1rem">
-							<ToggleButtonGroup
-								exclusive
-								value={glossaryCreateTab}
-								onChange={handleGlossaryCreateTabChange}
-								size="small"
-								color="primary"
-								aria-label="Choose create glossary or import glossary terms"
-							>
-								<ToggleButton
-									value="create"
-									className="entity-form-toggle-btn"
-									data-cy="create-glossary-tab"
-								>
-									Create glossary
-								</ToggleButton>
-								<ToggleButton
-									value="import"
-									className="entity-form-toggle-btn"
-									data-cy="import-glossary-terms-tab"
-								>
-									Import glossary terms
-								</ToggleButton>
-							</ToggleButtonGroup>
-						</Stack>
-					)}
-					{(!isAdd || glossaryCreateTab === "create") && (
-						<GlossaryForm
-							control={control}
-							handleSubmit={handleSubmit(onSubmit)}
-							setValue={setValue}
-						/>
-					)}
-					{isImportMode && (
-						<Stack gap={2}>
-							<Button
-								variant="outlined"
-								color="primary"
-								startIcon={<FileDownloadIcon />}
-								onClick={handleDownloadTemplate}
-								aria-label="Download import template"
-							>
-								Download import template
-							</Button>
-							<ImportLayout
-								setFileData={setImportFileData}
-								progressVal={importProgress}
-								setProgress={setImportProgress}
-								selectedFile={
-									importFileData !== undefined &&
-									hasSelectedImportFile(importFileData)
-										? [importFileData]
-										: []
-								}
-								errorDetails={importErrorDetails}
-							/>
-						</Stack>
-					)}
-					{showImportError && importData?.failedImportInfoList && (
-						<Stack
-							sx={{
-								width: "100%",
-								minHeight: 200,
-								maxHeight: 400,
-								bgcolor: "background.paper"
-							}}
+		const hideButton2 = Boolean(
+			isAdd && glossaryCreateTab === "import" && importErrorDetails
+		);
+		return (
+			<>
+		<CustomModal
+			open={open}
+			onClose={handleModalClose}
+			title={modalTitle}
+			titleIcon={titleIconNode}
+			button1Label="Cancel"
+			button1Handler={handleModalClose}
+			button2Label={button2Label}
+			maxWidth="sm"
+			button2Handler={button2Handler}
+			disableButton2={disableButton2}
+			button2Loading={button2Loading}
+			hideButton2={hideButton2}
+		>
+			<Stack>
+				{isAdd && (
+					<Stack marginBottom="1rem">
+						<ToggleButtonGroup
+							exclusive
+							value={glossaryCreateTab}
+							onChange={handleGlossaryCreateTabChange}
+							size="small"
+							color="primary"
+							aria-label="Choose create glossary or import glossary terms"
 						>
-							<List>
-								{importData.failedImportInfoList.map(
-									(
-										value: {
-											index: number;
-											remarks: string;
-										},
-										index: number
-									) => (
-										<ListItem key={value.index} disableGutters disablePadding>
-											<ListItemText
-												className="dropzone-listitem"
-												primary={`${index + 1}. ${value.remarks}`}
-											/>
-										</ListItem>
-									)
-								)}
-							</List>
-						</Stack>
-					)}
-				</Stack>
-			</CustomModal>
-		</>
-	);
+							<ToggleButton
+								value="create"
+								className="entity-form-toggle-btn"
+								data-cy="create-glossary-tab"
+							>
+								Create glossary
+							</ToggleButton>
+							<ToggleButton
+								value="import"
+								className="entity-form-toggle-btn"
+								data-cy="import-glossary-terms-tab"
+							>
+								Import glossary terms
+							</ToggleButton>
+						</ToggleButtonGroup>
+					</Stack>
+				)}
+				{(!isAdd || glossaryCreateTab === "create") && (
+					<GlossaryForm
+						control={control}
+						handleSubmit={handleSubmit(onSubmit)}
+						setValue={setValue}
+					/>
+				)}
+				{isImportMode && (
+					<Stack gap={2}>
+						<Button
+							variant="outlined"
+							color="primary"
+							startIcon={<FileDownloadIcon />}
+							onClick={handleDownloadTemplate}
+							aria-label="Download import template"
+						>
+							Download import template
+						</Button>
+						<ImportLayout
+							setFileData={setImportFileData}
+							progressVal={importProgress}
+							setProgress={setImportProgress}
+							selectedFile={
+								importFileData !== undefined &&
+									hasSelectedImportFile(importFileData)
+									? [importFileData]
+									: []
+							}
+							errorDetails={importErrorDetails}
+						/>
+					</Stack>
+				)}
+				{showImportError && importData?.failedImportInfoList && (
+					<Stack
+						sx={{
+							width: "100%",
+							minHeight: 200,
+							maxHeight: 400,
+							bgcolor: "background.paper"
+						}}
+					>
+						<List>
+							{importData.failedImportInfoList.map(
+								(
+									value: {
+										index: number;
+										remarks: string;
+									},
+									index: number
+								) => (
+									<ListItem key={value.index} disableGutters disablePadding>
+										<ListItemText
+											className="dropzone-listitem"
+											primary={`${index + 1}. ${value.remarks}`}
+										/>
+									</ListItem>
+								)
+							)}
+						</List>
+					</Stack>
+				)}
+			</Stack>
+		</CustomModal>
+	</>
+);
 };
 
 export default AddUpdateGlossaryForm;

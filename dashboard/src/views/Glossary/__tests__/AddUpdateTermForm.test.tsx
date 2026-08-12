@@ -27,9 +27,9 @@ import { configureStore } from '@reduxjs/toolkit';
 import { MemoryRouter } from 'react-router-dom';
 import AddUpdateTermForm from '../AddUpdateTermForm';
 import userEvent from '@testing-library/user-event';
-import * as glossarySlice from '@redux/slice/glossarySlice';
-import * as glossaryDetailsSlice from '@redux/slice/glossaryDetailsSlice';
-import * as detailPageSlice from '@redux/slice/detailPageSlice';
+import * as glossarySlice from '../../../redux/slice/glossarySlice';
+import * as glossaryDetailsSlice from '../../../redux/slice/glossaryDetailsSlice';
+import * as detailPageSlice from '../../../redux/slice/detailPageSlice';
 
 // Mock state variables
 let mockGuid: string | undefined = undefined;
@@ -58,9 +58,9 @@ const mockToastDismiss = jest.fn();
 
 jest.mock('react-toastify', () => ({
 	toast: {
-		success: (...args: any[]) => mockToastSuccess(...args),
+		success: function () { return mockToastSuccess.apply(null, arguments as any); },
 		error: jest.fn(),
-		dismiss: (...args: any[]) => mockToastDismiss(...args)
+		dismiss: function () { return mockToastDismiss.apply(null, arguments as any); }
 	}
 }));
 
@@ -68,9 +68,9 @@ jest.mock('react-toastify', () => ({
 const mockCreateTermorCategory = jest.fn();
 const mockEditTermorCategory = jest.fn();
 
-jest.mock('@api/apiMethods/glossaryApiMethod', () => ({
-	createTermorCategory: (...args: any[]) => mockCreateTermorCategory(...args),
-	editTermorCatgeory: (...args: any[]) => mockEditTermorCategory(...args)
+jest.mock('../../../api/apiMethods/glossaryApiMethod', () => ({
+	createTermorCategory: function () { return mockCreateTermorCategory.apply(null, arguments as any); },
+	editTermorCatgeory: function () { return mockEditTermorCategory.apply(null, arguments as any); }
 }));
 
 // Mock Redux actions
@@ -81,20 +81,20 @@ const mockFetchGlossaryData = jest.fn(() => (dispatch: any) => {
 const mockFetchGlossaryDetails = jest.fn();
 const mockFetchDetailPageData = jest.fn();
 
-jest.mock('@redux/slice/glossarySlice', () => ({
+jest.mock('../../../redux/slice/glossarySlice', () => ({
 	fetchGlossaryData: jest.fn()
 }));
 
-jest.mock('@redux/slice/glossaryDetailsSlice', () => ({
+jest.mock('../../../redux/slice/glossaryDetailsSlice', () => ({
 	fetchGlossaryDetails: jest.fn()
 }));
 
-jest.mock('@redux/slice/detailPageSlice', () => ({
+jest.mock('../../../redux/slice/detailPageSlice', () => ({
 	fetchDetailPageData: jest.fn()
 }));
 
 // Mock Utils
-jest.mock('@utils/Utils', () => {
+jest.mock('../../../utils/Utils', () => {
 	const actualLodash = jest.requireActual('lodash');
 	return {
 		isEmpty: actualLodash.isEmpty,
@@ -103,25 +103,25 @@ jest.mock('@utils/Utils', () => {
 });
 
 // Mock CustomModal
-jest.mock('@components/Modal', () => ({
+jest.mock('../../../components/Modal', () => ({
 	__esModule: true,
-	default: ({ 
-		open, 
-		onClose, 
-		children, 
-		title, 
-		button1Handler, 
-		button2Handler, 
+	default: ({
+		open,
+		onClose,
+		children,
+		title,
+		button1Handler,
+		button2Handler,
 		button2Label,
-		disableButton2 
+		disableButton2
 	}: any) =>
 		open ? (
 			<div data-testid="modal">
 				<div data-testid="modal-title">{title}</div>
 				{children}
 				<button data-testid="cancel-btn" onClick={button1Handler}>Cancel</button>
-				<button 
-					data-testid="submit-btn" 
+				<button
+					data-testid="submit-btn"
 					onClick={button2Handler}
 					disabled={disableButton2}
 				>
@@ -140,7 +140,7 @@ jest.mock('../GlossaryForm', () => ({
 				<input
 					data-testid="name-input"
 					onChange={(e: any) => {
-						const onChange = control._formValues?.name?.onChange || (() => {});
+						const onChange = control._formValues?.name?.onChange || (() => { });
 						onChange(e.target.value);
 					}}
 					placeholder="Name"
@@ -148,7 +148,7 @@ jest.mock('../GlossaryForm', () => ({
 				<input
 					data-testid="short-description-input"
 					onChange={(e: any) => {
-						const onChange = control._formValues?.shortDescription?.onChange || (() => {});
+						const onChange = control._formValues?.shortDescription?.onChange || (() => { });
 						onChange(e.target.value);
 					}}
 					placeholder="Short Description"
@@ -156,7 +156,7 @@ jest.mock('../GlossaryForm', () => ({
 				<textarea
 					data-testid="long-description-input"
 					onChange={(e: any) => {
-						const onChange = control._formValues?.longDescription?.onChange || (() => {});
+						const onChange = control._formValues?.longDescription?.onChange || (() => { });
 						onChange(e.target.value);
 					}}
 					placeholder="Long Description"
@@ -194,7 +194,7 @@ const mockUseForm = jest.fn(() => ({
 }));
 
 jest.mock('react-hook-form', () => ({
-	useForm: (...args: any[]) => mockUseForm(...args)
+	useForm: function () { return mockUseForm.apply(null, arguments as any); }
 }));
 
 const createStore = (glossaryData: any[] = []) => {
@@ -225,20 +225,20 @@ describe('AddUpdateTermForm', () => {
 		mockToastSuccess.mockReturnValue('toast-id-123');
 		mockCreateTermorCategory.mockResolvedValue({});
 		mockEditTermorCategory.mockResolvedValue({});
-		
+
 		// Set up Redux action mocks
-		(glossarySlice.fetchGlossaryData as jest.Mock).mockImplementation((...args: any[]) => {
-			mockFetchGlossaryData(...args);
+		(glossarySlice.fetchGlossaryData as unknown as jest.Mock).mockImplementation(function () {
+			mockFetchGlossaryData.apply(null, arguments as any);
 			return { type: 'FETCH_GLOSSARY_DATA' };
 		});
-		
-		(glossaryDetailsSlice.fetchGlossaryDetails as jest.Mock).mockImplementation((...args: any[]) => {
-			mockFetchGlossaryDetails(...args);
+
+		(glossaryDetailsSlice.fetchGlossaryDetails as unknown as jest.Mock).mockImplementation(function () {
+			mockFetchGlossaryDetails.apply(null, arguments as any);
 			return { type: 'FETCH_GLOSSARY_DETAILS' };
 		});
-		
-		(detailPageSlice.fetchDetailPageData as jest.Mock).mockImplementation((...args: any[]) => {
-			mockFetchDetailPageData(...args);
+
+		(detailPageSlice.fetchDetailPageData as unknown as jest.Mock).mockImplementation(function () {
+			mockFetchDetailPageData.apply(null, arguments as any);
 			return { type: 'FETCH_DETAIL_PAGE_DATA' };
 		});
 		mockHandleSubmit.mockImplementation((onSubmitFn: any) => {
@@ -391,7 +391,7 @@ describe('AddUpdateTermForm', () => {
 			});
 
 			// Check that Redux action was called
-			const { fetchGlossaryData } = require('@redux/slice/glossarySlice');
+			const { fetchGlossaryData } = require('../../../redux/slice/glossarySlice');
 			await waitFor(() => {
 				expect(fetchGlossaryData).toHaveBeenCalled();
 			});
@@ -406,6 +406,58 @@ describe('AddUpdateTermForm', () => {
 
 			await waitFor(() => {
 				expect(mockOnClose).toHaveBeenCalled();
+			});
+		});
+
+		it('should dispatch fetchGlossaryDetails and fetchDetailPageData when creating term successfully in add mode and URL has gtype and guid', async () => {
+			mockLocationSearch = '?gtype=glossary';
+			mockGuid = 'entity-guid-456';
+			mockUseLocation.mockReturnValue({
+				pathname: '/glossary',
+				search: '?gtype=glossary',
+				hash: '',
+				state: null,
+				key: 'default'
+			});
+
+			const glossaryData = [
+				{ name: 'Test Glossary', guid: 'glossary-guid-1' }
+			];
+			store = createStore(glossaryData);
+
+			render(
+				<Provider store={store}>
+					<MemoryRouter>
+						<AddUpdateTermForm
+							open={true}
+							onClose={mockOnClose}
+							isAdd={true}
+							node={{ id: 'term-id', parent: 'Test Glossary' }}
+							dataObj={undefined}
+						/>
+					</MemoryRouter>
+				</Provider>
+			);
+
+			const submitButton = screen.getByTestId('submit-btn');
+			await act(async () => {
+				fireEvent.click(submitButton);
+			});
+
+			const { fetchGlossaryData } = require('../../../redux/slice/glossarySlice');
+			const { fetchGlossaryDetails } = require('../../../redux/slice/glossaryDetailsSlice');
+			const { fetchDetailPageData } = require('../../../redux/slice/detailPageSlice');
+
+			await waitFor(() => {
+				expect(fetchGlossaryData).toHaveBeenCalled();
+			});
+
+			await waitFor(() => {
+				expect(fetchGlossaryDetails).toHaveBeenCalledWith({ gtype: 'glossary', guid: 'entity-guid-456' });
+			});
+
+			await waitFor(() => {
+				expect(fetchDetailPageData).toHaveBeenCalledWith('entity-guid-456');
 			});
 		});
 
@@ -497,8 +549,8 @@ describe('AddUpdateTermForm', () => {
 
 		it('should use glossaryObj values when dataObj is empty in add mode', () => {
 			const glossaryData = [
-				{ 
-					name: 'Test Glossary', 
+				{
+					name: 'Test Glossary',
 					guid: 'glossary-guid-1',
 					shortDescription: 'Glossary Short',
 					longDescription: 'Glossary Long'
@@ -577,9 +629,9 @@ describe('AddUpdateTermForm', () => {
 			});
 
 			// Check that Redux actions were called
-			const { fetchGlossaryData } = require('@redux/slice/glossarySlice');
-			const { fetchGlossaryDetails } = require('@redux/slice/glossaryDetailsSlice');
-			const { fetchDetailPageData } = require('@redux/slice/detailPageSlice');
+			const { fetchGlossaryData } = require('../../../redux/slice/glossarySlice');
+			const { fetchGlossaryDetails } = require('../../../redux/slice/glossaryDetailsSlice');
+			const { fetchDetailPageData } = require('../../../redux/slice/detailPageSlice');
 
 			await waitFor(() => {
 				expect(fetchGlossaryData).toHaveBeenCalled();
@@ -654,9 +706,9 @@ describe('AddUpdateTermForm', () => {
 			}, { timeout: 3000 });
 
 			// Check that Redux actions were called by checking the mocked modules
-			const { fetchGlossaryData } = require('@redux/slice/glossarySlice');
-			const { fetchGlossaryDetails } = require('@redux/slice/glossaryDetailsSlice');
-			const { fetchDetailPageData } = require('@redux/slice/detailPageSlice');
+			const { fetchGlossaryData } = require('../../../redux/slice/glossarySlice');
+			const { fetchGlossaryDetails } = require('../../../redux/slice/glossaryDetailsSlice');
+			const { fetchDetailPageData } = require('../../../redux/slice/detailPageSlice');
 
 			await waitFor(() => {
 				expect(fetchGlossaryData).toHaveBeenCalled();
@@ -799,7 +851,7 @@ describe('AddUpdateTermForm', () => {
 			const error = new Error('API Error');
 			mockCreateTermorCategory.mockRejectedValue(error);
 
-			const { serverError } = require('@utils/Utils');
+			const { serverError } = require('../../../utils/Utils');
 
 			const glossaryData = [
 				{ name: 'Test Glossary', guid: 'glossary-guid-1' }
@@ -840,7 +892,7 @@ describe('AddUpdateTermForm', () => {
 			const error = new Error('API Error');
 			mockEditTermorCategory.mockRejectedValue(error);
 
-			const { serverError } = require('@utils/Utils');
+			const { serverError } = require('../../../utils/Utils');
 
 			const dataObj = {
 				name: 'Existing Term',
@@ -985,7 +1037,7 @@ describe('AddUpdateTermForm', () => {
 
 			const submitButton = screen.getByTestId('submit-btn');
 			expect(submitButton).toBeDisabled();
-			
+
 			// Restore original mock
 			if (originalMock) {
 				mockUseForm.mockImplementation(originalMock);
@@ -1009,8 +1061,8 @@ describe('AddUpdateTermForm', () => {
 			};
 
 			const glossaryData = [
-				{ 
-					name: 'Test Glossary', 
+				{
+					name: 'Test Glossary',
 					guid: 'glossary-guid-1',
 					shortDescription: 'Glossary Short',
 					longDescription: 'Glossary Long'
@@ -1037,8 +1089,8 @@ describe('AddUpdateTermForm', () => {
 
 		it('should use glossaryObj values when dataObj is empty in add mode', () => {
 			const glossaryData = [
-				{ 
-					name: 'Test Glossary', 
+				{
+					name: 'Test Glossary',
 					guid: 'glossary-guid-1',
 					shortDescription: 'Glossary Short',
 					longDescription: 'Glossary Long'

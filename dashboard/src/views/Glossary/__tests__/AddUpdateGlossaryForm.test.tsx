@@ -56,19 +56,25 @@ const mockGlossaryData = [
 // Mock toast
 jest.mock('react-toastify', () => ({
 	toast: {
-		success: (...args: any[]) => mockToastSuccess(...args),
-		dismiss: (...args: any[]) => mockToastDismiss(...args)
+		success: function () { return mockToastSuccess.apply(null, arguments as any); },
+		dismiss: function () { return mockToastDismiss.apply(null, arguments as any); }
 	}
 }));
 
+// Mock react-router-dom
+jest.mock('react-router-dom', () => ({
+	useLocation: () => ({ search: '?gtype=glossary&guid=test-guid' }),
+	useParams: () => ({})
+}));
+
 // Mock API methods
-jest.mock('@api/apiMethods/glossaryApiMethod', () => ({
-	createGlossary: (...args: any[]) => mockCreateGlossary(...args),
-	editGlossary: (...args: any[]) => mockEditGlossary(...args)
+jest.mock('../../../api/apiMethods/glossaryApiMethod', () => ({
+	createGlossary: function () { return mockCreateGlossary.apply(null, arguments as any); },
+	editGlossary: function () { return mockEditGlossary.apply(null, arguments as any); }
 }));
 
 // Mock Redux hooks
-jest.mock('@hooks/reducerHook', () => {
+jest.mock('../../../hooks/reducerHook', () => {
 	// Define mock glossary data inside the factory to avoid hoisting issues
 	const mockGlossaryDataLocal = [
 		{
@@ -86,23 +92,23 @@ jest.mock('@hooks/reducerHook', () => {
 			longDescription: 'Another long description'
 		}
 	];
-	
+
 	// Define mock state inside the factory function to avoid hoisting issues
 	const mockState = {
 		glossary: {
 			glossaryData: mockGlossaryDataLocal
 		}
 	};
-	
+
 	const mockUseAppSelectorFn = jest.fn((sel: any) => {
 		// If selector is not a function, return default
 		if (typeof sel !== 'function') {
 			return { glossaryData: mockGlossaryDataLocal };
 		}
-		
+
 		// Execute selector
 		const result = sel(mockState);
-		
+
 		// CRITICAL: Never return undefined - return glossaryData if result is undefined
 		// Also ensure glossaryData is always an array, never null
 		if (result === undefined || result === null) {
@@ -112,20 +118,20 @@ jest.mock('@hooks/reducerHook', () => {
 		if (result.glossaryData === null || result.glossaryData === undefined) {
 			return { glossaryData: mockGlossaryDataLocal };
 		}
-		
+
 		return result;
 	});
-	
+
 	return {
 		useAppDispatch: () => mockDispatch,
-		useAppSelector: (...args: any[]) => mockUseAppSelectorFn(...args),
+		useAppSelector: mockUseAppSelectorFn,
 		// Export the mock function for use in tests
 		__mockUseAppSelector: mockUseAppSelectorFn
 	};
 });
 
 // Get the mock function for use in tests
-const { __mockUseAppSelector: mockUseAppSelector } = require('@hooks/reducerHook');
+const { __mockUseAppSelector: mockUseAppSelector } = require('../../../hooks/reducerHook');
 
 // Mock Redux slice - fetchGlossaryData is a thunk that returns a function
 const mockFetchGlossaryDataThunk = jest.fn(() => async (dispatch: any) => {
@@ -133,14 +139,15 @@ const mockFetchGlossaryDataThunk = jest.fn(() => async (dispatch: any) => {
 	return Promise.resolve({ type: 'glossary/fetchGlossaryData' });
 });
 
-jest.mock('@redux/slice/glossarySlice', () => ({
-	fetchGlossaryData: (...args: any[]) => mockFetchGlossaryDataThunk(...args)
+jest.mock('../../../redux/slice/glossarySlice', () => ({
+	fetchGlossaryData: function() { return mockFetchGlossaryDataThunk.apply(null, arguments as any); }
 }));
 
 // Mock Utils
-jest.mock('@utils/Utils', () => {
-	const actualLodash = jest.requireActual('lodash');
+jest.mock('../../../utils/Utils', () => {
+	const actualUtils = jest.requireActual('../../../utils/Utils') as any;
 	return {
+		...actualUtils,
 		isEmpty: (value: any) => {
 			return (
 				value === undefined ||
@@ -149,12 +156,12 @@ jest.mock('@utils/Utils', () => {
 				(typeof value === 'string' && value.trim().length === 0)
 			);
 		},
-		serverError: (...args: any[]) => mockServerError(...args)
+		serverError: function () { return mockServerError.apply(null, arguments as any); }
 	};
 });
 
 // Mock Modal component
-jest.mock('@components/Modal', () => ({
+jest.mock('../../../components/Modal', () => ({
 	__esModule: true,
 	default: ({ open, onClose, children, title, button1Label, button1Handler, button2Label, button2Handler, disableButton2 }: any) =>
 		open ? (
@@ -283,7 +290,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			return action;
 		});
 		// Reset useAppSelector to default behavior
-		const { __mockUseAppSelector } = require('@hooks/reducerHook');
+		const { __mockUseAppSelector } = require('../../../hooks/reducerHook');
 		__mockUseAppSelector.mockImplementation((selector: any) => {
 			const mockState = {
 				glossary: {
@@ -474,7 +481,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -498,7 +505,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -534,7 +541,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -574,7 +581,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -608,7 +615,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 				// Wait for async operations to complete
@@ -643,7 +650,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -676,7 +683,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -701,7 +708,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -726,7 +733,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -751,7 +758,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -776,7 +783,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -813,7 +820,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 				// Wait for async operations to complete
@@ -849,7 +856,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -877,7 +884,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 				}
 			];
 
-			const { __mockUseAppSelector } = require('@hooks/reducerHook');
+			const { __mockUseAppSelector } = require('../../../hooks/reducerHook');
 			__mockUseAppSelector.mockReturnValueOnce({
 				glossaryData: incompleteGlossaryData
 			});
@@ -895,7 +902,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 		});
 
 		test('handles empty glossaryData array', () => {
-			const { __mockUseAppSelector } = require('@hooks/reducerHook');
+			const { __mockUseAppSelector } = require('../../../hooks/reducerHook');
 			__mockUseAppSelector.mockReturnValueOnce({
 				glossaryData: []
 			});
@@ -914,7 +921,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 		});
 
 		test('handles null glossaryData', () => {
-			const { __mockUseAppSelector } = require('@hooks/reducerHook');
+			const { __mockUseAppSelector } = require('../../../hooks/reducerHook');
 			__mockUseAppSelector.mockReturnValueOnce({
 				glossaryData: null
 			});
@@ -957,7 +964,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -981,7 +988,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -1005,7 +1012,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -1029,7 +1036,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -1053,7 +1060,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -1077,7 +1084,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -1101,7 +1108,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -1122,7 +1129,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 				}
 			];
 
-			const { __mockUseAppSelector } = require('@hooks/reducerHook');
+			const { __mockUseAppSelector } = require('../../../hooks/reducerHook');
 			__mockUseAppSelector.mockReturnValueOnce({
 				glossaryData: glossaryDataWithoutGuid
 			});
@@ -1150,7 +1157,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 				}
 			];
 
-			const { __mockUseAppSelector } = require('@hooks/reducerHook');
+			const { __mockUseAppSelector } = require('../../../hooks/reducerHook');
 			__mockUseAppSelector.mockReturnValueOnce({
 				glossaryData: glossaryDataWithoutQualifiedName
 			});
@@ -1231,7 +1238,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -1260,7 +1267,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -1288,7 +1295,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 			});
@@ -1321,7 +1328,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 				// Wait for async operations to complete
@@ -1353,7 +1360,7 @@ describe('AddUpdateGlossaryForm - 100% Coverage', () => {
 			);
 
 			const submitBtn = screen.getByTestId('submit-btn');
-			
+
 			await act(async () => {
 				fireEvent.click(submitBtn);
 				// Wait for async operations to complete

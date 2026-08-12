@@ -23,7 +23,11 @@ import {
   Stack,
   ToggleButton,
   ToggleButtonGroup,
-  Typography
+  Typography,
+  Autocomplete,
+  TextField,
+  Menu,
+  MenuItem
 } from "@mui/material";
 import {
   extractKeyValueFromEntity,
@@ -39,24 +43,30 @@ const getDescriptionForDisplay = (desc: unknown): string => {
   }
   return "";
 };
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAppSelector } from "@hooks/reducerHook";
 import { toast } from "react-toastify";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { removeClassification } from "@api/apiMethods/classificationApiMethod";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
+import { TableLayout } from "@components/Table/TableLayout";
 import ClassificationForm from "@views/Classification/ClassificationForm";
 import AddUpdateTermForm from "@views/Glossary/AddUpdateTermForm";
 import AddUpdateCategoryForm from "@views/Glossary/AddUpdateCategoryForm";
-import { removeTermorCategory } from "@api/apiMethods/glossaryApiMethod";
-import { StyledPaper } from "@utils/Muiutils";
+import { removeTermorCategory, getGlossaryType } from "@api/apiMethods/glossaryApiMethod";
+import { StyledPaper, Item } from "@utils/Muiutils";
+import AddUpdateGlossaryForm from "@views/Glossary/AddUpdateGlossaryForm";
 import ShowMoreView from "@components/ShowMore/ShowMoreView";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import AddTag from "@views/Classification/AddTag";
 import AddTagAttributes from "@views/Classification/AddTagAttributes";
 import AssignCategory from "@views/Glossary/AssignCategory";
 import AssignTerm from "@views/Glossary/AssignTerm";
+import DeleteGlossary from "@views/Glossary/DeleteGlossary";
 import ShowMoreText from "@components/ShowMore/ShowMoreText";
+
 
 const DetailPageAttribute = ({
   data,
@@ -70,6 +80,7 @@ const DetailPageAttribute = ({
   const [searchParams] = useSearchParams();
   const { guid, tagName, bmguid } = useParams();
   const gtypeParams = searchParams.get("gtype");
+
   const [alignment, setAlignment] = useState<string>("formatted");
   const [tagModal, setTagModal] = useState<boolean>(false);
   const [editTermModal, setEditTermModal] = useState(false);
@@ -80,6 +91,147 @@ const DetailPageAttribute = ({
   const [openAddTermModal, setOpenAddTermModal] = useState<boolean>(false);
 
   const [categoryModal, setCategoryModal] = useState<boolean>(false);
+  const [editGlossaryModal, setEditGlossaryModal] = useState<boolean>(false);
+
+  const [selectedRowItem, setSelectedRowItem] = useState<any>(null);
+  const [editRowModal, setEditRowModal] = useState<boolean>(false);
+  const [deleteRowModal, setDeleteRowModal] = useState<boolean>(false);
+  const [createTermModal, setCreateTermModal] = useState<boolean>(false);
+  const [createCategoryModal, setCreateCategoryModal] = useState<boolean>(false);
+  const [createAnchorEl, setCreateAnchorEl] = useState<null | HTMLElement>(null);
+  const openCreateMenu = Boolean(createAnchorEl);
+
+  const handleCreateClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setCreateAnchorEl(event.currentTarget);
+  };
+  const handleCreateClose = () => {
+    setCreateAnchorEl(null);
+  };
+
+
+  const [isTableLoading, setIsTableLoading] = useState<boolean>(false);
+  const [localTerms, setLocalTerms] = useState<any[]>(data?.terms || []);
+  const [localCategories, setLocalCategories] = useState<any[]>(data?.categories || []);
+
+  const [prevData, setPrevData] = useState<any>(data);
+  if (data !== prevData) {
+    setPrevData(data);
+    setLocalTerms(data?.terms || []);
+    setLocalCategories(data?.categories || []);
+  }
+
+
+  const handleTableUpdate = async (showLoader = true) => {
+    if (gtypeParams && guid) {
+      if (showLoader) setIsTableLoading(true);
+      try {
+        const res = await getGlossaryType(gtypeParams, guid);
+        setLocalTerms(res.data?.terms || []);
+        setLocalCategories(res.data?.categories || []);
+      } finally {
+        if (showLoader) setIsTableLoading(false);
+      }
+    }
+  };
+
+  const [glossaryFilter, setGlossaryFilter] = useState<string>("All");
+
+  const glossaryTermsAndCategories = useMemo(() => {
+    if (gtypeParams !== "glossary") return [];
+    const t = (localTerms || []).map((t: any) => ({ ...t, _itemType: "term" }));
+    const c = (localCategories || []).map((c: any) => ({ ...c, _itemType: "category" }));
+    return [...t, ...c];
+  }, [localTerms, localCategories, gtypeParams]);
+
+  const filteredGlossaryItems = useMemo(() => {
+    if (glossaryFilter === "All") return glossaryTermsAndCategories;
+    if (glossaryFilter === "Terms") return glossaryTermsAndCategories.filter((i: any) => i._itemType === "term");
+    if (glossaryFilter === "Categories") return glossaryTermsAndCategories.filter((i: any) => i._itemType === "category");
+    return glossaryTermsAndCategories;
+  }, [glossaryTermsAndCategories, glossaryFilter]);
+
+  const filterOptions = ["All", "Terms", "Categories"];
+
+  const glossaryTableColumns = useMemo(() => [
+    {
+      accessorKey: "displayText",
+      header: "Name",
+      cell: (info: any) => {
+        const item = info.row.original;
+        const type = item._itemType;
+        const targetGuid = item.termGuid || item.categoryGuid || item.guid || item.id;
+        const href = `/glossary/${targetGuid}?gtype=${type}&view=properties`;
+        return (
+          <Link to={href} className="text-blue text-decoration-none fw-600">
+            {item.displayText}
+          </Link>
+        );
+      }
+    },
+    {
+      accessorKey: "glossaryType",
+      header: "Glossary Type",
+      enableSorting: false,
+      cell: (info: any) => {
+        const type = info.row.original._itemType;
+        return type ? type.charAt(0).toUpperCase() + type.slice(1) : "N/A";
+      }
+    },
+    {
+      accessorKey: "action",
+      header: "Action",
+      enableSorting: false,
+      cell: (info: any) => {
+        const item = info.row.original;
+        const type = item._itemType;
+        return (
+          <Stack direction="row" gap={1}>
+            <LightTooltip title={`Edit ${type === "term" ? "Term" : "Category"}`}>
+              <CustomButton
+                variant="outlined"
+                color="success"
+                className="table-filter-btn assignTag"
+                size="small"
+                onClick={async (e: React.MouseEvent<HTMLElement>) => {
+                  e.stopPropagation();
+                  try {
+                    const targetGuid = item.termGuid || item.categoryGuid || item.guid || item.id;
+                    const res = await getGlossaryType(type, targetGuid);
+                    setSelectedRowItem({ ...item, ...res.data });
+                    setEditRowModal(true);
+                  } catch (err) {
+                    toast.error("Failed to fetch details for editing");
+                  }
+                }}
+              >
+                <EditOutlinedIcon className="table-filter-refresh" />
+              </CustomButton>
+            </LightTooltip>
+
+            <LightTooltip title={`Delete ${type === "term" ? "Term" : "Category"}`}>
+              <CustomButton
+                variant="outlined"
+                color="success"
+                className="table-filter-btn assignTag"
+                size="small"
+                onClick={(e: React.MouseEvent<HTMLElement>) => {
+                  e.stopPropagation();
+                  setSelectedRowItem(item);
+                  setDeleteRowModal(true);
+                }}
+              >
+                <DeleteOutlinedIcon className="table-filter-refresh" />
+              </CustomButton>
+            </LightTooltip>
+          </Stack>
+        );
+      }
+    }
+  ], []);
+
+  const handleCloseEditGlossaryModal = () => {
+    setEditGlossaryModal(false);
+  };
 
   const handleCloseTermModal = () => {
     setOpenAddTermModal(false);
@@ -148,7 +300,19 @@ const DetailPageAttribute = ({
               </Typography>
             </LightTooltip>
             {isEmpty(bmguid) && (
-              <LightTooltip title={"Edit Classification"}>
+              <LightTooltip
+                title={
+                  !isEmpty(tagName)
+                    ? "Edit Classification"
+                    : !isEmpty(guid) && gtypeParams == "term"
+                      ? "Edit Term"
+                      : !isEmpty(guid) && gtypeParams == "category"
+                        ? "Edit Category"
+                        : !isEmpty(guid) && gtypeParams == "glossary"
+                          ? "Edit Glossary"
+                          : "Edit"
+                }
+              >
                 <CustomButton
                   variant="outlined"
                   color="success"
@@ -163,6 +327,9 @@ const DetailPageAttribute = ({
                     }
                     if (!isEmpty(guid) && gtypeParams == "category") {
                       setEditCategoryModal(true);
+                    }
+                    if (!isEmpty(guid) && gtypeParams == "glossary") {
+                      setEditGlossaryModal(true);
                     }
                   }}
                   data-cy="addTag"
@@ -355,7 +522,7 @@ const DetailPageAttribute = ({
                 )
               ))}
             {!isEmpty(gtypeParams) &&
-              gtypeParams == "category" &&
+              (gtypeParams == "category") &&
               (loading ? (
                 <Stack direction="column" spacing={2} alignItems="left">
                   <SkeletonLoader
@@ -367,7 +534,7 @@ const DetailPageAttribute = ({
                 </Stack>
               ) : (
                 !isEmpty(guid) &&
-                gtypeParams == "category" && (
+                (gtypeParams == "category") && (
                   <Stack
                     direction="column"
                     alignItems="flex-start"
@@ -412,17 +579,21 @@ const DetailPageAttribute = ({
                       flex="1"
                       justifyContent="flex-start"
                     >
-                      <ShowMoreView
-                        data={data?.["terms"] || []}
-                        maxVisible={4}
-                        title="Terms"
-                        displayKey="displayText"
-                        isEditView={false}
-                        currentEntity={data}
-                        removeApiMethod={removeTermorCategory}
-                        removeTagsTitle={"Remove Term Assignment"}
-                        id={"Terms"}
-                      />
+                      {isEmpty(data?.["terms"]) ? (
+                        <Typography lineHeight="26px" fontSize="14px">N/A</Typography>
+                      ) : (
+                        <ShowMoreView
+                          data={data?.["terms"] || []}
+                          maxVisible={4}
+                          title="Terms"
+                          displayKey="displayText"
+                          isEditView={false}
+                          currentEntity={data}
+                          removeApiMethod={removeTermorCategory}
+                          removeTagsTitle={"Remove Term Assignment"}
+                          id={"Terms"}
+                        />
+                      )}
                     </Stack>
                   </Stack>
                 )
@@ -439,8 +610,7 @@ const DetailPageAttribute = ({
                   />
                 </Stack>
               ) : (
-                !isEmpty(guid) &&
-                gtypeParams == "term" && (
+                !isEmpty(guid) && (
                   <Stack
                     direction="column"
                     alignItems="flex-start"
@@ -479,17 +649,21 @@ const DetailPageAttribute = ({
                       flex="1"
                       justifyContent="flex-start"
                     >
-                      <ShowMoreView
-                        data={data?.["categories"] || []}
-                        maxVisible={4}
-                        title="Category"
-                        displayKey="displayText"
-                        removeApiMethod={removeTermorCategory}
-                        currentEntity={data}
-                        removeTagsTitle={"Remove Category Assignment"}
-                        isEditView={false}
-                        id={"Category"}
-                      />
+                      {isEmpty(data?.["categories"]) ? (
+                        <Typography lineHeight="26px" fontSize="14px">N/A</Typography>
+                      ) : (
+                        <ShowMoreView
+                          data={data?.["categories"] || []}
+                          maxVisible={4}
+                          title="Category"
+                          displayKey="displayText"
+                          removeApiMethod={removeTermorCategory}
+                          currentEntity={data}
+                          removeTagsTitle={"Remove Category Assignment"}
+                          isEditView={false}
+                          id={"Category"}
+                        />
+                      )}
                     </Stack>
                   </Stack>
                 )
@@ -658,6 +832,78 @@ const DetailPageAttribute = ({
         </StyledPaper>
       </Stack>
 
+      {!isEmpty(gtypeParams) && gtypeParams == "glossary" && (
+        <Item variant="outlined" className="glossary-detail-items" sx={{ mt: 2, p: 2 }}>
+          <Stack>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              marginBottom="0.5rem"
+              gap="1rem"
+            >
+              <Autocomplete
+                size="small"
+                disablePortal
+                options={filterOptions}
+                value={glossaryFilter}
+                onChange={(_e, newVal) => setGlossaryFilter(newVal as string)}
+                isOptionEqualToValue={(option, value) => option === value}
+                getOptionLabel={(option) => option}
+                disableClearable
+                className="classification-table-autocomplete"
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Terms and Categories"
+                  />
+                )}
+              />
+              {(gtypeParams === "glossary" || gtypeParams === "category") && (
+                <>
+                  <CustomButton
+                    variant="contained"
+                    size="small"
+                    onClick={handleCreateClick}
+                    endIcon={<KeyboardArrowDownIcon />}
+                  >
+                    Create
+                  </CustomButton>
+                  <Menu
+                    anchorEl={createAnchorEl}
+                    open={openCreateMenu}
+                    onClose={handleCreateClose}
+                    anchorOrigin={{
+                      vertical: 'bottom',
+                      horizontal: 'right',
+                    }}
+                    transformOrigin={{
+                      vertical: 'top',
+                      horizontal: 'right',
+                    }}
+                  >
+                    <MenuItem onClick={() => { setCreateCategoryModal(true); handleCreateClose(); }}>Category</MenuItem>
+                    <MenuItem onClick={() => { setCreateTermModal(true); handleCreateClose(); }}>Term</MenuItem>
+                  </Menu>
+                </>
+              )}
+            </Stack>
+            <TableLayout
+              data={filteredGlossaryItems}
+              columns={glossaryTableColumns}
+              columnVisibility={false}
+              columnSort={true}
+              showPagination={true}
+              isFetching={loading || isTableLoading}
+              showRowSelection={false}
+              clientSideSorting={true}
+              isClientSidePagination={true}
+              emptyText="No Records found!"
+            />
+          </Stack>
+        </Item>
+      )}
+
       {tagModal && (
         <ClassificationForm
           open={tagModal}
@@ -693,6 +939,15 @@ const DetailPageAttribute = ({
           dataObj={data}
         />
       )}
+      {editGlossaryModal && (
+        <AddUpdateGlossaryForm
+          open={editGlossaryModal}
+          isAdd={false}
+          onClose={handleCloseEditGlossaryModal}
+          node={{ id: data?.name }}
+          dataObj={data}
+        />
+      )}
       {attributeModal && (
         <AddTagAttributes
           open={attributeModal}
@@ -715,6 +970,91 @@ const DetailPageAttribute = ({
           data={data || {}}
           updateTable={undefined}
           relatedTerm={undefined}
+        />
+      )}
+
+      {editRowModal && selectedRowItem?._itemType === "term" && (
+        <AddUpdateTermForm
+          open={editRowModal}
+          isAdd={false}
+          onClose={() => setEditRowModal(false)}
+          node={undefined}
+          dataObj={{
+            ...selectedRowItem,
+            guid: selectedRowItem.termGuid || selectedRowItem.guid || selectedRowItem.id,
+            name: selectedRowItem.displayText,
+            shortDescription: selectedRowItem.shortDescription || selectedRowItem.description || "",
+            longDescription: selectedRowItem.longDescription || "",
+            anchor: {
+              glossaryGuid: gtypeParams === "glossary" ? (data?.guid || guid) : data?.anchor?.glossaryGuid,
+              displayText: gtypeParams === "glossary" ? data?.name : data?.anchor?.displayText
+            }
+          }}
+        />
+      )}
+
+      {editRowModal && selectedRowItem?._itemType === "category" && (
+        <AddUpdateCategoryForm
+          open={editRowModal}
+          isAdd={false}
+          onClose={() => setEditRowModal(false)}
+          node={undefined}
+          dataObj={{
+            ...selectedRowItem,
+            guid: selectedRowItem.categoryGuid || selectedRowItem.guid || selectedRowItem.id,
+            name: selectedRowItem.displayText,
+            shortDescription: selectedRowItem.shortDescription || selectedRowItem.description || "",
+            longDescription: selectedRowItem.longDescription || "",
+            anchor: {
+              glossaryGuid: gtypeParams === "glossary" ? (data?.guid || guid) : data?.anchor?.glossaryGuid,
+              displayText: gtypeParams === "glossary" ? data?.name : data?.anchor?.displayText
+            }
+          }}
+        />
+      )}
+
+      {deleteRowModal && (
+        <DeleteGlossary
+          open={deleteRowModal}
+          onClose={() => setDeleteRowModal(false)}
+          setExpandNode={undefined}
+          node={{
+            id: selectedRowItem?.displayText,
+            guid: selectedRowItem?.termGuid || selectedRowItem?.guid || selectedRowItem?.id,
+            cGuid: selectedRowItem?.termGuid || selectedRowItem?.categoryGuid || selectedRowItem?.guid || selectedRowItem?.id,
+            types: selectedRowItem?._itemType === "category" ? "Category" : "Term"
+          }}
+          updatedData={handleTableUpdate}
+        />
+      )}
+      {createTermModal && (
+        <AddUpdateTermForm
+          open={createTermModal}
+          isAdd={true}
+          onClose={() => setCreateTermModal(false)}
+          node={{
+            id: data?.name,
+            parent: gtypeParams === "glossary" ? data?.name : data?.anchor?.displayText,
+            guid: data?.guid || guid,
+            cGuid: data?.guid || guid,
+            types: gtypeParams === "glossary" ? "Glossary" : "Category"
+          }}
+          dataObj={undefined}
+        />
+      )}
+      {createCategoryModal && (
+        <AddUpdateCategoryForm
+          open={createCategoryModal}
+          isAdd={true}
+          onClose={() => setCreateCategoryModal(false)}
+          node={{
+            id: data?.name,
+            parent: gtypeParams === "glossary" ? data?.name : data?.anchor?.displayText,
+            guid: data?.guid || guid,
+            cGuid: data?.guid || guid,
+            types: gtypeParams === "glossary" ? "Glossary" : "Category"
+          }}
+          dataObj={undefined}
         />
       )}
     </>

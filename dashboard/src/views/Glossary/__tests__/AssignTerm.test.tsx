@@ -25,7 +25,7 @@ import { toast } from 'react-toastify';
 const mockDispatch = jest.fn();
 const mockUseAppSelector = jest.fn();
 
-jest.mock('@hooks/reducerHook', () => ({
+jest.mock('../../../hooks/reducerHook', () => ({
 	useAppDispatch: () => mockDispatch,
 	useAppSelector: (selector: any) => mockUseAppSelector(selector)
 }));
@@ -50,10 +50,10 @@ const mockAssignGlossaryType = jest.fn();
 const mockAssignTermstoCategory = jest.fn();
 const mockAssignTermstoEntites = jest.fn();
 
-jest.mock('@api/apiMethods/glossaryApiMethod', () => ({
-	assignGlossaryType: (...args: any[]) => mockAssignGlossaryType(...args),
-	assignTermstoCategory: (...args: any[]) => mockAssignTermstoCategory(...args),
-	assignTermstoEntites: (...args: any[]) => mockAssignTermstoEntites(...args)
+jest.mock('../../../api/apiMethods/glossaryApiMethod', () => ({
+	assignGlossaryType: function() { return mockAssignGlossaryType.apply(null, arguments as any); },
+	assignTermstoCategory: function() { return mockAssignTermstoCategory.apply(null, arguments as any); },
+	assignTermstoEntites: function() { return mockAssignTermstoEntites.apply(null, arguments as any); }
 }));
 
 // Mock Redux actions
@@ -61,16 +61,16 @@ const mockFetchDetailPageData = jest.fn(() => ({ type: 'detailPage/fetch' }));
 const mockFetchGlossaryDetails = jest.fn(() => ({ type: 'glossaryDetails/fetch' }));
 const mockFetchGlossaryData = jest.fn(() => ({ type: 'glossary/fetch' }));
 
-jest.mock('@redux/slice/detailPageSlice', () => ({
-	fetchDetailPageData: (...args: any[]) => mockFetchDetailPageData(...args)
+jest.mock('../../../redux/slice/detailPageSlice', () => ({
+	fetchDetailPageData: function() { return mockFetchDetailPageData.apply(null, arguments as any); }
 }));
 
-jest.mock('@redux/slice/glossaryDetailsSlice', () => ({
-	fetchGlossaryDetails: (...args: any[]) => mockFetchGlossaryDetails(...args)
+jest.mock('../../../redux/slice/glossaryDetailsSlice', () => ({
+	fetchGlossaryDetails: function() { return mockFetchGlossaryDetails.apply(null, arguments as any); }
 }));
 
-jest.mock('@redux/slice/glossarySlice', () => ({
-	fetchGlossaryData: (...args: any[]) => mockFetchGlossaryData(...args)
+jest.mock('../../../redux/slice/glossarySlice', () => ({
+	fetchGlossaryData: function() { return mockFetchGlossaryData.apply(null, arguments as any); }
 }));
 
 // Mock utils
@@ -80,18 +80,18 @@ const mockCustomSortByObjectKeys = jest.fn();
 const mockNoTreeData = jest.fn();
 const mockServerError = jest.fn();
 
-jest.mock('@utils/Utils', () => ({
-	isEmpty: (...args: any[]) => mockIsEmpty(...args),
-	customSortBy: (...args: any[]) => mockCustomSortBy(...args),
-	customSortByObjectKeys: (...args: any[]) => mockCustomSortByObjectKeys(...args),
-	noTreeData: (...args: any[]) => mockNoTreeData(...args),
-	serverError: (...args: any[]) => mockServerError(...args)
+jest.mock('../../../utils/Utils', () => ({
+	isEmpty: function() { return mockIsEmpty.apply(null, arguments as any); },
+	customSortBy: function() { return mockCustomSortBy.apply(null, arguments as any); },
+	customSortByObjectKeys: function() { return mockCustomSortByObjectKeys.apply(null, arguments as any); },
+	noTreeData: function() { return mockNoTreeData.apply(null, arguments as any); },
+	serverError: function() { return mockServerError.apply(null, arguments as any); }
 }));
 
 const mockCloneDeep = jest.fn();
 
-jest.mock('@utils/Helper', () => ({
-	cloneDeep: (...args: any[]) => mockCloneDeep(...args)
+jest.mock('../../../utils/Helper', () => ({
+	cloneDeep: function() { return mockCloneDeep.apply(null, arguments as any); }
 }));
 
 // Mock react-hook-form
@@ -109,7 +109,7 @@ const mockUseForm = jest.fn(() => ({
 }));
 
 jest.mock('react-hook-form', () => ({
-	useForm: (...args: any[]) => mockUseForm(...args),
+	useForm: function() { return mockUseForm.apply(null, arguments as any); },
 	Controller: ({ render, name }: any) => {
 		const field = {
 			onChange: mockOnChange,
@@ -144,7 +144,7 @@ jest.mock('moment-timezone', () => {
 });
 
 // Mock components
-jest.mock('@components/Modal', () => ({
+jest.mock('../../../components/Modal', () => ({
 	__esModule: true,
 	default: ({
 		open,
@@ -180,7 +180,7 @@ jest.mock('@components/Modal', () => ({
 }));
 
 let mockOnNodeSelect: any;
-jest.mock('@components/Forms/FormTreeView', () => ({
+jest.mock('../../../components/Forms/FormTreeView', () => ({
 	__esModule: true,
 	default: ({
 		treeData,

@@ -28,7 +28,8 @@ import {
   glossaryTypeUrl,
   glossaryUrl,
   removeTermorCatgeoryUrl,
-  removeTermUrl
+  removeTermUrl,
+  deleteCategoryUrl
 } from "../apiUrlLinks/glossaryUrl";
 import { _delete, _get, _post, _put } from "./apiMethod";
 
@@ -142,6 +143,13 @@ const deleteGlossaryorType = (guid: string) => {
     params: {}
   });
 };
+
+const deleteCategory = (guid: string) => {
+  return _delete(deleteCategoryUrl(guid), {
+    method: "DELETE",
+    params: {}
+  });
+};
 const assignTermstoEntites = (
   termId: string,
   data: { guid: string; relationshipGuid: string }
@@ -194,5 +202,6 @@ export {
   assignTermstoCategory,
   assignGlossaryType,
   removeTermorCategory,
-  deleteGlossaryorType
+  deleteGlossaryorType,
+  deleteCategory
 };

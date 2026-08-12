@@ -83,10 +83,10 @@ const TreeNodeIcons = (props: {
 
   selectedSearchData = !isEmpty(savedSearchData)
     ? savedSearchData?.find((obj: { name: string; guid: string }) => {
-        if (obj.name == node.id) {
-          return obj;
-        }
-      })
+      if (obj.name == node.id) {
+        return obj;
+      }
+    })
     : {};
 
   const handleCloseGlossaryModal = () => {
@@ -202,17 +202,17 @@ const TreeNodeIcons = (props: {
           !isEmpty(node.children) &&
           node.cGuid != undefined)) &&
         !(treeName == "CustomFilters" && node.types == "parent") && (
-        <IconButton
-          onClick={(e) => {
-            handleClickNodeMenu(e);
-          }}
-          className="tree-item-more-label"
-          size="small"
-          data-cy="dropdownMenuButton"
-        >
-          <MoreHorizOutlinedIcon className="treeitem-dropdown-toggle" />
-        </IconButton>
-      )}
+          <IconButton
+            onClick={(e) => {
+              handleClickNodeMenu(e);
+            }}
+            className="tree-item-more-label"
+            size="small"
+            data-cy="dropdownMenuButton"
+          >
+            <MoreHorizOutlinedIcon className="treeitem-dropdown-toggle" />
+          </IconButton>
+        )}
       <Menu
         onClick={(e) => {
           e.stopPropagation();
@@ -232,193 +232,200 @@ const TreeNodeIcons = (props: {
         {((treeName == "Classifications" &&
           !addOnClassification.includes(node.id)) ||
           (treeName == "Glossary" && node.types == "parent")) && (
-          <MenuItem
-            onClick={(e) => {
-              e.stopPropagation();
-              if (
-                treeName == "Classifications" &&
-                !addOnClassification.includes(node.id)
-              ) {
-                setTagModal(true);
-              }
-              if (
-                treeName == "Glossary" &&
-                node.types == "parent" &&
-                isEmptyServicetype
-              ) {
-                setTermModal(true);
-              }
-              if (
-                treeName == "Glossary" &&
-                node.types == "parent" &&
-                !isEmptyServicetype
-              ) {
-                setCategoryModal(true);
-              }
-              handleCloseNode();
-            }}
-            className="sidebar-menu-item"
-            data-cy="createClassification"
-          >
-            <ListItemIcon sx={{ minWidth: "28px !important" }}>
-              <AddIcon fontSize="small" className="menuitem-icon" />
-            </ListItemIcon>
-            <Typography
-              className="menuitem-label"
-              sx={{ fontSize: "0.875rem" }}
+            <MenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                if (
+                  treeName == "Classifications" &&
+                  !addOnClassification.includes(node.id)
+                ) {
+                  setTagModal(true);
+                }
+                if (
+                  treeName == "Glossary" &&
+                  node.types == "parent" &&
+                  isEmptyServicetype
+                ) {
+                  setTermModal(true);
+                }
+                if (
+                  treeName == "Glossary" &&
+                  node.types == "parent" &&
+                  !isEmptyServicetype
+                ) {
+                  setCategoryModal(true);
+                }
+                handleCloseNode();
+              }}
+              className="sidebar-menu-item"
+              data-cy="createClassification"
             >
-              {`Create ${
-                treeName == "Classifications"
+              <ListItemIcon sx={{ minWidth: "28px !important" }}>
+                <AddIcon fontSize="small" className="menuitem-icon" />
+              </ListItemIcon>
+              <Typography
+                className="menuitem-label"
+                sx={{ fontSize: "0.875rem" }}
+              >
+                {`Create ${treeName == "Classifications"
                   ? "Sub-classification"
                   : isEmptyServicetype
-                  ? "Term"
-                  : "Category"
-              }`}
-            </Typography>
-          </MenuItem>
-        )}
+                    ? "Term"
+                    : "Category"
+                  }`}
+              </Typography>
+            </MenuItem>
+          )}
         {((treeName == "Classifications" &&
           !addOnClassification.includes(node.id)) ||
-          (treeName == "Glossary" && isEmptyServicetype)) && (
-          <MenuItem
-            onClick={(_e) => {
-              if (treeName == "Classifications") {
-                const searchParams = new URLSearchParams();
-                const classificationName = node.label
-                  ? node.label.split(" (")[0]
-                  : node.nodeName || node.id;
-                searchParams.set("tag", classificationName);
-                navigate({
-                  pathname: `/tag/tagAttribute/${classificationName}`,
-                  search: searchParams.toString()
-                });
-                setExpandNode(null);
-              }
-              if (treeName == "Glossary" && node.types == "parent") {
-                setGlossaryModal(true);
-                setExpandNode(null);
-              }
-              if (treeName == "Glossary" && node.types == "child") {
-                const searchParams = new URLSearchParams();
-                searchParams.set("gid", node.guid);
-                searchParams.set("term", "term");
-                searchParams.set("gtype", "term");
-                searchParams.set("viewType", "term");
-                searchParams.set("searchType", "basic");
-                searchParams.set("term", `${node.id}@${node.parent}`);
-                navigate({
-                  pathname: `/glossary/${node.cGuid}`,
-                  search: searchParams.toString()
-                });
-                setExpandNode(null);
-              }
-            }}
-            data-cy="createClassification"
-            className="sidebar-menu-item"
-          >
-            <ListItemIcon sx={{ minWidth: "28px !important" }}>
-              <ListAltOutlinedIcon fontSize="small" className="menuitem-icon" />
-            </ListItemIcon>
-            <Typography
-              className="menuitem-label"
-              sx={{ fontSize: "0.875rem" }}
+          treeName == "Glossary") && (
+            <MenuItem
+              onClick={(_e) => {
+                if (treeName == "Classifications") {
+                  const searchParams = new URLSearchParams();
+                  const classificationName = node.label
+                    ? node.label.split(" (")[0]
+                    : node.nodeName || node.id;
+                  searchParams.set("tag", classificationName);
+                  navigate({
+                    pathname: `/tag/tagAttribute/${classificationName}`,
+                    search: searchParams.toString()
+                  });
+                  setExpandNode(null);
+                }
+                if (treeName == "Glossary" && node.types == "parent") {
+                  const searchParams = new URLSearchParams();
+                  searchParams.set("gid", node.guid);
+                  searchParams.set("gtype", "glossary");
+                  searchParams.set("viewType", "glossary");
+                  searchParams.set("searchType", "basic");
+                  navigate({
+                    pathname: `/glossary/${node.guid}`,
+                    search: searchParams.toString()
+                  });
+                  setExpandNode(null);
+                }
+                if (treeName == "Glossary" && node.types == "child") {
+                  const searchParams = new URLSearchParams();
+                  searchParams.set("gid", node.guid);
+                  searchParams.set("term", "term");
+                  searchParams.set("gtype", isEmptyServicetype ? "term" : "category");
+                  searchParams.set("viewType", isEmptyServicetype ? "term" : "category");
+                  searchParams.set("searchType", "basic");
+                  if (isEmptyServicetype) {
+                    const termName = node.id.endsWith(`@${node.parent}`) ? node.id : `${node.id}@${node.parent}`;
+                    searchParams.set("term", termName);
+                  }
+                  navigate({
+                    pathname: `/glossary/${node.cGuid}`,
+                    search: searchParams.toString()
+                  });
+                  setExpandNode(null);
+                }
+              }}
+              data-cy="createClassification"
+              className="sidebar-menu-item"
             >
-              {`View/Edit ${
-                treeName == "Glossary"
-                  ? node.types == "parent"
-                    ? "Glossary"
-                    : "Term"
-                  : ""
-              }`}
-            </Typography>
-          </MenuItem>
-        )}
+              <ListItemIcon sx={{ minWidth: "28px !important" }}>
+                <ListAltOutlinedIcon fontSize="small" className="menuitem-icon" />
+              </ListItemIcon>
+              <Typography
+                className="menuitem-label"
+                sx={{ fontSize: "0.875rem" }}
+              >
+                {treeName === "Classifications"
+                  ? "View/Edit Classification"
+                  : node.types === "parent"
+                    ? "View/Edit Glossary"
+                    : isEmptyServicetype ? "View/Edit Term" : "View/Edit Category"}
+              </Typography>
+            </MenuItem>
+          )}
         {((treeName == "Classifications" &&
           !addOnClassification.includes(node.id)) ||
           (treeName == "Glossary" && node.types == "parent") ||
-          (treeName == "Glossary" &&
-            node.types == "child" &&
-            isEmptyServicetype)) && (
-          // &&
-          //   !isEmpty(gtype)
-          <MenuItem
-            onClick={(_e) => {
-              if (treeName == "Classifications") {
-                setdeleteTagModal(true);
-              }
-              if (treeName == "Glossary") {
-                setDeleteGlossaryModal(true);
-              }
-              handleCloseNode();
-            }}
-            data-cy="createClassification"
-            className="sidebar-menu-item"
-          >
-            <ListItemIcon sx={{ minWidth: "28px !important" }}>
-              <DeleteOutlineOutlinedIcon
-                fontSize="small"
-                className="menuitem-icon"
-              />
-            </ListItemIcon>
-            <Typography
-              className="menuitem-label"
-              sx={{ fontSize: "0.875rem" }}
+          (treeName == "Glossary" && node.types == "child")) && (
+            // &&
+            //   !isEmpty(gtype)
+            <MenuItem
+              onClick={(_e) => {
+                if (treeName == "Classifications") {
+                  setdeleteTagModal(true);
+                }
+                if (treeName == "Glossary") {
+                  setDeleteGlossaryModal(true);
+                }
+                handleCloseNode();
+              }}
+              data-cy="createClassification"
+              className="sidebar-menu-item"
             >
-              {`Delete ${
-                treeName == "Glossary"
+              <ListItemIcon sx={{ minWidth: "28px !important" }}>
+                <DeleteOutlineOutlinedIcon
+                  fontSize="small"
+                  className="menuitem-icon"
+                />
+              </ListItemIcon>
+              <Typography
+                className="menuitem-label"
+                sx={{ fontSize: "0.875rem" }}
+              >
+                {`Delete ${treeName == "Glossary"
                   ? node.types == "parent"
                     ? "Glossary"
-                    : "Term"
+                    : isEmptyServicetype
+                      ? "Term"
+                      : "Category"
                   : ""
-              }`}
-            </Typography>
-          </MenuItem>
-        )}
+                  }`}
+              </Typography>
+            </MenuItem>
+          )}
         {(treeName == "Classifications" ||
           (treeName == "Glossary" &&
             (node.types == "child" || node.types == undefined) &&
             isEmptyServicetype)) && (
-          <MenuItem
-            onClick={(e) => {
-              e.stopPropagation();
-              setExpandNode(null);
-              const searchParams = new URLSearchParams();
-              searchParams.set("searchType", "basic");
-              if (treeName == "Classifications") {
-                let classificationName: string;
-                if (node.label) {
-                  classificationName = node.label.split(" (")[0];
-                } else if (node.nodeName) {
-                  classificationName = node.nodeName;
-                } else {
-                  classificationName = node.id;
+            <MenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpandNode(null);
+                const searchParams = new URLSearchParams();
+                searchParams.set("searchType", "basic");
+                if (treeName == "Classifications") {
+                  let classificationName: string;
+                  if (node.label) {
+                    classificationName = node.label.split(" (")[0];
+                  } else if (node.nodeName) {
+                    classificationName = node.nodeName;
+                  } else {
+                    classificationName = node.id;
+                  }
+                  searchParams.set("tag", classificationName);
+                } else if (treeName == "Glossary") {
+                  const termValue = node.types == "child" && node.parent
+                    ? `${node.id}@${node.parent}`
+                    : node.id;
+                  searchParams.set("term", termValue);
                 }
-                searchParams.set("tag", classificationName);
-              } else if (treeName == "Glossary") {
-                const termValue = node.types == "child" && node.parent
-                  ? `${node.id}@${node.parent}`
-                  : node.id;
-                searchParams.set("term", termValue);
-              }
-              navigate({
-                pathname: "/search/searchResult",
-                search: searchParams.toString()
-              });
-            }}
-            data-cy="createClassification"
-            className="sidebar-menu-item"
-          >
-            <ListItemIcon sx={{ minWidth: "24px !important" }}>
-              <SearchOutlinedIcon fontSize="small" className="menuitem-icon" />
-            </ListItemIcon>
-            <Typography
-              className="menuitem-label"
-              sx={{ fontSize: "0.875rem" }}
+                navigate({
+                  pathname: "/search/searchResult",
+                  search: searchParams.toString()
+                });
+              }}
+              data-cy="createClassification"
+              className="sidebar-menu-item"
             >
-              Search
-            </Typography>
-          </MenuItem>
-        )}
+              <ListItemIcon sx={{ minWidth: "24px !important" }}>
+                <SearchOutlinedIcon fontSize="small" className="menuitem-icon" />
+              </ListItemIcon>
+              <Typography
+                className="menuitem-label"
+                sx={{ fontSize: "0.875rem" }}
+              >
+                Search
+              </Typography>
+            </MenuItem>
+          )}
         {treeName == "Glossary" &&
           !isEmptyServicetype &&
           node.types == "child" &&
@@ -550,7 +557,11 @@ const TreeNodeIcons = (props: {
           open={deleteGlossaryModal}
           onClose={handleCloseDeleteGlossaryModal}
           setExpandNode={setExpandNode}
-          node={node}
+          node={
+            treeName === "Glossary" && node.types === "child" && !isEmptyServicetype
+              ? { ...node, types: "Category" }
+              : node
+          }
           updatedData={updatedData}
         />
       )}

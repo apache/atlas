@@ -21,16 +21,7 @@ import { TableCell, TableRow } from "@mui/material";
 const TableRowsLoader = ({ rowsNum }: { rowsNum: number }) => {
   return [...Array(rowsNum)].map((_row, index) => (
     <TableRow key={index}>
-      <TableCell component="th" scope="row">
-        <SkeletonLoader animation="wave" variant="text" count={1} />
-      </TableCell>
-      <TableCell>
-        <SkeletonLoader animation="wave" variant="text" count={1} />
-      </TableCell>
-      <TableCell>
-        <SkeletonLoader animation="wave" variant="text" count={1} />
-      </TableCell>
-      <TableCell>
+      <TableCell colSpan={100}>
         <SkeletonLoader animation="wave" variant="text" count={1} />
       </TableCell>
     </TableRow>

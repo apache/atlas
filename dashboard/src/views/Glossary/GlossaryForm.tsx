@@ -29,9 +29,9 @@ import ReactQuill from "react-quill-new";
 const GlossaryForm = (props: {
   control: any;
   handleSubmit: any;
-  setValue: any;
+  setValue?: any;
 }) => {
-  const { control, handleSubmit, setValue } = props;
+  const { control, handleSubmit } = props;
   const [alignment, setAlignment] = useState<string>("formatted");
 
   const handleChange = (
@@ -146,7 +146,6 @@ const GlossaryForm = (props: {
                         placeholder={"Description required"}
                         onChange={(text) => {
                           field.onChange(text);
-                          setValue("description", text);
                         }}
                         className="classification-form-editor"
                         value={field.value || ""}
@@ -161,7 +160,6 @@ const GlossaryForm = (props: {
                         e.stopPropagation();
                         const value = e.target.value;
                         field.onChange(value);
-                        setValue("description", value);
                       }}
                       style={{ width: "100%" }}
                     />

@@ -87,13 +87,21 @@ type CustomContentRootProps = HTMLAttributes<HTMLDivElement> & {
   selectedNode?: any;
 };
 
-const CustomContentRoot = styled("div")<CustomContentRootProps>(
+const CustomContentRoot = styled("div", {
+  shouldForwardProp: (prop) =>
+    prop !== "selectedNodeType" &&
+    prop !== "selectedNodeTag" &&
+    prop !== "selectedNodeRelationship" &&
+    prop !== "selectedNodeBM" &&
+    prop !== "node" &&
+    prop !== "selectedNode",
+})<CustomContentRootProps>(
   ({ theme, ...props }) => ({
     WebkitTapHighlightColor: "#0E8173",
     "&&:hover, &&.Mui-disabled, &&.Mui-focused, &&.Mui-selected, &&.Mui-selected.Mui-focused, &&.Mui-selected:hover":
-      {
-        backgroundColor: "transparent",
-      },
+    {
+      backgroundColor: "transparent",
+    },
     ".MuiTreeItem-contentBar": {
       position: "absolute",
       width: "100%",
@@ -196,8 +204,8 @@ const CustomContent = forwardRef(function CustomContent(
   };
 
   const labelProps = isValidElement(props.label)
-  ? (props.label.props as CustomContentRootProps)
-  : undefined;
+    ? (props.label.props as CustomContentRootProps)
+    : undefined;
 
   return (
     <CustomContentRoot
@@ -208,7 +216,7 @@ const CustomContent = forwardRef(function CustomContent(
             (labelProps?.selectedNodeType === labelProps?.node ||
               labelProps?.selectedNodeTag === labelProps?.node ||
               labelProps?.selectedNodeRelationship ===
-                labelProps?.node ||
+              labelProps?.node ||
               labelProps?.selectedNodeBM === labelProps?.node)) ||
           selected,
         "Mui-focused": focused,
@@ -287,1007 +295,1012 @@ const BarTreeView: FC<{
   searchTerm,
   loader,
 }) => {
-  const { savedSearchData }: any = useAppSelector(
-    (state: any) => state.savedSearch
-  );
-  const { bmguid } = useParams();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const searchParams = new URLSearchParams(location.search);
-  const [expand, setExpand] = useState<null | HTMLElement>(null);
-  const [selectedNode, setSelectedNode] = useState<{
-    type: string | null;
-    tag: string | null;
-    relationship: string | null;
-    businessMetadata: string | null;
-  }>({
-    type: null,
-    tag: null,
-    relationship: null,
-    businessMetadata: null,
-  });
-
-  const [openModal, setOpenModal] = useState<boolean>(false);
-  const toastId: any = useRef(null);
-  const open = Boolean(expand);
-  const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  const [tagModal, setTagModal] = useState<boolean>(false);
-  const [glossaryModal, setGlossaryModal] = useState<boolean>(false);
-  const { businessMetaData }: any = useAppSelector(
-    (state: any) => state.businessMetaData
-  );
-
-  const filteredData = useMemo(() => {
-    return treeData.filter((node) => {
-      return (
-        node.label?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (node.children &&
-          node.children.some((child) =>
-            child.label?.toLowerCase().includes(searchTerm.toLowerCase())
-          ))
-      );
-    });
-  }, [treeData, searchTerm]);
-
-  const displayTreeName = useMemo(() => {
-    return treeName === "CustomFilters" ? "Custom Filters" : treeName
-  }, [treeName]);
-
-  const highlightText = useMemo(() => {
-    return (text: string) => {
-      if (!searchTerm) return text;
-
-      const parts = text.split(new RegExp(`(${searchTerm})`, "gi"));
-      return parts.map((part, index) =>
-        part.toLowerCase() === searchTerm.toLowerCase() ? (
-          <span key={index} style={{ color: "#D3D3D3", fontWeight: "600" }}>
-            {part}
-          </span>
-        ) : (
-          part
-        )
-      );
-    };
-  }, [searchTerm]);
-
-  const expandedItemsMemo = useMemo(() => {
-    const allNodeIds = filteredData.flatMap((node) => {
-      return [
-        node.id,
-        ...(node.children ? node.children.map((child) => child.id) : []),
-      ];
-    });
-    return [...allNodeIds, ...[treeName]];
-  }, [filteredData, treeName]);
-
-  useEffect(() => {
-    setExpandedItems(expandedItemsMemo);
-  }, [expandedItemsMemo]);
-
-  useEffect(() => {
+    const { savedSearchData }: any = useAppSelector(
+      (state: any) => state.savedSearch
+    );
+    const { bmguid } = useParams();
+    const location = useLocation();
+    const navigate = useNavigate();
     const searchParams = new URLSearchParams(location.search);
-    const nodeIdFromParamsType = searchParams.get("type");
-    const nodeIdFromParamsTag = searchParams.get("tag");
-    const nodeIdFromParamsRelationshipName =
-      searchParams.get("relationshipName");
-    const nodeIdFromBMName = location.pathname.includes(
-      "/administrator/businessMetadata"
+    const [expand, setExpand] = useState<null | HTMLElement>(null);
+    const [selectedNode, setSelectedNode] = useState<{
+      type: string | null;
+      tag: string | null;
+      relationship: string | null;
+      businessMetadata: string | null;
+    }>({
+      type: null,
+      tag: null,
+      relationship: null,
+      businessMetadata: null,
+    });
+
+    const [openModal, setOpenModal] = useState<boolean>(false);
+    const toastId: any = useRef(null);
+    const open = Boolean(expand);
+    const [expandedItems, setExpandedItems] = useState<string[]>([]);
+    const [tagModal, setTagModal] = useState<boolean>(false);
+    const [glossaryModal, setGlossaryModal] = useState<boolean>(false);
+    const { businessMetaData }: any = useAppSelector(
+      (state: any) => state.businessMetaData
     );
 
-    const bmObj = !isEmpty(businessMetaData?.businessMetadataDefs)
-      ? businessMetaData?.businessMetadataDefs?.find((obj: EnumTypeDefData) => {
+    const filteredData = useMemo(() => {
+      return treeData.filter((node) => {
+        return (
+          node.label?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (node.children &&
+            node.children.some((child) =>
+              child.label?.toLowerCase().includes(searchTerm.toLowerCase())
+            ))
+        );
+      });
+    }, [treeData, searchTerm]);
+
+    const displayTreeName = useMemo(() => {
+      return treeName === "CustomFilters" ? "Custom Filters" : treeName
+    }, [treeName]);
+
+    const highlightText = useMemo(() => {
+      return (text: string) => {
+        if (!searchTerm) return text;
+
+        const parts = text.split(new RegExp(`(${searchTerm})`, "gi"));
+        return parts.map((part, index) =>
+          part.toLowerCase() === searchTerm.toLowerCase() ? (
+            <span key={index} style={{ color: "#D3D3D3", fontWeight: "600" }}>
+              {part}
+            </span>
+          ) : (
+            part
+          )
+        );
+      };
+    }, [searchTerm]);
+
+    const expandedItemsMemo = useMemo(() => {
+      const allNodeIds = filteredData.flatMap((node) => {
+        return [
+          node.id,
+          ...(node.children ? node.children.map((child) => child.id) : []),
+        ];
+      });
+      return [...allNodeIds, ...[treeName]];
+    }, [filteredData, treeName]);
+
+    useEffect(() => {
+      setExpandedItems(expandedItemsMemo);
+    }, [expandedItemsMemo]);
+
+    useEffect(() => {
+      const searchParams = new URLSearchParams(location.search);
+      const nodeIdFromParamsType = searchParams.get("type");
+      const nodeIdFromParamsTag = searchParams.get("tag");
+      const nodeIdFromParamsRelationshipName =
+        searchParams.get("relationshipName");
+      const nodeIdFromBMName = location.pathname.includes(
+        "/administrator/businessMetadata"
+      );
+
+      const bmObj = !isEmpty(businessMetaData?.businessMetadataDefs)
+        ? businessMetaData?.businessMetadataDefs?.find((obj: EnumTypeDefData) => {
           if (bmguid == obj.guid) {
             return obj;
           }
         })
-      : {};
-    const { name = "" } = bmObj || {};
+        : {};
+      const { name = "" } = bmObj || {};
 
-    setSelectedNode({
-      type: nodeIdFromParamsType,
-      tag: nodeIdFromParamsTag,
-      relationship: nodeIdFromParamsRelationshipName,
-      businessMetadata: nodeIdFromBMName ? name : null,
-    });
-
-    if (
-      !nodeIdFromParamsType &&
-      !nodeIdFromParamsTag &&
-      !nodeIdFromParamsRelationshipName &&
-      !nodeIdFromBMName
-    ) {
       setSelectedNode({
-        type: null,
-        tag: null,
-        relationship: null,
-        businessMetadata: null,
+        type: nodeIdFromParamsType,
+        tag: nodeIdFromParamsTag,
+        relationship: nodeIdFromParamsRelationshipName,
+        businessMetadata: nodeIdFromBMName ? name : null,
       });
-    }
-  }, [location.search]);
 
-  const getEmptyTypesTitle = () => {
-    switch (treeName) {
-      case "Entities":
-        return `${isEmptyServicetype ? "Hide" : "Show"} empty service types`;
-
-      case "Classifications":
-        return `${isEmptyServicetype ? "Show" : "Hide"} unused classifications`;
-
-      case "Glossary":
-        return `Show ${isEmptyServicetype ? "Category" : "Term"}`;
-
-      case "CustomFilters":
-        return `Show ${isEmptyServicetype ? "all" : "Type"}`;
-
-      default:
-        return "";
-    }
-  };
-
-  const handleExpandedItemsChange = (
-    _event: SyntheticEvent,
-    newExpandedItems: string[]
-  ) => {
-    setExpandedItems(newExpandedItems);
-  };
-
-  const handleOpenModal = () => {
-    setOpenModal(true);
-  };
-  const handleCloseModal = () => {
-    setOpenModal(false);
-  };
-
-  const handleClickMenu = (event: MouseEvent<HTMLElement>) => {
-    event.stopPropagation();
-    setExpand(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setExpand(null);
-  };
-
-  const handleCloseTagModal = () => {
-    setTagModal(false);
-  };
-  const handleCloseGlossaryModal = () => {
-    setGlossaryModal(false);
-  };
-
-  const handleClickNode = (nodeId: string) => {
-    const searchParams = new URLSearchParams(location.search);
-    const isTypeMatch = searchParams.get("type") === nodeId;
-    const isTagMatch = searchParams.get("tag") === nodeId;
-    const isRelationshipMatch = searchParams.get("relationshipName") === nodeId;
-    const isBusinessMetadataMatch = location.pathname.includes(
-      "/administrator/businessMetadata"
-    );
-
-    if (isTypeMatch) {
-      setSelectedNode({
-        type: nodeId,
-        tag: null,
-        relationship: null,
-        businessMetadata: null,
-      });
-    }
-    if (isTagMatch) {
-      setSelectedNode({
-        type: null,
-        tag: nodeId,
-        relationship: null,
-        businessMetadata: null,
-      });
-    }
-    if (isRelationshipMatch) {
-      setSelectedNode({
-        type: null,
-        tag: null,
-        relationship: nodeId,
-        businessMetadata: null,
-      });
-    }
-    if (isBusinessMetadataMatch) {
-      setSelectedNode({
-        type: null,
-        tag: null,
-        relationship: null,
-        businessMetadata: nodeId,
-      });
-    }
-  };
-
-  const getNodeId = (node: TreeNode) => {
-    if (treeName == "Classifications" && node.types == "parent") {
-      return node.label;
-    } else if (treeName == "Classifications" && node.types == "child") {
-      return `${node.id}@${node.label}`;
-    }
-    return !isEmpty(node?.parent) ? `${node.id}@${node?.parent}` : node.id;
-  };
-
-  const handleNodeClick = (
-    node: TreeNode,
-    treeName: string,
-    searchParams: URLSearchParams,
-    navigate: NavigateFunction,
-    isEmptyServicetype: boolean | undefined,
-    savedSearchData: any,
-    toastId: any
-  ) => {
-    globalSearchFilterInitialQuery.setQuery({});
-    searchParams.delete("tabActive");
-
-    if (treeName === "Classifications") {
-      handleClickNode(node.id);
-    } else {
-      handleClickNode(node.id);
-    }
-
-    if (node.id === "No Records Found") {
-      if (typeof event !== "undefined" && event.stopPropagation) {
-        event.stopPropagation();
+      if (
+        !nodeIdFromParamsType &&
+        !nodeIdFromParamsTag &&
+        !nodeIdFromParamsRelationshipName &&
+        !nodeIdFromBMName
+      ) {
+        setSelectedNode({
+          type: null,
+          tag: null,
+          relationship: null,
+          businessMetadata: null,
+        });
       }
-      return;
-    }
+    }, [location.search]);
 
-    if (shouldSetSearchParams(node, treeName)) {
-      setSearchParams(
-        node,
-        treeName,
-        searchParams,
-        isEmptyServicetype,
-        savedSearchData
+    const getEmptyTypesTitle = () => {
+      switch (treeName) {
+        case "Entities":
+          return `${isEmptyServicetype ? "Hide" : "Show"} empty service types`;
+
+        case "Classifications":
+          return `${isEmptyServicetype ? "Show" : "Hide"} unused classifications`;
+
+        case "Glossary":
+          return `Show ${isEmptyServicetype ? "Category" : "Term"}`;
+
+        case "CustomFilters":
+          return `Show ${isEmptyServicetype ? "all" : "Type"}`;
+
+        default:
+          return "";
+      }
+    };
+
+    const handleExpandedItemsChange = (
+      _event: SyntheticEvent,
+      newExpandedItems: string[]
+    ) => {
+      setExpandedItems(newExpandedItems);
+    };
+
+    const handleOpenModal = () => {
+      setOpenModal(true);
+    };
+    const handleCloseModal = () => {
+      setOpenModal(false);
+    };
+
+    const handleClickMenu = (event: MouseEvent<HTMLElement>) => {
+      event.stopPropagation();
+      setExpand(event.currentTarget);
+    };
+
+    const handleClose = () => {
+      setExpand(null);
+    };
+
+    const handleCloseTagModal = () => {
+      setTagModal(false);
+    };
+    const handleCloseGlossaryModal = () => {
+      setGlossaryModal(false);
+    };
+
+    const handleClickNode = (nodeId: string) => {
+      const searchParams = new URLSearchParams(location.search);
+      const isTypeMatch = searchParams.get("type") === nodeId;
+      const isTagMatch = searchParams.get("tag") === nodeId;
+      const isRelationshipMatch = searchParams.get("relationshipName") === nodeId;
+      const isBusinessMetadataMatch = location.pathname.includes(
+        "/administrator/businessMetadata"
       );
-      navigateToPath(
-        node,
-        treeName,
-        searchParams,
-        navigate,
-        isEmptyServicetype,
-        toastId
-      );
-    }
-  };
 
-  const shouldSetSearchParams = (node: TreeNode, treeName: string) => {
-    if (treeName === "CustomFilters" && node.types === "parent") {
-      return false;
-    }
-    return (
-      node.children === undefined ||
-      isEmpty(node.children) ||
-      treeName === "Classifications" ||
-      (treeName === "Glossary" && node.types === "child")
-    );
-  };
-
-  const setSearchParams = (
-    node: TreeNode,
-    treeName: string,
-    searchParams: URLSearchParams,
-    isEmptyServicetype: boolean | undefined,
-    savedSearchData: any
-  ) => {
-    searchParams.set(
-      "searchType",
-      node.parent === "ADVANCED" ? "dsl" : "basic"
-    );
-
-    switch (treeName) {
-      case "Entities":
-        searchParams.delete("relationshipName");
-        searchParams.set("type", node.id);
-        break;
-      case "Classifications": {
-        searchParams.delete("relationshipName");
-        const id = node.label.split(" (")[0];
-        searchParams.set("tag", id);
-        break;
+      if (isTypeMatch) {
+        setSelectedNode({
+          type: nodeId,
+          tag: null,
+          relationship: null,
+          businessMetadata: null,
+        });
       }
-      case "Glossary":
-        setGlossarySearchParams(node, searchParams, isEmptyServicetype);
-        break;
-      case "Relationships":
-      case "CustomFilters":
-        setCustomFiltersSearchParams(node, searchParams, savedSearchData);
-        break;
-      default:
-        break;
-    }
-
-    if (treeName !== "CustomFilters") {
-    searchParams.delete("attributes");
-    searchParams.delete("entityFilters");
-    searchParams.delete("tagFilters");
-    searchParams.delete("relationshipFilters");
-    searchParams.set("pageLimit", "25");
-    searchParams.set("pageOffset", "0");
-    }
-  };
-
-  const setGlossarySearchParams = (
-    node: TreeNode,
-    searchParams: URLSearchParams,
-    isEmptyServicetype: boolean | undefined
-  ) => {
-    const guid =
-      !isEmptyServicetype && node.cGuid !== undefined
-        ? node.cGuid
-        : node.guid || "";
-    searchParams.delete("relationshipName");
-
-    if (isEmptyServicetype) {
-      searchParams.set("term", `${node.id}@${node.parent}`);
-    } else {
-      searchParams.delete("type");
-      searchParams.delete("tag");
-      searchParams.set("gid", node.guid as string);
-    }
-
-    searchParams.set("gtype", `${isEmptyServicetype ? "term" : "category"}`);
-    searchParams.set("viewType", `${isEmptyServicetype ? "term" : "category"}`);
-    searchParams.set("guid", guid);
-  };
-
-  const setCustomFiltersSearchParams = (
-    node: TreeNode,
-    searchParams: URLSearchParams,
-    savedSearchData: any[]
-  ) => {
-    // Clear all existing params except searchType
-    const keys = Array.from(searchParams.keys());
-    for (let i = 0; i < keys.length; i++) {
-      if (keys[i] !== "searchType") {
-        searchParams.delete(keys[i]);
+      if (isTagMatch) {
+        setSelectedNode({
+          type: null,
+          tag: nodeId,
+          relationship: null,
+          businessMetadata: null,
+        });
       }
-    }
-
-    // Clear globalSearchFilterInitialQuery when applying new saved search
-    globalSearchFilterInitialQuery.setQuery({});
-
-    if (treeName === "CustomFilters") {
-      const params = savedSearchData.find((obj) => obj.name === node.id);
-      if (params) {
-        const searchParamsObj = params?.searchParameters || {};
-        
-        // Step 1: Set searchType based on saved search type
-        if (params.searchType) {
-          const searchTypeValue = params.searchType === "ADVANCED" ? "dsl" : "basic";
-          searchParams.set("searchType", searchTypeValue);
-        }
-        
-        // Step 2: Apply basic search parameters (excluding filters which are handled separately)
-        for (const key in searchParamsObj) {
-          if (shouldSetCustomFilterParam(node, key) && 
-              !["entityFilters", "tagFilters", "relationshipFilters"].includes(key)) {
-            setCustomFilterParam(searchParams, key, searchParamsObj[key]);
-          }
-        }
-        
-        // Step 3: Convert and apply entityFilters from API format to URL string format
-        if (searchParamsObj.entityFilters && !isEmpty(searchParamsObj.entityFilters)) {
-          const clonedFilter = cloneDeep(searchParamsObj.entityFilters);
-          const ruleUrl = attributeFilter.generateUrl({
-            value: clonedFilter,
-            formatedDateToLong: true
-          });
-          
-          if (ruleUrl && !isEmpty(ruleUrl) && typeof ruleUrl === "string") {
-            searchParams.set("entityFilters", ruleUrl);
-            
-            // Convert API format to query builder format for Filters component UI
-            const qbFilter = convertApiToQueryBuilder(searchParamsObj.entityFilters);
-            if (qbFilter && (qbFilter.rules || qbFilter.combinator)) {
-              globalSearchFilterInitialQuery.setQuery({ 
-                entityFilters: qbFilter 
-              });
-            }
-          }
-        }
-        
-        // Step 4: Convert and apply tagFilters from API format to URL string format
-        if (searchParamsObj.tagFilters && !isEmpty(searchParamsObj.tagFilters)) {
-          const clonedFilter = cloneDeep(searchParamsObj.tagFilters);
-          const ruleUrl = attributeFilter.generateUrl({
-            value: clonedFilter,
-            formatedDateToLong: true
-          });
-          
-          if (ruleUrl && !isEmpty(ruleUrl) && typeof ruleUrl === "string") {
-            searchParams.set("tagFilters", ruleUrl);
-            
-            // Convert API format to query builder format for Filters component UI
-            const qbFilter = convertApiToQueryBuilder(searchParamsObj.tagFilters);
-            if (qbFilter && (qbFilter.rules || qbFilter.combinator)) {
-              globalSearchFilterInitialQuery.setQuery({ 
-                tagFilters: qbFilter 
-              });
-            }
-          }
-        }
-        
-        // Step 5: Convert and apply relationshipFilters from API format to URL string format
-        if (searchParamsObj.relationshipFilters && !isEmpty(searchParamsObj.relationshipFilters)) {
-          const clonedFilter = cloneDeep(searchParamsObj.relationshipFilters);
-          const ruleUrl = attributeFilter.generateUrl({
-            value: clonedFilter,
-            formatedDateToLong: true
-          });
-          
-          if (ruleUrl && !isEmpty(ruleUrl) && typeof ruleUrl === "string") {
-            searchParams.set("relationshipFilters", ruleUrl);
-            
-            // Convert API format to query builder format for Filters component UI
-            const qbFilter = convertApiToQueryBuilder(searchParamsObj.relationshipFilters);
-            if (qbFilter && (qbFilter.rules || qbFilter.combinator)) {
-              globalSearchFilterInitialQuery.setQuery({ 
-                relationshipFilters: qbFilter 
-              });
-            }
-          }
-        }
-        
-      searchParams.set("isCF", "true");
+      if (isRelationshipMatch) {
+        setSelectedNode({
+          type: null,
+          tag: null,
+          relationship: nodeId,
+          businessMetadata: null,
+        });
       }
-    } else {
-      searchParams.set("relationshipName", node.id);
-    }
-  };
-  
-  // Helper function to convert API format filter (criterion/condition) to query builder format (rules/combinator)
-  const convertApiToQueryBuilder = (apiFilter: any): any => {
-    if (!apiFilter || typeof apiFilter !== "object") {
-      return null;
-    }
-    
-    const result: any = {};
-    
-    // Convert condition to combinator
-    if (apiFilter.condition) {
-      result.combinator = apiFilter.condition.toLowerCase();
-    } else {
-      result.combinator = "and"; // default
-    }
-    
-    // Convert criterion to rules
-    if (apiFilter.criterion && Array.isArray(apiFilter.criterion)) {
-      result.rules = apiFilter.criterion.map((rule: any) => {
-        // If nested condition, recurse
-        if (rule.condition || rule.criterion) {
-          return convertApiToQueryBuilder(rule);
-        }
-        // Convert API rule format to query builder format
-        return {
-          field: rule.attributeName || rule.id,
-          operator: rule.operator,
-          value: rule.attributeValue || rule.value,
-          type: rule.type || rule.attributeType
-        };
-      });
-    } else if (apiFilter.rules && Array.isArray(apiFilter.rules)) {
-      // Already in query builder format
-      result.rules = apiFilter.rules.map((rule: any) => 
-        rule.condition || rule.criterion ? convertApiToQueryBuilder(rule) : rule
-      );
-    }
-    
-    return Object.keys(result).length > 0 ? result : null;
-  };
-
-  const shouldSetCustomFilterParam = (node: TreeNode, key: string) => {
-    return (
-      node.parent === "BASIC" ||
-      node.parent === "ADVANCED" ||
-      (node.parent === "BASIC_RELATIONSHIP" &&
-        (key === "relationshipName" || key === "limit" || key === "offset"))
-    );
-  };
-
-  const setCustomFilterParam = (
-    searchParams: URLSearchParams,
-    key: string,
-    value: any
-  ) => {
-    if (key === "limit") {
-      searchParams.set("pageLimit", value || 25);
-    } else if (key === "offset") {
-      searchParams.set("pageOffset", value);
-    } else if (key === "typeName") {
-      searchParams.set("type", value);
-    } else if (key === "classification") {
-      // Map classification to tag parameter for URL (matching classic UI)
-      searchParams.set("tag", value);
-    } else if (key === "termName") {
-      // Map termName (API format) to term parameter for URL (matching classic UI)
-      searchParams.set("term", value);
-    } else if (value !== null && value !== undefined && value !== "") {
-      // Only set parameter if value is not null, undefined, or empty string
-      searchParams.set(key, value);
-    }
-  };
-
-  const navigateToPath = (
-    node: TreeNode,
-    treeName: string,
-    searchParams: URLSearchParams,
-    navigate: NavigateFunction,
-    isEmptyServicetype: boolean | undefined,
-    toastId: any
-  ) => {
-    switch (treeName) {
-      case "Business MetaData":
-        searchParams.delete("relationshipName");
-        navigate(
-          { pathname: `administrator/businessMetadata/${node.guid}` },
-          { replace: true }
-        );
-        break;
-      case "Glossary":
-        if (!isEmptyServicetype) {
-          searchParams.delete("relationshipName");
-          navigate(
-            {
-              pathname: `glossary/${
-                node.cGuid !== undefined ? node.cGuid : node.guid
-              }`,
-              search: searchParams.toString(),
-            },
-            { replace: true }
-          );
-        } else if (node.types === "parent") {
-          toast.dismiss(toastId.current);
-          toastId.current = toast.warning("Create a Term or Category");
-        } else {
-          searchParams.delete("relationshipName");
-          navigate(
-            {
-              pathname: "/search/searchResult",
-              search: searchParams.toString(),
-            },
-            { replace: true }
-          );
-        }
-        break;
-      case "Relationships":
-      case "CustomFilters":
-        if (
-          treeName == "Relationships" ||
-          (treeName == "CustomFilters" && node.parent == "BASIC_RELATIONSHIP")
-        ) {
-          navigate(
-            {
-              pathname: `relationship/relationshipSearchresult`,
-              search: searchParams.toString(),
-            },
-            { replace: true }
-          );
-        } else {
-          searchParams.delete("relationshipName");
-          navigate(
-            {
-              pathname: "/search/searchResult",
-              search: searchParams.toString(),
-            },
-            { replace: true }
-          );
-        }
-        break;
-      default:
-        searchParams.delete("relationshipName");
-        navigate(
-          { pathname: "/search/searchResult", search: searchParams.toString() },
-          { replace: true }
-        );
-        break;
-    }
-  };
-
-  const TreeLabelWithTooltip: React.FC<{ label: string }> = ({ label }) => {
-    const labelRef = useRef<HTMLSpanElement>(null);
-    const [isOverflown, setIsOverflown] = useState(false);
-
-    useEffect(() => {
-      const el = labelRef.current;
-      if (el) {
-        setIsOverflown(el.scrollWidth > el.clientWidth);
+      if (isBusinessMetadataMatch) {
+        setSelectedNode({
+          type: null,
+          tag: null,
+          relationship: null,
+          businessMetadata: nodeId,
+        });
       }
-    }, [label, searchTerm]);
+    };
 
-    return (
-      <LightTooltip title={label} disableHoverListener={!isOverflown}>
-        <span
-          ref={labelRef}
-          className="tree-item-label"
-          style={{
-            display: "inline-block",
-            maxWidth: "100%",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {highlightText(label)}
-        </span>
-      </LightTooltip>
-    );
-  };
-
-  const renderTreeItem = (node: TreeNode) =>
-    node?.id && (
-      <CustomTreeItem
-        key={node.id}
-        itemId={getNodeId(node)}
-        label={
-          <div
-            {...({
-              selectedNodeType: selectedNode.type,
-              selectedNodeTag: selectedNode.tag,
-              selectedNodeRelationship: selectedNode.relationship,
-              selectedNodeBM: selectedNode.businessMetadata,
-              node: node.id,
-              onClick: (_event: MouseEvent<HTMLElement>) => {
-                handleNodeClick(
-                  node,
-                  treeName,
-                  searchParams,
-                  navigate,
-                  isEmptyServicetype,
-                  savedSearchData,
-                  toastId
-                );
-              },
-              className: "custom-treeitem-label",
-            } as any)}
-          >
-            {node.id != "No Records Found" && (
-              <TreeIcons
-                node={node}
-                treeName={treeName}
-                isEmptyServicetype={isEmptyServicetype ?? false}
-              />
-            )}
-            <TreeLabelWithTooltip label={node.label} />
-            {(treeName == "Entities" ||
-              treeName == "Classifications" ||
-              treeName == "CustomFilters" ||
-              treeName == "Glossary") &&
-              node.id != "No Records Found" && (
-                <TreeNodeIcons
-                  node={node}
-                  treeName={treeName}
-                  updatedData={refreshData}
-                  isEmptyServicetype={isEmptyServicetype}
-                />
-              )}
-          </div>
+    const getNodeId = (node: TreeNode) => {
+      if (treeName == "Classifications" && node.types == "parent") {
+        return node.label;
+      } else if (treeName == "Classifications" && node.types == "child") {
+        return `${node.id}@${node.label}`;
+      } else if (treeName == "Glossary") {
+        if (node.types === "child") {
+          return node.cGuid ? node.cGuid : `${node.id}@${node?.parent}`;
         }
-      >
-        {node.children && node.children.map((child) => renderTreeItem(child))}
-      </CustomTreeItem>
-    );
+        return node.guid ? node.guid : node.id;
+      }
+      return !isEmpty(node?.parent) ? `${node.id}@${node?.parent}` : node.id;
+    };
 
-  const downloadFile = async () => {
-    try {
-      if (treeName == "Glossary") {
-        await downloadGlossaryImportTemplate();
+    const handleNodeClick = (
+      node: TreeNode,
+      treeName: string,
+      searchParams: URLSearchParams,
+      navigate: NavigateFunction,
+      isEmptyServicetype: boolean | undefined,
+      savedSearchData: any,
+      toastId: any
+    ) => {
+      globalSearchFilterInitialQuery.setQuery({});
+      searchParams.delete("tabActive");
+
+      if (treeName === "Classifications") {
+        handleClickNode(node.id);
+      } else {
+        handleClickNode(node.id);
+      }
+
+      if (node.id === "No Records Found") {
+        if (typeof event !== "undefined" && event.stopPropagation) {
+          event.stopPropagation();
+        }
         return;
       }
-      const apiResp: any = await getBusinessMetadataImportTmpl({});
-      const text: string = apiResp ? apiResp.data : "";
-      const blob = new Blob([text], { type: "text/plain" });
 
-      const url = window.URL.createObjectURL(blob);
+      if (shouldSetSearchParams(node, treeName)) {
+        setSearchParams(
+          node,
+          treeName,
+          searchParams,
+          isEmptyServicetype,
+          savedSearchData
+        );
+        navigateToPath(
+          node,
+          treeName,
+          searchParams,
+          navigate,
+          isEmptyServicetype,
+          toastId
+        );
+      }
+    };
 
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "template_business_metadata");
+    const shouldSetSearchParams = (node: TreeNode, treeName: string) => {
+      if (treeName === "CustomFilters" && node.types === "parent") {
+        return false;
+      }
+      return (
+        node.children === undefined ||
+        isEmpty(node.children) ||
+        treeName === "Classifications" ||
+        (treeName === "Glossary" && node.types === "child")
+      );
+    };
 
-      document.body.appendChild(link);
+    const setSearchParams = (
+      node: TreeNode,
+      treeName: string,
+      searchParams: URLSearchParams,
+      isEmptyServicetype: boolean | undefined,
+      savedSearchData: any
+    ) => {
+      searchParams.set(
+        "searchType",
+        node.parent === "ADVANCED" ? "dsl" : "basic"
+      );
 
-      link.click();
+      switch (treeName) {
+        case "Entities":
+          searchParams.delete("relationshipName");
+          searchParams.set("type", node.id);
+          break;
+        case "Classifications": {
+          searchParams.delete("relationshipName");
+          const id = node.label.split(" (")[0];
+          searchParams.set("tag", id);
+          break;
+        }
+        case "Glossary":
+          setGlossarySearchParams(node, searchParams, isEmptyServicetype);
+          break;
+        case "Relationships":
+        case "CustomFilters":
+          setCustomFiltersSearchParams(node, searchParams, savedSearchData);
+          break;
+        default:
+          break;
+      }
 
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch {
-      /* ignore download error */
-    }
-  };
+      if (treeName !== "CustomFilters") {
+        searchParams.delete("attributes");
+        searchParams.delete("entityFilters");
+        searchParams.delete("tagFilters");
+        searchParams.delete("relationshipFilters");
+        searchParams.set("pageLimit", "25");
+        searchParams.set("pageOffset", "0");
+      }
+    };
 
-  const label = { inputProps: { "aria-label": "Switch demo" } };
-  return (
-    <>
-      <Stack
-        className="sidebar-tree-box"
-        sx={{
-          ...(sideBarOpen == false && {
-            visibility: "hidden !important",
-            top: "62px !important",
-          }),
-          minWidth: "30px",
-          width: `100% !important`,
-          overflowX: "auto",
-        }}
-      >
-        <SimpleTreeView
-          expandedItems={expandedItems}
-          onExpandedItemsChange={handleExpandedItemsChange}
-          aria-label="customized"
-          className="sidebar-treeview"
-        >
-          <TreeItem
-            itemId={treeName}
-            label={
-              <Stack
-                display="flex"
-                alignItems="center"
-                flexDirection="row"
-                className="tree-item-parent-label"
-              >
-                <Stack flexGrow={1}>
-                  <span>{displayTreeName}</span>
-                </Stack>
-                <Stack direction="row" alignItems="center" gap="0.375rem">
-                  <LightTooltip title="Refresh">
-                    <IconButton
-                      size="small"
-                      data-cy="refreshTree"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        refreshData();
-                      }}
-                      disabled={loader}
-                    >
-                      <RefreshIcon />
-                    </IconButton>
-                  </LightTooltip>
+    const setGlossarySearchParams = (
+      node: TreeNode,
+      searchParams: URLSearchParams,
+      isEmptyServicetype: boolean | undefined
+    ) => {
+      const guid =
+        !isEmptyServicetype && node.cGuid !== undefined
+          ? node.cGuid
+          : node.guid || "";
+      searchParams.delete("relationshipName");
 
+      if (isEmptyServicetype) {
+        const termName = node.id.endsWith(`@${node.parent}`) ? node.id : `${node.id}@${node.parent}`;
+        searchParams.set("term", termName);
+      } else {
+        searchParams.delete("type");
+        searchParams.delete("tag");
+        searchParams.set("gid", node.guid as string);
+      }
 
-                  {(treeName == "Entities" ||
-                    treeName == "Classifications" ||
-                    treeName == "Glossary") && (
-                    <>
-                      {
-                        <LightTooltip title={getEmptyTypesTitle()}>
-                          <AntSwitch
-                            {...label}
-                            size="small"
-                            onClick={(e: { stopPropagation: () => void }) => {
-                              e.stopPropagation();
-                              if (setisEmptyServicetype) {
-                                setisEmptyServicetype(!isEmptyServicetype);
-                              }
-                            }}
-                            data-cy="showEmptyServiceType"
-                            inputProps={{ "aria-label": "ant design" }}
-                          />
-                        </LightTooltip>
-                      }
-                    </>
-                  )}
+      searchParams.set("gtype", `${isEmptyServicetype ? "term" : "category"}`);
+      searchParams.set("viewType", `${isEmptyServicetype ? "term" : "category"}`);
+      searchParams.set("guid", guid);
+    };
 
-                  {(treeName == "Entities" ||
-                    treeName == "Classifications" ||
-                    treeName == "Glossary") && (
-                    <MoreVertIcon
-                      onClick={(e: any) => {
-                        e.stopPropagation();
-                        handleClickMenu(e);
-                      }}
-                      data-cy="dropdownMenuButton"
-                      fontSize="small"
-                    />
-                  )}
+    const setCustomFiltersSearchParams = (
+      node: TreeNode,
+      searchParams: URLSearchParams,
+      savedSearchData: any[]
+    ) => {
+      // Clear all existing params except searchType
+      const keys = Array.from(searchParams.keys());
+      for (let i = 0; i < keys.length; i++) {
+        if (keys[i] !== "searchType") {
+          searchParams.delete(keys[i]);
+        }
+      }
 
-                  {treeName == "Business MetaData" && (
-                    <LightTooltip title="Open Businesss Metadata">
-                      <LaunchOutlinedIcon
-                        fontSize="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const newSearchParams = new URLSearchParams();
+      // Clear globalSearchFilterInitialQuery when applying new saved search
+      globalSearchFilterInitialQuery.setQuery({});
 
-                          newSearchParams.set("tabActive", "businessMetadata");
-                          navigate(
-                            {
-                              pathname: `administrator`,
-                              search: newSearchParams.toString(),
-                            },
-                            { replace: true }
-                          );
-                        }}
-                        data-cy="createBusinessMetadata"
-                      />
-                    </LightTooltip>
-                  )}
-                </Stack>
-                <Menu
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                  anchorEl={expand}
-                  id="account-menu"
-                  open={open}
-                  onClose={handleClose}
-                  transformOrigin={{ horizontal: "right", vertical: "top" }}
-                  anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-                  sx={{
-                    "& .MuiPaper-root": {
-                      transition: "none !important",
-                    },
-                  }}
-                  disableScrollLock={true}
-                >
-                  {(treeName == "Entities" ||
-                    treeName == "Classifications") && (
-                    <MenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (setisGroupView) {
-                          setisGroupView(!isGroupView);
-                        }
-                        handleClose();
-                      }}
-                      data-cy="groupOrFlatTreeView"
-                      className="sidebar-menu-item"
-                    >
-                      <ListItemIcon
-                        sx={{ minWidth: "28px !important" }}
-                        data-cy="groupOrFlatTreeView"
-                      >
-                        {isGroupView ? (
-                          <FormatListBulletedIcon
-                            fontSize="small"
-                            className="menuitem-icon"
-                          />
-                        ) : (
-                          <AccountTreeIcon
-                            fontSize="small"
-                            className="menuitem-icon"
-                          />
-                        )}
-                      </ListItemIcon>
-                      <Typography className="menuitem-label">
-                        Show {isGroupView ? "flat" : "group"} tree
-                      </Typography>
-                    </MenuItem>
-                  )}
-                  {(treeName == "Classifications" ||
-                    treeName == "Glossary") && (
-                    <MenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (treeName == "Classifications") {
-                          setTagModal(true);
-                        } else if (treeName == "Glossary") {
-                          setGlossaryModal(true);
-                        }
-                        handleClose();
-                      }}
-                      data-cy="createClassification"
-                      className="sidebar-menu-item"
-                    >
-                      <ListItemIcon
-                        sx={{ minWidth: "28px !important" }}
-                        data-cy="createTag"
-                      >
-                        <AddIcon fontSize="small" className="menuitem-icon" />
-                      </ListItemIcon>
-                      <Typography className="menuitem-label">
-                        Create{" "}
-                        {treeName == "Classifications"
-                          ? "Classifications"
-                          : "Glossary"}
-                      </Typography>
-                    </MenuItem>
-                  )}
-                  {(treeName == "Entities" || treeName == "Glossary") && (
-                    <MenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        downloadFile();
-                        handleClose();
-                      }}
-                      data-cy="downloadBusinessMetadata"
-                      disabled={
-                        treeName == "Glossary" && !isEmptyServicetype
-                          ? true
-                          : false
-                      }
-                      className="sidebar-menu-item"
-                    >
-                      <ListItemIcon sx={{ minWidth: "28px !important" }}>
-                        <FileDownloadIcon
-                          fontSize="small"
-                          className="menuitem-icon"
-                        />
-                      </ListItemIcon>
-                      <Typography className="menuitem-label">
-                        Download Import template
-                      </Typography>
-                    </MenuItem>
-                  )}
-                  {(treeName == "Entities" || treeName == "Glossary") && (
-                    <MenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenModal();
-                        handleClose();
-                      }}
-                      data-cy="importBusinessMetadata"
-                      disabled={
-                        treeName == "Glossary" && !isEmptyServicetype
-                          ? true
-                          : false
-                      }
-                      className="sidebar-menu-item"
-                    >
-                      <ListItemIcon sx={{ minWidth: "28px !important" }}>
-                        <FileUploadIcon
-                          fontSize="small"
-                          className="menuitem-icon"
-                        />
-                      </ListItemIcon>
+      if (treeName === "CustomFilters") {
+        const params = savedSearchData.find((obj) => obj.name === node.id);
+        if (params) {
+          const searchParamsObj = params?.searchParameters || {};
 
-                      <Typography className="menuitem-label">
-                        {treeName == "Entities"
-                          ? "Import Business Metadata"
-                          : "Import Glossary Term"}
-                      </Typography>
-                    </MenuItem>
-                  )}
-                </Menu>
-              </Stack>
+          // Step 1: Set searchType based on saved search type
+          if (params.searchType) {
+            const searchTypeValue = params.searchType === "ADVANCED" ? "dsl" : "basic";
+            searchParams.set("searchType", searchTypeValue);
+          }
+
+          // Step 2: Apply basic search parameters (excluding filters which are handled separately)
+          for (const key in searchParamsObj) {
+            if (shouldSetCustomFilterParam(node, key) &&
+              !["entityFilters", "tagFilters", "relationshipFilters"].includes(key)) {
+              setCustomFilterParam(searchParams, key, searchParamsObj[key]);
             }
-            sx={{
-              "& .MuiTreeItem-label": {
-                fontWeight: "600  !important",
-                fontSize: "14px  !important",
-                lineHeight: "26px !important",
-                color: "white",
+          }
+
+          // Step 3: Convert and apply entityFilters from API format to URL string format
+          if (searchParamsObj.entityFilters && !isEmpty(searchParamsObj.entityFilters)) {
+            const clonedFilter = cloneDeep(searchParamsObj.entityFilters);
+            const ruleUrl = attributeFilter.generateUrl({
+              value: clonedFilter,
+              formatedDateToLong: true
+            });
+
+            if (ruleUrl && !isEmpty(ruleUrl) && typeof ruleUrl === "string") {
+              searchParams.set("entityFilters", ruleUrl);
+
+              // Convert API format to query builder format for Filters component UI
+              const qbFilter = convertApiToQueryBuilder(searchParamsObj.entityFilters);
+              if (qbFilter && (qbFilter.rules || qbFilter.combinator)) {
+                globalSearchFilterInitialQuery.setQuery({
+                  entityFilters: qbFilter
+                });
+              }
+            }
+          }
+
+          // Step 4: Convert and apply tagFilters from API format to URL string format
+          if (searchParamsObj.tagFilters && !isEmpty(searchParamsObj.tagFilters)) {
+            const clonedFilter = cloneDeep(searchParamsObj.tagFilters);
+            const ruleUrl = attributeFilter.generateUrl({
+              value: clonedFilter,
+              formatedDateToLong: true
+            });
+
+            if (ruleUrl && !isEmpty(ruleUrl) && typeof ruleUrl === "string") {
+              searchParams.set("tagFilters", ruleUrl);
+
+              // Convert API format to query builder format for Filters component UI
+              const qbFilter = convertApiToQueryBuilder(searchParamsObj.tagFilters);
+              if (qbFilter && (qbFilter.rules || qbFilter.combinator)) {
+                globalSearchFilterInitialQuery.setQuery({
+                  tagFilters: qbFilter
+                });
+              }
+            }
+          }
+
+          // Step 5: Convert and apply relationshipFilters from API format to URL string format
+          if (searchParamsObj.relationshipFilters && !isEmpty(searchParamsObj.relationshipFilters)) {
+            const clonedFilter = cloneDeep(searchParamsObj.relationshipFilters);
+            const ruleUrl = attributeFilter.generateUrl({
+              value: clonedFilter,
+              formatedDateToLong: true
+            });
+
+            if (ruleUrl && !isEmpty(ruleUrl) && typeof ruleUrl === "string") {
+              searchParams.set("relationshipFilters", ruleUrl);
+
+              // Convert API format to query builder format for Filters component UI
+              const qbFilter = convertApiToQueryBuilder(searchParamsObj.relationshipFilters);
+              if (qbFilter && (qbFilter.rules || qbFilter.combinator)) {
+                globalSearchFilterInitialQuery.setQuery({
+                  relationshipFilters: qbFilter
+                });
+              }
+            }
+          }
+
+          searchParams.set("isCF", "true");
+        }
+      } else {
+        searchParams.set("relationshipName", node.id);
+      }
+    };
+
+    // Helper function to convert API format filter (criterion/condition) to query builder format (rules/combinator)
+    const convertApiToQueryBuilder = (apiFilter: any): any => {
+      if (!apiFilter || typeof apiFilter !== "object") {
+        return null;
+      }
+
+      const result: any = {};
+
+      // Convert condition to combinator
+      if (apiFilter.condition) {
+        result.combinator = apiFilter.condition.toLowerCase();
+      } else {
+        result.combinator = "and"; // default
+      }
+
+      // Convert criterion to rules
+      if (apiFilter.criterion && Array.isArray(apiFilter.criterion)) {
+        result.rules = apiFilter.criterion.map((rule: any) => {
+          // If nested condition, recurse
+          if (rule.condition || rule.criterion) {
+            return convertApiToQueryBuilder(rule);
+          }
+          // Convert API rule format to query builder format
+          return {
+            field: rule.attributeName || rule.id,
+            operator: rule.operator,
+            value: rule.attributeValue || rule.value,
+            type: rule.type || rule.attributeType
+          };
+        });
+      } else if (apiFilter.rules && Array.isArray(apiFilter.rules)) {
+        // Already in query builder format
+        result.rules = apiFilter.rules.map((rule: any) =>
+          rule.condition || rule.criterion ? convertApiToQueryBuilder(rule) : rule
+        );
+      }
+
+      return Object.keys(result).length > 0 ? result : null;
+    };
+
+    const shouldSetCustomFilterParam = (node: TreeNode, key: string) => {
+      return (
+        node.parent === "BASIC" ||
+        node.parent === "ADVANCED" ||
+        (node.parent === "BASIC_RELATIONSHIP" &&
+          (key === "relationshipName" || key === "limit" || key === "offset"))
+      );
+    };
+
+    const setCustomFilterParam = (
+      searchParams: URLSearchParams,
+      key: string,
+      value: any
+    ) => {
+      if (key === "limit") {
+        searchParams.set("pageLimit", value || 25);
+      } else if (key === "offset") {
+        searchParams.set("pageOffset", value);
+      } else if (key === "typeName") {
+        searchParams.set("type", value);
+      } else if (key === "classification") {
+        // Map classification to tag parameter for URL (matching classic UI)
+        searchParams.set("tag", value);
+      } else if (key === "termName") {
+        // Map termName (API format) to term parameter for URL (matching classic UI)
+        searchParams.set("term", value);
+      } else if (value !== null && value !== undefined && value !== "") {
+        // Only set parameter if value is not null, undefined, or empty string
+        searchParams.set(key, value);
+      }
+    };
+
+    const navigateToPath = (
+      node: TreeNode,
+      treeName: string,
+      searchParams: URLSearchParams,
+      navigate: NavigateFunction,
+      isEmptyServicetype: boolean | undefined,
+      toastId: any
+    ) => {
+      switch (treeName) {
+        case "Business MetaData":
+          searchParams.delete("relationshipName");
+          navigate(
+            { pathname: `administrator/businessMetadata/${node.guid}` },
+            { replace: true }
+          );
+          break;
+        case "Glossary":
+          if (!isEmptyServicetype) {
+            searchParams.delete("relationshipName");
+            navigate(
+              {
+                pathname: `glossary/${node.cGuid !== undefined ? node.cGuid : node.guid
+                  }`,
+                search: searchParams.toString(),
               },
-              "& .MuiTreeItem-content svg": {
-                color: "white",
-                fontSize: "20px !important",
+              { replace: true }
+            );
+          } else if (node.types === "parent") {
+            toast.dismiss(toastId.current);
+            toastId.current = toast.warning("Create a Term or Category");
+          } else {
+            searchParams.delete("relationshipName");
+            navigate(
+              {
+                pathname: "/search/searchResult",
+                search: searchParams.toString(),
               },
+              { replace: true }
+            );
+          }
+          break;
+        case "Relationships":
+        case "CustomFilters":
+          if (
+            treeName == "Relationships" ||
+            (treeName == "CustomFilters" && node.parent == "BASIC_RELATIONSHIP")
+          ) {
+            navigate(
+              {
+                pathname: `relationship/relationshipSearchresult`,
+                search: searchParams.toString(),
+              },
+              { replace: true }
+            );
+          } else {
+            searchParams.delete("relationshipName");
+            navigate(
+              {
+                pathname: "/search/searchResult",
+                search: searchParams.toString(),
+              },
+              { replace: true }
+            );
+          }
+          break;
+        default:
+          searchParams.delete("relationshipName");
+          navigate(
+            { pathname: "/search/searchResult", search: searchParams.toString() },
+            { replace: true }
+          );
+          break;
+      }
+    };
+
+    const TreeLabelWithTooltip: React.FC<{ label: string }> = ({ label }) => {
+      const labelRef = useRef<HTMLSpanElement>(null);
+      const [isOverflown, setIsOverflown] = useState(false);
+
+      useEffect(() => {
+        const el = labelRef.current;
+        if (el) {
+          setIsOverflown(el.scrollWidth > el.clientWidth);
+        }
+      }, [label, searchTerm]);
+
+      return (
+        <LightTooltip title={label} disableHoverListener={!isOverflown}>
+          <span
+            ref={labelRef}
+            className="tree-item-label"
+            style={{
+              display: "inline-block",
+              maxWidth: "100%",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
-            {loader ? (
-              <SkeletonLoader animation="pulse" variant="text" width={300} count={5}/>
-            ) : (
-              filteredData.map((node: TreeNode) => renderTreeItem(node))
-            )}
-          </TreeItem>
+            {highlightText(label)}
+          </span>
+        </LightTooltip>
+      );
+    };
 
-          <ImportDialog
-            open={openModal}
-            onClose={handleCloseModal}
-            title={
-              treeName == "Entities"
-                ? "Import Business Metadata"
-                : "Import Glossary Term"
-            }
+    const renderTreeItem = (node: TreeNode) =>
+      node?.id && (
+        <CustomTreeItem
+          key={node.id}
+          itemId={getNodeId(node)}
+          label={
+            <div
+              {...({
+                selectedNodeType: selectedNode.type,
+                selectedNodeTag: selectedNode.tag,
+                selectedNodeRelationship: selectedNode.relationship,
+                selectedNodeBM: selectedNode.businessMetadata,
+                node: node.id,
+                onClick: (_event: MouseEvent<HTMLElement>) => {
+                  handleNodeClick(
+                    node,
+                    treeName,
+                    searchParams,
+                    navigate,
+                    isEmptyServicetype,
+                    savedSearchData,
+                    toastId
+                  );
+                },
+                className: "custom-treeitem-label",
+              } as any)}
+            >
+              {node.id != "No Records Found" && (
+                <TreeIcons
+                  node={node}
+                  treeName={treeName}
+                  isEmptyServicetype={isEmptyServicetype ?? false}
+                />
+              )}
+              <TreeLabelWithTooltip label={node.label} />
+              {(treeName == "Entities" ||
+                treeName == "Classifications" ||
+                treeName == "CustomFilters" ||
+                treeName == "Glossary") &&
+                node.id != "No Records Found" && (
+                  <TreeNodeIcons
+                    node={node}
+                    treeName={treeName}
+                    updatedData={refreshData}
+                    isEmptyServicetype={isEmptyServicetype}
+                  />
+                )}
+            </div>
+          }
+        >
+          {node.children && node.children.map((child) => renderTreeItem(child))}
+        </CustomTreeItem>
+      );
+
+    const downloadFile = async () => {
+      try {
+        if (treeName == "Glossary") {
+          await downloadGlossaryImportTemplate();
+          return;
+        }
+        const apiResp: any = await getBusinessMetadataImportTmpl({});
+        const text: string = apiResp ? apiResp.data : "";
+        const blob = new Blob([text], { type: "text/plain" });
+
+        const url = window.URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "template_business_metadata");
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch {
+        /* ignore download error */
+      }
+    };
+
+    const label = { inputProps: { "aria-label": "Switch demo" } };
+    return (
+      <>
+        <Stack
+          className="sidebar-tree-box"
+          sx={{
+            ...(sideBarOpen == false && {
+              visibility: "hidden !important",
+              top: "62px !important",
+            }),
+            minWidth: "30px",
+            width: `100% !important`,
+            overflowX: "auto",
+          }}
+        >
+          <SimpleTreeView
+            expandedItems={expandedItems}
+            onExpandedItemsChange={handleExpandedItemsChange}
+            aria-label="customized"
+            className="sidebar-treeview"
+          >
+            <TreeItem
+              itemId={treeName}
+              label={
+                <Stack
+                  display="flex"
+                  alignItems="center"
+                  flexDirection="row"
+                  className="tree-item-parent-label"
+                >
+                  <Stack flexGrow={1}>
+                    <span>{displayTreeName}</span>
+                  </Stack>
+                  <Stack direction="row" alignItems="center" gap="0.375rem">
+                    <LightTooltip title="Refresh">
+                      <IconButton
+                        size="small"
+                        data-cy="refreshTree"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          refreshData();
+                        }}
+                        disabled={loader}
+                      >
+                        <RefreshIcon />
+                      </IconButton>
+                    </LightTooltip>
+
+
+                    {(treeName == "Entities" ||
+                      treeName == "Classifications" ||
+                      treeName == "Glossary") && (
+                        <>
+                          {
+                            <LightTooltip title={getEmptyTypesTitle()}>
+                              <AntSwitch
+                                {...label}
+                                size="small"
+                                onClick={(e: { stopPropagation: () => void }) => {
+                                  e.stopPropagation();
+                                  if (setisEmptyServicetype) {
+                                    setisEmptyServicetype(!isEmptyServicetype);
+                                  }
+                                }}
+                                data-cy="showEmptyServiceType"
+                                inputProps={{ "aria-label": "ant design" }}
+                              />
+                            </LightTooltip>
+                          }
+                        </>
+                      )}
+
+                    {(treeName == "Entities" ||
+                      treeName == "Classifications" ||
+                      treeName == "Glossary") && (
+                        <MoreVertIcon
+                          onClick={(e: any) => {
+                            e.stopPropagation();
+                            handleClickMenu(e);
+                          }}
+                          data-cy="dropdownMenuButton"
+                          fontSize="small"
+                        />
+                      )}
+
+                    {treeName == "Business MetaData" && (
+                      <LightTooltip title="Open Businesss Metadata">
+                        <LaunchOutlinedIcon
+                          fontSize="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newSearchParams = new URLSearchParams();
+
+                            newSearchParams.set("tabActive", "businessMetadata");
+                            navigate(
+                              {
+                                pathname: `administrator`,
+                                search: newSearchParams.toString(),
+                              },
+                              { replace: true }
+                            );
+                          }}
+                          data-cy="createBusinessMetadata"
+                        />
+                      </LightTooltip>
+                    )}
+                  </Stack>
+                  <Menu
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                    anchorEl={expand}
+                    id="account-menu"
+                    open={open}
+                    onClose={handleClose}
+                    transformOrigin={{ horizontal: "right", vertical: "top" }}
+                    anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+                    sx={{
+                      "& .MuiPaper-root": {
+                        transition: "none !important",
+                      },
+                    }}
+                    disableScrollLock={true}
+                  >
+                    {(treeName == "Entities" ||
+                      treeName == "Classifications") && (
+                        <MenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (setisGroupView) {
+                              setisGroupView(!isGroupView);
+                            }
+                            handleClose();
+                          }}
+                          data-cy="groupOrFlatTreeView"
+                          className="sidebar-menu-item"
+                        >
+                          <ListItemIcon
+                            sx={{ minWidth: "28px !important" }}
+                            data-cy="groupOrFlatTreeView"
+                          >
+                            {isGroupView ? (
+                              <FormatListBulletedIcon
+                                fontSize="small"
+                                className="menuitem-icon"
+                              />
+                            ) : (
+                              <AccountTreeIcon
+                                fontSize="small"
+                                className="menuitem-icon"
+                              />
+                            )}
+                          </ListItemIcon>
+                          <Typography className="menuitem-label">
+                            Show {isGroupView ? "flat" : "group"} tree
+                          </Typography>
+                        </MenuItem>
+                      )}
+                    {(treeName == "Classifications" ||
+                      treeName == "Glossary") && (
+                        <MenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (treeName == "Classifications") {
+                              setTagModal(true);
+                            } else if (treeName == "Glossary") {
+                              setGlossaryModal(true);
+                            }
+                            handleClose();
+                          }}
+                          data-cy="createClassification"
+                          className="sidebar-menu-item"
+                        >
+                          <ListItemIcon
+                            sx={{ minWidth: "28px !important" }}
+                            data-cy="createTag"
+                          >
+                            <AddIcon fontSize="small" className="menuitem-icon" />
+                          </ListItemIcon>
+                          <Typography className="menuitem-label">
+                            Create{" "}
+                            {treeName == "Classifications"
+                              ? "Classifications"
+                              : "Glossary"}
+                          </Typography>
+                        </MenuItem>
+                      )}
+                    {(treeName == "Entities" || treeName == "Glossary") && (
+                      <MenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          downloadFile();
+                          handleClose();
+                        }}
+                        data-cy="downloadBusinessMetadata"
+                        disabled={
+                          treeName == "Glossary" && !isEmptyServicetype
+                            ? true
+                            : false
+                        }
+                        className="sidebar-menu-item"
+                      >
+                        <ListItemIcon sx={{ minWidth: "28px !important" }}>
+                          <FileDownloadIcon
+                            fontSize="small"
+                            className="menuitem-icon"
+                          />
+                        </ListItemIcon>
+                        <Typography className="menuitem-label">
+                          Download Import template
+                        </Typography>
+                      </MenuItem>
+                    )}
+                    {(treeName == "Entities" || treeName == "Glossary") && (
+                      <MenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenModal();
+                          handleClose();
+                        }}
+                        data-cy="importBusinessMetadata"
+                        disabled={
+                          treeName == "Glossary" && !isEmptyServicetype
+                            ? true
+                            : false
+                        }
+                        className="sidebar-menu-item"
+                      >
+                        <ListItemIcon sx={{ minWidth: "28px !important" }}>
+                          <FileUploadIcon
+                            fontSize="small"
+                            className="menuitem-icon"
+                          />
+                        </ListItemIcon>
+
+                        <Typography className="menuitem-label">
+                          {treeName == "Entities"
+                            ? "Import Business Metadata"
+                            : "Import Glossary Term"}
+                        </Typography>
+                      </MenuItem>
+                    )}
+                  </Menu>
+                </Stack>
+              }
+              sx={{
+                "& .MuiTreeItem-label": {
+                  fontWeight: "600  !important",
+                  fontSize: "14px  !important",
+                  lineHeight: "26px !important",
+                  color: "white",
+                },
+                "& .MuiTreeItem-content svg": {
+                  color: "white",
+                  fontSize: "20px !important",
+                },
+              }}
+            >
+              {loader ? (
+                <SkeletonLoader animation="pulse" variant="text" width={300} count={5} />
+              ) : (
+                filteredData.map((node: TreeNode) => renderTreeItem(node))
+              )}
+            </TreeItem>
+
+            <ImportDialog
+              open={openModal}
+              onClose={handleCloseModal}
+              title={
+                treeName == "Entities"
+                  ? "Import Business Metadata"
+                  : "Import Glossary Term"
+              }
+            />
+          </SimpleTreeView>
+        </Stack>
+
+        {tagModal && (
+          <ClassificationForm
+            open={tagModal}
+            isAdd={true}
+            onClose={handleCloseTagModal}
           />
-        </SimpleTreeView>
-      </Stack>
-
-      {tagModal && (
-        <ClassificationForm
-          open={tagModal}
-          isAdd={true}
-          onClose={handleCloseTagModal}
-        />
-      )}
-      {glossaryModal && (
-        <AddUpdateGlossaryForm
-          open={glossaryModal}
-          isAdd={true}
-          onClose={handleCloseGlossaryModal}
-          node={undefined}
-        />
-      )}
-    </>
-  );
-};
+        )}
+        {glossaryModal && (
+          <AddUpdateGlossaryForm
+            open={glossaryModal}
+            isAdd={true}
+            onClose={handleCloseGlossaryModal}
+            node={undefined}
+          />
+        )}
+      </>
+    );
+  };
 
 export default BarTreeView;

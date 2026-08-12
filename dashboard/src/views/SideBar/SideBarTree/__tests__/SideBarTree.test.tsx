@@ -28,19 +28,20 @@
 
 import React from 'react'
 import { render, screen, waitFor, fireEvent, act, cleanup } from '@testing-library/react'
+import '@testing-library/jest-dom'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
 import { BrowserRouter, MemoryRouter } from 'react-router-dom'
 import SideBarTree from '../SideBarTree'
-import { getBusinessMetadataImportTmpl } from '@api/apiMethods/entitiesApiMethods'
-import { getGlossaryImportTmpl } from '@api/apiMethods/glossaryApiMethod'
+import { getBusinessMetadataImportTmpl } from '../../../../api/apiMethods/entitiesApiMethods'
+import { getGlossaryImportTmpl } from '../../../../api/apiMethods/glossaryApiMethod'
 
 // Mock dependencies
-jest.mock('@api/apiMethods/entitiesApiMethods', () => ({
+jest.mock('../../../../api/apiMethods/entitiesApiMethods', () => ({
 	getBusinessMetadataImportTmpl: jest.fn()
 }))
 
-jest.mock('@api/apiMethods/glossaryApiMethod', () => ({
+jest.mock('../../../../api/apiMethods/glossaryApiMethod', () => ({
 	getGlossaryImportTmpl: jest.fn()
 }))
 
@@ -51,54 +52,54 @@ jest.mock('react-toastify', () => ({
 	}
 }))
 
-jest.mock('@utils/Utils', () => ({
+jest.mock('../../../../utils/Utils', () => ({
 	globalSearchFilterInitialQuery: {
 		setQuery: jest.fn()
 	},
 	isEmpty: jest.fn((val) => !val || (Array.isArray(val) && val.length === 0))
 }))
 
-jest.mock('@utils/CommonViewFunction', () => ({
+jest.mock('../../../../utils/CommonViewFunction', () => ({
 	attributeFilter: {
 		generateUrl: jest.fn((params) => 'mock-url-string')
 	}
 }))
 
-jest.mock('@utils/Helper', () => ({
+jest.mock('../../../../utils/Helper', () => ({
 	cloneDeep: jest.fn((obj) => JSON.parse(JSON.stringify(obj)))
 }))
 
-jest.mock('@components/ImportDialog', () => {
+jest.mock('../../../../components/ImportDialog', () => {
 	return function MockImportDialog(props: any) {
 		return props.open ? <div data-testid="import-dialog">Import Dialog</div> : null
 	}
 })
 
-jest.mock('@views/Classification/ClassificationForm', () => {
+jest.mock('../../../../views/Classification/ClassificationForm', () => {
 	return function MockClassificationForm(props: any) {
 		return props.open ? <div data-testid="classification-form">Classification Form</div> : null
 	}
 })
 
-jest.mock('@views/Glossary/AddUpdateGlossaryForm', () => {
+jest.mock('../../../../views/Glossary/AddUpdateGlossaryForm', () => {
 	return function MockAddUpdateGlossaryForm(props: any) {
 		return props.open ? <div data-testid="glossary-form">Glossary Form</div> : null
 	}
 })
 
-jest.mock('@components/Treeicons', () => {
+jest.mock('../../../../components/Treeicons', () => {
 	return function MockTreeIcons(props: any) {
 		return <div data-testid="tree-icons">Tree Icons</div>
 	}
 })
 
-jest.mock('@components/TreeNodeIcons', () => {
+jest.mock('../../../../components/TreeNodeIcons', () => {
 	return function MockTreeNodeIcons(props: any) {
 		return <div data-testid="tree-node-icons">TreeNode Icons</div>
 	}
 })
 
-jest.mock('@components/SkeletonLoader', () => {
+jest.mock('../../../../components/SkeletonLoader', () => {
 	return function MockSkeletonLoader(props: any) {
 		return <div data-testid="skeleton-loader">Loading...</div>
 	}
@@ -139,15 +140,15 @@ jest.mock('@mui/x-tree-view/TreeItem', () => {
 			</div>
 		)
 	}
-	return { 
-		TreeItem, 
+	return {
+		TreeItem,
 		useTreeItemState,
 		TreeItemProps: {},
 		TreeItemContentProps: {}
 	}
 })
 
-jest.mock('@components/muiComponents', () => ({
+jest.mock('../../../../components/muiComponents', () => ({
 	MoreVertIcon: ({ onClick, ...props }: any) => (
 		<div data-testid="more-vert-icon" onClick={onClick} {...props}>More</div>
 	),
@@ -175,7 +176,7 @@ jest.mock('@components/muiComponents', () => ({
 	)
 }))
 
-jest.mock('@utils/Muiutils', () => ({
+jest.mock('../../../../utils/Muiutils', () => ({
 	AntSwitch: ({ onClick, inputProps, ...props }: any) => (
 		<div data-testid="ant-switch" onClick={onClick} {...props}>Switch</div>
 	)
@@ -260,7 +261,7 @@ describe('SideBarTree', () => {
 		jest.clearAllMocks()
 		global.URL.createObjectURL = jest.fn(() => 'blob:url')
 		global.URL.revokeObjectURL = jest.fn()
-		
+
 		// Restore original createElement for React Testing Library
 		document.createElement = originalCreateElement
 		document.body.appendChild = originalAppendChild
@@ -570,7 +571,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-			
+
 			if (downloadItem) {
 				fireEvent.click(downloadItem)
 			}
@@ -620,7 +621,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-			
+
 			if (downloadItem) {
 				fireEvent.click(downloadItem)
 			}
@@ -649,7 +650,7 @@ describe('SideBarTree', () => {
 			await waitFor(() => {
 				const menuItems = screen.getAllByTestId('menu-item')
 				const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-				
+
 				if (downloadItem) {
 					expect(downloadItem).toHaveAttribute('data-disabled', 'true')
 				}
@@ -677,15 +678,15 @@ describe('SideBarTree', () => {
 			// Find menu item by text content
 			const importText = screen.getByText('Import Business Metadata')
 			expect(importText).toBeInTheDocument()
-			
+
 			const importMenuItem = importText.closest('[data-testid="menu-item"]')
 			expect(importMenuItem).toBeInTheDocument()
-			
+
 			if (importMenuItem) {
 				await act(async () => {
 					fireEvent.click(importMenuItem)
 				})
-				
+
 				// Wait for state update and dialog to appear
 				await waitFor(() => {
 					expect(screen.getByTestId('import-dialog')).toBeInTheDocument()
@@ -712,7 +713,7 @@ describe('SideBarTree', () => {
 			// Find menu item by text content
 			const importText = screen.getByText('Import Business Metadata')
 			const importMenuItem = importText.closest('[data-testid="menu-item"]')
-			
+
 			if (importMenuItem) {
 				await act(async () => {
 					fireEvent.click(importMenuItem)
@@ -745,7 +746,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const createItem = menuItems.find(item => item.textContent?.includes('Create'))
-			
+
 			if (createItem) {
 				fireEvent.click(createItem)
 			}
@@ -773,7 +774,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const createItem = menuItems.find(item => item.textContent?.includes('Create'))
-			
+
 			if (createItem) {
 				fireEvent.click(createItem)
 			}
@@ -1293,6 +1294,22 @@ describe('SideBarTree', () => {
 			})
 		})
 
+		it('should set search params for Glossary term without duplicating glossary suffix', async () => {
+			const treeData = [
+				{ id: 'term1@glossary1', label: 'Term 1', guid: 'guid1', parent: 'glossary1', types: 'child', children: [] }
+			]
+
+			renderComponent({
+				treeName: 'Glossary',
+				treeData,
+				isEmptyServicetype: true
+			}, {}, ['/search/searchResult'])
+
+			await waitFor(() => {
+				expect(screen.getByTestId('simple-tree-view')).toBeInTheDocument()
+			})
+		})
+
 		it('should set search params for Glossary category', async () => {
 			const treeData = [
 				{ id: 'cat1', label: 'Category 1', guid: 'guid1', cGuid: 'cguid1', types: 'child', children: [] }
@@ -1319,10 +1336,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'ADVANCED', 
-						searchParameters: { query: 'test' } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'ADVANCED',
+						searchParameters: { query: 'test' }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1349,10 +1366,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { entityFilters: mockEntityFilters } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { entityFilters: mockEntityFilters }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1379,10 +1396,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { tagFilters: mockTagFilters } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { tagFilters: mockTagFilters }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1409,10 +1426,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC_RELATIONSHIP', 
-						searchParameters: { relationshipFilters: mockRelationshipFilters } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC_RELATIONSHIP',
+						searchParameters: { relationshipFilters: mockRelationshipFilters }
 					}]
 				}
 			}, ['/relationship/relationshipSearchresult'])
@@ -1432,10 +1449,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC_RELATIONSHIP', 
-						searchParameters: { limit: 50, offset: 10 } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC_RELATIONSHIP',
+						searchParameters: { limit: 50, offset: 10 }
 					}]
 				}
 			}, ['/relationship/relationshipSearchresult'])
@@ -1455,10 +1472,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { typeName: 'EntityType' } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { typeName: 'EntityType' }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1478,10 +1495,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { classification: 'Tag1' } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { classification: 'Tag1' }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1501,14 +1518,14 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { 
-							nullValue: null, 
-							undefinedValue: undefined, 
-							emptyValue: '' 
-						} 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: {
+							nullValue: null,
+							undefinedValue: undefined,
+							emptyValue: ''
+						}
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1613,7 +1630,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-			
+
 			if (downloadItem) {
 				await act(async () => {
 					fireEvent.click(downloadItem)
@@ -1659,7 +1676,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-			
+
 			if (downloadItem) {
 				await act(async () => {
 					fireEvent.click(downloadItem)
@@ -1697,10 +1714,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { entityFilters: nestedFilters } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { entityFilters: nestedFilters }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1727,10 +1744,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { entityFilters: qbFilters } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { entityFilters: qbFilters }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1750,10 +1767,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { entityFilters: 'invalid' } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { entityFilters: 'invalid' }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1917,7 +1934,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-			
+
 			if (downloadItem) {
 				expect(downloadItem).not.toHaveAttribute('data-disabled', 'true')
 			}
@@ -1942,7 +1959,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const importItem = menuItems.find(item => item.textContent?.includes('Import'))
-			
+
 			if (importItem) {
 				expect(importItem).not.toHaveAttribute('data-disabled', 'true')
 			}
@@ -1967,7 +1984,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const importItem = menuItems.find(item => item.textContent?.includes('Import'))
-			
+
 			if (importItem) {
 				expect(importItem).toHaveAttribute('data-disabled', 'true')
 			}
@@ -2016,7 +2033,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const toggleItem = menuItems.find(item => item.textContent?.includes('flat'))
-			
+
 			if (toggleItem) {
 				await act(async () => {
 					fireEvent.click(toggleItem)

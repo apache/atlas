@@ -74,7 +74,7 @@ jest.mock('../../api/apiMethods/savedSearchApiMethod', () => ({
 
 jest.mock('../../utils/Utils', () => ({
 	isEmpty: (val: any) =>
-		val == null || (Array.isArray(val) ? val.length === 0 : val === '') ,
+		val == null || (Array.isArray(val) ? val.length === 0 : val === ''),
 	serverError: jest.fn()
 }))
 
@@ -118,7 +118,7 @@ describe('TreeNodeIcons', () => {
 	})
 
 	it('handles CustomFilters rename flow', async () => {
-		
+
 		const updatedData = jest.fn()
 		render(
 			<TreeNodeIcons
@@ -239,10 +239,40 @@ describe('TreeNodeIcons', () => {
 		expect(screen.getByTestId('delete-glossary')).toBeTruthy()
 	})
 
-	it('opens glossary edit modal for parent', () => {
+	it('opens delete glossary modal for glossary term child', () => {
 		render(
 			<TreeNodeIcons
-				node={{ id: 'Gloss1', types: 'parent', children: [] }}
+				node={{ id: 'Term1', types: 'child', children: [] }}
+				treeName="Glossary"
+				updatedData={jest.fn()}
+				isEmptyServicetype={true}
+			/>
+		)
+
+		fireEvent.click(screen.getByTestId('MoreHorizOutlinedIcon'))
+		fireEvent.click(screen.getByText('Delete Term'))
+		expect(screen.getByTestId('delete-glossary')).toBeTruthy()
+	})
+
+	it('opens delete glossary modal for glossary category child', () => {
+		render(
+			<TreeNodeIcons
+				node={{ id: 'Category1', types: 'child', children: [] }}
+				treeName="Glossary"
+				updatedData={jest.fn()}
+				isEmptyServicetype={false}
+			/>
+		)
+
+		fireEvent.click(screen.getByTestId('MoreHorizOutlinedIcon'))
+		fireEvent.click(screen.getByText('Delete Category'))
+		expect(screen.getByTestId('delete-glossary')).toBeTruthy()
+	})
+
+	it('navigates to glossary view/edit for parent', () => {
+		render(
+			<TreeNodeIcons
+				node={{ id: 'Gloss1', guid: 'gloss1-guid', types: 'parent', children: [] }}
 				treeName="Glossary"
 				updatedData={jest.fn()}
 				isEmptyServicetype={true}
@@ -251,7 +281,10 @@ describe('TreeNodeIcons', () => {
 
 		fireEvent.click(screen.getByTestId('MoreHorizOutlinedIcon'))
 		fireEvent.click(screen.getByText('View/Edit Glossary'))
-		expect(screen.getByTestId('glossary-form')).toBeTruthy()
+		expect(navigateMock).toHaveBeenCalledWith({
+			pathname: '/glossary/gloss1-guid',
+			search: expect.stringContaining('gtype=glossary')
+		})
 	})
 
 	it('navigates to search for classification', () => {
@@ -292,6 +325,29 @@ describe('TreeNodeIcons', () => {
 		expect(navigateMock).toHaveBeenCalledWith({
 			pathname: '/glossary/c1',
 			search: expect.stringContaining('term=Term1%40Gloss') // URL encoded @ symbol
+		})
+	})
+
+	it('navigates to glossary child view/edit without double appending glossary name if term already contains it', () => {
+		render(
+			<TreeNodeIcons
+				node={{
+					id: 'Term1@Gloss',
+					parent: 'Gloss',
+					types: 'child',
+					cGuid: 'c1'
+				}}
+				treeName="Glossary"
+				updatedData={jest.fn()}
+				isEmptyServicetype={true}
+			/>
+		)
+
+		fireEvent.click(screen.getByTestId('MoreHorizOutlinedIcon'))
+		fireEvent.click(screen.getByText('View/Edit Term'))
+		expect(navigateMock).toHaveBeenCalledWith({
+			pathname: '/glossary/c1',
+			search: expect.stringContaining('term=Term1%40Gloss') // Should not be Term1%40Gloss%40Gloss
 		})
 	})
 

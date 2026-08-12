@@ -37,6 +37,9 @@ const glossaryImportUrl = () => {
 };
 
 const glossaryTypeUrl = (glossaryType: string, guid: string) => {
+  if (glossaryType == "glossary") {
+    return `${glossaryUrl()}/${guid}`;
+  }
   return `${glossaryUrl()}/${glossaryType}/${guid}`;
 };
 
@@ -73,6 +76,10 @@ const assignGlossaryTypeUrl = (guid: string) => {
   return termUrl;
 };
 
+const deleteCategoryUrl = (guid: string) => {
+  return getBaseApiUrl("urlV2") + `/glossary/category/${guid}`;
+};
+
 const removeTermorCatgeoryUrl = (guid: string, glossaryType: string) => {
   let termUrl = getBaseApiUrl("urlV2") + `/glossary/${glossaryType}/${guid}`;
   return termUrl;
@@ -91,4 +98,5 @@ export {
   assignTermtoCategoryUrl,
   assignGlossaryTypeUrl,
   removeTermorCatgeoryUrl,
+  deleteCategoryUrl
 };

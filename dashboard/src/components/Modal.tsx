@@ -98,6 +98,9 @@ export const CustomModal: React.FC<CustomModalProps> = ({
           aria-labelledby="customized-dialog-title"
           aria-busy={isLoading}
           open={open}
+          disableEnforceFocus
+          disableAutoFocus
+          disableRestoreFocus
           sx={{
             "& .MuiDialog-paper": {
               // maxWidth: "80% !important",

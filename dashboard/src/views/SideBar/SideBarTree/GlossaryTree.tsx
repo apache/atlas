@@ -81,8 +81,19 @@ const GlossaryTree = ({ sideBarOpen, searchTerm }: Props) => {
               children: EnumCategoryRelation[];
               parent: string;
             }) => {
-              return !isEmpty(glossaries.children)
-                ? glossaries.children
+              if (isEmpty(glossaries.children)) return [];
+              
+              // Deduplicate children by guid to prevent MUI TreeView identical id errors
+              const uniqueChildren = Array.from(
+                new Map(
+                  glossaries.children.map(item => [
+                    glossaryType ? item.termGuid : item.categoryGuid, 
+                    item
+                  ])
+                ).values()
+              );
+
+              return uniqueChildren
                   .map((glossariesType: any) => {
                     const getChild = (parentGuid: string | undefined): any => {
                       if (!parentGuid) return [];
@@ -121,8 +132,7 @@ const GlossaryTree = ({ sideBarOpen, searchTerm }: Props) => {
                       };
                     }
                   })
-                  .filter(Boolean)
-                : [];
+                  .filter(Boolean);
             };
 
             let name: string = glossary.name,
