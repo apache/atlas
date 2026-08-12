@@ -22,6 +22,7 @@ import Switch from "@mui/material/Switch";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
+import React from "react";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Button from "@mui/material/Button";
@@ -67,6 +68,69 @@ const LightTooltip = styled(({ className, ...props }: any) => (
     fontSize: 11
   }
 }));
+
+import { TooltipProps } from '@mui/material/Tooltip';
+import { SxProps, Theme } from '@mui/material/styles';
+
+interface OverflowTooltipProps extends Omit<TooltipProps, 'children'> {
+  children: React.ReactElement;
+  wrapperComponent?: React.ElementType;
+  wrapperSx?: SxProps<Theme>;
+}
+
+const OverflowTooltip = ({ title, children, wrapperComponent, wrapperSx, ...props }: OverflowTooltipProps) => {
+  const textElementRef = React.useRef<HTMLElement>(null);
+  const [isOverflowed, setIsOverflowed] = React.useState(false);
+
+  const checkOverflow = () => {
+    if (textElementRef.current) {
+      setIsOverflowed(
+        textElementRef.current.scrollWidth > textElementRef.current.clientWidth
+      );
+    }
+  };
+
+  React.useEffect(() => {
+    checkOverflow();
+    window.addEventListener("resize", checkOverflow);
+    return () => {
+      window.removeEventListener("resize", checkOverflow);
+    };
+  }, [children, title]);
+
+  const child = wrapperComponent || wrapperSx ? (
+    <Box
+      component={wrapperComponent || 'span'}
+      ref={textElementRef}
+      sx={{
+        display: "inline-flex",
+        minWidth: 0,
+        width: "100%",
+        alignItems: "center",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        ...wrapperSx
+      }}
+    >
+      {children}
+    </Box>
+  ) : (
+    React.cloneElement(children, { ref: textElementRef })
+  );
+
+  return (
+    <LightTooltip
+      title={title}
+      disableHoverListener={!isOverflowed}
+      disableFocusListener={!isOverflowed}
+      disableTouchListener={!isOverflowed}
+      {...props}
+    >
+      {child}
+    </LightTooltip>
+  );
+};
 
 interface ButtonProps {
   children?: any;
@@ -202,5 +266,6 @@ export {
   CustomButton,
   Accordion,
   AccordionSummary,
-  AccordionDetails
+  AccordionDetails,
+  OverflowTooltip
 };
