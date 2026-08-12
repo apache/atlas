@@ -413,6 +413,14 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 matchString: "glossary"
             });
         },
+        isGlossaryTermsListPage: function(url) {
+            var query = this.getQueryUrl(url),
+                lastValue = query.lastValue || '';
+            if (lastValue.indexOf('?') > -1) {
+                lastValue = lastValue.split('?')[0];
+            }
+            return query.firstValue === 'glossary' && lastValue === 'terms-list';
+        },
         isDetailPage: function(url) {
             return this.checkTabUrl({
                 url: url,
