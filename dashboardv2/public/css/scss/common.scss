@@ -332,6 +332,42 @@ pre {
     float: left;
 }
 
+.glossary-actions-dropdown {
+    .dropdown-menu {
+        min-width: 220px;
+        padding: 4px 0;
+
+        > li > a.glossary-sidebar-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            color: $color_ironside_gray_approx;
+            white-space: nowrap;
+
+            .menuitem-icon {
+                color: $color_jungle_green_approx;
+                width: 16px;
+                min-width: 16px;
+                text-align: center;
+                flex-shrink: 0;
+                font-size: 14px;
+            }
+
+            .menuitem-label {
+                color: inherit;
+            }
+
+            &:hover,
+            &:focus {
+                color: $color_jungle_green_approx;
+                background-color: transparent;
+                text-decoration: none;
+            }
+        }
+    }
+}
+
 .glossary-terms-list-page {
     padding: 10px 10px;
 

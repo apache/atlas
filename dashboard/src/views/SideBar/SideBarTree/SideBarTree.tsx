@@ -51,7 +51,6 @@ import {
   Typography,
 } from "@components/muiComponents";
 import AddIcon from "@mui/icons-material/Add";
-import TableRowsOutlinedIcon from "@mui/icons-material/TableRowsOutlined";
 import { getBusinessMetadataImportTmpl } from "@api/apiMethods/entitiesApiMethods";
 import {
   NavigateFunction,
@@ -1240,7 +1239,7 @@ const BarTreeView: FC<{
                       className="sidebar-menu-item"
                     >
                       <ListItemIcon sx={{ minWidth: "28px !important" }}>
-                        <TableRowsOutlinedIcon
+                        <FileDownloadIcon
                           fontSize="small"
                           className="menuitem-icon"
                         />

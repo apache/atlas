@@ -216,10 +216,6 @@ jest.mock('@mui/icons-material/LaunchOutlined', () => ({
 	default: ({ onClick }: any) => <div data-testid="launch-icon" onClick={onClick}>Launch</div>
 }))
 
-jest.mock('@mui/icons-material/TableRowsOutlined', () => ({
-	__esModule: true,
-	default: () => <div data-testid="table-rows-icon">Export</div>
-}))
 
 jest.mock('@mui/material/Stack', () => ({
 	__esModule: true,
@@ -824,7 +820,7 @@ describe('SideBarTree', () => {
 			})
 
 			expect(screen.getByText('Export Glossary')).toBeInTheDocument()
-			expect(screen.getByTestId('table-rows-icon')).toBeInTheDocument()
+			expect(screen.getAllByTestId('file-download-icon').length).toBeGreaterThanOrEqual(2)
 			expect(
 				document.querySelector('[data-cy="glossaryTermsListNavigate"]')
 			).toBeInTheDocument()
