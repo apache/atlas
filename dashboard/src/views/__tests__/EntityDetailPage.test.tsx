@@ -287,6 +287,22 @@ describe('EntityDetailPage', () => {
 		}
 	});
 
+	it('should hide Add Classification and Add Term buttons for DELETED entities', () => {
+		const deletedEntity = {
+			...mockEntity,
+			status: 'DELETED'
+		};
+		const store = createMockStore({ entity: deletedEntity, referredEntities: {} }, mockEntityData, [{ terms: [] }]);
+		renderWithProviders(<TestWrapper store={store} />);
+
+		const addClassificationButton = screen.queryByLabelText(/add.*tag/i) || screen.queryByText(/add.*classification/i);
+		const addTermButton = screen.queryByLabelText(/assign.*term/i) || screen.queryByText(/assign.*term/i);
+
+		expect(addClassificationButton).toBeNull();
+		expect(addTermButton).toBeNull();
+	});
+
+
 	it('should handle entity not found', () => {
 		const store = createMockStore({ entity: null }, mockEntityData);
 		renderWithProviders(<TestWrapper store={store} />);

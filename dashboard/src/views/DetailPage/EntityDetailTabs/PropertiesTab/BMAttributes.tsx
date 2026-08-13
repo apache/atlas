@@ -553,11 +553,11 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
                               property, click{" "}
                               <Typography
                                 className="text-color-green cursor-pointer text-underline"
-                              component="span"
-                              onClick={(e: { stopPropagation: () => void }) => {
-                                e.stopPropagation();
-                                setAddLabel(false);
-                              }}
+                                component="span"
+                                onClick={(e: { stopPropagation: () => void }) => {
+                                  e.stopPropagation();
+                                  setAddLabel(false);
+                                }}
                               >
                                 here
                               </Typography>

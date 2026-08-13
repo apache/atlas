@@ -17,7 +17,6 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@utils/test-utils';
-import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import Labels from '../Labels';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -97,6 +96,13 @@ describe('Labels Component', () => {
     expect(screen.getByText(/No labels have been created yet/i)).toBeInTheDocument();
     expect(screen.queryByText(/To add a labels, click/i)).not.toBeInTheDocument();
     expect(screen.queryByText('Add')).not.toBeInTheDocument();
+  });
+
+  it('hides edit button for deleted entity even when labels exist', () => {
+    render(<TestWrapper><Labels loading={false} labels={['Label1']} entity={{ status: 'DELETED' }} /></TestWrapper>);
+    
+    expect(screen.getByText('Label1')).toBeInTheDocument();
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
   });
 
   it('allows clicking edit to show autocomplete form', async () => {

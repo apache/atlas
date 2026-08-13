@@ -460,23 +460,25 @@ const DetailPageAttribute = ({
                       >
                         Categories
                       </Typography>
-                      <LightTooltip title={"Add Categories"}>
-                        <IconButton
-                          component="label"
-                          role={undefined}
-                          tabIndex={-1}
-                          size="small"
-                          color="primary"
-                          onClick={() => {
-                            setCategoryModal(true);
-                          }}
-                        >
-                          <AddCircleOutlineIcon
-                            className="mr-0"
-                            fontSize="small"
-                          />{" "}
-                        </IconButton>
-                      </LightTooltip>
+                      {!loading && data?.status !== EntityStatus.DELETED && (
+                        <LightTooltip title={"Add Categories"}>
+                          <IconButton
+                            component="label"
+                            role={undefined}
+                            tabIndex={-1}
+                            size="small"
+                            color="primary"
+                            onClick={() => {
+                              setCategoryModal(true);
+                            }}
+                          >
+                            <AddCircleOutlineIcon
+                              className="mr-0"
+                              fontSize="small"
+                            />{" "}
+                          </IconButton>
+                        </LightTooltip>
+                      )}
                     </Stack>
                     <Stack
                       data-cy="categoryList"
@@ -619,23 +621,25 @@ const DetailPageAttribute = ({
                         >
                           Attributes:
                         </Typography>
-                        <LightTooltip title={"Add Attributes"}>
-                          <IconButton
-                            component="label"
-                            role={undefined}
-                            tabIndex={-1}
-                            size="small"
-                            color="primary"
-                            onClick={() => {
-                              setAttributeModal(true);
-                            }}
-                          >
-                            <AddCircleOutlineIcon
-                              className="mr-0"
-                              fontSize="small"
-                            />{" "}
-                          </IconButton>
-                        </LightTooltip>
+                        {!loading && data?.status !== EntityStatus.DELETED && (
+                          <LightTooltip title={"Add Attributes"}>
+                            <IconButton
+                              component="label"
+                              role={undefined}
+                              tabIndex={-1}
+                              size="small"
+                              color="primary"
+                              onClick={() => {
+                                setAttributeModal(true);
+                              }}
+                            >
+                              <AddCircleOutlineIcon
+                                className="mr-0"
+                                fontSize="small"
+                              />{" "}
+                            </IconButton>
+                          </LightTooltip>
+                        )}
                       </Stack>
 
                       <Stack

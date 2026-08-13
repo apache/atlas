@@ -17,7 +17,6 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@utils/test-utils';
-import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import UserDefinedProperties from '../UserDefinedProperties';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -98,6 +97,13 @@ describe('UserDefinedProperties Component', () => {
     expect(screen.getByText(/No properties have been created yet/i)).toBeInTheDocument();
     expect(screen.queryByText(/To add a property,click/i)).not.toBeInTheDocument();
     expect(screen.queryByText('Add')).not.toBeInTheDocument();
+  });
+
+  it('hides edit button for deleted entity even when properties exist', () => {
+    render(<TestWrapper><UserDefinedProperties {...defaultProps} entity={{ ...defaultProps.entity, status: 'DELETED' }} /></TestWrapper>);
+    
+    expect(screen.getByText('value1')).toBeInTheDocument();
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
   });
 
   it('switches to edit mode on Edit button click', () => {

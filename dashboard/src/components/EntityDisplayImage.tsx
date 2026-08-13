@@ -51,7 +51,7 @@ const DisplayImage = ({
             getEntityIconPath({ entityData: entityData, errorUrl: imagePath })
           );
         }
-      } catch (error) {
+      } catch (_error) {
         setImageUrl(
           getEntityIconPath({ entityData: entityData, errorUrl: imagePath })
         );

@@ -392,6 +392,27 @@ describe('DetailPageAttribute', () => {
 		fireEvent.click(screen.getByText('close-assign-cat'))
 	})
 
+	it('hides Add Classifications button for DELETED entities', () => {
+		mockGtype = 'term'
+		renderComp({ data: { ...baseData, status: 'DELETED' } })
+		expect(document.querySelector('[data-title="Add Classifications"]')).toBeNull()
+	})
+
+	it('hides Add Term button for DELETED entities', () => {
+		mockGtype = 'category'
+		mockParams.guid = 'gc'
+		renderComp({ data: { ...baseData, status: 'DELETED' } })
+		expect(document.querySelector('[data-title="Add Term"]')).toBeNull()
+	})
+
+	it('hides Add Categories button for DELETED entities', () => {
+		mockGtype = 'term'
+		mockParams.guid = 'gt'
+		renderComp({ data: { ...baseData, status: 'DELETED' } })
+		expect(document.querySelector('[data-title="Add Categories"]')).toBeNull()
+	})
+
+
 	it('superTypes section loading and loaded', () => {
 		const { rerender } = render(
 			<MemoryRouter>

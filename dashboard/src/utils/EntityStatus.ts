@@ -17,5 +17,11 @@
 
 export enum EntityStatus {
   ACTIVE = "ACTIVE",
-  DELETED = "DELETED"
+  DELETED = "DELETED",
+  PURGED = "PURGED"
 }
+
+export const isEntityModificationAllowed = (status: EntityStatus | string | undefined): boolean => {
+  if (!status) return true;
+  return status !== EntityStatus.DELETED && status !== EntityStatus.PURGED;
+};
