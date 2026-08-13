@@ -55,6 +55,7 @@ define(['require',
                 termTree: "[data-id='termTree']",
                 categoryTree: "[data-id='categoryTree']",
                 importGlossary: "[data-id='importGlossary']",
+                exportGlossary: "[data-id='exportGlossary']",
                 glossaryTreeLoader: "[data-id='glossaryTreeLoader']",
                 glossaryTreeView: "[data-id='glossaryTreeView']"
             },
@@ -86,6 +87,7 @@ define(['require',
                     this.getGlossary();
                 };
                 events["click " + this.ui.importGlossary] = 'onClickImportGlossary';
+                events["click " + this.ui.exportGlossary] = 'onExportGlossary';
                 events["keyup " + this.ui.searchTerm] = function() {
                     this.ui.termTree.jstree("search", _.escape(this.ui.searchTerm.val()));
                 };
@@ -189,12 +191,10 @@ define(['require',
                     this.$('.category-view').show();
                     this.$('.term-view').hide();
                     this.viewType = "category";
-                    this.$('.dropdown-toggle').attr('disabled', 'disabled');
                 } else {
                     this.$('.term-view').show();
                     this.$('.category-view').hide();
                     this.viewType = "term";
-                    this.$('.dropdown-toggle').removeAttr('disabled');
                 }
                 var setDefaultSelector = function() {
                     if (!that.value) {
@@ -216,7 +216,7 @@ define(['require',
                         gType: "glossary"
                     }
                 }
-                if (Utils.getUrlState.isGlossaryTab()) {
+                if (Utils.getUrlState.isGlossaryTab() && !Utils.getUrlState.isGlossaryTermsListPage()) {
                     var obj = this.query[this.viewType],
                         $tree = this.ui[(this.viewType == "term" ? "termTree" : "categoryTree")];
                     obj["gId"] = that.value ? that.value.gId : null; //this Property added, Because when we toggle the GlossaryViewButton it does not adds the gId which is required for selection.
@@ -479,7 +479,7 @@ define(['require',
                         }
                     }
                 }
-                if (options.isTrigger) {
+                if (options.isTrigger && !Utils.getUrlState.isGlossaryTermsListPage()) {
                     this.triggerUrl();
                 }
             },
@@ -590,7 +590,16 @@ define(['require',
                                     } else if (type == that.viewType) {
                                         if (data && data.event && data.event.skipTrigger) {
                                             return;
-                                        } else if (that.glossary.selectedItem.guid !== data.node.original.guid) {
+                                        }
+                                        var onTermsListPage = Utils.getUrlState.isGlossaryTermsListPage();
+                                        var isUserSelection = !!(data && data.event);
+                                        if (onTermsListPage && !isUserSelection) {
+                                            that.glossary.selectedItem = data.node.original;
+                                            return;
+                                        }
+                                        var selectedGuid = that.glossary.selectedItem && that.glossary.selectedItem.guid;
+                                        var clickedGuid = data.node.original.guid;
+                                        if (onTermsListPage || selectedGuid !== clickedGuid) {
                                             that.glossary.selectedItem = data.node.original;
                                             that.triggerUrl();
                                         }
@@ -639,7 +648,7 @@ define(['require',
                 }
 
 
-                if (Utils.getUrlState.isGlossaryTab()) {
+                if (Utils.getUrlState.isGlossaryTab() && !Utils.getUrlState.isGlossaryTermsListPage()) {
                     this.triggerUrl();
                 }
                 this.glossaryCollection.trigger("render:done");
@@ -876,6 +885,28 @@ define(['require',
                         },
                         isGlossary: true
                     });
+                });
+            },
+            closeGlossaryActionsDropdown: function(e) {
+                var $dropdown = e && e.currentTarget
+                    ? $(e.currentTarget).closest('.dropdown')
+                    : this.$('.dropdown');
+                $dropdown.removeClass('open');
+                $dropdown.find('.dropdown-toggle').attr('aria-expanded', 'false');
+            },
+            onExportGlossary: function(e) {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                this.closeGlossaryActionsDropdown(e);
+                if (Utils.getUrlState.isGlossaryTermsListPage()) {
+                    return;
+                }
+                Utils.setUrl({
+                    url: '#!/glossary/terms-list',
+                    trigger: true,
+                    updateTabState: true
                 });
             }
         });

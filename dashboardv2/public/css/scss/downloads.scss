@@ -34,6 +34,7 @@
         padding: 10px;
         display: flex;
         align-items: center;
+        justify-content: space-between;
         color: #686868;
         border-bottom: 1px solid #ccc;
         background-color: #eee;
@@ -41,8 +42,33 @@
         border-top-right-radius: 10px;
 
         .download-header-actions {
-            position: absolute;
-            right: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            margin-left: 12px;
+        }
+
+        .download-header-toggle-wrap {
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+            margin-right: 4px;
+        }
+
+        .download-header-toggle {
+            margin: 0;
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+            min-width: 3.5em;
+        }
+
+        .download-header-btn {
+            margin: 0;
+            flex-shrink: 0;
+            min-width: 32px;
+            padding: 5px 8px;
         }
 
         .pretty.p-switch.p-fill input:checked~.state.p-primary:before {
@@ -55,7 +81,7 @@
         position: absolute;
         left: 50%;
         top: 50%;
-        transform: translateX(-50%, -50%);
+        transform: translate(-50%, -50%);
 
         i {
             color: #37bb9b;
@@ -76,8 +102,16 @@
                 border-bottom: 1px solid #ccc;
                 display: flex;
                 align-items: center;
-                position: relative;
+                gap: 16px;
                 color: #686868;
+
+                &.download-list-empty {
+                    border-bottom: none;
+                }
+
+                > i.fa-file-excel-o {
+                    flex-shrink: 0;
+                }
 
                 i {
                     color: #37bb9b;
@@ -85,18 +119,17 @@
 
                 a {
                     color: #686868 !important;
-                    width: 100%;
                 }
 
                 .file-name {
-                    padding: 0 10px 0 10px;
                     word-wrap: break-word;
-                    width: 90%;
+                    flex: 1;
+                    min-width: 0;
                 }
 
                 .download-state {
-                    position: absolute;
-                    right: 15px;
+                    flex-shrink: 0;
+                    margin-left: auto;
                 }
             }
         }

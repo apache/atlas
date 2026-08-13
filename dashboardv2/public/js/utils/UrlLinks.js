@@ -310,6 +310,21 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         },
         downloadSearchResultsFileUrl: function(fileName) {
             return this.baseUrlV2 + '/search/download/' + fileName;
+        },
+        glossarySearchUrl: function() {
+            return this.glossaryApiUrl() + '/search';
+        },
+        glossaryExportUrl: function() {
+            return this.glossaryApiUrl() + '/export';
+        },
+        glossaryCreateFileUrl: function() {
+            return this.glossaryApiUrl() + '/create_file';
+        },
+        getGlossaryDownloadsList: function() {
+            return this.glossaryApiUrl() + '/download/status';
+        },
+        glossaryDownloadFileUrl: function(fileName) {
+            return this.glossaryApiUrl() + '/download/' + fileName;
         }
     });
 
