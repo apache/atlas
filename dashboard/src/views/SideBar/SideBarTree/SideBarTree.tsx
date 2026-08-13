@@ -27,7 +27,6 @@ import {
   useRef,
   useState,
   useMemo,
-  useCallback,
   SyntheticEvent,
   memo,
 } from "react";
@@ -70,7 +69,7 @@ import { toast } from "react-toastify";
 import { EnumTypeDefData, TreeNode } from "@models/treeStructureType";
 import ImportDialog from "@components/ImportDialog";
 import TreeIcons from "@components/Treeicons";
-import { useAppSelector, useAppDispatch } from "@hooks/reducerHook";
+import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
 import { fetchGlossaryData } from "@redux/slice/glossarySlice";
 import TreeNodeIcons from "@components/TreeNodeIcons";
 import ClassificationForm from "@views/Classification/ClassificationForm";
@@ -81,6 +80,15 @@ import { IconButton } from "@components/muiComponents";
 
 import TreeSkeletonLoader from "@components/TreeSkeletonLoader";
 
+type SelectedNode = {
+  type: string | null;
+  tag: string | null;
+  relationship: string | null;
+  businessMetadata: string | null;
+  term: string | null;
+  customFilter: string | null;
+};
+
 type CustomContentRootProps = HTMLAttributes<HTMLDivElement> & {
   selectedNodeType?: string | null;
   selectedNodeTag?: string | null;
@@ -88,26 +96,20 @@ type CustomContentRootProps = HTMLAttributes<HTMLDivElement> & {
   selectedNodeBM?: string | null;
   selectedNodeTerm?: string | null;
   selectedNodeCustomFilter?: string | null;
-  node?: Record<string, unknown> | null;
-  selectedNode?: Record<string, unknown> | null;
+  node?: string | null;
+  selectedNode?: SelectedNode;
 };
 
-import { Box } from "@mui/material";
-
-type HoverableProps = HTMLAttributes<HTMLDivElement> & {
-  children?: React.ReactNode | ((isHovered: boolean) => React.ReactNode);
-};
-
-const HoverableTreeItemContainer = ({ children, ...props }: HoverableProps) => {
+const HoverableTreeItemContainer = ({ children, ...props }: { children: React.ReactNode | ((isHovered: boolean) => React.ReactNode) } & HTMLAttributes<HTMLDivElement>) => {
   const [isHovered, setIsHovered] = useState(false);
   return (
-    <Box
+    <div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       {...props}
     >
       {typeof children === "function" ? children(isHovered) : children}
-    </Box>
+    </div>
   );
 };
 
@@ -153,12 +155,15 @@ const CustomContentRoot = styled("div")<CustomContentRootProps>(
         // borderRadius: "4px"
       },
     }),
-    ...(props?.selectedNode == props?.node && {
+    ...((props.selectedNodeType === props.node ||
+      props.selectedNodeTag === props.node ||
+      props.selectedNodeRelationship === props.node ||
+      props.selectedNodeBM === props.node ||
+      props.selectedNodeTerm === props.node ||
+      props.selectedNodeCustomFilter === props.node) && {
       "&.Mui-selected .MuiTreeItem-label": {
         color: "white",
       },
-    }),
-    ...(props?.selectedNode == props?.node && {
       "&.Mui-selected & .MuiTreeItem-content svg": {
         color: "white",
       },
@@ -319,8 +324,8 @@ const BarTreeView: FC<{
   loader,
   isPopover,
 }) => {
-    const { savedSearchData } = useAppSelector(
-      (state) => state.savedSearch
+    const { savedSearchData }: any = useAppSelector(
+      (state: any) => state.savedSearch
     );
     const { bmguid } = useParams();
     const dispatch = useAppDispatch();
@@ -328,14 +333,7 @@ const BarTreeView: FC<{
     const navigate = useNavigate();
     const searchParams = new URLSearchParams(location.search);
     const [expand, setExpand] = useState<null | HTMLElement>(null);
-    const [selectedNode, setSelectedNode] = useState<{
-      type: string | null;
-      tag: string | null;
-      relationship: string | null;
-      businessMetadata: string | null;
-      term: string | null;
-      customFilter: string | null;
-    }>({
+    const [selectedNode, setSelectedNode] = useState<SelectedNode>({
       type: null,
       tag: null,
       relationship: null,
@@ -350,37 +348,20 @@ const BarTreeView: FC<{
     const [expandedItems, setExpandedItems] = useState<string[]>([]);
     const [tagModal, setTagModal] = useState<boolean>(false);
     const [glossaryModal, setGlossaryModal] = useState<boolean>(false);
-    const { businessMetaData } = useAppSelector(
-      (state) => state.businessMetaData as unknown as { businessMetaData?: { businessMetadataDefs?: EnumTypeDefData[] } }
+    const { businessMetaData }: any = useAppSelector(
+      (state: any) => state.businessMetaData
     );
 
     const filteredData = useMemo(() => {
-      if (!searchTerm) return treeData;
-      
-      const lowerTerm = searchTerm.toLowerCase();
-
-      const filterNodes = (nodes: TreeNode[]): TreeNode[] => {
-        return nodes.reduce((acc: TreeNode[], node) => {
-          const isMatch = node.label?.toLowerCase().includes(lowerTerm);
-          let filteredChildren: TreeNode[] | undefined = undefined;
-          
-          if (node.children) {
-            filteredChildren = filterNodes(node.children);
-          }
-          
-          const hasMatchingChildren = filteredChildren && filteredChildren.length > 0;
-          
-          if (isMatch || hasMatchingChildren) {
-            acc.push({
-              ...node,
-              children: isMatch ? node.children : filteredChildren
-            });
-          }
-          return acc;
-        }, []);
-      };
-
-      return filterNodes(treeData);
+      return treeData.filter((node) => {
+        return (
+          node.label?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (node.children &&
+            node.children.some((child) =>
+              child.label?.toLowerCase().includes(searchTerm.toLowerCase())
+            ))
+        );
+      });
     }, [treeData, searchTerm]);
 
     const displayTreeName = useMemo(() => {
@@ -391,11 +372,10 @@ const BarTreeView: FC<{
       return (text: string) => {
         if (!searchTerm) return text;
 
-        const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const parts = text.split(new RegExp(`(${escapedSearchTerm})`, "gi"));
+        const parts = text.split(new RegExp(`(${searchTerm})`, "gi"));
         return parts.map((part, index) =>
           part.toLowerCase() === searchTerm.toLowerCase() ? (
-            <span key={index} className="sidebar-tree-highlight">
+            <span key={index} style={{ color: "#D3D3D3", fontWeight: "600" }}>
               {part}
             </span>
           ) : (
@@ -419,14 +399,14 @@ const BarTreeView: FC<{
       setExpandedItems(expandedItemsMemo);
     }, [expandedItemsMemo]);
 
-    const getNodeId = useCallback((node: TreeNode) => {
+    const getNodeId = (node: TreeNode) => {
       if (treeName == "Classifications" && node.types == "parent") {
         return node.label;
       } else if (treeName == "Classifications" && node.types == "child") {
         return `${node.id}@${node.label}`;
       }
       return !isEmpty(node?.parent) ? `${node.id}@${node?.parent}` : node.id;
-    }, [treeName]);
+    };
 
     useEffect(() => {
       const searchParams = new URLSearchParams(location.search);
@@ -447,7 +427,7 @@ const BarTreeView: FC<{
           }
         })
         : {};
-      const { name = "" } = (bmObj || {}) as { name?: string };
+      const { name = "" } = bmObj || {};
 
       setSelectedNode({
         type: nodeIdFromParamsType,
@@ -491,7 +471,7 @@ const BarTreeView: FC<{
           customFilter: null,
         });
       }
-    }, [location.search, location.pathname, treeData, treeName, businessMetaData, bmguid, getNodeId]);
+    }, [location.search, treeData, treeName, businessMetaData, bmguid]);
 
     const getEmptyTypesTitle = () => {
       switch (treeName) {
@@ -979,13 +959,16 @@ const BarTreeView: FC<{
         if (el) {
           setIsOverflown(el.scrollWidth > el.clientWidth);
         }
-      }, [label]);
+      }, [label, searchTerm]);
 
       return (
         <LightTooltip title={label} disableHoverListener={!isOverflown}>
           <span
             ref={labelRef}
-            className="tree-item-label sidebar-tree-label-nowrap"
+            className="tree-item-label"
+            style={{
+              whiteSpace: "nowrap",
+            }}
           >
             {highlightText(label)}
           </span>
@@ -1111,12 +1094,11 @@ const BarTreeView: FC<{
                   className="tree-item-parent-label"
                 >
                   <Stack flexGrow={1} direction="row" alignItems="center" gap="12px">
-                    {treeName === "Entities" && <img src="/img/sidebar-icons/icon-entities.svg" className="sidebar-tree-icon" alt="" />}
-                    {treeName === "Classifications" && <img src="/img/sidebar-icons/icon-classifications.svg" className="sidebar-tree-icon" alt="" />}
-                    {treeName === "Business MetaData" && <img src="/img/sidebar-icons/icon-business-metadata.svg" className="sidebar-tree-icon" alt="" />}
-                    {treeName === "Glossary" && <img src="/img/sidebar-icons/icon-glossary.svg" className="sidebar-tree-icon" alt="" />}
-                    {treeName === "CustomFilters" && <img src="/img/sidebar-icons/icon-custom-filters.svg" className="sidebar-tree-icon" alt="" />}
-                    {treeName === "Relationships" && <img src="/img/sidebar-icons/icon-relationships.svg" className="sidebar-tree-icon" alt="" />}
+                    {treeName === "Entities" && <img src="/img/sidebar-icons/icon-entities.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
+                    {treeName === "Classifications" && <img src="/img/sidebar-icons/icon-classifications.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
+                    {treeName === "Business MetaData" && <img src="/img/sidebar-icons/icon-business-metadata.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
+                    {treeName === "Glossary" && <img src="/img/sidebar-icons/icon-glossary.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
+                    {treeName === "CustomFilters" && <img src="/img/sidebar-icons/icon-custom-filters.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
                     <Typography sx={{ fontWeight: "500", fontSize: "14px", color: "rgba(255, 255, 255, 0.9)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{displayTreeName}</Typography>
                   </Stack>
                   <Stack direction="row" alignItems="center" gap="0.375rem">
@@ -1281,11 +1263,6 @@ const BarTreeView: FC<{
                           handleClose();
                         }}
                         data-cy="downloadBusinessMetadata"
-                        disabled={
-                          treeName == "Glossary" && !isEmptyServicetype
-                            ? true
-                            : false
-                        }
                         className="sidebar-menu-item"
                       >
                         <ListItemIcon sx={{ minWidth: "28px !important" }}>
@@ -1307,11 +1284,6 @@ const BarTreeView: FC<{
                           handleClose();
                         }}
                         data-cy="importBusinessMetadata"
-                        disabled={
-                          treeName == "Glossary" && !isEmptyServicetype
-                            ? true
-                            : false
-                        }
                         className="sidebar-menu-item"
                       >
                         <ListItemIcon sx={{ minWidth: "28px !important" }}>
@@ -1383,13 +1355,12 @@ const BarTreeView: FC<{
               onImportSuccess={
                 treeName == "Glossary"
                   ? () => {
-                      void dispatch(fetchGlossaryData());
-                    }
+                    void dispatch(fetchGlossaryData());
+                  }
                   : undefined
               }
             />
           </SimpleTreeView>
-
         </Stack>
 
         {tagModal && (
