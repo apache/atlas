@@ -2367,10 +2367,7 @@
         <profile>
             <id>audit-hbase</id>
             <activation>
-                <property>
-                    <name>atlas.audit.backend</name>
-                    <value>hbase</value>
-                </property>
+                <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
                 <atlas.audit.backend>hbase</atlas.audit.backend>
@@ -2576,6 +2573,9 @@
         </profile>
         <profile>
             <id>storage-hbase</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <properties>
                 <atlas.storage.backend>hbase</atlas.storage.backend>
                 <atlas.war.storage.excludes />

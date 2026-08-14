@@ -455,18 +455,11 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     private static void injectStoreManager(String shortName, String managerClassName) throws Exception {
         Field field = StandardStoreManager.class.getDeclaredField("ALL_MANAGER_CLASSES");
 
-        field.setAccessible(true);
-
-        Field modifiersField = Field.class.getDeclaredField("modifiers");
-
-        modifiersField.setAccessible(true);
-        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-
         Map<String, String> customMap = new HashMap<>(StandardStoreManager.getAllManagerClasses());
 
         customMap.put(shortName, managerClassName);
 
-        field.set(null, ImmutableMap.copyOf(customMap));
+        setStaticFinalField(field, ImmutableMap.copyOf(customMap));
 
         LOG.debug("Registered Janus storage backend {} -> {}", shortName, managerClassName);
     }
@@ -482,20 +475,48 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     private static void injectIndexProvider(String shortName, String providerClassName) throws Exception {
         Field field = StandardIndexProvider.class.getDeclaredField("ALL_MANAGER_CLASSES");
 
-        field.setAccessible(true);
-
-        Field modifiersField = Field.class.getDeclaredField("modifiers");
-
-        modifiersField.setAccessible(true);
-        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-
         Map<String, String> customMap = new HashMap<>(StandardIndexProvider.getAllProviderClasses());
 
         customMap.put(shortName, providerClassName);
 
-        field.set(null, ImmutableMap.copyOf(customMap));
+        setStaticFinalField(field, ImmutableMap.copyOf(customMap));
 
         LOG.debug("Registered Janus index provider {} -> {}", shortName, providerClassName);
+    }
+
+    /**
+     * Update a static final field in Janus {@code StandardStoreManager} / {@code StandardIndexProvider}.
+     * Java 8: clear {@code modifiers}. Java 12+: {@code Field.modifiers} is gone — use {@code sun.misc.Unsafe}.
+     */
+    private static void setStaticFinalField(Field field, Object value) throws Exception {
+        field.setAccessible(true);
+
+        try {
+            Field modifiersField = Field.class.getDeclaredField("modifiers");
+
+            modifiersField.setAccessible(true);
+            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+            field.set(null, value);
+
+            return;
+        } catch (NoSuchFieldException ignored) {
+            // Java 12+ — fall through to Unsafe
+        }
+
+        Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
+        Field theUnsafeField = unsafeClass.getDeclaredField("theUnsafe");
+
+        theUnsafeField.setAccessible(true);
+
+        Object unsafe = theUnsafeField.get(null);
+        Method staticFieldBase   = unsafeClass.getMethod("staticFieldBase", Field.class);
+        Method staticFieldOffset = unsafeClass.getMethod("staticFieldOffset", Field.class);
+        Method putObject         = unsafeClass.getMethod("putObject", Object.class, long.class, Object.class);
+
+        Object base   = staticFieldBase.invoke(unsafe, field);
+        long   offset = (Long) staticFieldOffset.invoke(unsafe, field);
+
+        putObject.invoke(unsafe, base, offset, value);
     }
 
     /**

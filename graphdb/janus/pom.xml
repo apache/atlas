@@ -312,12 +312,58 @@
     <!-- ATLAS-5220: optional storage backends. HBase stack only when atlas.storage.backend=hbase (default). ES index: atlas-graphdb-janus-es-shim (WAR -Pindex-elasticsearch). -->
     <profiles>
         <profile>
-            <id>atlas-storage-hbase</id>
+            <id>dist</id>
             <activation>
-                <property>
-                    <name>atlas.storage.backend</name>
-                    <value>hbase</value>
-                </property>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <!-- -Pdist disables activeByDefault storage-hbase; declare default HBase stack here (ATLAS-5220). -->
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.atlas</groupId>
+                    <artifactId>hbase-shaded-client-fixed</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-distcp</artifactId>
+                    <version>${hadoop.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-shaded-mapreduce</artifactId>
+                    <version>${hbase.version}-hadoop3</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>org.apache.hadoop</groupId>
+                            <artifactId>hadoop-distcp</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>org.janusgraph</groupId>
+                    <artifactId>janusgraph-hbase</artifactId>
+                    <version>${janusgraph.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>org.apache.hbase</groupId>
+                            <artifactId>hbase-shaded-client</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>org.apache.hbase</groupId>
+                            <artifactId>hbase-shaded-mapreduce</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>storage-hbase</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
             </activation>
             <dependencies>
                 <dependency>
@@ -363,13 +409,7 @@
             </dependencies>
         </profile>
         <profile>
-            <id>atlas-storage-cassandra</id>
-            <activation>
-                <property>
-                    <name>atlas.storage.backend</name>
-                    <value>cassandra</value>
-                </property>
-            </activation>
+            <id>storage-cassandra</id>
             <dependencies>
                 <dependency>
                     <groupId>org.janusgraph</groupId>
@@ -385,13 +425,7 @@
             </dependencies>
         </profile>
         <profile>
-            <id>atlas-storage-berkeleyje</id>
-            <activation>
-                <property>
-                    <name>atlas.storage.backend</name>
-                    <value>berkeleyje</value>
-                </property>
-            </activation>
+            <id>storage-berkeleyje</id>
             <dependencies>
                 <dependency>
                     <groupId>org.janusgraph</groupId>
@@ -411,13 +445,7 @@
             </dependencies>
         </profile>
         <profile>
-            <id>atlas-storage-rdbms</id>
-            <activation>
-                <property>
-                    <name>atlas.storage.backend</name>
-                    <value>rdbms</value>
-                </property>
-            </activation>
+            <id>storage-rdbms</id>
             <dependencies>
                 <dependency>
                     <groupId>org.apache.atlas</groupId>
