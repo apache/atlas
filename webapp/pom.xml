@@ -242,16 +242,16 @@
             <artifactId>atlas-server-api</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-server-common</artifactId>
+        </dependency>
+
         <!-- Main compile + Enunciate: MetricsSink.init uses HBase-shaded SubsetConfiguration (not test-only). -->
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>hbase-shaded-client-fixed</artifactId>
             <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-server-common</artifactId>
         </dependency>
 
         <dependency>
@@ -867,10 +867,7 @@
         <profile>
             <id>audit-hbase</id>
             <activation>
-                <property>
-                    <name>atlas.audit.backend</name>
-                    <value>hbase</value>
-                </property>
+                <activeByDefault>true</activeByDefault>
             </activation>
             <dependencies>
                 <dependency>
@@ -946,10 +943,7 @@
         <profile>
             <id>storage-hbase</id>
             <activation>
-                <property>
-                    <name>atlas.storage.backend</name>
-                    <value>hbase</value>
-                </property>
+                <activeByDefault>true</activeByDefault>
             </activation>
             <dependencies>
                 <dependency>
@@ -1028,6 +1022,33 @@
             <properties>
                 <packages.to.exclude>${distro.exclude.packages}</packages.to.exclude>
             </properties>
+            <!-- -Pdist disables activeByDefault storage/audit profiles; declare default HBase stack here (ATLAS-5220). -->
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.atlas</groupId>
+                    <artifactId>atlas-audit-hbase</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.janusgraph</groupId>
+                    <artifactId>janusgraph-hbase</artifactId>
+                    <version>${janusgraph.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>org.apache.hbase</groupId>
+                            <artifactId>hbase-shaded-client</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>org.apache.hbase</groupId>
+                            <artifactId>hbase-shaded-mapreduce</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
         </profile>
 
         <profile>
