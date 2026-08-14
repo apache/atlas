@@ -220,6 +220,14 @@
   padding: 0 10px 0 16px;
   color: rgba(0, 0, 0, 0.7);
   font-size: 14px;
+
+  &-icon {
+    width: 16px;
+    height: 16px;
+    filter: brightness(0.4);
+    opacity: 1;
+    margin-left: 4px;
+  }
 }
 
 .sidebar-treeview-container {
