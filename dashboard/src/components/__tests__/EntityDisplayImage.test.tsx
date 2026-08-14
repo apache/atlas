@@ -69,6 +69,25 @@ describe('EntityDisplayImage', () => {
     expect(img?.getAttribute('src')).toBe('/icons/entity-1.png-fallback')
   })
 
+  it('prevents infinite loop when fallback image also fails', () => {
+    const { container } = render(
+      <DisplayImage entity={entity} width={20} height={20} />
+    )
+
+    const img = container.querySelector('img')!
+    
+    // First error triggers fallback
+    fireEvent.error(img)
+    expect(img.getAttribute('src')).toBe('/icons/entity-1.png-fallback')
+    expect(img.onerror).toBeNull()
+
+    // Second error (fallback failed)
+    fireEvent.error(img)
+    
+    // Ensure src hasn't changed again (it should still be the fallback)
+    expect(img.getAttribute('src')).toBe('/icons/entity-1.png-fallback')
+  })
+
   it('renders Avatar when avatarDisplay is provided and handles fallback', () => {
     const { container } = render(
       <DisplayImage
