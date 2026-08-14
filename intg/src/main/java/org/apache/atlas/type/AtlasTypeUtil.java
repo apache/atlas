@@ -73,6 +73,7 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_MAP_SUF
  */
 public class AtlasTypeUtil {
     public static final String ATTRIBUTE_QUALIFIED_NAME = "qualifiedName";
+    public static final String ATTRIBUTE_NAME           = "name";
 
     private static final Set<String> ATLAS_BUILTIN_TYPENAMES = new HashSet<>();
     private static final String      NAME_REGEX              = "[a-zA-Z][a-zA-Z0-9_ ]*";

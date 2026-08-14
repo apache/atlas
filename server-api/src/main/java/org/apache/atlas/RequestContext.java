@@ -78,6 +78,8 @@ public class RequestContext {
     private String       currentTypePatchAction = "";
     private int          maxAttempts            = 1;
     private int          attemptCount           = 1;
+    private Long         createEventMsgTime;
+    private Long         deleteEventMsgTime;
 
     private RequestContext() {
     }
@@ -426,6 +428,22 @@ public class RequestContext {
 
     public long getRequestTime() {
         return requestTime;
+    }
+
+    public Long getCreateEventMsgTime() {
+        return createEventMsgTime;
+    }
+
+    public void setCreateEventMsgTime(Long createEventMsgTime) {
+        this.createEventMsgTime = createEventMsgTime;
+    }
+
+    public Long getDeleteEventMsgTime() {
+        return deleteEventMsgTime;
+    }
+
+    public void setDeleteEventMsgTime(Long deleteEventMsgTime) {
+        this.deleteEventMsgTime = deleteEventMsgTime;
     }
 
     public boolean isUpdatedEntity(String guid) {

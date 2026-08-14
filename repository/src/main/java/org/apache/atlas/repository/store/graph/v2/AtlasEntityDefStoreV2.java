@@ -17,18 +17,21 @@
  */
 package org.apache.atlas.repository.store.graph.v2;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -314,6 +317,15 @@ public class AtlasEntityDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEntityDe
             AtlasStructDefStoreV2.toStructDef(vertex, ret, typeDefStore);
 
             ret.setSuperTypes(typeDefStore.getSuperTypeNames(vertex));
+
+            String overridesJson = vertex.getProperty(Constants.TYPE_ATTR_DEF_OVERRIDES_PROPERTY_KEY, String.class);
+
+            if (StringUtils.isNotBlank(overridesJson)) {
+                List<AtlasAttributeDef> overrides = AtlasJson.fromJson(overridesJson,
+                        new TypeReference<List<AtlasAttributeDef>>() { });
+
+                ret.setAttributeDefOverrides(overrides);
+            }
         }
 
         return ret;

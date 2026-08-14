@@ -221,6 +221,11 @@ public class AbstractNotificationConsumerTest {
         public List<AtlasKafkaMessage<TestMessage>> receiveRawRecordsWithCheckedCommit(Map<TopicPartition, Long> lastCommittedPartitionOffset) {
             return null;
         }
+
+        @Override
+        public void poll() {
+            // Do nothing
+        }
     }
 
     public static class TestMessageDeserializer extends AbstractMessageDeserializer<TestMessage> {

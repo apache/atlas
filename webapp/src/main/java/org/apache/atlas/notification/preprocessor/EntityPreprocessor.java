@@ -111,7 +111,7 @@ public abstract class EntityPreprocessor {
 
     public abstract void preprocess(AtlasEntity entity, PreprocessorContext context);
 
-    public String getTypeName(Object obj) {
+    public static String getTypeName(Object obj) {
         Object ret = null;
 
         if (obj instanceof AtlasObjectId) {
@@ -127,7 +127,7 @@ public abstract class EntityPreprocessor {
         return ret != null ? ret.toString() : null;
     }
 
-    public String getQualifiedName(Object obj) {
+    public static String getQualifiedName(Object obj) {
         Map<String, Object> attributes = null;
 
         if (obj instanceof AtlasObjectId) {

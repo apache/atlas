@@ -57,7 +57,7 @@ const RelationshipPropertiesTab = (props: {
     }
   }
 
-  const { end1, end2 } = entity;
+  const { end1, end2 } = entity || {};
 
   return (
     <Grid

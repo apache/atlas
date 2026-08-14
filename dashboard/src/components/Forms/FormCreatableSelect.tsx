@@ -48,11 +48,11 @@ const FormCreatableSelect = ({ data, control, fieldName }: any) => {
               <LightTooltip title={`Data Type: (${typeName})`}>
                 <Typography
                   color="#666666"
-                  textOverflow="ellipsis"
+                  
                   maxWidth="160px"
                   overflow="hidden"
                   fontSize={14}
-                >{`(${typeName}) ${cardinality}`}</Typography>
+                 noWrap>{`(${typeName}) ${cardinality}`}</Typography>
               </LightTooltip>
             </div>
             <Autocomplete

@@ -267,6 +267,15 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         ret.setProperty(Constants.VERSION_PROPERTY_KEY, typeDef.getVersion());
         ret.setProperty(Constants.TYPEOPTIONS_PROPERTY_KEY, AtlasType.toJson(typeDef.getOptions()));
 
+        if (typeDef instanceof AtlasEntityDef) {
+            AtlasEntityDef entityDef = (AtlasEntityDef) typeDef;
+
+            if (CollectionUtils.isNotEmpty(entityDef.getAttributeDefOverrides())) {
+                ret.setProperty(Constants.TYPE_ATTR_DEF_OVERRIDES_PROPERTY_KEY,
+                        AtlasType.toJson(entityDef.getAttributeDefOverrides()));
+            }
+        }
+
         return ret;
     }
 
@@ -287,6 +296,17 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         updateVertexProperty(vertex, Constants.TYPEDESCRIPTION_PROPERTY_KEY, typeDef.getDescription());
         updateVertexProperty(vertex, Constants.TYPEVERSION_PROPERTY_KEY, typeDef.getTypeVersion());
         updateVertexProperty(vertex, Constants.TYPEOPTIONS_PROPERTY_KEY, AtlasType.toJson(typeDef.getOptions()));
+
+        if (typeDef instanceof AtlasEntityDef) {
+            AtlasEntityDef entityDef = (AtlasEntityDef) typeDef;
+
+            if (CollectionUtils.isNotEmpty(entityDef.getAttributeDefOverrides())) {
+                updateVertexProperty(vertex, Constants.TYPE_ATTR_DEF_OVERRIDES_PROPERTY_KEY,
+                        AtlasType.toJson(entityDef.getAttributeDefOverrides()));
+            } else {
+                vertex.removeProperty(Constants.TYPE_ATTR_DEF_OVERRIDES_PROPERTY_KEY);
+            }
+        }
 
         if (StringUtils.isNotEmpty(typeDef.getServiceType())) {
             updateVertexProperty(vertex, Constants.TYPESERVICETYPE_PROPERTY_KEY, typeDef.getServiceType());

@@ -22,7 +22,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.graph.GraphSandboxUtil;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.runner.LocalSolrRunner;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;

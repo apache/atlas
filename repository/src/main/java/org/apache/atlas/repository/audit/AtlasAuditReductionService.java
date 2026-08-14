@@ -28,7 +28,7 @@ import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.slf4j.Logger;

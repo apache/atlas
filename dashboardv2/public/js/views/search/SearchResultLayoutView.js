@@ -1372,6 +1372,7 @@ define(['require',
                     var view = new CreateEntityLayoutView({
                         entityDefCollection: that.entityDefCollection,
                         typeHeaders: that.typeHeaders,
+                        enumDefCollection: that.enumDefCollection,
                         searchVent: that.searchVent,
                         callback: function() {
                             that.fetchCollection();

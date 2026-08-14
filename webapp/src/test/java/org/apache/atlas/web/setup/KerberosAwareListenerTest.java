@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.setup;
 
+import org.apache.atlas.server.common.setup.KerberosAwareListener;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeClass;

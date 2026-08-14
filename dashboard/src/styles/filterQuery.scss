@@ -25,4 +25,10 @@
 .searchValue {
   color: v.$tag_color;
   font-weight: 600 !important;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: bottom;
 }

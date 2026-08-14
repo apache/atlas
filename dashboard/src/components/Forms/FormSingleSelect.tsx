@@ -52,11 +52,11 @@ const FormSingleSelect = ({
 
             <Typography
               color="#666666"
-              textOverflow="ellipsis"
+              
               overflow="hidden"
               maxWidth="160px"
               fontSize={14}
-            >{`(${typeName})`}</Typography>
+             noWrap>{`(${typeName})`}</Typography>
           </div>
           <div style={{ width: "100%" }} className="form-textfield">
             <Select

@@ -159,7 +159,7 @@ public class HBaseAtlasHookIT {
     // Methods for creating HBase
     private void createAtlasClient() {
         try {
-            org.apache.commons.configuration.Configuration configuration = ApplicationProperties.get();
+            org.apache.commons.configuration2.Configuration configuration = ApplicationProperties.get();
             String[] atlasEndPoint = configuration.getStringArray(HBaseAtlasHook.ATTR_ATLAS_ENDPOINT);
 
             configuration.setProperty("atlas.cluster.name", CLUSTER_NAME);

@@ -19,7 +19,8 @@
 package org.apache.atlas.web.service;
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.repository.audit.AtlasAuditService;
+import org.apache.atlas.server.common.service.EmbeddedServer;
+import org.apache.atlas.server.common.service.SecureEmbeddedServer;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -30,27 +31,16 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Date;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class EmbeddedServerTest {
-    @Mock
-    private AtlasAuditService auditService;
-
-    @Mock
-    private ServiceState serviceState;
-
     @Mock
     private Server server;
 
@@ -207,85 +197,6 @@ public class EmbeddedServerTest {
         };
 
         embeddedServer.start();
-    }
-
-    @Test
-    public void testAuditServerStatusActive() throws Exception {
-        String host = "localhost";
-        int port = 8080;
-        String path = "/test";
-
-        embeddedServer = new EmbeddedServer(host, port, path);
-
-        // Set up mocks for audit
-        setFieldValue(getField(EmbeddedServer.class, "auditService"), embeddedServer, auditService);
-        setFieldValue(getField(EmbeddedServer.class, "serviceState"), embeddedServer, serviceState);
-
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
-
-        Method method = EmbeddedServer.class.getDeclaredMethod("auditServerStatus");
-        method.setAccessible(true);
-
-        try {
-            method.invoke(embeddedServer);
-            // Test passes if no exception is thrown
-        } catch (InvocationTargetException e) {
-            // Expected to fail due to BeanUtil dependency in test environment
-            assertTrue(e.getCause() instanceof NullPointerException);
-        }
-    }
-
-    @Test
-    public void testAuditServerStatusNotActive() throws Exception {
-        String host = "localhost";
-        int port = 8080;
-        String path = "/test";
-
-        embeddedServer = new EmbeddedServer(host, port, path);
-
-        // Set up mocks for audit
-        setFieldValue(getField(EmbeddedServer.class, "auditService"), embeddedServer, auditService);
-        setFieldValue(getField(EmbeddedServer.class, "serviceState"), embeddedServer, serviceState);
-
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-
-        Method method = EmbeddedServer.class.getDeclaredMethod("auditServerStatus");
-        method.setAccessible(true);
-
-        try {
-            method.invoke(embeddedServer);
-            // Test passes if no exception is thrown
-        } catch (InvocationTargetException e) {
-            // Expected to fail due to BeanUtil dependency in test environment
-            assertTrue(e.getCause() instanceof NullPointerException);
-        }
-    }
-
-    @Test
-    public void testAuditServerStatusWithException() throws Exception {
-        String host = "localhost";
-        int port = 8080;
-        String path = "/test";
-
-        embeddedServer = new EmbeddedServer(host, port, path);
-
-        // Set up mocks for audit
-        setFieldValue(getField(EmbeddedServer.class, "auditService"), embeddedServer, auditService);
-        setFieldValue(getField(EmbeddedServer.class, "serviceState"), embeddedServer, serviceState);
-
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
-        doThrow(new AtlasBaseException("Test exception")).when(auditService).add(any(), any(), any(), anyObject(), anyObject(), anyInt());
-
-        Method method = EmbeddedServer.class.getDeclaredMethod("auditServerStatus");
-        method.setAccessible(true);
-
-        try {
-            method.invoke(embeddedServer);
-            // Test passes if no exception is thrown
-        } catch (InvocationTargetException e) {
-            // Expected to fail due to BeanUtil dependency in test environment
-            assertTrue(e.getCause() instanceof NullPointerException);
-        }
     }
 
     @Test

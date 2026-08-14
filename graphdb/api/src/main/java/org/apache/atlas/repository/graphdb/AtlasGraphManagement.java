@@ -48,6 +48,13 @@ public interface AtlasGraphManagement extends AutoCloseable {
     AtlasEdgeLabel makeEdgeLabel(String label);
 
     /**
+     * @param propertyName
+     * @param dataType
+     * @return true if the property key exists and has the given data type
+     */
+    boolean propertyKeyHasDataType(String propertyName, Class<?> dataType);
+
+    /**
      *  @param propertyKey
      *
      */

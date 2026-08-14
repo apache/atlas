@@ -340,7 +340,7 @@ const getEntityIconPath = (options: any) => {
 };
 
 const serverError = (error: any, toastId: any) => {
-  // fetchApi already surfaces 403 via serverErrorHandler (toast); avoid duplicate.
+  // fetchApi already surfaces 403 via deferred toast.error; avoid duplicate.
   if (error?.response?.status === 403) {
     return;
   }
@@ -801,6 +801,45 @@ const getNavigate = () => {
   return backNavigate;
 };
 
+const virtualizeList = (options: {
+  items: any[];
+  scrollTop: number;
+  itemHeight?: number;
+  overscan?: number;
+  visibleCount?: number;
+}) => {
+  const items = options.items || [];
+  const scrollTop = options.scrollTop || 0;
+  const itemHeight = options.itemHeight || 37;
+  const overscan = options.overscan || 10;
+  const visibleCount = options.visibleCount || 40;
+
+  const totalItems = items.length;
+  if (totalItems === 0) {
+    return {
+      visibleItems: [],
+      paddingTop: 0,
+      paddingBottom: 0,
+      startIndex: 0,
+    };
+  }
+
+  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
+  const endIndex = Math.min(totalItems - 1, Math.floor(scrollTop / itemHeight) + visibleCount + overscan);
+
+  const visibleItems = items.slice(startIndex, endIndex + 1);
+
+  const paddingTop = startIndex * itemHeight;
+  const paddingBottom = Math.max(0, (totalItems - 1 - endIndex) * itemHeight);
+
+  return {
+    visibleItems,
+    paddingTop,
+    paddingBottom,
+    startIndex,
+  };
+};
+
 const globalSearchFilterInitialQuery: any = {
   query: {},
   setQuery: (newQuery: any) => {
@@ -857,5 +896,7 @@ export {
   setNavigate,
   getNavigate,
   globalSearchParams,
-  globalSearchFilterInitialQuery
+  globalSearchFilterInitialQuery,
+  virtualizeList
 };
+

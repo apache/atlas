@@ -62,12 +62,14 @@ interface CustomModalProps {
   open: boolean;
   onClose: () => void;
   title: string;
+  onImportSuccess?: () => void;
 }
 
 export const ImportDialog: React.FC<CustomModalProps> = ({
   open,
   onClose,
-  title
+  title,
+  onImportSuccess
 }) => {
   const [fileData, setFileData] = useState<any>([]);
   const [progress, setProgress] = useState(0);
@@ -106,6 +108,7 @@ export const ImportDialog: React.FC<CustomModalProps> = ({
             `File: ${fileData.name} imported successfully`
           );
 
+          onImportSuccess?.();
           onClose();
           setErrorDetails(false);
           setFileData([]);

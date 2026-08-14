@@ -100,10 +100,10 @@ const DrawerBodyChipView = ({
 
   const filteredData = !isEmpty(data)
     ? data.filter((tag: any) => {
-        return (tag[displayKey] || tag)
-          ?.toLowerCase()
-          ?.includes(searchTerm?.toLowerCase());
-      })
+      return (tag[displayKey] || tag)
+        ?.toLowerCase()
+        ?.includes(searchTerm?.toLowerCase());
+    })
     : [];
 
   const handleRemove = async () => {
@@ -114,18 +114,18 @@ const DrawerBodyChipView = ({
       } else if (title == "Terms" || title == "Category") {
         let selectedTerm: any = !isEmpty(data)
           ? data?.find((obj: any) => {
-              const typedObj = obj as {
-                qualifiedName: string;
-                displayText: string;
-                termGuid: string;
-              };
-              if (
-                (typedObj.qualifiedName || typedObj.displayText) ==
-                currentValue.selectedValue
-              ) {
-                return typedObj;
-              }
-            })
+            const typedObj = obj as {
+              qualifiedName: string;
+              displayText: string;
+              termGuid: string;
+            };
+            if (
+              (typedObj.qualifiedName || typedObj.displayText) ==
+              currentValue.selectedValue
+            ) {
+              return typedObj;
+            }
+          })
           : {};
 
         if (isEmpty(gType)) {
@@ -185,8 +185,8 @@ const DrawerBodyChipView = ({
   const checkSuperTypes = (classificationName: string) => {
     var tagObj = !isEmpty(classificationData.classificationDefs)
       ? classificationData.classificationDefs.find((obj: { name: string }) => {
-          return obj.name == classificationName;
-        })
+        return obj.name == classificationName;
+      })
       : {};
 
     return !isEmpty(tagObj?.superTypes)
@@ -198,10 +198,10 @@ const DrawerBodyChipView = ({
 
   const getTagParentList = (name: string) => {
     let tagObj = !isEmpty(classificationDefs)
-        ? classificationDefs?.find((obj: { name: string }) => {
-            return obj.name == name;
-          })
-        : {},
+      ? classificationDefs?.find((obj: { name: string }) => {
+        return obj.name == name;
+      })
+      : {},
       tagParents = tagObj ? tagObj?.["superTypes"] : null,
       parentName = name;
     if (tagParents && tagParents.length) {
@@ -330,10 +330,10 @@ const DrawerBodyChipView = ({
                       onDelete={
                         !isEmpty(removeApiMethod) && !isDeleteIcon
                           ? () => {
-                              handleDelete(obj[displayKey] || obj);
-                            }
+                            handleDelete(obj[displayKey] || obj);
+                          }
                           : isDeleteIcon && obj.count > 1
-                          ? () => {
+                            ? () => {
                               const searchParams = new URLSearchParams();
                               searchParams.set("tabActive", "classification");
                               searchParams.set("filter", obj.typeName);
@@ -342,7 +342,7 @@ const DrawerBodyChipView = ({
                                 search: searchParams.toString()
                               });
                             }
-                          : undefined
+                            : undefined
                       }
                       deleteIcon={
                         isDeleteIcon && obj.count > 1 ? (
@@ -394,23 +394,37 @@ const DrawerBodyChipView = ({
             Remove:{" "}
             <Typography
               component="span"
-              display="inline"
-              sx={{ fontWeight: 600 }}
-            >
+              title={currentValue.selectedValue}
+              sx={{
+                fontWeight: 600,
+                display: "inline-block",
+                maxWidth: "100%",
+                verticalAlign: "bottom"
+              }}
+             noWrap>
               {currentValue.selectedValue}
             </Typography>{" "}
             assignment from{" "}
             <Typography
               component="span"
-              display="inline"
-              sx={{ fontWeight: 600 }}
-            >
+              title={!isEmpty(currentEntity)
+                ? `${currentValue.assetName} ${!isEmpty(currentEntity?.typeName)
+                  ? `(${currentEntity.typeName})`
+                  : ""
+                }`
+                : ""}
+              sx={{
+                fontWeight: 600,
+                display: "inline-block",
+                maxWidth: "100%",
+                verticalAlign: "bottom"
+              }}
+             noWrap>
               {!isEmpty(currentEntity)
-                ? `${currentValue.assetName} ${
-                    !isEmpty(currentEntity?.typeName)
-                      ? `(${currentEntity.typeName})`
-                      : ""
-                  }`
+                ? `${currentValue.assetName} ${!isEmpty(currentEntity?.typeName)
+                  ? `(${currentEntity.typeName})`
+                  : ""
+                }`
                 : ""}
             </Typography>{" "}
             ?

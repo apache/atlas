@@ -69,7 +69,8 @@ import { toast } from "react-toastify";
 import { EnumTypeDefData, TreeNode } from "@models/treeStructureType";
 import ImportDialog from "@components/ImportDialog";
 import TreeIcons from "@components/Treeicons";
-import { useAppSelector } from "@hooks/reducerHook";
+import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
+import { fetchGlossaryData } from "@redux/slice/glossarySlice";
 import TreeNodeIcons from "@components/TreeNodeIcons";
 import ClassificationForm from "@views/Classification/ClassificationForm";
 import AddUpdateGlossaryForm from "@views/Glossary/AddUpdateGlossaryForm";
@@ -287,6 +288,7 @@ const BarTreeView: FC<{
   searchTerm,
   loader,
 }) => {
+  const dispatch = useAppDispatch();
   const { savedSearchData }: any = useAppSelector(
     (state: any) => state.savedSearch
   );
@@ -1042,23 +1044,6 @@ const BarTreeView: FC<{
                     </IconButton>
                   </LightTooltip>
 
-                  {treeName == "CustomFilters" && (
-                    <LightTooltip title={getEmptyTypesTitle()}>
-                      <AccountTreeIcon
-                        sx={{
-                          color: !isEmptyServicetype ? "#999 !important" : "",
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (setisEmptyServicetype) {
-                            setisEmptyServicetype(!isEmptyServicetype);
-                          }
-                        }}
-                        fontSize="small"
-                        className="menuitem-icon"
-                      />
-                    </LightTooltip>
-                  )}
 
                   {(treeName == "Entities" ||
                     treeName == "Classifications" ||
@@ -1206,11 +1191,6 @@ const BarTreeView: FC<{
                         handleClose();
                       }}
                       data-cy="downloadBusinessMetadata"
-                      disabled={
-                        treeName == "Glossary" && !isEmptyServicetype
-                          ? true
-                          : false
-                      }
                       className="sidebar-menu-item"
                     >
                       <ListItemIcon sx={{ minWidth: "28px !important" }}>
@@ -1232,11 +1212,6 @@ const BarTreeView: FC<{
                         handleClose();
                       }}
                       data-cy="importBusinessMetadata"
-                      disabled={
-                        treeName == "Glossary" && !isEmptyServicetype
-                          ? true
-                          : false
-                      }
                       className="sidebar-menu-item"
                     >
                       <ListItemIcon sx={{ minWidth: "28px !important" }}>
@@ -1250,6 +1225,27 @@ const BarTreeView: FC<{
                         {treeName == "Entities"
                           ? "Import Business Metadata"
                           : "Import Glossary Term"}
+                      </Typography>
+                    </MenuItem>
+                  )}
+                  {treeName == "Glossary" && (
+                    <MenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate("/glossary/terms-list");
+                        handleClose();
+                      }}
+                      data-cy="glossaryTermsListNavigate"
+                      className="sidebar-menu-item"
+                    >
+                      <ListItemIcon sx={{ minWidth: "28px !important" }}>
+                        <FileDownloadIcon
+                          fontSize="small"
+                          className="menuitem-icon"
+                        />
+                      </ListItemIcon>
+                      <Typography className="menuitem-label">
+                        Export Glossary
                       </Typography>
                     </MenuItem>
                   )}
@@ -1283,6 +1279,13 @@ const BarTreeView: FC<{
               treeName == "Entities"
                 ? "Import Business Metadata"
                 : "Import Glossary Term"
+            }
+            onImportSuccess={
+              treeName == "Glossary"
+                ? () => {
+                    void dispatch(fetchGlossaryData());
+                  }
+                : undefined
             }
           />
         </SimpleTreeView>

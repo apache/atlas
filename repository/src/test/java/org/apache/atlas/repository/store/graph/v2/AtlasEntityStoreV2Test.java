@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v2;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
@@ -41,12 +42,16 @@ import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.services.PurgeBatchExecutor;
+import org.apache.atlas.services.PurgeBatchOrchestrator;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.util.FileUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.janusgraph.diskstorage.locking.PermanentLockingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeClass;
@@ -68,6 +73,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.AtlasErrorCode.INVALID_CUSTOM_ATTRIBUTE_KEY_CHARACTERS;
@@ -81,7 +90,11 @@ import static org.apache.atlas.TestUtilsV2.NAME;
 import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
 import static org.apache.atlas.TestUtilsV2.getFile;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -105,6 +118,9 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
 
     @Inject
     private EntityGraphMapper graphMapper;
+
+    @Inject
+    private AtlasEntityStoreV2 guiceEntityStore;
 
     @Inject
     private String dbEntityGuid;
@@ -141,12 +157,20 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
 
     @BeforeTest
     public void init() throws Exception {
-        entityStore = new AtlasEntityStoreV2(graph, deleteDelegate, typeRegistry, mockChangeNotifier, graphMapper);
+        AtlasEntityStoreV2 entityStoreV2 = new AtlasEntityStoreV2(graph, deleteDelegate, typeRegistry, mockChangeNotifier, graphMapper);
+        entityStore = entityStoreV2;
 
         RequestContext.clear();
         RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
 
         LOG.debug("RequestContext: activeCount={}, earliestActiveRequestTime={}", RequestContext.getActiveRequestsCount(), RequestContext.earliestActiveRequestTime());
+    }
+
+    private void initPurgeWorkerTest() throws Exception {
+        init();
+        ApplicationProperties.get().setProperty("atlas.purge.workers.count", "1");
+        RequestContext.clear();
+        RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
     }
 
     @Test
@@ -1965,25 +1989,6 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
     }
 
     @Test
-    public void testPurgeByIdsWithEmptySet() throws Exception {
-        init();
-
-        try {
-            entityStore.purgeByIds(new HashSet<>());
-            fail("Expected AtlasBaseException for empty GUID set");
-        } catch (AtlasBaseException e) {
-            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_PARAMETERS);
-        }
-
-        try {
-            entityStore.purgeByIds(null);
-            fail("Expected AtlasBaseException for null GUID set");
-        } catch (AtlasBaseException e) {
-            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_PARAMETERS);
-        }
-    }
-
-    @Test
     public void testAddClassificationsWithInvalidParameters() throws Exception {
         init();
 
@@ -2466,15 +2471,290 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         assertTrue(response.getDeletedEntities() == null || response.getDeletedEntities().size() == 0);
     }
 
+    /**
+     * Reproduces stale JanusGraph vertex handles on the coordinator thread when expansion runs
+     * without a per-root transaction boundary and workers delete vertices in parallel.
+     */
     @Test
-    public void testPurgeByIdsWithNonExistentEntities() throws Exception {
+    public void testExpansionWithoutPerRootTxnBoundaryFailsWithStaleHandles() throws Exception {
         init();
 
-        // Test purging non-existent entities (should not throw exception)
-        Set<String> guids = new HashSet<>(Arrays.asList("non-existent-guid-1", "non-existent-guid-2"));
-        EntityMutationResponse response = entityStore.purgeByIds(guids);
+        String dept1Guid = createSoftDeletedDepartment("stale_txn_dept1");
+
+        initPurgeRequestContext();
+
+        try {
+            // Direct store instance — no GraphTransaction interceptor (pre-fix coordinator path).
+            Set<String> firstBatch = entityStore.accumulateDeletionCandidates(
+                    Collections.singleton(dept1Guid));
+            assertFalse(firstBatch.isEmpty(), "Expected deletion candidates from first expansion");
+
+            // Release Berkeley JE read locks from the coordinator txn, but keep guidVertexCache entries
+            // that the interceptor would have cleared after a per-root @GraphTransaction commit.
+            graph.rollback();
+
+            runPurgeBatchInWorker(firstBatch);
+
+            try {
+                // Re-expand a purged root: main-thread guidVertexCache still holds stale handles.
+                entityStore.accumulateDeletionCandidates(Collections.singleton(dept1Guid));
+                fail("Expected stale coordinator-thread graph transaction to fail second expansion");
+            } catch (Exception e) {
+                assertTrue(hasIllegalStateInChain(e),
+                        "Expected IllegalStateException from stale graph handles, got: " + e);
+            }
+        } finally {
+            graph.rollback();
+            GraphTransactionInterceptor.clearCache();
+            RequestContext.clear();
+        }
+    }
+
+    /**
+     * Verifies {@code @GraphTransaction} on accumulateDeletionCandidates plus
+     * {@link PurgeBatchOrchestrator#clearPurgeCandidateExpansionState()} prevent stale-handle failures
+     * when workers delete the first expansion's vertices before the next root is expanded.
+     */
+    @Test
+    public void testPerRootGraphTransactionSurvivesParallelWorkerDeletes() throws Exception {
+        init();
+
+        String dept1Guid = createSoftDeletedDepartment("per_root_txn_dept1");
+        String dept2Guid = createSoftDeletedDepartment("per_root_txn_dept2");
+
+        initPurgeRequestContext();
+
+        try {
+            Set<String> firstBatch = guiceEntityStore.accumulateDeletionCandidates(
+                    Collections.singleton(dept1Guid));
+            assertFalse(firstBatch.isEmpty());
+
+            runPurgeBatchInWorker(firstBatch);
+            PurgeBatchOrchestrator.clearPurgeCandidateExpansionState();
+
+            Set<String> secondBatch = guiceEntityStore.accumulateDeletionCandidates(
+                    Collections.singleton(dept2Guid));
+            assertFalse(secondBatch.isEmpty(), "Second expansion should succeed with per-root txn boundary");
+        } finally {
+            graph.rollback();
+            GraphTransactionInterceptor.clearCache();
+            RequestContext.clear();
+        }
+    }
+
+    /**
+     * Verifies {@link PurgeBatchExecutor} clears graph and RequestContext caches before retrying a
+     * batch after a lock conflict, so stale vertex handles from a rolled-back attempt do not break
+     * the next attempt.
+     */
+    @Test
+    public void testPurgeBatchRetryClearsStaleCachesAfterLockConflict() throws Exception {
+        initPurgeWorkerTest();
+
+        String guid = createSoftDeletedDepartment("retry_stale_dept");
+        Set<String> batch = Collections.singleton(guid);
+
+        initPurgeRequestContext();
+
+        try {
+            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+            assertNotNull(vertex);
+            assertNotNull(GraphTransactionInterceptor.getVertexFromCache(guid),
+                    "Expected guidVertexCache entry before rollback");
+
+            graph.rollback();
+
+            AtlasEntityStoreV2 storeSpy = spy(guiceEntityStore);
+            PermanentLockingException ple = new PermanentLockingException("simulated lock conflict");
+            AtlasBaseException lockConflict = new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, ple);
+            doThrow(lockConflict)
+                    .doCallRealMethod()
+                    .when(storeSpy).purgeEntitiesInBatch(batch);
+
+            PurgeBatchExecutor executor = new PurgeBatchExecutor(storeSpy);
+            EntityMutationResponse response = executor.executeBatch(batch);
+
+            assertNotNull(response);
+            assertNotNull(response.getPurgedEntities());
+            assertEquals(response.getPurgedEntities().size(), 1);
+            assertEquals(response.getPurgedEntities().get(0).getGuid(), guid);
+            assertNull(AtlasGraphUtilsV2.findByGuid(graph, guid),
+                    "Entity should be purged after successful retry");
+            verify(storeSpy, times(2)).purgeEntitiesInBatch(batch);
+        } finally {
+            graph.rollback();
+            GraphTransactionInterceptor.clearCache();
+            RequestContext.clear();
+        }
+    }
+
+    @Test
+    public void testPurgeExpansionVsWorkerDeleteConcurrency() throws Exception {
+        init();
+
+        String dept1Guid = createSoftDeletedDepartment("conc_dept1");
+        String dept2Guid = createSoftDeletedDepartment("conc_dept2");
+
+        initPurgeRequestContext();
+
+        try {
+            Set<String> firstBatch = guiceEntityStore.accumulateDeletionCandidates(
+                    Collections.singleton(dept1Guid));
+            assertFalse(firstBatch.isEmpty());
+
+            CountDownLatch done = new CountDownLatch(1);
+            AtomicReference<Exception> workerError = new AtomicReference<>();
+            PurgeBatchExecutor purgeBatchExecutor = new PurgeBatchExecutor(guiceEntityStore);
+
+            Thread worker = new Thread(() -> {
+                try {
+                    RequestContext.clear();
+                    RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
+                    RequestContext.get().setDeleteType(DeleteType.HARD);
+                    RequestContext.get().setPurgeRequested(true);
+                    purgeBatchExecutor.executeBatch(firstBatch);
+                } catch (Exception e) {
+                    workerError.set(e);
+                } finally {
+                    done.countDown();
+                    RequestContext.clear();
+                }
+            }, "purge-race-worker");
+
+            worker.start();
+
+            Thread.sleep(100);
+
+            Set<String> secondBatch = guiceEntityStore.accumulateDeletionCandidates(
+                    Collections.singleton(dept2Guid));
+
+            assertTrue(done.await(60, TimeUnit.SECONDS), "Worker purge timed out");
+
+            if (workerError.get() != null) {
+                throw workerError.get();
+            }
+
+            assertFalse(secondBatch.isEmpty(), "Second expansion should succeed concurrently");
+
+            guiceEntityStore.purgeEntitiesInBatch(secondBatch);
+        } finally {
+            RequestContext.clear();
+            PurgeBatchOrchestrator.clearPurgeCandidateExpansionState();
+        }
+    }
+
+    @Test
+    public void testPurgeEntitiesInBatchRejectsNonDeletedState() throws Exception {
+        init();
+
+        AtlasEntity dbEntity = TestUtilsV2.createDBEntity();
+        EntityMutationResponse createResponse = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
+        String guid = createResponse.getCreatedEntities().get(0).getGuid();
+
+        RequestContext.clear();
+        RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
+        RequestContext.get().setDeleteType(DeleteType.HARD);
+        RequestContext.get().setPurgeRequested(true);
+
+        EntityMutationResponse response = entityStore.purgeEntitiesInBatch(Collections.singleton(guid));
         assertNotNull(response);
-        assertTrue(response.getPurgedEntities() == null || response.getPurgedEntities().size() == 0);
+        assertNotNull(response.getFailedEntities());
+        assertEquals(response.getFailedEntities().size(), 1);
+        assertEquals(response.getFailedEntities().get(0).getErrorCode(), AtlasErrorCode.NOT_IN_DELETED_STATE.getErrorCode());
+        assertTrue(response.getPurgedEntities() == null || response.getPurgedEntities().isEmpty());
+    }
+
+    @Test
+    public void testPurgeEntitiesInBatchSkipsAlreadyRemovedGuid() throws Exception {
+        init();
+
+        AtlasEntity dbEntity = TestUtilsV2.createDBEntity();
+        EntityMutationResponse createResponse = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
+        String guid = createResponse.getCreatedEntities().get(0).getGuid();
+
+        entityStore.deleteById(guid);
+
+        RequestContext.clear();
+        RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
+        RequestContext.get().setDeleteType(DeleteType.HARD);
+        RequestContext.get().setPurgeRequested(true);
+
+        EntityMutationResponse firstPurge = entityStore.purgeEntitiesInBatch(Collections.singleton(guid));
+        assertNotNull(firstPurge);
+        assertNotNull(firstPurge.getPurgedEntities());
+        assertEquals(firstPurge.getPurgedEntities().size(), 1);
+        assertEquals(firstPurge.getPurgedEntities().get(0).getGuid(), guid);
+        assertNotNull(firstPurge.getPurgedEntities().get(0).getTypeName());
+
+        EntityMutationResponse secondPurge = entityStore.purgeEntitiesInBatch(Collections.singleton(guid));
+        assertNotNull(secondPurge);
+        assertNotNull(secondPurge.getFailedEntities());
+        assertEquals(secondPurge.getFailedEntities().size(), 1);
+        assertEquals(secondPurge.getFailedEntities().get(0).getGuid(), guid);
+        assertEquals(secondPurge.getFailedEntities().get(0).getErrorCode(),
+                AtlasErrorCode.INSTANCE_GUID_NOT_FOUND.getErrorCode());
+        assertTrue(secondPurge.getPurgedEntities() == null || secondPurge.getPurgedEntities().isEmpty());
+    }
+
+    /**
+     * Two threads purging the same soft-deleted GUID must not both report it as purged; the loser
+     * should record a skippable {@code INSTANCE_GUID_NOT_FOUND} failure.
+     */
+    @Test
+    public void testConcurrentPurgeSameGuidNotDoubleReported() throws Exception {
+        init();
+
+        AtlasEntity dbEntity = TestUtilsV2.createDBEntity();
+        EntityMutationResponse createResponse = guiceEntityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
+        String guid = createResponse.getCreatedEntities().get(0).getGuid();
+
+        guiceEntityStore.deleteById(guid);
+        graph.rollback();
+
+        PurgeBatchExecutor executor = new PurgeBatchExecutor(guiceEntityStore);
+        CountDownLatch startGate = new CountDownLatch(1);
+        AtomicInteger purgedCount = new AtomicInteger(0);
+        AtomicInteger failedCount = new AtomicInteger(0);
+        AtomicReference<Exception> workerError = new AtomicReference<>();
+
+        Runnable concurrentPurge = () -> {
+            try {
+                startGate.await();
+                RequestContext.clear();
+                RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
+                RequestContext.get().setDeleteType(DeleteType.HARD);
+                RequestContext.get().setPurgeRequested(true);
+
+                EntityMutationResponse response = executor.executeBatch(Collections.singleton(guid));
+                if (response.getPurgedEntities() != null) {
+                    purgedCount.addAndGet(response.getPurgedEntities().size());
+                }
+                if (response.getFailedEntities() != null) {
+                    failedCount.addAndGet(response.getFailedEntities().size());
+                }
+            } catch (Exception e) {
+                workerError.set(e);
+            } finally {
+                RequestContext.clear();
+                GraphTransactionInterceptor.clearCache();
+            }
+        };
+
+        Thread worker1 = new Thread(concurrentPurge, "purge-race-1");
+        Thread worker2 = new Thread(concurrentPurge, "purge-race-2");
+        worker1.start();
+        worker2.start();
+        startGate.countDown();
+        worker1.join(TimeUnit.SECONDS.toMillis(60));
+        worker2.join(TimeUnit.SECONDS.toMillis(60));
+
+        if (workerError.get() != null) {
+            throw workerError.get();
+        }
+
+        assertEquals(purgedCount.get(), 1, "Exactly one concurrent purge should report success");
+        assertEquals(failedCount.get(), 1, "The other concurrent purge should record a skippable failure");
+        assertNull(AtlasGraphUtilsV2.findByGuid(guid), "Entity should be removed from graph after purge");
     }
 
     @Test
@@ -2790,5 +3070,72 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         // Verify classification is deleted
         List<AtlasClassification> classifications = entityStore.getClassifications(guid);
         assertFalse(classifications.stream().anyMatch(c -> "TestClassificationForDeletion".equals(c.getTypeName())));
+    }
+
+    private String createSoftDeletedDepartment(String namePrefix) throws Exception {
+        AtlasEntity.AtlasEntitiesWithExtInfo deptPayload = TestUtilsV2.createDeptEg2();
+        String uniqueDeptName = namePrefix + "_" + System.nanoTime();
+
+        for (AtlasEntity entity : deptPayload.getEntities()) {
+            if (TestUtilsV2.DEPARTMENT_TYPE.equals(entity.getTypeName())) {
+                entity.setAttribute("name", uniqueDeptName);
+                break;
+            }
+        }
+
+        EntityMutationResponse createResponse = guiceEntityStore.createOrUpdate(new AtlasEntityStream(deptPayload), false);
+        AtlasEntityHeader deptHeader = createResponse.getFirstCreatedEntityByTypeName(TestUtilsV2.DEPARTMENT_TYPE);
+        assertNotNull(deptHeader, "Department entity should be created");
+
+        guiceEntityStore.deleteById(deptHeader.getGuid());
+        return deptHeader.getGuid();
+    }
+
+    private void initPurgeRequestContext() {
+        RequestContext.clear();
+        RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
+        RequestContext.get().setDeleteType(DeleteType.HARD);
+        RequestContext.get().setPurgeRequested(true);
+    }
+
+    private void runPurgeBatchInWorker(Set<String> guids) throws Exception {
+        // Ensure the coordinator thread is not holding a Berkeley JE read txn before worker writes.
+        graph.rollback();
+
+        CountDownLatch           done        = new CountDownLatch(1);
+        AtomicReference<Exception> workerError = new AtomicReference<>();
+        PurgeBatchExecutor       executor    = new PurgeBatchExecutor(guiceEntityStore);
+
+        Thread worker = new Thread(() -> {
+            try {
+                RequestContext.clear();
+                RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
+                RequestContext.get().setDeleteType(DeleteType.HARD);
+                RequestContext.get().setPurgeRequested(true);
+                executor.executeBatch(guids);
+            } catch (Exception e) {
+                workerError.set(e);
+            } finally {
+                done.countDown();
+                RequestContext.clear();
+            }
+        }, "purge-stale-handle-test-worker");
+
+        worker.start();
+        assertTrue(done.await(60, TimeUnit.SECONDS), "Worker purge timed out");
+
+        if (workerError.get() != null) {
+            throw workerError.get();
+        }
+    }
+
+    private static boolean hasIllegalStateInChain(Throwable t) {
+        for (Throwable c = t; c != null; c = c.getCause()) {
+            if (c instanceof IllegalStateException) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

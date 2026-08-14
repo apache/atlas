@@ -36,7 +36,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME;
 import static org.apache.atlas.examples.QuickStartV2.CLUSTER_SUFFIX;
@@ -119,9 +121,13 @@ public class QuickStartV2IT extends BaseResourceIT {
         String timeDimTableId     = getTableId(TIME_DIM_TABLE);
         String salesFactDailyMVId = getTableId(SALES_FACT_DAILY_MV_TABLE);
 
-        assertEquals(salesFactTableId, ((Map<?, ?>) inputs.get(0)).get("guid"));
-        assertEquals(timeDimTableId, ((Map<?, ?>) inputs.get(1)).get("guid"));
-        assertEquals(salesFactDailyMVId, ((Map<?, ?>) outputs.get(0)).get("guid"));
+        Set<String> inputGuids = inputs.stream()
+                .map(i -> (String) ((Map<?, ?>) i).get("guid"))
+                .collect(Collectors.toSet());
+
+        assertTrue(inputGuids.contains(salesFactTableId));
+        assertTrue(inputGuids.contains(timeDimTableId));
+        assertEquals(((Map<?, ?>) outputs.get(0)).get("guid"), salesFactDailyMVId);
     }
 
     @Test

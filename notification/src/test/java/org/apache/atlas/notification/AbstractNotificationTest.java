@@ -24,7 +24,7 @@ import org.apache.atlas.model.notification.HookNotification.HookNotificationType
 import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
 import org.apache.atlas.type.AtlasType;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 
 import java.util.ArrayList;
 import java.util.Arrays;

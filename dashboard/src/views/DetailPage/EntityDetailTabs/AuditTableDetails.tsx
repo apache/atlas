@@ -24,7 +24,10 @@ const updateName = (entityName: string, entity: object) => {
     extractKeyValueFromEntity(entity);
   return (
     <>
-      <span className="audit-detail-name">
+      <span
+        className="audit-detail-name text-truncate-inline"
+        title={!isEmpty(entity) ? `${name} (${entityName})` : entityName}
+      >
         Name: {!isEmpty(entity) ? `${name} (${entityName})` : entityName}
       </span>
     </>
@@ -59,7 +62,7 @@ const AuditTableDetails = ({ componentProps, row }: any) => {
         }
       } else {
         try {
-          parseDetailsObject = JSON.parse(auditData);
+          parseDetailsObject = JSON.parse(auditData.trim());
           var skipAttribute = parseDetailsObject.typeName ? "guid" : null;
           const { name }: { name: string; found: boolean; key: any } =
             extractKeyValueFromEntity(parseDetailsObject, null, skipAttribute);
@@ -70,16 +73,30 @@ const AuditTableDetails = ({ componentProps, row }: any) => {
             let customAttr = parseDetailsObject.customAttributes;
             return (
               <>
-                {name == "-"
-                  ? parseDetailsObject.typeName
-                  : updateName(name, {})}
-                {!isEmpty(entity) ? (
-                  <Stack
-                    direction={"row"}
-                    gap={"1rem"}
-                    flexWrap="wrap"
-                    className="audit-attributes properties-container"
-                  >
+                <div className="text-truncate d-inline-block w-100 align-bottom"
+                  title={name == "-" ? parseDetailsObject.typeName : name}
+                >
+                  {name == "-"
+                    ? parseDetailsObject.typeName
+                    : updateName(name, {})}
+                </div>
+                <Stack
+                  direction={"row"}
+                  gap={"1rem"}
+                  flexWrap="wrap"
+                  className="audit-attributes properties-container"
+                >
+                  <div className="audit-attributes-item">
+                    <AttributeProperties
+                      entity={parseDetailsObject}
+                      referredEntities={referredEntities}
+                      loading={loading}
+                      auditDetails={true}
+                      entityobj={entity}
+                      propertiesName="Technical"
+                    />
+                  </div>
+                  {!isEmpty(relationshipAttributes) && (
                     <div className="audit-attributes-item">
                       <AttributeProperties
                         entity={parseDetailsObject}
@@ -87,45 +104,31 @@ const AuditTableDetails = ({ componentProps, row }: any) => {
                         loading={loading}
                         auditDetails={true}
                         entityobj={entity}
-                        propertiesName="Technical"
+                        propertiesName="Relationship"
                       />
                     </div>
-                    {!isEmpty(relationshipAttributes) && (
-                      <div className="audit-attributes-item">
-                        <AttributeProperties
-                          entity={parseDetailsObject}
-                          referredEntities={referredEntities}
-                          loading={loading}
-                          auditDetails={true}
-                          entityobj={entity}
-                          propertiesName="Relationship"
-                        />
-                      </div>
-                    )}
-                    {!isEmpty(customAttr) && (
-                      <div className="audit-attributes-item">
-                        <AttributeProperties
-                          entity={parseDetailsObject}
-                          referredEntities={referredEntities}
-                          loading={loading}
-                          auditDetails={true}
-                          entityobj={entity}
-                          propertiesName="User-defined"
-                        />
-                      </div>
-                    )}
-                  </Stack>
-                ) : (
-                  <h4 data-cy="noData">
-                    <i>No details to show!</i>
-                  </h4>
-                )}
+                  )}
+                  {!isEmpty(customAttr) && (
+                    <div className="audit-attributes-item">
+                      <AttributeProperties
+                        entity={parseDetailsObject}
+                        referredEntities={referredEntities}
+                        loading={loading}
+                        auditDetails={true}
+                        entityobj={entity}
+                        propertiesName="User-defined"
+                      />
+                    </div>
+                  )}
+                </Stack>
               </>
             );
           } else {
-            <h4 data-cy="noData">
-              <i>No details to show!</i>
-            </h4>;
+            return (
+              <h4 data-cy="noData">
+                <i>No details to show!</i>
+              </h4>
+            );
           }
         } catch (error) {
           isArray(parseDetailsObject) && updateName(parseDetailsObject[0], {});

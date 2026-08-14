@@ -69,6 +69,8 @@ interface PaginationProps {
   totalCount?: number;
   /** Client mode: notify parent when page size changes (user action). */
   onClientPageSizeChange?: (pageSize: number) => void;
+  /** See TableProps.paginationSummaryVariant */
+  paginationSummaryVariant?: 'default' | 'audit';
 }
 
 const TablePagination: React.FC<PaginationProps> = ({
@@ -90,7 +92,8 @@ const TablePagination: React.FC<PaginationProps> = ({
   setIsEmptyData,
   showGoToPage = false,
   totalCount,
-  onClientPageSizeChange
+  onClientPageSizeChange,
+  paginationSummaryVariant = 'default'
 }) => {
   const theme: any = useTheme();
   const location = useLocation();
@@ -381,8 +384,18 @@ const TablePagination: React.FC<PaginationProps> = ({
     totalDatasetRows === 0 ? 0 : Math.min(displayFrom, displayToCapped);
   const footerRangeEnd = totalDatasetRows === 0 ? 0 : displayToCapped;
 
+  const showAuditPaginationSummary =
+    paginationSummaryVariant === 'audit' &&
+    isServerSide &&
+    memoizedData.length > 0;
+
+  const auditRangeStart = offset + 1;
+  const auditRangeEnd = offset + memoizedData.length;
+
   return (
     <Stack
+      role="navigation"
+      aria-label="Table pagination"
       spacing={{ xs: 1, sm: 2 }}
       direction="row"
       useFlexGap
@@ -393,14 +406,21 @@ const TablePagination: React.FC<PaginationProps> = ({
     >
       <div>
         <span className="text-grey">
-          {totalDatasetRows === 0 ? (
-            "No records to display"
+          {memoizedData.length === 0 ? (
+            'No records to display'
+          ) : showAuditPaginationSummary ? (
+            <>
+              Showing {memoizedData.length.toLocaleString()}{' '}
+              {memoizedData.length === 1 ? 'record' : 'records'} From{' '}
+              {auditRangeStart.toLocaleString()} -{' '}
+              {auditRangeEnd.toLocaleString()}
+            </>
           ) : (
             <>
               Showing {footerRangeStart.toLocaleString()}-
-              {footerRangeEnd.toLocaleString()} of{" "}
-              {totalDatasetRows.toLocaleString()}{" "}
-              {totalDatasetRows === 1 ? "record" : "records"}
+              {footerRangeEnd.toLocaleString()} of{' '}
+              {totalDatasetRows.toLocaleString()}{' '}
+              {totalDatasetRows === 1 ? 'record' : 'records'}
             </>
           )}
         </span>

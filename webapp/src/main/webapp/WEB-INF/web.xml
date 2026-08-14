@@ -74,7 +74,7 @@
 
     <filter>
         <filter-name>AuditFilter</filter-name>
-        <filter-class>org.apache.atlas.web.filters.AuditFilter</filter-class>
+        <filter-class>org.apache.atlas.server.common.filters.AuditFilter</filter-class>
     </filter>
 
     <filter-mapping>
@@ -84,7 +84,7 @@
 
     <filter>
         <filter-name>HeaderFilter</filter-name>
-        <filter-class>org.apache.atlas.web.filters.AtlasHeaderFilter</filter-class>
+        <filter-class>org.apache.atlas.server.common.filters.AtlasHeaderFilter</filter-class>
     </filter>
 
     <filter-mapping>
@@ -102,7 +102,7 @@
     </listener>
 
     <listener>
-        <listener-class>org.apache.atlas.web.setup.KerberosAwareListener</listener-class>
+        <listener-class>org.apache.atlas.server.common.setup.KerberosAwareListener</listener-class>
     </listener>
 
 

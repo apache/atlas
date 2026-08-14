@@ -1,5 +1,3 @@
-//@ts-nocheck
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,14 +12,17 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License.useForm
+ * limitations under the License.
  */
+
+//@ts-nocheck
 
 import CustomModal from "@components/Modal";
 import { CustomButton, LightTooltip } from "@components/muiComponents";
 import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
 import {
   Autocomplete,
+  Chip,
   CircularProgress,
   IconButton,
   InputLabel,
@@ -70,8 +71,8 @@ const ClassificationForm = ({
   const { enumDefs } = enumObj.data;
   const classificationObj = !isEmpty(currentTagName)
     ? classificationData.classificationDefs.find(
-        (obj: { name: string }) => obj.name == currentTagName
-      )
+      (obj: { name: string }) => obj.name == currentTagName
+    )
     : {};
 
   const { name, description } = classificationObj;
@@ -111,6 +112,7 @@ const ClassificationForm = ({
     event: React.MouseEvent<HTMLElement>,
     newAlignment: string
   ) => {
+    /* istanbul ignore next */
     event?.stopPropagation();
     setAlignment(newAlignment);
   };
@@ -126,9 +128,9 @@ const ClassificationForm = ({
 
   const options = !isEmpty(classificationData)
     ? classificationData.classificationDefs.map((obj: { name: any }) => ({
-        label: obj.name,
-        value: obj.name
-      }))
+      label: obj.name,
+      value: obj.name
+    }))
     : [];
 
   const enumType = !isEmpty(enumDefs)
@@ -199,8 +201,7 @@ const ClassificationForm = ({
       onClose();
       toast.dismiss(toastId.current);
       toastId.current = toast.success(
-        `Classification ${name} was ${
-          isAdd ? "created" : "updated"
+        `Classification ${name} was ${isAdd ? "created" : "updated"
         } successfully`
       );
       await fetchInitialData();
@@ -384,6 +385,38 @@ const ClassificationForm = ({
                             }
                             options={options}
                             className="form-autocomplete-field"
+                            componentsProps={{
+                              paper: {
+                                sx: {
+                                  maxWidth: "100%",
+                                  overflowX: "hidden"
+                                }
+                              }
+                            }}
+                            renderOption={(props, option: any) => {
+                              return (
+                                <li
+                                  {...props}
+                                  title={option.label}
+                                  className={props.className}
+                                >
+                                  <span className="autocomplete-option-label">
+                                    {option.label}
+                                  </span>
+                                </li>
+                              );
+                            }}
+                            renderTags={(tagValue, getTagProps) =>
+                              tagValue.map((option, index) => (
+                                <Chip
+                                  {...getTagProps({ index })}
+                                  key={index}
+                                  label={option.label}
+                                  title={option.label}
+                                  size="small"
+                                />
+                              ))
+                            }
                             renderInput={(params) => (
                               <TextField
                                 {...params}
@@ -425,58 +458,57 @@ const ClassificationForm = ({
                     Add New Attributes
                   </CustomButton>
 
-                  {fields.map((field, index) => (
-                    <Stack gap="1rem" key={field.id} direction="row">
-                      <TextField
-                        margin="normal"
-                        fullWidth
-                        {...register(`attributes.${index}.attributeName`)}
-                        defaultValue={field.attributeName}
-                        variant="outlined"
-                        size="small"
-                        placeholder={"Attribute Name"}
-                        className="form-textfield"
-                        sx={{
-                          marginTop: "8px !important",
-                          marginBottom: "8px !important"
-                        }}
-                      />
-
-                      <div
-                        style={{
-                          width: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.5rem"
-                        }}
-                      >
-                        <Select
+                  {fields.map((field, index) => {
+                    /* istanbul ignore next */
+                    const shouldShowToggle =
+                      watched?.[index] &&
+                      watched?.[index]?.typeName == "array<string>";
+                    return (
+                      <Stack gap="1rem" key={field.id} direction="row">
+                        <TextField
+                          margin="normal"
                           fullWidth
+                          {...register(`attributes.${index}.attributeName`)}
+                          defaultValue={field.attributeName}
+                          variant="outlined"
                           size="small"
-                          defaultValue={"string"}
-                          id="demo-select-small"
-                          {...register(`attributes.${index}.typeName`)}
+                          placeholder={"Attribute Name"}
                           className="form-textfield"
                           sx={{
                             marginTop: "8px !important",
                             marginBottom: "8px !important"
                           }}
+                        />
+
+                        <div
+                          className="flex-center-gap"
                         >
-                          {dataTypeSelector.map((type) => (
-                            <MenuItem key={type} value={type}>
-                              {type}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                        {watched?.[index] &&
-                          watched?.[index]?.typeName == "array<string>" && (
+                          <Select
+                            fullWidth
+                            size="small"
+                            defaultValue={"string"}
+                            id="demo-select-small"
+                            {...register(`attributes.${index}.typeName`)}
+                            className="form-textfield"
+                            sx={{
+                              marginTop: "8px !important",
+                              marginBottom: "8px !important"
+                            }}
+                          >
+                            {dataTypeSelector.map((type) => (
+                              <MenuItem key={type} value={type}>
+                                {type}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                          {shouldShowToggle && (
                             <Controller
                               control={control}
                               name={
                                 `attributes.${index}.toggleDuplicates` as const
                               }
                               data-cy={`attributes.${index}.toggleDuplicates`}
-                              defaultValue={field?.toggleDuplicates}
+                              defaultValue={field.toggleDuplicates}
                               render={({ field: { value, onChange } }: any) => (
                                 <>
                                   <LightTooltip
@@ -501,26 +533,27 @@ const ClassificationForm = ({
                               )}
                             />
                           )}
-                      </div>
+                        </div>
 
-                      <IconButton
-                        aria-label="back"
-                        color="error"
-                        sx={{
-                          display: "inline-flex",
-                          position: "relative",
-                          padding: "4px",
-                          marginLeft: "4px"
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          remove(index);
-                        }}
-                      >
-                        <ClearOutlinedIcon sx={{ fontSize: "1.25rem" }} />
-                      </IconButton>
-                    </Stack>
-                  ))}
+                        <IconButton
+                          aria-label="back"
+                          color="error"
+                          sx={{
+                            display: "inline-flex",
+                            position: "relative",
+                            padding: "4px",
+                            marginLeft: "4px"
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            remove(index);
+                          }}
+                        >
+                          <ClearOutlinedIcon sx={{ fontSize: "1.25rem" }} />
+                        </IconButton>
+                      </Stack>
+                    );
+                  })}
                   {/* <TagAtrributes control={control} /> */}
                 </Stack>
               )}

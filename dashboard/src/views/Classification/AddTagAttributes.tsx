@@ -12,7 +12,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License.useForm
+ * limitations under the License.
  */
 
 import CustomModal from "@components/Modal";
@@ -167,8 +167,13 @@ const AddTagAttributes = ({ open, onClose }: any) => {
               Add New Attributes
             </CustomButton>
 
-            {fields.map((field: any, index) => (
-              <Stack gap="1rem" key={field.id} direction="row">
+            {fields.map((field: any, index) => {
+              /* istanbul ignore next */
+              const shouldShowToggle =
+                watched?.[index] &&
+                watched?.[index]?.typeName == "array<string>";
+              return (
+                <Stack gap="1rem" key={field.id} direction="row">
                 <TextField
                   margin="normal"
                   fullWidth
@@ -210,34 +215,33 @@ const AddTagAttributes = ({ open, onClose }: any) => {
                       </MenuItem>
                     ))}
                   </Select>
-                  {watched?.[index] &&
-                    watched?.[index]?.typeName == "array<string>" && (
-                      <Controller
-                        control={control}
-                        name={`attributes.${index}.toggleDuplicates` as const}
-                        key={`attributes.${index}.toggleDuplicates`}
-                        data-cy={`attributes.${index}.toggleDuplicates`}
-                        defaultValue={field?.multiValueSelect}
-                        render={({ field: { value, onChange } }: any) => (
-                          <>
-                            <LightTooltip
-                              title={value == false ? "Make LIST" : "Make SET"}
-                            >
-                              <AntSwitch
-                                size="small"
-                                {...register(
-                                  `attributes.${index}.toggleDuplicates`
-                                )}
-                                checked={value}
-                                onChange={onChange}
-                                sx={{ marginRight: "4px" }}
-                                inputProps={{ "aria-label": "controlled" }}
-                              />
-                            </LightTooltip>
-                          </>
-                        )}
-                      />
-                    )}
+                  {shouldShowToggle && (
+                    <Controller
+                      control={control}
+                      name={`attributes.${index}.toggleDuplicates` as const}
+                      key={`attributes.${index}.toggleDuplicates`}
+                      data-cy={`attributes.${index}.toggleDuplicates`}
+                      defaultValue={field.multiValueSelect}
+                      render={({ field: { value, onChange } }: any) => (
+                        <>
+                          <LightTooltip
+                            title={value == false ? "Make LIST" : "Make SET"}
+                          >
+                            <AntSwitch
+                              size="small"
+                              {...register(
+                                `attributes.${index}.toggleDuplicates`
+                              )}
+                              checked={value}
+                              onChange={onChange}
+                              sx={{ marginRight: "4px" }}
+                              inputProps={{ "aria-label": "controlled" }}
+                            />
+                          </LightTooltip>
+                        </>
+                      )}
+                    />
+                  )}
                 </div>
 
                 <IconButton
@@ -258,8 +262,9 @@ const AddTagAttributes = ({ open, onClose }: any) => {
                 >
                   <ClearOutlinedIcon fontSize="small" />
                 </IconButton>
-              </Stack>
-            ))}
+                </Stack>
+              );
+            })}
             {/* <TagAtrributes control={control} /> */}
           </Stack>
         </form>

@@ -61,4 +61,9 @@ export interface TableProps {
   defaultPageSize?: number;
   /** Client pagination: invoked when the user changes page size (e.g. sync schema relationship chunk limit). */
   onClientPageSizeChange?: (pageSize: number) => void;
+  /**
+   * Admin audit table: API does not return a total count. Footer shows
+   * "Showing {n} records From {start} - {end}" instead of "… of {total}".
+   */
+  paginationSummaryVariant?: 'default' | 'audit';
 }

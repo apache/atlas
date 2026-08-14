@@ -402,6 +402,11 @@ public class EntityGraphMapper {
                 AtlasVertex     vertex     = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
 
+                // Store CREATE event Kafka message creation time for accurate lineage correlation
+                // This is set here (not in createStructVertex) to ensure only actual CREATE entities
+                // get the timestamp, not shell entities created by lineage messages
+                setCreateEventMsgTime(vertex);
+
                 mapRelationshipAttributes(createdEntity, entityType, vertex, CREATE, context);
 
                 mapAttributes(createdEntity, entityType, vertex, CREATE, context);
@@ -423,6 +428,12 @@ public class EntityGraphMapper {
                 String          guid       = updatedEntity.getGuid();
                 AtlasVertex     vertex     = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
+
+                // Store CREATE event Kafka message creation time for shell entities which got updated
+                Long createTime = vertex.getProperty(Constants.ENTITY_CREATE_EVENT_TIME_PROPERTY_KEY, Long.class);
+                if (createTime == null) {
+                    setCreateEventMsgTime(vertex);
+                }
 
                 mapRelationshipAttributes(updatedEntity, entityType, vertex, UPDATE, context);
 
@@ -2864,6 +2875,24 @@ public class EntityGraphMapper {
         }
 
         return relGuidsSet;
+    }
+
+    /**
+     * Sets the CREATE event Kafka message creation time on the entity vertex.
+     * This timestamp is used for accurate lineage correlation and temporal entity resolution.
+     *
+     * This method is called only when processing actual CREATE messages (not shell entities),
+     * ensuring that entities get stamped with their actual creation time from metadata messages,
+     * not from lineage messages that may have created shell entities earlier and for entities which
+     * created as SHELL entities and then got updated
+     *
+     * @param vertex the entity vertex to set the timestamp on
+     */
+    private void setCreateEventMsgTime(AtlasVertex vertex) {
+        Long createEventMsgTime = RequestContext.get().getCreateEventMsgTime();
+        if (createEventMsgTime != null) {
+            AtlasGraphUtilsV2.setEncodedProperty(vertex, Constants.ENTITY_CREATE_EVENT_TIME_PROPERTY_KEY, createEventMsgTime);
+        }
     }
 
     private List<AtlasEntity> updateClassificationText(AtlasClassification classification, Collection<AtlasVertex> propagatedVertices) throws AtlasBaseException {

@@ -160,14 +160,9 @@ const RelationShipSearch: React.FC = () => {
           entityDef.attributes &&
           entityDef.attributes.serviceType !== undefined
         ) {
-          if (
-            serviceTypeMap[entityDef.typeName] === undefined &&
-            entityData.entityDefs
-          ) {
-            var defObj = entityData.entityDefs.find(
-              (obj: { typeName: string }) => ({
-                name: obj.typeName
-              })
+          if (serviceTypeMap[entityDef.typeName] === undefined) {
+            const defObj = entityData?.entityDefs?.find(
+              (obj: { typeName: string }) => obj.typeName === entityDef.typeName
             );
             if (defObj) {
               serviceTypeMap[entityDef.typeName] = defObj.get("serviceType");
@@ -308,8 +303,8 @@ const RelationShipSearch: React.FC = () => {
 
   let allColumns = removeDuplicateObjects([
     ...defaultColumns,
-    ...defaultHideColumns
-  ]);
+    ...(defaultHideColumns || [])
+  ]) || [];
 
   const defaultColumnVisibility: any = (columns: any) => {
     let columnsParams: any = searchParams.get("attributes");

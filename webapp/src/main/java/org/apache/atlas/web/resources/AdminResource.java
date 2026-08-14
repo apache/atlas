@@ -51,6 +51,7 @@ import org.apache.atlas.model.instance.AtlasCheckStateResult;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.PurgeSummary;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.metrics.AtlasMetricsMapToChart;
 import org.apache.atlas.model.metrics.AtlasMetricsStat;
@@ -66,7 +67,11 @@ import org.apache.atlas.repository.impexp.ImportService;
 import org.apache.atlas.repository.impexp.MigrationProgressService;
 import org.apache.atlas.repository.impexp.ZipSink;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
+import org.apache.atlas.repository.purge.PurgeUtils;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
+import org.apache.atlas.server.common.service.ServiceState;
+import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.services.PurgeService;
 import org.apache.atlas.tasks.TaskManagement;
@@ -76,15 +81,13 @@ import org.apache.atlas.util.AtlasMetricsUtil;
 import org.apache.atlas.util.SearchTracker;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
-import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.model.DebugMetrics;
 import org.apache.atlas.web.service.AtlasDebugMetricsSink;
-import org.apache.atlas.web.service.ServiceState;
-import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.io.FileHandler;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -133,7 +136,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import static javax.servlet.http.HttpServletResponse.SC_NO_CONTENT;
-import static org.apache.atlas.web.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
+import static org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
 
 /**
  * Jersey Resource for admin operations.
@@ -209,11 +212,11 @@ public class AdminResource {
 
     @Inject
     public AdminResource(ServiceState serviceState, MetricsService metricsService, AtlasTypeRegistry typeRegistry,
-            ExportService exportService, ImportService importService, SearchTracker activeSearches,
-            MigrationProgressService migrationProgressService, AtlasServerService serverService,
-            ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
-            AtlasPatchManager patchManager, AtlasAuditService auditService, EntityAuditRepository auditRepository,
-            TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink, AtlasAuditReductionService atlasAuditReductionService, AtlasMetricsUtil atlasMetricsUtil,
+             ExportService exportService, ImportService importService, SearchTracker activeSearches,
+             MigrationProgressService migrationProgressService, AtlasServerService serverService,
+             ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
+             AtlasPatchManager patchManager, AtlasAuditService auditService, EntityAuditRepository auditRepository,
+             TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink, AtlasAuditReductionService atlasAuditReductionService, AtlasMetricsUtil atlasMetricsUtil,
                          PurgeService purgeService) {
         this.serviceState              = serviceState;
         this.metricsService            = metricsService;
@@ -267,8 +270,10 @@ public class AdminResource {
     @GET
     @Path("stack")
     @Produces(MediaType.TEXT_PLAIN)
-    public String getThreadDump() {
+    public String getThreadDump() throws AtlasBaseException {
         LOG.debug("==> AdminResource.getThreadDump()");
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "thread dump");
 
         ThreadGroup topThreadGroup = Thread.currentThread().getThreadGroup();
 
@@ -307,7 +312,9 @@ public class AdminResource {
 
         if (version == null) {
             try {
-                PropertiesConfiguration configProperties = new PropertiesConfiguration("atlas-buildinfo.properties");
+                PropertiesConfiguration configProperties = new PropertiesConfiguration();
+                FileHandler fileHandler = new FileHandler(configProperties);
+                fileHandler.load("atlas-buildinfo.properties");
 
                 Map<String, Object> response = new HashMap<>();
 
@@ -732,6 +739,8 @@ public class AdminResource {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(MediaType.APPLICATION_JSON)
     public void abortAsyncImport(@PathParam("importId") String importId) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "abort async import");
+
         importService.abortAsyncImport(importId);
     }
 
@@ -745,6 +754,8 @@ public class AdminResource {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAsyncImportStatus()");
             }
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "async import status");
 
             return importService.getAsyncImportsStatus(offset, limit);
         } finally {
@@ -763,39 +774,61 @@ public class AdminResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAsyncImportStatusById(importId=" + importId + ")");
             }
 
+            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "async import status by id");
+
             return importService.getAsyncImportRequest(importId);
         } finally {
             AtlasPerfTracer.log(perf);
         }
     }
 
+    /**
+     * Hard-purge entities in DELETED state by GUID.
+     * The response includes {@code mutatedEntities.PURGE}, {@code failedEntities}, and {@code summary}.
+     * Each entry in {@code failedEntities} carries {@code guid}, {@code errorCode}, and {@code errorMessage}.
+     * {@code summary} contains {@code requestedCount}, {@code purgedCount} (requested GUIDs purged),
+     * {@code purgedDependenciesCount} (dependency-expanded entities purged beyond the request),
+     * {@code failedCount} (non-skippable failures among originally requested GUIDs),
+     * {@code failedDependenciesCount} (non-skippable failures among dependency-expanded GUIDs),
+     * and {@code skippedCount}.
+     *
+     * @param guids set of entity GUIDs to purge
+     * @return consolidated purge result with per-GUID outcomes and summary counts
+     * @throws AtlasBaseException if the request exceeds {@code atlas.purge.api.max.request.size} or authorization fails
+     * @HTTP 200 the request was processed successfully. The response body contains detailed execution
+     *              outcomes, including purged, failed, and skipped counts.
+     */
     @PUT
     @Path("/purge")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public EntityMutationResponse purgeByIds(Set<String> guids) throws AtlasBaseException {
-        if (CollectionUtils.isNotEmpty(guids)) {
-            for (String guid : guids) {
-                Servlets.validateQueryParamLength("guid", guid);
-            }
+        if (CollectionUtils.isEmpty(guids)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
+        }
+
+        int purgeApiMaxRequestSize = AtlasConfiguration.PURGE_API_MAX_REQUEST_SIZE.getInt();
+        if (guids.size() > purgeApiMaxRequestSize) {
+            throw new AtlasBaseException(AtlasErrorCode.PURGE_REQUEST_SIZE_EXCEEDS_LIMIT,
+                    String.valueOf(guids.size()), String.valueOf(purgeApiMaxRequestSize));
+        }
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_PURGE),
+                "purge entity: guids=", guids);
+
+        for (String guid : guids) {
+            Servlets.validateQueryParamLength("guid", guid);
         }
 
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.purgeByIds(" + guids + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG,
+                        "AdminResource.purgeByIds(count=" + guids.size() + ")");
             }
 
-            EntityMutationResponse resp = entityStore.purgeByIds(guids);
-
-            final List<AtlasEntityHeader> purgedEntities = resp.getPurgedEntities();
-
-            if (purgedEntities != null && !purgedEntities.isEmpty()) {
-                auditService.add(AuditOperation.PURGE, guids.toString(), resp.getPurgedEntitiesIds(), resp.getPurgedEntities().size());
-            }
-
-            return resp;
+            return purgeService.purgeByIds(guids);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -803,33 +836,43 @@ public class AdminResource {
 
     @Scheduled(cron = "#{getPurgeCronExpression}")
     public void schedulePurgeEntities() throws AtlasBaseException {
+        boolean lockAcquired = false;
+        String  originalThreadName = Thread.currentThread().getName();
         try {
             Thread.currentThread().setName(PURGE_THREAD_NAME);
-            if (acquireCronPurgeOperationLock()) {
+            lockAcquired = acquireCronPurgeOperationLock();
+            if (!lockAcquired) {
+                LOG.info("==> Scheduled purge skipped because another purge operation is already running");
+            } else {
                 String state = serviceState.getState().toString();
                 LOG.info("==> Status of current node is {}", state);
                 if (state.equals(ACTIVE)) {
                     LOG.info("==> Scheduled Purging has started");
                     EntityMutationResponse entityMutationResponse = purgeService.purgeEntities();
-                    Set<String> guids = new HashSet<>();
 
                     final List<AtlasEntityHeader> purgedEntities = entityMutationResponse.getPurgedEntities() != null
                             ? entityMutationResponse.getPurgedEntities()
                             : Collections.emptyList();
 
+                    PurgeSummary summary = entityMutationResponse.getPurgeSummary();
+                    if (summary != null) {
+                        LOG.info("==> Purge execution summary: {}", summary);
+                    }
+
                     if (CollectionUtils.isEmpty(purgedEntities)) {
-                        LOG.info("==> no entities got purged");
+                        if (summary != null
+                                && (summary.getFailedCount() > 0
+                                || summary.getFailedDependenciesCount() > 0)) {
+                            LOG.info("==> no entities got purged, but encountered failures");
+                        } else if (summary != null && summary.getSkippedCount() > 0) {
+                            LOG.info("==> no entities got purged, but some were skipped");
+                        } else {
+                            LOG.info("==> no entities got purged");
+                        }
                         return;
                     }
 
-                    for (AtlasEntityHeader entityHeader : entityMutationResponse.getPurgedEntities()) {
-                        guids.add(entityHeader.getGuid());
-                    }
-
                     LOG.info("==> Purged Entities {}", purgedEntities.size());
-
-                    auditService.add(AuditOperation.AUTO_PURGE, guids.toString(), entityMutationResponse.getPurgedEntitiesIds(),
-                            entityMutationResponse.getPurgedEntities().size());
 
                     LOG.info("==> Scheduled Purging has finished");
                 } else {
@@ -842,7 +885,10 @@ public class AdminResource {
         } finally {
             RequestContext.clear();
             LOG.info("==> clearing the context");
-            cronPurgeOperationLock.unlock();
+            if (lockAcquired) {
+                cronPurgeOperationLock.unlock();
+            }
+            Thread.currentThread().setName(originalThreadName);
         }
     }
 
@@ -920,6 +966,8 @@ public class AdminResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "cluster.getServer(" + serverName + ")");
             }
 
+            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "get server");
+
             AtlasServer cluster = new AtlasServer(serverName, serverName);
 
             return atlasServerService.get(cluster);
@@ -942,6 +990,8 @@ public class AdminResource {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "getExportImportAudit(" + serverName + ")");
             }
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "export import audit");
 
             return exportImportAuditService.get(userName, operation, serverName, startTime, endTime, limit, offset);
         } finally {
@@ -997,9 +1047,36 @@ public class AdminResource {
 
             AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_AUDITS), "Admin Audits");
 
-            return auditService.get(auditSearchParameters);
+            boolean summaryOnlyListing = auditSearchParameters == null
+                    || !PurgeUtils.hasRunIdFilter(auditSearchParameters.getAuditFilters());
+            if (summaryOnlyListing) {
+                // Graph auditRowKind != BATCH: exclude batch rows before pagination.
+                PurgeUtils.excludeBatchRowsFromAuditSearch(auditSearchParameters);
+            }
+
+            List<AtlasAuditEntry> auditEntries = auditService.get(auditSearchParameters);
+
+            if (summaryOnlyListing) {
+                // Defensive post-filter for BATCH rows still returned by the index.
+                auditEntries = PurgeUtils.excludeBatchRowsFromResults(auditEntries);
+            }
+
+            buildPurgeSummaryResults(auditEntries);
+            return auditEntries;
         } finally {
             AtlasPerfTracer.log(perf);
+        }
+    }
+
+    private void buildPurgeSummaryResults(List<AtlasAuditEntry> auditEntries) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(auditEntries)) {
+            return;
+        }
+
+        for (AtlasAuditEntry entry : auditEntries) {
+            if (PurgeUtils.isPurgeSummaryAudit(entry)) {
+                PurgeUtils.buildPurgeSummaryResult(entry, auditService.getPurgedEntityGuidsForRun(entry));
+            }
         }
     }
 
@@ -1015,23 +1092,30 @@ public class AdminResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAuditDetails(" + auditGuid + ", " + limit + ", " + offset + ")");
             }
 
+            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_AUDITS), "audit details");
+
             List<AtlasEntityHeader> ret = new ArrayList<>();
 
             AtlasAuditEntry auditEntry = auditService.toAtlasAuditEntry(entityStore.getById(auditGuid, false, true));
 
-            if (auditEntry != null && StringUtils.isNotEmpty(auditEntry.getResult())) {
-                String[]            listOfResultGuid = auditEntry.getResult().split(",");
-                EntityAuditActionV2 auditAction      = auditEntry.getOperation().toEntityAuditActionV2();
+            if (auditEntry != null) {
+                boolean isSummaryPurgeAudit = PurgeUtils.isPurgeSummaryAudit(auditEntry);
 
-                if (offset <= listOfResultGuid.length) {
-                    for (int index = offset; index < listOfResultGuid.length && index < (offset + limit); index++) {
-                        List<EntityAuditEventV2> events = auditRepository.listEventsV2(listOfResultGuid[index], auditAction, null, (short) 1);
+                if (isSummaryPurgeAudit || StringUtils.isNotEmpty(auditEntry.getResult())) {
+                    String[] listOfResultGuid = isSummaryPurgeAudit
+                            ? auditService.getPurgedEntityGuidsForRun(auditEntry).toArray(new String[0])
+                            : auditEntry.getResult().split(",");
+                    EntityAuditActionV2 auditAction = auditEntry.getOperation().toEntityAuditActionV2();
 
-                        for (EntityAuditEventV2 event : events) {
-                            AtlasEntityHeader entityHeader = event.getEntityHeader();
+                    if (offset <= listOfResultGuid.length) {
+                        for (int index = offset; index < listOfResultGuid.length && index < (offset + limit); index++) {
+                            List<EntityAuditEventV2> events = auditRepository.listEventsV2(listOfResultGuid[index], auditAction, null, (short) 1);
 
-                            if (entityHeader != null) {
-                                ret.add(entityHeader);
+                            for (EntityAuditEventV2 event : events) {
+                                AtlasEntityHeader entityHeader = event.getEntityHeader();
+                                if (entityHeader != null) {
+                                    ret.add(entityHeader);
+                                }
                             }
                         }
                     }
@@ -1042,6 +1126,50 @@ public class AdminResource {
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    @GET
+    @Path("/audit/{auditGuid}/summary")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public PurgeSummary getPurgeAuditSummary(@PathParam("auditGuid") String auditGuid) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_AUDITS), "Admin Audits");
+
+        AtlasAuditEntry auditEntry = loadSummaryPurgeAuditEntry(auditGuid);
+        PurgeSummary    summary    = PurgeUtils.parsePurgeSummary(auditEntry);
+
+        if (summary == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "No purge summary for audit: " + auditGuid);
+        }
+
+        return summary;
+    }
+
+    @GET
+    @Path("/audit/{auditGuid}/batches")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public List<String> getPurgeAuditBatches(@PathParam("auditGuid") String auditGuid) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_AUDITS), "Admin Audits");
+
+        return auditService.getPurgeBatchAuditGuidsForRun(loadSummaryPurgeAuditEntry(auditGuid));
+    }
+
+    private AtlasAuditEntry loadSummaryPurgeAuditEntry(String auditGuid) throws AtlasBaseException {
+        AtlasAuditEntry auditEntry = loadPurgeAuditEntry(auditGuid);
+        if (!PurgeUtils.isPurgeSummaryAudit(auditEntry)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Not a purge summary audit entry: " + auditGuid);
+        }
+
+        return auditEntry;
+    }
+
+    private AtlasAuditEntry loadPurgeAuditEntry(String auditGuid) throws AtlasBaseException {
+        AtlasAuditEntry auditEntry = auditService.toAtlasAuditEntry(entityStore.getById(auditGuid, false, true));
+
+        if (auditEntry == null || !PurgeUtils.isCorrelatedPurgeAudit(auditEntry)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Not a purge audit entry: " + auditGuid);
+        }
+
+        return auditEntry;
     }
 
     @GET
@@ -1072,6 +1200,8 @@ public class AdminResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "checkState(" + request + ")");
             }
 
+            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ), "check state");
+
             return entityStore.checkState(request);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -1081,8 +1211,10 @@ public class AdminResource {
     @GET
     @Path("patches")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasPatches getAtlasPatches() {
+    public AtlasPatches getAtlasPatches() throws AtlasBaseException {
         LOG.debug("==> AdminResource.getAtlasPatches()");
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "patches");
 
         AtlasPatches ret = patchManager.getAllPatches();
 
@@ -1095,6 +1227,8 @@ public class AdminResource {
     @Path("/tasks")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public List<AtlasTask> getTaskStatus(@QueryParam("guids") List<String> guids) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_PURGE), "tasks");
+
         return CollectionUtils.isNotEmpty(guids) ? taskManagement.getByGuids(guids) : taskManagement.getAll();
     }
 
@@ -1102,6 +1236,8 @@ public class AdminResource {
     @Path("/tasks")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public void deleteTask(@QueryParam("guids") List<String> guids) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_PURGE), "delete tasks");
+
         if (CollectionUtils.isNotEmpty(guids)) {
             taskManagement.deleteByGuids(guids);
         }
@@ -1110,7 +1246,9 @@ public class AdminResource {
     @GET
     @Path("/debug/metrics")
     @Produces(MediaType.APPLICATION_JSON)
-    public Map<String, DebugMetrics> getDebugMetrics() {
+    public Map<String, DebugMetrics> getDebugMetrics() throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "debug metrics");
+
         return debugMetricsRESTSink.getMetrics();
     }
 

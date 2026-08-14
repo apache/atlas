@@ -75,7 +75,7 @@ const sessionSlice = createSlice({
         state.sessionObj = {
           loading: false,
           data: null,
-          error: action.payload as string
+          error: (action.payload as string) || action.error?.message || 'An error occurred'
         };
       });
   }

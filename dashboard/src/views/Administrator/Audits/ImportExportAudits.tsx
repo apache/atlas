@@ -45,23 +45,14 @@ const ImportExportAudits = ({ auditObj }: any) => {
                         marginTop={1}
                       >
                         <div
-                          style={{
-                            flex: 1,
-                            wordBreak: "break-all",
-                            textAlign: "left",
-                            fontWeight: "600"
-                          }}
+                           className="text-truncate-flex text-left fw-600"
                         >
                           {`${keys} ${
                             isArray(value) ? `(${value.length})` : ""
                           }`}
                         </div>
                         <div
-                          style={{
-                            flex: 1,
-                            wordBreak: "break-all",
-                            textAlign: "left"
-                          }}
+                           className="text-truncate-flex text-left"
                         >
                           {getValues(
                             value,
@@ -94,23 +85,14 @@ const ImportExportAudits = ({ auditObj }: any) => {
                         marginTop={1}
                       >
                         <div
-                          style={{
-                            flex: 1,
-                            wordBreak: "break-all",
-                            textAlign: "left",
-                            fontWeight: "600"
-                          }}
+                           className="text-truncate-flex text-left fw-600"
                         >
                           {`${keys} ${
                             isArray(value) ? `(${value.length})` : ""
                           }`}
                         </div>
                         <div
-                          style={{
-                            flex: 1,
-                            wordBreak: "break-all",
-                            textAlign: "left"
-                          }}
+                           className="text-truncate-flex text-left"
                         >
                           {getValues(
                             paramsObj,

@@ -43,11 +43,14 @@ public class AtlasAuditEntryDTO extends AbstractDataTransferObject<AtlasAuditEnt
     public static final String ATTRIBUTE_CLIENT_ID    = "clientId";
     public static final String ATTRIBUTE_RESULT       = "result";
     public static final String ATTRIBUTE_RESULT_COUNT = "resultCount";
+    public static final String ATTRIBUTE_RUN_ID       = "runId";
+    public static final String ATTRIBUTE_AUDIT_ROW_KIND = "auditRowKind";
 
     private static final Set<String> ATTRIBUTE_NAMES = new HashSet<>(Arrays.asList(ATTRIBUTE_USER_NAME,
             ATTRIBUTE_OPERATION, ATTRIBUTE_PARAMS,
             ATTRIBUTE_START_TIME, ATTRIBUTE_END_TIME,
-            ATTRIBUTE_CLIENT_ID, ATTRIBUTE_RESULT, ATTRIBUTE_RESULT_COUNT));
+            ATTRIBUTE_CLIENT_ID, ATTRIBUTE_RESULT, ATTRIBUTE_RESULT_COUNT, ATTRIBUTE_RUN_ID,
+            ATTRIBUTE_AUDIT_ROW_KIND));
 
     @Inject
     public AtlasAuditEntryDTO(AtlasTypeRegistry typeRegistry) {
@@ -70,6 +73,12 @@ public class AtlasAuditEntryDTO extends AbstractDataTransferObject<AtlasAuditEnt
         entry.setClientId((String) attributes.get(ATTRIBUTE_CLIENT_ID));
         entry.setResult((String) attributes.get(ATTRIBUTE_RESULT));
         entry.setResultCount((long) attributes.get(ATTRIBUTE_RESULT_COUNT));
+        entry.setRunId((String) attributes.get(ATTRIBUTE_RUN_ID));
+
+        Object auditRowKind = attributes.get(ATTRIBUTE_AUDIT_ROW_KIND);
+        if (auditRowKind != null) {
+            entry.setAuditRowKind(AtlasAuditEntry.AuditRowKind.valueOf(auditRowKind.toString()));
+        }
 
         return entry;
     }
@@ -96,6 +105,9 @@ public class AtlasAuditEntryDTO extends AbstractDataTransferObject<AtlasAuditEnt
         entity.setAttribute(ATTRIBUTE_CLIENT_ID, obj.getClientId());
         entity.setAttribute(ATTRIBUTE_RESULT, obj.getResult());
         entity.setAttribute(ATTRIBUTE_RESULT_COUNT, obj.getResultCount());
+        entity.setAttribute(ATTRIBUTE_RUN_ID, obj.getRunId());
+        entity.setAttribute(ATTRIBUTE_AUDIT_ROW_KIND,
+                obj.getAuditRowKind() != null ? obj.getAuditRowKind().name() : null);
 
         return entity;
     }

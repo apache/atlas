@@ -16,67 +16,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -e
 set -x
 
-if [ ! -e ${ATLAS_HOME}/.setupDone ]
+ATLAS_APPLICATION_PROPERTIES=${ATLAS_HOME}/conf/atlas-application.properties
+ATLAS_USER_CREDENTIALS=${ATLAS_HOME}/conf/users-credentials.properties
+ATLAS_EXPANDED_WEBAPP=${ATLAS_HOME}/server/webapp/atlas/WEB-INF
+
+if [ ! -r "${ATLAS_APPLICATION_PROPERTIES}" ]
 then
-  SETUP_ATLAS=true
-else
-  SETUP_ATLAS=false
+  echo "Missing readable Atlas configuration: ${ATLAS_APPLICATION_PROPERTIES}" >&2
+  exit 1
 fi
 
-if [ "${SETUP_ATLAS}" == "true" ]
+if [ ! -r "${ATLAS_USER_CREDENTIALS}" ]
 then
-  encryptedPwd=$(${ATLAS_HOME}/bin/cputil.py -g -u admin -p atlasR0cks! -s | tail -1)
+  echo "Missing readable Atlas user credentials: ${ATLAS_USER_CREDENTIALS}" >&2
+  exit 1
+fi
 
-  echo "admin=ADMIN::${encryptedPwd}" > ${ATLAS_HOME}/conf/users-credentials.properties
-
-  sed -i "s/atlas.graph.storage.hostname=.*$/atlas.graph.storage.hostname=atlas-zk.example.com:2181/"             /opt/atlas/conf/atlas-application.properties
-  sed -i "s/atlas.audit.hbase.zookeeper.quorum=.*$/atlas.audit.hbase.zookeeper.quorum=atlas-zk.example.com:2181/" /opt/atlas/conf/atlas-application.properties
-
-  sed -i "s/^atlas.graph.index.search.solr.mode=cloud/# atlas.graph.index.search.solr.mode=cloud/"                                              /opt/atlas/conf/atlas-application.properties
-  sed -i "s/^# *atlas.graph.index.search.solr.mode=http/atlas.graph.index.search.solr.mode=http/"                                               /opt/atlas/conf/atlas-application.properties
-  sed -i "s/^.*atlas.graph.index.search.solr.http-urls=.*$/atlas.graph.index.search.solr.http-urls=http:\/\/atlas-solr.example.com:8983\/solr/" /opt/atlas/conf/atlas-application.properties
-
-  sed -i "s/atlas.notification.embedded=.*$/atlas.notification.embedded=false/"                            /opt/atlas/conf/atlas-application.properties
-  sed -i "s/atlas.kafka.zookeeper.connect=.*$/atlas.kafka.zookeeper.connect=atlas-zk.example.com:2181/"    /opt/atlas/conf/atlas-application.properties
-  sed -i "s/atlas.kafka.bootstrap.servers=.*$/atlas.kafka.bootstrap.servers=atlas-kafka.example.com:9092/" /opt/atlas/conf/atlas-application.properties
-
-  echo ""                                                     >> /opt/atlas/conf/atlas-application.properties
-  echo "atlas.graph.storage.hbase.compression-algorithm=NONE" >> /opt/atlas/conf/atlas-application.properties
-  echo "atlas.graph.graph.replace-instance-if-exists=true"    >> /opt/atlas/conf/atlas-application.properties
-
-  if [ "${ATLAS_BACKEND}" == "postgres" ]
-  then
-    # set RDBMS as backend and entity-audit store
-    sed -i "s/^atlas.graph.storage.backend=hbase2/# atlas.graph.storage.backend=hbase2/"                                                            /opt/atlas/conf/atlas-application.properties
-    sed -i "s/atlas.EntityAuditRepository.impl=.*$/# atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository/" /opt/atlas/conf/atlas-application.properties
-
-    cat <<EOF >> /opt/atlas/conf/atlas-application.properties
-
-atlas.graph.storage.backend=rdbms
-atlas.graph.storage.rdbms.jpa.hikari.driverClassName=org.postgresql.Driver
-atlas.graph.storage.rdbms.jpa.hikari.jdbcUrl=jdbc:postgresql://atlas-db/atlas
-atlas.graph.storage.rdbms.jpa.hikari.username=atlas
-atlas.graph.storage.rdbms.jpa.hikari.password=atlasR0cks!
-atlas.graph.storage.rdbms.jpa.hikari.maximumPoolSize=40
-atlas.graph.storage.rdbms.jpa.hikari.minimumIdle=5
-atlas.graph.storage.rdbms.jpa.hikari.idleTimeout=300000
-atlas.graph.storage.rdbms.jpa.hikari.connectionTestQuery=select 1
-atlas.graph.storage.rdbms.jpa.hikari.maxLifetime=1800000
-atlas.graph.storage.rdbms.jpa.hikari.connectionTimeout=30000
-atlas.graph.storage.rdbms.jpa.javax.persistence.jdbc.dialect=org.eclipse.persistence.platform.database.PostgreSQLPlatform
-atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.database.action=create
-atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-database-schemas=true
-atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-source=script
-atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-script-source=META-INF/postgres/create_schema.sql
-atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.rdbms.RdbmsBasedAuditRepository
-EOF
-  fi
-
-  chown -R atlas:atlas ${ATLAS_HOME}/
-
-  touch ${ATLAS_HOME}/.setupDone
+if [ ! -d "${ATLAS_EXPANDED_WEBAPP}" ]
+then
+  echo "Missing expanded Atlas webapp: ${ATLAS_EXPANDED_WEBAPP}" >&2
+  exit 1
 fi
 
 su -c "cd ${ATLAS_HOME}/bin && ./atlas_start.py" atlas

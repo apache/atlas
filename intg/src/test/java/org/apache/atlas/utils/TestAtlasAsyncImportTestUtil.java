@@ -22,7 +22,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 

@@ -33,7 +33,34 @@ fi
 
 su -c "${HBASE_HOME}/bin/start-hbase.sh" hbase
 
-HBASE_MASTER_PID=`ps -ef  | grep -v grep | grep -i "org.apache.hadoop.hbase.master.HMaster" | awk '{print $2}'`
+echo "Waiting for HBase Master and RegionServer (up to 180s)..."
+READY=false
+for attempt in $(seq 1 90); do
+  if ${ATLAS_SCRIPTS}/atlas-hbase-healthcheck.sh 2>/dev/null; then
+    echo "HBase master and regionserver ready (~$((attempt * 2))s)"
+    READY=true
+    break
+  fi
+  sleep 2
+done
 
-# prevent the container from exiting
-tail --pid=$HBASE_MASTER_PID -f /dev/null
+if [ "${READY}" != "true" ]; then
+  echo "HBase health endpoints not ready within 180s" >&2
+  ls -la ${HBASE_HOME}/logs/ 2>/dev/null || true
+  tail -80 ${HBASE_HOME}/logs/* 2>/dev/null || true
+  exit 1
+fi
+
+# Keep container alive while HBase JVMs are running (do not tail only HMaster PID).
+while true; do
+  MASTER_PID=$(ps -ef | grep -v grep | grep -i "org.apache.hadoop.hbase.master.HMaster" | awk '{print $2}')
+  RS_PID=$(ps -ef | grep -v grep | grep -i "org.apache.hadoop.hbase.regionserver.HRegionServer" | awk '{print $2}')
+
+  if [ -z "${MASTER_PID}" ] && [ -z "${RS_PID}" ]; then
+    echo "HBase master and regionserver processes exited" >&2
+    tail -80 ${HBASE_HOME}/logs/* 2>/dev/null || true
+    exit 1
+  fi
+
+  sleep 30
+done

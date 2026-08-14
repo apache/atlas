@@ -21,13 +21,17 @@ package org.apache.atlas.web.resources;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.audit.AtlasAuditEntry;
+import org.apache.atlas.model.audit.AtlasAuditEntry.AuditOperation;
+import org.apache.atlas.model.audit.AtlasAuditEntry.AuditRowKind;
 import org.apache.atlas.model.audit.AuditReductionCriteria;
 import org.apache.atlas.model.audit.AuditSearchParameters;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.impexp.AsyncImportStatus;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
@@ -42,6 +46,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.PurgeSummary;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.metrics.AtlasMetricsMapToChart;
 import org.apache.atlas.model.metrics.AtlasMetricsStat;
@@ -55,8 +60,12 @@ import org.apache.atlas.repository.impexp.ExportImportAuditService;
 import org.apache.atlas.repository.impexp.ExportService;
 import org.apache.atlas.repository.impexp.ImportService;
 import org.apache.atlas.repository.impexp.MigrationProgressService;
+import org.apache.atlas.repository.ogm.AtlasAuditEntryDTO;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
+import org.apache.atlas.repository.purge.PurgeUtils;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.server.common.service.ServiceState;
+import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.services.PurgeService;
 import org.apache.atlas.tasks.TaskManagement;
@@ -67,9 +76,7 @@ import org.apache.atlas.util.SearchTracker;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.web.model.DebugMetrics;
 import org.apache.atlas.web.service.AtlasDebugMetricsSink;
-import org.apache.atlas.web.service.ServiceState;
-import org.apache.atlas.web.util.Servlets;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
@@ -93,15 +100,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -232,6 +242,22 @@ public class AdminResourceTest {
                 debugMetricsRESTSink, auditReductionService, atlasMetricsUtil, purgeService);
     }
 
+    private void withAuthorizationBypass(Runnable runnable) {
+        try (MockedStatic<AtlasAuthorizationUtils> mockedUtils = mockStatic(AtlasAuthorizationUtils.class)) {
+            mockedUtils.when(() -> AtlasAuthorizationUtils.verifyAccess(any(org.apache.atlas.authorize.AtlasAdminAccessRequest.class), any())).then(invocation -> null);
+            mockedUtils.when(() -> AtlasAuthorizationUtils.verifyAccess(any(AtlasEntityAccessRequest.class), any())).then(invocation -> null);
+            runnable.run();
+        }
+    }
+
+    private <T> T withAuthorizationBypassCallable(Callable<T> callable) throws Exception {
+        try (MockedStatic<AtlasAuthorizationUtils> mockedUtils = mockStatic(AtlasAuthorizationUtils.class)) {
+            mockedUtils.when(() -> AtlasAuthorizationUtils.verifyAccess(any(org.apache.atlas.authorize.AtlasAdminAccessRequest.class), any())).then(invocation -> null);
+            mockedUtils.when(() -> AtlasAuthorizationUtils.verifyAccess(any(AtlasEntityAccessRequest.class), any())).then(invocation -> null);
+            return callable.call();
+        }
+    }
+
     // Helper method to inject HttpServletRequest via reflection
     private void injectHttpServletRequest(AdminResource adminResource) throws Exception {
         Field requestField = AdminResource.class.getDeclaredField("httpServletRequest");
@@ -246,14 +272,118 @@ public class AdminResourceTest {
         responseField.set(adminResource, httpServletResponse);
     }
 
+    private static PurgeSummary buildPurgeSummary(long requested, long purged, long purgedDeps,
+                                                                         long failed, long failedDeps, long skipped,
+                                                                         boolean executionFailed) {
+        return buildPurgeSummary(requested, purged, purgedDeps, failed, failedDeps, skipped, 0, executionFailed);
+    }
+
+    private static AuditSearchParameters createPurgeAuditSearchParameters() {
+        SearchParameters.FilterCriteria root = new SearchParameters.FilterCriteria();
+        root.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+        List<SearchParameters.FilterCriteria> criterion = new ArrayList<>();
+
+        SearchParameters.FilterCriteria opFilter = new SearchParameters.FilterCriteria();
+        opFilter.setAttributeName("operation");
+        opFilter.setOperator(SearchParameters.Operator.EQ);
+        opFilter.setAttributeValue(AuditOperation.PURGE.name());
+        criterion.add(opFilter);
+
+        root.setCriterion(criterion);
+
+        final SearchParameters.FilterCriteria[] filtersHolder = {root};
+        AuditSearchParameters searchParameters = mock(AuditSearchParameters.class);
+        when(searchParameters.getAuditFilters()).thenAnswer(invocation -> filtersHolder[0]);
+        doAnswer(invocation -> {
+            filtersHolder[0] = invocation.getArgument(0);
+            return null;
+        }).when(searchParameters).setAuditFilters(any(SearchParameters.FilterCriteria.class));
+
+        return searchParameters;
+    }
+
+    private static boolean hasExcludeBatchRowKindFilter(SearchParameters.FilterCriteria filter) {
+        if (filter == null) {
+            return false;
+        }
+
+        if (AtlasAuditEntryDTO.ATTRIBUTE_AUDIT_ROW_KIND.equals(filter.getAttributeName())
+                && SearchParameters.Operator.NEQ.equals(filter.getOperator())
+                && AuditRowKind.BATCH.name().equals(filter.getAttributeValue())) {
+            return true;
+        }
+
+        if (filter.getCriterion() != null) {
+            for (SearchParameters.FilterCriteria each : filter.getCriterion()) {
+                if (hasExcludeBatchRowKindFilter(each)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static AtlasAuditEntry buildSummaryAuditEntry(String guid, String runId, long requested, long purged) {
+        PurgeSummary summary = buildPurgeSummary(requested, purged, 0, 0, 0, 0, false);
+        summary.setRunId(runId);
+
+        AtlasAuditEntry entry = new AtlasAuditEntry();
+        entry.setGuid(guid);
+        entry.setOperation(AuditOperation.PURGE);
+        entry.setRunId(runId);
+        entry.setAuditRowKind(AuditRowKind.SUMMARY);
+        entry.setResult(AtlasJson.toJson(summary));
+        entry.setResultCount(purged);
+        return entry;
+    }
+
+    private static AtlasAuditEntry buildBatchAuditEntry(String guid, String runId, String purgedGuids) {
+        AtlasAuditEntry entry = new AtlasAuditEntry();
+        entry.setGuid(guid);
+        entry.setOperation(AuditOperation.PURGE);
+        entry.setRunId(runId);
+        entry.setAuditRowKind(AuditRowKind.BATCH);
+        entry.setParams("input-guid-1,input-guid-2");
+        entry.setResult(purgedGuids);
+        entry.setResultCount(purgedGuids.split(",").length);
+        return entry;
+    }
+
+    private static AtlasAuditEntry buildLegacyPurgeAuditEntry(String guid, String purgedGuids) {
+        AtlasAuditEntry entry = new AtlasAuditEntry();
+        entry.setGuid(guid);
+        entry.setOperation(AuditOperation.PURGE);
+        entry.setResult(purgedGuids);
+        entry.setResultCount(purgedGuids.split(",").length);
+        return entry;
+    }
+
+    private static PurgeSummary buildPurgeSummary(long requested, long purged, long purgedDeps,
+                                                                         long failed, long failedDeps, long skipped,
+                                                                         long validGuidCount, boolean executionFailed) {
+        PurgeSummary summary =
+                new PurgeSummary(requested, purged, purgedDeps, failed, failedDeps, skipped);
+        summary.setValidGuidCount(validGuidCount);
+        summary.setExecutionFailed(executionFailed);
+        return summary;
+    }
+
     @Test
     public void testGetThreadDump() {
         AdminResource adminResource = createAdminResource();
-        String threadDump = adminResource.getThreadDump();
+        withAuthorizationBypass(() -> {
+            String threadDump = null;
+            try {
+                threadDump = adminResource.getThreadDump();
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
 
-        assertNotNull(threadDump);
-        assertTrue(threadDump.length() > 0);
-        assertTrue(threadDump.contains("State:"));
+            assertNotNull(threadDump);
+            assertTrue(threadDump.length() > 0);
+            assertTrue(threadDump.contains("State:"));
+        });
     }
 
     @Test
@@ -342,40 +472,88 @@ public class AdminResourceTest {
     public void testPurgeByIds() throws Exception {
         Set<String> guids = new HashSet<>();
         guids.add("guid1");
-        guids.add("guid2");
 
         EntityMutationResponse mockResponse = mock(EntityMutationResponse.class);
         List<AtlasEntityHeader> purgedEntities = new ArrayList<>();
         AtlasEntityHeader mockHeader = mock(AtlasEntityHeader.class);
         purgedEntities.add(mockHeader);
 
-        when(entityStore.purgeByIds(guids)).thenReturn(mockResponse);
+        when(purgeService.purgeByIds(guids)).thenReturn(mockResponse);
         when(mockResponse.getPurgedEntities()).thenReturn(purgedEntities);
         when(mockResponse.getPurgedEntitiesIds()).thenReturn(String.valueOf(new ArrayList<>(guids)));
+        when(mockResponse.getFailedEntities()).thenReturn(null);
+        when(mockResponse.getPurgeSummary()).thenReturn(new PurgeSummary(1, 1, 0, 0, 0));
 
         AdminResource adminResource = createAdminResource();
+        injectHttpServletResponse(adminResource);
 
         EntityMutationResponse result = adminResource.purgeByIds(guids);
 
         assertNotNull(result);
-        verify(entityStore).purgeByIds(guids);
+        verify(purgeService).purgeByIds(guids);
     }
 
     @Test
     public void testPurgeByIdsWithEmptyGuidSet() throws Exception {
         Set<String> emptyGuids = new HashSet<>();
 
-        EntityMutationResponse mockResponse = mock(EntityMutationResponse.class);
-        when(entityStore.purgeByIds(emptyGuids)).thenReturn(mockResponse);
-        when(mockResponse.getPurgedEntities()).thenReturn(new ArrayList<>());
+        AdminResource adminResource = createAdminResource();
+        injectHttpServletResponse(adminResource);
+
+        try {
+            adminResource.purgeByIds(emptyGuids);
+            fail("Expected AtlasBaseException for empty GUID set");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_PARAMETERS);
+        }
+
+        verify(purgeService, never()).purgeByIds(any());
+    }
+
+    @Test
+    public void testPurgeByIdsRequestSizeExceedsLimit() throws Exception {
+        Set<String> guids = new LinkedHashSet<>();
+        for (int i = 0; i < 1001; i++) {
+            guids.add(String.format("11111111-1111-1111-1111-%012d", i));
+        }
 
         AdminResource adminResource = createAdminResource();
+        injectHttpServletResponse(adminResource);
 
-        EntityMutationResponse result = adminResource.purgeByIds(emptyGuids);
+        try {
+            adminResource.purgeByIds(guids);
+            fail("Expected AtlasBaseException for request size exceeding limit");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.PURGE_REQUEST_SIZE_EXCEEDS_LIMIT);
+            assertTrue(e.getMessage().contains("1001"));
+            assertTrue(e.getMessage().contains("1000"));
+        }
 
-        assertNotNull(result);
-        verify(entityStore).purgeByIds(emptyGuids);
-        // Should not call audit service for empty results
+        verify(purgeService, never()).purgeByIds(any());
+        verify(httpServletResponse, never()).setStatus(anyInt());
+    }
+
+    @Test
+    public void testPurgeByIdsDoesNotWriteAggregateAudit() throws Exception {
+        Set<String> guids = new LinkedHashSet<>();
+        for (int i = 0; i < 15; i++) {
+            guids.add(String.format("11111111-1111-1111-1111-%012d", i));
+        }
+
+        EntityMutationResponse mockResponse = mock(EntityMutationResponse.class);
+        List<AtlasEntityHeader> purgedEntities = new ArrayList<>();
+        purgedEntities.add(mock(AtlasEntityHeader.class));
+
+        when(purgeService.purgeByIds(guids)).thenReturn(mockResponse);
+        when(mockResponse.getPurgedEntities()).thenReturn(purgedEntities);
+        when(mockResponse.getFailedEntities()).thenReturn(null);
+        when(mockResponse.getPurgeSummary()).thenReturn(new PurgeSummary(15, 15, 0, 0, 0));
+
+        AdminResource adminResource = createAdminResource();
+        injectHttpServletResponse(adminResource);
+
+        adminResource.purgeByIds(guids);
+
         verify(auditService, never()).add(any(), anyString(), any(), anyInt());
     }
 
@@ -436,10 +614,16 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        AtlasCheckStateResult result = adminResource.checkState(request);
+        withAuthorizationBypass(() -> {
+            try {
+                AtlasCheckStateResult result = adminResource.checkState(request);
 
-        assertNotNull(result);
-        verify(entityStore).checkState(request);
+                assertNotNull(result);
+                verify(entityStore).checkState(request);
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -450,10 +634,16 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        AtlasPatches result = adminResource.getAtlasPatches();
+        withAuthorizationBypass(() -> {
+            try {
+                AtlasPatches result = adminResource.getAtlasPatches();
 
-        assertNotNull(result);
-        verify(patchManager).getAllPatches();
+                assertNotNull(result);
+                verify(patchManager).getAllPatches();
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -470,11 +660,17 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        List<AtlasTask> result = adminResource.getTaskStatus(guids);
+        withAuthorizationBypass(() -> {
+            try {
+                List<AtlasTask> result = adminResource.getTaskStatus(guids);
 
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        verify(taskManagement).getByGuids(guids);
+                assertNotNull(result);
+                assertFalse(result.isEmpty());
+                verify(taskManagement).getByGuids(guids);
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -487,10 +683,16 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        List<AtlasTask> result = adminResource.getTaskStatus(null);
+        withAuthorizationBypass(() -> {
+            try {
+                List<AtlasTask> result = adminResource.getTaskStatus(null);
 
-        assertNotNull(result);
-        verify(taskManagement).getAll();
+                assertNotNull(result);
+                verify(taskManagement).getAll();
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -501,19 +703,31 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        adminResource.deleteTask(guids);
+        withAuthorizationBypass(() -> {
+            try {
+                adminResource.deleteTask(guids);
 
-        verify(taskManagement).deleteByGuids(guids);
+                verify(taskManagement).deleteByGuids(guids);
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
     public void testDeleteTaskWithEmptyGuids() throws Exception {
         AdminResource adminResource = createAdminResource();
 
-        adminResource.deleteTask(null);
+        withAuthorizationBypass(() -> {
+            try {
+                adminResource.deleteTask(null);
 
-        // Should not call deleteByGuids when guids is null or empty
-        verify(taskManagement, never()).deleteByGuids(any());
+                // Should not call deleteByGuids when guids is null or empty
+                verify(taskManagement, never()).deleteByGuids(any());
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -526,11 +740,17 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        Map<String, DebugMetrics> result = adminResource.getDebugMetrics();
+        withAuthorizationBypass(() -> {
+            try {
+                Map<String, DebugMetrics> result = adminResource.getDebugMetrics();
 
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        verify(debugMetricsRESTSink).getMetrics();
+                assertNotNull(result);
+                assertFalse(result.isEmpty());
+                verify(debugMetricsRESTSink).getMetrics();
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -661,7 +881,10 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        adminResource.checkState(request);
+        withAuthorizationBypassCallable(() -> {
+            adminResource.checkState(request);
+            return null;
+        });
     }
 
     @Test
@@ -812,9 +1035,15 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        adminResource.abortAsyncImport(importId);
+        withAuthorizationBypass(() -> {
+            try {
+                adminResource.abortAsyncImport(importId);
 
-        verify(importService).abortAsyncImport(importId);
+                verify(importService).abortAsyncImport(importId);
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -828,10 +1057,16 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        PList<AsyncImportStatus> result = adminResource.getAsyncImportStatus(offset, limit);
+        withAuthorizationBypass(() -> {
+            try {
+                PList<AsyncImportStatus> result = adminResource.getAsyncImportStatus(offset, limit);
 
-        assertNotNull(result);
-        verify(importService).getAsyncImportsStatus(offset, limit);
+                assertNotNull(result);
+                verify(importService).getAsyncImportsStatus(offset, limit);
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -844,10 +1079,16 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        AtlasAsyncImportRequest result = adminResource.getAsyncImportStatusById(importId);
+        withAuthorizationBypass(() -> {
+            try {
+                AtlasAsyncImportRequest result = adminResource.getAsyncImportStatusById(importId);
 
-        assertNotNull(result);
-        verify(importService).getAsyncImportRequest(importId);
+                assertNotNull(result);
+                verify(importService).getAsyncImportRequest(importId);
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -860,10 +1101,16 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        AtlasServer result = adminResource.getCluster(serverName);
+        withAuthorizationBypass(() -> {
+            try {
+                AtlasServer result = adminResource.getCluster(serverName);
 
-        assertNotNull(result);
-        verify(atlasServerService).get(any(AtlasServer.class));
+                assertNotNull(result);
+                verify(atlasServerService).get(any(AtlasServer.class));
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -885,12 +1132,18 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        List<ExportImportAuditEntry> result = adminResource.getExportImportAudit(serverName, userName, operation,
-                startTime, endTime, limit, offset);
+        withAuthorizationBypass(() -> {
+            try {
+                List<ExportImportAuditEntry> result = adminResource.getExportImportAudit(serverName, userName, operation,
+                        startTime, endTime, limit, offset);
 
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        verify(exportImportAuditService).get(userName, operation, serverName, startTime, endTime, limit, offset);
+                assertNotNull(result);
+                assertFalse(result.isEmpty());
+                verify(exportImportAuditService).get(userName, operation, serverName, startTime, endTime, limit, offset);
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -904,11 +1157,17 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        List<AtlasTask> result = adminResource.ageoutAuditData(criteria, true);
+        withAuthorizationBypass(() -> {
+            try {
+                List<AtlasTask> result = adminResource.ageoutAuditData(criteria, true);
 
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        verify(auditReductionService).startAuditAgingByConfig();
+                assertNotNull(result);
+                assertFalse(result.isEmpty());
+                verify(auditReductionService).startAuditAgingByConfig();
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -931,12 +1190,18 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        List<AtlasTask> result = adminResource.ageoutAuditData(criteria, false);
+        withAuthorizationBypass(() -> {
+            try {
+                List<AtlasTask> result = adminResource.ageoutAuditData(criteria, false);
 
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        verify(auditReductionService).buildAgeoutCriteriaForAllAgingTypes(criteria);
-        verify(auditReductionService).startAuditAgingByCriteria(mockCriteriaMap);
+                assertNotNull(result);
+                assertFalse(result.isEmpty());
+                verify(auditReductionService).buildAgeoutCriteriaForAllAgingTypes(criteria);
+                verify(auditReductionService).startAuditAgingByCriteria(mockCriteriaMap);
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -946,10 +1211,16 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        List<AtlasTask> result = adminResource.ageoutAuditData(criteria, false);
+        withAuthorizationBypass(() -> {
+            try {
+                List<AtlasTask> result = adminResource.ageoutAuditData(criteria, false);
 
-        assertNull(result);
-        verify(auditReductionService, never()).startAuditAgingByCriteria(any());
+                assertNull(result);
+                verify(auditReductionService, never()).startAuditAgingByCriteria(any());
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -960,14 +1231,101 @@ public class AdminResourceTest {
         mockResults.add(mockEntry);
 
         when(auditService.get(searchParameters)).thenReturn(mockResults);
+        when(searchParameters.getAuditFilters()).thenReturn(null);
 
         AdminResource adminResource = createAdminResource();
 
-        List<AtlasAuditEntry> result = adminResource.getAtlasAudits(searchParameters);
+        withAuthorizationBypass(() -> {
+            try {
+                List<AtlasAuditEntry> result = adminResource.getAtlasAudits(searchParameters);
 
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        verify(auditService).get(searchParameters);
+                assertNotNull(result);
+                assertFalse(result.isEmpty());
+                verify(auditService).get(searchParameters);
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Test
+    public void testGetAtlasAuditsExcludesBatchRowsWithoutRunId() throws Exception {
+        String runId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+        AuditSearchParameters searchParameters = createPurgeAuditSearchParameters();
+
+        AtlasAuditEntry summaryEntry = buildSummaryAuditEntry("summary-guid", runId, 2, 1);
+        AtlasAuditEntry batchEntry   = buildBatchAuditEntry("batch-guid", runId, "entity-guid-1");
+        AtlasAuditEntry legacyEntry  = buildLegacyPurgeAuditEntry("legacy-guid", "entity-guid-2,entity-guid-3");
+
+        List<AtlasAuditEntry> mockResults = new ArrayList<>();
+        mockResults.add(summaryEntry);
+        mockResults.add(batchEntry);
+        mockResults.add(legacyEntry);
+
+        when(auditService.get(searchParameters)).thenReturn(mockResults);
+
+        when(auditService.getPurgedEntityGuidsForRun(summaryEntry)).thenReturn(java.util.Collections.emptyList());
+
+        AdminResource adminResource = createAdminResource();
+
+        withAuthorizationBypass(() -> {
+            try {
+                List<AtlasAuditEntry> result = adminResource.getAtlasAudits(searchParameters);
+
+                assertNotNull(result);
+                assertEquals(result.size(), 2);
+                assertTrue(hasExcludeBatchRowKindFilter(searchParameters.getAuditFilters()),
+                        "Graph search should exclude auditRowKind=BATCH when runId filter is absent");
+
+                boolean hasSummary = false;
+                boolean hasLegacy  = false;
+                for (AtlasAuditEntry entry : result) {
+                    if ("summary-guid".equals(entry.getGuid())) {
+                        hasSummary = true;
+                    }
+                    if ("legacy-guid".equals(entry.getGuid())) {
+                        hasLegacy = true;
+                    }
+                    assertFalse(PurgeUtils.isPurgeBatchAudit(entry));
+                }
+                assertTrue(hasSummary);
+                assertTrue(hasLegacy);
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Test
+    public void testGetAtlasAuditsBuildPurgeSummaryResults() throws Exception {
+        String runId       = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+        String entityGuid1 = "11111111-1111-1111-1111-111111111111";
+        String entityGuid2 = "22222222-2222-2222-2222-222222222222";
+        AuditSearchParameters searchParameters = createPurgeAuditSearchParameters();
+
+        AtlasAuditEntry summaryEntry = buildSummaryAuditEntry("summary-guid", runId, 2, 2);
+        summaryEntry.setParams(PurgeUtils.buildGuidParams(java.util.Arrays.asList(entityGuid1, entityGuid2)));
+
+        when(auditService.get(searchParameters)).thenReturn(java.util.Collections.singletonList(summaryEntry));
+        when(auditService.getPurgedEntityGuidsForRun(summaryEntry)).thenReturn(
+                java.util.Arrays.asList(entityGuid1, entityGuid2));
+
+        AdminResource adminResource = createAdminResource();
+
+        try (MockedStatic<AtlasAuthorizationUtils> mockedUtils = mockStatic(AtlasAuthorizationUtils.class)) {
+            mockedUtils.when(() -> AtlasAuthorizationUtils.verifyAccess(any(org.apache.atlas.authorize.AtlasAdminAccessRequest.class), anyString()))
+                    .then(invocation -> null);
+
+            List<AtlasAuditEntry> result = adminResource.getAtlasAudits(searchParameters);
+
+            assertNotNull(result);
+            assertEquals(result.size(), 1);
+            assertEquals(result.get(0).getParams(), "[" + entityGuid1 + ", " + entityGuid2 + "]");
+            assertEquals(result.get(0).getResult(), entityGuid1 + "," + entityGuid2);
+            assertEquals(result.get(0).getResultCount(), 2);
+        }
+
+        verify(auditService).getPurgedEntityGuidsForRun(summaryEntry);
     }
 
     @Test
@@ -976,9 +1334,7 @@ public class AdminResourceTest {
         int limit = 10;
         int offset = 0;
 
-        AtlasAuditEntry mockAuditEntry = mock(AtlasAuditEntry.class);
-        when(mockAuditEntry.getResult()).thenReturn("guid1,guid2");
-        when(mockAuditEntry.getOperation()).thenReturn(AtlasAuditEntry.AuditOperation.PURGE);
+        AtlasAuditEntry batchEntry = buildBatchAuditEntry(auditGuid, "run-id-1", "guid1,guid2");
 
         List<EntityAuditEventV2> mockEvents = new ArrayList<>();
         EntityAuditEventV2 mockEvent = mock(EntityAuditEventV2.class);
@@ -986,37 +1342,138 @@ public class AdminResourceTest {
         when(mockEvent.getEntityHeader()).thenReturn(mockHeader);
         mockEvents.add(mockEvent);
 
-        when(auditService.toAtlasAuditEntry(any(AtlasEntityWithExtInfo.class))).thenReturn(mockAuditEntry);
+        when(auditService.toAtlasAuditEntry(any(AtlasEntityWithExtInfo.class))).thenReturn(batchEntry);
         when(entityStore.getById(auditGuid, false, true)).thenReturn(mock(AtlasEntityWithExtInfo.class));
-        when(auditRepository.listEventsV2(anyString(), any(EntityAuditEventV2.EntityAuditActionV2.class), any(), any(Short.class))).thenReturn(mockEvents);
+        when(auditRepository.listEventsV2(anyString(), any(EntityAuditEventV2.EntityAuditActionV2.class), any(), any(Short.class)))
+                .thenReturn(mockEvents);
 
         AdminResource adminResource = createAdminResource();
 
-        List<AtlasEntityHeader> result = adminResource.getAuditDetails(auditGuid, limit, offset);
+        withAuthorizationBypass(() -> {
+            try {
+                List<AtlasEntityHeader> result = adminResource.getAuditDetails(auditGuid, limit, offset);
 
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        verify(entityStore).getById(auditGuid, false, true);
-        verify(auditService).toAtlasAuditEntry(any());
+                assertNotNull(result);
+                assertEquals(result.size(), 2);
+                verify(entityStore).getById(auditGuid, false, true);
+                verify(auditRepository).listEventsV2(eq("guid1"), any(EntityAuditEventV2.EntityAuditActionV2.class), any(), any(Short.class));
+                verify(auditRepository).listEventsV2(eq("guid2"), any(EntityAuditEventV2.EntityAuditActionV2.class), any(), any(Short.class));
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
     public void testGetAuditDetailsWithNullResult() throws Exception {
-        String auditGuid = "audit-123";
+        String auditGuid = "audit-null-result";
 
-        AtlasAuditEntry mockAuditEntry = mock(AtlasAuditEntry.class);
-        when(mockAuditEntry.getResult()).thenReturn(null);
+        AtlasAuditEntry nullResultEntry = mock(AtlasAuditEntry.class);
+        when(nullResultEntry.getResult()).thenReturn(null);
 
-        when(auditService.toAtlasAuditEntry(any())).thenReturn(mockAuditEntry);
+        when(auditService.toAtlasAuditEntry(any(AtlasEntityWithExtInfo.class))).thenReturn(nullResultEntry);
         when(entityStore.getById(auditGuid, false, true)).thenReturn(mock(AtlasEntityWithExtInfo.class));
 
         AdminResource adminResource = createAdminResource();
 
-        List<AtlasEntityHeader> result = adminResource.getAuditDetails(auditGuid, 10, 0);
+        withAuthorizationBypass(() -> {
+            try {
+                List<AtlasEntityHeader> result = adminResource.getAuditDetails(auditGuid, 10, 0);
 
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(entityStore).getById(auditGuid, false, true);
+                assertNotNull(result);
+                assertTrue(result.isEmpty());
+                verify(entityStore).getById(auditGuid, false, true);
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Test
+    public void testGetAuditDetailsForSummaryPurgeAudit() throws Exception {
+        String summaryGuid = "summary-audit-guid";
+        String runId       = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+        String entityGuid1 = "11111111-1111-1111-1111-111111111111";
+        AtlasAuditEntry summaryEntry = buildSummaryAuditEntry(summaryGuid, runId, 2, 1);
+
+        List<EntityAuditEventV2> mockEvents = new ArrayList<>();
+        EntityAuditEventV2 mockEvent = mock(EntityAuditEventV2.class);
+        AtlasEntityHeader mockHeader = mock(AtlasEntityHeader.class);
+        when(mockEvent.getEntityHeader()).thenReturn(mockHeader);
+        mockEvents.add(mockEvent);
+
+        when(auditService.toAtlasAuditEntry(any(AtlasEntityWithExtInfo.class))).thenReturn(summaryEntry);
+        when(entityStore.getById(summaryGuid, false, true)).thenReturn(mock(AtlasEntityWithExtInfo.class));
+        when(auditService.getPurgedEntityGuidsForRun(summaryEntry)).thenReturn(
+                java.util.Collections.singletonList(entityGuid1));
+        when(auditRepository.listEventsV2(eq(entityGuid1), any(EntityAuditEventV2.EntityAuditActionV2.class), any(), any(Short.class)))
+                .thenReturn(mockEvents);
+
+        AdminResource adminResource = createAdminResource();
+
+        withAuthorizationBypass(() -> {
+            try {
+                List<AtlasEntityHeader> result = adminResource.getAuditDetails(summaryGuid, 10, 0);
+
+                assertNotNull(result);
+                assertEquals(result.size(), 1);
+                verify(entityStore).getById(summaryGuid, false, true);
+                verify(auditService).getPurgedEntityGuidsForRun(summaryEntry);
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Test
+    public void testGetPurgeAuditSummary() throws Exception {
+        String summaryGuid = "summary-audit-guid";
+        String runId       = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+        AtlasAuditEntry summaryEntry = buildSummaryAuditEntry(summaryGuid, runId, 2, 2);
+
+        when(auditService.toAtlasAuditEntry(any(AtlasEntityWithExtInfo.class))).thenReturn(summaryEntry);
+        when(entityStore.getById(summaryGuid, false, true)).thenReturn(mock(AtlasEntityWithExtInfo.class));
+
+        AdminResource adminResource = createAdminResource();
+
+        withAuthorizationBypass(() -> {
+            try {
+                PurgeSummary summary = adminResource.getPurgeAuditSummary(summaryGuid);
+
+                assertNotNull(summary);
+                assertEquals(summary.getRunId(), runId);
+                assertEquals(summary.getRequestedCount(), 2);
+                assertEquals(summary.getPurgedCount(), 2);
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Test
+    public void testPurgeAuditBatchesEndpoint() throws Exception {
+        String summaryGuid = "summary-audit-guid";
+        String runId       = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+
+        AtlasAuditEntry summaryEntry = buildSummaryAuditEntry(summaryGuid, runId, 2, 2);
+
+        when(auditService.toAtlasAuditEntry(any(AtlasEntityWithExtInfo.class))).thenReturn(summaryEntry);
+        when(entityStore.getById(summaryGuid, false, true)).thenReturn(mock(AtlasEntityWithExtInfo.class));
+        when(auditService.getPurgeBatchAuditGuidsForRun(summaryEntry)).thenReturn(
+                java.util.Collections.singletonList("batch-guid-1"));
+
+        AdminResource adminResource = createAdminResource();
+
+        withAuthorizationBypass(() -> {
+            try {
+                List<String> batches = adminResource.getPurgeAuditBatches(summaryGuid);
+                assertNotNull(batches);
+                assertEquals(batches.size(), 1);
+                assertEquals(batches.get(0), "batch-guid-1");
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -1261,7 +1718,7 @@ public class AdminResourceTest {
 
         AtlasImportResult mockResult = mock(AtlasImportResult.class);
         when(mockResult.getOperationStatus()).thenReturn(AtlasImportResult.OperationStatus.SUCCESS);
-        when(mockResult.getProcessedEntities()).thenReturn(new ArrayList<>());
+        when(mockResult.getProcessedEntities()).thenReturn(new HashSet<>());
         when(mockResult.getMetrics()).thenReturn(new HashMap<String, Integer>());
         when(mockResult.getExportResult()).thenReturn(mock(AtlasExportResult.class));
         when(mockResult.getExportResult().getRequest()).thenReturn(null);

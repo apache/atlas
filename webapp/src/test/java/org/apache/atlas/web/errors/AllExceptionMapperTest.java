@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.errors;
 
+import org.apache.atlas.server.common.errors.AllExceptionMapper;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 

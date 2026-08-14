@@ -107,6 +107,14 @@ atlas.graph.storage.hbase.regions-per-server=1
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-webapp</artifactId>
+            <version>${project.version}</version>
+            <type>war</type>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
             <artifactId>couchbase-bridge</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
@@ -144,6 +152,14 @@ atlas.graph.storage.hbase.regions-per-server=1
             <groupId>org.apache.atlas</groupId>
             <artifactId>kafka-bridge</artifactId>
             <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>rest-notification-webapp</artifactId>
+            <version>${project.version}</version>
+            <type>war</type>
             <scope>provided</scope>
         </dependency>
 
@@ -270,6 +286,7 @@ atlas.graph.storage.hbase.regions-per-server=1
                                         <descriptor>src/main/assemblies/atlas-kafka-hook-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/atlas-couchbase-hook-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/atlas-server-package.xml</descriptor>
+                                        <descriptor>src/main/assemblies/rest-server-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/standalone-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/src-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/atlas-repair-index-package.xml</descriptor>

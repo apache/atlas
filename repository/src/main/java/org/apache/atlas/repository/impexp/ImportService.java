@@ -60,9 +60,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -164,22 +162,22 @@ public class ImportService implements AsyncImporter {
         try {
             LOG.info("==> asyncImport(user={}, from={}, request={})", userName, requestingIP, request);
 
-            EntityImportStream source     = createZipSource(inputStream, AtlasConfiguration.IMPORT_TEMP_DIRECTORY.getString());
-            String             transforms = MapUtils.isNotEmpty(request.getOptions()) ? request.getOptions().get(TRANSFORMS_KEY) : null;
+            EntityImportStream source      = createZipSource(inputStream, AtlasConfiguration.IMPORT_TEMP_DIRECTORY.getString());
+            String             transforms  = MapUtils.isNotEmpty(request.getOptions()) ? request.getOptions().get(TRANSFORMS_KEY) : null;
 
             setImportTransform(source, transforms);
 
-            String transformers = MapUtils.isNotEmpty(request.getOptions()) ? request.getOptions().get(TRANSFORMERS_KEY) : null;
+            String             transformers = MapUtils.isNotEmpty(request.getOptions()) ? request.getOptions().get(TRANSFORMERS_KEY) : null;
 
             setEntityTransformerHandlers(source, transformers);
 
-            AtlasImportResult result = new AtlasImportResult(request, userName, requestingIP, hostName, System.currentTimeMillis());
+            AtlasImportResult  result       = new AtlasImportResult(request, userName, requestingIP, hostName, System.currentTimeMillis());
 
             result.setExportResult(source.getExportResult());
 
             return asyncImportTaskExecutor.run(result, source);
         } finally {
-            LOG.info("<== asyncImport(user={}, from={}, request={})", userName, requestingIP, request);
+            LOG.info("<== asyncImport(user={}, from={})", userName, requestingIP);
         }
     }
 
@@ -255,7 +253,7 @@ public class ImportService implements AsyncImporter {
             throw new AtlasBaseException(AtlasErrorCode.IMPORT_NOT_FOUND, importId);
         }
 
-        AtlasImportResult result = importRequest.getImportResult();
+        AtlasImportResult       result        = importRequest.getImportResult();
 
         try {
             RequestContext.get().setImportInProgress(true);
@@ -270,9 +268,10 @@ public class ImportService implements AsyncImporter {
 
             importRequest.setImportResult(result);
 
-            asyncImportService.updateImportRequest(importRequest);
+            asyncImportService.populateCache(importRequest);
+            asyncImportService.saveImport(importId);
 
-            LOG.info("<== onImportTypeDef()");
+            LOG.info("<== onImportTypeDef(importId={})", importId);
         }
     }
 
@@ -288,9 +287,7 @@ public class ImportService implements AsyncImporter {
 
         AtlasImportResult      result                  = importRequest.getImportResult();
         float                  importProgress          = importRequest.getImportDetails().getImportProgress();
-        int                    importedEntitiesCounter = importRequest.getImportDetails().getImportedEntitiesCount();
-        int                    failedEntitiesCounter   = importRequest.getImportDetails().getFailedEntitiesCount();
-        Set<String>            processedEntities       = new HashSet<>(result.getProcessedEntities());
+        Set<String>            processedEntities       = result.getProcessedEntities();
         List<String>           failedEntities          = importRequest.getImportDetails().getFailedEntities();
         EntityMutationResponse entityMutationResponse  = null;
         long                   startTimestamp          = System.currentTimeMillis();
@@ -301,39 +298,31 @@ public class ImportService implements AsyncImporter {
             TypesUtil.Pair<EntityMutationResponse, Float> resp = this.bulkImporter.asyncImport(entityWithExtInfo, entityMutationResponse,
                     result, processedEntities, failedEntities, position, importRequest.getImportDetails().getTotalEntitiesCount(), importProgress);
 
-            importedEntitiesCounter += 1;
+            result.setProcessedEntities(processedEntities);
 
-            importRequest.getImportDetails().setImportedEntitiesCount(importedEntitiesCounter);
-
-            result.setProcessedEntities(new ArrayList<>(processedEntities));
-
+            importRequest.getImportDetails().setImportedEntitiesCount(importRequest.getImportDetails().getImportedEntitiesCount() + 1);
             importRequest.getImportDetails().setImportProgress(resp.right);
         } catch (AtlasBaseException abe) {
             LOG.warn("Failed to import entity: {} at position: {} for import: {}", entityWithExtInfo.getEntity().getGuid(), position, importId, abe);
-            failedEntitiesCounter += 1;
 
-            importRequest.getImportDetails().setFailedEntitiesCount(failedEntitiesCounter);
-            failedEntities.add(entityWithExtInfo.getEntity().getGuid());
-            importRequest.getImportDetails().setFailedEntities(failedEntities);
+            importRequest.getImportDetails().setFailedEntitiesCount(importRequest.getImportDetails().getFailedEntitiesCount() + 1);
+            importRequest.getImportDetails().getFailedEntities().add(entityWithExtInfo.getEntity().getGuid());
             importRequest.getImportDetails().addFailure(entityWithExtInfo.getEntity().getGuid(), abe.getMessage());
         } finally {
             RequestContext.get().setImportInProgress(false);
 
             result.incrementMeticsCounter("duration", getDuration(System.currentTimeMillis(), startTimestamp));
+
             importRequest.setImportResult(result);
             importRequest.setCompletedTime(System.currentTimeMillis());
 
-            asyncImportService.updateImportRequest(importRequest);
+            asyncImportService.populateCache(importRequest);
 
             LOG.info("<== onImportEntity(importId={}, position={})", importId, position);
         }
 
-        if (importRequest.getImportDetails().getPublishedEntityCount() <=
-                importRequest.getImportDetails().getImportedEntitiesCount() + importRequest.getImportDetails().getFailedEntitiesCount()) {
-            onImportComplete(importId);
-            return true;
-        }
-        return false;
+        return importRequest.getImportDetails().getPublishedEntityCount() <=
+                importRequest.getImportDetails().getImportedEntitiesCount() + importRequest.getImportDetails().getFailedEntitiesCount();
     }
 
     @Override
@@ -359,7 +348,8 @@ public class ImportService implements AsyncImporter {
                 importRequest.setStatus(FAILED);
             }
 
-            asyncImportService.updateImportRequest(importRequest);
+            asyncImportService.populateCache(importRequest);
+            asyncImportService.saveImport(importId);
 
             AtlasImportResult result = importRequest.getImportResult();
 

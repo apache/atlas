@@ -36,11 +36,13 @@ const TypeFilters = ({ fieldsObj, typeQuery, setTypeQuery }: any) => {
       defaultExpanded
       sx={{ borderBottom: "1px solid rgba(0, 0, 0, 0.12) !important" }}
     >
-      <AccordionSummary aria-controls="panel1-content" id="panel1-header">
+      <AccordionSummary aria-controls="panel1-content" id="panel1-header" sx={{ '& .MuiAccordionSummary-content': { overflow: 'hidden' } }}>
         <Typography
           className="text-color-green"
           fontSize="16px"
           fontWeight="600"
+          noWrap sx={{ width: "100%" }}
+          title={`Type: ${typeParams}`}
         >
           Type: {typeParams}
         </Typography>

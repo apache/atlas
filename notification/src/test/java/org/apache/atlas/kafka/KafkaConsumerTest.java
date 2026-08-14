@@ -40,6 +40,7 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 
@@ -98,7 +99,7 @@ public class KafkaConsumerTest {
 
         kafkaConsumer.assign(Collections.singletonList(tp));
 
-        when(kafkaConsumer.poll(100L)).thenReturn(records);
+        when(kafkaConsumer.poll(Duration.ofMillis(100L))).thenReturn(records);
 
         AtlasKafkaConsumer<HookNotification> consumer = new AtlasKafkaConsumer<>(NotificationType.HOOK, kafkaConsumer, false, 100L);
 
@@ -149,7 +150,7 @@ public class KafkaConsumerTest {
 
         kafkaConsumer.assign(Collections.singletonList(tp));
 
-        when(kafkaConsumer.poll(100L)).thenReturn(records);
+        when(kafkaConsumer.poll(Duration.ofMillis(100L))).thenReturn(records);
 
         AtlasKafkaConsumer<HookNotification> consumer = new AtlasKafkaConsumer<>(NotificationType.HOOK, kafkaConsumer, false, 100L);
 
@@ -166,7 +167,7 @@ public class KafkaConsumerTest {
         List<ConsumerRecord<String, String>> klist   = Collections.singletonList(new ConsumerRecord<>(topic, 0, 0L, "mykey", json));
         ConsumerRecords<String, String>      records = new ConsumerRecords<>(Collections.singletonMap(tp, klist));
 
-        when(kafkaConsumer.poll(100)).thenReturn(records);
+        when(kafkaConsumer.poll(Duration.ofMillis(100L))).thenReturn(records);
 
         kafkaConsumer.assign(Collections.singletonList(tp));
 

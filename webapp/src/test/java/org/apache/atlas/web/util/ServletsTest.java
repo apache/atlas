@@ -20,6 +20,7 @@ package org.apache.atlas.web.util;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.server.common.util.Servlets;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.core.Response;

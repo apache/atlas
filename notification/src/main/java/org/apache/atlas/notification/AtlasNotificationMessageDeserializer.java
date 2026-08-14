@@ -60,9 +60,13 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
     private final AtomicLong                          messageCountTotal             = new AtomicLong(0);
     private final AtomicLong                          messageCountSinceLastInterval = new AtomicLong(0);
     private       long                                splitMessagesLastPurgeTime    = System.currentTimeMillis();
-    private       long                                msgCreated;
-    private       boolean                             spooled;
-    private       String                              source;
+
+    // Thread-local storage for message metadata to support concurrent deserialization
+    // These values are set during deserialize() and read by getMsgCreated(), getSpooled(), etc.
+    private final ThreadLocal<Long>                   msgCreated                    = ThreadLocal.withInitial(() -> 0L);
+    private final ThreadLocal<Boolean>                spooled                       = ThreadLocal.withInitial(() -> Boolean.FALSE);
+    private final ThreadLocal<String>                 source                        = ThreadLocal.withInitial(() -> null);
+    private final ThreadLocal<String>                 sourceVersion                 = ThreadLocal.withInitial(() -> null);
 
     // ----- Constructors ----------------------------------------------------
     /**
@@ -127,15 +131,19 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
 
     // ----- MessageDeserializer ---------------------------------------------
     public long getMsgCreated() {
-        return this.msgCreated;
+        return this.msgCreated.get();
     }
 
     public boolean getSpooled() {
-        return this.spooled;
+        return this.spooled.get();
     }
 
     public String getSource() {
-        return this.source;
+        return this.source.get();
+    }
+
+    public String getSourceVersion() {
+        return this.sourceVersion.get();
     }
 
     @Override
@@ -144,19 +152,20 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
 
         messageCountTotal.incrementAndGet();
         messageCountSinceLastInterval.incrementAndGet();
-
-        this.msgCreated = 0;
-        this.spooled    = false;
-        this.source     = null;
+        this.msgCreated.set(0L);
+        this.spooled.set(false);
+        this.source.set(null);
+        this.sourceVersion.set(null);
 
         AtlasNotificationBaseMessage msg = AtlasType.fromV1Json(messageJson, AtlasNotificationMessage.class);
 
         if (msg == null || msg.getVersion() == null) { // older style messages not wrapped with AtlasNotificationMessage
             ret = AtlasType.fromV1Json(messageJson, messageType);
-        } else {
-            this.msgCreated = ((AtlasNotificationMessage) msg).getMsgCreationTime();
-            this.spooled    = ((AtlasNotificationMessage) msg).getSpooled();
-            this.source     = msg.getSource() != null ? msg.getSource().getSource() : null;
+        } else  {
+            this.msgCreated.set(((AtlasNotificationMessage) msg).getMsgCreationTime());
+            this.spooled.set(((AtlasNotificationMessage) msg).getSpooled());
+            this.source.set(msg.getSource() != null ? msg.getSource().getSource() : null);
+            this.sourceVersion.set(msg.getSource() != null ? msg.getSource().getVersion() : null);
 
             String msgJson = messageJson;
 

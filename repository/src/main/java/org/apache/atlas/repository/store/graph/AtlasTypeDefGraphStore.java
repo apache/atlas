@@ -90,6 +90,27 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         return typeRegistry;
     }
 
+    /**
+     * Registers a TypeDefChangeListener to receive notifications of type definition changes.
+     * @param listener the listener to register
+     */
+    public void registerTypeDefChangeListener(TypeDefChangeListener listener) {
+        if (listener != null) {
+            typeDefChangeListeners.add(listener);
+            LOG.info("Registered TypeDefChangeListener: {}", listener.getClass().getSimpleName());
+        }
+    }
+
+    /**
+     * Unregisters a TypeDefChangeListener from receiving notifications.
+     * @param listener the listener to unregister
+     */
+    public void unregisterTypeDefChangeListener(TypeDefChangeListener listener) {
+        if (listener != null && typeDefChangeListeners.remove(listener)) {
+            LOG.info("Unregistered TypeDefChangeListener: {}", listener.getClass().getSimpleName());
+        }
+    }
+
     @Override
     public void init() throws AtlasBaseException {
         LOG.info("==> AtlasTypeDefGraphStore.init()");

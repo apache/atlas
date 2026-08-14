@@ -21,16 +21,17 @@ import {
   getEntity,
   getTypedef
 } from "@api/apiMethods/entityFormApiMethod";
-import FormAutocomplete from "@components/Forms/FormAutocomplete";
-import FormCreatableSelect from "@components/Forms/FormCreatableSelect";
-import FormDatepicker from "@components/Forms/FormDatepicker";
-import FormInputText from "@components/Forms/FormInputText";
-import FormSelectBoolean from "@components/Forms/FormSelectBoolean";
-import FormTextArea from "@components/Forms/FormTextArea";
 import CustomModal from "@components/Modal";
 import SkeletonLoader from "@components/SkeletonLoader";
 import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
 import { Action, DynamicObject, State } from "@models/entityFormType";
+import {
+  buildEnumOptionsForTypeName,
+  isArrayTypeName,
+  isEnumTypeName,
+  normalizeMultiEnumValue,
+  serializeMultiEnumValue
+} from "@utils/enumTypeUtils";
 import {
   Autocomplete,
   FormControl,
@@ -51,11 +52,13 @@ import {
   isString,
   serverError
 } from "@utils/Utils";
+import { filterEditableEntityTypes } from "@utils/entityTypeConfigUtils";
 import moment from "moment";
 import { useEffect, useReducer, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { renderEntityFormControl } from "./entityFormFields";
 
 export const initialState: State = {
   entityTypeObj: null,
@@ -63,7 +66,7 @@ export const initialState: State = {
   error: null
 };
 
-function reducer(state: State, action: Action): State {
+export function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "FETCH_REQUEST":
       return { ...state, error: null };
@@ -78,15 +81,18 @@ function reducer(state: State, action: Action): State {
 
 const EntityForm = ({
   open,
-  onClose
+  onClose,
+  isAdd = false
 }: {
   open: boolean;
   onClose: () => void;
+  isAdd?: boolean;
 }) => {
   const key = "atlas.ui.editable.entity.types";
   const dispatchApi = useAppDispatch();
   const navigate = useNavigate();
-  const { guid }: any = useParams();
+  const { guid: urlGuid }: any = useParams();
+  const guid = isAdd ? undefined : urlGuid;
   const [_searchParams, setSearchParams] = useSearchParams();
 
   const { entityData = {} }: any = useAppSelector((state: any) => state.entity);
@@ -94,10 +100,12 @@ const EntityForm = ({
     (state: any) => state.session
   );
   const { data = {} } = sessionObj || {};
-  const entityTypes = data?.[key] || {};
+  const editableEntityTypesConfig = data?.[key];
   const { typeHeaderData }: any = useAppSelector(
     (state: any) => state.typeHeader
   );
+  const { enumObj = {} }: any = useAppSelector((state: any) => state.enum);
+  const { enumDefs = [] } = enumObj?.data || {};
   const toastId: any = useRef(null);
   const [state, dispatch] = useReducer(reducer, initialState);
   const [typeValue, setTypeValue] = useState<any>("");
@@ -214,6 +222,15 @@ const EntityForm = ({
             )
           ) {
             val = extractValue(value, type);
+          } else if (isEnumTypeName(type, enumDefs)) {
+            if (isArrayTypeName(type)) {
+              val = normalizeMultiEnumValue(
+                value,
+                buildEnumOptionsForTypeName(type, enumDefs)
+              );
+            } else {
+              val = value || null;
+            }
           } else if (type === "date" || type === "time") {
             val = moment(value);
           } else if (
@@ -311,9 +328,12 @@ const EntityForm = ({
   const { entityDefs = {} } = entityData || {};
 
   const optionsList = !isEmpty(entityDefs)
-    ? entityDefs.map((entity: { name: string }) => {
-        return entity.name;
-      })
+    ? filterEditableEntityTypes(
+        entityDefs
+          .map((entity: { name: string }) => entity.name)
+          .filter((name: string) => name.indexOf("__") !== 0),
+        editableEntityTypesConfig
+      )
     : [];
 
   const { entityTypeObj }: State = state;
@@ -386,6 +406,12 @@ const EntityForm = ({
           )
         ) {
           val = extractValue(value, type);
+        } else if (isEnumTypeName(type, enumDefs)) {
+          if (isArrayTypeName(type)) {
+            val = !isEmpty(value) ? serializeMultiEnumValue(value) : null;
+          } else {
+            val = isString(value) && value.length ? value : null;
+          }
         } else if (type === "date" || type === "time") {
           val = value?.valueOf();
         } else if (
@@ -469,38 +495,15 @@ const EntityForm = ({
   };
 
   const renderFormControl: any = (obj: any) => {
-    let attributeObj = entityDefs.find(
-      (typedef: any) => typedef.name == obj.typeName
-    );
-    let typeHeaderObj = typeHeaderData.find(
-      (typeheader: { name: string }) => typeheader.name == obj.typeName
-    );
-    switch (obj.typeName) {
-      case (obj.typeName.indexOf("map") > -1 ||
-        typeHeaderObj?.category === "STRUCT") &&
-        obj.typeName:
-        return <FormTextArea data={obj} control={control} />;
-      case (attributeObj && obj.typeName) ||
-        (obj.typeName.indexOf("array") > -1 &&
-          obj.cardinality == "SET" &&
-          obj.typeName):
-        return <FormAutocomplete data={obj} control={control} />;
-      case (attributeObj && obj.typeName) ||
-        (obj.typeName.indexOf("array") > -1 &&
-          obj.cardinality == "SINGLE" &&
-          obj.typeName):
-        return <FormCreatableSelect data={obj} control={control} />;
-      case "boolean":
-        return <FormSelectBoolean data={obj} control={control} />;
-      case "date":
-      case "time":
-        return <FormDatepicker data={obj} control={control} />;
-
-      default:
-        return <FormInputText data={obj} control={control} />;
-    }
+    return renderEntityFormControl({
+      obj,
+      control,
+      entityDefs,
+      typeHeaderData,
+      enumDefs
+    });
   };
-  const { name } = extractKeyValueFromEntity(entity);
+  const { name } = extractKeyValueFromEntity(entity) || { name: '', found: false, key: '' };
 
   let requiredFieldList = !isEmpty(entityTypeObj)
     ? Object.keys(entityTypeObj).reduce((acc: any, key: string) => {
@@ -547,18 +550,7 @@ const EntityForm = ({
                 }}
                 disableClearable={true}
                 id="search-by-type"
-                options={optionsList
-                  .map((obj: any) => {
-                    if (entityTypes != "*") {
-                      if (obj == entityTypes) {
-                        return obj;
-                      }
-                    } else {
-                      return obj;
-                    }
-                  })
-                  .filter(Boolean)
-                  .sort()}
+                options={optionsList.sort()}
                 className="entity-form-type-select"
                 renderInput={(params) => {
                   return (

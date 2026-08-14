@@ -18,7 +18,7 @@
 
 package org.apache.atlas;
 
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -44,6 +44,7 @@ public enum AtlasConfiguration {
     NOTIFICATION_HOOK_CONSUMER_BUFFERING_BATCH_SIZE("atlas.notification.consumer.message.buffering.batch.size", 100),
 
     NOTIFICATION_HOOK_REST_ENABLED("atlas.hook.rest.notification.enabled", false),
+    NOTIFICATION_HOOK_REST_ADDRESS("atlas.hook.rest.notification.address", ""),
     NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES("atlas.notification.hook.consumer.topic.names", "ATLAS_HOOK"), //  a comma separated list of topic names
     NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES("atlas.notification.entities.consumer.topic.names", "ATLAS_ENTITIES"), //  a comma separated list of topic names
 
@@ -67,6 +68,8 @@ public enum AtlasConfiguration {
     //search configuration
     SEARCH_MAX_LIMIT("atlas.search.maxlimit", 10000),
     SEARCH_DEFAULT_LIMIT("atlas.search.defaultlimit", 100),
+
+    GLOSSARY_EXPORT_MAX_ROWS("atlas.glossary.export.max.rows", 5000),
 
     CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH("atlas.custom.attribute.key.max.length", 50),
     CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH("atlas.custom.attribute.value.max.length", 500),
@@ -93,6 +96,11 @@ public enum AtlasConfiguration {
     SESSION_TIMEOUT_SECS("atlas.session.timeout.secs", -1),
     UPDATE_COMPOSITE_INDEX_STATUS("atlas.update.composite.index.status", true),
     METRICS_TIME_TO_LIVE_HOURS("atlas.metrics.ttl.hours", 336), // 14 days default
+    NOTIFICATION_CONCURRENT_PROCESSING("atlas.notifications.concurrent", false),
+    ATLAS_PARALLEL_PROCESSING_ENABLED("atlas.notification.parallel.processing.enabled", false),
+    ATLAS_METADATA_TOPIC_PREFIX("atlas.notification.metadata.topic.prefix", "ATLAS_METADATA_"),
+    ATLAS_LINEAGE_TOPIC_PREFIX("atlas.notification.lineage.topic.prefix", "ATLAS_LINEAGE_"),
+    ATLAS_PARALLEL_PROCESSING_INPUT_TOPICS("atlas.notification.parallel.processing.input.topics", "ATLAS_HOOK"),
     SOLR_INDEX_TX_LOG_TTL_CONF("write.ahead.log.ttl.in.hours", 240), //10 days default
 
     ATLAS_AUDIT_AGING_ENABLED("atlas.audit.aging.enabled", false),
@@ -115,7 +123,8 @@ public enum AtlasConfiguration {
     ATLAS_ASYNC_IMPORT_MIN_DURATION_OVERRIDE_TEST_AUTOMATION("atlas.async.import.min.duration.override.test.automation", false),
     ASYNC_IMPORT_TOPIC_PREFIX("atlas.async.import.topic.prefix", "ATLAS_IMPORT_"),
     ASYNC_IMPORT_REQUEST_ID_PREFIX("atlas.async.import.request_id.prefix", "async_import_"),
-    REPLACE_HUGE_SPARK_PROCESS_ATTRIBUTES_PATCH("atlas.process.spark.attributes.update.patch", false);
+    REPLACE_HUGE_SPARK_PROCESS_ATTRIBUTES_PATCH("atlas.process.spark.attributes.update.patch", false),
+    PURGE_API_MAX_REQUEST_SIZE("atlas.purge.api.max.request.size", 1000);
     private static final Configuration APPLICATION_PROPERTIES;
 
     private final String propertyName;

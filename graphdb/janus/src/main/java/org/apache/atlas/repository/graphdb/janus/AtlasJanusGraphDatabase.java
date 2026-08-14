@@ -29,8 +29,8 @@ import org.apache.atlas.repository.graphdb.janus.serializer.BigDecimalSerializer
 import org.apache.atlas.repository.graphdb.janus.serializer.BigIntegerSerializer;
 import org.apache.atlas.repository.graphdb.janus.serializer.TypeCategorySerializer;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationConverter;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.ConfigurationConverter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
 import org.janusgraph.core.JanusGraph;
@@ -251,6 +251,8 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
                 LOG.info("Newer client is being used with older janus storage version. Setting allow-upgrade=true and reattempting connection");
 
                 config.addProperty("graph.allow-upgrade", true);
+
+                conf2 = createConfiguration2(config);
 
                 return JanusGraphFactory.open(conf2);
             } else {
@@ -630,7 +632,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     }
 
     /**
-     * {@link org.apache.commons.configuration.Configuration#getKeys()} on subset configs can omit keys that are only
+     * {@link Configuration#getKeys()} on subset configs can omit keys that are only
      * present as multi-valued / list types, so {@link #normalizeStringArrayValuesForJanus} may skip them.
      * Janus {@code storage.hostname} is a STRING for HBase and CQL ({@link org.janusgraph.diskstorage.common.DistributedStoreManager}).
      */

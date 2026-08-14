@@ -211,6 +211,15 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     }
 
     @Override
+    public boolean propertyKeyHasDataType(String propertyName, Class<?> dataType) {
+        checkName(propertyName);
+
+        PropertyKey janusPropertyKey = management.getPropertyKey(propertyName);
+
+        return janusPropertyKey != null && janusPropertyKey.dataType().equals(dataType);
+    }
+
+    @Override
     public void deletePropertyKey(String propertyKey) {
         PropertyKey janusPropertyKey = management.getPropertyKey(propertyKey);
 

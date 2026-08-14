@@ -68,6 +68,10 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
     // the value of this field is derived from all the businessMetadataDefs this entityType is referenced in
     private Map<String, List<AtlasAttributeDef>> businessAttributeDefs;
 
+    // this field allows derived entity types to override specific properties (like autoComputeFormat)
+    // of attributes inherited from their superTypes, without needing to redefine the entire attribute.
+    private List<AtlasAttributeDef> attributeDefOverrides;
+
     public AtlasEntityDef() {
         this(null, null, null, null, null, null, null);
     }
@@ -124,6 +128,7 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
             setSubTypes(other.getSubTypes());
             setRelationshipAttributeDefs(other.getRelationshipAttributeDefs());
             setBusinessAttributeDefs(other.getBusinessAttributeDefs());
+            setAttributeDefOverrides(other.getAttributeDefOverrides());
         }
     }
 
@@ -165,6 +170,14 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
 
     public void setBusinessAttributeDefs(Map<String, List<AtlasAttributeDef>> businessAttributeDefs) {
         this.businessAttributeDefs = businessAttributeDefs;
+    }
+
+    public List<AtlasAttributeDef> getAttributeDefOverrides() {
+        return attributeDefOverrides;
+    }
+
+    public void setAttributeDefOverrides(List<AtlasAttributeDef> attributeDefOverrides) {
+        this.attributeDefOverrides = attributeDefOverrides;
     }
 
     public boolean hasSuperType(String typeName) {
@@ -250,6 +263,20 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
             }
         }
         sb.append('}');
+
+        if (CollectionUtils.isNotEmpty(attributeDefOverrides)) {
+            sb.append(", attributeDefOverrides=[");
+            int i = 0;
+            for (AtlasAttributeDef override : attributeDefOverrides) {
+                if (i > 0) {
+                    sb.append(", ");
+                }
+                override.toString(sb);
+                i++;
+            }
+            sb.append(']');
+        }
+
         sb.append('}');
 
         return sb;
@@ -267,12 +294,13 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
 
         AtlasEntityDef that = (AtlasEntityDef) o;
 
-        return Objects.equals(superTypes, that.superTypes);
+        return Objects.equals(superTypes, that.superTypes) &&
+               Objects.equals(attributeDefOverrides, that.attributeDefOverrides);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), superTypes);
+        return Objects.hash(super.hashCode(), superTypes, attributeDefOverrides);
     }
 
     @Override

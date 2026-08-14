@@ -38,14 +38,14 @@ import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask;
+import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
-import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
@@ -412,17 +412,16 @@ public class DiscoveryREST {
     @Timed
     @Path("download/{filename}")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public Response downloadSearchResultFile(@PathParam("filename") String fileName) {
+    public Response downloadSearchResultFile(@PathParam("filename") String fileName) throws AtlasBaseException {
         File dir     = new File(SearchResultDownloadTask.DOWNLOAD_DIR_PATH, RequestContext.getCurrentUser());
-        File csvFile = new File(dir, fileName);
+        File csvFile = SearchDownloadFileValidator.resolveDownloadFile(fileName, dir);
 
-        if (!csvFile.exists()) {
+        if (!csvFile.exists() || !csvFile.isFile()) {
             return Response.noContent().build();
         }
 
         Response.ResponseBuilder response = Response.ok(csvFile);
-
-        response.header("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+        response.header("Content-Disposition", "attachment; filename=\"" + csvFile.getName() + "\"");
 
         return response.build();
     }

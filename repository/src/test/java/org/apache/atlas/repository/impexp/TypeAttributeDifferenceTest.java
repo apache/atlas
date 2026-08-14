@@ -89,6 +89,21 @@ public class TypeAttributeDifferenceTest {
     }
 
     @Test
+    public void attributeTypeChanged_ReturnsUpdatedAttribute() throws Exception {
+        AtlasEntityDef                         existing           = getAtlasEntityDefWithAttributes("name");
+        AtlasEntityDef                         incoming           = new AtlasEntityDef();
+        AtlasStructDef.AtlasAttributeDef       nameAttr           = new AtlasStructDef.AtlasAttributeDef("name", AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE);
+        List<AtlasStructDef.AtlasAttributeDef> expectedAttributes = new ArrayList<>();
+
+        incoming.addAttribute(nameAttr);
+        expectedAttributes.add(nameAttr);
+
+        List<AtlasStructDef.AtlasAttributeDef> actualAttributes = invokeGetAttributesAbsentInExisting(existing, incoming);
+
+        assertEquals(actualAttributes, expectedAttributes);
+    }
+
+    @Test
     public void differentSubset_ReturnsDifference() throws Exception {
         AtlasEntityDef                         existing         = getAtlasEntityDefWithAttributes("name", "qualifiedName");
         AtlasEntityDef                         incoming         = getAtlasEntityDefWithAttributes("name");

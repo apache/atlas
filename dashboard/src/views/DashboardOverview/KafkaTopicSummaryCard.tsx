@@ -67,6 +67,26 @@ interface KafkaTopicSummaryCardProps {
 	isLoading?: boolean;
 }
 
+type TopicConsumptionSlice = {
+	totalRow: MessageConsumptionItem | undefined;
+	chartData: MessageConsumptionItem[];
+};
+
+/** Pure helper: exercised directly in tests for full branch coverage. */
+export const getConsumptionForTopicRow = (
+	map: Map<string, TopicConsumptionSlice>,
+	topic: string,
+): {
+	totalForHover: MessageConsumptionItem | undefined;
+	chartData: MessageConsumptionItem[];
+} => {
+	const cons = map.get(topic);
+	return {
+		totalForHover: cons?.totalRow,
+		chartData: cons?.chartData ?? [],
+	};
+};
+
 const getTopicConsumptionPanelId = (topic: string): string =>
 	`kafka-topic-msg-panel-${topic.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
 
@@ -154,10 +174,7 @@ const KafkaTopicSummaryCard = memo(({ stats, isLoading }: KafkaTopicSummaryCardP
 	}, [rows, sortKey, sortOrder]);
 
 	const consumptionByTopic = useMemo(() => {
-		const m = new Map<
-			string,
-			{ totalRow: MessageConsumptionItem | undefined; chartData: MessageConsumptionItem[] }
-		>();
+		const m = new Map<string, TopicConsumptionSlice>();
 		for (const row of rows) {
 			const record = buildTopicNotificationRecord(row.topicStats, {
 				aggregateNotification: notification,
@@ -267,9 +284,10 @@ const KafkaTopicSummaryCard = memo(({ stats, isLoading }: KafkaTopicSummaryCardP
 							{sortedRows.map((row) => {
 								const isExpanded = expandedTopic === row.topic;
 								const panelId = getTopicConsumptionPanelId(row.topic);
-								const cons = consumptionByTopic.get(row.topic);
-								const totalForHover = cons?.totalRow;
-								const chartData = cons?.chartData ?? [];
+								const { totalForHover, chartData } = getConsumptionForTopicRow(
+									consumptionByTopic,
+									row.topic,
+								);
 								return (
 									<Fragment key={row.topic}>
 										<TableRow hover>

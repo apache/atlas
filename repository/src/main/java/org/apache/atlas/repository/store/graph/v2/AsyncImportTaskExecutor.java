@@ -94,14 +94,14 @@ public class AsyncImportTaskExecutor {
     }
 
     public void publishTypeDefNotification(AtlasAsyncImportRequest importRequest, AtlasTypesDef atlasTypesDef) throws AtlasBaseException {
-        LOG.info("==> publishTypeDefNotification()");
+        LOG.info("==> publishTypeDefNotification(importId={})", importRequest.getImportId());
 
         try {
             HookNotification typeDefImportNotification = new ImportNotification.AtlasTypesDefImportNotification(importRequest.getImportId(), importRequest.getImportResult().getUserName(), atlasTypesDef);
 
             sendToTopic(importRequest.getTopicName(), typeDefImportNotification);
         } finally {
-            LOG.info("<== publishTypeDefNotification()");
+            LOG.info("<== publishTypeDefNotification(importId={})", importRequest.getImportId());
         }
     }
 
@@ -134,26 +134,26 @@ public class AsyncImportTaskExecutor {
     @VisibleForTesting
     void publishImportRequest(AtlasAsyncImportRequest importRequest, EntityImportStream entityImportStream) throws AtlasBaseException {
         try {
-            LOG.info("==> publishImportRequest(atlasAsyncImportRequest={})", importRequest);
+            LOG.info("==> publishImportRequest(importId={})", importRequest.getImportId());
 
             publishTypeDefNotification(importRequest, entityImportStream.getTypesDef());
             publishEntityNotification(importRequest, entityImportStream);
 
             importRequest.setStagedTime(System.currentTimeMillis());
 
-            importService.updateImportRequest(importRequest);
+            importService.populateCache(importRequest);
 
             importTaskListener.onReceiveImportRequest(importRequest);
         } finally {
             notificationInterface.closeProducer(ASYNC_IMPORT, importRequest.getTopicName());
 
-            LOG.info("<== publishImportRequest()");
+            LOG.info("<== publishImportRequest(importId={})", importRequest.getImportId());
         }
     }
 
     @VisibleForTesting
     void publishEntityNotification(AtlasAsyncImportRequest importRequest, EntityImportStream entityImportStream) {
-        LOG.info("==> publishEntityNotification()");
+        LOG.info("==> publishEntityNotification(importId={})", importRequest.getImportId());
 
         int publishedEntityCounter = importRequest.getImportDetails().getPublishedEntityCount();
         int failedEntityCounter    = importRequest.getImportDetails().getFailedEntitiesCount();
@@ -187,11 +187,16 @@ public class AsyncImportTaskExecutor {
                 importRequest.getImportTrackingInfo().setStartEntityPosition(startEntityPosition);
                 importRequest.getImportDetails().setPublishedEntityCount(publishedEntityCounter);
 
-                importService.updateImportRequest(importRequest);
+                importService.populateCache(importRequest);
 
-                LOG.info("<== publishEntityNotification()");
+                if (publishedEntityCounter % 100 == 0) {
+                    LOG.info("AsyncImport(id={}): published {} out of {} entities so far)",
+                            importRequest.getImportId(), publishedEntityCounter, importRequest.getImportDetails().getTotalEntitiesCount());
+                }
             }
         }
+
+        LOG.info("<== publishEntityNotification(importId={})", importRequest.getImportId());
     }
 
     @VisibleForTesting
@@ -220,6 +225,8 @@ public class AsyncImportTaskExecutor {
                     || ObjectUtils.equals(existingImportRequest.getStatus(), ImportStatus.PARTIAL_SUCCESS)
                     || ObjectUtils.equals(existingImportRequest.getStatus(), ImportStatus.FAILED)
                     || ObjectUtils.equals(existingImportRequest.getStatus(), ImportStatus.ABORTED)) {
+                importService.deleteRequest(existingImportRequest);
+
                 AtlasAsyncImportRequest newImportRequest = new AtlasAsyncImportRequest(result);
 
                 newImportRequest.setImportId(importId);
@@ -229,7 +236,7 @@ public class AsyncImportTaskExecutor {
                 return withRetry(() -> {
                     importService.saveImportRequest(newImportRequest);
                     LOG.info("registerRequest(importId={}): registered new request", importId);
-                    return newImportRequest; }, importId);
+                    return importService.fetchImportRequestByImportId(newImportRequest.getImportId()); }, importId);
             } else if (ObjectUtils.equals(existingImportRequest.getStatus(), ImportStatus.STAGING)) {
                 // if we are resuming staging, we need to update the latest request received at
                 existingImportRequest.setReceivedTime(System.currentTimeMillis());

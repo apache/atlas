@@ -47,11 +47,11 @@ const FormSelectBoolean = ({ data, control, fieldName }: any) => {
             <LightTooltip title={`Data Type: (${typeName})`}>
               <Typography
                 color="#666666"
-                textOverflow="ellipsis"
+                
                 overflow="hidden"
                 maxWidth="160px"
                 fontSize={14}
-              >{`(${typeName})`}</Typography>
+               noWrap>{`(${typeName})`}</Typography>
             </LightTooltip>
           </div>
           <div style={{ width: "100%" }}>

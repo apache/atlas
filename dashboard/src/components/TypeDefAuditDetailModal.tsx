@@ -66,39 +66,26 @@ export const TypeDefAuditDetailModal = ({
 			<StyledPaper variant="outlined">
 				{!isEmpty(detailObject)
 					? Object.entries(detailObject as Record<string, unknown>)
-							.sort(([a], [b]) => a.localeCompare(b))
-							.map(([keys, value]) => (
-								<div key={keys}>
-									<Stack direction="row" spacing={4} marginBottom={1} marginTop={1}>
-										<div
-											style={{
-												flex: 1,
-												wordBreak: "break-all",
-												textAlign: "left",
-												fontWeight: "600",
-											}}
-										>
-											{`${keys} ${isArray(value) ? `(${(value as unknown[]).length})` : ""}`}
-										</div>
-										<div
-											style={{
-												flex: 1,
-												wordBreak: "break-all",
-												textAlign: "left",
-											}}
-										>
-											{getValues(
-												value,
-												undefined,
-												undefined,
-												undefined,
-												"properties"
-											)}
-										</div>
-									</Stack>
-									<Divider />
-								</div>
-							))
+						.sort(([a], [b]) => a.localeCompare(b))
+						.map(([keys, value]) => (
+							<div key={keys}>
+								<Stack direction="row" spacing={4} marginBottom={1} marginTop={1}>
+									<div className="text-truncate-flex text-left fw-600">
+										{`${keys} ${isArray(value) ? `(${(value as unknown[]).length})` : ""}`}
+									</div>
+									<div className="text-truncate-flex text-left">
+										{getValues(
+											value,
+											undefined,
+											undefined,
+											undefined,
+											"properties"
+										)}
+									</div>
+								</Stack>
+								<Divider />
+							</div>
+						))
 					: "No Record Found"}
 			</StyledPaper>
 		</CustomModal>

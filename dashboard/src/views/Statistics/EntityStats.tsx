@@ -16,6 +16,7 @@
  */
 
 import {
+  CircularProgress,
   Paper,
   Stack,
   Table,
@@ -43,21 +44,11 @@ import { numberFormatWithComma } from "@utils/Helper";
 import { isEmpty, serverError } from "@utils/Utils";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getMetricsGraph } from "@api/apiMethods/metricsApiMethods";
-import { useState, useEffect, useRef, SetStateAction } from "react";
-import { getStatsValue } from "./Statistics";
-import moment from "moment";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer
-} from "recharts";
-import GraphCustomTooltip from "./StatsGraphs/GraphCustomTooltip";
+import { useEffect, useRef, useState, lazy, Suspense, SetStateAction } from "react";
+import { getStatsValue } from "./statsUtils";
 import { statsDateRangesMap } from "@utils/Enum";
+
+const EntityStatsChart = lazy(() => import("./EntityStatsChart"));
 
 const dateRangeText = {
   "1d": "last 1 day",
@@ -495,83 +486,21 @@ const EntityStats = ({
           </Stack>
 
           {!isEmpty(metricsGraphData) && (
-            <ResponsiveContainer width="100%" height={400}>
-              <AreaChart
-                data={getTransformedData()}
-                margin={{ top: 10, right: 60, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="timestamp"
-                  tickFormatter={(tick) => moment(tick).format("MM/DD/YYYY")}
-                />
-
-                <YAxis
-                  domain={
-                    chartMode === "stream"
-                      ? [
-                          (dataMin: number) => dataMin - 10,
-                          (dataMax: number) => dataMax + 10
-                        ]
-                      : ["auto", "auto"]
-                  }
-                  tickFormatter={(tick) =>
-                    chartMode === "expanded"
-                      ? `${tick.toFixed(2)}%`
-                      : tick.toFixed(2)
-                  }
-                />
-
-                <Tooltip
-                  content={<GraphCustomTooltip />}
-                  cursor={{ stroke: "rgba(0, 0, 0, 0.1)", strokeWidth: 2 }}
-                />
-                <Legend
-                  onClick={(e) => {
-                    if (e && e.id) {
-                      handleLegendClick(e.id);
-                    }
-                  }}
-                  payload={Object.keys(activeKeys).map((key) => ({
-                    id: key,
-                    type: "square",
-                    value: key,
-                    color:
-                      activeKeys[key as keyof typeof activeKeys] === true
-                        ? getColorForKey(key)
-                        : "#d3d3d3",
-                    inactive: !activeKeys[key as keyof typeof activeKeys]
-                  }))}
-                />
-                {activeKeys.Active && (
-                  <Area
-                    type={chartMode === "stream" ? "basis" : "monotone"}
-                    dataKey="Active"
-                    stackId={chartMode === "expanded" ? undefined : "1"}
-                    stroke="rgb(31, 119, 180)"
-                    fill="rgb(31, 119, 180)"
-                  />
-                )}
-                {activeKeys.Deleted && (
-                  <Area
-                    type={chartMode === "stream" ? "basis" : "monotone"}
-                    dataKey="Deleted"
-                    stackId={chartMode === "expanded" ? undefined : "1"}
-                    stroke="rgb(174, 199, 232)"
-                    fill="rgb(174, 199, 232)"
-                  />
-                )}
-                {activeKeys.Shell && (
-                  <Area
-                    type={chartMode === "stream" ? "basis" : "monotone"}
-                    dataKey="Shell"
-                    stackId={chartMode === "expanded" ? undefined : "1"}
-                    stroke="rgb(255, 127, 14)"
-                    fill="rgb(255, 127, 14)"
-                  />
-                )}
-              </AreaChart>
-            </ResponsiveContainer>
+            <Suspense
+              fallback={
+                <Stack alignItems="center" justifyContent="center" height={400}>
+                  <CircularProgress size={32} />
+                </Stack>
+              }
+            >
+              <EntityStatsChart
+                chartData={getTransformedData()}
+                chartMode={chartMode}
+                activeKeys={activeKeys}
+                onLegendClick={handleLegendClick}
+                getColorForKey={getColorForKey}
+              />
+            </Suspense>
           )}
         </Stack>
       </AccordionDetails>

@@ -17,7 +17,7 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.security.SecurityProperties;
-import org.apache.atlas.web.service.SecureEmbeddedServer;
+import org.apache.atlas.server.common.service.SecureEmbeddedServer;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;

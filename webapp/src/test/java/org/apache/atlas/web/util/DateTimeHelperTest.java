@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.util;
 
+import org.apache.atlas.server.common.util.DateTimeHelper;
 import org.junit.Test;
 
 import java.text.DateFormat;

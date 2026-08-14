@@ -27,6 +27,11 @@ import {
   glossaryImportUrl,
   glossaryTypeUrl,
   glossaryUrl,
+  glossaryTermsUrl,
+  glossaryCategoriesUrl,
+  glossarySearchUrl,
+  glossaryCreateFileUrl,
+  glossaryDownloadStatusUrl,
   removeTermorCatgeoryUrl,
   removeTermUrl
 } from "../apiUrlLinks/glossaryUrl";
@@ -91,6 +96,48 @@ const getGlossaryType = (glossaryType: string, guid: string) => {
     params: {}
   };
   return _get(glossaryTypeUrl(glossaryType, guid), config);
+};
+
+const getGlossaryTermsForGlossary = (glossaryGuid: string) => {
+  const config: configs = {
+    method: "GET",
+    params: { limit: -1, offset: 0, sort: "ASC" }
+  };
+  return _get(glossaryTermsUrl(glossaryGuid), config);
+};
+
+const getGlossaryCategoriesForGlossary = (glossaryGuid: string) => {
+  const config: configs = {
+    method: "GET",
+    params: { limit: -1, offset: 0, sort: "ASC" }
+  };
+  return _get(glossaryCategoriesUrl(glossaryGuid), config);
+};
+
+const searchGlossary = (params: object) => {
+  const config: importConfigs = {
+    method: "POST",
+    params: {},
+    data: params
+  };
+  return _post(glossarySearchUrl(), config);
+};
+
+const createGlossaryExportFile = (params: object) => {
+  const config: importConfigs = {
+    method: "POST",
+    params: {},
+    data: params
+  };
+  return _post(glossaryCreateFileUrl(), config);
+};
+
+const getGlossaryDownloadStatus = (params: object) => {
+  const config: configs = {
+    method: "GET",
+    params: params
+  };
+  return _get(glossaryDownloadStatusUrl(), config);
 };
 
 const createGlossary = (params: any) => {
@@ -182,6 +229,11 @@ const removeTermorCategory = (
 export {
   removeTerm,
   getGlossary,
+  getGlossaryTermsForGlossary,
+  getGlossaryCategoriesForGlossary,
+  searchGlossary,
+  createGlossaryExportFile,
+  getGlossaryDownloadStatus,
   getGlossaryImportTmpl,
   getGlossaryImport,
   getGlossaryType,

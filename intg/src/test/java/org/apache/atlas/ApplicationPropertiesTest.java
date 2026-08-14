@@ -18,8 +18,8 @@
 package org.apache.atlas;
 
 import org.apache.atlas.utils.AtlasConfigurationUtil;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.testng.annotations.Test;
 
 import java.io.InputStream;

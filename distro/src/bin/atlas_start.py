@@ -17,6 +17,7 @@
 # limitations under the License.
 import os
 import sys
+import subprocess
 import traceback
 
 import atlas_config as mc
@@ -26,6 +27,12 @@ ATLAS_COMMAND_OPTS="-Datlas.home=%s"
 ATLAS_CONFIG_OPTS="-Datlas.conf=%s"
 DEFAULT_JVM_HEAP_OPTS="-Xmx1024m"
 DEFAULT_JVM_OPTS="-Dlogback.configurationFile=atlas-logback.xml -Djava.net.preferIPv4Stack=true -server"
+
+def get_default_jvm_opts():
+    java_version = mc.get_java_version()
+    opts = DEFAULT_JVM_OPTS.strip().split()
+    opts.extend(mc.get_expected_jvm_opts(java_version))
+    return " ".join(opts)
 
 def main():
 
@@ -65,6 +72,7 @@ def main():
     if atlas_server_jvm_opts:
         jvm_opts_list.extend(atlas_server_jvm_opts.split())
 
+    DEFAULT_JVM_OPTS = get_default_jvm_opts()
     atlas_jvm_opts = os.environ.get(mc.ATLAS_OPTS, DEFAULT_JVM_OPTS)
     jvm_opts_list.extend(atlas_jvm_opts.split())
 
