@@ -115,34 +115,58 @@ const SideBarBody = (props: {
   const { relationshipSearch = {} } = globalSessionData || {};
   const [open, setOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const { data: versionData } = useAppSelector((state) => state.session?.versionData || {});
+  const { data: versionData, loading: isVersionLoading, error: versionError } = useAppSelector((state) => state.session?.versionData || {});
   const searchParams = new URLSearchParams(location.search);
 
-  const isCustomFilterActive = searchParams.get("isCF") === "true";
-  const isGlossaryActive = !isCustomFilterActive && (location.pathname.includes("/glossary") || !!searchParams.get("gtype") || !!searchParams.get("term") || !!searchParams.get("category"));
-  const isBusinessMetadataActive = !isCustomFilterActive && location.pathname.includes("/administrator/businessMetadata");
-  const isClassificationActive = !isCustomFilterActive && (!!searchParams.get("tag") || location.pathname.includes("/tag/tagAttribute"));
-  const isRelationshipActive = !isCustomFilterActive && (!!searchParams.get("relationshipName") || location.pathname.includes("/relationshipDetailPage"));
+  const getActiveModule = () => {
+    if (searchParams.get("isCF") === "true") return "customFilters";
+    if (location.pathname.includes("/glossary") || !!searchParams.get("gtype") || !!searchParams.get("term") || !!searchParams.get("category")) return "glossary";
+    if (location.pathname.includes("/administrator/businessMetadata")) return "businessMetadata";
+    if (!!searchParams.get("tag") || location.pathname.includes("/tag/tagAttribute")) return "classification";
+    if (!!searchParams.get("relationshipName") || location.pathname.includes("/relationshipDetailPage")) return "relationships";
+    if (!!searchParams.get("type") || location.pathname.includes("/detailPage")) return "entities";
+    return null;
+  };
 
-  const isEntitiesActive = !isCustomFilterActive && (!!searchParams.get("type") || location.pathname.includes("/detailPage"));
+  const activeModule = getActiveModule();
 
-  const modules = [
+  const isCustomFilterActive = activeModule === "customFilters";
+  const isGlossaryActive = activeModule === "glossary";
+  const isBusinessMetadataActive = activeModule === "businessMetadata";
+  const isClassificationActive = activeModule === "classification";
+  const isRelationshipActive = activeModule === "relationships";
+  const isEntitiesActive = activeModule === "entities";
+
+  const modules = useMemo(() => [
     { id: "entities", title: "Entities", isActive: isEntitiesActive, iconUrl: "/img/sidebar-icons/icon-entities.svg", Component: EntitiesTree, isVisible: true },
     { id: "classification", title: "Classifications", isActive: isClassificationActive, iconUrl: "/img/sidebar-icons/icon-classifications.svg", Component: ClassificationTree, isVisible: true },
     { id: "glossary", title: "Glossary", isActive: isGlossaryActive, iconUrl: "/img/sidebar-icons/icon-glossary.svg", Component: GlossaryTree, isVisible: true },
     { id: "businessMetadata", title: "Business Metadata", isActive: isBusinessMetadataActive, iconUrl: "/img/sidebar-icons/icon-business-metadata.svg", Component: BusinessMetadataTree, isVisible: true },
     { id: "relationships", title: "Relationships", isActive: isRelationshipActive, iconUrl: "/img/sidebar-icons/icon-relationships.svg", Component: RelationshipsTree, isVisible: !!relationshipSearch },
     { id: "customFilters", title: "Custom Filters", isActive: isCustomFilterActive, iconUrl: "/img/sidebar-icons/icon-custom-filters.svg", Component: CustomFiltersTree, isVisible: true }
-  ];
-
-  const handleDrawerOpen = () => {
-    setOpen(!open);
-  };
+  ], [
+    isEntitiesActive,
+    isClassificationActive,
+    isGlossaryActive,
+    isBusinessMetadataActive,
+    isRelationshipActive,
+    isCustomFilterActive,
+    relationshipSearch
+  ]);
 
   const [popoverAnchor, setPopoverAnchor] = useState<HTMLButtonElement | null>(null);
   const [activePopover, setActivePopover] = useState<string | null>(null);
   const [popoverMaxHeight, setPopoverMaxHeight] = useState<string>('calc(100vh - 100px)');
   const [isBottomHalf, setIsBottomHalf] = useState<boolean>(false);
+  const popoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (popoverTimeoutRef.current) {
+        clearTimeout(popoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handlePopoverOpen = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
     const target = event.currentTarget;
@@ -165,10 +189,16 @@ const SideBarBody = (props: {
       }
     };
 
+    // Clear any pending timeout from rapid clicks
+    if (popoverTimeoutRef.current) {
+      clearTimeout(popoverTimeoutRef.current);
+      popoverTimeoutRef.current = null;
+    }
+
     // If a different popover is already open, close it first to ensure clean unmount
     if (activePopover && activePopover !== id) {
       handlePopoverClose();
-      setTimeout(openNewPopover, 0);
+      popoverTimeoutRef.current = setTimeout(openNewPopover, 0);
     } else {
       openNewPopover();
     }
@@ -177,6 +207,13 @@ const SideBarBody = (props: {
   const handlePopoverClose = () => {
     setPopoverAnchor(null);
     setActivePopover(null);
+  };
+
+  const handleDrawerOpen = () => {
+    setOpen(!open);
+    if (!open) {
+      handlePopoverClose();
+    }
   };
 
 
@@ -350,7 +387,7 @@ const SideBarBody = (props: {
                 {/* Search */}
                 <Box sx={{ display: "flex", justifyContent: "center", borderLeft: "4px solid transparent", borderRight: "4px solid transparent", background: "transparent" }}>
                   <Tooltip title="Search" placement="right">
-                    <IconButton aria-expanded={open} onClick={() => setOpen(true)} sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.1)' } }}>
+                    <IconButton aria-label="Expand sidebar search" onClick={() => { setOpen(true); handlePopoverClose(); }} sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.1)' } }}>
                       <img src="/img/sidebar-icons/icon-search.svg" className="sidebar-module-icon" alt="search" />
                     </IconButton>
                   </Tooltip>
@@ -369,7 +406,7 @@ const SideBarBody = (props: {
                     }}
                   >
                     <Tooltip title={m.title} placement="right">
-                      <IconButton onClick={(e) => handlePopoverOpen(e, m.id)} sx={{ color: m.isActive ? "white" : "rgba(255, 255, 255, 0.6)", '&:hover': { color: 'white', background: 'rgba(255, 255, 255, 0.1)' } }}>
+                      <IconButton aria-label={m.title} aria-expanded={activePopover === m.id} onClick={(e) => handlePopoverOpen(e, m.id)} sx={{ color: m.isActive ? "white" : "rgba(255, 255, 255, 0.6)", '&:hover': { color: 'white', background: 'rgba(255, 255, 255, 0.1)' } }}>
                         <img src={m.iconUrl} className="sidebar-module-icon" alt={m.title.toLowerCase()} />
                       </IconButton>
                     </Tooltip>
@@ -574,7 +611,15 @@ const SideBarBody = (props: {
             {open && (
               <Box display="flex" flexDirection="column" gap="4px" alignItems="flex-start" pl="4px">
                 <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.6)", pl: '4px' }}>
-                  {versionData?.Version ? `V ${versionData.Version}` : ''}
+                  {isVersionLoading ? (
+                    <CircularProgress size={12} sx={{ color: "rgba(255, 255, 255, 0.6)" }} />
+                  ) : versionError ? (
+                    'Version unavailable'
+                  ) : versionData?.Version ? (
+                    `V ${versionData.Version}`
+                  ) : (
+                    ''
+                  )}
                 </Typography>
               </Box>
             )}
