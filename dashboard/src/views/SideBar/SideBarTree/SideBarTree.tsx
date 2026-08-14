@@ -372,10 +372,15 @@ const BarTreeView: FC<{
       return (text: string) => {
         if (!searchTerm) return text;
 
-        const parts = text.split(new RegExp(`(${searchTerm})`, "gi"));
+        const escapeRegExp = (string: string) => {
+          return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+        };
+
+        const escapedSearchTerm = escapeRegExp(searchTerm);
+        const parts = text.split(new RegExp(`(${escapedSearchTerm})`, "gi"));
         return parts.map((part, index) =>
           part.toLowerCase() === searchTerm.toLowerCase() ? (
-            <span key={index} style={{ color: "#D3D3D3", fontWeight: "600" }}>
+            <span key={index} className="sidebar-tree-highlight">
               {part}
             </span>
           ) : (
