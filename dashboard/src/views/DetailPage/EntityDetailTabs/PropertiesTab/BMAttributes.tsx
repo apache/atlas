@@ -58,6 +58,7 @@ import { cloneDeep } from "@utils/Helper";
 import moment from "moment-timezone";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 import { EntityStatus } from "@utils/EntityStatus";
+import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const defaultField = {
   key: null,
@@ -383,7 +384,7 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
 
                       <Stack direction="row" alignItems="center" gap="0.5rem">
                         {addLabel ? (
-                          !loading && entity?.status !== EntityStatus.DELETED && (
+                          !loading && isEntityModificationAllowed(entity?.status) && (
                             <CustomButton
                               key="edit-Add-button"
                               variant="outlined"
@@ -545,7 +546,7 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
                         justifyContent="center"
                       >
                         <span>
-                          {entity?.status === EntityStatus.DELETED ? (
+                          {!isEntityModificationAllowed(entity?.status) ? (
                             "No properties have been created yet."
                           ) : (
                             <>
@@ -569,7 +570,7 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
                   </>
                 ) : (
                   <>
-                    {!loading && entity?.status !== EntityStatus.DELETED && (
+                    {!loading && isEntityModificationAllowed(entity?.status) && (
                       <LightTooltip title={"Add New Attribute"}>
                         <CustomButton
                           sx={{

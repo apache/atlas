@@ -99,8 +99,23 @@ describe('UserDefinedProperties Component', () => {
     expect(screen.queryByText('Add')).not.toBeInTheDocument();
   });
 
+  it('does not allow editing if entity is purged', () => {
+    render(<TestWrapper><UserDefinedProperties loading={false} customAttributes={{}} entity={{ status: 'PURGED' }} /></TestWrapper>);
+    
+    expect(screen.getByText(/No properties have been created yet/i)).toBeInTheDocument();
+    expect(screen.queryByText(/To add a property,click/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Add')).not.toBeInTheDocument();
+  });
+
   it('hides edit button for deleted entity even when properties exist', () => {
     render(<TestWrapper><UserDefinedProperties {...defaultProps} entity={{ ...defaultProps.entity, status: 'DELETED' }} /></TestWrapper>);
+    
+    expect(screen.getByText('value1')).toBeInTheDocument();
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+  });
+
+  it('hides edit button for purged entity even when properties exist', () => {
+    render(<TestWrapper><UserDefinedProperties {...defaultProps} entity={{ ...defaultProps.entity, status: 'PURGED' }} /></TestWrapper>);
     
     expect(screen.getByText('value1')).toBeInTheDocument();
     expect(screen.queryByText('Edit')).not.toBeInTheDocument();
@@ -197,4 +212,15 @@ describe('UserDefinedProperties Component', () => {
     const { serverError } = require('@utils/Utils');
     expect(serverError).toHaveBeenCalled();
   });
+
+  it('hides Add button while loading', () => {
+    render(<TestWrapper><UserDefinedProperties loading={true} customAttributes={{}} entity={{ status: 'ACTIVE' }} /></TestWrapper>);
+    expect(screen.queryByText('Add')).not.toBeInTheDocument();
+  });
+
+  it('hides Edit button while loading even when properties exist', () => {
+    render(<TestWrapper><UserDefinedProperties {...defaultProps} loading={true} entity={{ ...defaultProps.entity, status: 'ACTIVE' }} /></TestWrapper>);
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+  });
+
 });

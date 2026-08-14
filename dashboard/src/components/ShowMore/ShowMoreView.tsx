@@ -34,6 +34,7 @@ import ShowMoreDrawer from "./ShowMoreDrawer";
 import { openDrawer, closeDrawer } from "@redux/slice/drawerSlice";
 import { cloneDeep } from "@utils/Helper";
 import { EntityStatus } from "@utils/EntityStatus";
+import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const CHIP_MAX_WIDTH = "200px";
 
@@ -317,13 +318,13 @@ const ShowMoreView = ({
                   }
                   component="a"
                   onDelete={
-                    !isEmpty(removeApiMethod) && !isDeleteIcon && currentEntity?.status !== EntityStatus.DELETED
+                    !isEmpty(removeApiMethod) && !isDeleteIcon && isEntityModificationAllowed(currentEntity?.status)
                       ? () => {
                           // Handle undefined displayKey by extracting a string value
                           const deleteValue = obj[displayKey] || obj.displayText || obj.text || obj.name || '';
                           handleDelete(deleteValue);
                         }
-                      : isDeleteIcon && obj.count > 1 && currentEntity?.status !== EntityStatus.DELETED
+                      : isDeleteIcon && obj.count > 1 && isEntityModificationAllowed(currentEntity?.status)
                       ? () => {
                           const searchParams = new URLSearchParams();
                           searchParams.set("tabActive", "classification");

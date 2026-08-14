@@ -98,8 +98,23 @@ describe('Labels Component', () => {
     expect(screen.queryByText('Add')).not.toBeInTheDocument();
   });
 
+  it('does not allow editing if entity is purged', () => {
+    render(<TestWrapper><Labels loading={false} labels={[]} entity={{ status: 'PURGED' }} /></TestWrapper>);
+    
+    expect(screen.getByText(/No labels have been created yet/i)).toBeInTheDocument();
+    expect(screen.queryByText(/To add a labels, click/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Add')).not.toBeInTheDocument();
+  });
+
   it('hides edit button for deleted entity even when labels exist', () => {
     render(<TestWrapper><Labels loading={false} labels={['Label1']} entity={{ status: 'DELETED' }} /></TestWrapper>);
+    
+    expect(screen.getByText('Label1')).toBeInTheDocument();
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+  });
+
+  it('hides edit button for purged entity even when labels exist', () => {
+    render(<TestWrapper><Labels loading={false} labels={['Label1']} entity={{ status: 'PURGED' }} /></TestWrapper>);
     
     expect(screen.getByText('Label1')).toBeInTheDocument();
     expect(screen.queryByText('Edit')).not.toBeInTheDocument();
@@ -177,4 +192,15 @@ describe('Labels Component', () => {
       expect(mockGetGlobalSearchResult).toHaveBeenCalledWith('suggestions', expect.objectContaining({ params: { fieldName: '__labels' } }));
     });
   });
+
+  it('hides Add button while loading', () => {
+    render(<TestWrapper><Labels loading={true} labels={[]} entity={{ status: 'ACTIVE' }} /></TestWrapper>);
+    expect(screen.queryByText('Add')).not.toBeInTheDocument();
+  });
+
+  it('hides Edit button while loading even when labels exist', () => {
+    render(<TestWrapper><Labels loading={true} labels={['Label1']} entity={{ status: 'ACTIVE' }} /></TestWrapper>);
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+  });
+
 });

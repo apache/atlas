@@ -398,6 +398,18 @@ describe('DetailPageAttribute', () => {
 		expect(document.querySelector('[data-title="Add Classifications"]')).toBeNull()
 	})
 
+	it('hides Add Attributes button for DELETED entities', () => {
+		mockGtype = 'term'
+		renderComp({ data: { ...baseData, status: 'DELETED' } })
+		expect(document.querySelector('[data-title="Add Attributes"]')).toBeNull()
+	})
+
+	it('hides Edit Classification button for DELETED entities', () => {
+		mockGtype = 'term'
+		renderComp({ data: { ...baseData, status: 'DELETED' } })
+		expect(document.querySelector('[data-title="Edit Classification"]')).toBeNull()
+	})
+
 	it('hides Add Term button for DELETED entities', () => {
 		mockGtype = 'category'
 		mockParams.guid = 'gc'

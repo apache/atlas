@@ -51,6 +51,7 @@ import { cloneDeep } from "@utils/Helper";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 import { enrichEntityPayloadForRelationshipSave } from "@utils/entityPayloadEnrichmentUtils";
 import { EntityStatus } from "@utils/EntityStatus";
+import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const defaultField = {
   key: "",
@@ -201,7 +202,7 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: UserDefine
 
                     <Stack direction="row" alignItems="center" gap="0.5rem">
                       {addLabel ? (
-                        !loading && entity?.status !== EntityStatus.DELETED && (
+                        !loading && isEntityModificationAllowed(entity?.status) && (
                           <CustomButton
                             key="edit-Add-button"
                             variant="outlined"
@@ -312,7 +313,7 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: UserDefine
                         })
                     ) : (
                       <span>
-                        {entity?.status === EntityStatus.DELETED ? (
+                        {!isEntityModificationAllowed(entity?.status) ? (
                           "No properties have been created yet."
                         ) : (
                           <>

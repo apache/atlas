@@ -164,6 +164,12 @@ const renderWithProviders = (ui: React.ReactElement) => {
 	return render(ui, { withRouter: false });
 };
 
+
+jest.mock('@components/muiComponents', () => ({
+	...jest.requireActual('@components/muiComponents'),
+	LightTooltip: ({ title, children }: any) => <span data-title={title}>{children}</span>
+}));
+
 describe('EntityDetailPage', () => {
 	const mockEntity = {
 		guid: 'test-guid',
@@ -216,6 +222,20 @@ describe('EntityDetailPage', () => {
 		expect(screen.getAllByTestId('skeleton-loader').length).toBeGreaterThan(0);
 	});
 
+	it('should render loading skeleton when detailPageData is null', () => {
+		const store = configureStore({
+			reducer: {
+				detailPage: (state = { detailPageData: null, loading: false }) => state,
+				entity: (state = { entityData: {} }) => state,
+				glossary: (state = { glossaryData: [] }) => state
+			}
+		});
+
+		renderWithProviders(<TestWrapper store={store} />);
+
+		expect(screen.getAllByTestId('skeleton-loader').length).toBeGreaterThan(0);
+	});
+
 	it('should display entity name and type', () => {
 		const store = createMockStore(mockDetailPageData, mockEntityData);
 		renderWithProviders(<TestWrapper store={store} />);
@@ -256,9 +276,9 @@ describe('EntityDetailPage', () => {
 		const store = createMockStore(mockDetailPageData, mockEntityData);
 		renderWithProviders(<TestWrapper store={store} />);
 
-		const addTagButton = screen.queryByLabelText(/add.*tag/i) || screen.queryByText(/add.*classification/i);
+		const addTagButton = document.querySelector('[data-title="Add Classifications"]');
 		if (addTagButton) {
-			fireEvent.click(addTagButton);
+			fireEvent.click(addTagButton.querySelector('.MuiIconButton-root') || addTagButton);
 			expect(screen.getByTestId('add-tag-modal')).toBeTruthy();
 		}
 	});
@@ -267,9 +287,9 @@ describe('EntityDetailPage', () => {
 		const store = createMockStore(mockDetailPageData, mockEntityData);
 		renderWithProviders(<TestWrapper store={store} />);
 
-		const addTagButton = screen.queryByLabelText(/add.*tag/i) || screen.queryByText(/add.*classification/i);
+		const addTagButton = document.querySelector('[data-title="Add Classifications"]');
 		if (addTagButton) {
-			fireEvent.click(addTagButton);
+			fireEvent.click(addTagButton.querySelector('.MuiIconButton-root') || addTagButton);
 			const closeButton = screen.getByText('Close Add Tag');
 			fireEvent.click(closeButton);
 			expect(screen.queryByTestId('add-tag-modal')).toBeNull();
@@ -277,12 +297,12 @@ describe('EntityDetailPage', () => {
 	});
 
 	it('should open assign term modal when assign term button is clicked', () => {
-		const store = createMockStore(mockDetailPageData, mockEntityData, [{ terms: [] }]);
+		const store = createMockStore(mockDetailPageData, mockEntityData, [{ terms: [{ termGuid: '123' }] }]);
 		renderWithProviders(<TestWrapper store={store} />);
 
-		const assignTermButton = screen.queryByLabelText(/assign.*term/i) || screen.queryByText(/assign.*term/i);
+		const assignTermButton = document.querySelector('[data-title="Add Term"]');
 		if (assignTermButton) {
-			fireEvent.click(assignTermButton);
+			fireEvent.click(assignTermButton.querySelector('.MuiIconButton-root') || assignTermButton);
 			expect(screen.getByTestId('assign-term-modal')).toBeTruthy();
 		}
 	});
@@ -295,8 +315,8 @@ describe('EntityDetailPage', () => {
 		const store = createMockStore({ entity: deletedEntity, referredEntities: {} }, mockEntityData, [{ terms: [] }]);
 		renderWithProviders(<TestWrapper store={store} />);
 
-		const addClassificationButton = screen.queryByLabelText(/add.*tag/i) || screen.queryByText(/add.*classification/i);
-		const addTermButton = screen.queryByLabelText(/assign.*term/i) || screen.queryByText(/assign.*term/i);
+		const addClassificationButton = document.querySelector('[data-title="Add Classifications"]');
+		const addTermButton = document.querySelector('[data-title="Add Term"]');
 
 		expect(addClassificationButton).toBeNull();
 		expect(addTermButton).toBeNull();

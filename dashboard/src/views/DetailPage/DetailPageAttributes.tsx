@@ -58,6 +58,7 @@ import AddTagAttributes from "@views/Classification/AddTagAttributes";
 import AssignCategory from "@views/Glossary/AssignCategory";
 import AssignTerm from "@views/Glossary/AssignTerm";
 import ShowMoreText from "@components/ShowMore/ShowMoreText";
+import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const DetailPageAttribute = ({
   data,
@@ -148,7 +149,7 @@ const DetailPageAttribute = ({
                 {name}{" "}
               </Typography>
             </LightTooltip>
-            {isEmpty(bmguid) && !loading && data?.status !== EntityStatus.DELETED && (
+            {isEmpty(bmguid) && !loading && isEntityModificationAllowed(data?.status) && (
               <LightTooltip title={"Edit Classification"}>
                 <CustomButton
                   variant="outlined"
@@ -316,7 +317,7 @@ const DetailPageAttribute = ({
                       >
                         Classifications
                       </Typography>
-                      {!loading && data?.status !== EntityStatus.DELETED && (
+                      {!loading && isEntityModificationAllowed(data?.status) && (
                         <LightTooltip title={"Add Classifications"}>
                           <IconButton
                             component="label"
@@ -386,7 +387,7 @@ const DetailPageAttribute = ({
                       >
                         Terms
                       </Typography>
-                      {!loading && data?.status !== EntityStatus.DELETED && (
+                      {!loading && isEntityModificationAllowed(data?.status) && (
                         <LightTooltip title={"Add Term"}>
                           <IconButton
                             component="label"
@@ -460,7 +461,7 @@ const DetailPageAttribute = ({
                       >
                         Categories
                       </Typography>
-                      {!loading && data?.status !== EntityStatus.DELETED && (
+                      {!loading && isEntityModificationAllowed(data?.status) && (
                         <LightTooltip title={"Add Categories"}>
                           <IconButton
                             component="label"
@@ -621,7 +622,7 @@ const DetailPageAttribute = ({
                         >
                           Attributes:
                         </Typography>
-                        {!loading && data?.status !== EntityStatus.DELETED && (
+                        {!loading && isEntityModificationAllowed(data?.status) && (
                           <LightTooltip title={"Add Attributes"}>
                             <IconButton
                               component="label"

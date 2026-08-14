@@ -142,8 +142,23 @@ describe('BMAttributes Component', () => {
     expect(screen.queryByText('Add')).not.toBeInTheDocument();
   });
 
+  it('does not allow editing if entity is purged', () => {
+    render(<TestWrapper><BMAttributes loading={false} bmAttributes={{}} entity={{ status: 'PURGED', typeName: 'DataSet' }} /></TestWrapper>);
+    
+    expect(screen.getByText(/No properties have been created yet/i)).toBeInTheDocument();
+    expect(screen.queryByText(/To add a property, click/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Add')).not.toBeInTheDocument();
+  });
+
   it('hides edit button for deleted entity even when business metadata exists', () => {
     render(<TestWrapper><BMAttributes {...defaultProps} entity={{ ...defaultProps.entity, status: 'DELETED' }} /></TestWrapper>);
+    
+    expect(screen.getByText('value1')).toBeInTheDocument();
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+  });
+
+  it('hides edit button for purged entity even when business metadata exists', () => {
+    render(<TestWrapper><BMAttributes {...defaultProps} entity={{ ...defaultProps.entity, status: 'PURGED' }} /></TestWrapper>);
     
     expect(screen.getByText('value1')).toBeInTheDocument();
     expect(screen.queryByText('Edit')).not.toBeInTheDocument();
@@ -206,4 +221,15 @@ describe('BMAttributes Component', () => {
     const { serverError } = require('@utils/Utils');
     expect(serverError).toHaveBeenCalled();
   });
+
+  it('hides Add button while loading', () => {
+    render(<TestWrapper><BMAttributes loading={true} bmAttributes={{}} entity={{ status: 'ACTIVE', typeName: 'DataSet' }} /></TestWrapper>);
+    expect(screen.queryByText('Add')).not.toBeInTheDocument();
+  });
+
+  it('hides Edit button while loading even when business metadata exists', () => {
+    render(<TestWrapper><BMAttributes {...defaultProps} loading={true} entity={{ ...defaultProps.entity, status: 'ACTIVE' }} /></TestWrapper>);
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+  });
+
 });

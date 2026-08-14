@@ -45,6 +45,7 @@ import AssignTerm from "@views/Glossary/AssignTerm";
 import { removeTerm } from "@api/apiMethods/glossaryApiMethod";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ShowMoreView from "@components/ShowMore/ShowMoreView";
+import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const PropertiesTab = lazy(
   () => import("./EntityDetailTabs/PropertiesTab/PropertiesTab")
@@ -409,7 +410,7 @@ const EntityDetailPage: React.FC = () => {
                   >
                     Classifications
                   </Typography>
-                  {entity?.status !== EntityStatus.DELETED && (
+                  {!loading && isEntityModificationAllowed(entity?.status) && (
                     <LightTooltip title={"Add Classifications"}>
                       <IconButton
                         component="label"
@@ -472,7 +473,7 @@ const EntityDetailPage: React.FC = () => {
                     >
                       Terms
                     </Typography>
-                    {entity?.status !== EntityStatus.DELETED && (
+                    {!loading && isEntityModificationAllowed(entity?.status) && (
                       <LightTooltip title="Add Term">
                         <IconButton
                           component="label"

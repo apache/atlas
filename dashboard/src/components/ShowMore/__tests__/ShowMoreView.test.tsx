@@ -273,7 +273,7 @@ const { cloneDeep } = require('@utils/Helper');
 const { fetchDetailPageData } = require('@redux/slice/detailPageSlice');
 const { fetchGlossaryData } = require('@redux/slice/glossarySlice');
 const { fetchGlossaryDetails } = require('@redux/slice/glossaryDetailsSlice');
-const { openDrawer } = require('@redux/slice/drawerSlice');
+const { openDrawer, closeDrawer } = require('@redux/slice/drawerSlice');
 const { toast } = require('react-toastify');
 
 const TestWrapper: React.FC<React.PropsWithChildren<{}>> = ({ children }) => (
@@ -1821,5 +1821,12 @@ describe('ShowMoreView', () => {
 		});
 	});
 });
+
+
+	it('should dispatch closeDrawer on unmount', () => {
+		const { unmount } = render(<TestWrapper><ShowMoreView {...defaultProps} /></TestWrapper>);
+		unmount();
+		expect(closeDrawer).toHaveBeenCalled();
+	});
 
 });

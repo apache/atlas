@@ -51,6 +51,7 @@ import moment from "moment";
 import { useAppDispatch } from "@hooks/reducerHook";
 import { AntSwitch } from "@utils/Muiutils";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
+import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
   entity,
@@ -256,7 +257,7 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
           let values = info.row.original;
           return (
             <Stack direction="row" gap={1}>
-              {!loading && entity?.status !== EntityStatus.DELETED && (guid == values?.entityGuid ||
+              {!loading && isEntityModificationAllowed(entity?.status) && (guid == values?.entityGuid ||
                 (guid != values?.entityGuid &&
                   values.entityStatus == "DELETED")) && (
                   <LightTooltip title={"Delete Classification"}>
@@ -280,7 +281,7 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
                     </CustomButton>
                   </LightTooltip>
                 )}
-              {!loading && entity?.status !== EntityStatus.DELETED && guid == values?.entityGuid && (
+              {!loading && isEntityModificationAllowed(entity?.status) && guid == values?.entityGuid && (
                 <LightTooltip title={"Edit Classification"}>
                   <CustomButton
                     variant="outlined"

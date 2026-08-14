@@ -44,6 +44,7 @@ import { getLabels } from "@api/apiMethods/detailpageApiMethod";
 import { useAppDispatch } from "@hooks/reducerHook";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 import { EntityStatus } from "@utils/EntityStatus";
+import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 type LabelOption = string | { inputValue?: string; value?: string };
 const filter = createFilterOptions<LabelOption>();
@@ -197,7 +198,7 @@ const Labels = ({ loading, labels, entity }: LabelsProps) => {
 
                   <Stack direction="row" alignItems="center" gap="0.5rem">
                     {addLabel ? (
-                      !loading && entity?.status !== EntityStatus.DELETED && (
+                      !loading && isEntityModificationAllowed(entity?.status) && (
                         <CustomButton
                           key="edit-Add-button"
                           variant="outlined"
@@ -285,7 +286,7 @@ const Labels = ({ loading, labels, entity }: LabelsProps) => {
                     })
                   ) : (
                     <span>
-                      {entity?.status === EntityStatus.DELETED ? (
+                      {!isEntityModificationAllowed(entity?.status) ? (
                         "No labels have been created yet."
                       ) : (
                         <>
