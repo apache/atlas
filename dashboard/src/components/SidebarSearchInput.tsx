@@ -52,6 +52,7 @@ export const SidebarSearchInput: React.FC<SidebarSearchInputProps> = ({
         <Stack direction="row" alignItems="center" gap="4px">
           {searchTerm.length > 0 && (
             <IconButton
+              aria-label="Clear search"
               size="small"
               onClick={() => onChange("")}
               edge="end"
@@ -62,13 +63,7 @@ export const SidebarSearchInput: React.FC<SidebarSearchInputProps> = ({
           )}
           <img
             src="/img/sidebar-icons/icon-search.svg"
-            style={{
-              width: "16px",
-              height: "16px",
-              filter: "brightness(0.4)",
-              opacity: 1,
-              marginLeft: "4px"
-            }}
+            className="sidebar-searchbar-icon"
             alt="Search"
           />
         </Stack>
