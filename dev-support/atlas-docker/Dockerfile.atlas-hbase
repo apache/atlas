@@ -24,6 +24,7 @@ COPY ./dist/apache-atlas-${ATLAS_VERSION}-hbase-hook.tar.gz /home/atlas/dist/
 COPY ./downloads/hbase-${HBASE_VERSION}-bin.tar.gz          /home/atlas/dist/
 
 COPY ./scripts/atlas-hbase-setup.sh               /home/atlas/scripts/
+COPY ./scripts/atlas-hbase-healthcheck.sh         /home/atlas/scripts/
 COPY ./scripts/atlas-hbase.sh                     /home/atlas/scripts/
 COPY ./scripts/hbase-site.xml                     /home/atlas/scripts/
 COPY ./scripts/atlas-hbase-application.properties /home/atlas/scripts/
@@ -38,7 +39,8 @@ RUN tar xvfz /home/atlas/dist/hbase-${HBASE_VERSION}-bin.tar.gz --directory=/opt
     ln -s /opt/apache-atlas-hbase-hook/hook/hbase/hbase-bridge-shim-${ATLAS_VERSION}.jar /opt/hbase/lib/ && \
     ln -s /opt/apache-atlas-hbase-hook/hook/hbase/atlas-hbase-plugin-impl /opt/hbase/lib/atlas-hbase-plugin-impl && \
     cp /home/atlas/scripts/hbase-site.xml /opt/hbase/conf/hbase-site.xml && \
-    cp -f /home/atlas/scripts/atlas-hbase-application.properties /opt/hbase/conf/atlas-application.properties
+    cp -f /home/atlas/scripts/atlas-hbase-application.properties /opt/hbase/conf/atlas-application.properties && \
+    chmod +x /home/atlas/scripts/atlas-hbase-healthcheck.sh /home/atlas/scripts/atlas-hbase.sh
 
 ENV HBASE_HOME=/opt/hbase
 ENV PATH=/usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/hbase/bin

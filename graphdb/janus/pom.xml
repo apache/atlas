@@ -73,6 +73,11 @@
             <artifactId>commons-text</artifactId>
             <version>${commons-text.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-distcp</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
         <!-- Default index: Solr (+Lucene). Elasticsearch: use atlas-graphdb-janus-es-shim + -Pindex-elasticsearch on the WAR (ATLAS-5220). -->
         <dependency>
             <groupId>org.apache.lucene</groupId>
@@ -262,7 +267,8 @@
 
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

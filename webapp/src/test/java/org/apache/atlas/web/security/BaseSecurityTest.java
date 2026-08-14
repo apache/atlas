@@ -19,8 +19,9 @@ package org.apache.atlas.web.security;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.web.TestUtils;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.io.FileHandler;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.minikdc.MiniKdc;
@@ -64,7 +65,8 @@ public class BaseSecurityTest {
             url = new File(confLocation, ApplicationProperties.APPLICATION_PROPERTIES).toURI().toURL();
         }
         PropertiesConfiguration configuredProperties = new PropertiesConfiguration();
-        configuredProperties.load(url);
+        FileHandler fileHandler = new FileHandler(configuredProperties);
+        fileHandler.load(url);
 
         configuredProperties.copy(configuration);
 
@@ -101,7 +103,7 @@ public class BaseSecurityTest {
         FileUtils.write(policyFile, policyStr);
     }
 
-    public static void persistSSLClientConfiguration(org.apache.commons.configuration.Configuration clientConfig)
+    public static void persistSSLClientConfiguration(org.apache.commons.configuration2.Configuration clientConfig)
             throws AtlasException, IOException {
         //trust settings
         Configuration configuration = new Configuration(false);
@@ -134,16 +136,16 @@ public class BaseSecurityTest {
     }
 
     protected void generateTestProperties(Properties props) throws ConfigurationException, IOException {
-        PropertiesConfiguration config =
-                new PropertiesConfiguration(System.getProperty("user.dir") +
-                        "/../src/conf/" + ApplicationProperties.APPLICATION_PROPERTIES);
+        PropertiesConfiguration config = new PropertiesConfiguration();
+        FileHandler fileHandler = new FileHandler(config);
+        fileHandler.load(System.getProperty("user.dir") + "/../src/conf/" + ApplicationProperties.APPLICATION_PROPERTIES);
         for (String propName : props.stringPropertyNames()) {
             config.setProperty(propName, props.getProperty(propName));
         }
         File file = new File(System.getProperty("user.dir"), ApplicationProperties.APPLICATION_PROPERTIES);
         file.deleteOnExit();
         Writer fileWriter = new FileWriter(file);
-        config.save(fileWriter);
+        fileHandler.save(fileWriter);
     }
 
     protected void startEmbeddedServer(Server server) throws Exception {

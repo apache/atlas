@@ -19,7 +19,7 @@
 package org.apache.atlas.notification;
 
 import org.apache.atlas.GraphTransactionInterceptor;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

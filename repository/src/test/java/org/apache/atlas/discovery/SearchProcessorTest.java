@@ -23,6 +23,8 @@ import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria.Condition;
 import org.apache.atlas.model.discovery.SearchParameters.Operator;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -32,7 +34,9 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasRelationshipType;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.Predicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -47,6 +51,7 @@ import org.testng.annotations.Test;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -533,6 +538,83 @@ public class SearchProcessorTest {
             // Expected with minimal setup - but exercises real code paths
             assertTrue(true);
         }
+    }
+
+    private static final String LONG_FILTER_VALUE;
+
+    static {
+        char[] chars = new char[300];
+        Arrays.fill(chars, 'x');
+        LONG_FILTER_VALUE = new String(chars);
+    }
+
+    @Test
+    public void testContainsLongValueTextIndexTypeNotIndexSearchable() throws Exception {
+        assertFalse(isIndexSearchableForAttribute("qualifiedName", "qualifiedName", Operator.CONTAINS,
+                LONG_FILTER_VALUE, null));
+    }
+
+    @Test
+    public void testContainsLongValueStringIndexTypeIsIndexSearchable() throws Exception {
+        assertTrue(isIndexSearchableForAttribute("owner", "__s_owner", Operator.CONTAINS,
+                LONG_FILTER_VALUE, AtlasStructDef.AtlasAttributeDef.IndexType.STRING));
+    }
+
+    @Test
+    public void testContainsShortValueTextIndexTypeIsIndexSearchable() throws Exception {
+        assertTrue(isIndexSearchableForAttribute("qualifiedName", "qualifiedName", Operator.CONTAINS,
+                "default.table", null));
+    }
+
+    @Test
+    public void testStartsWithLongValueTextIndexTypeNotIndexSearchable() throws Exception {
+        assertFalse(isIndexSearchableForAttribute("qualifiedName", "qualifiedName", Operator.STARTS_WITH,
+                LONG_FILTER_VALUE, null));
+    }
+
+    @Test
+    public void testStartsWithLongValueStringIndexTypeIsIndexSearchable() throws Exception {
+        assertTrue(isIndexSearchableForAttribute("owner", "__s_owner", Operator.STARTS_WITH,
+                LONG_FILTER_VALUE, AtlasStructDef.AtlasAttributeDef.IndexType.STRING));
+    }
+
+    @Test
+    public void testEndsWithLongValueTextIndexTypeNotIndexSearchable() throws Exception {
+        assertFalse(isIndexSearchableForAttribute("qualifiedName", "qualifiedName", Operator.ENDS_WITH,
+                LONG_FILTER_VALUE, null));
+    }
+
+    @Test
+    public void testEndsWithLongValueStringIndexTypeIsIndexSearchable() throws Exception {
+        assertTrue(isIndexSearchableForAttribute("owner", "__s_owner", Operator.ENDS_WITH,
+                LONG_FILTER_VALUE, AtlasStructDef.AtlasAttributeDef.IndexType.STRING));
+    }
+
+    private boolean isIndexSearchableForAttribute(String attributeName, String vertexPropertyName,
+                                                 Operator operator, String attributeValue,
+                                                 AtlasStructDef.AtlasAttributeDef.IndexType indexType) throws Exception {
+        FilterCriteria filterCriteria = new FilterCriteria();
+        filterCriteria.setAttributeName(attributeName);
+        filterCriteria.setOperator(operator);
+        filterCriteria.setAttributeValue(attributeValue);
+
+        AtlasStructType structType = mock(AtlasStructType.class);
+        AtlasType         attrType = mock(AtlasType.class);
+        AtlasStructDef.AtlasAttributeDef attributeDef = mock(AtlasStructDef.AtlasAttributeDef.class);
+
+        when(structType.getAttributeType(attributeName)).thenReturn(attrType);
+        when(attrType.getTypeName()).thenReturn(AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+        when(structType.getVertexPropertyName(attributeName)).thenReturn(vertexPropertyName);
+        when(structType.getAttributeDef(attributeName)).thenReturn(attributeDef);
+        when(attributeDef.getIndexType()).thenReturn(indexType);
+
+        Set<String> indexedKeys = new HashSet<>(Collections.singletonList(vertexPropertyName));
+        when(context.getIndexedKeys()).thenReturn(indexedKeys);
+        when(context.getEdgeIndexKeys()).thenReturn(Collections.emptySet());
+
+        Method method = SearchProcessor.class.getDeclaredMethod("isIndexSearchable", FilterCriteria.class, AtlasStructType.class);
+        method.setAccessible(true);
+        return (Boolean) method.invoke(searchProcessor, filterCriteria, structType);
     }
 
     @Test

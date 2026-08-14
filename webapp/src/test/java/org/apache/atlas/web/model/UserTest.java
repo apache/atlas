@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.model;
 
+import org.apache.atlas.server.common.model.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.testng.annotations.BeforeClass;

@@ -20,7 +20,7 @@ package org.apache.atlas.ha;
 
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.net.NetUtils;
 import org.slf4j.Logger;

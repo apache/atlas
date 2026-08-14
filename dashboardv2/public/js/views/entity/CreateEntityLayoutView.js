@@ -73,7 +73,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'callback', 'showLoader', 'entityDefCollection', 'typeHeaders', 'searchVent'));
+                _.extend(this, _.pick(options, 'guid', 'callback', 'showLoader', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection'));
                 var that = this,
                     entityTitle, okLabel;
                 this.selectStoreCollection = new Backbone.Collection();
@@ -473,6 +473,25 @@ define(['require',
                         this.value = setValue;
                     }
                 });
+                this.$('select[data-enum="true"]').each(function() {
+                    var $this = $(this),
+                        dataKey = $this.data('key');
+                    if ($this.prop('multiple')) {
+                        $this.select2({
+                            allowClear: !$this.hasClass('true'),
+                            multiple: true,
+                            placeholder: '-- Select --'
+                        });
+                    }
+                    if (that.guid && that.entityData) {
+                        var setValue = that.entityData.get("entity").attributes[dataKey];
+                        if ($this.prop('multiple') && _.isArray(setValue)) {
+                            $this.val(setValue).trigger('change');
+                        } else if (!$this.prop('multiple') && setValue) {
+                            $this.val(setValue).trigger('change');
+                        }
+                    }
+                });
                 this.addJsonSearchData();
             },
             initializeValidation: function() {
@@ -525,6 +544,60 @@ define(['require',
                     alloptional = object.alloptional,
                     typeOfDefination = (relationshipType ? "Relationships" : "Attributes");
                 return '<div class="attribute-dash-box ' + (alloptional ? "alloptional" : "") + ' "><span class="attribute-type-label">' + (typeOfDefination) + '</span>' + htmlField + '</div>';
+            },
+            getInnerEnumTypeName: function(typeName) {
+                if (!typeName || typeName.indexOf("array<") !== 0) {
+                    return typeName;
+                }
+                var match = typeName.match(/array<(.*)>/);
+                return match && match[1] ? match[1] : typeName;
+            },
+            getEnumTypeDef: function(typeName) {
+                if (!this.enumDefCollection || !typeName) {
+                    return null;
+                }
+                var innerEnumTypeName = this.getInnerEnumTypeName(typeName);
+                return this.enumDefCollection.fullCollection.findWhere({ name: innerEnumTypeName });
+            },
+            getEnumSelect: function(object) {
+                var value = object.value,
+                    name = _.escape(value.name),
+                    entityValue = object.entityValue,
+                    isAttribute = object.isAttribute,
+                    isRelation = object.isRelation,
+                    enumTypeDef = object.enumTypeDef,
+                    isMultiValued = object.isMultiValued,
+                    typeName = value.typeName,
+                    optionsHtml = "",
+                    selectedValues = [];
+
+                if (isMultiValued && _.isArray(entityValue)) {
+                    selectedValues = entityValue;
+                }
+
+                if (!isMultiValued && value.isOptional) {
+                    optionsHtml += '<option value="">-- Select ' + _.escape(enumTypeDef.get("name")) + ' --</option>';
+                }
+
+                _.each(enumTypeDef.get("elementDefs"), function(elementDef) {
+                    var selected = "";
+                    if (isMultiValued) {
+                        if (selectedValues.indexOf(elementDef.value) > -1) {
+                            selected = " selected";
+                        }
+                    } else if (entityValue && elementDef.value === entityValue) {
+                        selected = " selected";
+                    }
+                    optionsHtml += '<option value="' + _.escape(elementDef.value) + '"' + selected + '>' + _.escape(elementDef.value) + '</option>';
+                });
+
+                return '<select class="form-control row-margin-bottom entityInputBox ' + (value.isOptional === true ? "false" : "true") +
+                    '" data-type="' + typeName +
+                    '" data-attribute="' + isAttribute +
+                    '" data-relation="' + isRelation +
+                    '" data-key="' + name +
+                    '" data-enum="true"' +
+                    ' data-id="entityInput"' + (isMultiValued ? ' multiple="multiple"' : '') + '>' + optionsHtml + '</select>';
             },
             getSelect: function(object) {
                 var value = object.value,
@@ -606,7 +679,9 @@ define(['require',
                     entityValue = "";
                 if (this.guid) {
                     var dataValue = this.entityData.get("entity").attributes[value.name];
-                    if (_.isObject(dataValue)) {
+                    if (_.isArray(dataValue)) {
+                        entityValue = dataValue;
+                    } else if (_.isObject(dataValue)) {
                         entityValue = JSON.stringify(dataValue);
                     } else {
                         if (dataValue) {
@@ -620,6 +695,17 @@ define(['require',
                             }
                         }
                     }
+                }
+                var enumTypeDef = this.getEnumTypeDef(typeName);
+                if (enumTypeDef) {
+                    return this.getEnumSelect({
+                        "value": value,
+                        "entityValue": entityValue,
+                        "isAttribute": isAttribute,
+                        "isRelation": isRelation,
+                        "enumTypeDef": enumTypeDef,
+                        "isMultiValued": typeName.indexOf("array<") === 0
+                    });
                 }
                 if ((typeName && this.entityDefCollection.fullCollection.find({ name: typeName })) || typeName === "boolean" || typeName.indexOf("array") > -1) {
                     return this.getSelect({
@@ -721,7 +807,13 @@ define(['require',
                             val = null;
                         // Extract Data
                         if (dataTypeEnitity && datakeyEntity) {
-                            if (that.entityDefCollection.fullCollection.find({ name: dataTypeEnitity })) {
+                            if ($(this).data('enum')) {
+                                if ($(this).prop('multiple')) {
+                                    val = (value && value.length) ? value : null;
+                                } else {
+                                    val = (value && value.length) ? value : null;
+                                }
+                            } else if (that.entityDefCollection.fullCollection.find({ name: dataTypeEnitity })) {
                                 val = extractValue(value, typeName);
                             } else if (dataTypeEnitity === 'date' || dataTypeEnitity === 'time') {
                                 val = Date.parse(value);

@@ -16,17 +16,27 @@
  */
 
 import { LinkTab } from "@components/muiComponents";
+import SkeletonLoader from "@components/SkeletonLoader";
 import { Stack, Tabs } from "@mui/material";
 import { Item, samePageLinkNavigation } from "@utils/Muiutils";
 import { isEmpty } from "@utils/Utils";
-import { useState, useEffect } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import BusinessMetadataTab from "./BusinessMetadataTab";
-import Enumerations from "./Enumerations";
-import AdminAuditTable from "./Audits/AdminAuditTable";
-import BusinessMetaDataForm from "@views/BusinessMetadata/BusinessMetadataForm";
 import { useAppSelector } from "@hooks/reducerHook";
-import TypeSystemTreeView from "./TypeSystemTreeView";
+
+const BusinessMetadataTab = lazy(() => import("./BusinessMetadataTab"));
+const Enumerations = lazy(() => import("./Enumerations"));
+const AdminAuditTable = lazy(() => import("./Audits/AdminAuditTable"));
+const TypeSystemTreeView = lazy(() => import("./TypeSystemTreeView"));
+const BusinessMetaDataForm = lazy(
+  () => import("@views/BusinessMetadata/BusinessMetadataForm")
+);
+
+const tabFallback = (
+  <Stack direction="column" spacing={2} sx={{ p: 2 }}>
+    <SkeletonLoader count={4} variant="text" className="text-loader" />
+  </Stack>
+);
 
 const allTabs = ["businessMetadata", "enum", "audit", "typeSystem"];
 
@@ -90,11 +100,13 @@ const AdministratorLayout = () => {
     >
       {form ? (
         <Stack width="100%">
-          <BusinessMetaDataForm
-            setForm={setForm}
-            setBMAttribute={setBMAttribute}
-            bmAttribute={bmAttribute}
-          />
+          <Suspense fallback={tabFallback}>
+            <BusinessMetaDataForm
+              setForm={setForm}
+              setBMAttribute={setBMAttribute}
+              bmAttribute={bmAttribute}
+            />
+          </Suspense>
         </Stack>
       ) : (
         <Stack width="100%">
@@ -110,17 +122,19 @@ const AdministratorLayout = () => {
             <LinkTab label="Audits" />
             <LinkTab label="Type System" />
           </Tabs>
-          {(activeTab == undefined || activeTab === "businessMetadata") && (
-            <BusinessMetadataTab
-              setForm={setForm}
-              setBMAttribute={setBMAttribute}
-            />
-          )}
-          {activeTab === "enum" && <Enumerations />}
-          {activeTab === "audit" && <AdminAuditTable />}
-          {activeTab === "typeSystem" && !isEmpty(entityDefs) && (
-            <TypeSystemTreeView entityDefs={entityDefs} />
-          )}
+          <Suspense fallback={tabFallback}>
+            {(activeTab == undefined || activeTab === "businessMetadata") && (
+              <BusinessMetadataTab
+                setForm={setForm}
+                setBMAttribute={setBMAttribute}
+              />
+            )}
+            {activeTab === "enum" && <Enumerations />}
+            {activeTab === "audit" && <AdminAuditTable />}
+            {activeTab === "typeSystem" && !isEmpty(entityDefs) && (
+              <TypeSystemTreeView entityDefs={entityDefs} />
+            )}
+          </Suspense>
         </Stack>
       )}
     </Item>

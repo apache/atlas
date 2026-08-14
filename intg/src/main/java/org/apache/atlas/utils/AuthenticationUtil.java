@@ -19,7 +19,7 @@ package org.apache.atlas.utils;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +74,12 @@ public final class AuthenticationUtil {
     }
 
     public static String[] getBasicAuthenticationInput() {
+        String envUser = System.getenv("ATLAS_USERNAME");
+        String envPass = System.getenv("ATLAS_PASSWORD");
+        if (envUser != null && !envUser.isEmpty() && envPass != null) {
+            return new String[] {envUser, envPass};
+        }
+
         String username = null;
         String password = null;
 

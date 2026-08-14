@@ -58,6 +58,16 @@ define(['require',
 
                 return this.constructor.nonCrudOperation.call(this, url, 'GET', options);
             },
+            getGlossaryDownloadsList: function(options) {
+                var url = UrlLinks.getGlossaryDownloadsList();
+
+                options = _.extend({
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }, options);
+
+                return this.constructor.nonCrudOperation.call(this, url, 'GET', options);
+            },
             startDownloading: function(options) {
                 var queryParams = Utils.getUrlState.getQueryParams(),
                     url = queryParams.searchType === "basic" ? UrlLinks.downloadBasicSearchResultsCSV() : UrlLinks.downloadAdvanceSearchResultsCSV(),

@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.notification.spool;
 
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 
 import java.io.File;
 

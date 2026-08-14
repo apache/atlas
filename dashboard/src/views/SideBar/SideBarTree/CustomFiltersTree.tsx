@@ -19,7 +19,6 @@ import { useState, useEffect, useMemo } from "react";
 import SideBarTree from "../../SideBar/SideBarTree/SideBarTree.tsx";
 import {
   customSortBy,
-  customSortByObjectKeys,
   groupBy,
   isArray,
   isEmpty
@@ -29,7 +28,6 @@ import type { Props } from "@models/treeStructureType.ts";
 import {
   ChildrenInterface,
   ChildrenInterfaces,
-  ServiceTypeFlatInterface,
   ServiceTypeInterface
 } from "@models/entityTreeType.ts";
 import {
@@ -47,9 +45,8 @@ const CustomFiltersTree = ({ sideBarOpen, searchTerm }: Props) => {
   );
   const { relationshipSearch = {} } = globalSessionData || {};
 
-  const [savedSearchType, setsavedSearchType] = useState<boolean>(true);
   const [savedSearchTypeData, setSavedSearchTypeData] = useState<
-    SavedSearchArrType<typeof savedSearchType>
+    SavedSearchArrType<true>
   >([]);
   const [customFilterLoader, setCustomFilterLoader] = useState<boolean>(false);
 
@@ -76,9 +73,7 @@ const CustomFiltersTree = ({ sideBarOpen, searchTerm }: Props) => {
     ];
 
     let searchTypes = !isEmpty(savedSearchData)
-      ? savedSearchType
-        ? groupBy(savedSearchData, "searchType")
-        : savedSearchData
+      ? groupBy(savedSearchData, "searchType")
       : groupBy(emptySearchTypes, "searchType");
     for (let type in searchTypes) {
       const getType = (type: string) => {
@@ -101,21 +96,20 @@ const CustomFiltersTree = ({ sideBarOpen, searchTerm }: Props) => {
           parent: type
         }));
       };
-      let name = savedSearchType ? getType(type) : searchTypes[type].name;
+      let name = getType(type);
       let children =
-        savedSearchType && !isEmpty(savedSearchData)
+        !isEmpty(savedSearchData)
           ? getChildren(searchTypes[type] as SavedSearchDataType[], type)
           : [];
       savedSearchTypeArr.push({
         name,
         children,
         types: "parent",
-        parent: savedSearchType ? type : searchTypes[type].searchType
+        parent: type
       });
     }
 
     const existingSearchTypes = savedSearchTypeArr.map((child) => child.parent);
-    if (savedSearchType) {
       emptySearchTypes.forEach((typeObj) => {
         if (!existingSearchTypes.includes(typeObj.searchType)) {
           savedSearchTypeArr.push({
@@ -126,9 +120,8 @@ const CustomFiltersTree = ({ sideBarOpen, searchTerm }: Props) => {
           });
         }
       });
-    }
     setSavedSearchTypeData(savedSearchTypeArr as any);
-  }, [savedSearchData, savedSearchType]);
+  }, [savedSearchData]);
 
   const generateChildrenData = useMemo(() => {
     const child = (childs: any) => {
@@ -157,35 +150,26 @@ const CustomFiltersTree = ({ sideBarOpen, searchTerm }: Props) => {
       serviceTypeData.map((type: any) => ({
         id: type.name,
         label: type.name,
-        children: savedSearchType
-          ? child(type.children as ChildrenInterfaces[])
-          : [],
+        children: child(type.children as ChildrenInterfaces[]),
         types: type.types,
         parent: type.parent
       }));
-  }, [savedSearchType]);
+  }, []);
 
   const treeData = useMemo(() => {
-    return savedSearchType
-      ? customSortBy(
+    return customSortBy(
           generateChildrenData(
             savedSearchTypeData as unknown as SavedSearchArrInterface[]
           ),
           ["label"]
-        )
-      : generateChildrenData(
-          customSortByObjectKeys(
-            savedSearchTypeData as ServiceTypeFlatInterface[]
-          )
         );
-  }, [savedSearchType, savedSearchTypeData]);
+  }, [savedSearchTypeData]);
 
   return (
     <SideBarTree
       treeData={treeData}
       treeName={"CustomFilters"}
-      setisEmptyServicetype={setsavedSearchType}
-      isEmptyServicetype={savedSearchType}
+      isEmptyServicetype={true}
       refreshData={fetchInitialData}
       sideBarOpen={sideBarOpen}
       loader={customFilterLoader}

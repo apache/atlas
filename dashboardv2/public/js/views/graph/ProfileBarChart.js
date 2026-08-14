@@ -16,8 +16,21 @@
  * limitations under the License.
  */
 
-define(["require", "d3", "d3-tip"], function(require, d3, d3Tip) {
+define(["require", "d3", "d3-tip", "underscore"], function(require, d3, d3Tip, _) {
     "use strict";
+
+    var buildTooltipHtml = function(d, type) {
+        return (
+            "<table><thead><tr><td colspan=\"3\"><strong class=\"x-value\">" +
+            _.escape(d.value) +
+            "</strong></td></tr></thead><tbody><tr><td class=\"key\">" +
+            _.escape(type) +
+            "</td><td class=\"value\">" +
+            _.escape(d.count) +
+            "</td></tr></tbody></table>"
+        );
+    };
+
     var ProfileBarChart = {
         render: function(options) {
             var el = options.el,
@@ -103,7 +116,7 @@ define(["require", "d3", "d3-tip"], function(require, d3, d3Tip) {
                 .attr("class", "d3-tip")
                 .offset([10, 0])
                 .html(function(d) {
-                    return '<table><thead><tr><td colspan="3"><strong class="x-value">' + d.value + '</strong></td></tr></thead><tbody><tr><td class="key">' + type + '</td><td class="value">' + d.count + '</td></tr></tbody></table>';
+                    return buildTooltipHtml(d, type);
                 });
 
             // append the rectangles for the bar chart

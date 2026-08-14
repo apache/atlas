@@ -22,7 +22,6 @@ import { getMetricsStats } from "@api/apiMethods/metricsApiMethods";
 import ClassificationStats from "./ClassificationStats";
 import {
   Autocomplete,
-  Badge,
   CircularProgress,
   IconButton,
   Stack,
@@ -30,32 +29,16 @@ import {
 } from "@mui/material";
 import ServerStats from "./ServerStats";
 import SystemDetails from "./SystemDetails";
-import { formatedDate, millisecondsToTime, serverError } from "@utils/Utils";
-import { numberFormatWithComma } from "@utils/Helper";
+import { serverError } from "@utils/Utils";
 import { Refresh } from "@mui/icons-material";
 import { LightTooltip } from "@components/muiComponents";
 import { useAppDispatch } from "@hooks/reducerHook";
 import { fetchMetricEntity } from "@redux/slice/metricsSlice";
 import { toast } from "react-toastify";
 import SkeletonLoader from "@components/SkeletonLoader";
+import { getStatsValue } from "./statsUtils";
 
-export const getStatsValue = (options: { value: any; type: any }) => {
-  let value = options.value;
-  let type = options.type;
-  if (type == "time") {
-    return millisecondsToTime(value);
-  } else if (type == "day") {
-    return formatedDate({ date: value });
-  } else if (type == "number") {
-    return numberFormatWithComma(value);
-  } else if (type == "millisecond") {
-    return numberFormatWithComma(value) + " millisecond/s";
-  } else if (type == "status-html") {
-    return <Badge color="success" variant="dot"></Badge>;
-  } else {
-    return value;
-  }
-};
+export { getStatsValue };
 
 const Statistics = ({
   open,

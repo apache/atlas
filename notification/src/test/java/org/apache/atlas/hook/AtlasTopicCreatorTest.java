@@ -20,7 +20,7 @@ package org.apache.atlas.hook;
 
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.utils.KafkaUtils;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 

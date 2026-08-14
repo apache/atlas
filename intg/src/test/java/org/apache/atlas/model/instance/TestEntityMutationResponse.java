@@ -586,4 +586,68 @@ public class TestEntityMutationResponse {
 
         assertEquals(guidAssignments, response.getGuidAssignments());
     }
+
+    @Test
+    public void testSetMutatedEntitiesThenAddEntity() {
+        EntityMutationResponse response = new EntityMutationResponse();
+
+        Map<EntityOperation, List<AtlasEntityHeader>> mutatedEntities = new HashMap<>();
+        List<AtlasEntityHeader> purgedEntities = new ArrayList<>();
+        purgedEntities.add(new AtlasEntityHeader("type1", "guid1", null));
+        mutatedEntities.put(EntityOperation.PURGE, purgedEntities);
+
+        // Rebuilds the GUID index from the map; duplicate add must be ignored.
+        response.setMutatedEntities(mutatedEntities);
+
+        // Add the same entity again — must not duplicate.
+        AtlasEntityHeader duplicateEntity = new AtlasEntityHeader("type1", "guid1", null);
+        response.addEntity(EntityOperation.PURGE, duplicateEntity);
+
+        assertEquals(1, response.getPurgedEntities().size());
+        assertEquals("guid1", response.getPurgedEntities().get(0).getGuid());
+    }
+
+    @Test
+    public void testAddEntityThenSetMutatedEntitiesThenAddEntity() {
+        EntityMutationResponse response = new EntityMutationResponse();
+
+        // 1. addEntity runs -> index has CREATE -> {guid1}
+        AtlasEntityHeader entity1 = new AtlasEntityHeader("type1", "guid1", null);
+        response.addEntity(EntityOperation.CREATE, entity1);
+
+        assertEquals(1, response.getCreatedEntities().size());
+
+        // 2. setMutatedEntities replaces lists
+        Map<EntityOperation, List<AtlasEntityHeader>> newMutatedEntities = new HashMap<>();
+        List<AtlasEntityHeader> newCreatedEntities = new ArrayList<>();
+        newCreatedEntities.add(new AtlasEntityHeader("type2", "guid2", null));
+        newMutatedEntities.put(EntityOperation.CREATE, newCreatedEntities);
+
+        // This must invalidate the cache!
+        response.setMutatedEntities(newMutatedEntities);
+
+        // 3. addEntity runs again for guid2 already in the new list
+        AtlasEntityHeader entity2 = new AtlasEntityHeader("type2", "guid2", null);
+        response.addEntity(EntityOperation.CREATE, entity2);
+        // If cache wasn't invalidated, entityHeaderExists might use stale cache {guid1}
+        // and add guid2 again, resulting in 2 entries for guid2 (actually size 2 in the list).
+        assertEquals(1, response.getCreatedEntities().size());
+        assertEquals("guid2", response.getCreatedEntities().get(0).getGuid());
+    }
+
+    @Test
+    public void testNullGuidBehavior() {
+        EntityMutationResponse response = new EntityMutationResponse();
+
+        AtlasEntityHeader nullGuidEntity1 = new AtlasEntityHeader("type1", null, null);
+        AtlasEntityHeader nullGuidEntity2 = new AtlasEntityHeader("type2", null, null);
+
+        // Null GUIDs are not indexed, but they should still be added to the lists.
+        response.addEntity(EntityOperation.CREATE, nullGuidEntity1);
+        response.addEntity(EntityOperation.CREATE, nullGuidEntity2);
+
+        assertEquals(2, response.getCreatedEntities().size());
+        assertNull(response.getCreatedEntities().get(0).getGuid());
+        assertNull(response.getCreatedEntities().get(1).getGuid());
+    }
 }

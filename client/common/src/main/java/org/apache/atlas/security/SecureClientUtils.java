@@ -66,7 +66,7 @@ public class SecureClientUtils {
 
     private SSLFactory factory;
 
-    public static void persistSSLClientConfiguration(org.apache.commons.configuration.Configuration clientConfig, String confLocation) throws AtlasException, IOException {
+    public static void persistSSLClientConfiguration(org.apache.commons.configuration2.Configuration clientConfig, String confLocation) throws AtlasException, IOException {
         //trust settings
         Configuration configuration = new Configuration(false);
         File          sslClientFile = getSSLClientFile(confLocation);
@@ -94,7 +94,7 @@ public class SecureClientUtils {
         }
     }
 
-    public URLConnectionClientHandler getClientConnectionHandler(DefaultClientConfig config, org.apache.commons.configuration.Configuration clientConfig, String doAsUser, final UserGroupInformation ugi) {
+    public URLConnectionClientHandler getClientConnectionHandler(DefaultClientConfig config, org.apache.commons.configuration2.Configuration clientConfig, String doAsUser, final UserGroupInformation ugi) {
         config.getProperties().put(URLConnectionClientHandler.PROPERTY_HTTP_URL_CONNECTION_SET_METHOD_WORKAROUND, true);
 
         Configuration conf = new Configuration();

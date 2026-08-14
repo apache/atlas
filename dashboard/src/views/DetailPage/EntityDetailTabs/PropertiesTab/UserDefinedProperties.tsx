@@ -49,6 +49,7 @@ import { useAppDispatch } from "@hooks/reducerHook";
 import { useParams } from "react-router-dom";
 import { cloneDeep } from "@utils/Helper";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
+import { enrichEntityPayloadForRelationshipSave } from "@utils/entityPayloadEnrichmentUtils";
 
 const defaultField = {
   key: "",
@@ -120,10 +121,11 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
 
   const onSubmit = async (values: any) => {
     let formData = { ...values };
-    let entityObj = { ...entity };
+    let entityObj = cloneDeep(entity);
     let properties = structureAttributes(formData.customAttributes);
     entityObj.customAttributes = !isEmpty(properties) ? properties : {};
     try {
+      await enrichEntityPayloadForRelationshipSave(entityObj);
       await createEntity({ entity: entityObj });
       toast.dismiss(toastId.current);
       toastId.current = toast.success(

@@ -126,7 +126,9 @@ const ClassificationStats = ({ handleClose }: any) => {
               ) : (
                 Object.entries(tagEntitiesData).map(([key, value]: any) => (
                   <TableRow key={key}>
-                    <TableCell sx={{ wordBreak: "break-all" }}>{key}</TableCell>
+                    <TableCell className="classification-name-cell" title={key}>
+                      <div className="text-truncate">{key}</div>
+                    </TableCell>
                     <TableCell align="right">
                       <LightTooltip
                         title={`Search for entities associated with '${key}'`}

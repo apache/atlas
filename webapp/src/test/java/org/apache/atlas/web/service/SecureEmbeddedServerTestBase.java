@@ -22,11 +22,13 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.Atlas;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.server.common.service.EmbeddedServer;
+import org.apache.atlas.server.common.service.SecureEmbeddedServer;
 import org.apache.atlas.web.TestUtils;
 import org.apache.atlas.web.integration.AdminJerseyResourceIT;
 import org.apache.atlas.web.integration.EntityJerseyResourceIT;
 import org.apache.atlas.web.integration.TypesJerseyResourceIT;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.alias.CredentialProvider;
@@ -64,7 +66,7 @@ public class SecureEmbeddedServerTestBase {
 
     @BeforeClass
     public void setupSecurePort() throws AtlasException {
-        org.apache.commons.configuration.Configuration configuration = ApplicationProperties.get();
+        org.apache.commons.configuration2.Configuration configuration = ApplicationProperties.get();
 
         securePort = configuration.getInt(Atlas.ATLAS_SERVER_HTTPS_PORT, ATLAS_DEFAULT_HTTPS_PORT);
     }

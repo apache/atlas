@@ -38,6 +38,9 @@ import { navigateToSearch, navigateToClassificationSearch } from "@utils/dashboa
 import {
 	CHART_BAR_ACTIVE_BLUE,
 	CLASSIFICATION_DISTRIBUTION_CHART_MARGIN,
+	getClassificationYAxisWidth,
+	isClassificationYAxisLabelTruncated,
+	truncateClassificationYAxisLabel,
 } from "./dashboardChartPalette";
 
 const BAR_COLOR = CHART_BAR_ACTIVE_BLUE;
@@ -51,6 +54,10 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 	const navigate = useNavigate();
 	const data = getClassificationDistribution(tag, 5);
 	const associationTotal = useMemo(() => getTagEntityAssociationTotal(tag), [tag]);
+	const yAxisWidth = useMemo(
+		() => getClassificationYAxisWidth(data.map((item) => item.name)),
+		[data],
+	);
 
 	const handleBarClick = useCallback(
 		(entry: { name: string }) => {
@@ -155,18 +162,14 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 							<YAxis
 								type="category"
 								dataKey="name"
-								width={52}
-								label={{
-									value: "Classification",
-									angle: -90,
-									position: "left",
-									offset: 2,
-									style: { fontSize: 10, fill: "#6c757d", textAnchor: "middle" },
-								}}
+								width={yAxisWidth}
+								tickMargin={4}
 								tick={(props: Record<string, unknown>) => {
 									const { x = 0, y = 0, payload } = props;
 									const p = payload as { value?: string; name?: string } | undefined;
 									const value = p?.value ?? p?.name ?? (typeof payload === "string" ? payload : "");
+									const displayLabel = truncateClassificationYAxisLabel(value);
+									const isTruncated = isClassificationYAxisLabelTruncated(value);
 									return (
 										<g
 											transform={`translate(${x},${y})`}
@@ -174,6 +177,7 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 											style={{ cursor: value ? "pointer" : "default" }}
 											role={value ? "button" : undefined}
 											tabIndex={value ? 0 : undefined}
+											aria-label={value || undefined}
 											onKeyDown={
 												value
 													? (e: React.KeyboardEvent<SVGGElement>) => {
@@ -185,8 +189,9 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 													: undefined
 											}
 										>
+											{isTruncated ? <title>{value}</title> : null}
 											<text x={0} y={0} dy={4} textAnchor="end" fill="#333" fontSize={12}>
-												{value}
+												{displayLabel}
 											</text>
 										</g>
 									);

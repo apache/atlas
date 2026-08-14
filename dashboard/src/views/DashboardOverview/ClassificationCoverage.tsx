@@ -373,7 +373,12 @@ const ClassificationCoverage = memo(
 													fontSize: "0.875rem",
 													fontWeight: 500,
 													cursor: "pointer",
+													display: "block",
+													overflow: "hidden",
+													textOverflow: "ellipsis",
+													whiteSpace: "nowrap"
 												}}
+												title={name}
 											>
 												{name}
 											</Link>

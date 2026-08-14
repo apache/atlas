@@ -17,8 +17,8 @@
  */
 package org.apache.atlas.web.servlets;
 
-import org.apache.atlas.web.filters.AtlasResponseRequestWrapper;
-import org.apache.atlas.web.filters.HeadersUtil;
+import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
+import org.apache.atlas.server.common.filters.HeadersUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

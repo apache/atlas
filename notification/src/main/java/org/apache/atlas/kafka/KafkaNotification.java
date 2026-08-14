@@ -28,8 +28,8 @@ import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.utils.KafkaUtils;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationConverter;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.ConfigurationConverter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -77,8 +77,9 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
     protected static final String CONSUMER_GROUP_ID_PROPERTY = "group.id";
 
-    private static final String[] ATLAS_HOOK_CONSUMER_TOPICS            = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_HOOK_TOPIC);
-    private static final String[] ATLAS_ENTITIES_CONSUMER_TOPICS        = AtlasConfiguration.NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_ENTITIES_TOPIC);
+    private static final String[] ATLAS_HOOK_CONSUMER_TOPICS             = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_HOOK_TOPIC);
+    private static final String[] ATLAS_ENTITIES_CONSUMER_TOPICS         = AtlasConfiguration.NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_ENTITIES_TOPIC);
+    private static final String[] ATLAS_PARALLEL_PROCESSING_INPUT_TOPICS = AtlasConfiguration.ATLAS_PARALLEL_PROCESSING_INPUT_TOPICS.getStringArray(ATLAS_HOOK_TOPIC);
     private static final String   DEFAULT_CONSUMER_CLOSED_ERROR_MESSAGE = "This consumer has already been closed.";
 
     private static final Map<NotificationType, String>       PRODUCER_TOPIC_MAP  = new HashMap<>();
@@ -173,7 +174,18 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public void start() throws AtlasException {
         LOG.info("==> KafkaNotification.start()");
 
+        syncBootstrapServers();
+
         LOG.info("<== KafkaNotification.start()");
+    }
+
+    private void syncBootstrapServers() throws AtlasException {
+        Configuration kafkaConf = ApplicationProperties.getSubsetConfiguration(ApplicationProperties.get(), PROPERTY_PREFIX);
+        String        bootstrap = kafkaConf.getString("bootstrap.servers");
+
+        if (StringUtils.isNotEmpty(bootstrap)) {
+            properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
+        }
     }
 
     // ----- Service ---------------------------------------------------------
@@ -543,5 +555,6 @@ public class KafkaNotification extends AbstractNotification implements Service {
         CONSUMER_TOPICS_MAP.put(NotificationType.HOOK, trimAndPurge(ATLAS_HOOK_CONSUMER_TOPICS));
         CONSUMER_TOPICS_MAP.put(NotificationType.HOOK_UNSORTED, trimAndPurge(ATLAS_HOOK_UNSORTED_CONSUMER_TOPICS));
         CONSUMER_TOPICS_MAP.put(NotificationType.ENTITIES, trimAndPurge(ATLAS_ENTITIES_CONSUMER_TOPICS));
+        CONSUMER_TOPICS_MAP.put(NotificationType.HOOK_PREPROCESS, trimAndPurge(ATLAS_PARALLEL_PROCESSING_INPUT_TOPICS));
     }
 }

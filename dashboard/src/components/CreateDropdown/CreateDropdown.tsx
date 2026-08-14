@@ -152,6 +152,7 @@ const CreateDropdown = () => {
 				<EntityForm
 					open={entityModal}
 					onClose={() => setEntityModal(false)}
+					isAdd={true}
 				/>
 			)}
 			{classificationModal && (

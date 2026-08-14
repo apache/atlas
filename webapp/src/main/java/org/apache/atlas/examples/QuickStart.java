@@ -37,7 +37,7 @@ import org.apache.atlas.v1.model.typedef.Multiplicity;
 import org.apache.atlas.v1.model.typedef.TraitTypeDefinition;
 import org.apache.atlas.v1.model.typedef.TypesDef;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 
 import java.util.Arrays;
 import java.util.Collections;

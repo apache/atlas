@@ -61,92 +61,93 @@ const GlossaryTree = ({ sideBarOpen, searchTerm }: Props) => {
     newServiceTypeArr =
       glossaryData != null
         ? glossaryData.map(
-            (glossary: {
-              name: string;
-              subTypes: [];
-              guid: string;
-              superTypes: string[];
-              categories: EnumCategoryRelation[];
-              terms: EnumCategoryRelation[];
+          (glossary: {
+            name: string;
+            subTypes: [];
+            guid: string;
+            superTypes: string[];
+            categories: EnumCategoryRelation[];
+            terms: EnumCategoryRelation[];
+          }) => {
+            let categoryRelation: EnumCategoryRelation[] = [];
+
+            glossary?.categories?.map((obj: EnumCategoryRelations) => {
+              if (obj.parentCategoryGuid != undefined) {
+                categoryRelation.push(obj as EnumCategoryRelations);
+              }
+            });
+
+            const getChildren = (glossaries: {
+              children: EnumCategoryRelation[];
+              parent: string;
             }) => {
-              let categoryRelation: EnumCategoryRelation[] = [];
+              return !isEmpty(glossaries.children)
+                ? glossaries.children
+                  .map((glossariesType: any) => {
+                    const getChild = (parentGuid: string | undefined): any => {
+                      if (!parentGuid) return [];
+                      return categoryRelation
+                        .map((obj: EnumCategoryRelations) => {
+                          if (
+                            obj.parentCategoryGuid ==
+                            parentGuid
+                          ) {
+                            return {
+                              ["name"]: obj.displayText,
+                              id: obj.displayText,
+                              ["children"]: getChild(obj.categoryGuid),
+                              types: "child",
+                              parent: glossaries.parent,
+                              cGuid: glossaryType
+                                ? obj.termGuid
+                                : obj.categoryGuid,
+                              guid: glossary.guid
+                            };
+                          }
+                        })
+                        .filter(Boolean);
+                    };
+                    if (glossariesType.parentCategoryGuid == undefined) {
+                      return {
+                        ["name"]: glossariesType.displayText,
+                        id: glossariesType.displayText,
+                        ["children"]: getChild(glossariesType.categoryGuid),
+                        types: "child",
+                        parent: glossaries.parent,
+                        cGuid: glossaryType
+                          ? glossariesType.termGuid
+                          : glossariesType.categoryGuid,
+                        guid: glossary.guid
+                      };
+                    }
+                  })
+                  .filter(Boolean)
+                : [];
+            };
 
-              glossary?.categories?.map((obj: EnumCategoryRelations) => {
-                if (obj.parentCategoryGuid != undefined) {
-                  categoryRelation.push(obj as EnumCategoryRelations);
-                }
-              });
+            let name: string = glossary.name,
+              children: any = glossaryType
+                ? getChildren({
+                  children: glossary?.terms,
+                  parent: glossary.name
+                })
+                : getChildren({
+                  children: glossary?.categories,
+                  parent: glossary.name
+                });
 
-              const getChildren = (glossaries: {
-                children: EnumCategoryRelation[];
-                parent: string;
-              }) => {
-                return !isEmpty(glossaries.children)
-                  ? glossaries.children
-                      .map((glossariesType: any) => {
-                        const getChild = () => {
-                          return categoryRelation
-                            .map((obj: EnumCategoryRelations) => {
-                              if (
-                                obj.parentCategoryGuid ==
-                                glossariesType.categoryGuid
-                              ) {
-                                return {
-                                  ["name"]: obj.displayText,
-                                  id: obj.displayText,
-                                  ["children"]: [],
-                                  types: "child",
-                                  parent: glossaries.parent,
-                                  cGuid: glossaryType
-                                    ? obj.termGuid
-                                    : obj.categoryGuid,
-                                  guid: glossary.guid
-                                };
-                              }
-                            })
-                            .filter(Boolean);
-                        };
-                        if (glossariesType.parentCategoryGuid == undefined) {
-                          return {
-                            ["name"]: glossariesType.displayText,
-                            id: glossariesType.displayText,
-                            ["children"]: getChild(),
-                            types: "child",
-                            parent: glossaries.parent,
-                            cGuid: glossaryType
-                              ? glossariesType.termGuid
-                              : glossariesType.categoryGuid,
-                            guid: glossary.guid
-                          };
-                        }
-                      })
-                      .filter(Boolean)
-                  : [];
-              };
-
-              let name: string = glossary.name,
-                children: any = glossaryType
-                  ? getChildren({
-                      children: glossary?.terms,
-                      parent: glossary.name
-                    })
-                  : getChildren({
-                      children: glossary?.categories,
-                      parent: glossary.name
-                    });
-
-              return {
-                [name]: {
-                  ["name"]: name,
-                  ["children"]: children || [],
-                  id: glossary.guid,
-                  types: "parent",
-                  parent: name,
-                  guid: glossary.guid
-                }
-              };
-            }
-          )
+            return {
+              [name]: {
+                ["name"]: name,
+                ["children"]: children || [],
+                id: glossary.guid,
+                types: "parent",
+                parent: name,
+                guid: glossary.guid
+              }
+            };
+          }
+        )
         : [];
 
     setGlossaryData(newServiceTypeArr);
@@ -162,10 +163,10 @@ const GlossaryTree = ({ sideBarOpen, searchTerm }: Props) => {
             children:
               obj?.children != undefined
                 ? child(
-                    obj.children.filter(
-                      Boolean
-                    ) as unknown as ChildrenInterfaces[]
-                  )
+                  obj.children.filter(
+                    Boolean
+                  ) as unknown as ChildrenInterfaces[]
+                )
                 : [],
             types: obj?.types,
             parent: obj?.parent,
@@ -193,8 +194,8 @@ const GlossaryTree = ({ sideBarOpen, searchTerm }: Props) => {
   const treeData = useMemo(() => {
     return !isEmpty(glossaryData)
       ? generateChildrenData(
-          customSortByObjectKeys(glossaryTypeData as ServiceTypeInterface[])
-        )
+        customSortByObjectKeys(glossaryTypeData as ServiceTypeInterface[])
+      )
       : noTreeData();
   }, [glossaryType, glossaryTypeData]);
 

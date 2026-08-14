@@ -54,8 +54,33 @@ const AdminAuditTable = () => {
       const limit = pageSize || 25;
       const offset = (pageIndex || 0) * limit;
 
-      let params: any = {
-        auditFilters: !isEmpty(queryApiObj) ? queryApiObj : null,
+      let auditFilters = !isEmpty(queryApiObj) ? JSON.parse(JSON.stringify(queryApiObj)) : null;
+
+      if (auditFilters) {
+        const filtersStr = JSON.stringify(auditFilters);
+        if (filtersStr.includes('"attributeName":"runId"')) {
+          // Remove any existing auditRowKind to prevent duplicates/conflicts
+          const removeAuditRowKind = (node: Record<string, any>) => {
+            if (node && node.criterion) {
+              node.criterion = node.criterion.filter((c: Record<string, any>) => c.attributeName !== 'auditRowKind');
+              node.criterion.forEach(removeAuditRowKind);
+            }
+          };
+          removeAuditRowKind(auditFilters);
+
+          // Force append SUMMARY by wrapping the existing filter
+          auditFilters = {
+            condition: "AND",
+            criterion: [
+              auditFilters,
+              { attributeName: "auditRowKind", operator: "eq", attributeValue: "SUMMARY" }
+            ]
+          };
+        }
+      }
+
+      let params: Record<string, unknown> = {
+        auditFilters: auditFilters,
         limit: limit,
         sortOrder: "DESCENDING",
         offset: offset,
@@ -65,10 +90,10 @@ const AdminAuditTable = () => {
       try {
         setLoader(true);
         let searchResp = await getAuditData(params);
-        setAuditData(searchResp.data);
+        setAuditData(searchResp.data || []);
         setLoader(false);
-      } catch (error: any) {
-        console.error("Error fetching data:", error.response.data.errorMessage);
+      } catch (error: unknown) {
+        console.error("Error fetching data:", (error as any)?.response?.data?.errorMessage || (error as any)?.message);
         toast.dismiss(toastId.current);
         serverError(error, toastId);
         setLoader(false);
@@ -201,16 +226,14 @@ const AdminAuditTable = () => {
     <>
       <Grid container marginTop={0}>
         <Grid item md={12} p={2}>
-          <Stack alignItems="flex-start">
-            <div
-              style={{
-                height: !isEmpty(auditData) ? 0 : "32px"
-              }}
-            >
-              {!loader && (
+          <Stack>
+            <TableLayout
+              fetchData={fetchAuditResult}
+              customLeftButton={
                 <CustomButton
                   variant="outlined"
                   size="small"
+                  disabled={loader || (isEmpty(auditData) && isEmpty(queryApiObj))}
                   onClick={handleClickFilterPopover}
                   startIcon={
                     !filtersPopover ? (
@@ -219,20 +242,10 @@ const AdminAuditTable = () => {
                       <KeyboardArrowDownOutlinedIcon />
                     )
                   }
-                  sx={{
-                    zIndex: "99999",
-                    marginTop: "13px !important",
-                    marginLeft: "13px !important"
-                  }}
                 >
                   Filters
                 </CustomButton>
-              )}
-            </div>
-          </Stack>
-          <Stack>
-            <TableLayout
-              fetchData={fetchAuditResult}
+              }
               data={auditData || []}
               columns={defaultColumns}
               defaultColumnVisibility={defaultColumnVisibility(defaultColumns)}
@@ -252,6 +265,7 @@ const AdminAuditTable = () => {
                 }
               }}
               queryBuilder={false}
+              paginationSummaryVariant="audit"
             />
           </Stack>
         </Grid>

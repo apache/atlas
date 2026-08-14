@@ -20,7 +20,7 @@ package org.apache.atlas.repository;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 
@@ -70,6 +70,10 @@ public final class Constants {
     public static final String TYPEVERSION_PROPERTY_KEY     = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.version");
     public static final String TYPEOPTIONS_PROPERTY_KEY     = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.options");
     public static final String TYPESERVICETYPE_PROPERTY_KEY = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.servicetype");
+    /**
+     * JSON-serialized {@code List<AtlasAttributeDef>} for entity typedef attribute overrides (e.g. qualifiedName format).
+     */
+    public static final String TYPE_ATTR_DEF_OVERRIDES_PROPERTY_KEY = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.attrDefOverrides");
 
     // relationship def constants
     public static final String RELATIONSHIPTYPE_END1_KEY                               = "endDef1";
@@ -131,8 +135,10 @@ public final class Constants {
     public static final String PROVENANCE_TYPE_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "provenanceType");
     public static final String TIMESTAMP_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "timestamp");
     public static final String ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "entityDeletedTimestamp");
-    public static final String MODIFICATION_TIMESTAMP_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "modificationTimestamp");
-    public static final String IS_INCOMPLETE_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "isIncomplete");
+    public static final String MODIFICATION_TIMESTAMP_PROPERTY_KEY   = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "modificationTimestamp");
+    public static final String ENTITY_DELETE_EVENT_TIME_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "entityDeleteEventTime");
+    public static final String ENTITY_CREATE_EVENT_TIME_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "entityCreateEventTime");
+    public static final String IS_INCOMPLETE_PROPERTY_KEY            = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "isIncomplete");
     /**
      * search backing index name.
      */
@@ -152,6 +158,7 @@ public final class Constants {
     public static final String INDEX_SEARCH_MAX_RESULT_SET_SIZE        = "atlas.graph.index.search.max-result-set-size";
     public static final String INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH = "atlas.graph.index.search.types.max-query-str-length";
     public static final String INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH  = "atlas.graph.index.search.tags.max-query-str-length";
+    public static final String INDEX_SEARCH_MAX_TOKEN_LENGTH           = "atlas.graph.index.search.max-token-length";
     public static final String INDEX_SEARCH_VERTEX_PREFIX_PROPERTY     = "atlas.graph.index.search.vertex.prefix";
     public static final String INDEX_SEARCH_VERTEX_PREFIX_DEFAULT      = "$v$";
     public static final String MAX_FULLTEXT_QUERY_STR_LENGTH = "atlas.graph.fulltext-max-query-str-length";
