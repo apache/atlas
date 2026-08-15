@@ -33,7 +33,7 @@
     <description>HBase Testing Utilities.</description>
 
     <properties>
-        <apache.log4j.version>2.17.1</apache.log4j.version>
+        <apache.log4j.version>2.25.4</apache.log4j.version>
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
         <checkstyle.skip>false</checkstyle.skip>
         <hadoop.version>3.0.3</hadoop.version>
