@@ -34,6 +34,14 @@ class AtlasServiceException(Exception):
             except Exception:
                 body = response.content
 
-        msg = "Metadata service API {method} {path} failed with status {status}. Response body is: {body}".format(**{'method': api.method, 'path': api.path, 'status': response.status_code, 'body': body})
+        msg = (
+            "Metadata service API {method} {path} failed with status {status}. "
+            "Response body is: {body}"
+        ).format(
+            method=api.method,
+            path=api.path,
+            status=response.status_code,
+            body=body,
+        )
 
         Exception.__init__(self, msg)

@@ -16,16 +16,24 @@
 # limitations under the License.
 ##########################################################################
 
-.PHONY: test_unit
+PYTHONPATH ?= .
+TEST_FILE  ?= ../../test/python/test_atlas_client.py
+
+.PHONY: test_unit lint mypy test build check
+
 test_unit:
-	python3 -b -m pytest tests
+	PYTHONPATH=$(PYTHONPATH) python3 -B $(TEST_FILE)
 
 lint:
-	python3 -m flake8
+	python3 -m flake8 apache_atlas
 
-.PHONY: mypy
 mypy:
-	mypy --ignore-missing-imports --follow-imports=skip --strict-optional --warn-no-return .
+	python3 -m mypy --ignore-missing-imports --follow-imports=skip --strict-optional --warn-no-return apache_atlas
 
-.PHONY: test
-test: lint mypy
+test: test_unit lint mypy
+
+build:
+	python3 -m build
+
+check: build
+	twine check dist/*
