@@ -39,7 +39,7 @@ import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 import { normalizeSchemaElementsAttribute } from "@utils/schemaElementsAttributeUtils";
 import { SchemaTabCacheState } from "@models/schemaTabTypes";
 import React from "react";
-import { EntityStatus } from "@utils/EntityStatus";
+
 import AddTag from "@views/Classification/AddTag";
 import AssignTerm from "@views/Glossary/AssignTerm";
 import { removeTerm } from "@api/apiMethods/glossaryApiMethod";

@@ -322,6 +322,21 @@ describe('EntityDetailPage', () => {
 		expect(addTermButton).toBeNull();
 	});
 
+	it('should hide Add Classification and Add Term buttons for PURGED entities', () => {
+		const purgedEntity = {
+			...mockEntity,
+			status: 'PURGED'
+		};
+		const store = createMockStore({ entity: purgedEntity, referredEntities: {} }, mockEntityData, [{ terms: [] }]);
+		renderWithProviders(<TestWrapper store={store} />);
+
+		const addClassificationButton = document.querySelector('[data-title="Add Classifications"]');
+		const addTermButton = document.querySelector('[data-title="Add Term"]');
+
+		expect(addClassificationButton).toBeNull();
+		expect(addTermButton).toBeNull();
+	});
+
 
 	it('should handle entity not found', () => {
 		const store = createMockStore({ entity: null }, mockEntityData);

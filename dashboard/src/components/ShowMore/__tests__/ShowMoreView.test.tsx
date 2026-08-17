@@ -761,6 +761,25 @@ describe('ShowMoreView', () => {
 			expect(screen.queryByTestId('chip-ondelete-button')).not.toBeInTheDocument();
 		});
 
+		it('should not show delete button when currentEntity status is PURGED', () => {
+			const dataWithCount = [
+				{ typeName: 'Tag1' }
+			];
+
+			render(
+				<TestWrapper>
+					<ShowMoreView
+						{...defaultProps}
+						data={dataWithCount}
+						removeApiMethod={jest.fn()}
+						currentEntity={{ guid: 'entity-guid-123', status: 'PURGED' }}
+					/>
+				</TestWrapper>
+			);
+
+			expect(screen.queryByTestId('chip-ondelete-button')).not.toBeInTheDocument();
+		});
+
 
 		it('should show count when isDeleteIcon is true and count > 1', () => {
 			const dataWithCount = [
@@ -1749,6 +1768,7 @@ describe('ShowMoreView', () => {
 				expect(removeApiMethod).toHaveBeenCalled();
 			}, { timeout: 3000 });
 		});
+	});
 
 	describe('Display Key Variations', () => {
 		it('should handle different displayKey values', () => {
@@ -1820,13 +1840,10 @@ describe('ShowMoreView', () => {
 			expect(screen.queryByTestId('custom-modal')).not.toBeInTheDocument();
 		});
 	});
-});
-
 
 	it('should dispatch closeDrawer on unmount', () => {
 		const { unmount } = render(<TestWrapper><ShowMoreView {...defaultProps} /></TestWrapper>);
 		unmount();
 		expect(closeDrawer).toHaveBeenCalled();
 	});
-
 });

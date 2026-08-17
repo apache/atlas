@@ -37,7 +37,6 @@ import SearchIcon from "@mui/icons-material/Search";
 import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
 import { Link as MuiLink } from "@mui/material";
 import { cloneDeep } from "@utils/Helper";
-import { EntityStatus } from "@utils/EntityStatus";
 import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const CHIP_MAX_WIDTH = "200px";

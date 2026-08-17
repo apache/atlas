@@ -50,7 +50,7 @@ import { useParams } from "react-router-dom";
 import { cloneDeep } from "@utils/Helper";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 import { enrichEntityPayloadForRelationshipSave } from "@utils/entityPayloadEnrichmentUtils";
-import { EntityStatus } from "@utils/EntityStatus";
+
 import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const defaultField = {

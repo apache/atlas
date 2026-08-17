@@ -33,7 +33,6 @@ import { fetchGlossaryDetails } from "@redux/slice/glossaryDetailsSlice";
 import ShowMoreDrawer from "./ShowMoreDrawer";
 import { openDrawer, closeDrawer } from "@redux/slice/drawerSlice";
 import { cloneDeep } from "@utils/Helper";
-import { EntityStatus } from "@utils/EntityStatus";
 import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const CHIP_MAX_WIDTH = "200px";

@@ -739,6 +739,35 @@ describe('AttributeProperties', () => {
 			expect(screen.queryByTestId('custom-button')).not.toBeInTheDocument();
 		});
 
+		it('should not show Edit button for PURGED entities', () => {
+			mockUseAppSelector.mockImplementation((selector: any) => {
+				const mockState = {
+					session: {
+						sessionObj: {
+							data: {
+								'atlas.entity.update.allowed': true,
+								'atlas.ui.editable.entity.types': '*'
+							}
+						}
+					}
+				};
+				return selector(mockState);
+			});
+
+			render(
+				<TestWrapper>
+					<AttributeProperties
+						entity={{ ...defaultMockEntity, status: 'PURGED' }}
+						referredEntities={defaultMockReferredEntities}
+						loading={false}
+						propertiesName="Technical"
+					/>
+				</TestWrapper>
+			);
+
+			expect(screen.queryByTestId('custom-button')).not.toBeInTheDocument();
+		});
+
 		it('should not show Edit button in audit details mode', () => {
 			render(
 				<TestWrapper>

@@ -34,7 +34,7 @@ import EntityForm from "@views/Entity/EntityForm";
 import { useAppSelector } from "@hooks/reducerHook";
 import { AntSwitch } from "@utils/Muiutils";
 import { cloneDeep } from "@utils/Helper";
-import { EntityStatus } from "@utils/EntityStatus";
+
 import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const AttributeProperties = ({

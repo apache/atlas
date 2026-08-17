@@ -57,7 +57,7 @@ import { toast } from "react-toastify";
 import { cloneDeep } from "@utils/Helper";
 import moment from "moment-timezone";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
-import { EntityStatus } from "@utils/EntityStatus";
+
 import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const defaultField = {

@@ -42,7 +42,7 @@ import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import { isEntityPurged } from "@utils/Enum";
 import CustomModal from "@components/Modal";
 import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
-import { EntityStatus } from "@utils/EntityStatus";
+
 import { removeClassification } from "@api/apiMethods/classificationApiMethod";
 import { toast } from "react-toastify";
 import AttributeTable from "../AttributeTable";

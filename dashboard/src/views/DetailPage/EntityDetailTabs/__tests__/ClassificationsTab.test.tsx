@@ -1018,6 +1018,23 @@ describe('ClassificationsTab', () => {
 			expect(actionButtons).toHaveLength(0);
 		});
 
+		it('should not render action buttons when parent entity is PURGED', () => {
+			const purgedEntity = {
+				...mockEntity,
+				status: 'PURGED'
+			};
+
+			render(
+				<TestWrapper>
+					<ClassificationsTab entity={purgedEntity} loading={false} tags={mockTags} />
+				</TestWrapper>
+			);
+
+			// Delete and Edit buttons should not be rendered
+			const actionButtons = screen.queryAllByTestId(/custom-button-addTag/);
+			expect(actionButtons).toHaveLength(0);
+		});
+
 		it('should handle empty tags prop', () => {
 			render(
 				<TestWrapper>

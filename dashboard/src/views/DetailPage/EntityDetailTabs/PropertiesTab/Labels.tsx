@@ -43,7 +43,7 @@ import { useParams } from "react-router-dom";
 import { getLabels } from "@api/apiMethods/detailpageApiMethod";
 import { useAppDispatch } from "@hooks/reducerHook";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
-import { EntityStatus } from "@utils/EntityStatus";
+
 import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 type LabelOption = string | { inputValue?: string; value?: string };
