@@ -99,6 +99,13 @@
         margin-bottom: 5px;
         text-align: left;
 
+        &.entity-list-item {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
         &.deleted-relation {
             .deleteBtn {
                 padding: 2px 8px !important;

@@ -48,6 +48,16 @@ import { CloseIcon, LightTooltip } from "@components/muiComponents";
 import { useAppSelector } from "@hooks/reducerHook";
 import { Link as MUILink } from "@mui/material";
 
+interface CustomLinkProps {
+  href: string;
+  status: string;
+  entityColor: string;
+  guid: string;
+  name: string;
+  typeName: string;
+  params: URLSearchParams | string;
+}
+
 const CustomLink = ({
   href,
   status,
@@ -56,20 +66,24 @@ const CustomLink = ({
   name,
   typeName,
   params
-}: any): any => {
+}: CustomLinkProps): JSX.Element => {
+  const displayLabel = `${name} (${typeName})`;
   return (
     <li className={status}>
-      <MUILink
-        component={RouterLink}
-        to={{
-          pathname: href,
-          search: params.toString() ? params.toString() : ""
-        }}
-        style={{ color: entityColor }}
-        replace={true}
-      >
-        {name} ({typeName})
-      </MUILink>
+      <LightTooltip title={displayLabel}>
+        <MUILink
+          component={RouterLink}
+          to={{
+            pathname: href,
+            search: params.toString() ? params.toString() : ""
+          }}
+          className={`relationship-node-link ${entityColor === "#1976d2" ? "text-blue" : "text-red"}`}
+          replace={true}
+          underline="hover"
+        >
+          {displayLabel}
+        </MUILink>
+      </LightTooltip>
     </li>
   );
 };
@@ -146,9 +160,9 @@ const RelationshipLineage = ({
       selectedNodeColor = "#4a90e2";
 
     var svg = d3
-        .select(svgElement)
-        .attr("viewBox", `${-padding} ${-padding} ${width + padding * 2} ${height + padding * 2}`)
-        .attr("enable-background", `new ${-padding} ${-padding} ${width + padding * 2} ${height + padding * 2}`),
+      .select(svgElement)
+      .attr("viewBox", `${-padding} ${-padding} ${width + padding * 2} ${height + padding * 2}`)
+      .attr("enable-background", `new ${-padding} ${-padding} ${width + padding * 2} ${height + padding * 2}`),
       node,
       path;
 
@@ -527,15 +541,18 @@ const RelationshipLineage = ({
             ? "deleted-relation"
             : "";
         }
+        const displayLabel = `${name} (${options.typeName})`;
         return (
           <li className={status}>
-            <MUILink
-              component={RouterLink}
-              to={`/detailPage/${options.guid}?tabActive=relationship`}
-              style={{ color: entityColor }}
-            >
-              {name} ({options.typeName})
-            </MUILink>
+            <LightTooltip title={displayLabel}>
+              <MUILink
+                component={RouterLink}
+                to={`/detailPage/${options.guid}?tabActive=relationship`}
+                className={`relationship-node-link ${entityColor === "#1976d2" ? "text-blue" : "text-red"}`}
+              >
+                {displayLabel}
+              </MUILink>
+            </LightTooltip>
           </li>
         );
       };
@@ -617,7 +634,7 @@ const RelationshipLineage = ({
       listString.push(<Fragment key={itemKey}>{getElement(data)}</Fragment>);
     }
     return (
-      <Stack sx={{ background: "white" }} minHeight={"150px"} maxWidth="520px">
+      <Stack sx={{ background: "white" }} minHeight={"150px"} maxWidth="350px">
         {/* {listString?.length > 1 && ( */}
         <Paper
           variant="outlined"

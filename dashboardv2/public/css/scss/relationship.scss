@@ -121,7 +121,7 @@
     flex-direction: column;
     gap: 12px;
     min-width: 280px;
-    flex: 0 0 auto;
+    flex: 1 1 0;
 }
 
 @media (max-width: 599px) {
@@ -220,6 +220,7 @@
         flex-direction: column;
         padding: 12px;
         min-height: 0;
+        min-width: 0;
         overflow: hidden;
 
         .relationship-card-search {
@@ -241,6 +242,7 @@
             overflow-y: auto;
             overflow-x: hidden;
             min-height: 0;
+            min-width: 0;
             position: relative;
 
             &::-webkit-scrollbar {
@@ -267,10 +269,14 @@
             padding: 0;
             margin: 0;
             text-align: left;
+            width: 100%;
+            overflow: hidden;
 
             .relationship-card-item {
                 padding: 8px 0;
                 border-bottom: 1px solid #f0f0f0;
+                width: 100%;
+                overflow: hidden;
 
                 &:last-child {
                     border-bottom: none;
@@ -290,7 +296,12 @@
                     font-size: 13px;
                     font-family: inherit;
                     line-height: 1.5;
-                    word-break: break-word;
+                    display: inline-block;
+                    max-width: 100%;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    vertical-align: middle;
 
                     &:hover {
                         text-decoration: underline;
@@ -548,3 +559,12 @@
         background-position: -200% 0;
     }
 }
+.entity-type-name {
+    &.active {
+        color: #1976d2;
+    }
+    &.deleted {
+        color: #BB5838;
+    }
+}
+.entity-type-name { &.active { color: #1976d2; } &.deleted { color: #BB5838; } }

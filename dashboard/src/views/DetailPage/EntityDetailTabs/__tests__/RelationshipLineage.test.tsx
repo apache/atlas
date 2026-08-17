@@ -1217,6 +1217,41 @@ describe('RelationshipLineage', () => {
 		});
 	});
 
+	describe('Tooltip Rendering', () => {
+		it('should render LightTooltip for relationship nodes in drawer', async () => {
+			render(
+				<TestWrapper>
+					<RelationshipLineage entity={mockEntityWithRelationships} />
+				</TestWrapper>
+			);
+
+			const mockNode = {
+				name: 'Process',
+				value: [
+					{
+						guid: 'proc-1',
+						typeName: 'Process',
+						displayText: 'Test Tooltip Name',
+						entityStatus: 'ACTIVE',
+						relationshipStatus: 'ACTIVE'
+					}
+				]
+			};
+
+			act(() => {
+				if (mockEnterSelection.clickHandler) {
+					mockEnterSelection.clickHandler(mockNode);
+				}
+			});
+
+			await waitFor(() => {
+				const tooltips = screen.getAllByTestId('light-tooltip');
+				const targetTooltip = tooltips.find(t => t.getAttribute('title') === 'Test Tooltip Name (Process)');
+				expect(targetTooltip).toBeInTheDocument();
+			}, { timeout: 3000 });
+		});
+	});
+
 	describe('Edge Cases', () => {
 		it('should handle entity without relationshipAttributes', () => {
 			const entityWithoutAttributes = {
