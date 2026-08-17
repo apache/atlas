@@ -28,6 +28,11 @@
 import {
 	removeTerm,
 	getGlossary,
+	getGlossaryTermsForGlossary,
+	getGlossaryCategoriesForGlossary,
+	searchGlossary,
+	createGlossaryExportFile,
+	getGlossaryDownloadStatus,
 	getGlossaryImportTmpl,
 	getGlossaryImport,
 	getGlossaryType,
@@ -57,7 +62,10 @@ import {
 	assignTermtoEntitiesUrl,
 	assignTermtoCategoryUrl,
 	assignGlossaryTypeUrl,
-	removeTermorCatgeoryUrl
+	removeTermorCatgeoryUrl,
+	glossaryTermsUrl,
+	glossaryCategoriesUrl,
+	glossarySearchUrl
 } from '../../../api/apiUrlLinks/glossaryUrl'
 
 // Mock dependencies
@@ -81,6 +89,11 @@ const mockAssignTermtoEntitiesUrl = jest.fn((termId: string) => `/api/glossary/t
 const mockAssignTermtoCategoryUrl = jest.fn((categoryId: string) => `/api/glossary/category/${categoryId}`)
 const mockAssignGlossaryTypeUrl = jest.fn((guid: string) => `/api/glossary/type/${guid}`)
 const mockRemoveTermorCatgeoryUrl = jest.fn((guid: string, type: string) => `/api/glossary/${type}/${guid}`)
+const mockGlossaryTermsUrl = jest.fn((guid: string) => `/api/glossary/${guid}/terms`)
+const mockGlossaryCategoriesUrl = jest.fn((guid: string) => `/api/glossary/${guid}/categories`)
+const mockGlossarySearchUrl = jest.fn(() => '/api/glossary/search')
+const mockGlossaryCreateFileUrl = jest.fn(() => '/api/glossary/create_file')
+const mockGlossaryDownloadStatusUrl = jest.fn(() => '/api/glossary/download/status')
 
 jest.mock('../../../api/apiUrlLinks/glossaryUrl', () => ({
 	removeTermUrl: (...args: any[]) => mockRemoveTermUrl(...args),
@@ -95,7 +108,12 @@ jest.mock('../../../api/apiUrlLinks/glossaryUrl', () => ({
 	assignTermtoEntitiesUrl: (...args: any[]) => mockAssignTermtoEntitiesUrl(...args),
 	assignTermtoCategoryUrl: (...args: any[]) => mockAssignTermtoCategoryUrl(...args),
 	assignGlossaryTypeUrl: (...args: any[]) => mockAssignGlossaryTypeUrl(...args),
-	removeTermorCatgeoryUrl: (...args: any[]) => mockRemoveTermorCatgeoryUrl(...args)
+	removeTermorCatgeoryUrl: (...args: any[]) => mockRemoveTermorCatgeoryUrl(...args),
+	glossaryTermsUrl: (...args: any[]) => mockGlossaryTermsUrl(...args),
+	glossaryCategoriesUrl: (...args: any[]) => mockGlossaryCategoriesUrl(...args),
+	glossarySearchUrl: (...args: any[]) => mockGlossarySearchUrl(...args),
+	glossaryCreateFileUrl: (...args: any[]) => mockGlossaryCreateFileUrl(...args),
+	glossaryDownloadStatusUrl: (...args: any[]) => mockGlossaryDownloadStatusUrl(...args)
 }))
 
 describe('glossaryApiMethod', () => {
@@ -132,6 +150,8 @@ describe('glossaryApiMethod', () => {
 		mockAssignTermtoCategoryUrl.mockImplementation((categoryId: string) => `/api/glossary/category/${categoryId}`)
 		mockAssignGlossaryTypeUrl.mockImplementation((guid: string) => `/api/glossary/type/${guid}`)
 		mockRemoveTermorCatgeoryUrl.mockImplementation((guid: string, type: string) => `/api/glossary/${type}/${guid}`)
+		mockGlossaryTermsUrl.mockImplementation((guid: string) => `/api/glossary/${guid}/terms`)
+		mockGlossaryCategoriesUrl.mockImplementation((guid: string) => `/api/glossary/${guid}/categories`)
 	})
 
 	describe('removeTerm', () => {
@@ -156,6 +176,85 @@ describe('glossaryApiMethod', () => {
 
 			expect(mockGlossaryUrl).toHaveBeenCalled()
 			expect(mockGet).toHaveBeenCalledWith('/api/glossary', {
+				method: 'GET',
+				params: {}
+			})
+			expect(result).toEqual(mockResponse)
+		})
+	})
+
+	describe('getGlossaryTermsForGlossary', () => {
+		it('should call _get with terms URL and list params', async () => {
+			const result = await getGlossaryTermsForGlossary('g-1')
+
+			expect(mockGlossaryTermsUrl).toHaveBeenCalledWith('g-1')
+			expect(mockGet).toHaveBeenCalledWith('/api/glossary/g-1/terms', {
+				method: 'GET',
+				params: { limit: -1, offset: 0, sort: 'ASC' }
+			})
+			expect(result).toEqual(mockResponse)
+		})
+	})
+
+	describe('getGlossaryCategoriesForGlossary', () => {
+		it('should call _get with categories URL and list params', async () => {
+			const result = await getGlossaryCategoriesForGlossary('g-2')
+
+			expect(mockGlossaryCategoriesUrl).toHaveBeenCalledWith('g-2')
+			expect(mockGet).toHaveBeenCalledWith('/api/glossary/g-2/categories', {
+				method: 'GET',
+				params: { limit: -1, offset: 0, sort: 'ASC' }
+			})
+			expect(result).toEqual(mockResponse)
+		})
+	})
+
+	describe('searchGlossary', () => {
+		it('should POST search parameters to glossary search URL', async () => {
+			const params = {
+				limit: 25,
+				offset: 0,
+				sortBy: 'glossaryName',
+				sortOrder: 'ASCENDING'
+			}
+			const result = await searchGlossary(params)
+
+			expect(mockGlossarySearchUrl).toHaveBeenCalled()
+			expect(mockPost).toHaveBeenCalledWith('/api/glossary/search', {
+				method: 'POST',
+				params: {},
+				data: params
+			})
+			expect(result).toEqual(mockResponse)
+		})
+	})
+
+	describe('createGlossaryExportFile', () => {
+		it('should POST export parameters to glossary create_file URL', async () => {
+			const params = {
+				limit: 0,
+				offset: 0,
+				sortBy: 'glossaryName',
+				sortOrder: 'DESCENDING'
+			}
+			const result = await createGlossaryExportFile(params)
+
+			expect(mockGlossaryCreateFileUrl).toHaveBeenCalled()
+			expect(mockPost).toHaveBeenCalledWith('/api/glossary/create_file', {
+				method: 'POST',
+				params: {},
+				data: params
+			})
+			expect(result).toEqual(mockResponse)
+		})
+	})
+
+	describe('getGlossaryDownloadStatus', () => {
+		it('should GET glossary download status URL', async () => {
+			const result = await getGlossaryDownloadStatus({})
+
+			expect(mockGlossaryDownloadStatusUrl).toHaveBeenCalled()
+			expect(mockGet).toHaveBeenCalledWith('/api/glossary/download/status', {
 				method: 'GET',
 				params: {}
 			})

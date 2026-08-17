@@ -267,7 +267,7 @@ public class GlossaryServiceTest {
         // Create a real instance of GlossaryService with mocked dependencies
         mockedDataAccess      = mock(DataAccess.class);
         mockedGlossaryDTO     = mock(AtlasGlossaryDTO.class);
-        mockedGlossaryService = new GlossaryService(mockedDataAccess, null, null, null, mockedGlossaryDTO);
+        mockedGlossaryService = new GlossaryService(mockedDataAccess, null, null, null, mockedGlossaryDTO, null);
     }
 
     @Test(groups = "Glossary.CREATE")

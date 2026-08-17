@@ -67,7 +67,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'entity', 'typeHeaders', 'attributeDefs', 'attributes', 'editEntity', 'guid', 'entityDefCollection', 'searchVent', 'fetchCollection', 'isRelationshipDetailPage'));
+                _.extend(this, _.pick(options, 'entity', 'typeHeaders', 'attributeDefs', 'attributes', 'editEntity', 'guid', 'entityDefCollection', 'enumDefCollection', 'searchVent', 'fetchCollection', 'isRelationshipDetailPage'));
                 this.entityModel = new VEntity({});
                 this.showAllProperties = false;
             },
@@ -104,6 +104,7 @@ define(['require',
                         searchVent: that.searchVent,
                         entityDefCollection: that.entityDefCollection,
                         typeHeaders: that.typeHeaders,
+                        enumDefCollection: that.enumDefCollection,
                         callback: function() {
                             that.fetchCollection();
                         }

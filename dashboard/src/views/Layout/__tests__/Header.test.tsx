@@ -64,6 +64,12 @@ jest.mock('@api/apiMethods/downloadApiMethod', () => ({
 	getDownloadStatus: (...args: any[]) => mockGetDownloadStatus(...args)
 }));
 
+const mockGetGlossaryDownloadStatus = jest.fn();
+jest.mock('@api/apiMethods/glossaryApiMethod', () => ({
+	getGlossaryDownloadStatus: (...args: any[]) =>
+		mockGetGlossaryDownloadStatus(...args)
+}));
+
 // Mock Utils (factory must not close over const mocks — hoisting runs factory first)
 jest.mock('@utils/Utils', () => ({
 	getBaseUrl: jest.fn((url: string) => '/base'),
@@ -112,6 +118,13 @@ jest.mock('@api/apiUrlLinks/headerUrl', () => ({
 const mockDownloadSearchResultsFileUrl = jest.fn((fileName: string) => `/download/${fileName}`);
 jest.mock('@api/apiUrlLinks/downloadApiUrl', () => ({
 	downloadSearchResultsFileUrl: (...args: any[]) => mockDownloadSearchResultsFileUrl(...args)
+}));
+
+const mockGlossaryDownloadFileUrl = jest.fn(
+	(fileName: string) => `/glossary-download/${fileName}`
+);
+jest.mock('@api/apiUrlLinks/glossaryUrl', () => ({
+	glossaryDownloadFileUrl: (...args: any[]) => mockGlossaryDownloadFileUrl(...args)
 }));
 
 // Mock globalSessionData
@@ -204,16 +217,17 @@ jest.mock('@mui/material', () => {
 	};
 });
 
-// Mock AntSwitch
+// Mock AntSwitch — forwards change events so controlled Header toggle updates in tests
 jest.mock('@utils/Muiutils', () => ({
-	AntSwitch: ({ checked, onChange, onClick, ...props }: any) => (
+	AntSwitch: ({ checked, onChange, onClick, inputProps, sx: _sx, size: _size, ...rest }: any) => (
 		<input
 			type="checkbox"
 			data-testid="ant-switch"
 			checked={checked}
 			onChange={onChange}
 			onClick={onClick}
-			{...props}
+			{...inputProps}
+			{...rest}
 		/>
 	)
 }));
@@ -234,6 +248,11 @@ describe('Header Component', () => {
 		mockGetDownloadStatus.mockResolvedValue({
 			data: {
 				searchDownloadRecords: []
+			}
+		});
+		mockGetGlossaryDownloadStatus.mockResolvedValue({
+			data: {
+				glossaryDownloadRecords: []
 			}
 		});
 		mockGetBaseUrl.mockReturnValue('/base');
@@ -641,11 +660,17 @@ describe('Header Component', () => {
 					]
 				}
 			});
+			mockGetGlossaryDownloadStatus.mockResolvedValue({
+				data: {
+					glossaryDownloadRecords: []
+				}
+			});
 			const { container } = renderHeader();
 			const downloadButton = container.querySelector('[data-cy="showDownloads"]') as HTMLElement;
 			fireEvent.click(downloadButton);
 			await waitFor(() => {
 				expect(mockGetDownloadStatus).toHaveBeenCalledWith({});
+				expect(mockGetGlossaryDownloadStatus).toHaveBeenCalledWith({});
 			});
 		});
 
@@ -680,6 +705,11 @@ describe('Header Component', () => {
 					]
 				}
 			});
+			mockGetGlossaryDownloadStatus.mockResolvedValue({
+				data: {
+					glossaryDownloadRecords: [{ fileName: 'glossary-file.csv' }]
+				}
+			});
 			mockIsEmpty.mockReturnValue(false);
 			const { container } = renderHeader();
 			const downloadButton = container.querySelector('[data-cy="showDownloads"]') as HTMLElement;
@@ -689,6 +719,50 @@ describe('Header Component', () => {
 			await waitFor(() => {
 				expect(screen.getByText('file1.csv')).toBeInTheDocument();
 				expect(screen.getByText('file2.csv')).toBeInTheDocument();
+				expect(screen.getByText('glossary-file.csv')).toBeInTheDocument();
+			}, { timeout: 15000 });
+		}, 30000);
+
+		it('should sort download list with newest files first', async () => {
+			mockGetDownloadStatus.mockResolvedValue({
+				data: {
+					searchDownloadRecords: [
+						{
+							fileName: 'admin_basic_2026-08-12_12-11-41.csv',
+							createdTime: Date.parse('2026-08-12T12:11:41')
+						},
+						{
+							fileName: 'admin_basic_2026-08-12_15-36-29.csv',
+							createdTime: Date.parse('2026-08-12T15:36:29')
+						}
+					]
+				}
+			});
+			mockGetGlossaryDownloadStatus.mockResolvedValue({
+				data: {
+					searchDownloadRecords: [
+						{
+							fileName: 'admin_GLOSSARY_EXPORT_2026-08-12_15-30-14.csv',
+							createdTime: Date.parse('2026-08-12T15:30:14')
+						}
+					]
+				}
+			});
+			mockIsEmpty.mockReturnValue(false);
+			const { container } = renderHeader();
+			const downloadButton = container.querySelector('[data-cy="showDownloads"]') as HTMLElement;
+			await act(async () => {
+				fireEvent.click(downloadButton);
+			});
+			await waitFor(() => {
+				const fileNames = screen
+					.getAllByText(/admin_(basic|GLOSSARY_EXPORT)_2026-08-12_/i)
+					.map((element) => element.textContent);
+				expect(fileNames).toEqual([
+					'admin_basic_2026-08-12_15-36-29.csv',
+					'admin_GLOSSARY_EXPORT_2026-08-12_15-30-14.csv',
+					'admin_basic_2026-08-12_12-11-41.csv'
+				]);
 			}, { timeout: 15000 });
 		}, 30000);
 
@@ -715,6 +789,11 @@ describe('Header Component', () => {
 					searchDownloadRecords: [{ fileName: 'test-file.csv' }]
 				}
 			});
+			mockGetGlossaryDownloadStatus.mockResolvedValue({
+				data: {
+					glossaryDownloadRecords: []
+				}
+			});
 			mockIsEmpty.mockReturnValue(false);
 			const { container } = renderHeader();
 			const downloadButton = container.querySelector('[data-cy="showDownloads"]') as HTMLElement;
@@ -734,8 +813,67 @@ describe('Header Component', () => {
 				});
 				expect(mockGetBaseUrl).toHaveBeenCalled();
 				expect(mockDownloadSearchResultsFileUrl).toHaveBeenCalledWith('test-file.csv');
-				expect(mockToastSuccess).toHaveBeenCalledWith('File download succesfully');
+				expect(mockToastSuccess).toHaveBeenCalledWith('File downloaded successfully');
 			}
+		}, 30000);
+
+		it('should use glossary download URL for glossary export files', async () => {
+			mockGetDownloadStatus.mockResolvedValue({
+				data: {
+					searchDownloadRecords: []
+				}
+			});
+			mockGetGlossaryDownloadStatus.mockResolvedValue({
+				data: {
+					glossaryDownloadRecords: [{ fileName: 'glossary-export.csv' }]
+				}
+			});
+			mockIsEmpty.mockReturnValue(false);
+			const { container } = renderHeader();
+			const downloadButton = container.querySelector('[data-cy="showDownloads"]') as HTMLElement;
+			await act(async () => {
+				fireEvent.click(downloadButton);
+			});
+			await waitFor(() => {
+				expect(screen.getByText('glossary-export.csv')).toBeInTheDocument();
+			}, { timeout: 15000 });
+			const downloadIcons = screen.getAllByRole('button');
+			const fileDownloadButton = downloadIcons.find((btn) =>
+				btn.querySelector('svg[data-testid="DownloadIcon"]')
+			);
+			if (fileDownloadButton) {
+				await act(async () => {
+					fireEvent.click(fileDownloadButton);
+				});
+				expect(mockGlossaryDownloadFileUrl).toHaveBeenCalledWith(
+					'glossary-export.csv'
+				);
+			}
+		}, 30000);
+
+		it('should not show source labels in download list items', async () => {
+			mockGetDownloadStatus.mockResolvedValue({
+				data: {
+					searchDownloadRecords: [{ fileName: 'search-export.csv' }]
+				}
+			});
+			mockGetGlossaryDownloadStatus.mockResolvedValue({
+				data: {
+					searchDownloadRecords: [{ fileName: 'glossary-from-api.csv' }]
+				}
+			});
+			mockIsEmpty.mockReturnValue(false);
+			const { container } = renderHeader();
+			const downloadButton = container.querySelector('[data-cy="showDownloads"]') as HTMLElement;
+			await act(async () => {
+				fireEvent.click(downloadButton);
+			});
+			await waitFor(() => {
+				expect(screen.getByText('glossary-from-api.csv')).toBeInTheDocument();
+				expect(screen.getByText('search-export.csv')).toBeInTheDocument();
+				expect(screen.queryByText('Glossary export')).not.toBeInTheDocument();
+				expect(screen.queryByText('Search export')).not.toBeInTheDocument();
+			}, { timeout: 15000 });
 		}, 30000);
 
 		it('should refresh download list when clicking refresh button', async () => {
@@ -751,6 +889,7 @@ describe('Header Component', () => {
 			});
 			await waitFor(() => {
 				expect(mockGetDownloadStatus).toHaveBeenCalledTimes(1);
+				expect(mockGetGlossaryDownloadStatus).toHaveBeenCalledTimes(1);
 			}, { timeout: 15000 });
 			// Find refresh button by looking for RefreshIcon
 			await waitFor(() => {
@@ -764,11 +903,12 @@ describe('Header Component', () => {
 				});
 				await waitFor(() => {
 					expect(mockGetDownloadStatus).toHaveBeenCalledTimes(2);
+					expect(mockGetGlossaryDownloadStatus).toHaveBeenCalledTimes(2);
 				}, { timeout: 15000 });
 			}
 		}, 30000);
 
-		it('should handle download status fetch error', async () => {
+		it('should handle download status fetch error when both APIs fail', async () => {
 			const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 			const mockError = {
 				response: {
@@ -778,12 +918,17 @@ describe('Header Component', () => {
 				}
 			};
 			mockGetDownloadStatus.mockRejectedValue(mockError);
+			mockGetGlossaryDownloadStatus.mockRejectedValue(mockError);
 			const { container } = renderHeader();
 			const downloadButton = container.querySelector('[data-cy="showDownloads"]') as HTMLElement;
 			fireEvent.click(downloadButton);
 			await waitFor(() => {
 				expect(consoleErrorSpy).toHaveBeenCalledWith(
-					'Error occur while fetching searchResult records',
+					'Error occurred while fetching search download records',
+					mockError
+				);
+				expect(consoleErrorSpy).toHaveBeenCalledWith(
+					'Error occurred while fetching glossary download records',
 					mockError
 				);
 				expect(mockServerError).toHaveBeenCalled();
@@ -791,25 +936,115 @@ describe('Header Component', () => {
 			consoleErrorSpy.mockRestore();
 		});
 
-		it('should toggle switch to filter downloads', async () => {
-			mockGetDownloadStatus.mockResolvedValue({
+		it('should still show downloads when one status API fails', async () => {
+			mockGetDownloadStatus.mockRejectedValue(new Error('search failed'));
+			mockGetGlossaryDownloadStatus.mockResolvedValue({
 				data: {
-					searchDownloadRecords: [{ fileName: 'file1.csv' }]
+					glossaryDownloadRecords: [{ fileName: 'glossary-only.csv' }]
 				}
 			});
 			mockIsEmpty.mockReturnValue(false);
 			const { container } = renderHeader();
 			const downloadButton = container.querySelector('[data-cy="showDownloads"]') as HTMLElement;
-			fireEvent.click(downloadButton);
-			await waitFor(() => {
-				expect(screen.getByText('Downloads')).toBeInTheDocument();
+			await act(async () => {
+				fireEvent.click(downloadButton);
 			});
-			const switchElement = screen.getByTestId('ant-switch');
-			expect(switchElement).toBeInTheDocument();
-			expect(switchElement).toHaveProperty('checked', false);
-			fireEvent.change(switchElement, { target: { checked: true } });
-			expect(switchElement).toHaveProperty('checked', true);
-		});
+			await waitFor(() => {
+				expect(screen.getByText('glossary-only.csv')).toBeInTheDocument();
+			}, { timeout: 15000 });
+			expect(mockServerError).not.toHaveBeenCalled();
+		}, 30000);
+
+		it('should show all downloads by default including pending files', async () => {
+			mockGetDownloadStatus.mockResolvedValue({
+				data: {
+					searchDownloadRecords: [
+						{ fileName: 'ready.csv', status: 'COMPLETE' },
+						{ fileName: 'pending.csv', status: 'PENDING' }
+					]
+				}
+			});
+			mockGetGlossaryDownloadStatus.mockResolvedValue({
+				data: {
+					searchDownloadRecords: []
+				}
+			});
+			const { container } = renderHeader();
+			const downloadButton = container.querySelector('[data-cy="showDownloads"]') as HTMLElement;
+			await act(async () => {
+				fireEvent.click(downloadButton);
+			});
+			await waitFor(() => {
+				expect(screen.getByText('ready.csv')).toBeInTheDocument();
+				expect(screen.getByText('pending.csv')).toBeInTheDocument();
+				expect(screen.getByTestId('ant-switch')).toHaveProperty('checked', true);
+			}, { timeout: 15000 });
+		}, 30000);
+
+		it('should hide pending downloads when toggle shows completed files only', async () => {
+			mockGetDownloadStatus.mockResolvedValue({
+				data: {
+					searchDownloadRecords: [
+						{ fileName: 'ready.csv', status: 'COMPLETE' },
+						{ fileName: 'pending.csv', status: 'PENDING' }
+					]
+				}
+			});
+			mockGetGlossaryDownloadStatus.mockResolvedValue({
+				data: {
+					searchDownloadRecords: []
+				}
+			});
+			const { container } = renderHeader();
+			const downloadButton = container.querySelector('[data-cy="showDownloads"]') as HTMLElement;
+			await act(async () => {
+				fireEvent.click(downloadButton);
+			});
+			await waitFor(() => {
+				expect(screen.getByText('pending.csv')).toBeInTheDocument();
+			}, { timeout: 15000 });
+
+			await act(async () => {
+				fireEvent.click(screen.getByTestId('ant-switch'));
+			});
+
+			await waitFor(() => {
+				expect(screen.queryByText('pending.csv')).not.toBeInTheDocument();
+				expect(screen.getByText('ready.csv')).toBeInTheDocument();
+			}, { timeout: 15000 });
+		}, 30000);
+
+		it('should show No Data Found when only pending files exist and toggle is off', async () => {
+			mockGetDownloadStatus.mockResolvedValue({
+				data: {
+					searchDownloadRecords: [
+						{ fileName: 'pending-only.csv', status: 'PENDING' }
+					]
+				}
+			});
+			mockGetGlossaryDownloadStatus.mockResolvedValue({
+				data: {
+					searchDownloadRecords: []
+				}
+			});
+			const { container } = renderHeader();
+			const downloadButton = container.querySelector('[data-cy="showDownloads"]') as HTMLElement;
+			await act(async () => {
+				fireEvent.click(downloadButton);
+			});
+			await waitFor(() => {
+				expect(screen.getByText('pending-only.csv')).toBeInTheDocument();
+			}, { timeout: 15000 });
+
+			await act(async () => {
+				fireEvent.click(screen.getByTestId('ant-switch'));
+			});
+
+			await waitFor(() => {
+				expect(screen.queryByText('pending-only.csv')).not.toBeInTheDocument();
+				expect(screen.getByText('No Data Found')).toBeInTheDocument();
+			}, { timeout: 15000 });
+		}, 30000);
 
 		it('should stop propagation when clicking switch', async () => {
 			mockGetDownloadStatus.mockResolvedValue({
@@ -1071,6 +1306,9 @@ describe('Header Component', () => {
 			expect(container.querySelector('[data-cy="showDownloads"]')).toBeInTheDocument();
 			expect(container.querySelector('[data-cy="showStats"]')).toBeInTheDocument();
 			expect(container.querySelector('[data-cy="user-account"]')).toBeInTheDocument();
+			expect(
+				container.querySelector('[data-cy="glossaryTermsListNavigate"]')
+			).not.toBeInTheDocument();
 		});
 	});
 });

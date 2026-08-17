@@ -21,9 +21,13 @@ import org.apache.atlas.common.TestUtility;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.glossary.GlossaryService;
 import org.apache.atlas.glossary.GlossaryTermUtils;
+import org.apache.atlas.model.discovery.AtlasSearchResultDownloadStatus;
 import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
+import org.apache.atlas.model.glossary.GlossaryExportParameters;
+import org.apache.atlas.model.glossary.GlossarySearchParameters;
+import org.apache.atlas.model.glossary.GlossarySearchResult;
 import org.apache.atlas.model.glossary.relations.AtlasGlossaryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
@@ -892,5 +896,71 @@ public class GlossaryRESTTest {
         assertNotNull(result);
         assertEquals(expectedResponse, result);
         verify(mockGlossaryService).importGlossaryData(inputStream, testFileName);
+    }
+
+    @Test
+    public void testGlossaryExportCreateFile_Success() throws Exception {
+        Map<String, Object> body = new HashMap<>();
+        body.put("limit", 0);
+        body.put("offset", 0);
+        body.put("sortBy", "glossaryName");
+        body.put("sortOrder", "DESCENDING");
+        body.put("excludeDeleted", true);
+
+        glossaryREST.glossaryExportCreateFile(body);
+
+        verify(mockGlossaryService).createAndQueueGlossaryExportDownloadTask(any(Map.class));
+    }
+
+    @Test
+    public void testGlossaryExportCreateFileAlias_Success() throws Exception {
+        GlossaryExportParameters parameters = new GlossaryExportParameters();
+        parameters.setFormat(GlossaryExportParameters.ExportFormat.XLSX);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("exportParameters", parameters);
+
+        glossaryREST.glossaryExportCreateFileAlias(body);
+
+        verify(mockGlossaryService).createAndQueueGlossaryExportDownloadTask(any(Map.class));
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void testGlossaryExportCreateFile_MissingFormat() throws Exception {
+        Map<String, Object> body = new HashMap<>();
+        body.put("exportParameters", new HashMap<>());
+
+        glossaryREST.glossaryExportCreateFile(body);
+    }
+
+    @Test
+    public void testGetGlossaryExportDownloadStatus_Success() throws Exception {
+        AtlasSearchResultDownloadStatus expected = new AtlasSearchResultDownloadStatus();
+        when(mockGlossaryService.getGlossaryExportDownloadStatus()).thenReturn(expected);
+
+        AtlasSearchResultDownloadStatus result = glossaryREST.getGlossaryExportDownloadStatus();
+
+        assertNotNull(result);
+        verify(mockGlossaryService).getGlossaryExportDownloadStatus();
+    }
+
+    @Test
+    public void testSearchGlossary_Success() throws Exception {
+        GlossarySearchParameters parameters = new GlossarySearchParameters();
+        parameters.setLimit(25);
+        parameters.setOffset(0);
+        parameters.setSortBy("name");
+        parameters.setSortOrder(SortOrder.ASCENDING);
+
+        GlossarySearchResult expected = new GlossarySearchResult();
+        expected.setApproximateCount(1);
+
+        when(mockGlossaryService.searchGlossary(parameters)).thenReturn(expected);
+
+        GlossarySearchResult result = glossaryREST.searchGlossary(parameters);
+
+        assertNotNull(result);
+        assertEquals(result.getApproximateCount(), 1);
+        verify(mockGlossaryService).searchGlossary(parameters);
     }
 }
