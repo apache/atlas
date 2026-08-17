@@ -158,15 +158,7 @@ const SideBarBody = (props: {
   const [activePopover, setActivePopover] = useState<string | null>(null);
   const [popoverMaxHeight, setPopoverMaxHeight] = useState<string>('calc(100vh - 100px)');
   const [isBottomHalf, setIsBottomHalf] = useState<boolean>(false);
-  const popoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (popoverTimeoutRef.current) {
-        clearTimeout(popoverTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const handlePopoverOpen = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
     const target = event.currentTarget;
@@ -189,19 +181,7 @@ const SideBarBody = (props: {
       }
     };
 
-    // Clear any pending timeout from rapid clicks
-    if (popoverTimeoutRef.current) {
-      clearTimeout(popoverTimeoutRef.current);
-      popoverTimeoutRef.current = null;
-    }
-
-    // If a different popover is already open, close it first to ensure clean unmount
-    if (activePopover && activePopover !== id) {
-      handlePopoverClose();
-      popoverTimeoutRef.current = setTimeout(openNewPopover, 0);
-    } else {
-      openNewPopover();
-    }
+    openNewPopover();
   };
 
   const handlePopoverClose = () => {
@@ -406,7 +386,7 @@ const SideBarBody = (props: {
                     }}
                   >
                     <Tooltip title={m.title} placement="right">
-                      <IconButton aria-label={m.title} aria-expanded={activePopover === m.id} onClick={(e) => handlePopoverOpen(e, m.id)} sx={{ color: m.isActive ? "white" : "rgba(255, 255, 255, 0.6)", '&:hover': { color: 'white', background: 'rgba(255, 255, 255, 0.1)' } }}>
+                      <IconButton aria-haspopup="dialog" aria-label={m.title} aria-expanded={activePopover === m.id} onClick={(e) => handlePopoverOpen(e, m.id)} sx={{ color: m.isActive ? "white" : "rgba(255, 255, 255, 0.6)", '&:hover': { color: 'white', background: 'rgba(255, 255, 255, 0.1)' } }}>
                         <img src={m.iconUrl} className="sidebar-module-icon" alt={m.title.toLowerCase()} />
                       </IconButton>
                     </Tooltip>
@@ -624,7 +604,7 @@ const SideBarBody = (props: {
               </Box>
             )}
 
-            <IconButton size="medium" onClick={() => handleDrawerOpen()}>
+            <IconButton aria-label={open ? "Collapse sidebar" : "Expand sidebar"} size="medium" onClick={() => handleDrawerOpen()}>
               {open ? (
                 <KeyboardDoubleArrowLeftIcon
                   sx={{ color: "white" }}

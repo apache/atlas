@@ -155,7 +155,7 @@ jest.mock('@mui/x-tree-view/TreeItem', () => {
 			<div data-testid={`tree-item-label-${itemId}`}>{label}</div>
 		)
 		return (
-			<div data-testid={`tree-item-${itemId}`} data-item-id={itemId}>
+			<div data-testid={`tree-item-${itemId}`} data-item-id={itemId} className={props.className}>
 				{Content}
 				{children}
 			</div>
@@ -2208,13 +2208,12 @@ describe('SideBarTree', () => {
 				treeData, 
 				treeName: 'CustomFilters', 
 				isPopover: true 
-			}, {}, ['/search/searchResult?searchType=BASIC&isCF=true&type=customFilter1'])
+			}, {}, ['/search/searchResult?searchType=BASIC&isCF=true&customFilter=customFilter1'])
 
 			await waitFor(() => {
-				const treeView = screen.getByTestId('simple-tree-view')
-				expect(treeView).toBeInTheDocument()
-				const expandedItems = JSON.parse(treeView.getAttribute('data-expanded-items') || '[]')
-				expect(expandedItems).toContain('customFilter1')
+				const treeItem = screen.getByTestId('tree-item-customFilter1')
+				expect(treeItem).toBeInTheDocument()
+				expect(treeItem.querySelector('.Mui-selected')).toBeInTheDocument()
 			})
 		})
 

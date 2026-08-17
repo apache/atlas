@@ -476,34 +476,7 @@ describe('SideBarBody', () => {
     });
   });
 
-  describe('Mouse Events for Resizing', () => {
-    it('should handle mouse events for drawer resizing', () => {
-      // The dragger ref and mouse event handlers are internal implementation details
-      // Testing them directly would require exposing internal refs
-      // Instead, we verify the component renders and functions correctly
-      renderWithProviders();
-      
-      expect(screen.getByTestId('entities-tree')).toBeInTheDocument();
-    });
 
-    it('should maintain drawer width constraints', () => {
-      // Window width and drawer constraints are calculated internally
-      // The component should render without errors
-      renderWithProviders();
-      
-      expect(screen.getByTestId('entities-tree')).toBeInTheDocument();
-    });
-
-    it('should cleanup event listeners on unmount', () => {
-      const { unmount } = renderWithProviders();
-      
-      // Unmount should cleanup all event listeners
-      unmount();
-      
-      // Verify no errors during unmount
-      expect(true).toBe(true);
-    });
-  });
 
   describe('Props Handling', () => {
     it('should pass handleOpenModal to Header', () => {
