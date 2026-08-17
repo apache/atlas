@@ -26,7 +26,7 @@ import {
 } from "@mui/material";
 
 const About = () => {
-  const { data: versionData, loading: loader } = useAppSelector((state: any) => state.session.versionData);
+  const { data: versionData, loading: loader, error } = useAppSelector((state: any) => state.session.versionData);
 
   return (
     <>
@@ -37,7 +37,7 @@ const About = () => {
           <Stack direction="column" spacing={1}>
             <Typography variant="body1">
               <strong>Version: </strong>
-              {versionData?.Version}
+              {error ? "Unknown (failed to fetch version)" : (versionData?.Version || "N/A")}
             </Typography>
             <Typography variant="body2" color="info.main">
               Get involved!
