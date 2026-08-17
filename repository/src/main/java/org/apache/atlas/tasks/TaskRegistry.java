@@ -17,6 +17,9 @@
  */
 package org.apache.atlas.tasks;
 
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.tasks.AtlasTask;
@@ -33,6 +36,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
@@ -48,10 +52,19 @@ public class TaskRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(TaskRegistry.class);
 
     private final AtlasGraph graph;
+    private final long       inProgressStaleThresholdMs;
+    private final String     nodeId;
 
     @Inject
     public TaskRegistry(AtlasGraph graph) {
+        this(graph, AtlasConfiguration.TASK_CLAIM_STALE_THRESHOLD_MS.getLong());
+    }
+
+    @VisibleForTesting
+    TaskRegistry(AtlasGraph graph, long inProgressStaleThresholdMs) {
         this.graph = graph;
+        this.inProgressStaleThresholdMs = inProgressStaleThresholdMs;
+        this.nodeId = buildNodeId();
     }
 
     @GraphTransaction
@@ -133,6 +146,137 @@ public class TaskRegistry {
 
             throw new AtlasBaseException(exception);
         }
+    }
+
+    /**
+     * Atomically claims a task for execution on this node by transitioning its status
+     * from {@code PENDING} to {@code IN_PROGRESS} inside a single graph transaction.
+     *
+     * <p>In an active-active cluster every node calls {@code queuePendingTasks()} on startup
+     * and may also receive task dispatch calls at runtime.  Without a claim step, multiple
+     * nodes would execute the same task concurrently.  This method provides the
+     * Compare-And-Swap (CAS) guard:
+     * <ul>
+     *   <li>The first node whose transaction commits wins the claim and must execute the task.</li>
+     *   <li>Any other node that concurrently attempts the same CAS gets a JanusGraph
+     *       {@code PermanentLockingException}. The {@link GraphTransactionInterceptor} retries,
+     *       but on retry the vertex status is already {@code IN_PROGRESS} (or {@code COMPLETE}),
+     *       so the query returns no results and the method returns {@code false}.</li>
+     * </ul>
+     *
+     * @param taskGuid the GUID of the task to claim
+     * @return {@code true} if this node successfully claimed the task; {@code false} if the
+     *         task was not found, was not in {@code PENDING} state, or was already claimed
+     *         by another node
+     */
+    @GraphTransaction
+    public boolean tryClaimTask(String taskGuid) {
+        // AsyncImport-style global serialization: allow claiming only when
+        // there is no task already IN_PROGRESS.
+        if (hasAnyTaskInProgress()) {
+            LOG.debug("TaskRegistry.tryClaimTask({}): node={} claim denied, global IN_PROGRESS task exists", taskGuid, nodeId);
+            return false;
+        }
+
+        // Preserve FIFO order: only the oldest PENDING task is claimable.
+        // This prevents newer tasks from leapfrogging older tasks when multiple
+        // nodes race to claim tasks at startup/runtime.
+        if (!isOldestPendingTask(taskGuid)) {
+            LOG.debug("TaskRegistry.tryClaimTask({}): node={} claim denied, not oldest pending task", taskGuid, nodeId);
+            return false;
+        }
+
+        AtlasGraphQuery query = graph.query()
+                .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
+                .has(Constants.TASK_GUID, taskGuid)
+                .has(Constants.TASK_STATUS, AtlasTask.Status.PENDING.toString());
+
+        Iterator<AtlasVertex> results = query.vertices().iterator();
+
+        if (!results.hasNext()) {
+            // Task not found or not PENDING — already claimed or completed by another node.
+            LOG.debug("TaskRegistry.tryClaimTask({}): node={} claim denied, task not PENDING/found", taskGuid, nodeId);
+            return false;
+        }
+
+        AtlasVertex taskVertex = results.next();
+        long        now        = System.currentTimeMillis();
+
+        setEncodedProperty(taskVertex, Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS.toString());
+        setEncodedProperty(taskVertex, Constants.TASK_START_TIME, now);
+        setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, now);
+
+        LOG.info("TaskRegistry.tryClaimTask({}): node={} claimed IN_PROGRESS", taskGuid, nodeId);
+        return true;
+    }
+
+    @GraphTransaction
+    public void recoverStaleInProgressTasks() {
+        AtlasGraphQuery query = graph.query()
+                .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
+                .has(Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS.toString());
+        long now = System.currentTimeMillis();
+
+        for (AtlasVertex vertex : (Iterable<AtlasVertex>) query.vertices()) {
+            String taskGuid    = vertex.getProperty(Constants.TASK_GUID, String.class);
+            Long   updatedTime = vertex.getProperty(Constants.TASK_UPDATED_TIME, Long.class);
+
+            if (!isStaleInProgress(updatedTime, now)) {
+                continue;
+            }
+
+            LOG.warn("TaskRegistry.recoverStaleInProgressTasks(): recovering stale IN_PROGRESS task {} back to PENDING",
+                    taskGuid);
+            LOG.warn("TaskRegistry.recoverStaleInProgressTasks(): node={} recovered stale task {}", nodeId, taskGuid);
+            setEncodedProperty(vertex, Constants.TASK_STATUS, AtlasTask.Status.PENDING.toString());
+            setEncodedProperty(vertex, Constants.TASK_UPDATED_TIME, now);
+        }
+    }
+
+    private String buildNodeId() {
+        String runMode  = AtlasRunMode.current().name();
+        String hostName = System.getenv("HOSTNAME");
+        String jvmId    = ManagementFactory.getRuntimeMXBean().getName();
+
+        if (hostName == null || hostName.trim().isEmpty()) {
+            hostName = "unknown-host";
+        }
+
+        return runMode + "@" + hostName + "#" + jvmId;
+    }
+
+    private boolean hasAnyTaskInProgress() {
+        AtlasGraphQuery query = graph.query()
+                .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
+                .has(Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS.toString());
+
+        return query.vertices().iterator().hasNext();
+    }
+
+    private boolean isStaleInProgress(Long updatedTime, long now) {
+        if (updatedTime == null || updatedTime <= 0L) {
+            return true;
+        }
+
+        return now - updatedTime >= inProgressStaleThresholdMs;
+    }
+
+    private boolean isOldestPendingTask(String taskGuid) {
+        AtlasGraphQuery query = graph.query()
+                .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
+                .has(Constants.TASK_STATUS, AtlasTask.Status.PENDING.toString())
+                .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
+
+        Iterator<AtlasVertex> pending = query.vertices().iterator();
+
+        if (!pending.hasNext()) {
+            return false;
+        }
+
+        AtlasVertex oldestPending = pending.next();
+        String oldestGuid = oldestPending.getProperty(Constants.TASK_GUID, String.class);
+
+        return taskGuid.equals(oldestGuid);
     }
 
     @GraphTransaction

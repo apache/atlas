@@ -18,20 +18,26 @@
 
 package org.apache.atlas.repository.patches;
 
+import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
+import org.apache.atlas.tasks.GraphClaimable;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
@@ -47,6 +53,7 @@ public class AtlasPatchManager {
     private final GraphBackedSearchIndexer indexer;
     private final EntityGraphMapper        entityGraphMapper;
     private       PatchContext             context;
+    private final Object                   initLock = new Object();
 
     @Inject
     public AtlasPatchManager(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, GraphBackedSearchIndexer indexer, EntityGraphMapper entityGraphMapper) {
@@ -57,24 +64,43 @@ public class AtlasPatchManager {
     }
 
     public AtlasPatches getAllPatches() {
+        initIfNeeded();
         return context.getPatchRegistry().getAllPatches();
     }
 
     public void applyAll() {
+        applyInternal(true);
+    }
+
+    public void recoverFailedOrInProgress() {
+        applyInternal(false);
+    }
+
+    private void applyInternal(boolean includeNotApplied) {
         LOG.info("==> AtlasPatchManager.applyAll()");
 
-        init();
+        initIfNeeded();
+        String nodeId = buildPatchNodeId();
+        long processStartMs = System.currentTimeMillis();
+        AtlasPatchRegistry registry = context.getPatchRegistry();
+        List<AtlasPatchHandler> failedHandlers = new ArrayList<>();
 
         try {
             for (AtlasPatchHandler handler : handlers) {
                 PatchStatus patchStatus = handler.getStatusFromRegistry();
+                if (patchStatus == PatchStatus.FAILED) {
+                    failedHandlers.add(handler);
+                    continue;
+                }
 
-                if (patchStatus == APPLIED || patchStatus == SKIPPED) {
-                    LOG.info("Ignoring java handler: {}; status: {}", handler.getPatchId(), patchStatus);
-                } else {
-                    LOG.info("Applying java handler: {}; status: {}", handler.getPatchId(), patchStatus);
+                applyHandler(handler, patchStatus, registry, nodeId, processStartMs, includeNotApplied);
+            }
 
-                    handler.apply();
+            if (!failedHandlers.isEmpty()) {
+                failedHandlers.sort(Comparator.comparing(AtlasPatchHandler::getPatchId));
+                for (AtlasPatchHandler handler : failedHandlers) {
+                    PatchStatus patchStatus = handler.getStatusFromRegistry();
+                    applyHandler(handler, patchStatus, registry, nodeId, processStartMs, includeNotApplied);
                 }
             }
         } catch (Exception ex) {
@@ -85,6 +111,63 @@ public class AtlasPatchManager {
         }
 
         LOG.info("<== AtlasPatchManager.applyAll()");
+    }
+
+    private void applyHandler(AtlasPatchHandler handler, PatchStatus patchStatus, AtlasPatchRegistry registry,
+            String nodeId, long processStartMs, boolean includeNotApplied) throws AtlasBaseException {
+        if (patchStatus == APPLIED || patchStatus == SKIPPED) {
+            LOG.info("Ignoring java handler: {}; status: {}", handler.getPatchId(), patchStatus);
+            return;
+        }
+
+        if (!includeNotApplied && !registry.isRecoveryApplicable(handler.getPatchId())) {
+            LOG.info("Ignoring non-recovery handler: {}; status: {}", handler.getPatchId(), patchStatus);
+            return;
+        }
+
+        if (registry.findByPatchId(handler.getPatchId()) == null) {
+            registry.register(handler.getPatchId(), handler.getPatchId(),
+                    AtlasPatchHandler.JAVA_PATCH_TYPE, "apply", PatchStatus.UNKNOWN);
+        }
+
+        GraphClaimable<Boolean> claimAction = new GraphClaimable<Boolean>() {
+            @Override
+            public Boolean tryClaim() {
+                return registry.tryClaimPatchExecution(handler.getPatchId(), nodeId, processStartMs);
+            }
+
+            @Override
+            public void recoverStaleClaims() {
+                registry.recoverStaleInProgressClaims(nodeId, processStartMs);
+            }
+        };
+
+        claimAction.recoverStaleClaims();
+        if (!claimAction.tryClaim()) {
+            LOG.info("Skipping java handler: {}; node={}; claim not acquired", handler.getPatchId(), nodeId);
+            return;
+        }
+
+        LOG.info("Applying java handler: {}; node={}; status={}", handler.getPatchId(), nodeId, patchStatus);
+
+        try {
+            handler.apply();
+        } catch (Exception ex) {
+            LOG.error("Error applying patch {}. Marking FAILED.", handler.getPatchId(), ex);
+            handler.setStatus(PatchStatus.FAILED);
+        }
+    }
+
+    private String buildPatchNodeId() {
+        String runMode  = AtlasRunMode.current().name();
+        String hostName = System.getenv("HOSTNAME");
+        String jvmId    = ManagementFactory.getRuntimeMXBean().getName();
+
+        if (StringUtils.isBlank(hostName)) {
+            hostName = "unknown-host";
+        }
+
+        return runMode + "@" + hostName + "#" + jvmId;
     }
 
     public void addPatchHandler(AtlasPatchHandler patchHandler) {
@@ -99,6 +182,7 @@ public class AtlasPatchManager {
         LOG.info("==> AtlasPatchManager.init()");
 
         this.context = new PatchContext(atlasGraph, typeRegistry, indexer, entityGraphMapper);
+        this.handlers.clear();
 
         // register all java patches here
         handlers.add(new UniqueAttributePatch(context));
@@ -114,5 +198,17 @@ public class AtlasPatchManager {
         handlers.add(new ReplaceHugeSparkProcessAttributesPatch(context));
 
         LOG.info("<== AtlasPatchManager.init()");
+    }
+
+    private void initIfNeeded() {
+        if (context != null) {
+            return;
+        }
+
+        synchronized (initLock) {
+            if (context == null) {
+                init();
+            }
+        }
     }
 }

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class TaskExecutor {
     private static final Logger LOG = LoggerFactory.getLogger(TaskExecutor.class);
@@ -59,7 +60,24 @@ public class TaskExecutor {
 
             TASK_LOG.log(task);
 
-            this.executorService.submit(new TaskConsumer(task, this.registry, this.taskTypeFactoryMap, this.statistics));
+            // Build a per-task GraphClaimable that atomically transitions
+            // PENDING → IN_PROGRESS for exactly this task's GUID.
+            // TaskConsumer uses GraphClaimable for both stale-claim recovery and
+            // the claim step, so callers stay decoupled from TaskRegistry.
+            final String              taskGuid    = task.getGuid();
+            GraphClaimable<Boolean>   claimAction = new GraphClaimable<Boolean>() {
+                @Override
+                public Boolean tryClaim() {
+                    return registry.tryClaimTask(taskGuid);
+                }
+
+                @Override
+                public void recoverStaleClaims() {
+                    registry.recoverStaleInProgressTasks();
+                }
+            };
+
+            this.executorService.submit(new TaskConsumer(task, claimAction, this.registry, this.taskTypeFactoryMap, this.statistics));
         }
     }
 
@@ -70,17 +88,42 @@ public class TaskExecutor {
 
     static class TaskConsumer implements Runnable {
         private static final int MAX_ATTEMPT_COUNT = 3;
+        private static final int DEFAULT_MAX_CLAIM_ATTEMPTS = 600;
+        private static final int DEFAULT_CLAIM_RETRY_WAIT_MS = (int) TimeUnit.SECONDS.toMillis(1);
 
+        private final GraphClaimable<Boolean>   claimAction;
         private final Map<String, TaskFactory>  taskTypeFactoryMap;
         private final TaskRegistry              registry;
         private final TaskManagement.Statistics statistics;
         private final AtlasTask                 task;
+        private final int                       maxClaimAttempts;
+        private final int                       claimRetryWaitMs;
 
-        public TaskConsumer(AtlasTask task, TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
+        /**
+         * @param task        the task to execute
+         * @param claimAction the {@link GraphClaimable} that performs stale-claim
+         *                    recovery and CAS claim ({@code PENDING → IN_PROGRESS}).
+         *                    Only if {@code claimAction.tryClaim()} returns {@code true} does
+         *                    this consumer proceed to execute the task.
+         * @param registry    the registry used for vertex lookup, status updates and
+         *                    delete-on-complete (all graph operations except the claim)
+         * @param taskTypeFactoryMap factories keyed by task type
+         * @param statistics  execution counters
+         */
+        public TaskConsumer(AtlasTask task, GraphClaimable<Boolean> claimAction, TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
+            this(task, claimAction, registry, taskTypeFactoryMap, statistics, DEFAULT_MAX_CLAIM_ATTEMPTS, DEFAULT_CLAIM_RETRY_WAIT_MS);
+        }
+
+        @VisibleForTesting
+        TaskConsumer(AtlasTask task, GraphClaimable<Boolean> claimAction, TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap,
+                     TaskManagement.Statistics statistics, int maxClaimAttempts, int claimRetryWaitMs) {
             this.task               = task;
+            this.claimAction        = claimAction;
             this.registry           = registry;
             this.taskTypeFactoryMap = taskTypeFactoryMap;
             this.statistics         = statistics;
+            this.maxClaimAttempts   = maxClaimAttempts;
+            this.claimRetryWaitMs   = claimRetryWaitMs;
         }
 
         @Override
@@ -89,9 +132,21 @@ public class TaskExecutor {
             int         attemptCount;
 
             try {
+                // GraphClaimable.recoverStaleClaims() + tryClaim(): recover stale
+                // claims first, then atomically transition PENDING → IN_PROGRESS.
+                // In active-active mode multiple nodes may queue the same PENDING task on
+                // startup.  Only the node whose @GraphTransaction commits first proceeds;
+                // all other nodes receive false and skip without executing the task.
+                // Same contract as AsyncImportService.claimNextWaitingImport().
+                boolean claimed = tryClaimWithWait();
+                if (!claimed) {
+                    TASK_LOG.warn("Task skipped - already claimed by another node or not PENDING.", task);
+                    return;
+                }
+
                 taskVertex = registry.getVertex(task.getGuid());
 
-                if (taskVertex == null || task.getStatus() == AtlasTask.Status.COMPLETE) {
+                if (taskVertex == null) {
                     TASK_LOG.warn("Task not scheduled as it was not found or status was COMPLETE!", task);
 
                     return;
@@ -133,6 +188,26 @@ public class TaskExecutor {
                     TASK_LOG.log(task);
                 }
             }
+        }
+
+        private boolean tryClaimWithWait() throws Exception {
+            int claimAttempt = 0;
+
+            while (claimAttempt < maxClaimAttempts) {
+                claimAction.recoverStaleClaims();
+
+                if (claimAction.tryClaim()) {
+                    return true;
+                }
+
+                claimAttempt++;
+
+                if (claimAttempt < maxClaimAttempts) {
+                    Thread.sleep(claimRetryWaitMs);
+                }
+            }
+
+            return false;
         }
 
         private void performTask(AtlasVertex taskVertex, AtlasTask task) throws Exception {

@@ -37,7 +37,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
-import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
+import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 
 public class ReIndexPatch extends AtlasPatchHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ReIndexPatch.class);
@@ -70,11 +70,12 @@ public class ReIndexPatch extends AtlasPatchHandler {
             reindexPatchProcessor.repairEdges();
         } catch (Exception exception) {
             LOG.error("Error while reindexing.", exception);
+            throw (exception instanceof AtlasBaseException) ? (AtlasBaseException) exception : new AtlasBaseException(exception);
         } finally {
             LOG.info("ReIndexPatch: Done!");
         }
 
-        setStatus(UNKNOWN);
+        setStatus(APPLIED);
 
         LOG.info("ReIndexPatch.apply(): patchId={}, status={}", getPatchId(), getStatus());
     }

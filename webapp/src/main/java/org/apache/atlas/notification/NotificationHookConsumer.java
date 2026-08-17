@@ -22,8 +22,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.kafka.KafkaNotification;
@@ -185,14 +185,14 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
     @Override
     public void start() throws AtlasException {
-        startInternal(applicationProperties, null);
+        // activation is handled exclusively by instanceIsActive()
     }
 
     @Override
     public void stop() {
         //Allow for completion of outstanding work
         try {
-            if (consumerDisabled && consumers.isEmpty()) {
+            if (consumerDisabled && (consumers == null || consumers.isEmpty())) {
                 return;
             }
 
@@ -221,35 +221,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
      */
     @Override
     public void instanceIsActive() {
-        if (executors == null) {
-            executors = createExecutor();
-            LOG.info("Executors initialized (Instance is active)");
-        }
-
-        if (consumerDisabled) {
-            return;
-        }
-
-        LOG.info("Reacting to active state: initializing Kafka consumers");
-
-        startHookConsumers();
-    }
-
-    /**
-     * Stop Kafka consumer threads that read from Kafka topic when server is de-activated.
-     * <p>
-     * Since the consumers create / update entities to the shared backend store, only the active instance
-     * should perform this activity. Hence, these threads are stopped only on server deactivation.
-     */
-    @Override
-    public void instanceIsPassive() {
-        if (consumerDisabled && consumers.isEmpty()) {
-            return;
-        }
-
-        LOG.info("Reacting to passive state: shutting down Kafka consumers.");
-
-        stop();
+        startInternal(AtlasRunMode.current(), null);
     }
 
     @Override
@@ -284,29 +256,22 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     }
 
     @VisibleForTesting
-    void startInternal(Configuration configuration, ExecutorService executorService) {
-        if (consumers == null) {
-            consumers = new ArrayList<>();
+    void startInternal(AtlasRunMode runMode, ExecutorService executorService) {
+        // INITIALIZER does not run long-lived consumers.
+        if (!runMode.runsMetadataServer() && !runMode.runsNotificationProcessing()) {
+            LOG.info("NotificationHookConsumer.startInternal(): RUN_MODE={} — skipping consumer initialization", runMode);
+            return;
         }
 
-        if (executorService != null) {
-            executors = executorService;
+        initializeConsumerInfrastructure(executorService);
+
+        // Hook consumers run only on nodes that process notification events.
+        if (!runMode.runsNotificationProcessing() || consumerDisabled) {
+            LOG.info("NotificationHookConsumer.startInternal(): RUN_MODE={} — initialized async-import infrastructure only", runMode);
+            return;
         }
 
-        if (!HAConfiguration.isHAEnabled(configuration)) {
-            if (executors == null) {
-                executors = createExecutor();
-                LOG.info("Executors initialized (HA is disabled)");
-            }
-            if (consumerDisabled) {
-                LOG.info("No hook messages will be processed. {} = {}", CONSUMER_DISABLED, consumerDisabled);
-                return;
-            }
-
-            LOG.info("HA is disabled, starting consumers inline.");
-
-            startHookConsumers();
-        }
+        startHookConsumers();
     }
 
     @VisibleForTesting
@@ -375,6 +340,25 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d").build());
     }
 
+    private void initializeConsumerInfrastructure(ExecutorService executorService) {
+        if (consumers == null) {
+            consumers = new ArrayList<>();
+        }
+
+        if (executorService != null) {
+            executors = executorService;
+        }
+
+        if (executors == null || executors.isShutdown() || executors.isTerminated()) {
+            synchronized (this) {
+                if (executors == null || executors.isShutdown() || executors.isTerminated()) {
+                    executors = createExecutor();
+                    LOG.info("NotificationHookConsumer: consumer executor initialized");
+                }
+            }
+        }
+    }
+
     List<HookConsumer> getPreprocessorHookConsumers() {
         List<NotificationConsumer<HookNotification>> notificationConsumers = notificationInterface.createConsumers(NotificationType.HOOK_PREPROCESS, 1);
         List<HookConsumer>                           hookConsumers         = new ArrayList<>();
@@ -398,13 +382,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     }
 
     private void startConsumers(List<HookConsumer> hookConsumers) {
-        if (consumers == null) {
-            consumers = new ArrayList<>();
-        }
-
-        if (executors == null) {
-            throw new IllegalStateException("Executors must be initialized before starting consumers.");
-        }
+        initializeConsumerInfrastructure(null);
 
         for (final HookConsumer consumer : hookConsumers) {
             consumers.add(consumer);

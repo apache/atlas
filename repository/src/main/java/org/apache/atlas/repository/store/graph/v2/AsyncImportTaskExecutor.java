@@ -217,7 +217,7 @@ public class AsyncImportTaskExecutor {
         LOG.info("==> registerRequest(importId={})", importId);
 
         try {
-            AtlasAsyncImportRequest existingImportRequest = importService.fetchImportRequestByImportId(importId);
+            AtlasAsyncImportRequest existingImportRequest = importService.resolveRequestStatus(importId);
 
             // handle new , successful and failed request from scratch
             if (existingImportRequest == null
@@ -233,10 +233,7 @@ public class AsyncImportTaskExecutor {
                 newImportRequest.setReceivedTime(System.currentTimeMillis());
                 newImportRequest.getImportDetails().setTotalEntitiesCount(totalEntities);
                 newImportRequest.getImportDetails().setCreationOrder(creationOrder);
-                return withRetry(() -> {
-                    importService.saveImportRequest(newImportRequest);
-                    LOG.info("registerRequest(importId={}): registered new request", importId);
-                    return importService.fetchImportRequestByImportId(newImportRequest.getImportId()); }, importId);
+                return registerNewRequestWithRetry(importId, newImportRequest);
             } else if (ObjectUtils.equals(existingImportRequest.getStatus(), ImportStatus.STAGING)) {
                 // if we are resuming staging, we need to update the latest request received at
                 existingImportRequest.setReceivedTime(System.currentTimeMillis());
@@ -261,21 +258,24 @@ public class AsyncImportTaskExecutor {
         }
     }
 
-    // retry to handle JanusGraph locking conflicts
-    private <T> T withRetry(Callable<T> action, String importId) throws AtlasBaseException {
+    private AtlasAsyncImportRequest registerNewRequestWithRetry(String importId,
+                                                                AtlasAsyncImportRequest newImportRequest) throws AtlasBaseException {
         int attempt = 0;
 
         while (true) {
             try {
-                return action.call();
+                importService.saveImportRequest(newImportRequest);
+                LOG.info("registerRequest(importId={}): registered new request", importId);
+                return importService.fetchImportRequestByImportId(newImportRequest.getImportId());
             } catch (Exception e) {
-                // detect JanusGraph lock contention by walking the cause chain
-                boolean lockingConflict = false;
-                for (Throwable c = e; c != null; c = c.getCause()) {
-                    if ("org.janusgraph.diskstorage.locking.PermanentLockingException"
-                            .equals(c.getClass().getName())) {
-                        lockingConflict = true;
-                        break;
+                boolean lockingConflict = isLockingConflict(e);
+
+                if (lockingConflict) {
+                    AtlasAsyncImportRequest concurrent = importService.resolveRequestStatus(importId);
+                    if (isActiveOrStaging(concurrent)) {
+                        LOG.info("registerRequest(importId={}): lock conflict but concurrent active request found; reusing {}",
+                                importId, concurrent.getStatus());
+                        return concurrent;
                     }
                 }
 
@@ -284,10 +284,36 @@ public class AsyncImportTaskExecutor {
                     long backoff = (long) BASE_BACKOFF_MS * (attempt + 1);
                     LOG.warn("Lock conflict for importId={} on attempt {}/{}, backing off {} ms",
                             importId, attempt + 1, MAX_RETRIES, backoff);
-                    try {
-                        Thread.sleep(backoff);
-                    } catch (InterruptedException ignored) {
-                    }
+                    sleepQuietly(backoff);
+                    attempt++;
+                    continue;
+                }
+
+                LOG.error("Failed to register importId={} on attempt {}/{}", importId, attempt + 1, MAX_RETRIES, e);
+                if (e instanceof AtlasBaseException) {
+                    throw (AtlasBaseException) e;
+                }
+                throw new AtlasBaseException(AtlasErrorCode.IMPORT_REGISTRATION_FAILED, e);
+            }
+        }
+    }
+
+    // retry to handle JanusGraph locking conflicts
+    private <T> T withRetry(Callable<T> action, String importId) throws AtlasBaseException {
+        int attempt = 0;
+
+        while (true) {
+            try {
+                return action.call();
+            } catch (Exception e) {
+                boolean lockingConflict = isLockingConflict(e);
+
+                boolean canRetry = lockingConflict && attempt < (MAX_RETRIES - 1);
+                if (canRetry) {
+                    long backoff = (long) BASE_BACKOFF_MS * (attempt + 1);
+                    LOG.warn("Lock conflict for importId={} on attempt {}/{}, backing off {} ms",
+                            importId, attempt + 1, MAX_RETRIES, backoff);
+                    sleepQuietly(backoff);
                     attempt++;
                     continue; // next attempt
                 }
@@ -299,6 +325,36 @@ public class AsyncImportTaskExecutor {
                 }
                 throw new AtlasBaseException(AtlasErrorCode.IMPORT_REGISTRATION_FAILED, e);
             }
+        }
+    }
+
+    private boolean isLockingConflict(Exception e) {
+        for (Throwable c = e; c != null; c = c.getCause()) {
+            if ("org.janusgraph.diskstorage.locking.PermanentLockingException"
+                    .equals(c.getClass().getName())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isActiveOrStaging(AtlasAsyncImportRequest request) {
+        if (request == null) {
+            return false;
+        }
+
+        ImportStatus status = request.getStatus();
+        return ObjectUtils.equals(status, ImportStatus.WAITING)
+                || ObjectUtils.equals(status, ImportStatus.PROCESSING)
+                || ObjectUtils.equals(status, ImportStatus.STAGING);
+    }
+
+    private void sleepQuietly(long backoff) {
+        try {
+            Thread.sleep(backoff);
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
         }
     }
 

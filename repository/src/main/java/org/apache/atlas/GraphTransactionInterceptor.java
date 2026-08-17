@@ -44,6 +44,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static org.apache.atlas.AtlasConfiguration.GRAPH_TXN_MAX_RETRIES;
+import static org.apache.atlas.AtlasConfiguration.GRAPH_TXN_RETRY_BACKOFF_MS;
+
 @Component
 public class GraphTransactionInterceptor implements MethodInterceptor {
     private static final Logger LOG = LoggerFactory.getLogger(GraphTransactionInterceptor.class);
@@ -59,11 +62,15 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
 
     private final AtlasGraph     graph;
     private final TaskManagement taskManagement;
+    private final int            maxRetries;
+    private final long           backoffMs;
 
     @Inject
     public GraphTransactionInterceptor(AtlasGraph graph, TaskManagement taskManagement) {
         this.graph          = graph;
         this.taskManagement = taskManagement;
+        this.maxRetries     = GRAPH_TXN_MAX_RETRIES.getInt();
+        this.backoffMs      = GRAPH_TXN_RETRY_BACKOFF_MS.getLong();
     }
 
     public static void lockObjectAndReleasePostCommit(final String guid) {
@@ -184,32 +191,59 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
 
         boolean        isSuccess = false;
         MetricRecorder metric    = null;
+        int            attempt   = 0;
 
         try {
-            try {
-                Object response = invocation.proceed();
+            while (true) {
+                try {
+                    Object response = invocation.proceed();
 
-                if (isInnerTxn) {
-                    LOG.debug("Ignoring commit for nested/inner transaction {}.{}", invokingClass, invokedMethodName);
-                } else {
-                    metric = RequestContext.get().startMetricRecord("graphCommit");
+                    if (isInnerTxn) {
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("Ignoring commit for nested/inner transaction {}.{}", invokingClass, invokedMethodName);
+                        }
+                    } else {
+                        metric = RequestContext.get().startMetricRecord("graphCommit");
 
-                    doCommitOrRollback(invokingClass, invokedMethodName);
+                        doCommitOrRollback(invokingClass, invokedMethodName);
+                    }
+
+                    isSuccess = !innerFailure.get();
+
+                    return response;
                 }
+                catch (Throwable t) {
+                    if (isInnerTxn) {
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("Ignoring rollback for nested/inner transaction {}.{}", invokingClass, invokedMethodName);
+                        }
+                        innerFailure.set(true);
+                        throw t;
+                    }
 
-                isSuccess = !innerFailure.get();
+                    if (isRetryableException(t) && attempt < maxRetries) {
+                        attempt++;
+                        long backoff = backoffMs * attempt;
+                        LOG.warn("JanusGraph locking conflict in {}.{} – rolling back and retrying (attempt {}/{}), backoff {}ms",
+                                invokingClass, invokedMethodName, attempt, maxRetries + 1, backoff);
+                        graph.rollback();
+                        RequestContext.get().endMetricRecord(metric);
+                        metric = null;
+                        OBJECT_UPDATE_SYNCHRONIZER.releaseLockedObjects();
+                        innerFailure.set(Boolean.FALSE);
+                        clearCache();
+                        postTransactionHooks.remove();
+                        try {
+                            Thread.sleep(backoff);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                        }
+                        continue;
+                    }
 
-                return response;
-            } catch (Throwable t) {
-                if (isInnerTxn) {
-                    LOG.debug("Ignoring rollback for nested/inner transaction {}.{}", invokingClass, invokedMethodName);
-
-                    innerFailure.set(true);
-                } else {
                     doRollback(logRollback, t);
+                    throw t;
                 }
-
-                throw t;
             }
         } finally {
             RequestContext.get().endMetricRecord(metric);
@@ -256,6 +290,21 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
         } else {
             return !(t instanceof NotFoundException);
         }
+    }
+
+    /**
+     * Returns {@code true} when the exception (or any cause in its chain) is a JanusGraph
+     * locking conflict that is safe to retry by re-running the whole transaction.
+     */
+    private static boolean isRetryableException(Throwable t) {
+        for (Throwable cause = t; cause != null; cause = cause.getCause()) {
+            String name = cause.getClass().getName();
+            if ("org.janusgraph.diskstorage.locking.PermanentLockingException".equals(name)
+                    || "org.janusgraph.diskstorage.locking.TemporaryLockingException".equals(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void doCommitOrRollback(final String invokingClass, final String invokedMethodName) {

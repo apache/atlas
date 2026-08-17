@@ -22,12 +22,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizerFactory;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
@@ -47,11 +47,14 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.patches.AddMandatoryAttributesPatch;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.patches.AtlasPatchRegistry;
 import org.apache.atlas.repository.patches.SuperTypesUpdatePatch;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.tasks.GraphClaimable;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
@@ -75,6 +78,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import java.io.File;
+import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -89,8 +93,18 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.FAILED;
+import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.IN_PROGRESS;
+import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.NOT_APPLIED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.SKIPPED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
+import static org.apache.atlas.repository.Constants.TYPEDEF_BOOTSTRAP_APPLIED_AT_KEY;
+import static org.apache.atlas.repository.Constants.TYPEDEF_BOOTSTRAP_APPLIED_BY_KEY;
+import static org.apache.atlas.repository.Constants.TYPEDEF_BOOTSTRAP_CLAIMED_BY_KEY;
+import static org.apache.atlas.repository.Constants.TYPEDEF_BOOTSTRAP_CLAIM_STARTED_AT;
+import static org.apache.atlas.repository.Constants.TYPEDEF_BOOTSTRAP_FILE_KEY;
+import static org.apache.atlas.repository.Constants.TYPEDEF_BOOTSTRAP_STATE_KEY;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getEncodedProperty;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
 /**
  * Class that handles initial loading of models and patches into typedef store
@@ -104,6 +118,8 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     public static final String RELATIONSHIP_CATEGORY  = "relationshipCategory";
     public static final String RELATIONSHIP_SWAP_ENDS = "swapEnds";
     public static final String TYPEDEF_PATCH_TYPE     = "TYPEDEF_PATCH";
+    private static final long TYPEDEF_BOOTSTRAP_STALE_THRESHOLD_MS =
+            AtlasConfiguration.TYPEDEF_BOOTSTRAP_STALE_THRESHOLD_MS.getLong();
 
     private final AtlasTypeDefStore typeDefStore;
     private final AtlasTypeRegistry typeRegistry;
@@ -275,31 +291,54 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
     @PostConstruct
     public void init() {
-        LOG.info("==> AtlasTypeDefStoreInitializer.init()");
-
-        if (!HAConfiguration.isHAEnabled(conf)) {
-            startInternal();
-        } else {
-            LOG.info("AtlasTypeDefStoreInitializer.init(): deferring type loading until instance activation");
-        }
+        // type loading is deferred entirely to instanceIsActive() for guaranteed ordering
 
         LOG.info("<== AtlasTypeDefStoreInitializer.init()");
     }
 
+    /**
+     * Called when this node wins leader election (or is the sole active node in legacy HA).
+     * Guarded by {@link #initialized} so bootstrap does not run twice if this node was
+     * already initialised as a follower.
+     */
     @Override
     public void instanceIsActive() {
         LOG.info("==> AtlasTypeDefStoreInitializer.instanceIsActive()");
 
-        startInternal();
+        AtlasRunMode mode = AtlasRunMode.current();
+        if (!mode.runsInitialization()) {
+            // METADATA_SERVER and NOTIFICATION_PROCESSOR: store already initialized by INITIALIZER
+            // or MONOLITHIC node — just load types into this JVM's in-memory registry.
+            LOG.info("AtlasTypeDefStoreInitializer.instanceIsActive(): RUN_MODE={} — loading types without bootstrap", mode);
+            loadTypesOnly();
+        } else {
+            // MONOLITHIC and INITIALIZER: bootstrap type-defs and apply patches.
+            startInternal();
+        }
 
         LOG.info("<== AtlasTypeDefStoreInitializer.instanceIsActive()");
     }
 
-    @Override
-    public void instanceIsPassive() throws AtlasException {
-        LOG.info("==> AtlasTypeDefStoreInitializer.instanceIsPassive()");
-
-        LOG.info("<== AtlasTypeDefStoreInitializer.instanceIsPassive()");
+    /**
+     * Loads type definitions from the graph into the in-memory registry without
+     * running bootstrap or patch writes.  Used in {@code SERVICE_TYPE=ATLAS} mode
+     * where initialization has already been completed by a prior INITIALIZATION pod.
+     */
+    private void loadTypesOnly() {
+        try {
+            typeDefStore.init();
+            typeDefStore.notifyLoadCompletion();
+            try {
+                AtlasAuthorizerFactory.getAtlasAuthorizer();
+            } catch (Throwable t) {
+                LOG.error("AtlasTypeDefStoreInitializer.loadTypesOnly(): Unable to obtain AtlasAuthorizer", t);
+            }
+            LOG.info("AtlasTypeDefStoreInitializer.loadTypesOnly(): types loaded successfully");
+        } catch (AtlasBaseException e) {
+            LOG.error("AtlasTypeDefStoreInitializer.loadTypesOnly(): failed to load types", e);
+        } finally {
+            RequestContext.clear();
+        }
     }
 
     @Override
@@ -327,6 +366,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             File               topModeltypesDir  = new File(modelsDirName);
             File[]             modelsDirContents = topModeltypesDir.exists() ? topModeltypesDir.listFiles() : null;
             AtlasPatchRegistry patchRegistry     = new AtlasPatchRegistry(graph);
+            String             nodeId            = buildPatchNodeId();
 
             if (modelsDirContents != null && modelsDirContents.length > 0) {
                 Arrays.sort(modelsDirContents);
@@ -337,13 +377,13 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                         continue;
                     } else if (!folder.getName().equals(PATCHES_FOLDER_NAME)) {
                         // load the models alphabetically in the subfolders apart from patches
-                        loadModelsInFolder(folder, patchRegistry);
+                        loadModelsInFolder(folder, patchRegistry, nodeId);
                     }
                 }
             }
 
             // load any files in the top models folder and any associated patches.
-            loadModelsInFolder(topModeltypesDir, patchRegistry);
+            loadModelsInFolder(topModeltypesDir, patchRegistry, nodeId);
         }
 
         LOG.info("<== AtlasTypeDefStoreInitializer.loadBootstrapTypeDefs()");
@@ -353,7 +393,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
      * Load all the model files in the supplied folder followed by the contents of the patches folder.
      * @param typesDir
      */
-    private void loadModelsInFolder(File typesDir, AtlasPatchRegistry patchRegistry) {
+    private void loadModelsInFolder(File typesDir, AtlasPatchRegistry patchRegistry, String nodeId) {
         LOG.info("==> AtlasTypeDefStoreInitializer({})", typesDir);
 
         String typesDirName = typesDir.getName();
@@ -367,6 +407,12 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
             for (File typeDefFile : typeDefFiles) {
                 if (typeDefFile.isFile()) {
+                    String fileKey = typeDefFile.getAbsolutePath();
+                    if (!waitOrClaimTypeDefFile(fileKey, nodeId)) {
+                        LOG.info("TypeDef file {} already applied by another node. Skipping.", fileKey);
+                        continue;
+                    }
+
                     try {
                         String        jsonStr  = new String(Files.readAllBytes(typeDefFile.toPath()), StandardCharsets.UTF_8);
                         AtlasTypesDef typesDef = AtlasType.fromJson(jsonStr, AtlasTypesDef.class);
@@ -387,8 +433,18 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                         } else {
                             LOG.info("No new type in file {}", typeDefFile.getAbsolutePath());
                         }
+                        markTypeDefFileState(fileKey, APPLIED, nodeId);
                     } catch (Throwable t) {
-                        LOG.error("error while registering types in file {}", typeDefFile.getAbsolutePath(), t);
+                        if (isTypeAlreadyExistsError(t)) {
+                            // Another node may have completed this typedef just before we retried/reclaimed.
+                            // Treat this as idempotent success to avoid flipping shared state to FAILED.
+                            markTypeDefFileState(fileKey, APPLIED, nodeId);
+                            LOG.warn("TypeDef file apply treated as APPLIED due to existing type race file={}, node={}",
+                                    fileKey, nodeId, t);
+                        } else {
+                            markTypeDefFileState(fileKey, FAILED, nodeId);
+                            LOG.error("error while registering types in file {}", typeDefFile.getAbsolutePath(), t);
+                        }
                     }
                 }
             }
@@ -396,6 +452,173 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             applyTypePatches(typesDir.getPath(), patchRegistry);
         }
         LOG.info("<== AtlasTypeDefStoreInitializer({})", typesDir);
+    }
+
+    private boolean waitOrClaimTypeDefFile(String fileKey, String nodeId) {
+        while (true) {
+            AtlasVertex vertex = findBootstrapVertex(fileKey, nodeId);
+            if (vertex == null) {
+                vertex = graph.addVertex();
+                setEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_FILE_KEY, fileKey);
+                setEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_STATE_KEY, NOT_APPLIED.toString());
+                setEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_CLAIMED_BY_KEY, "");
+                setEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_CLAIM_STARTED_AT, 0L);
+                setEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_APPLIED_BY_KEY, "");
+                setEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_APPLIED_AT_KEY, 0L);
+                LOG.info("TypeDef claim vertex created for file={}", fileKey);
+            }
+
+            PatchStatus state = getBootstrapState(vertex);
+            if (state == APPLIED) {
+                LOG.info("TypeDef file already APPLIED file={}, node={}", fileKey, nodeId);
+                return false;
+            }
+
+            String claimedBy  = getEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_CLAIMED_BY_KEY, String.class);
+            Long   claimedAt  = getEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_CLAIM_STARTED_AT, Long.class);
+            long   now        = System.currentTimeMillis();
+            boolean staleByAge = claimedAt != null && (now - claimedAt) > TYPEDEF_BOOTSTRAP_STALE_THRESHOLD_MS;
+            boolean recoverable = state == IN_PROGRESS
+                    && staleByAge
+                    && StringUtils.isNotBlank(claimedBy)
+                    && !StringUtils.equals(claimedBy, nodeId);
+            boolean alreadyOwnedBySelf = state == IN_PROGRESS && StringUtils.equals(claimedBy, nodeId);
+            boolean claimable = state == NOT_APPLIED || state == FAILED || state == UNKNOWN || recoverable || alreadyOwnedBySelf;
+            if (claimable) {
+                setEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_STATE_KEY, IN_PROGRESS.toString());
+                setEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_CLAIMED_BY_KEY, nodeId);
+                setEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_CLAIM_STARTED_AT, now);
+                if (recoverable) {
+                    LOG.warn("TypeDef file claim recovered from stale owner file={}, previousOwner={}, previousStart={}, newOwner={}",
+                            fileKey, claimedBy, claimedAt, nodeId);
+                } else {
+                    LOG.info("TypeDef file claimed file={}, node={}, previousState={}", fileKey, nodeId, state);
+                }
+                graph.commit();
+                return true;
+            }
+
+            LOG.debug("TypeDef file claim waiting file={}, node={}, state={}, claimedBy={}, claimedAt={}",
+                    fileKey, nodeId, state, claimedBy, claimedAt);
+
+            // Drop the current transaction snapshot before retrying so we don't keep
+            // polling the same cached IN_PROGRESS state while another node has advanced it.
+            graph.rollback();
+
+            try {
+                Thread.sleep(2000L);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+    }
+
+    private void markTypeDefFileState(String fileKey, PatchStatus status, String nodeId) {
+        try {
+            List<AtlasVertex> vertices = findBootstrapVertices(fileKey);
+            if (vertices.isEmpty()) {
+                return;
+            }
+
+            long appliedAt = System.currentTimeMillis();
+            for (AtlasVertex vertex : vertices) {
+                setEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_STATE_KEY, status.toString());
+                if (status == APPLIED || status == FAILED) {
+                    setEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_APPLIED_BY_KEY, nodeId);
+                    setEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_APPLIED_AT_KEY, appliedAt);
+                }
+                if (status != IN_PROGRESS) {
+                    setEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_CLAIMED_BY_KEY, "");
+                    setEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_CLAIM_STARTED_AT, 0L);
+                }
+            }
+            LOG.info("TypeDef file state updated file={}, status={}, node={}", fileKey, status, nodeId);
+        } finally {
+            graph.commit();
+        }
+    }
+
+    private PatchStatus getBootstrapState(AtlasVertex vertex) {
+        String value = getEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_STATE_KEY, String.class);
+        if (value == null) {
+            return UNKNOWN;
+        }
+
+        try {
+            return PatchStatus.valueOf(value);
+        } catch (IllegalArgumentException ex) {
+            return UNKNOWN;
+        }
+    }
+
+    private AtlasVertex findBootstrapVertex(String fileKey, String nodeId) {
+        List<AtlasVertex> vertices = findBootstrapVertices(fileKey);
+        AtlasVertex       first          = null;
+        AtlasVertex       applied        = null;
+        AtlasVertex       claimedBySelf  = null;
+        AtlasVertex       newestInFlight = null;
+        long              newestClaimAt  = Long.MIN_VALUE;
+
+        for (AtlasVertex vertex : vertices) {
+            if (first == null) {
+                first = vertex;
+            }
+
+            PatchStatus state = getBootstrapState(vertex);
+            if (state == APPLIED) {
+                applied = vertex;
+                break;
+            }
+
+            String claimedBy = getEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_CLAIMED_BY_KEY, String.class);
+            Long claimedAt = getEncodedProperty(vertex, TYPEDEF_BOOTSTRAP_CLAIM_STARTED_AT, Long.class);
+
+            if (state == IN_PROGRESS && StringUtils.equals(claimedBy, nodeId)) {
+                claimedBySelf = vertex;
+            }
+
+            if (state == IN_PROGRESS) {
+                long claimTs = claimedAt != null ? claimedAt : 0L;
+                if (newestInFlight == null || claimTs > newestClaimAt) {
+                    newestInFlight = vertex;
+                    newestClaimAt  = claimTs;
+                }
+            }
+        }
+
+        if (applied != null) {
+            return applied;
+        }
+        if (claimedBySelf != null) {
+            return claimedBySelf;
+        }
+        if (newestInFlight != null) {
+            return newestInFlight;
+        }
+        return first;
+    }
+
+    private List<AtlasVertex> findBootstrapVertices(String fileKey) {
+        AtlasGraphQuery query = graph.query().has(TYPEDEF_BOOTSTRAP_FILE_KEY, fileKey);
+        Iterable<AtlasVertex> vertices = query.vertices();
+        List<AtlasVertex> ret = new ArrayList<>();
+        for (AtlasVertex vertex : vertices) {
+            ret.add(vertex);
+        }
+        return ret;
+    }
+
+    private boolean isTypeAlreadyExistsError(Throwable t) {
+        Throwable current = t;
+        while (current != null) {
+            String message = current.getMessage();
+            if (StringUtils.containsIgnoreCase(message, "already exists")) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private void startInternal() {
@@ -406,7 +629,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             try {
                 AtlasAuthorizerFactory.getAtlasAuthorizer();
             } catch (Throwable t) {
-                LOG.error("AtlasTypeDefStoreInitializer.instanceIsActive(): Unable to obtain AtlasAuthorizer", t);
+                LOG.error("AtlasTypeDefStoreInitializer.startInternal(): Unable to obtain AtlasAuthorizer", t);
             }
         } catch (AtlasBaseException e) {
             LOG.error("Failed to init after becoming active", e);
@@ -449,6 +672,8 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         String typePatchesDirName = typesDirName + File.separator + PATCHES_FOLDER_NAME;
         File   typePatchesDir     = new File(typePatchesDirName);
         File[] typePatchFiles     = typePatchesDir.exists() ? typePatchesDir.listFiles() : null;
+        String nodeId             = buildPatchNodeId();
+        long   processStartMs     = System.currentTimeMillis();
 
         if (typePatchFiles == null || typePatchFiles.length == 0) {
             LOG.info("Type patches directory {} does not exist or not readable or has no patches", typePatchesDirName);
@@ -497,6 +722,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
                         int patchIndex = 0;
                         for (TypeDefPatch patch : patches.getPatches()) {
+                            int currentPatchIndex = patchIndex++;
                             PatchHandler patchHandler = patchHandlerRegistry.get(patch.getAction());
 
                             if (patchHandler == null) {
@@ -504,8 +730,30 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                                 continue;
                             }
 
-                            if (patchRegistry.isApplicable(patch.getId(), patchFile, patchIndex++)) {
+                            String patchId = patchRegistry.resolvePatchId(patch.getId(), patchFile, currentPatchIndex);
+                            if (patchRegistry.isApplicable(patch.getId(), patchFile, currentPatchIndex)) {
                                 PatchStatus status;
+                                if (patchRegistry.findByPatchId(patchId) == null) {
+                                    patchRegistry.register(patchId, patch.description, TYPEDEF_PATCH_TYPE, patch.action, UNKNOWN);
+                                }
+
+                                GraphClaimable<Boolean> claimAction = new GraphClaimable<Boolean>() {
+                                    @Override
+                                    public Boolean tryClaim() {
+                                        return patchRegistry.tryClaimPatchExecution(patchId, nodeId, processStartMs);
+                                    }
+
+                                    @Override
+                                    public void recoverStaleClaims() {
+                                        patchRegistry.recoverStaleInProgressClaims(nodeId, processStartMs);
+                                    }
+                                };
+
+                                claimAction.recoverStaleClaims();
+                                if (!claimAction.tryClaim()) {
+                                    LOG.info("{} in file: {} claim not acquired. Ignoring.", patchId, patchFile);
+                                    continue;
+                                }
 
                                 try {
                                     status = patchHandler.applyPatch(patch);
@@ -515,10 +763,12 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                                     LOG.error("Failed to apply {} (status: {}; action: {}) in file: {}. Ignored.", patch.getId(), status, patch.getAction(), patchFile);
                                 }
 
-                                patchRegistry.register(patch.id, patch.description, TYPEDEF_PATCH_TYPE, patch.action, status);
-                                LOG.info("{} (status: {}; action: {}) in file: {}", patch.getId(), status.toString(), patch.getAction(), patchFile);
+                                patchRegistry.updateStatus(patchId, status);
+                                LOG.info("{} (status: {}; action: {}) in file: {}", patchId, status.toString(), patch.getAction(), patchFile);
                             } else {
-                                LOG.info("{} in file: {} already {}. Ignoring.", patch.getId(), patchFile, patchRegistry.getStatus(patch.getId()).toString());
+                                PatchStatus existingStatus = patchRegistry.getStatus(patchId);
+                                LOG.info("{} in file: {} already {}. Ignoring.", patchId, patchFile,
+                                        existingStatus != null ? existingStatus : UNKNOWN);
                             }
                         }
                     } catch (Throwable t) {
@@ -527,6 +777,18 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                 }
             }
         }
+    }
+
+    private String buildPatchNodeId() {
+        String runMode  = AtlasRunMode.current().name();
+        String hostName = System.getenv("HOSTNAME");
+        String jvmId    = ManagementFactory.getRuntimeMXBean().getName();
+
+        if (StringUtils.isBlank(hostName)) {
+            hostName = "unknown-host";
+        }
+
+        return runMode + "@" + hostName + "#" + jvmId;
     }
 
     /**

@@ -20,8 +20,8 @@ package org.apache.atlas.tasks;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.service.Service;
@@ -89,13 +89,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
     @Override
     public void start() throws AtlasException {
-        if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
-            startInternal();
-        } else {
-            LOG.info("TaskManagement.start(): deferring until instance activation");
-        }
-
-        this.hasStarted = true;
+        // activation is handled exclusively by instanceIsActive()
     }
 
     @Override
@@ -107,18 +101,46 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         return this.hasStarted;
     }
 
+    /**
+     * Every active peer node runs its own task worker pool.  Task state is persisted in
+     * JanusGraph, so concurrent pickup across nodes is serialised by graph transactions.
+     */
     @Override
     public void instanceIsActive() throws AtlasException {
         LOG.info("==> TaskManagement.instanceIsActive()");
 
+        // Task workers run on all long-lived nodes: MONOLITHIC, METADATA_SERVER,
+        // NOTIFICATION_PROCESSOR. Entity writes from hook processing can enqueue tasks,
+        // so NOTIFICATION_PROCESSOR needs workers too. Skipped for INITIALIZER.
+        if (!AtlasRunMode.current().runsServer()) {
+            LOG.info("TaskManagement.instanceIsActive(): RUN_MODE={} — skipping task workers",
+                    AtlasRunMode.current());
+            return;
+        }
         startInternal();
+        this.hasStarted = true;
 
         LOG.info("<== TaskManagement.instanceIsActive()");
     }
 
-    @Override
-    public void instanceIsPassive() throws AtlasException {
-        LOG.info("TaskManagement.instanceIsPassive(): no action needed");
+    /**
+     * Returns a {@link GraphClaimable} scoped to the given task GUID.
+     * Callers (e.g. {@link TaskExecutor.TaskConsumer}) can use this to recover
+     * stale claims and claim a specific task without knowing about
+     * {@link TaskRegistry} directly.
+     */
+    public GraphClaimable<Boolean> claimableFor(String taskGuid) {
+        return new GraphClaimable<Boolean>() {
+            @Override
+            public Boolean tryClaim() {
+                return registry.tryClaimTask(taskGuid);
+            }
+
+            @Override
+            public void recoverStaleClaims() {
+                registry.recoverStaleInProgressTasks();
+            }
+        };
     }
 
     @Override

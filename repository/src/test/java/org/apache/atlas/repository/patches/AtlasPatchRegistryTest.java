@@ -29,6 +29,7 @@ import javax.inject.Inject;
 import static org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer.TYPEDEF_PATCH_TYPE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class AtlasPatchRegistryTest {
@@ -64,6 +65,16 @@ public class AtlasPatchRegistryTest {
 
         assertEquals(patches.getPatches().get(0).getId(), patchId);
         assertEquals(patches.getPatches().get(0).getStatus(), expectedStatus);
+        assertNotNull(patches.getPatches().get(0).getAppliedBy());
+        assertTrue(patches.getPatches().get(0).getAppliedAt() > 0L);
+    }
+
+    @Test(dependsOnMethods = "updateStatusForPatch")
+    public void notAppliedStatusShouldBeRunnable() {
+        AtlasPatchRegistry registry = new AtlasPatchRegistry(graph);
+        registry.updateStatus("1", AtlasPatch.PatchStatus.NOT_APPLIED);
+
+        assertTrue(registry.isApplicable("1", null, 0));
     }
 
     private AtlasPatch.AtlasPatches assertPatches(AtlasPatchRegistry registry, int i) {

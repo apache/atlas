@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.store.bootstrap;
 
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
@@ -170,18 +169,19 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     @Test
-    public void testInitWhenHADisabled() throws Exception {
+    public void testInitWhenHADisabled_isNoOp() throws Exception {
         haConfigMock.when(() -> HAConfiguration.isHAEnabled(conf)).thenReturn(false);
         initializer.init();
-        verify(typeDefStore, times(1)).init();
-        verify(typeDefStore, times(1)).notifyLoadCompletion();
+        verify(typeDefStore, never()).init();
+        verify(typeDefStore, never()).notifyLoadCompletion();
     }
 
     @Test
-    public void testInitWhenHAEnabled() throws Exception {
+    public void testInitWhenHAEnabled_isNoOp() throws Exception {
         haConfigMock.when(() -> HAConfiguration.isHAEnabled(conf)).thenReturn(true);
         initializer.init();
         verify(typeDefStore, never()).init();
+        verify(typeDefStore, never()).notifyLoadCompletion();
     }
 
     @Test
@@ -191,8 +191,13 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     @Test
-    public void testInstanceIsPassive() throws AtlasException {
-        initializer.instanceIsPassive();
+    public void testLoadTypesOnlyInitializesOnce() throws Exception {
+        Method loadTypesOnlyMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadTypesOnly");
+        loadTypesOnlyMethod.setAccessible(true);
+        loadTypesOnlyMethod.invoke(initializer);
+
+        verify(typeDefStore, times(1)).init();
+        verify(typeDefStore, times(1)).notifyLoadCompletion();
     }
 
     @Test
@@ -308,9 +313,9 @@ public class AtlasTypeDefStoreInitializerTest {
 
             when(typeRegistry.isRegisteredType("ValidType")).thenReturn(false);
 
-            Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, AtlasPatchRegistry.class);
+            Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, AtlasPatchRegistry.class, String.class);
             loadModelsMethod.setAccessible(true);
-            loadModelsMethod.invoke(initializer, tempDir.toFile(), patchRegistry);
+            loadModelsMethod.invoke(initializer, tempDir.toFile(), patchRegistry, "test-node");
 
             // Verify valid files were processed, empty/invalid files handled gracefully
             verify(typeDefStore, times(2)).createUpdateTypesDef(any(), any());
@@ -518,9 +523,9 @@ public class AtlasTypeDefStoreInitializerTest {
 
     @Test
     public void testNonExistentDirectoriesHandling() throws Exception {
-        Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, AtlasPatchRegistry.class);
+        Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, AtlasPatchRegistry.class, String.class);
         loadModelsMethod.setAccessible(true);
-        loadModelsMethod.invoke(initializer, new File("/non/existent"), patchRegistry);
+        loadModelsMethod.invoke(initializer, new File("/non/existent"), patchRegistry, "test-node");
 
         Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class);
         applyPatchesMethod.setAccessible(true);
