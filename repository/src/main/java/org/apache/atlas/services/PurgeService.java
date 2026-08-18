@@ -22,8 +22,6 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasRunMode;
-import org.apache.atlas.DeleteType;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.AtlasService;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -58,6 +56,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -68,7 +67,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
-import java.lang.management.ManagementFactory;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
