@@ -278,7 +278,7 @@ public class ClassificationTaskTest {
 
     @Test
     public void testToParametersWithNullValues() {
-        Map<String, Object> result = ClassificationTask.toParameters(null, null, null, null);
+        Map<String, Object> result = ClassificationTask.toParameters((String) null, (String) null, null, null);
 
         assertNotNull(result);
         assertEquals(result.get(PARAM_ENTITY_GUID), null);
