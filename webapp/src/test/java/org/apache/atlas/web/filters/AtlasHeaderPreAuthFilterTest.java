@@ -20,6 +20,7 @@ package org.apache.atlas.web.filters;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
@@ -36,6 +37,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -43,6 +46,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -55,9 +59,6 @@ public class AtlasHeaderPreAuthFilterTest {
 
     @Mock
     private FilterChain filterChain;
-
-    @Mock
-    private Configuration configuration;
 
     @BeforeMethod
     public void setUp() {
@@ -72,20 +73,16 @@ public class AtlasHeaderPreAuthFilterTest {
 
     @Test
     public void testDoFilterEnabledWithUsernameAndRoles() throws Exception {
-        when(configuration.getBoolean(AtlasHeaderPreAuthFilter.PROP_HEADER_AUTH_ENABLED, false)).thenReturn(true);
-        when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_USERNAME_HEADER, ""))
-                .thenReturn("x-user");
-        when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_ROLES_HEADER, ""))
-                .thenReturn("x-roles");
-        when(request.getHeader("x-user")).thenReturn("alice");
-        when(request.getHeader("x-roles")).thenReturn("ROLE_ADMIN, ROLE_USER");
+        Map<String, Object> properties = new HashMap<>();
 
-        try (MockedStatic<ApplicationProperties> appProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
-            appProps.when(ApplicationProperties::get).thenReturn(configuration);
+        properties.put(AtlasHeaderAuthConfiguration.PROP_HEADER_AUTH_ENABLED, true);
+        properties.put(AtlasHeaderAuthConfiguration.PROP_METHOD_HEADER_PREFIX + ".username", "X-Forwarded-User");
+        properties.put(AtlasHeaderAuthConfiguration.PROP_METHOD_HEADER_PREFIX + ".roles", "X-Forwarded-Groups");
 
-            AtlasHeaderPreAuthFilter filter = new AtlasHeaderPreAuthFilter();
-            filter.doFilter(request, response, filterChain);
-        }
+        when(request.getHeader("X-Forwarded-User")).thenReturn("alice");
+        when(request.getHeader("X-Forwarded-Groups")).thenReturn("ROLE_ADMIN, ROLE_USER");
+
+        runFilter(new MapConfiguration(properties));
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         assertNotNull(auth);
@@ -102,22 +99,46 @@ public class AtlasHeaderPreAuthFilterTest {
 
     @Test
     public void testDoFilterEnabledWithoutUsernameDoesNotAuthenticate() throws IOException, ServletException {
-        when(configuration.getBoolean(AtlasHeaderPreAuthFilter.PROP_HEADER_AUTH_ENABLED, false)).thenReturn(true);
-        when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_USERNAME_HEADER, ""))
-                .thenReturn("x-user");
-        when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_ROLES_HEADER, ""))
-                .thenReturn("x-roles");
-        when(request.getHeader("x-user")).thenReturn("   ");
+        Map<String, Object> properties = new HashMap<>();
 
-        try (MockedStatic<ApplicationProperties> appProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
-            appProps.when(ApplicationProperties::get).thenReturn(configuration);
+        properties.put(AtlasHeaderAuthConfiguration.PROP_HEADER_AUTH_ENABLED, true);
+        properties.put(AtlasHeaderAuthConfiguration.PROP_METHOD_HEADER_PREFIX + ".username", "X-Forwarded-User");
 
-            AtlasHeaderPreAuthFilter filter = new AtlasHeaderPreAuthFilter();
-            filter.doFilter(request, response, filterChain);
-        }
+        when(request.getHeader("X-Forwarded-User")).thenReturn("   ");
 
-        assertEquals(SecurityContextHolder.getContext().getAuthentication(), null);
+        runFilter(new MapConfiguration(properties));
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
         verify(filterChain).doFilter(eq(request), any(HttpServletResponse.class));
+    }
+
+    @Test
+    public void testDoFilterEnabledWithoutAnyHeadersContinuesUnauthenticated() throws Exception {
+        Map<String, Object> properties = new HashMap<>();
+
+        properties.put(AtlasHeaderAuthConfiguration.PROP_HEADER_AUTH_ENABLED, true);
+
+        runFilter(new MapConfiguration(properties));
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        verify(filterChain).doFilter(eq(request), any(HttpServletResponse.class));
+    }
+
+    @Test
+    public void testDoFilterAuthenticatesWithUsernameOnly() throws Exception {
+        Map<String, Object> properties = new HashMap<>();
+
+        properties.put(AtlasHeaderAuthConfiguration.PROP_HEADER_AUTH_ENABLED, true);
+        properties.put(AtlasHeaderAuthConfiguration.PROP_METHOD_HEADER_PREFIX + ".username", "username");
+
+        when(request.getHeader("username")).thenReturn("alice");
+
+        runFilter(new MapConfiguration(properties));
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        assertNotNull(auth);
+        assertEquals(((UserDetails) auth.getPrincipal()).getUsername(), "alice");
+        assertTrue(auth.getAuthorities().isEmpty());
     }
 
     @Test
@@ -126,21 +147,25 @@ public class AtlasHeaderPreAuthFilterTest {
         when(existing.isAuthenticated()).thenReturn(true);
         SecurityContextHolder.getContext().setAuthentication(existing);
 
-        when(configuration.getBoolean(AtlasHeaderPreAuthFilter.PROP_HEADER_AUTH_ENABLED, false)).thenReturn(true);
-        when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_USERNAME_HEADER, ""))
-                .thenReturn("x-user");
-        when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_ROLES_HEADER, ""))
-                .thenReturn("x-roles");
-        when(request.getHeader("x-user")).thenReturn("alice");
+        Map<String, Object> properties = new HashMap<>();
 
+        properties.put(AtlasHeaderAuthConfiguration.PROP_HEADER_AUTH_ENABLED, true);
+        properties.put(AtlasHeaderAuthConfiguration.PROP_METHOD_HEADER_PREFIX + ".username", "X-Forwarded-User");
+
+        when(request.getHeader("X-Forwarded-User")).thenReturn("alice");
+
+        runFilter(new MapConfiguration(properties));
+
+        assertSame(SecurityContextHolder.getContext().getAuthentication(), existing);
+        verify(filterChain).doFilter(eq(request), any(HttpServletResponse.class));
+    }
+
+    private void runFilter(Configuration configuration) throws Exception {
         try (MockedStatic<ApplicationProperties> appProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
             appProps.when(ApplicationProperties::get).thenReturn(configuration);
 
             AtlasHeaderPreAuthFilter filter = new AtlasHeaderPreAuthFilter();
             filter.doFilter(request, response, filterChain);
         }
-
-        assertSame(SecurityContextHolder.getContext().getAuthentication(), existing);
-        verify(filterChain).doFilter(eq(request), any(HttpServletResponse.class));
     }
 }
