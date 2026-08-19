@@ -21,8 +21,7 @@ package org.apache.atlas.web.filters;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
 import org.apache.atlas.server.common.filters.HeadersUtil;
-import org.apache.atlas.server.common.model.User;
-import org.apache.commons.configuration2.Configuration;
+import org.apache.atlas.web.model.User;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,16 +51,9 @@ import java.util.UUID;
 public class AtlasHeaderPreAuthFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasHeaderPreAuthFilter.class);
 
-    public static final String PROP_HEADER_AUTH_ENABLED = "atlas.authn.header.enabled";
-    public static final String PROP_USERNAME_HEADER     = "atlas.authn.header.username";
-    public static final String PROP_ROLES_HEADER        = "atlas.authn.header.roles";
-    public static final String PROP_REQUEST_ID_HEADER   = "atlas.authn.header.requestid";
-    public static final String REQUEST_ID_ATTRIBUTE     = "atlas.request.id";
+    private static final String REQUEST_ID_ATTRIBUTE = "atlas.request.id";
 
-    private Configuration configuration;
-    private boolean       headerAuthEnabled;
-    private String        userNameHeaderName;
-    private String        rolesHeaderName;
+    private AtlasHeaderAuthConfiguration headerAuthConfiguration;
 
     @Inject
     public AtlasHeaderPreAuthFilter() {
@@ -70,30 +62,23 @@ public class AtlasHeaderPreAuthFilter implements Filter {
 
     private void loadConfiguration() {
         try {
-            configuration = ApplicationProperties.get();
+            headerAuthConfiguration = AtlasHeaderAuthConfiguration.load(ApplicationProperties.get());
         } catch (Exception e) {
             LOG.error("Error loading application properties for header pre-auth", e);
-            configuration = null;
+            headerAuthConfiguration = AtlasHeaderAuthConfiguration.load(null);
         }
-        if (configuration == null) {
-            headerAuthEnabled  = false;
-            userNameHeaderName = null;
-            rolesHeaderName    = null;
-            return;
-        }
-        headerAuthEnabled  = configuration.getBoolean(PROP_HEADER_AUTH_ENABLED, false);
-        userNameHeaderName = StringUtils.trimToNull(configuration.getString(PROP_USERNAME_HEADER, ""));
-        rolesHeaderName    = StringUtils.trimToNull(configuration.getString(PROP_ROLES_HEADER, ""));
     }
 
     private List<GrantedAuthority> getAuthoritiesFromRolesHeader(String rolesHeader) {
         List<GrantedAuthority> ret = new ArrayList<>();
+
         if (StringUtils.isBlank(rolesHeader)) {
             return ret;
         }
 
         for (String role : rolesHeader.split(",")) {
             String trimmed = StringUtils.trimToNull(role);
+
             if (trimmed != null) {
                 ret.add(new org.springframework.security.core.authority.SimpleGrantedAuthority(trimmed));
             }
@@ -117,15 +102,15 @@ public class AtlasHeaderPreAuthFilter implements Filter {
         HeadersUtil.setSecurityHeaders(responseWrapper);
 
         try {
-            if (headerAuthEnabled) {
+            if (headerAuthConfiguration.isEnabled()) {
                 Authentication pre = SecurityContextHolder.getContext().getAuthentication();
 
                 if (pre == null || !pre.isAuthenticated()) {
-                    String username = StringUtils.trimToNull(httpRequest.getHeader(userNameHeaderName));
+                    String username = headerAuthConfiguration.readHeaderValue(httpRequest, AtlasHeaderAuthConfiguration.KEY_USERNAME);
 
                     if (username != null) {
-                        List<GrantedAuthority> grantedAuths =
-                                getAuthoritiesFromRolesHeader(httpRequest.getHeader(rolesHeaderName));
+                        String rolesHeaderValue = headerAuthConfiguration.readHeaderValue(httpRequest, AtlasHeaderAuthConfiguration.KEY_ROLES);
+                        List<GrantedAuthority> grantedAuths = getAuthoritiesFromRolesHeader(rolesHeaderValue);
 
                         UserDetails principal = new User(username, "", grantedAuths);
 
@@ -140,8 +125,9 @@ public class AtlasHeaderPreAuthFilter implements Filter {
                 }
             }
 
-            Authentication auth     = SecurityContextHolder.getContext().getAuthentication();
+            Authentication auth      = SecurityContextHolder.getContext().getAuthentication();
             String         requestId = getRequestId(auth, httpRequest);
+
             httpRequest.setAttribute(REQUEST_ID_ATTRIBUTE, requestId);
 
             chain.doFilter(servletRequest, responseWrapper);
@@ -153,12 +139,10 @@ public class AtlasHeaderPreAuthFilter implements Filter {
     }
 
     private String getRequestId(Authentication auth, HttpServletRequest request) {
-        String requestIdHeaderName = configuration != null ? configuration.getString(PROP_REQUEST_ID_HEADER) : null;
-
-        if (requestIdHeaderName != null &&
-                auth instanceof AtlasAuthenticationToken &&
+        if (auth instanceof AtlasAuthenticationToken &&
                 ((AtlasAuthenticationToken) auth).getAuthType() == AtlasAuthenticationToken.AUTH_TYPE_TRUSTED_PROXY) {
-            String requestId = StringUtils.trimToNull(request.getHeader(requestIdHeaderName));
+            String requestId = headerAuthConfiguration.readHeaderValue(request, AtlasHeaderAuthConfiguration.KEY_REQUEST_ID);
+
             if (requestId != null) {
                 return requestId;
             }
