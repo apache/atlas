@@ -27,7 +27,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -118,20 +117,14 @@ public final class AtlasHeaderAuthConfiguration {
             return null;
         }
 
-        String normalized = propertyKey.trim().toLowerCase(Locale.ROOT).replace('-', '_');
-
-        switch (normalized) {
+        switch (propertyKey.trim()) {
             case KEY_USERNAME:
-            case "user":
                 return KEY_USERNAME;
 
             case KEY_ROLES:
-            case "role":
-            case "groups":
                 return KEY_ROLES;
 
-            case KEY_REQUEST_ID:
-            case "request_id":
+            case "request-id":
                 return KEY_REQUEST_ID;
 
             default:

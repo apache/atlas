@@ -109,4 +109,20 @@ public class AtlasHeaderAuthConfigurationTest {
         assertEquals(config.getHeaderName(AtlasHeaderAuthConfiguration.KEY_USERNAME), "username");
         assertNull(config.getHeaderName(AtlasHeaderAuthConfiguration.KEY_ROLES));
     }
+
+    @Test
+    public void testUnrecognizedPropertyKeyIsIgnored() {
+        Map<String, Object> properties = new HashMap<>();
+
+        properties.put(AtlasHeaderAuthConfiguration.PROP_HEADER_AUTH_ENABLED, true);
+        properties.put(AtlasHeaderAuthConfiguration.PROP_METHOD_HEADER_PREFIX + ".username", "username");
+        properties.put(AtlasHeaderAuthConfiguration.PROP_METHOD_HEADER_PREFIX + ".user", "ignored-user-header");
+        properties.put(AtlasHeaderAuthConfiguration.PROP_METHOD_HEADER_PREFIX + ".requestid", "ignored-requestid-header");
+
+        AtlasHeaderAuthConfiguration config = AtlasHeaderAuthConfiguration.load(new MapConfiguration(properties));
+
+        assertEquals(config.getHeaderName(AtlasHeaderAuthConfiguration.KEY_USERNAME), "username");
+        assertNull(config.getHeaderName(AtlasHeaderAuthConfiguration.KEY_ROLES));
+        assertNull(config.getHeaderName(AtlasHeaderAuthConfiguration.KEY_REQUEST_ID));
+    }
 }
