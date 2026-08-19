@@ -21,7 +21,7 @@ package org.apache.atlas.web.filters;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
 import org.apache.atlas.server.common.filters.HeadersUtil;
-import org.apache.atlas.web.model.User;
+import org.apache.atlas.server.common.model.User;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
