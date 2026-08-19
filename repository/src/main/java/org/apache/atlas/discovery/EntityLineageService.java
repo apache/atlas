@@ -654,22 +654,15 @@ public class EntityLineageService implements AtlasLineageService {
         String      relationGuid = AtlasGraphUtilsV2.getEncodedProperty(edge, RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
         boolean     isInputEdge  = edge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
-        if (!entities.containsKey(inGuid)) {
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(inVertex);
+        addEntityHeaderIfAuthorized(inVertex, inGuid, entities);
+        addEntityHeaderIfAuthorized(outVertex, outGuid, entities);
 
-            entities.put(inGuid, entityHeader);
-        }
-
-        if (!entities.containsKey(outGuid)) {
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(outVertex);
-
-            entities.put(outGuid, entityHeader);
-        }
-
-        if (isInputEdge) {
-            relations.add(new LineageRelation(inGuid, outGuid, relationGuid));
-        } else {
-            relations.add(new LineageRelation(outGuid, inGuid, relationGuid));
+        if (entities.containsKey(inGuid) && entities.containsKey(outGuid)) {
+            if (isInputEdge) {
+                relations.add(new LineageRelation(inGuid, outGuid, relationGuid));
+            } else {
+                relations.add(new LineageRelation(outGuid, inGuid, relationGuid));
+            }
         }
 
         if (visitedEdges != null) {
@@ -677,6 +670,22 @@ public class EntityLineageService implements AtlasLineageService {
 
             visitedEdges.add(visitedEdgeLabel);
         }
+    }
+
+    private void addEntityHeaderIfAuthorized(AtlasVertex vertex, String guid, Map<String, AtlasEntityHeader> entities) throws AtlasBaseException {
+        if (entities.containsKey(guid)) {
+            return;
+        }
+
+        AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(vertex);
+
+        if (isEntityReadAllowed(entityHeader)) {
+            entities.put(guid, entityHeader);
+        }
+    }
+
+    private boolean isEntityReadAllowed(AtlasEntityHeader entityHeader) {
+        return AtlasAuthorizationUtils.isAccessAllowed(new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, entityHeader));
     }
 
     private AtlasLineageInfo getBothLineageInfoV1(String guid, int depth, boolean isDataSet) throws AtlasBaseException {
