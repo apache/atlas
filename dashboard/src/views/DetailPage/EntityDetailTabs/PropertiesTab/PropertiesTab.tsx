@@ -56,7 +56,7 @@ const PropertiesTab = (props: {
             customAttributes={customAttributes}
             entity={entity}
           />
-          <Labels loading={loading} labels={labels} />
+          <Labels loading={loading} labels={labels} entity={entity} />
 
           <BMAttributes
             loading={loading}
