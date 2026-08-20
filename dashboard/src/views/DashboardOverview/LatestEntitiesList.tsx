@@ -159,7 +159,7 @@ const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesL
 						onClick={handleViewAll}
 						className="latest-entities-view-all"
 						aria-label="View all entities"
-						color="primary.main"
+						color="primary"
 					>
 						View All
 					</Link>
@@ -197,7 +197,7 @@ const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesL
 								<Stack width="100%" direction="row" justifyContent="space-between" alignItems="center">
 									<Stack direction="row" spacing={0.5} alignItems="center" flexWrap="nowrap" flex={1} minWidth={0} mr={1}>
 										{detailHref ? (
-											<OverflowTooltip title={displayName} arrow placement="top">
+											<OverflowTooltip title={displayName} arrow placement="top" wrapperSx={{ display: "block", flex: "1 1 auto" }}>
 												<Link
 													component={RouterLink}
 													to={detailHref}
@@ -209,7 +209,7 @@ const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesL
 												</Link>
 											</OverflowTooltip>
 										) : (
-											<OverflowTooltip title={displayName} arrow placement="top">
+											<OverflowTooltip title={displayName} arrow placement="top" wrapperSx={{ display: "block", flex: "1 1 auto" }}>
 												<Typography
 													component="span"
 													className="latest-entities-entity-name latest-entities-entity-name-fallback"
@@ -218,12 +218,14 @@ const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesL
 												</Typography>
 											</OverflowTooltip>
 										)}
-										<Typography
-											component="span"
-											className="latest-entities-type-name"
-										>
-											({typeName})
-										</Typography>
+										<OverflowTooltip title={`(${typeName})`} arrow placement="top" wrapperSx={{ display: "block", flex: "0 1 auto", width: "auto" }}>
+											<Typography
+												component="span"
+												className="latest-entities-type-name"
+											>
+												({typeName})
+											</Typography>
+										</OverflowTooltip>
 									</Stack>
 									<Typography className="latest-entities-timestamp">
 										{formatRelativeTime(timestamp)}

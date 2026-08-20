@@ -38,7 +38,7 @@
 .latest-entities-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: rgba(0, 0, 0, 0.87);
 }
 
 .latest-entities-view-all {
@@ -66,13 +66,7 @@
 }
 
 .latest-entities-entity-name {
-  display: block;
   font-size: 0.875rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 0 1 auto;
-  min-width: 0;
 }
 
 .latest-entities-entity-name-link {
@@ -86,14 +80,12 @@
 
 .latest-entities-type-name {
   font-size: 0.875rem;
-  color: #6c757d;
-  flex-shrink: 0;
-  margin-left: 4px;
+  color: rgba(0, 0, 0, 0.6);
 }
 
 .latest-entities-timestamp {
   font-size: 0.8125rem;
-  color: #6c757d;
+  color: rgba(0, 0, 0, 0.6);
   flex-shrink: 0;
   margin-left: 8px;
   white-space: nowrap;

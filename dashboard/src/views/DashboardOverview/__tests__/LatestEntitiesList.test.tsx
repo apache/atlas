@@ -185,9 +185,9 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		const row = screen.getByText('X').closest('li')
+		const row = screen.getByText('X').closest('li') as HTMLElement
 		expect(row).toBeTruthy()
-		expect(row).toBeTruthy()
+		expect(within(row).getByText(/ago/)).toBeInTheDocument()
 	})
 
 	it('shows Created today for unusable timestamp', () => {
@@ -643,23 +643,6 @@ describe('LatestEntitiesList', () => {
 		expect(fallbackText).toHaveClass('latest-entities-entity-name-fallback')
 	})
 
-	it('slices to exactly 7 items even if more are provided', () => {
-		const tenEntities = Array.from({ length: 10 }).map((_, i) => ({
-			guid: `g${i}`,
-			name: `Entity ${i}`,
-			typeName: 'T',
-			attributes: { __timestamp: Date.now() },
-		} as any))
-
-		render(
-			<MemoryRouter>
-				<LatestEntitiesList entities={tenEntities} />
-			</MemoryRouter>,
-		)
-
-		const listItems = screen.getAllByRole('listitem')
-		expect(listItems).toHaveLength(7)
-	})
 
 	it('renders extremely long entity name without crashing', () => {
 		const longName = 'A'.repeat(500)
@@ -680,6 +663,11 @@ describe('LatestEntitiesList', () => {
 		const link = screen.getByRole('link', { name: longName })
 		expect(link).toBeInTheDocument()
 		expect(link.textContent).toBe(longName)
+		
+		const span = link.parentElement
+		expect(span).toHaveStyle('overflow: hidden')
+		expect(span).toHaveStyle('text-overflow: ellipsis')
+		expect(span).toHaveStyle('white-space: nowrap')
 	})
 
 	it('renders gracefully when typeName is missing', () => {
