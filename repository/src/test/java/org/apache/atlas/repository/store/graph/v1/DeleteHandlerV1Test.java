@@ -61,7 +61,9 @@ import static org.apache.atlas.TestRelationshipUtilsV2.DEPARTMENT_TYPE;
 import static org.apache.atlas.TestRelationshipUtilsV2.EMPLOYEE_TYPE;
 import static org.apache.atlas.TestRelationshipUtilsV2.MANAGER_TYPE;
 import static org.apache.atlas.TestRelationshipUtilsV2.getDepartmentEmployeeTypes;
+import static org.apache.atlas.TestUtilsV2.COLUMNS_ATTR_NAME;
 import static org.apache.atlas.TestUtilsV2.NAME;
+import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
 import static org.apache.atlas.type.AtlasTypeUtil.getAtlasObjectId;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -72,7 +74,7 @@ import static org.testng.Assert.assertTrue;
  * Tests for ATLAS-4766: resilience of DeleteHandlerV1 when graph elements
  * are removed during iteration ({@link DeleteHandlerV1#isRelationshipEdge},
  * {@link DeleteHandlerV1#deleteVertex}, {@link DeleteHandlerV1#deleteTraitsAndVertices}, and
- * {@code deleteAllClassifications}).
+ * {@code deleteAllClassifications}), and empty owned reference vertices during delete traversal.
  */
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class DeleteHandlerV1Test extends AtlasTestBase {
@@ -336,9 +338,64 @@ public class DeleteHandlerV1Test extends AtlasTestBase {
         assertEntityPurged(mgrGuid, purgeGuids(Collections.singleton(mgrGuid)));
     }
 
+    /**
+     * Delete must succeed when an owned column edge points to an empty reference vertex
+     * (edge present, column vertex has no properties).
+     */
+    @Test
+    public void testDeleteTableWithHollowOwnedColumnVertex() throws Exception {
+        ensureHiveTypesRegistered();
+
+        AtlasEntity dbEntity = TestUtilsV2.createDBEntityV2().getEntity();
+        AtlasEntity tableEntity = TestUtilsV2.createTableEntity(dbEntity, "hollow_col_table");
+        AtlasEntity col1 = TestUtilsV2.createColumnEntity(tableEntity, "col1");
+        AtlasEntity col2 = TestUtilsV2.createColumnEntity(tableEntity, "col2");
+        tableEntity.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(getAtlasObjectId(col1), getAtlasObjectId(col2)));
+
+        AtlasEntitiesWithExtInfo batch = new AtlasEntitiesWithExtInfo(tableEntity);
+        batch.addReferredEntity(dbEntity);
+        batch.addReferredEntity(col1);
+        batch.addReferredEntity(col2);
+
+        initRequestContext();
+        EntityMutationResponse createResp = entityStore.createOrUpdate(new AtlasEntityStream(batch), false);
+        assertNotNull(createResp);
+
+        String tableGuid = createResp.getFirstCreatedEntityByTypeName(TABLE_TYPE).getGuid();
+        String col2Guid  = getGuidForName(createResp, "col2");
+        assertNotNull(tableGuid);
+        assertNotNull(col2Guid);
+
+        AtlasVertex hollowColumnVertex = AtlasGraphUtilsV2.findByGuid(col2Guid);
+        assertNotNull(hollowColumnVertex);
+        stripAllVertexProperties(hollowColumnVertex);
+        assertTrue(hollowColumnVertex.getPropertyKeys().isEmpty());
+
+        DeleteHandlerV1 handler = deleteDelegate.getHandler();
+        handler.getOwnedVertices(AtlasGraphUtilsV2.findByGuid(tableGuid));
+
+        initRequestContext();
+        EntityMutationResponse deleteResp = entityStore.deleteById(tableGuid);
+        assertNotNull(deleteResp);
+        assertNotNull(deleteResp.getDeletedEntities());
+        assertTrue(deleteResp.getDeletedEntities().stream().anyMatch(h -> tableGuid.equals(h.getGuid())));
+    }
+
     // ---------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------
+
+    private void ensureHiveTypesRegistered() throws Exception {
+        if (typeRegistry.getEntityTypeByName(TABLE_TYPE) == null) {
+            typeDefStore.createTypesDef(TestUtilsV2.defineHiveTypes());
+        }
+    }
+
+    private void stripAllVertexProperties(AtlasVertex vertex) {
+        for (String propertyKey : new ArrayList<>(vertex.getPropertyKeys())) {
+            vertex.removeProperty(propertyKey);
+        }
+    }
 
     private EntityMutationResponse createManagerWithSubordinates(String prefix, int subordinateCount) throws Exception {
         AtlasEntitiesWithExtInfo batch = new AtlasEntitiesWithExtInfo();
