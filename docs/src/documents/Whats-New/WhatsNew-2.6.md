@@ -36,7 +36,7 @@ submenu: Whats New
   * Classic/React UI coexistence fixes; relationship tab UX; glossary and business metadata fixes
 * **Security**
   * XSS fix in sanitize-html; Swagger apidocs static asset access adjustment
-  * **Header-based authentication** (trusted proxy): when `atlas.authentication.method.header.enabled=true`, Atlas reads configured HTTP headers for username, comma-separated roles, and optional request ID from a trusted gateway and authenticates REST calls without Basic auth (e.g. `curl -H "username: ramk" -H "roles: dev" -H "requestid: test-1" http://localhost:21000/api/atlas/admin/version`).
+  * **Header-based authentication** (trusted proxy): when `atlas.authentication.method.header.enabled=true`, Atlas reads configured HTTP headers for username, comma-separated roles, and optional request ID from a trusted gateway and authenticates REST calls without Basic auth (e.g. `curl -H "username: alice" -H "roles: dev" -H "requestid: test-1" http://localhost:21000/api/atlas/admin/version`).
   * Header auth settings use `atlas.authentication.method.header.*` keys in `atlas-application.properties`—map each logical field (`username`, `roles`, `request-id`) to the HTTP header name your proxy sends (renamed from `atlas.authn.header.*`).
 * **Release / build**
   * Release artifact checksums; WAR size and build stabilization for atlas-2.6
