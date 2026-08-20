@@ -173,20 +173,23 @@ describe('SideBarBody', () => {
     handleOpenAboutModal: mockHandleOpenAboutModal
   };
 
-  const createMockStore = (initialState = {}) => {
+  const createMockStore = (initialState: any = {}) => {
     return configureStore({
       reducer: {
         typeHeader: () => ({
           loading: false,
-          ...initialState
+          ...(initialState.typeHeader || initialState)
         }),
         entity: () => ({
           loading: false,
-          entityData: {}
+          entityData: {},
+          ...(initialState.entity || {})
         }),
         session: () => ({
           sessionObj: { loading: false, data: null, error: null },
-          versionData: { loading: false, data: null, error: null }
+          versionData: { loading: false, data: null, error: null },
+          globalSessionData: { relationshipSearch: true },
+          ...(initialState.session || {})
         })
       }
     });
@@ -497,11 +500,32 @@ describe('SideBarBody', () => {
       expect(mockHandleOpenAboutModal).toHaveBeenCalled();
     });
 
-    it('should pass loading prop to ClassificationTree', () => {
-      const props = { ...defaultProps, loading: true };
-      renderWithProviders(props);
+    it('should show "Version unavailable" if versionError is set', () => {
+      const stateWithVersionError = {
+        session: {
+          versionData: {
+            loading: false,
+            data: null,
+            error: { message: "Failed to fetch version" }
+          }
+        }
+      };
+      renderWithProviders({}, { store: createMockStore(stateWithVersionError) });
       
-      expect(screen.getByTestId('classification-tree')).toBeInTheDocument();
+      expect(screen.getByText('Version unavailable')).toBeInTheDocument();
+    });
+
+    it('should hide relationships icon when relationshipSearch is falsy', () => {
+      const stateWithoutRelSearch = {
+        session: {
+          globalSessionData: {
+            relationshipSearch: false
+          }
+        }
+      };
+      renderWithProviders({}, { store: createMockStore(stateWithoutRelSearch) });
+      
+      expect(screen.queryByTestId('relationship-icon')).not.toBeInTheDocument();
     });
   });
 

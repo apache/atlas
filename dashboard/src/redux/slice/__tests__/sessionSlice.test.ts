@@ -46,6 +46,11 @@ describe('sessionSlice', () => {
 			loading: false,
 			data: null,
 			error: null
+		},
+		versionData: {
+			loading: false,
+			data: null,
+			error: null
 		}
 	};
 
@@ -58,6 +63,9 @@ describe('sessionSlice', () => {
 		expect(state.sessionObj.loading).toBe(false);
 		expect(state.sessionObj.data).toBeNull();
 		expect(state.sessionObj.error).toBeNull();
+		expect(state.versionData.loading).toBe(false);
+		expect(state.versionData.data).toBeNull();
+		expect(state.versionData.error).toBeNull();
 	});
 
 	it('should handle fetchSessionData.pending', () => {
