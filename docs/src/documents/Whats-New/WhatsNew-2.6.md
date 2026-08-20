@@ -36,6 +36,7 @@ submenu: Whats New
   * Classic/React UI coexistence fixes; relationship tab UX; glossary and business metadata fixes
 * **Security**
   * XSS fix in sanitize-html; Swagger apidocs static asset access adjustment
+  * Header auth configuration keys renamed to `atlas.authentication.method.header.*` (see `atlas-application.properties`)
 * **Release / build**
   * Release artifact checksums; WAR size and build stabilization for atlas-2.6
 * [List of JIRAs resolved in Apache Atlas 2.6.0 release](https://issues.apache.org/jira/issues/?jql=project%20%3D%20ATLAS%20AND%20fixVersion%20%3D%202.6.0%20ORDER%20BY%20key%20DESC)
