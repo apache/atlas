@@ -118,7 +118,7 @@ const SideBarBody = (props: {
   const { data: versionData, loading: isVersionLoading, error: versionError } = useAppSelector((state) => state.session?.versionData || {});
   const searchParams = new URLSearchParams(location.search);
 
-  const getActiveModule = () => {
+  const activeModule = useMemo(() => {
     if (searchParams.get("isCF") === "true") return "customFilters";
     if (location.pathname.includes("/glossary") || !!searchParams.get("gtype") || !!searchParams.get("term") || !!searchParams.get("category")) return "glossary";
     if (location.pathname.includes("/administrator/businessMetadata")) return "businessMetadata";
@@ -126,9 +126,7 @@ const SideBarBody = (props: {
     if (!!searchParams.get("relationshipName") || location.pathname.includes("/relationshipDetailPage")) return "relationships";
     if (!!searchParams.get("type") || location.pathname.includes("/detailPage")) return "entities";
     return null;
-  };
-
-  const activeModule = getActiveModule();
+  }, [location.pathname, location.search]);
 
   const isCustomFilterActive = activeModule === "customFilters";
   const isGlossaryActive = activeModule === "glossary";
