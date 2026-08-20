@@ -74,11 +74,11 @@ public class AtlasHeaderPreAuthFilterTest {
     public void testDoFilterEnabledWithUsernameAndRoles() throws Exception {
         when(configuration.getBoolean(AtlasHeaderPreAuthFilter.PROP_HEADER_AUTH_ENABLED, false)).thenReturn(true);
         when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_USERNAME_HEADER, ""))
-                .thenReturn("x-user");
+                .thenReturn("X-Forwarded-User");
         when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_ROLES_HEADER, ""))
-                .thenReturn("x-roles");
-        when(request.getHeader("x-user")).thenReturn("alice");
-        when(request.getHeader("x-roles")).thenReturn("ROLE_ADMIN, ROLE_USER");
+                .thenReturn("X-Forwarded-Groups");
+        when(request.getHeader("X-Forwarded-User")).thenReturn("alice");
+        when(request.getHeader("X-Forwarded-Groups")).thenReturn("ROLE_ADMIN, ROLE_USER");
 
         try (MockedStatic<ApplicationProperties> appProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
             appProps.when(ApplicationProperties::get).thenReturn(configuration);
@@ -104,10 +104,10 @@ public class AtlasHeaderPreAuthFilterTest {
     public void testDoFilterEnabledWithoutUsernameDoesNotAuthenticate() throws IOException, ServletException {
         when(configuration.getBoolean(AtlasHeaderPreAuthFilter.PROP_HEADER_AUTH_ENABLED, false)).thenReturn(true);
         when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_USERNAME_HEADER, ""))
-                .thenReturn("x-user");
+                .thenReturn("X-Forwarded-User");
         when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_ROLES_HEADER, ""))
-                .thenReturn("x-roles");
-        when(request.getHeader("x-user")).thenReturn("   ");
+                .thenReturn("X-Forwarded-Groups");
+        when(request.getHeader("X-Forwarded-User")).thenReturn("   ");
 
         try (MockedStatic<ApplicationProperties> appProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
             appProps.when(ApplicationProperties::get).thenReturn(configuration);
@@ -128,10 +128,8 @@ public class AtlasHeaderPreAuthFilterTest {
 
         when(configuration.getBoolean(AtlasHeaderPreAuthFilter.PROP_HEADER_AUTH_ENABLED, false)).thenReturn(true);
         when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_USERNAME_HEADER, ""))
-                .thenReturn("x-user");
-        when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_ROLES_HEADER, ""))
-                .thenReturn("x-roles");
-        when(request.getHeader("x-user")).thenReturn("alice");
+                .thenReturn("X-Forwarded-User");
+        when(request.getHeader("X-Forwarded-User")).thenReturn("alice");
 
         try (MockedStatic<ApplicationProperties> appProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
             appProps.when(ApplicationProperties::get).thenReturn(configuration);
