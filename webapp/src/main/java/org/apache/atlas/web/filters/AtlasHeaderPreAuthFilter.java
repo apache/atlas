@@ -52,7 +52,7 @@ import java.util.UUID;
 public class AtlasHeaderPreAuthFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasHeaderPreAuthFilter.class);
 
-    public static final String PROP_HEADER_AUTH_ENABLED = "atlas.authentication.header.enabled";
+    public static final String PROP_HEADER_AUTH_ENABLED = "atlas.authentication.method.header.enabled";
     public static final String PROP_USERNAME_HEADER     = "atlas.authentication.method.header.username";
     public static final String PROP_ROLES_HEADER        = "atlas.authentication.method.header.roles";
     public static final String PROP_REQUEST_ID_HEADER   = "atlas.authentication.method.header.request-id";
