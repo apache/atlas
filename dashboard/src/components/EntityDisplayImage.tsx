@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import type { SyntheticEvent } from "react";
 import { Avatar } from "@mui/material";
 import { getEntityIconPath } from "../utils/Utils";
 
@@ -38,7 +39,7 @@ const DisplayImage = ({
   const primaryUrl = getEntityIconPath({ entityData }) || "";
   const fallbackUrl = getEntityIconPath({ entityData, errorUrl: primaryUrl }) || "";
 
-  const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+  const handleError = (e: SyntheticEvent<HTMLImageElement, Event>) => {
     const target = e.currentTarget;
     if (target.src !== fallbackUrl) {
       target.onerror = null;
