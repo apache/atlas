@@ -94,7 +94,6 @@ import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NA
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getAllClassificationEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getAssociatedEntityVertex;
 import static org.apache.atlas.repository.graph.GraphHelper.getBlockedClassificationIds;
@@ -207,8 +206,14 @@ public abstract class DeleteHandlerV1 {
                 deletionCandidateVertices.add(vertexInfo.getVertex());
             }
 
-            AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(instanceVertex);
-            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+            // Root type unreadable — skip linked process/column-lineage collection; still queue the vertex for delete.
+            AtlasEntityType entityType = resolveEntityType(instanceVertex);
+            if (entityType == null) {
+                if (GraphHelper.elementExists(instanceVertex) && !deletionCandidateVertices.contains(instanceVertex)) {
+                    deletionCandidateVertices.add(instanceVertex);
+                }
+                continue;
+            }
 
             if (entityType.getEntityDef().hasSuperType(ATLAS_TYPE_DATASET)) {
                 addUpstreamProcessEntities(instanceVertex, deletionCandidateVertices, instanceVertexGuids);
@@ -295,6 +300,11 @@ public abstract class DeleteHandlerV1 {
             AtlasEdge edge = edgeIterator.next();
             AtlasVertex processVertex = edge.getOutVertex();
 
+            // Skip empty reference vertices on upstream process edges.
+            if (isUnreadableEntityVertex(processVertex)) {
+                continue;
+            }
+
             String guid = processVertex.getProperty(GUID_PROPERTY_KEY, String.class);
             if (instanceVertexGuids.contains(guid)) {
                 return; // already added
@@ -324,8 +334,11 @@ public abstract class DeleteHandlerV1 {
     public void getColumnLineageEntities(AtlasVertex process, Set<AtlasVertex> deletionCandidateVertices) throws AtlasBaseException {
         RequestContext requestContext = RequestContext.get();
 
-        AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(process);
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+        AtlasEntityType entityType = resolveEntityType(process);
+        if (entityType == null) {
+            return; // Process vertex unreadable — skip column-lineage collection
+        }
+
         Map<String, Map<String, AtlasAttribute>> relationshipAttributes = entityType.getRelationshipAttributes();
         Map<String, AtlasAttribute> columnLineages = relationshipAttributes.get(RELATIONSHIP_ATTRIBUTE_KEY_STRING);
 
@@ -339,7 +352,13 @@ public abstract class DeleteHandlerV1 {
 
             while (edgeIterator.hasNext()) {
                 AtlasVertex columnLineageVertex = edgeIterator.next().getOutVertex();
-                String typeName = columnLineageVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
+
+                // Skip empty reference vertices during delete
+                if (isUnreadableEntityVertex(columnLineageVertex)) {
+                    continue;
+                }
+
+                String typeName = GraphHelper.getTypeName(columnLineageVertex);
 
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Column-lineage candidate: type={}, guid={}, state={}, viaEdgeLabel={}, process={}",
@@ -464,7 +483,13 @@ public abstract class DeleteHandlerV1 {
         vertices.push(entityVertex);
 
         while (!vertices.isEmpty()) {
-            AtlasVertex        vertex = vertices.pop();
+            AtlasVertex vertex = vertices.pop();
+
+            // Skip empty reference vertices during delete
+            if (isUnreadableEntityVertex(vertex)) {
+                continue;
+            }
+
             AtlasEntity.Status state  = getState(vertex);
 
             //In case of purge If the reference vertex is active then skip it or else
@@ -479,13 +504,14 @@ public abstract class DeleteHandlerV1 {
                 continue;
             }
 
-            AtlasEntityHeader entity     = entityRetriever.toAtlasEntityHeader(vertex);
-            String            typeName   = entity.getTypeName();
-            AtlasEntityType   entityType = typeRegistry.getEntityTypeByName(typeName);
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(GraphHelper.getTypeName(vertex));
 
             if (entityType == null) {
-                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), typeName);
+                LOG.warn("Vertex {} has unrecognized typeName {}. Skipping.", vertex.getId(), GraphHelper.getTypeName(vertex));
+                continue;
             }
+
+            AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(vertex);
 
             vertexInfoMap.put(guid, new GraphHelper.VertexInfo(entity, vertex));
 
@@ -626,7 +652,8 @@ public abstract class DeleteHandlerV1 {
 
                 AtlasVertex referencedVertex = entityRetriever.getReferencedEntityVertex(edge, relationshipDirection, entityVertex);
 
-                if (referencedVertex != null) {
+                // Do not update the other end of the edge if that vertex is an empty reference vertex.
+                if (referencedVertex != null && !isUnreadableEntityVertex(referencedVertex)) {
                     RequestContext requestContext = RequestContext.get();
 
                     if (!requestContext.isUpdatedEntity(GraphHelper.getGuid(referencedVertex))) {
@@ -1466,6 +1493,49 @@ public abstract class DeleteHandlerV1 {
 
             deleteEdgeReference(edge, CLASSIFICATION, false, false, instanceVertex);
         }
+    }
+
+    /**
+     * True when a vertex cannot be read as an entity during delete traversal (empty shell, missing
+     * guid/typeName, or already removed). Matches {@code EntityGraphRetriever} ATLAS-4605 behavior.
+     */
+    private boolean isUnreadableEntityVertex(AtlasVertex vertex) {
+        if (vertex == null || !GraphHelper.elementExists(vertex)) {
+            return true;
+        }
+
+        if (CollectionUtils.isEmpty(vertex.getPropertyKeys())) {
+            LOG.warn("Reference vertex found empty with vertexId: {}. Skipping.", vertex.getId());
+            return true;
+        }
+
+        if (StringUtils.isEmpty(GraphHelper.getGuid(vertex))) {
+            LOG.warn("Vertex {} has no GUID. Skipping.", vertex.getId());
+            return true;
+        }
+
+        if (StringUtils.isEmpty(GraphHelper.getTypeName(vertex))) {
+            LOG.warn("Vertex {} has empty typeName. Skipping.", vertex.getId());
+            return true;
+        }
+
+        return false;
+    }
+
+    /** Resolves entity type for delete traversal; returns null when vertex is unreadable or type unknown. */
+    private AtlasEntityType resolveEntityType(AtlasVertex vertex) throws AtlasBaseException {
+        if (isUnreadableEntityVertex(vertex)) {
+            return null;
+        }
+
+        String          typeName   = GraphHelper.getTypeName(vertex);
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+        if (entityType == null) {
+            LOG.warn("Vertex {} has unrecognized typeName {}. Skipping.", vertex.getId(), typeName);
+        }
+
+        return entityType;
     }
 
     private boolean skipVertexForDelete(AtlasVertex vertex) {
