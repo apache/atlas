@@ -150,23 +150,7 @@
   color: v.$text-grey;
 }
 
-.sidebar-dragger {
-  position: inherit;
-  min-width: 2px;
-  width: 2px;
-  background-color: #f4f7f9;
-  cursor: col-resize;
-  padding: 4px 0 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 999;
-  clear: both;
-}
 
-.sidebar-dragger:hover {
-  background: #4a90e2;
-}
 
 .tree-item-label {
   flex: 1;

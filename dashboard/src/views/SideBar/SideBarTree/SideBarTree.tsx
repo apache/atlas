@@ -970,10 +970,7 @@ const BarTreeView: FC<{
         <LightTooltip title={label} disableHoverListener={!isOverflown}>
           <span
             ref={labelRef}
-            className="tree-item-label"
-            style={{
-              whiteSpace: "nowrap",
-            }}
+            className="tree-item-label sidebar-tree-label-nowrap"
           >
             {highlightText(label)}
           </span>
@@ -1159,7 +1156,7 @@ const BarTreeView: FC<{
                       )}
 
                     {treeName == "Business MetaData" && (
-                      <LightTooltip title="Open Businesss Metadata">
+                      <LightTooltip title="Open Business Metadata">
                         <LaunchOutlinedIcon
                           fontSize="small"
                           onClick={(e) => {
