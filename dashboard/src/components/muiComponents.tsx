@@ -52,6 +52,8 @@ import MuiAccordionSummary, {
   AccordionSummaryProps
 } from "@mui/material/AccordionSummary";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
+import { TooltipProps } from '@mui/material/Tooltip';
+import { SxProps, Theme } from '@mui/material/styles';
 
 const LightTooltip = styled(({ className, ...props }: any) => (
   <Tooltip
@@ -69,8 +71,6 @@ const LightTooltip = styled(({ className, ...props }: any) => (
   }
 }));
 
-import { TooltipProps } from '@mui/material/Tooltip';
-import { SxProps, Theme } from '@mui/material/styles';
 
 interface OverflowTooltipProps extends Omit<TooltipProps, 'children'> {
   children: React.ReactElement;
@@ -90,15 +90,15 @@ const OverflowTooltip = ({ title, children, wrapperComponent, wrapperSx, ...prop
     }
   };
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     checkOverflow();
     window.addEventListener("resize", checkOverflow);
     return () => {
       window.removeEventListener("resize", checkOverflow);
     };
-  }, [children, title]);
+  }, [title]);
 
-  const child = wrapperComponent || wrapperSx ? (
+  const child = (
     <Box
       component={wrapperComponent || 'span'}
       ref={textElementRef}
@@ -106,7 +106,6 @@ const OverflowTooltip = ({ title, children, wrapperComponent, wrapperSx, ...prop
         display: "inline-flex",
         minWidth: 0,
         width: "100%",
-        alignItems: "center",
         overflow: "hidden",
         textOverflow: "ellipsis",
         whiteSpace: "nowrap",
@@ -115,8 +114,6 @@ const OverflowTooltip = ({ title, children, wrapperComponent, wrapperSx, ...prop
     >
       {children}
     </Box>
-  ) : (
-    React.cloneElement(children, { ref: textElementRef })
   );
 
   return (
