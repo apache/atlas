@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.web.errors;
+package org.apache.atlas.server.common.errors;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;

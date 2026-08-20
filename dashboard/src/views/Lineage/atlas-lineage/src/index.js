@@ -19,7 +19,7 @@
 import dagreD3 from "dagre-d3";
 import { select, selection, event } from "d3-selection";
 import { curveBasis } from "d3-shape";
-import { LineageUtils, DataUtils, isEmpty } from "./Utils";
+import { LineageUtils, DataUtils, isEmpty, escapeHtml } from "./Utils";
 import d3Tip from "d3-tip";
 
 import "./styles/style.scss";
@@ -543,7 +543,9 @@ export default class LineageHelper {
           var htmlStr = "";
           if (toolTipTitle) {
             htmlStr =
-              "<h5 style='text-align: center;'>" + toolTipTitle + "</h5>";
+              "<h5 style='text-align: center;'>" +
+              escapeHtml(toolTipTitle) +
+              "</h5>";
           } else if (value.id !== this.guid) {
             htmlStr =
               "<h5 style='text-align: center;'>" +
@@ -553,18 +555,18 @@ export default class LineageHelper {
 
           htmlStr +=
             "<h5 class='text-center'><span style='color:#359f89'>" +
-            value.toolTipLabel +
+            escapeHtml(value.toolTipLabel) +
             "</span></h5> ";
           if (value.typeName) {
             htmlStr +=
               "<h5 class='text-center'><span>(" +
-              value.typeName +
+              escapeHtml(value.typeName) +
               ")</span></h5> ";
           }
           if (value.queryText) {
             htmlStr +=
               "<h5>Query: <span style='color:#359f89'>" +
-              value.queryText +
+              escapeHtml(value.queryText) +
               "</span></h5> ";
           }
           return "<div class='tip-inner-scroll'>" + htmlStr + "</div>";

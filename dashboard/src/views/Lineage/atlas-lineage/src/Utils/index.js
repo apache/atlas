@@ -25,10 +25,18 @@ const isEmpty = (value) =>
 	(typeof value === "object" && Object.keys(value).length === 0) ||
 	(typeof value === "string" && value.trim().length === 0);
 
+const escapeHtml = (value) =>
+	String(value ?? "")
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#39;");
+
 String.prototype.trunc =
 	String.prototype.trunc ||
 	function(n) {
 		return this.length > n ? this.substr(0, n - 1) + "..." : this;
 	};
 
-export { LineageUtils, DataUtils, isEmpty };
+export { LineageUtils, DataUtils, isEmpty, escapeHtml };

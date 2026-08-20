@@ -20,6 +20,7 @@ package org.apache.atlas.web.errors;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.server.common.errors.AtlasBaseExceptionMapper;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -35,6 +36,25 @@ public class AtlasBaseExceptionMapperTest {
     @BeforeClass
     public void setUp() {
         atlasBaseExceptionMapper = new AtlasBaseExceptionMapper();
+    }
+
+    @Test
+    public void testPurgeRequestSizeExceedsLimitMapsToHttp400() {
+        AtlasBaseException exception = new AtlasBaseException(
+                AtlasErrorCode.PURGE_REQUEST_SIZE_EXCEEDS_LIMIT, "1001", "1000");
+
+        Response response = atlasBaseExceptionMapper.toResponse(exception);
+
+        assertNotNull(response);
+        assertEquals(response.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
+        assertNotNull(response.getEntity());
+
+        String entity = (String) response.getEntity();
+        assertTrue(entity.contains(AtlasErrorCode.PURGE_REQUEST_SIZE_EXCEEDS_LIMIT.getErrorCode()));
+        assertTrue(entity.contains("errorCode"));
+        assertTrue(entity.contains("errorMessage"));
+        assertTrue(entity.contains("1001"));
+        assertTrue(entity.contains("1000"));
     }
 
     @Test
@@ -62,5 +82,18 @@ public class AtlasBaseExceptionMapperTest {
             // Exception is acceptable as it might be thrown by the utility methods
             assertTrue(true);
         }
+    }
+
+    @Test
+    public void testUnauthorizedAccessResponse() {
+        AtlasBaseException testException = new AtlasBaseException(
+                AtlasErrorCode.UNAUTHORIZED_ACCESS, "testuser", "post on rest notification service");
+
+        Response response = atlasBaseExceptionMapper.toResponse(testException);
+
+        assertEquals(response.getStatus(), Response.Status.FORBIDDEN.getStatusCode());
+        String entity = (String) response.getEntity();
+        assertTrue(entity.contains("ATLAS-403-00-001"));
+        assertTrue(entity.contains("not authorized to perform post on rest notification service"));
     }
 }

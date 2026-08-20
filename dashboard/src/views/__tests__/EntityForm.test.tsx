@@ -136,6 +136,16 @@ jest.mock('@components/Forms/FormCreatableSelect', () => ({
 	default: ({ data }: any) => <input data-testid={`creatable-${data.name}`} />
 }));
 
+jest.mock('@components/Forms/FormSingleSelect', () => ({
+	__esModule: true,
+	default: ({ data }: any) => <select data-testid={`enum-single-${data.name}`} />
+}));
+
+jest.mock('@components/Forms/FormEnumMultiSelect', () => ({
+	__esModule: true,
+	default: ({ data }: any) => <select multiple data-testid={`enum-multi-${data.name}`} />
+}));
+
 jest.mock('@components/Modal', () => ({
 	__esModule: true,
 	default: ({ open, onClose, children, title, button1Handler, button2Handler, button2Label }: any) =>
@@ -154,12 +164,18 @@ jest.mock('@components/SkeletonLoader', () => ({
 	default: () => <div data-testid="skeleton">Loading...</div>
 }));
 
-const createStore = (entityData: any = {}, sessionData: any = {}, typeHeaderData: any = []) => {
+const createStore = (
+	entityData: any = {},
+	sessionData: any = {},
+	typeHeaderData: any = [],
+	enumData: any = { enumDefs: [] }
+) => {
 	return configureStore({
 		reducer: {
 			entity: () => ({ entityData }),
 			session: () => ({ sessionObj: { data: sessionData } }),
-			typeHeader: () => ({ typeHeaderData })
+			typeHeader: () => ({ typeHeaderData }),
+			enum: () => ({ enumObj: { data: enumData } })
 		},
 		middleware: (getDefaultMiddleware) =>
 			getDefaultMiddleware({
@@ -203,6 +219,30 @@ describe('EntityForm - 100% Coverage', () => {
 					{ name: 'inputs', typeName: 'array<DataSet>', isOptional: true, cardinality: 'SET' },
 					{ name: 'output', typeName: 'DataSet', isOptional: true, cardinality: 'SINGLE' },
 					{ name: 'outputs', typeName: 'array<DataSet>', isOptional: true, cardinality: 'SINGLE' }
+				]
+			},
+			{
+				name: 'enumchecking',
+				category: 'ENTITY',
+				attributeDefs: [
+					{ name: 'name', typeName: 'string', isOptional: false, cardinality: 'SINGLE' },
+					{ name: 'storageType', typeName: 'ozone_storage_type', isOptional: true, cardinality: 'SINGLE' },
+					{ name: 'requiredStorageType', typeName: 'ozone_storage_type', isOptional: false, cardinality: 'SINGLE' },
+					{ name: 'storageTypes', typeName: 'array<ozone_storage_type>', isOptional: true, cardinality: 'SET' }
+				]
+			},
+			{
+				name: 'hdfs_path',
+				category: 'ENTITY',
+				attributeDefs: [
+					{ name: 'path', typeName: 'string', isOptional: false, cardinality: 'SINGLE' }
+				]
+			},
+			{
+				name: '__internal_type',
+				category: 'ENTITY',
+				attributeDefs: [
+					{ name: 'internalAttr', typeName: 'string', isOptional: false, cardinality: 'SINGLE' }
 				]
 			}
 		]
@@ -1750,6 +1790,58 @@ describe('EntityForm - 100% Coverage', () => {
 	});
 
 	describe('Entity Type Selection', () => {
+		const openEntityTypeDropdown = async () => {
+			const autocomplete = screen.getByLabelText('Search-entity-type');
+			fireEvent.mouseDown(autocomplete);
+			return autocomplete;
+		};
+
+		test('shows enumchecking when listed in session config (positive)', async () => {
+			const restrictedSessionData = {
+				'atlas.ui.editable.entity.types': 'hdfs_path,enumchecking'
+			};
+			const store = createStore(mockEntityData, restrictedSessionData, mockTypeHeaderData);
+
+			render(
+				<Provider store={store}>
+					<MemoryRouter>
+						<EntityForm open={true} onClose={jest.fn()} />
+					</MemoryRouter>
+				</Provider>
+			);
+
+			await openEntityTypeDropdown();
+
+			await waitFor(() => {
+				expect(screen.getByRole('option', { name: 'enumchecking' })).toBeInTheDocument();
+				expect(screen.getByRole('option', { name: 'hdfs_path' })).toBeInTheDocument();
+			});
+			expect(screen.queryByRole('option', { name: 'DataSet' })).not.toBeInTheDocument();
+			expect(screen.queryByRole('option', { name: '__internal_type' })).not.toBeInTheDocument();
+		});
+
+		test('hides enumchecking when not listed in session config (negative)', async () => {
+			const restrictedSessionData = {
+				'atlas.ui.editable.entity.types': 'DataSet'
+			};
+			const store = createStore(mockEntityData, restrictedSessionData, mockTypeHeaderData);
+
+			render(
+				<Provider store={store}>
+					<MemoryRouter>
+						<EntityForm open={true} onClose={jest.fn()} />
+					</MemoryRouter>
+				</Provider>
+			);
+
+			await openEntityTypeDropdown();
+
+			await waitFor(() => {
+				expect(screen.getByRole('option', { name: 'DataSet' })).toBeInTheDocument();
+			});
+			expect(screen.queryByRole('option', { name: 'enumchecking' })).not.toBeInTheDocument();
+		});
+
 		test('filters entity types when session config is not wildcard', () => {
 			const restrictedSessionData = {
 				'atlas.ui.editable.entity.types': 'DataSet'
@@ -1767,7 +1859,7 @@ describe('EntityForm - 100% Coverage', () => {
 			expect(screen.getByTestId('modal')).toBeInTheDocument();
 		});
 
-		test('shows all entity types when session config is wildcard', () => {
+		test('shows all entity types when session config is wildcard', async () => {
 			const store = createStore(mockEntityData, mockSessionData, mockTypeHeaderData);
 			
 			render(
@@ -1778,7 +1870,12 @@ describe('EntityForm - 100% Coverage', () => {
 				</Provider>
 			);
 
-			expect(screen.getByTestId('modal')).toBeInTheDocument();
+			await openEntityTypeDropdown();
+
+			await waitFor(() => {
+				expect(screen.getByRole('option', { name: 'enumchecking' })).toBeInTheDocument();
+				expect(screen.getByRole('option', { name: 'DataSet' })).toBeInTheDocument();
+			});
 		});
 
 		test('renders entity type selection autocomplete', async () => {

@@ -329,8 +329,129 @@ pre {
     font-size: 12px;
     font-weight: normal;
     margin-bottom: 5px;
-    margin-left: 5px;
     float: left;
+}
+
+.glossary-actions-dropdown {
+    .dropdown-menu {
+        min-width: 220px;
+        padding: 4px 0;
+
+        > li > a.glossary-sidebar-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            color: $color_ironside_gray_approx;
+            white-space: nowrap;
+
+            .menuitem-icon {
+                color: $color_jungle_green_approx;
+                width: 16px;
+                min-width: 16px;
+                text-align: center;
+                flex-shrink: 0;
+                font-size: 14px;
+            }
+
+            .menuitem-label {
+                color: inherit;
+            }
+
+            &:hover,
+            &:focus {
+                color: $color_jungle_green_approx;
+                background-color: transparent;
+                text-decoration: none;
+            }
+        }
+    }
+}
+
+.glossary-terms-list-page {
+    padding: 10px 10px;
+
+    .glossary-terms-list-actions {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+        gap: 8px;
+        max-width: 100%;
+
+        .btn {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .glossary-download-dropdown {
+            flex-shrink: 0;
+
+            .dropdown-menu {
+                z-index: 1050;
+            }
+        }
+    }
+
+    .glossary-terms-table {
+        margin-top: 10px;
+
+        .table-responsive {
+            min-height: 140px;
+        }
+
+        .backgrid {
+            width: 100%;
+            margin-bottom: 0;
+        }
+
+        .banded.pagination-box {
+            margin-top: 10px;
+        }
+    }
+}
+
+.glossary-terms-list-title {
+    margin-top: 0;
+}
+
+.glossary-terms-filters {
+    margin-bottom: 15px;
+
+    &.is-loading {
+        opacity: 0.65;
+        pointer-events: none;
+    }
+}
+
+.glossary-status-badge {
+    display: inline-block;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    font-size: 11px;
+    line-height: 1.2;
+    padding: 2px 6px;
+    white-space: nowrap;
+}
+
+.glossary-status-active {
+    border-color: #37bb9b;
+    color: #1f7f67;
+}
+
+.glossary-status-draft {
+    border-color: #f0ad4e;
+    color: #9a6700;
+}
+
+.glossary-status-deprecated {
+    border-color: #bb5838;
+    color: #8f3f24;
+}
+
+.glossary-status-unknown {
+    border-color: #bdbdbd;
+    color: #686868;
 }
 
 .errorValidate {

@@ -18,6 +18,7 @@
 package org.apache.atlas.discovery;
 
 import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
@@ -60,9 +61,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class EntityDiscoveryServiceTest {
     @Mock
@@ -147,6 +152,32 @@ public class EntityDiscoveryServiceTest {
         when(entityDiscoveryService.getSavedSearchByGuid(anyString(), anyString())).thenReturn(new AtlasUserSavedSearch());
         when(entityDiscoveryService.getSavedSearchByName(anyString(), anyString(), anyString())).thenReturn(new AtlasUserSavedSearch());
         when(entityDiscoveryService.searchGUIDsWithParameters(any(AtlasAuditAgingType.class), any(Set.class), any(SearchParameters.class))).thenReturn(new HashSet<>());
+    }
+
+    private EntityDiscoveryService createStrictServiceForSecurityTests() throws Exception {
+        /*
+         * Strict setup path for security-sensitive tests:
+         * always instantiate a real EntityDiscoveryService and never
+         * fallback to a mocked/spied service.
+         */
+        when(typeRegistry.getEntityTypeByName(anyString())).thenReturn(entityType);
+        when(entityType.getTypeAndAllSubTypesQryStr()).thenReturn("(TestType)");
+        when(entityType.getAttribute(anyString())).thenReturn(attribute);
+        when(entityType.getTypeName()).thenReturn("TestType");
+        when(attribute.getVertexPropertyName()).thenReturn("v.testAttr");
+        when(attribute.getAttributeType()).thenReturn(mock(org.apache.atlas.type.AtlasType.class));
+        when(indexer.getVertexIndexKeys()).thenReturn(Collections.emptySet());
+        when(indexer.getEdgeIndexKeys()).thenReturn(Collections.emptySet());
+        when(graph.indexQuery(anyString(), anyString())).thenReturn(indexQuery);
+        when(graph.query()).thenReturn(mock(org.apache.atlas.repository.graphdb.AtlasGraphQuery.class));
+        when(indexQuery.vertices()).thenReturn(Collections.emptyIterator());
+        when(indexQuery.vertexTotals()).thenReturn(0L);
+
+        RequestContext context = mock(RequestContext.class);
+        when(RequestContext.get()).thenReturn(context);
+        when(context.getUser()).thenReturn("testUser");
+
+        return new EntityDiscoveryService(typeRegistry, graph, indexer, searchTracker, userProfileService, taskManagement);
     }
 
     @AfterMethod
@@ -253,6 +284,54 @@ public class EntityDiscoveryServiceTest {
         } catch (Exception e) {
             assertTrue(true);
         }
+    }
+
+    @Test
+    public void testAddSavedSearchWithGuidFromAnotherUserIsRejectedStrict() throws Exception {
+        EntityDiscoveryService strictService = createStrictServiceForSecurityTests();
+        AtlasUserSavedSearch   savedSearch   = new AtlasUserSavedSearch();
+
+        savedSearch.setGuid("testGuid");
+        savedSearch.setOwnerName("testUser");
+        savedSearch.setName("testSearch");
+        savedSearch.setSearchType(AtlasUserSavedSearch.SavedSearchType.BASIC);
+
+        AtlasUserSavedSearch existingSavedSearch = new AtlasUserSavedSearch();
+        existingSavedSearch.setGuid("testGuid");
+        existingSavedSearch.setOwnerName("otherUser");
+
+        when(userProfileService.getSavedSearch("testGuid")).thenReturn(existingSavedSearch);
+
+        try {
+            strictService.addSavedSearch("testUser", savedSearch);
+            fail("Expected cross-user GUID reuse to be rejected");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.BAD_REQUEST);
+            verify(userProfileService, never()).addSavedSearch(any(AtlasUserSavedSearch.class));
+        }
+    }
+
+    @Test
+    public void testAddSavedSearchWithOwnGuidIsAllowedStrict() throws Exception {
+        EntityDiscoveryService strictService = createStrictServiceForSecurityTests();
+        AtlasUserSavedSearch   savedSearch   = new AtlasUserSavedSearch();
+
+        savedSearch.setGuid("testGuid");
+        savedSearch.setOwnerName("testUser");
+        savedSearch.setName("testSearch");
+        savedSearch.setSearchType(AtlasUserSavedSearch.SavedSearchType.BASIC);
+
+        AtlasUserSavedSearch existingSavedSearch = new AtlasUserSavedSearch();
+        existingSavedSearch.setGuid("testGuid");
+        existingSavedSearch.setOwnerName("testUser");
+
+        when(userProfileService.getSavedSearch("testGuid")).thenReturn(existingSavedSearch);
+        when(userProfileService.addSavedSearch(savedSearch)).thenReturn(savedSearch);
+
+        AtlasUserSavedSearch result = strictService.addSavedSearch("testUser", savedSearch);
+
+        assertEquals(result, savedSearch);
+        verify(userProfileService).addSavedSearch(savedSearch);
     }
 
     @Test

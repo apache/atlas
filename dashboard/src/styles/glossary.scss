@@ -1,0 +1,55 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.glossary-terms-list-page {
+  width: 100%;
+  text-align: left;
+
+  .glossary-terms-list-header {
+    padding: 16px 16px 0;
+    margin-bottom: 16px;
+  }
+
+  .glossary-terms-list-title {
+    margin: 0;
+  }
+
+  .glossary-terms-filters {
+    margin: 0 16px;
+    padding: 16px;
+    border: thin #e1e2e4 solid;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.6);
+  }
+
+  .glossary-terms-filters-label {
+    margin-bottom: 12px;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.87);
+  }
+
+  .glossary-terms-table {
+    padding: 0 16px 16px;
+    flex: 1;
+    min-height: 0;
+
+    .searchTableName .glossary-term-name-link {
+      width: unset !important;
+      white-space: nowrap;
+    }
+  }
+}

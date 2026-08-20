@@ -21,6 +21,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.authorize.AtlasAdminAccessRequest;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.kafka.KafkaNotification;
@@ -87,6 +90,8 @@ public class NotificationREST {
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     public void handleNotifications(@PathParam("topicName") String topicName, @Context HttpServletRequest request) throws AtlasBaseException, IOException {
         LOG.debug("Handling notifications for topic {}", topicName);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.SERVICE_NOTIFICATION_POST), "post on rest notification service");
 
         if (!TOPICS.contains(topicName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_TOPIC_NAME, topicName);

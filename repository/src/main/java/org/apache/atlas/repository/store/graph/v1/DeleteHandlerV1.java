@@ -39,6 +39,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasUniqueKeyHandler;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.EntityDeletePropagationHandler;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.tasks.TaskManagement;
@@ -143,6 +144,7 @@ public abstract class DeleteHandlerV1 {
     private final boolean              softDelete;
     private final TaskManagement       taskManagement;
     private final AtlasUniqueKeyHandler uniqueKeyHandler;
+    private final EntityDeletePropagationHandler deletePropagationHandler;
 
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement) {
         this.typeRegistry                  = typeRegistry;
@@ -152,6 +154,7 @@ public abstract class DeleteHandlerV1 {
         this.softDelete                    = softDelete;
         this.taskManagement                = taskManagement;
         this.uniqueKeyHandler              = graph.getUniqueKeyHandler();
+        this.deletePropagationHandler      = new EntityDeletePropagationHandler(typeRegistry);
     }
 
     /**
@@ -215,13 +218,51 @@ public abstract class DeleteHandlerV1 {
                 getColumnLineageEntities(instanceVertex, deletionCandidateVertices);
             }
         }
+
+        // Propagation applies only during delete (ACTIVE→DELETED), not purge (cleanup of already-DELETED entities)
+        if (!requestContext.isPurgeRequested()) {
+            collectDeletePropagationCandidates(requestContext, deletionCandidateVertices, instanceVertexGuids);
+        }
+
         return deletionCandidateVertices;
+    }
+
+    private void collectDeletePropagationCandidates(RequestContext requestContext, Set<AtlasVertex> deletionCandidateVertices,
+                                                    Set<String> visitedGuids) throws AtlasBaseException {
+        Set<AtlasVertex> propagationSources = new HashSet<>(deletionCandidateVertices);
+
+        for (AtlasVertex vertex : propagationSources) {
+            String          typeName   = GraphHelper.getTypeName(vertex);
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+            if (entityType == null || CollectionUtils.isEmpty(entityType.getDeletePropagationTargets())) {
+                continue;
+            }
+
+            LOG.debug("collectDeletePropagationCandidates(): checking propagation targets for entity type='{}', guid='{}'",
+                    typeName, AtlasGraphUtilsV2.getIdFromVertex(vertex));
+
+            Set<AtlasVertex> propagatedVertices = deletePropagationHandler.collectPropagatedVertices(vertex, entityType, visitedGuids);
+
+            for (AtlasVertex propagatedVertex : propagatedVertices) {
+                for (GraphHelper.VertexInfo vertexInfo : getOwnedVertices(propagatedVertex)) {
+                    requestContext.recordEntityDelete(vertexInfo.getEntity());
+                    deletionCandidateVertices.add(vertexInfo.getVertex());
+                }
+            }
+        }
+
+        if (deletionCandidateVertices.size() > propagationSources.size()) {
+            LOG.info("collectDeletePropagationCandidates(): added {} entities via delete propagation",
+                    deletionCandidateVertices.size() - propagationSources.size());
+        }
     }
 
     /*
         actually delete traits and then the vertex along its references
     */
-    public void deleteTraitsAndVertices(Collection<AtlasVertex> deletionCandidateVertices) throws AtlasBaseException {
+    public Collection<AtlasVertex> deleteTraitsAndVertices(Collection<AtlasVertex> deletionCandidateVertices) throws AtlasBaseException {
+        Collection<AtlasVertex> deletedVertices = new ArrayList<>();
         for (AtlasVertex deletionCandidateVertex : deletionCandidateVertices) {
             if (deletionCandidateVertex == null) {
                 continue;
@@ -235,10 +276,12 @@ public abstract class DeleteHandlerV1 {
             try {
                 deleteAllClassifications(deletionCandidateVertex);
                 deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
+                deletedVertices.add(deletionCandidateVertex);
             } catch (IllegalStateException e) {
                 LOG.warn("deleteTraitsAndVertices(): skipping vertex - already removed", e);
             }
         }
+        return deletedVertices;
     }
 
     public void addUpstreamProcessEntities(AtlasVertex entityVertex, Set<AtlasVertex> deletionCandidateVertices, Set<String> instanceVertexGuids) throws AtlasBaseException {
@@ -1157,7 +1200,7 @@ public abstract class DeleteHandlerV1 {
             LOG.debug("Removing edge from {} to {} with attribute name {}", string(outVertex), string(inVertex), attribute.getName());
         }
 
-        if (skipVertexForDelete(outVertex)) {
+        if (skipVertexForDelete(outVertex) || isDeletedEntity(outVertex)) {
             return;
         }
 
@@ -1433,13 +1476,10 @@ public abstract class DeleteHandlerV1 {
                 final RequestContext reqContext = RequestContext.get();
                 final String         guid       = AtlasGraphUtilsV2.getIdFromVertex(vertex);
 
-                if (guid != null && !reqContext.isDeletedEntity(guid)) {
-                    final AtlasEntity.Status vertexState = getState(vertex);
-                    if (reqContext.isPurgeRequested()) {
-                        ret = vertexState == ACTIVE; // skip purging ACTIVE vertices
-                    } else {
-                        ret = vertexState == DELETED; // skip deleting DELETED vertices
-                    }
+                if (reqContext.isPurgeRequested()) {
+                    ret = getState(vertex) == ACTIVE; // skip purging ACTIVE vertices
+                } else if (guid != null && !reqContext.isDeletedEntity(guid)) {
+                    ret = getState(vertex) == DELETED; // skip deleting DELETED vertices
                 }
             } catch (IllegalStateException excp) {
                 LOG.warn("skipVertexForDelete(): failed guid/state for the vertex", excp);

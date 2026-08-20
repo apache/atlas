@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { ChangeEvent, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   Divider,
   IconButton,
@@ -44,12 +44,14 @@ import {
   ListItemText,
   Popover,
   Skeleton,
-  Stack
+  Stack,
+  CircularProgress
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import { getDownloadStatus } from "@api/apiMethods/downloadApiMethod";
+import { getGlossaryDownloadStatus } from "@api/apiMethods/glossaryApiMethod";
 import {
   getBaseUrl,
   getNavigate,
@@ -57,12 +59,30 @@ import {
   serverError,
   setNavigate
 } from "@utils/Utils";
-import { toast } from "react-toastify";
+import { toast, type Id } from "react-toastify";
 import { apiDocUrl } from "@api/apiUrlLinks/headerUrl";
 import { globalSessionData } from "@utils/Enum";
 import { downloadSearchResultsFileUrl } from "@api/apiUrlLinks/downloadApiUrl";
+import { glossaryDownloadFileUrl } from "@api/apiUrlLinks/glossaryUrl";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { AntSwitch } from "@utils/Muiutils";
+import {
+  type DownloadRecord,
+  extractDownloadRecords,
+  filterDownloadRecordsForToggle,
+  isPendingDownloadRecord,
+  mergeDownloadRecords
+} from "@utils/downloadRecords";
+
+interface HeaderSessionState {
+  session: {
+    sessionObj: {
+      loading: boolean;
+      data: { userName?: string } | null;
+      error: string | null;
+    };
+  };
+}
 
 interface Header {
   handleOpenModal: () => void;
@@ -75,11 +95,11 @@ const Header: React.FC<Header> = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const toastId: any = useRef(null);
-  const { sessionObj = "" }: any = useAppSelector(
-    (state: any) => state.session
+  const toastId = useRef<Id | undefined>(undefined);
+  const sessionObj = useAppSelector(
+    (state: HeaderSessionState) => state.session.sessionObj
   );
-  const { userName } = sessionObj.data || {};
+  const userName = sessionObj?.data?.userName;
   const { debugMetrics = {} } = globalSessionData || {};
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -92,26 +112,65 @@ const Header: React.FC<Header> = ({
   const [downloadAnchorEl, setDownloadAnchorEl] = useState<null | HTMLElement>(
     null
   );
-  const [searchDownloadsList, setSearchDownList] = useState([]);
+  const [searchDownloadsList, setSearchDownList] = useState<DownloadRecord[]>(
+    []
+  );
   const [downloadLoader, setDownloadLoader] = useState<boolean>(false);
-  const [checked, setChecked] = useState(false);
+  const [checked, setChecked] = useState(true);
 
-  if (location.pathname == "/search/searchResult") {
-    setNavigate(location.pathname + location.search);
-  }
+  const displayedDownloadsList = useMemo(
+    () => filterDownloadRecordsForToggle(searchDownloadsList, checked),
+    [checked, searchDownloadsList]
+  );
+
+  useEffect(() => {
+    if (location.pathname === "/search/searchResult") {
+      setNavigate(location.pathname + location.search);
+    }
+  }, [location.pathname, location.search, setNavigate]);
 
   const fetchDownloadStatus = async () => {
-    try {
-      setDownloadLoader(true);
-      const downListResp = await getDownloadStatus({});
-      const { searchDownloadRecords } = downListResp.data;
-      setSearchDownList(searchDownloadRecords);
-      setDownloadLoader(false);
-    } catch (error) {
-      setDownloadLoader(false);
-      console.error(`Error occur while fetching searchResult records`, error);
-      serverError(error, toastId);
+    setDownloadLoader(true);
+
+    const [searchResult, glossaryResult] = await Promise.allSettled([
+      getDownloadStatus({}),
+      getGlossaryDownloadStatus({})
+    ]);
+
+    const searchRecords =
+      searchResult.status === "fulfilled"
+        ? extractDownloadRecords(searchResult.value.data, "search")
+        : [];
+    const glossaryRecords =
+      glossaryResult.status === "fulfilled"
+        ? extractDownloadRecords(glossaryResult.value.data, "glossary")
+        : [];
+
+    if (searchResult.status === "rejected") {
+      console.error(
+        "Error occurred while fetching search download records",
+        searchResult.reason
+      );
     }
+
+    if (glossaryResult.status === "rejected") {
+      console.error(
+        "Error occurred while fetching glossary download records",
+        glossaryResult.reason
+      );
+    }
+
+    if (
+      searchResult.status === "rejected" &&
+      glossaryResult.status === "rejected"
+    ) {
+      setDownloadLoader(false);
+      serverError(searchResult.reason, toastId);
+      return;
+    }
+
+    setSearchDownList(mergeDownloadRecords(searchRecords, glossaryRecords));
+    setDownloadLoader(false);
   };
 
   const handleClickDownload = (event: React.MouseEvent<HTMLElement>) => {
@@ -133,11 +192,15 @@ const Header: React.FC<Header> = ({
     setAnchorEl(event.currentTarget);
   };
 
-  const handleFileDownload = async (file: any) => {
-    const { fileName } = file;
+  const handleFileDownload = async (file: DownloadRecord) => {
+    const { fileName, source } = file;
     let path = getBaseUrl(window.location.pathname);
-    window.location.href = path + downloadSearchResultsFileUrl(fileName);
-    toast.success("File download succesfully");
+    const downloadUrl =
+      source === "glossary"
+        ? glossaryDownloadFileUrl(fileName)
+        : downloadSearchResultsFileUrl(fileName);
+    window.location.href = path + downloadUrl;
+    toast.success("File downloaded successfully");
   };
 
   const handleNestedMenuClick = () => {
@@ -191,7 +254,10 @@ const Header: React.FC<Header> = ({
       {(location.pathname === "/" || location.pathname === "/search") && (
         <div style={{ flex: "1" }} />
       )}
-      <div className="header-menu" style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+      <div
+        className="header-menu"
+        style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}
+      >
         <CreateDropdown />
         <LightTooltip title="Downloads">
           <IconButton
@@ -383,7 +449,9 @@ const Header: React.FC<Header> = ({
             <Stack direction="row" alignItems="center" gap="0.25rem">
               <LightTooltip
                 title={
-                  checked ? "Display All Files" : "Display Available Files"
+                  checked
+                    ? "Showing all files (including in progress)"
+                    : "Showing completed files only"
                 }
               >
                 <AntSwitch
@@ -434,10 +502,11 @@ const Header: React.FC<Header> = ({
                   </ListItem>
                 ))}
               </List>
-            ) : !isEmpty(searchDownloadsList) ? (
-              searchDownloadsList?.map((file: { fileName: string }, index) => {
+            ) : !isEmpty(displayedDownloadsList) ? (
+              displayedDownloadsList.map((file: DownloadRecord, index) => {
+                const isPending = isPendingDownloadRecord(file);
                 return (
-                  <List dense disablePadding>
+                  <List dense disablePadding key={`${file.source}-${file.fileName}`}>
                     <ListItem dense disablePadding>
                       <Stack
                         direction="row"
@@ -450,15 +519,19 @@ const Header: React.FC<Header> = ({
                           aria-hidden="true"
                         ></i>
                         <ListItemText primary={file.fileName} />
-                        <IconButton
-                          color="success"
-                          onClick={() => handleFileDownload(file)}
-                        >
-                          <DownloadIcon />
-                        </IconButton>
+                        {isPending ? (
+                          <CircularProgress size={20} color="success" />
+                        ) : (
+                          <IconButton
+                            color="success"
+                            onClick={() => handleFileDownload(file)}
+                          >
+                            <DownloadIcon />
+                          </IconButton>
+                        )}
                       </Stack>
                     </ListItem>
-                    {index != searchDownloadsList?.length - 1 && <Divider />}
+                    {index != displayedDownloadsList.length - 1 && <Divider />}
                   </List>
                 );
               })

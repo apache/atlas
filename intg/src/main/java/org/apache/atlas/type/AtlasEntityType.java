@@ -116,6 +116,7 @@ public class AtlasEntityType extends AtlasStructType {
      * are resolved from the model.
      */
     private List<RenamePropagationTarget>                    renamePropagationTargets      = Collections.emptyList();
+    private List<DeletePropagationTarget>                    deletePropagationTargets      = Collections.emptyList();
     /**
      * For this type's qualifiedName {@code autoComputeFormat}: each key is another entity type name
      * that appears in the template (via relationship hops ending in {@code .name}); the value is the
@@ -267,6 +268,10 @@ public class AtlasEntityType extends AtlasStructType {
         return renamePropagationTargets;
     }
 
+    public List<DeletePropagationTarget> getDeletePropagationTargets() {
+        return deletePropagationTargets;
+    }
+
     public Map<String, String> getAutoComputeFormatPathByRefTypeNameMap() {
         return autoComputeFormatPathByRefTypeNameMap;
     }
@@ -403,6 +408,7 @@ public class AtlasEntityType extends AtlasStructType {
 
             tagPropagationEdges.addAll(superType.tagPropagationEdges);
             renamePropagationTargets.addAll(superType.renamePropagationTargets);
+            deletePropagationTargets.addAll(superType.deletePropagationTargets);
         }
 
         ownedRefAttributes = new ArrayList<>();
@@ -430,6 +436,7 @@ public class AtlasEntityType extends AtlasStructType {
         ownedRefAttributes       = Collections.unmodifiableList(ownedRefAttributes);
         tagPropagationEdges      = Collections.unmodifiableSet(tagPropagationEdges);
         renamePropagationTargets = Collections.unmodifiableList(renamePropagationTargets);
+        deletePropagationTargets = Collections.unmodifiableList(deletePropagationTargets);
 
         entityDef.setSubTypes(subTypes);
 
@@ -580,6 +587,7 @@ public class AtlasEntityType extends AtlasStructType {
         this.businessAttributes     = new HashMap<>(); // this will be populated in resolveReferences(), from AtlasBusinessMetadataType
         this.tagPropagationEdges    = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
         this.renamePropagationTargets              = new ArrayList<>(); // this will be populated in resolveReferencesPhase2()
+        this.deletePropagationTargets              = new ArrayList<>(); // this will be populated in resolveReferencesPhase2()
         this.autoComputeFormatPathByRefTypeNameMap = new HashMap<>(); // this will be populated in resolveReferencesPhase3()
 
         this.typeAndAllSubTypes.add(this.getTypeName());
@@ -891,6 +899,7 @@ public class AtlasEntityType extends AtlasStructType {
         }
 
         addRenamePropagationTargetIfTriggered(relationshipType, attribute);
+        addDeletePropagationTargetIfTriggered(relationshipType, attribute);
     }
 
     /**
@@ -1115,6 +1124,54 @@ public class AtlasEntityType extends AtlasStructType {
                     target.getPropagateAttributes().size());
         } else {
             LOG.debug("addRenamePropagationTargetIfTriggered({}): duplicate propagation target skipped — relationship '{}', attribute '{}', target type '{}'",
+                    thisTypeName,
+                    relationshipType.getTypeName(),
+                    relAttrName,
+                    targetTypeName);
+        }
+    }
+
+    private void addDeletePropagationTargetIfTriggered(AtlasRelationshipType relationshipType, AtlasAttribute relationshipAttribute) {
+        AtlasRelationshipEndDef endDef1 = relationshipType.getRelationshipDef().getEndDef1();
+        AtlasRelationshipEndDef endDef2 = relationshipType.getRelationshipDef().getEndDef2();
+
+        if (endDef1 == null || endDef2 == null) {
+            LOG.debug("addDeletePropagationTargetIfTriggered({}): relationship type '{}' missing endDef — skipping",
+                    getTypeName(), relationshipType.getTypeName());
+            return;
+        }
+
+        String thisTypeName = getTypeName();
+        boolean triggerOnEnd1 = StringUtils.equals(relationshipType.getEnd1Type().getTypeName(), thisTypeName) && endDef1.getIsPropagateDelete();
+        boolean triggerOnEnd2 = StringUtils.equals(relationshipType.getEnd2Type().getTypeName(), thisTypeName) && endDef2.getIsPropagateDelete();
+
+        if (!triggerOnEnd1 && !triggerOnEnd2) {
+            return;
+        }
+
+        String targetTypeName = triggerOnEnd1
+                ? relationshipType.getEnd2Type().getTypeName()
+                : relationshipType.getEnd1Type().getTypeName();
+
+        RelationshipCategory category = relationshipType.getRelationshipDef().getRelationshipCategory();
+        DeletePropagationTarget target = new DeletePropagationTarget(targetTypeName, relationshipAttribute);
+
+        String relAttrName = relationshipAttribute.getAttributeDef() != null
+                ? relationshipAttribute.getAttributeDef().getName()
+                : null;
+
+        if (!deletePropagationTargets.contains(target)) {
+            deletePropagationTargets.add(target);
+
+            LOG.info("addDeletePropagationTargetIfTriggered({}): delete propagation via relationship '{}' attribute '{}' -> target type '{}' (trigger {}, category {})",
+                    thisTypeName,
+                    relationshipType.getTypeName(),
+                    relAttrName,
+                    targetTypeName,
+                    triggerOnEnd1 ? "end1" : "end2",
+                    category);
+        } else {
+            LOG.debug("addDeletePropagationTargetIfTriggered({}): duplicate propagation target skipped — relationship '{}', attribute '{}', target type '{}'",
                     thisTypeName,
                     relationshipType.getTypeName(),
                     relAttrName,

@@ -15,14 +15,55 @@
  * limitations under the License.
  */
 
-import { defineConfig } from "vite";
+import { defineConfig, Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import fs from "fs";
 
 const proxyHost = "http://localhost:21000";
 
+let apacheLicense = "";
+let apacheHtmlLicense = "";
+try {
+  const viteConfigContent = fs.readFileSync(path.resolve(__dirname, "vite.config.ts"), "utf-8");
+  const extracted = viteConfigContent.substring(viteConfigContent.indexOf("/*"), viteConfigContent.indexOf("*/") + 2);
+  if (extracted.includes("Licensed to the Apache Software Foundation")) {
+    apacheLicense = extracted + "\n";
+    apacheHtmlLicense = `\n<!--\n${extracted.replace('/*', '').replace('*/', '').trim()}\n-->\n`;
+  } else {
+    console.warn("Warning: Could not safely extract the Apache License from vite.config.ts!");
+  }
+} catch (e) {
+  console.warn("Warning: Failed to read vite.config.ts for license extraction", e);
+}
+
+const addLicensePlugin = (): Plugin => {
+  return {
+    name: 'add-license',
+    apply: 'build' as const, // only run during build
+    generateBundle(_options: any, bundle: any) {
+      if (!apacheLicense) return;
+      for (const [fileName, chunk] of Object.entries(bundle)) {
+        if (fileName.endsWith('.js') || fileName.endsWith('.css')) {
+          if (chunk && typeof chunk === 'object') {
+            if ('type' in chunk && chunk.type === 'chunk' && 'code' in chunk) {
+              (chunk as any).code = apacheLicense + (chunk as any).code;
+            } else if ('type' in chunk && chunk.type === 'asset' && 'source' in chunk && typeof (chunk as any).source === 'string') {
+              (chunk as any).source = apacheLicense + (chunk as any).source;
+            }
+          }
+        }
+      }
+    },
+    transformIndexHtml(html: string) {
+      if (!apacheHtmlLicense) return html;
+      return html.replace('<head>', `<head>${apacheHtmlLicense}`);
+    }
+  };
+};
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), addLicensePlugin()],
   base: "",
   build: {
     chunkSizeWarningLimit: 2000,

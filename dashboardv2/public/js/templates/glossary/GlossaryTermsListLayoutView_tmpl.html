@@ -1,0 +1,83 @@
+<!--
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<div class="glossary-terms-list-page">
+    <div class="row form-group">
+        <div class="col-sm-8">
+            <h4 class="glossary-terms-list-title">
+                <i class="fa fa-list-alt text-green" aria-hidden="true"></i>
+                Glossary terms &amp; categories
+            </h4>
+        </div>
+        <div class="col-sm-4 text-right">
+            <div class="glossary-terms-list-actions">
+                <button type="button" class="btn btn-action btn-sm" data-id="refreshGlossaryTermsList" title="Reload from server">
+                    <i class="fa fa-refresh" aria-hidden="true"></i>&nbsp;Refresh
+                </button>
+                <div class="btn-group glossary-download-dropdown">
+                    <button type="button" class="btn btn-action btn-sm dropdown-toggle" data-id="downloadGlossaryTermsList" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Download glossary export">
+                        <i class="fa fa-download" aria-hidden="true"></i>&nbsp;Download&nbsp;<span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-right" role="menu">
+                        <li role="presentation">
+                            <a href="javascript:void(0)" role="menuitem" data-id="downloadGlossaryCsv">CSV</a>
+                        </li>
+                        <li role="presentation">
+                            <a href="javascript:void(0)" role="menuitem" data-id="downloadGlossaryXlsx">XLSX</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-default glossary-terms-filters">
+        <div class="panel-heading"><strong>Filters</strong></div>
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-sm-3 form-group">
+                    <label for="glossaryTermsFilterGlossary">Glossary</label>
+                    <select class="form-control" data-id="filterGlossary" id="glossaryTermsFilterGlossary">
+                        <option value="">All glossaries</option>
+                    </select>
+                </div>
+                <div class="col-sm-3 form-group">
+                    <label for="glossaryTermsFilterRecordType">Record type</label>
+                    <select class="form-control" data-id="filterRecordType" id="glossaryTermsFilterRecordType">
+                        <option value="all">All</option>
+                        <option value="Term">Terms only</option>
+                        <option value="Category">Categories only</option>
+                    </select>
+                </div>
+                <div class="col-sm-3 form-group">
+                    <label for="glossaryTermsFilterStatus">Status</label>
+                    <select class="form-control" data-id="filterStatus" id="glossaryTermsFilterStatus">
+                        <option value="">All</option>
+                        <option value="DRAFT">Draft</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="DEPRECATED">Deprecated</option>
+                    </select>
+                </div>
+                <div class="col-sm-3 form-group">
+                    <label for="glossaryTermsFilterSearch">Search all columns</label>
+                    <input type="text" class="form-control" data-id="filterSearchText" id="glossaryTermsFilterSearch" placeholder="Search all columns" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="r_glossaryTermsTableLayoutView" class="glossary-terms-table searchTable"></div>
+</div>

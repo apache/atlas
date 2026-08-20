@@ -30,10 +30,11 @@ import React from 'react'
 import { render, screen, waitFor, fireEvent, act, cleanup } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
-import { BrowserRouter, MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import SideBarTree from '../SideBarTree'
 import { getBusinessMetadataImportTmpl } from '@api/apiMethods/entitiesApiMethods'
 import { getGlossaryImportTmpl } from '@api/apiMethods/glossaryApiMethod'
+import { fetchGlossaryData } from '@redux/slice/glossarySlice'
 
 // Mock dependencies
 jest.mock('@api/apiMethods/entitiesApiMethods', () => ({
@@ -68,9 +69,23 @@ jest.mock('@utils/Helper', () => ({
 	cloneDeep: jest.fn((obj) => JSON.parse(JSON.stringify(obj)))
 }))
 
+jest.mock('@redux/slice/glossarySlice', () => ({
+	fetchGlossaryData: jest.fn(() => ({ type: 'glossary/fetchGlossaryData' }))
+}))
+
 jest.mock('@components/ImportDialog', () => {
 	return function MockImportDialog(props: any) {
-		return props.open ? <div data-testid="import-dialog">Import Dialog</div> : null
+		return props.open ? (
+			<div data-testid="import-dialog">
+				<button
+					type="button"
+					data-testid="import-success-trigger"
+					onClick={() => props.onImportSuccess?.()}
+				>
+					Import Success
+				</button>
+			</div>
+		) : null
 	}
 })
 
@@ -161,8 +176,13 @@ jest.mock('@components/muiComponents', () => ({
 	Menu: ({ children, open, onClose, anchorEl }: any) => (
 		open ? <div data-testid="menu" onClick={onClose}>{children}</div> : null
 	),
-	MenuItem: ({ children, onClick, disabled }: any) => (
-		<div data-testid="menu-item" onClick={disabled ? undefined : onClick} data-disabled={disabled}>
+	MenuItem: ({ children, onClick, disabled, ...props }: any) => (
+		<div
+			data-testid="menu-item"
+			onClick={disabled ? undefined : onClick}
+			data-disabled={disabled}
+			{...props}
+		>
 			{children}
 		</div>
 	),
@@ -196,6 +216,7 @@ jest.mock('@mui/icons-material/LaunchOutlined', () => ({
 	default: ({ onClick }: any) => <div data-testid="launch-icon" onClick={onClick}>Launch</div>
 }))
 
+
 jest.mock('@mui/material/Stack', () => ({
 	__esModule: true,
 	default: ({ children, className, sx }: any) => (
@@ -205,6 +226,7 @@ jest.mock('@mui/material/Stack', () => ({
 
 describe('SideBarTree', () => {
 	const mockDispatch = jest.fn()
+	const mockFetchGlossaryData = fetchGlossaryData as jest.MockedFunction<typeof fetchGlossaryData>
 	const mockGetBusinessMetadataImportTmpl = getBusinessMetadataImportTmpl as jest.MockedFunction<typeof getBusinessMetadataImportTmpl>
 	const mockGetGlossaryImportTmpl = getGlossaryImportTmpl as jest.MockedFunction<typeof getGlossaryImportTmpl>
 
@@ -258,6 +280,7 @@ describe('SideBarTree', () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks()
+		mockFetchGlossaryData.mockReturnValue({ type: 'glossary/fetchGlossaryData' } as any)
 		global.URL.createObjectURL = jest.fn(() => 'blob:url')
 		global.URL.revokeObjectURL = jest.fn()
 		
@@ -633,7 +656,7 @@ describe('SideBarTree', () => {
 			document.createElement = originalCreateElement
 		})
 
-		it('should disable download for Glossary when isEmptyServicetype is false', async () => {
+		it('should keep download enabled for Glossary when isEmptyServicetype is false', async () => {
 			renderComponent({
 				treeName: 'Glossary',
 				isEmptyServicetype: false
@@ -651,7 +674,7 @@ describe('SideBarTree', () => {
 				const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
 				
 				if (downloadItem) {
-					expect(downloadItem).toHaveAttribute('data-disabled', 'true')
+					expect(downloadItem).not.toHaveAttribute('data-disabled', 'true')
 				}
 			})
 		})
@@ -781,6 +804,88 @@ describe('SideBarTree', () => {
 			await waitFor(() => {
 				expect(screen.getByTestId('glossary-form')).toBeInTheDocument()
 			})
+		})
+
+		it('should show Export Glossary menu item for Glossary tree', async () => {
+			renderComponent({ treeName: 'Glossary' })
+
+			await waitFor(() => {
+				expect(screen.getByTestId('simple-tree-view')).toBeInTheDocument()
+			})
+
+			fireEvent.click(screen.getByTestId('more-vert-icon'))
+
+			await waitFor(() => {
+				expect(screen.getByTestId('menu')).toBeInTheDocument()
+			})
+
+			expect(screen.getByText('Export Glossary')).toBeInTheDocument()
+			expect(screen.getAllByTestId('file-download-icon').length).toBeGreaterThanOrEqual(2)
+			expect(
+				document.querySelector('[data-cy="glossaryTermsListNavigate"]')
+			).toBeInTheDocument()
+		})
+
+		it('should navigate to glossary terms list when Export Glossary is clicked', async () => {
+			const LocationWatcher = () => {
+				const location = useLocation()
+				return <div data-testid="current-path">{location.pathname}</div>
+			}
+			const store = createMockStore()
+
+			render(
+				<Provider store={store}>
+					<MemoryRouter initialEntries={['/']}>
+						<LocationWatcher />
+						<SideBarTree
+							treeData={defaultTreeData}
+							treeName="Glossary"
+							refreshData={jest.fn()}
+							sideBarOpen={true}
+							searchTerm=""
+						/>
+					</MemoryRouter>
+				</Provider>
+			)
+
+			await waitFor(() => {
+				expect(screen.getByTestId('simple-tree-view')).toBeInTheDocument()
+			})
+
+			fireEvent.click(screen.getByTestId('more-vert-icon'))
+
+			await waitFor(() => {
+				expect(screen.getByTestId('menu')).toBeInTheDocument()
+			})
+
+			const exportItem = screen
+				.getAllByTestId('menu-item')
+				.find((item) => item.textContent?.includes('Export Glossary'))
+
+			expect(exportItem).toBeTruthy()
+			fireEvent.click(exportItem as HTMLElement)
+
+			await waitFor(() => {
+				expect(screen.getByTestId('current-path')).toHaveTextContent(
+					'/glossary/terms-list'
+				)
+			})
+		})
+
+		it('should not show Export Glossary menu item for Entities tree', async () => {
+			renderComponent({ treeName: 'Entities' })
+
+			await waitFor(() => {
+				expect(screen.getByTestId('simple-tree-view')).toBeInTheDocument()
+			})
+
+			fireEvent.click(screen.getByTestId('more-vert-icon'))
+
+			await waitFor(() => {
+				expect(screen.getByTestId('menu')).toBeInTheDocument()
+			})
+
+			expect(screen.queryByText('Export Glossary')).not.toBeInTheDocument()
 		})
 	})
 
@@ -1948,7 +2053,7 @@ describe('SideBarTree', () => {
 			}
 		})
 
-		it('should disable import for Glossary when isEmptyServicetype is false', async () => {
+		it('should keep import enabled for Glossary when isEmptyServicetype is false', async () => {
 			renderComponent({
 				treeName: 'Glossary',
 				isEmptyServicetype: false
@@ -1969,8 +2074,42 @@ describe('SideBarTree', () => {
 			const importItem = menuItems.find(item => item.textContent?.includes('Import'))
 			
 			if (importItem) {
-				expect(importItem).toHaveAttribute('data-disabled', 'true')
+				expect(importItem).not.toHaveAttribute('data-disabled', 'true')
 			}
+		})
+
+		it('should refresh glossary sidebar after successful glossary import', async () => {
+			renderComponent({
+				treeName: 'Glossary',
+				isEmptyServicetype: false
+			})
+
+			await waitFor(() => {
+				expect(screen.getByTestId('simple-tree-view')).toBeInTheDocument()
+			})
+
+			fireEvent.click(screen.getByTestId('more-vert-icon'))
+
+			await waitFor(() => {
+				expect(screen.getByTestId('menu')).toBeInTheDocument()
+			})
+
+			const importItem = screen
+				.getAllByTestId('menu-item')
+				.find(item => item.textContent?.includes('Import Glossary Term'))
+
+			expect(importItem).toBeTruthy()
+			fireEvent.click(importItem!)
+
+			await waitFor(() => {
+				expect(screen.getByTestId('import-dialog')).toBeInTheDocument()
+			})
+
+			fireEvent.click(screen.getByTestId('import-success-trigger'))
+
+			await waitFor(() => {
+				expect(mockFetchGlossaryData).toHaveBeenCalled()
+			})
 		})
 	})
 

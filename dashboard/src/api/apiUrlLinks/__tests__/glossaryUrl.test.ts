@@ -47,7 +47,13 @@ import {
 	assignTermtoEntitiesUrl,
 	assignTermtoCategoryUrl,
 	assignGlossaryTypeUrl,
-	removeTermorCatgeoryUrl
+	removeTermorCatgeoryUrl,
+	glossaryTermsUrl,
+	glossaryCategoriesUrl,
+	glossarySearchUrl,
+	glossaryCreateFileUrl,
+	glossaryDownloadStatusUrl,
+	glossaryDownloadFileUrl
 } from '../glossaryUrl'
 import { getBaseApiUrl } from '../commonApiUrl'
 
@@ -286,6 +292,54 @@ describe('glossaryUrl', () => {
 		it('should handle empty guid', () => {
 			const result = assignGlossaryTypeUrl('')
 			expect(result).toBe('/mock-base-url/api/atlas/v2/glossary/term/')
+		})
+	})
+
+	describe('glossaryTermsUrl', () => {
+		it('should return terms URL for a glossary guid', () => {
+			const result = glossaryTermsUrl('glossary-guid-1')
+			expect(result).toBe(
+				'/mock-base-url/api/atlas/v2/glossary/glossary-guid-1/terms'
+			)
+		})
+	})
+
+	describe('glossaryCategoriesUrl', () => {
+		it('should return categories URL for a glossary guid', () => {
+			const result = glossaryCategoriesUrl('glossary-guid-2')
+			expect(result).toBe(
+				'/mock-base-url/api/atlas/v2/glossary/glossary-guid-2/categories'
+			)
+		})
+	})
+
+	describe('glossarySearchUrl', () => {
+		it('should return glossary search URL', () => {
+			const result = glossarySearchUrl()
+			expect(result).toBe('/mock-base-url/api/atlas/v2/glossary/search')
+		})
+	})
+
+	describe('glossaryCreateFileUrl', () => {
+		it('should return glossary create_file URL', () => {
+			const result = glossaryCreateFileUrl()
+			expect(result).toBe('/mock-base-url/api/atlas/v2/glossary/create_file')
+		})
+	})
+
+	describe('glossaryDownloadStatusUrl', () => {
+		it('should return glossary download status URL', () => {
+			const result = glossaryDownloadStatusUrl()
+			expect(result).toBe('/mock-base-url/api/atlas/v2/glossary/download/status')
+		})
+	})
+
+	describe('glossaryDownloadFileUrl', () => {
+		it('should return glossary download file URL', () => {
+			const result = glossaryDownloadFileUrl('glossary-export.csv')
+			expect(result).toBe(
+				'/mock-base-url/api/atlas/v2/glossary/download/glossary-export.csv'
+			)
 		})
 	})
 

@@ -34,6 +34,9 @@ const ClassificationDetailsLayout = lazy(
 const GlossaryDetailLayout = lazy(
   () => import("@views/DetailPage/GlossaryDetails/GlossaryDetailsLayout")
 );
+const GlossaryTermsListPage = lazy(
+  () => import("@views/Glossary/GlossaryTermsListPage")
+);
 const AdministratiorLayout = lazy(
   () => import("@views/Administrator/AdministratorLayout")
 );
@@ -70,6 +73,10 @@ const Router = () => {
           <Route
             path="/administrator/businessMetadata/:bmguid"
             element={<BusinessMetadataDetailsLayout />}
+          />
+          <Route
+            path="/glossary/terms-list"
+            element={<GlossaryTermsListPage />}
           />
           <Route path="/glossary/:guid" element={<GlossaryDetailLayout />} />
           <Route

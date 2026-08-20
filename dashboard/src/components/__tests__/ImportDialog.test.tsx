@@ -85,9 +85,15 @@ describe('ImportDialog', () => {
 	it('uploads business metadata file successfully', async () => {
 		uploadMock.mockResolvedValue({ data: {} })
 		const onClose = jest.fn()
+		const onImportSuccess = jest.fn()
 
 		render(
-			<ImportDialog open={true} onClose={onClose} title="Import Business Metadata" />
+			<ImportDialog
+				open={true}
+				onClose={onClose}
+				onImportSuccess={onImportSuccess}
+				title="Import Business Metadata"
+			/>
 		)
 
 		fireEvent.click(screen.getByText('Select File'))
@@ -96,8 +102,32 @@ describe('ImportDialog', () => {
 		await waitFor(() => {
 			expect(uploadMock).toHaveBeenCalled()
 			expect(onClose).toHaveBeenCalled()
+			expect(onImportSuccess).toHaveBeenCalled()
 			expect(toastSuccess).toHaveBeenCalled()
 		})
+	})
+
+	it('does not call onImportSuccess when upload fails', async () => {
+		uploadMock.mockRejectedValue(new Error('fail'))
+		const onImportSuccess = jest.fn()
+
+		render(
+			<ImportDialog
+				open={true}
+				onClose={jest.fn()}
+				onImportSuccess={onImportSuccess}
+				title="Import Business Metadata"
+			/>
+		)
+
+		fireEvent.click(screen.getByText('Select File'))
+		fireEvent.click(screen.getByText('Upload'))
+
+		await waitFor(() => {
+			expect(toastError).toHaveBeenCalledWith('Invalid JSON response from server')
+		})
+
+		expect(onImportSuccess).not.toHaveBeenCalled()
 	})
 
 	it('shows error details when import returns failed info', async () => {
