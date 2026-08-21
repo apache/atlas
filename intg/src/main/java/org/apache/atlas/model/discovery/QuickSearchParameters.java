@@ -20,10 +20,13 @@ package org.apache.atlas.model.discovery;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -45,6 +48,7 @@ public class QuickSearchParameters implements Serializable {
     private boolean        excludeDeletedEntities;
     private int            offset;
     private int            limit;
+    @JsonDeserialize(as = LinkedHashSet.class)
     private Set<String>    attributes;
     private String         sortBy;
     private SortOrder      sortOrder;
@@ -56,7 +60,7 @@ public class QuickSearchParameters implements Serializable {
     public QuickSearchParameters() {
     }
 
-    public QuickSearchParameters(String query, String typeName, FilterCriteria entityFilters, boolean includeSubTypes, boolean excludeDeletedEntities, int offset, int limit, Set<String> attributes, String sortBy, SortOrder sortOrder) {
+    public QuickSearchParameters(String query, String typeName, FilterCriteria entityFilters, boolean includeSubTypes, boolean excludeDeletedEntities, int offset, int limit, Collection<String> attributes, String sortBy, SortOrder sortOrder) {
         this.query                  = query;
         this.typeName               = typeName;
         this.entityFilters          = entityFilters;
@@ -64,7 +68,7 @@ public class QuickSearchParameters implements Serializable {
         this.excludeDeletedEntities = excludeDeletedEntities;
         this.offset                 = offset;
         this.limit                  = limit;
-        this.attributes             = attributes;
+        this.attributes             = attributes == null ? null : new LinkedHashSet<>(attributes);
         this.sortBy                 = sortBy;
         this.sortOrder              = sortOrder;
     }
@@ -129,8 +133,8 @@ public class QuickSearchParameters implements Serializable {
         return attributes;
     }
 
-    public void setAttributes(Set<String> attributes) {
-        this.attributes = attributes;
+    public void setAttributes(Collection<String> attributes) {
+        this.attributes = attributes == null ? null : new LinkedHashSet<>(attributes);
     }
 
     public String getSortBy() {

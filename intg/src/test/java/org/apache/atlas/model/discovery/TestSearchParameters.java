@@ -20,13 +20,14 @@ package org.apache.atlas.model.discovery;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.discovery.SearchParameters.Operator;
+import org.apache.atlas.utils.AtlasJson;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -290,14 +291,22 @@ public class TestSearchParameters {
     public void testAttributesGetterSetter() {
         assertNull(searchParameters.getAttributes());
 
-        Set<String> attributes = new HashSet<>();
+        List<String> attributes = new ArrayList<>();
         attributes.add("name");
         attributes.add("description");
         searchParameters.setAttributes(attributes);
-        assertSame(searchParameters.getAttributes(), attributes);
+        assertEquals(searchParameters.getAttributes(), new LinkedHashSet<>(attributes));
 
         searchParameters.setAttributes(null);
         assertNull(searchParameters.getAttributes());
+    }
+
+    @Test
+    public void testAttributesDedupePreservesFirstOccurrenceOrder() {
+        searchParameters.setAttributes(Arrays.asList("qualifiedName", "createTime", "qualifiedName"));
+
+        assertEquals(searchParameters.getAttributes(), new LinkedHashSet<>(Arrays.asList("qualifiedName", "createTime")));
+        assertEquals(new ArrayList<>(searchParameters.getAttributes()), Arrays.asList("qualifiedName", "createTime"));
     }
 
     @Test
@@ -708,7 +717,7 @@ public class TestSearchParameters {
         searchParameters.setSortBy("createTime");
         searchParameters.setSortOrder(SortOrder.DESCENDING);
 
-        Set<String> attributes = new HashSet<>();
+        List<String> attributes = new ArrayList<>();
         attributes.add("qualifiedName");
         attributes.add("owner");
         searchParameters.setAttributes(attributes);
@@ -736,6 +745,26 @@ public class TestSearchParameters {
         assertEquals(searchParameters.getSortBy(), "createTime");
         assertEquals(searchParameters.getSortOrder(), SortOrder.DESCENDING);
         assertEquals(searchParameters.getAttributes().size(), 2);
+        assertEquals(new ArrayList<>(searchParameters.getAttributes()).get(0), "qualifiedName");
+        assertEquals(new ArrayList<>(searchParameters.getAttributes()).get(1), "owner");
         assertNotNull(searchParameters.getEntityFilters());
+    }
+
+    @Test
+    public void testAttributesJsonDeserializationPreservesOrder() {
+        String json = "{\"typeName\":\"hive_table\",\"attributes\":[\"qualifiedName\",\"createTime\"]}";
+
+        SearchParameters params = AtlasJson.fromJson(json, SearchParameters.class);
+
+        assertEquals(params.getAttributes(), new LinkedHashSet<>(Arrays.asList("qualifiedName", "createTime")));
+    }
+
+    @Test
+    public void testAttributesJsonDeserializationDedupes() {
+        String json = "{\"typeName\":\"hive_table\",\"attributes\":[\"qualifiedName\",\"createTime\",\"qualifiedName\"]}";
+
+        SearchParameters params = AtlasJson.fromJson(json, SearchParameters.class);
+
+        assertEquals(params.getAttributes(), new LinkedHashSet<>(Arrays.asList("qualifiedName", "createTime")));
     }
 }
