@@ -63,4 +63,25 @@ describe("SidebarSearchInput Component", () => {
     const container = input.closest(".MuiInputBase-root");
     expect(container).toHaveAttribute("data-cy", "my-search-input");
   });
+
+  it("should support keyboard-only clear (Enter/Space) and have correct aria-labels", () => {
+    const mockOnChange = jest.fn();
+    render(<SidebarSearchInput searchTerm="accessible text" onChange={mockOnChange} />);
+    
+    // Verify aria-label on input
+    const input = screen.getByPlaceholderText("Search");
+    expect(input).toHaveAttribute("aria-label", "search");
+    
+    // Verify aria-label on clear button
+    const clearButton = screen.getByRole("button", { name: "Clear search" });
+    expect(clearButton).toBeInTheDocument();
+    
+    // Test Enter key
+    fireEvent.keyDown(clearButton, { key: "Enter", code: "Enter" });
+    expect(mockOnChange).toHaveBeenCalledWith("");
+    
+    // Test Space key
+    fireEvent.keyDown(clearButton, { key: " ", code: "Space" });
+    expect(mockOnChange).toHaveBeenCalledWith("");
+  });
 });

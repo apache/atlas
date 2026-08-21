@@ -23,3 +23,15 @@ $action_gray: #999999;
 $tag_color: #4a90e2;
 $color_havelock_blue_approx: #4a90e2;
 $gray: #808080;
+
+$sidebar-bg: #034858;
+$sidebar-active: #2ccebb;
+$sidebar-divider: #ddd;
+$sidebar-search-bg: #f1f1f1;
+$sidebar-highlight: #D3D3D3;
+
+:root {
+  --sidebar-bg: #{$sidebar-bg};
+  --sidebar-active: #{$sidebar-active};
+  --text-blue: #{$text-blue};
+}
