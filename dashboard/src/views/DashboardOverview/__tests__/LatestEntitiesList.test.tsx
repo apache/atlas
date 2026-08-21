@@ -185,11 +185,9 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		const row = screen.getByText('X').closest('li')
+		const row = screen.getByText('X').closest('li') as HTMLElement
 		expect(row).toBeTruthy()
-		expect(
-			within(row as HTMLElement).getByText(/^Created /),
-		).toBeInTheDocument()
+		expect(within(row).getByText(/ago/)).toBeInTheDocument()
 	})
 
 	it('shows Created today for unusable timestamp', () => {
@@ -227,7 +225,7 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		expect(screen.getByText('Created just now')).toBeInTheDocument()
+		expect(screen.getByText('Just now')).toBeInTheDocument()
 
 		jest.setSystemTime(new Date(base))
 		rerender(
@@ -244,7 +242,7 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		expect(screen.getByText('Created 30 seconds ago')).toBeInTheDocument()
+		expect(screen.getByText('30 seconds ago')).toBeInTheDocument()
 
 		jest.setSystemTime(new Date(base))
 		rerender(
@@ -261,7 +259,7 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		expect(screen.getByText('Created 1 minute ago')).toBeInTheDocument()
+		expect(screen.getByText('1 minute ago')).toBeInTheDocument()
 
 		jest.setSystemTime(new Date(base))
 		rerender(
@@ -278,7 +276,7 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		expect(screen.getByText('Created 2 minutes ago')).toBeInTheDocument()
+		expect(screen.getByText('2 minutes ago')).toBeInTheDocument()
 
 		jest.setSystemTime(new Date(base))
 		rerender(
@@ -295,7 +293,7 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		expect(screen.getByText('Created 1 hour ago')).toBeInTheDocument()
+		expect(screen.getByText('1 hour ago')).toBeInTheDocument()
 
 		jest.setSystemTime(new Date(base))
 		rerender(
@@ -312,7 +310,7 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		expect(screen.getByText('Created 2 hours ago')).toBeInTheDocument()
+		expect(screen.getByText('2 hours ago')).toBeInTheDocument()
 
 		jest.setSystemTime(new Date(base))
 		rerender(
@@ -330,7 +328,7 @@ describe('LatestEntitiesList', () => {
 			</MemoryRouter>,
 		)
 		const li = screen.getByText('A').closest('li') as HTMLElement
-		expect(within(li).getByText(/Created in /)).toBeInTheDocument()
+		expect(within(li).getByText(/in /)).toBeInTheDocument()
 	})
 
 	it('normalizeEntityTimestampMs: $numberLong and longValue wrappers', () => {
@@ -536,7 +534,7 @@ describe('LatestEntitiesList', () => {
 		)
 		expect(
 			within(screen.getByText('Old').closest('li') as HTMLElement).getByText(
-				/^Created /,
+				/ago/,
 			),
 		).toBeInTheDocument()
 	})
@@ -558,7 +556,7 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		expect(screen.getByText('Created 1 second ago')).toBeInTheDocument()
+		expect(screen.getByText('1 second ago')).toBeInTheDocument()
 	})
 
 	it('uses Created today when Date.now is non-finite for relative time', () => {
@@ -578,7 +576,7 @@ describe('LatestEntitiesList', () => {
 			</MemoryRouter>,
 		)
 		expect(
-			within(screen.getByRole('listitem')).getByText(/^Created /),
+			within(screen.getByRole('listitem')).getByText('Created today'),
 		).toHaveTextContent('Created today')
 		spy.mockRestore()
 	})
@@ -602,7 +600,7 @@ describe('LatestEntitiesList', () => {
 		)
 		const row = screen.getByText('Historic').closest('li') as HTMLElement
 		expect(
-			within(row).getByText(/^Created /).textContent,
+			within(row).getByText(/ago/).textContent,
 		).not.toMatch(/^Created today$/)
 	})
 
@@ -623,5 +621,69 @@ describe('LatestEntitiesList', () => {
 			</MemoryRouter>,
 		)
 		expect(screen.getByText('Created today')).toBeInTheDocument()
+	})
+
+	it('renders fallback Typography when detailHref is absent (no guid)', () => {
+		render(
+			<MemoryRouter>
+				<LatestEntitiesList
+					entities={[
+						{
+							name: 'EntityWithoutGuid',
+							typeName: 'T',
+							attributes: { __timestamp: Date.now() },
+						},
+					]}
+				/>
+			</MemoryRouter>,
+		)
+		const fallbackText = screen.getByText('EntityWithoutGuid')
+		expect(fallbackText).toBeInTheDocument()
+		expect(fallbackText.tagName).toBe('SPAN')
+		expect(fallbackText).toHaveClass('latest-entities-entity-name-fallback')
+	})
+
+
+	it('renders extremely long entity name without crashing', () => {
+		const longName = 'A'.repeat(500)
+		render(
+			<MemoryRouter>
+				<LatestEntitiesList
+					entities={[
+						{
+							guid: 'g1',
+							name: longName,
+							typeName: 'T',
+							attributes: { __timestamp: Date.now() },
+						},
+					]}
+				/>
+			</MemoryRouter>,
+		)
+		const link = screen.getByRole('link', { name: longName })
+		expect(link).toBeInTheDocument()
+		expect(link.textContent).toBe(longName)
+		
+		const span = link.parentElement
+		expect(span).toHaveStyle('overflow: hidden')
+		expect(span).toHaveStyle('text-overflow: ellipsis')
+		expect(span).toHaveStyle('white-space: nowrap')
+	})
+
+	it('renders gracefully when typeName is missing', () => {
+		render(
+			<MemoryRouter>
+				<LatestEntitiesList
+					entities={[
+						{
+							guid: 'g1',
+							name: 'NamelessType',
+							attributes: { __timestamp: Date.now() },
+						},
+					]}
+				/>
+			</MemoryRouter>,
+		)
+		expect(screen.getByText('(Entity)')).toBeInTheDocument()
 	})
 })

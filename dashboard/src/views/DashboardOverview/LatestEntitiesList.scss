@@ -1,0 +1,92 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.latest-entities-paper {
+  padding: 16px;
+  border-radius: 8px;
+  min-height: 340px;
+  min-width: 0;
+  width: 100%;
+  flex: 1;
+  box-sizing: border-box;
+  transition: box-shadow 0.3s ease;
+
+  &:hover {
+    box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.2), 0px 4px 5px 0px rgba(0,0,0,0.14), 0px 1px 10px 0px rgba(0,0,0,0.12);
+  }
+}
+
+.latest-entities-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.latest-entities-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.latest-entities-view-all {
+  font-size: 0.875rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.latest-entities-empty {
+  padding-top: 16px;
+}
+
+.latest-entities-list {
+  padding-top: 16px;
+}
+
+.latest-entities-list-item {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.latest-entities-entity-name {
+  font-size: 0.875rem;
+}
+
+.latest-entities-entity-name-link {
+  cursor: pointer;
+}
+
+.latest-entities-entity-name-fallback {
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.latest-entities-type-name {
+  font-size: 0.875rem;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.latest-entities-timestamp {
+  font-size: 0.8125rem;
+  color: rgba(0, 0, 0, 0.6);
+  flex-shrink: 0;
+  margin-left: 8px;
+  white-space: nowrap;
+}
