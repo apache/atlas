@@ -18,9 +18,11 @@ package org.apache.atlas.authorize.simple;
 
 import org.apache.atlas.authorize.AtlasAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizationException;
+import org.apache.atlas.authorize.AtlasAuthorizeConstants;
 import org.apache.atlas.authorize.AtlasAuthorizer;
 import org.apache.atlas.authorize.AtlasAuthorizerFactory;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasNotificationRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -50,6 +52,7 @@ public class AtlasSimpleAuthorizerTest {
     private static final String USER_FINANCE_PII      = "financePII";
     private static final String USER_IN_ADMIN_GROUP   = "admin-group-user";
     private static final String USER_IN_UNKNOWN_GROUP = "unknown-group-user";
+    private static final String USER_HIVE_HOOK        = "hivehook";
 
     private static final Map<String, Set<String>> USER_GROUPS       = new HashMap<>();
     private static final List<AtlasPrivilege>     ENTITY_PRIVILEGES = new ArrayList<>();
@@ -336,6 +339,69 @@ public class AtlasSimpleAuthorizerTest {
         }
     }
 
+    @Test
+    public void testNotificationRequestResourceType() {
+        AtlasNotificationRequest request = new AtlasNotificationRequest(AtlasPrivilege.POST_NOTIFICATION, "ATLAS_HOOK");
+
+        AssertJUnit.assertEquals(AtlasAuthorizeConstants.NOTIFICATION_TOPIC_RESOURCE_TYPE, request.getResourceType());
+        AssertJUnit.assertEquals("ATLAS_HOOK", request.getTopicName());
+    }
+
+    @Test
+    public void testPostNotificationAllowedForAdminUser() {
+        try {
+            AtlasNotificationRequest request = new AtlasNotificationRequest(AtlasPrivilege.POST_NOTIFICATION, "ATLAS_HOOK");
+
+            setUser(request, USER_ADMIN);
+
+            AssertJUnit.assertTrue("admin should be allowed to post to ATLAS_HOOK",
+                    authorizer.isAccessAllowed(request));
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
+    @Test
+    public void testPostNotificationDeniedForDataScientistUser() {
+        try {
+            AtlasNotificationRequest request = new AtlasNotificationRequest(AtlasPrivilege.POST_NOTIFICATION, "ATLAS_HOOK");
+
+            setUser(request, USER_DATA_SCIENTIST);
+
+            AssertJUnit.assertFalse("data scientist should not be allowed to post notifications",
+                    authorizer.isAccessAllowed(request));
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
+    @Test
+    public void testPostNotificationAllowedForTopicSpecificRole() {
+        try {
+            AtlasNotificationRequest hookRequest = new AtlasNotificationRequest(AtlasPrivilege.POST_NOTIFICATION, "ATLAS_HOOK");
+
+            setUser(hookRequest, USER_HIVE_HOOK);
+
+            AssertJUnit.assertTrue("hivehook should be allowed to post to ATLAS_HOOK",
+                    authorizer.isAccessAllowed(hookRequest));
+
+            AtlasNotificationRequest entitiesRequest = new AtlasNotificationRequest(AtlasPrivilege.POST_NOTIFICATION, "ATLAS_ENTITIES");
+
+            setUser(entitiesRequest, USER_HIVE_HOOK);
+
+            AssertJUnit.assertFalse("hivehook should not be allowed to post to ATLAS_ENTITIES",
+                    authorizer.isAccessAllowed(entitiesRequest));
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
     private void setUser(AtlasAccessRequest request, String userName) {
         Set<String> userGroups = USER_GROUPS.get(userName);
 
@@ -351,6 +417,7 @@ public class AtlasSimpleAuthorizerTest {
         USER_GROUPS.put(USER_FINANCE_PII, Collections.singleton("FINANCE_PII"));
         USER_GROUPS.put(USER_IN_ADMIN_GROUP, Collections.singleton("ROLE_ADMIN"));
         USER_GROUPS.put(USER_IN_UNKNOWN_GROUP, Collections.singleton("UNKNOWN_GROUP"));
+        USER_GROUPS.put(USER_HIVE_HOOK, Collections.emptySet());
 
         ENTITY_PRIVILEGES.add(AtlasPrivilege.ENTITY_CREATE);
         ENTITY_PRIVILEGES.add(AtlasPrivilege.ENTITY_UPDATE);

@@ -47,10 +47,9 @@ public class RestNotification extends AbstractNotification {
     private static final Logger LOG = LoggerFactory.getLogger(RestNotification.class);
 
     private static final int    BATCH_MAX_LENGTH_BYTES = AtlasConfiguration.NOTIFICATION_REST_BODY_MAX_LENGTH_BYTES.getInt();
-    private static final String ATLAS_HOOK_REST_NOTIFICATION_ENDPOINT   = "atlas.hook.rest.notification.address";
+    private static final String ATLAS_HOOK_REST_NOTIFICATION_ENDPOINT   = AtlasConfiguration.NOTIFICATION_HOOK_REST_ADDRESS.getPropertyName();
     private static final String BASIC_AUTH_USERNAME    = "atlas.rest.basic.auth.username";
     private static final String BASIC_AUTH_PASSWORD    = "atlas.rest.basic.auth.password";
-    private static final String DEFAULT_ATLAS_URL      = "http://localhost:31000/";
 
     private static final Map<NotificationType, String> PRODUCER_TOPIC_MAP = new HashMap<>();
 
@@ -115,11 +114,10 @@ public class RestNotification extends AbstractNotification {
             String[] atlasEndPoint = configuration.getStringArray(ATLAS_HOOK_REST_NOTIFICATION_ENDPOINT);
 
             if (isEndpointNotSpecified(atlasEndPoint)) {
-                atlasEndPoint = configuration.getStringArray(AtlasConstants.ATLAS_REST_ADDRESS_KEY);
-            }
-
-            if (isEndpointNotSpecified(atlasEndPoint)) {
-                atlasEndPoint = new String[] {DEFAULT_ATLAS_URL};
+                throw new AtlasException("atlas.hook.rest.notification.address must be configured when REST notification is enabled. "
+                        + "Hook REST ingress is served only by rest-notification-webapp (port 41000); "
+                        + "the main Atlas webapp notification endpoint has been removed. "
+                        + "Example: " + AtlasConstants.DEFAULT_REST_NOTIFICATION_ADDRESS);
             }
 
             if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
