@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.patches;
 
+import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.patches.AtlasPatch;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
@@ -28,12 +29,14 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasTypeDefGraphStoreV2;
+import org.apache.atlas.tasks.GraphClaim;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -72,11 +75,13 @@ public class AtlasPatchRegistry {
 
     private final Map<String, PatchStatus> patchNameStatusMap;
     private final AtlasGraph               graph;
+    private final String                   nodeId;
 
     public AtlasPatchRegistry(AtlasGraph graph) {
         LOG.info("AtlasPatchRegistry: initializing..");
 
         this.graph              = graph;
+        this.nodeId             = buildNodeId();
         this.patchNameStatusMap = getPatchNameStatusForAllRegistered(graph);
 
         LOG.info("AtlasPatchRegistry: found {} patches", patchNameStatusMap.size());
@@ -84,6 +89,11 @@ public class AtlasPatchRegistry {
         for (Map.Entry<String, PatchStatus> entry : patchNameStatusMap.entrySet()) {
             LOG.info("AtlasPatchRegistry: patchId={}, status={}", entry.getKey(), entry.getValue());
         }
+    }
+
+    /** Identifies this node as a claimant, so that it only ever releases claims of its own. */
+    public String getNodeId() {
+        return nodeId;
     }
 
     public boolean isApplicable(String incomingId, String patchFile, int index) {
@@ -135,7 +145,7 @@ public class AtlasPatchRegistry {
                 }
 
                 if (patchStatus != IN_PROGRESS) {
-                    clearClaimProperties(patchVertex);
+                    clearClaimProperties(patchVertex, patchId);
                 }
             }
         } finally {
@@ -145,64 +155,87 @@ public class AtlasPatchRegistry {
         }
     }
 
-    public boolean tryClaimPatchExecution(String patchId, String nodeId, long reclaimInProgressBeforeMs) {
-        long now = System.currentTimeMillis();
-
+    /**
+     * Hands back the claim on a patch this node has stopped working on without reaching a verdict.
+     *
+     * <p>A handler for a patch that is disabled by configuration returns without recording any status.
+     * That would otherwise leave the patch IN_PROGRESS holding a claim nothing will ever release, which
+     * says two untrue things: that some node is applying the patch, and that the work is under way.  The
+     * second is the more damaging of the two, because peers read IN_PROGRESS as work to recover.
+     *
+     * <p>The patch goes back to UNKNOWN rather than SKIPPED so that it still runs if the configuration
+     * that disabled it is later turned on.
+     */
+    public void releaseUnfinishedClaim(String patchId) {
         try {
             AtlasVertex patchVertex = findByPatchId(patchId);
-            if (patchVertex == null) {
-                patchVertex = graph.addVertex();
-                setEncodedProperty(patchVertex, PATCH_ID_PROPERTY_KEY, patchId);
-                setEncodedProperty(patchVertex, PATCH_TYPE_PROPERTY_KEY, JAVA_PATCH_TYPE);
-                setEncodedProperty(patchVertex, PATCH_ACTION_PROPERTY_KEY, "apply");
+
+            if (patchVertex != null && getPatchStatus(patchVertex) == IN_PROGRESS) {
+                LOG.info("Patch claim released without a verdict patchId={}; the handler recorded no status", patchId);
+
                 setEncodedProperty(patchVertex, PATCH_STATE_PROPERTY_KEY, UNKNOWN.toString());
-                setEncodedProperty(patchVertex, TIMESTAMP_PROPERTY_KEY, now);
-                setEncodedProperty(patchVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, now);
-                setEncodedProperty(patchVertex, CREATED_BY_KEY, nodeId);
-                setEncodedProperty(patchVertex, MODIFIED_BY_KEY, nodeId);
-                clearClaimProperties(patchVertex);
+                clearClaimProperties(patchVertex, patchId);
+
                 patchNameStatusMap.put(patchId, UNKNOWN);
             }
-
-            PatchStatus status = getPatchStatus(patchVertex);
-            if (status == APPLIED || status == SKIPPED) {
-                LOG.info("Patch claim skipped patchId={}, node={}, status={}", patchId, nodeId, status);
-                return false;
-            }
-
-            String claimedBy  = getEncodedProperty(patchVertex, PATCH_CLAIMED_BY_PROPERTY_KEY, String.class);
-            Long   claimedAt  = getEncodedProperty(patchVertex, PATCH_CLAIM_STARTED_AT_KEY, Long.class);
-            boolean recoverableInProgress = claimedAt == null || claimedAt <= reclaimInProgressBeforeMs;
-
-            boolean canClaim = status == FAILED || status == UNKNOWN || status == NOT_APPLIED
-                    || (status == IN_PROGRESS && (recoverableInProgress || StringUtils.equals(claimedBy, nodeId)));
-            if (!canClaim) {
-                LOG.debug("Patch claim denied patchId={}, node={}, status={}, claimedBy={}, claimedAt={}, reclaimBefore={}",
-                        patchId, nodeId, status, claimedBy, claimedAt, reclaimInProgressBeforeMs);
-                return false;
-            }
-
-            setEncodedProperty(patchVertex, PATCH_STATE_PROPERTY_KEY, IN_PROGRESS.toString());
-            setEncodedProperty(patchVertex, PATCH_CLAIMED_BY_PROPERTY_KEY, nodeId);
-            setEncodedProperty(patchVertex, PATCH_CLAIM_STARTED_AT_KEY, now);
-            setEncodedProperty(patchVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, now);
-            setEncodedProperty(patchVertex, MODIFIED_BY_KEY, nodeId);
-
-            patchNameStatusMap.put(patchId, IN_PROGRESS);
-            if (status == IN_PROGRESS && recoverableInProgress && StringUtils.isNotBlank(claimedBy)
-                    && !StringUtils.equals(claimedBy, nodeId)) {
-                LOG.warn("Patch claim recovered stale ownership patchId={}, previousOwner={}, previousClaimAt={}, newOwner={}",
-                        patchId, claimedBy, claimedAt, nodeId);
-            } else {
-                LOG.info("Patch claimed patchId={}, node={}, previousStatus={}", patchId, nodeId, status);
-            }
-            return true;
+        } catch (Exception exception) {
+            LOG.warn("Could not release the claim on unfinished patch {}", patchId, exception);
         } finally {
             graph.commit();
         }
     }
 
-    public void recoverStaleInProgressClaims(String nodeId, long reclaimInProgressBeforeMs) {
+    /**
+     * Takes this node's claim on a patch, so that only one node in the cluster applies it.
+     *
+     * <p>The claim is a lease taken through {@link GraphClaim}, which the store adjudicates.  It is
+     * deliberately not recorded on the patch vertex: uniqueness distinguishes vertices, so every node
+     * writing the same claim name to the same patch vertex is a write nothing can refuse, and both
+     * nodes would go on to apply the patch.
+     *
+     * <p>The lease also settles what "abandoned" means.  A node cannot tell a peer that died from a
+     * peer that is still working, so the only safe evidence that a claim may be taken over is that it
+     * has lapsed - and a lapse is decided by the holder's own lease, never by the age of the claim
+     * relative to the observer.
+     *
+     * @param leaseMillis how long this node may hold the patch before peers may take it over
+     */
+    public boolean tryClaimPatchExecution(String patchId, String nodeId, long leaseMillis) {
+        PatchStatus status = registeredStatusOf(patchId, nodeId);
+
+        if (status == APPLIED || status == SKIPPED) {
+            LOG.info("Patch claim skipped patchId={}, node={}, status={}", patchId, nodeId, status);
+
+            return false;
+        }
+
+        if (!GraphClaim.claimLeaseAndCommit(graph, patchClaimName(patchId), nodeId, leaseMillis)) {
+            LOG.info("Patch claim lost to another node patchId={}, node={}", patchId, nodeId);
+
+            return false;
+        }
+
+        try {
+            recordClaim(patchId, nodeId);
+        } catch (Exception exception) {
+            LOG.warn("Patch claim taken but not recorded patchId={}, node={}; handing it back", patchId, nodeId, exception);
+
+            GraphClaim.releaseLeaseAndCommit(graph, patchClaimName(patchId), nodeId);
+
+            return false;
+        }
+
+        LOG.info("Patch claimed patchId={}, node={}, previousStatus={}", patchId, nodeId, status);
+
+        return true;
+    }
+
+    /**
+     * Marks patches left IN_PROGRESS by a node that never came back as FAILED, so they are attempted
+     * again.  A patch is only abandoned once its claim has lapsed; while a peer still holds the claim
+     * it is working on the patch, however long ago it started.
+     */
+    public void recoverStaleInProgressClaims(String nodeId) {
         try {
             AtlasGraphQuery query = graph.query()
                     .has(Constants.PATCH_STATE_PROPERTY_KEY, IN_PROGRESS.toString());
@@ -212,23 +245,82 @@ public class AtlasPatchRegistry {
                 AtlasVertex v = it.next();
                 String patchId   = getEncodedProperty(v, PATCH_ID_PROPERTY_KEY, String.class);
                 String claimedBy = getEncodedProperty(v, PATCH_CLAIMED_BY_PROPERTY_KEY, String.class);
-                Long   claimedAt = getEncodedProperty(v, PATCH_CLAIM_STARTED_AT_KEY, Long.class);
 
-                if (claimedAt != null && claimedAt > reclaimInProgressBeforeMs) {
-                    continue;
-                }
-
-                // Recover only work claimed by a different node.
                 if (StringUtils.isBlank(claimedBy) || StringUtils.equals(claimedBy, nodeId)) {
                     continue;
                 }
 
-                LOG.warn("AtlasPatchRegistry.recoverStaleInProgressClaims(): recovering stale IN_PROGRESS patch {} from node {} to FAILED",
+                if (GraphClaim.hasLiveHolder(graph, patchClaimName(patchId))) {
+                    continue;
+                }
+
+                LOG.warn("AtlasPatchRegistry.recoverStaleInProgressClaims(): patch {} was left IN_PROGRESS by node {}, whose claim has lapsed; marking it FAILED",
                         patchId, claimedBy);
+
                 setEncodedProperty(v, PATCH_STATE_PROPERTY_KEY, FAILED.toString());
-                clearClaimProperties(v);
+                clearClaimProperties(v, patchId);
                 patchNameStatusMap.put(patchId, FAILED);
             }
+        } finally {
+            graph.commit();
+        }
+    }
+
+    /** Registers the patch if this is the first time it has been seen, and reports its status. */
+    private PatchStatus registeredStatusOf(String patchId, String nodeId) {
+        // Whatever transaction this thread has open was opened before a peer finished with the patch,
+        // and it keeps showing the state as of then: a patch a peer has since applied still reads
+        // IN_PROGRESS, which is a status this node happily claims and applies over the top of.  The
+        // claim is handed out on what is read here, so it has to be read afresh.
+        graph.commit();
+
+        try {
+            AtlasVertex patchVertex = findByPatchId(patchId);
+
+            if (patchVertex == null) {
+                long now = System.currentTimeMillis();
+
+                patchVertex = graph.addVertex();
+
+                setEncodedProperty(patchVertex, PATCH_ID_PROPERTY_KEY, patchId);
+                setEncodedProperty(patchVertex, PATCH_TYPE_PROPERTY_KEY, JAVA_PATCH_TYPE);
+                setEncodedProperty(patchVertex, PATCH_ACTION_PROPERTY_KEY, "apply");
+                setEncodedProperty(patchVertex, PATCH_STATE_PROPERTY_KEY, UNKNOWN.toString());
+                setEncodedProperty(patchVertex, TIMESTAMP_PROPERTY_KEY, now);
+                setEncodedProperty(patchVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, now);
+                setEncodedProperty(patchVertex, CREATED_BY_KEY, nodeId);
+                setEncodedProperty(patchVertex, MODIFIED_BY_KEY, nodeId);
+
+                patchNameStatusMap.put(patchId, UNKNOWN);
+
+                return UNKNOWN;
+            }
+
+            return getPatchStatus(patchVertex);
+        } finally {
+            graph.commit();
+        }
+    }
+
+    /** Notes on the patch itself that this node has taken it, for anyone reading the patch list. */
+    private void recordClaim(String patchId, String nodeId) {
+        try {
+            AtlasVertex patchVertex = findByPatchId(patchId);
+            long        now         = System.currentTimeMillis();
+
+            if (patchVertex == null) {
+                LOG.warn("Patch {} has no record to mark as claimed by node={}; the claim itself still stands", patchId, nodeId);
+
+                return;
+            }
+
+            setEncodedProperty(patchVertex, PATCH_STATE_PROPERTY_KEY, IN_PROGRESS.toString());
+            setEncodedProperty(patchVertex, PATCH_CLAIMED_BY_PROPERTY_KEY, nodeId);
+            setEncodedProperty(patchVertex, PATCH_CLAIM_STARTED_AT_KEY, now);
+            setEncodedProperty(patchVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, now);
+            setEncodedProperty(patchVertex, MODIFIED_BY_KEY, nodeId);
+
+            patchNameStatusMap.put(patchId, IN_PROGRESS);
         } finally {
             graph.commit();
         }
@@ -273,8 +365,11 @@ public class AtlasPatchRegistry {
             setEncodedProperty(patchVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
             setEncodedProperty(patchVertex, CREATED_BY_KEY, AtlasTypeDefGraphStoreV2.getCurrentUser());
             setEncodedProperty(patchVertex, MODIFIED_BY_KEY, AtlasTypeDefGraphStoreV2.getCurrentUser());
-            setEncodedProperty(patchVertex, PATCH_CLAIMED_BY_PROPERTY_KEY, "");
-            setEncodedProperty(patchVertex, PATCH_CLAIM_STARTED_AT_KEY, 0L);
+
+            // Registering resets the patch to "not running", so the claim has to go with it. Clearing
+            // only the bookkeeping fields would leave the claim itself behind with no owner able to
+            // release it, and a stranded claim means this patch could never be claimed again.
+            clearClaimProperties(patchVertex, patchId);
         } finally {
             graph.commit();
 
@@ -282,9 +377,36 @@ public class AtlasPatchRegistry {
         }
     }
 
-    private static void clearClaimProperties(AtlasVertex patchVertex) {
+    /**
+     * Gives up this node's claim on a patch and clears the bookkeeping that went with it.  A claim
+     * held by a peer is left alone - {@link GraphClaim#releaseLease} releases only our own.
+     *
+     * <p>The claim used to be written onto the patch vertex, so vertices carried over from an older
+     * build may still hold one; it is dropped here too, since a claim nobody can release would keep
+     * the patch from ever being claimed again.
+     */
+    private void clearClaimProperties(AtlasVertex patchVertex, String patchId) {
+        GraphClaim.releaseLease(graph, patchClaimName(patchId), nodeId);
+        GraphClaim.releaseClaim(patchVertex);
+
         setEncodedProperty(patchVertex, PATCH_CLAIMED_BY_PROPERTY_KEY, "");
         setEncodedProperty(patchVertex, PATCH_CLAIM_STARTED_AT_KEY, 0L);
+    }
+
+    private static String buildNodeId() {
+        String runMode  = AtlasRunMode.current().name();
+        String hostName = System.getenv("HOSTNAME");
+        String jvmId    = ManagementFactory.getRuntimeMXBean().getName();
+
+        if (StringUtils.isBlank(hostName)) {
+            hostName = "unknown-host";
+        }
+
+        return runMode + "@" + hostName + "#" + jvmId;
+    }
+
+    private static String patchClaimName(String patchId) {
+        return Constants.CLAIM_PATCH_PREFIX + patchId;
     }
 
     private static Map<String, PatchStatus> getPatchNameStatusForAllRegistered(AtlasGraph graph) {

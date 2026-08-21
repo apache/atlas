@@ -93,8 +93,16 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     }
 
     @Override
-    public void stop() throws AtlasException {
+    public synchronized void stop() throws AtlasException {
+        if (this.taskExecutor != null) {
+            this.taskExecutor.shutdown();
+        }
+
         LOG.info("TaskManagement: Stopped!");
+    }
+
+    static long getPollIntervalMs() {
+        return AtlasConfiguration.TASKS_POLL_INTERVAL_MS.getLong();
     }
 
     public boolean hasStarted() {
@@ -124,23 +132,18 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     }
 
     /**
-     * Returns a {@link GraphClaimable} scoped to the given task GUID.
-     * Callers (e.g. {@link TaskExecutor.TaskConsumer}) can use this to recover
-     * stale claims and claim a specific task without knowing about
-     * {@link TaskRegistry} directly.
+     * Invoked once the task factories are known.  Activation runs before Spring finishes wiring
+     * them up, so without this callback a node would come up with workers that have no factory
+     * to execute anything with, and tasks left pending by the previous run would never be picked up.
      */
-    public GraphClaimable<Boolean> claimableFor(String taskGuid) {
-        return new GraphClaimable<Boolean>() {
-            @Override
-            public Boolean tryClaim() {
-                return registry.tryClaimTask(taskGuid);
-            }
+    public void onFactoriesRegistered() {
+        if (!hasStarted) {
+            LOG.info("TaskManagement.onFactoriesRegistered(): node not activated — nothing to start");
 
-            @Override
-            public void recoverStaleClaims() {
-                registry.recoverStaleInProgressTasks();
-            }
-        };
+            return;
+        }
+
+        startInternal();
     }
 
     @Override
@@ -223,41 +226,35 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             return;
         }
 
-        if (this.taskExecutor == null) {
-            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
-        }
-
-        this.taskExecutor.addAll(tasks);
+        ensureExecutor().addAll(tasks);
 
         this.statistics.print();
     }
 
-    private void startInternal() {
+    private synchronized TaskExecutor ensureExecutor() {
+        if (this.taskExecutor == null) {
+            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
+        }
+
+        return this.taskExecutor;
+    }
+
+    private synchronized void startInternal() {
         if (!AtlasConfiguration.TASKS_USE_ENABLED.getBoolean()) {
+            return;
+        }
+
+        if (this.taskTypeFactoryMap.isEmpty()) {
+            LOG.warn("No factories registered! Tasks will be picked up once factories are registered.");
+
             return;
         }
 
         LOG.info("TaskManagement: Started!");
 
-        if (this.taskTypeFactoryMap.isEmpty()) {
-            LOG.warn("Not factories registered! Pending tasks will be queued once factories are registered!");
-
-            return;
-        }
-
-        queuePendingTasks();
-    }
-
-    private void queuePendingTasks() {
-        if (!AtlasConfiguration.TASKS_USE_ENABLED.getBoolean()) {
-            return;
-        }
-
-        List<AtlasTask> pendingTasks = this.registry.getPendingTasks();
-
-        LOG.info("TaskManagement: Found: {}: Tasks in pending state.", pendingTasks.size());
-
-        addAll(pendingTasks);
+        // The worker pulls pending work straight from the graph, so anything left over by a
+        // previous run is picked up by this wake-up — no separate requeue step is needed.
+        ensureExecutor().wakeUp();
     }
 
     static class Statistics {

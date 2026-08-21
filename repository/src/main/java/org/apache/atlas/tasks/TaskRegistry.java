@@ -117,11 +117,18 @@ public class TaskRegistry {
         return ret;
     }
 
+    /**
+     * Records the outcome of a task and gives the cluster-wide claim back.  Every path out of
+     * execution comes through here, so releasing the claim at this one point is what keeps a
+     * finished task from blocking the rest of the cluster forever.
+     */
     @GraphTransaction
     public void updateStatus(AtlasVertex taskVertex, AtlasTask task) {
         if (taskVertex == null) {
             return;
         }
+
+        GraphClaim.releaseLease(graph, Constants.CLAIM_TASK_RUNNER, nodeId);
 
         setEncodedProperty(taskVertex, Constants.TASK_ATTEMPT_COUNT, task.getAttemptCount());
         setEncodedProperty(taskVertex, Constants.TASK_STATUS, task.getStatus().toString());
@@ -139,7 +146,7 @@ public class TaskRegistry {
             Iterator<AtlasVertex> results = query.vertices().iterator();
 
             if (results.hasNext()) {
-                graph.removeVertex(results.next());
+                deleteVertex(results.next());
             }
         } catch (Exception exception) {
             LOG.error("Error: deletingByGuid: {}", guid);
@@ -149,67 +156,114 @@ public class TaskRegistry {
     }
 
     /**
-     * Atomically claims a task for execution on this node by transitioning its status
-     * from {@code PENDING} to {@code IN_PROGRESS} inside a single graph transaction.
+     * Atomically claims the next task this node may execute, transitioning it from
+     * {@code PENDING} to {@code IN_PROGRESS} inside a single graph transaction.
      *
-     * <p>In an active-active cluster every node calls {@code queuePendingTasks()} on startup
-     * and may also receive task dispatch calls at runtime.  Without a claim step, multiple
-     * nodes would execute the same task concurrently.  This method provides the
-     * Compare-And-Swap (CAS) guard:
+     * <p>Claiming is a <em>pull</em>: the caller does not nominate a task, it asks for
+     * whichever task is next in line.  This is what makes cluster-wide ordering workable.
+     * Tasks are created on whichever node served the request, but any node may execute any
+     * task, so a task is never stranded in the queue of a node that is busy or unable to run
+     * it.  A caller that nominated a specific task would have to wait for its turn while
+     * holding a worker thread, and the task it is waiting for may well be behind it in that
+     * same worker's queue — a deadlock.
+     *
+     * <p>Two invariants are enforced here, both required by classification propagation:
      * <ul>
-     *   <li>The first node whose transaction commits wins the claim and must execute the task.</li>
-     *   <li>Any other node that concurrently attempts the same CAS gets a JanusGraph
-     *       {@code PermanentLockingException}. The {@link GraphTransactionInterceptor} retries,
-     *       but on retry the vertex status is already {@code IN_PROGRESS} (or {@code COMPLETE}),
-     *       so the query returns no results and the method returns {@code false}.</li>
+     *   <li>At most one task runs in the cluster at any time, so an add and a delete of the
+     *       same classification can never overlap.</li>
+     *   <li>Tasks are handed out oldest-first, so those two never run out of order.</li>
      * </ul>
      *
-     * @param taskGuid the GUID of the task to claim
-     * @return {@code true} if this node successfully claimed the task; {@code false} if the
-     *         task was not found, was not in {@code PENDING} state, or was already claimed
-     *         by another node
+     * <p>The race between nodes is settled by {@link GraphClaim}, not by the status write, which
+     * would serialise nothing: two nodes can both read {@code PENDING} and both write
+     * {@code IN_PROGRESS}.  The claim is a lease on a single cluster-wide runner slot, held on a
+     * vertex of its own rather than on the task being claimed.  Marking the task itself is not
+     * exclusive: uniqueness stops two <em>vertices</em> from holding one claim name, so nodes that
+     * picked different tasks conflict, but nodes that picked the <em>same</em> task write the same
+     * marker and both writes stand.  Taking the slot, by contrast, means creating a vertex that only
+     * one node can create, whichever task each of them had in mind.
+     *
+     * <p>The slot is leased so that a node dying mid-task cannot keep the cluster idle forever; the
+     * lease runs for the same stale threshold that returns its abandoned task to {@code PENDING}.
+     *
+     * <p>The slot is taken and committed <em>before</em> a task is looked for, which is what makes
+     * the claim exclusive rather than merely optimistic.  The store gets to refuse a claim only when
+     * the claim is committed, so a claim that rides along in the same transaction as the work
+     * excludes nobody: both nodes read the slot as free, both write it, and neither commit conflicts
+     * because each has let go of the slot by the time the other commits.  Committing the claim first
+     * also gives this node a fresh view of the queue, without which it can pick up a task a peer has
+     * just finished.
+     *
+     * <p>Call through {@link GraphClaim#attempt(GraphClaim.ClaimAttempt)}: a lost race may
+     * surface as a return of {@code null} or as a thrown conflict, depending on when the backend
+     * refuses the write.
+     *
+     * @return the claimed task, or {@code null} if a task is already running elsewhere in the
+     *         cluster or there is nothing pending
+     * @throws ClaimConflictException if another node won the race for this task
      */
     @GraphTransaction
-    public boolean tryClaimTask(String taskGuid) {
-        // AsyncImport-style global serialization: allow claiming only when
-        // there is no task already IN_PROGRESS.
+    public AtlasTask claimNextPendingTask() {
+        // Both of these run before the slot is taken, so that a node polling while its own task is
+        // still running cannot end up releasing the slot it holds for that task.  Neither is the
+        // exclusion - a stale view can report either wrongly - they only avoid taking a slot this
+        // node has no use for.  The slot itself is what excludes.
         if (hasAnyTaskInProgress()) {
-            LOG.debug("TaskRegistry.tryClaimTask({}): node={} claim denied, global IN_PROGRESS task exists", taskGuid, nodeId);
-            return false;
+            LOG.debug("TaskRegistry.claimNextPendingTask(): node={} no claim, a task is already in progress", nodeId);
+
+            return null;
         }
 
-        // Preserve FIFO order: only the oldest PENDING task is claimable.
-        // This prevents newer tasks from leapfrogging older tasks when multiple
-        // nodes race to claim tasks at startup/runtime.
-        if (!isOldestPendingTask(taskGuid)) {
-            LOG.debug("TaskRegistry.tryClaimTask({}): node={} claim denied, not oldest pending task", taskGuid, nodeId);
-            return false;
+        if (findOldestPendingVertex() == null) {
+            return null;
         }
 
-        AtlasGraphQuery query = graph.query()
-                .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
-                .has(Constants.TASK_GUID, taskGuid)
-                .has(Constants.TASK_STATUS, AtlasTask.Status.PENDING.toString());
+        if (!GraphClaim.claimLeaseAndCommit(graph, Constants.CLAIM_TASK_RUNNER, nodeId, inProgressStaleThresholdMs)) {
+            LOG.debug("TaskRegistry.claimNextPendingTask(): node={} no claim, another node holds the runner slot", nodeId);
 
-        Iterator<AtlasVertex> results = query.vertices().iterator();
-
-        if (!results.hasNext()) {
-            // Task not found or not PENDING — already claimed or completed by another node.
-            LOG.debug("TaskRegistry.tryClaimTask({}): node={} claim denied, task not PENDING/found", taskGuid, nodeId);
-            return false;
+            return null;
         }
 
-        AtlasVertex taskVertex = results.next();
-        long        now        = System.currentTimeMillis();
+        AtlasTask ret = takeOldestPendingTask();
+
+        if (ret == null) {
+            GraphClaim.releaseLeaseAndCommit(graph, Constants.CLAIM_TASK_RUNNER, nodeId);
+        }
+
+        return ret;
+    }
+
+    /**
+     * Marks the oldest pending task as this node's, with the runner slot already held and committed.
+     * The queue is read again here rather than reusing the candidate found before the claim: that
+     * candidate came from a view taken before the claim was committed, and a peer may have finished
+     * it in the meantime.
+     */
+    private AtlasTask takeOldestPendingTask() {
+        AtlasVertex taskVertex = findOldestPendingVertex();
+
+        if (taskVertex == null) {
+            return null;
+        }
+
+        long now = System.currentTimeMillis();
 
         setEncodedProperty(taskVertex, Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS.toString());
         setEncodedProperty(taskVertex, Constants.TASK_START_TIME, now);
         setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, now);
 
-        LOG.info("TaskRegistry.tryClaimTask({}): node={} claimed IN_PROGRESS", taskGuid, nodeId);
-        return true;
+        AtlasTask ret = toAtlasTask(taskVertex);
+
+        LOG.info("TaskRegistry.claimNextPendingTask(): node={} claimed {} ({})", nodeId, ret.getGuid(), ret.getType());
+
+        return ret;
     }
 
+    /**
+     * Returns {@code IN_PROGRESS} tasks whose owner has gone quiet for longer than the stale
+     * threshold back to {@code PENDING}.  Without this a node that died mid-task would hold the
+     * cluster-wide slot forever and no task would ever run again.
+     */
     @GraphTransaction
     public void recoverStaleInProgressTasks() {
         AtlasGraphQuery query = graph.query()
@@ -225,9 +279,15 @@ public class TaskRegistry {
                 continue;
             }
 
-            LOG.warn("TaskRegistry.recoverStaleInProgressTasks(): recovering stale IN_PROGRESS task {} back to PENDING",
-                    taskGuid);
-            LOG.warn("TaskRegistry.recoverStaleInProgressTasks(): node={} recovered stale task {}", nodeId, taskGuid);
+            LOG.warn("TaskRegistry.recoverStaleInProgressTasks(): node={} recovering stale IN_PROGRESS task {} back to PENDING",
+                    nodeId, taskGuid);
+
+            // The runner slot the dead node held is not released here: it is leased for this same
+            // threshold, so it has lapsed too and the next claimant takes it over.  This clears a
+            // claim only if the task was marked by a node running a build that recorded claims on
+            // task vertices, which would otherwise outlive the task and block every later claim.
+            GraphClaim.releaseClaim(vertex);
+
             setEncodedProperty(vertex, Constants.TASK_STATUS, AtlasTask.Status.PENDING.toString());
             setEncodedProperty(vertex, Constants.TASK_UPDATED_TIME, now);
         }
@@ -261,22 +321,87 @@ public class TaskRegistry {
         return now - updatedTime >= inProgressStaleThresholdMs;
     }
 
-    private boolean isOldestPendingTask(String taskGuid) {
+    /**
+     * Returns the oldest {@code PENDING} task vertex, or {@code null} if there is none.
+     *
+     * <p>The ordering is computed here rather than delegated to {@code orderBy()} on the graph
+     * query: {@link Constants#TASK_CREATED_TIME} is written as a {@link Date} but indexed as a
+     * {@code Long}, so the store-level sort cannot be relied upon to return the true oldest
+     * vertex.  Every node must agree on which task is next, otherwise the claim stops being a
+     * race that exactly one participant wins.
+     *
+     * <p>Each candidate's status is confirmed on the vertex itself, because the index that produced
+     * the candidate can lag behind it: a task another node finished moments ago is still returned as
+     * {@code PENDING} and would be run a second time.  Candidates are filtered as they are scanned
+     * rather than after the oldest is chosen, so a lagging entry cannot hide the tasks behind it.
+     */
+    private AtlasVertex findOldestPendingVertex() {
         AtlasGraphQuery query = graph.query()
                 .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
-                .has(Constants.TASK_STATUS, AtlasTask.Status.PENDING.toString())
-                .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
+                .has(Constants.TASK_STATUS, AtlasTask.Status.PENDING.toString());
 
-        Iterator<AtlasVertex> pending = query.vertices().iterator();
+        AtlasVertex ret            = null;
+        long        oldestCreated  = Long.MAX_VALUE;
+        String      oldestGuid     = null;
 
-        if (!pending.hasNext()) {
-            return false;
+        for (AtlasVertex vertex : (Iterable<AtlasVertex>) query.vertices()) {
+            if (!isPending(vertex)) {
+                continue;
+            }
+
+            long   created = readCreatedTime(vertex);
+            String guid    = vertex.getProperty(Constants.TASK_GUID, String.class);
+
+            // GUID breaks ties so that concurrent claimers converge on the same vertex.
+            if (created < oldestCreated || (created == oldestCreated && compareGuids(guid, oldestGuid) < 0)) {
+                ret           = vertex;
+                oldestCreated = created;
+                oldestGuid    = guid;
+            }
         }
 
-        AtlasVertex oldestPending = pending.next();
-        String oldestGuid = oldestPending.getProperty(Constants.TASK_GUID, String.class);
+        return ret;
+    }
 
-        return taskGuid.equals(oldestGuid);
+    /**
+     * Whether the vertex itself still says {@code PENDING}.  A vertex the owning node has already
+     * deleted reads as no status at all, which is equally not claimable.
+     */
+    private static boolean isPending(AtlasVertex vertex) {
+        try {
+            return AtlasTask.Status.PENDING.toString().equals(vertex.getProperty(Constants.TASK_STATUS, String.class));
+        } catch (Exception exception) {
+            LOG.debug("TaskRegistry: skipping a task vertex that could no longer be read", exception);
+
+            return false;
+        }
+    }
+
+    private static int compareGuids(String guid, String otherGuid) {
+        if (guid == null) {
+            return otherGuid == null ? 0 : 1;
+        }
+
+        return otherGuid == null ? -1 : guid.compareTo(otherGuid);
+    }
+
+    /**
+     * Reads the task creation time, tolerating both representations found on task vertices:
+     * {@code createVertex()} stores a {@link Date} while claim/update paths store epoch millis.
+     * A vertex with no usable creation time sorts last so it can never wedge the queue.
+     */
+    private static long readCreatedTime(AtlasVertex vertex) {
+        Object value = vertex.getProperty(Constants.TASK_CREATED_TIME, Object.class);
+
+        if (value instanceof Date) {
+            return ((Date) value).getTime();
+        }
+
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+
+        return Long.MAX_VALUE;
     }
 
     @GraphTransaction
@@ -337,6 +462,11 @@ public class TaskRegistry {
         if (taskVertex == null) {
             return;
         }
+
+        // Removing the vertex does not clear its uniqueness entries, so a claim left on it would
+        // survive the task and no node could ever claim again.  Current claims live on the runner
+        // slot rather than here; this covers tasks marked by an earlier build.
+        GraphClaim.releaseClaim(taskVertex);
 
         graph.removeVertex(taskVertex);
     }

@@ -126,6 +126,19 @@ public enum AtlasConfiguration {
     REPLACE_HUGE_SPARK_PROCESS_ATTRIBUTES_PATCH("atlas.process.spark.attributes.update.patch", false),
     ASYNC_IMPORT_CLAIM_STALE_THRESHOLD_MS("atlas.async.import.claim.stale.threshold.ms", 3600000L),
     TASK_CLAIM_STALE_THRESHOLD_MS("atlas.tasks.claim.stale.threshold.ms", 3600000L),
+    /**
+     * How often a node re-checks the graph for pending tasks.  Creating a task wakes the worker
+     * immediately, so this only backstops work that no live worker knows about — tasks orphaned
+     * by a peer that died, or left behind by a previous run.
+     */
+    TASKS_POLL_INTERVAL_MS("atlas.tasks.poll.interval.ms", 30000L),
+    /**
+     * How long a node applying a patch keeps its claim on it.  A node that dies mid-patch cannot
+     * hand the claim back, so peers wait this long before taking the patch over.  The claim is not
+     * renewed while the patch runs, so this must exceed the longest a patch can take: taking a
+     * patch over from a node that is still applying it would run it twice.
+     */
+    PATCH_CLAIM_LEASE_MS("atlas.patch.claim.lease.ms", 3600000L),
     TYPEDEF_BOOTSTRAP_STALE_THRESHOLD_MS("atlas.typedef.bootstrap.claim.stale.threshold.ms", 120000L),
     /**
      * Maximum number of times the {GraphTransactionInterceptor} will

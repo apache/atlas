@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.graph;
 
 import org.apache.atlas.AtlasRunMode;
+import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
@@ -29,6 +30,7 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -132,6 +134,65 @@ public class GraphBackedSearchIndexerActivationTest {
             verify(claimManager, times(1)).releaseOwnership(anyString());
             verify(waitManagement, times(1)).setIsSuccess(true);
         }
+    }
+
+    /**
+     * A node that stood down from index setup has no index field names registered in its type
+     * registry, so it must not publish search weights and overwrite the Solr configuration written
+     * by the node that did the setup.
+     */
+    @Test
+    public void onLoadCompletion_doesNotNotifyListenersOnANodeThatStoodDownFromIndexSetup() throws Exception {
+        IAtlasGraphProvider provider = Mockito.mock(IAtlasGraphProvider.class);
+        Configuration configuration = Mockito.mock(Configuration.class);
+        AtlasTypeRegistry typeRegistry = Mockito.mock(AtlasTypeRegistry.class);
+        AtlasGraph graph = Mockito.mock(AtlasGraph.class);
+        AtlasGraphManagement management = Mockito.mock(AtlasGraphManagement.class);
+
+        when(provider.get()).thenReturn(graph);
+        when(graph.getManagementSystem()).thenReturn(management);
+
+        GraphBackedSearchIndexer indexer = new GraphBackedSearchIndexer(provider, configuration, typeRegistry);
+        IndexChangeListener listener = Mockito.mock(IndexChangeListener.class);
+
+        indexer.addIndexListener(listener);
+
+        try (MockedStatic<AtlasRunMode> runModeMock = Mockito.mockStatic(AtlasRunMode.class)) {
+            AtlasRunMode runMode = Mockito.mock(AtlasRunMode.class);
+
+            runModeMock.when(AtlasRunMode::current).thenReturn(runMode);
+            when(runMode.runsIndexSetup()).thenReturn(false);
+
+            indexer.instanceIsActive();
+            indexer.onLoadCompletion();
+        }
+
+        verify(listener, never()).onInitCompletion(any(ChangedTypeDefs.class));
+    }
+
+    /**
+     * Standing down is the exception, not the rule: a node that ran index setup - which is every node
+     * of a single-node deployment - must publish the search weights, or free text search has nothing
+     * to search on.
+     */
+    @Test
+    public void onLoadCompletion_notifiesListenersOnANodeThatRanIndexSetup() throws Exception {
+        IAtlasGraphProvider provider = Mockito.mock(IAtlasGraphProvider.class);
+        Configuration configuration = Mockito.mock(Configuration.class);
+        AtlasTypeRegistry typeRegistry = Mockito.mock(AtlasTypeRegistry.class);
+        AtlasGraph graph = Mockito.mock(AtlasGraph.class);
+        AtlasGraphManagement management = Mockito.mock(AtlasGraphManagement.class);
+
+        when(provider.get()).thenReturn(graph);
+        when(graph.getManagementSystem()).thenReturn(management);
+
+        GraphBackedSearchIndexer indexer = new GraphBackedSearchIndexer(provider, configuration, typeRegistry);
+        IndexChangeListener listener = Mockito.mock(IndexChangeListener.class);
+
+        indexer.addIndexListener(listener);
+        indexer.onLoadCompletion();
+
+        verify(listener, times(1)).onInitCompletion(any(ChangedTypeDefs.class));
     }
 
     private static class FakePermanentLockingException extends RuntimeException {

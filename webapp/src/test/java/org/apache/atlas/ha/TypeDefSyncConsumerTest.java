@@ -18,22 +18,29 @@
 package org.apache.atlas.ha;
 
 import org.apache.atlas.AtlasConstants;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.kafka.KafkaNotification;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.commons.configuration2.Configuration;
+import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class TypeDefSyncConsumerTest {
     @Mock
@@ -41,6 +48,9 @@ public class TypeDefSyncConsumerTest {
 
     @Mock
     private AtlasTypeDefStore typeDefStore;
+
+    @Mock
+    private AtlasGraph graph;
 
     @Mock
     private Configuration configuration;
@@ -91,8 +101,37 @@ public class TypeDefSyncConsumerTest {
     }
 
     @Test
+    public void reload_dropsTheStaleTransactionBeforeReadingTheTypesBack() throws Exception {
+        TypeDefSyncConsumer consumer = newConsumer();
+
+        reloadTypeRegistry(consumer);
+
+        // Reading the types back through the transaction this thread already holds would return
+        // the graph as it looked before the peer committed the typedef being announced.
+        InOrder inOrder = Mockito.inOrder(graph, typeDefStore);
+
+        inOrder.verify(graph).commit();
+        inOrder.verify(typeDefStore).init();
+    }
+
+    @Test
+    public void reload_letsAFailedReadBackSurfaceSoTheSignalIsNotMarkedApplied() throws Exception {
+        TypeDefSyncConsumer consumer = newConsumer();
+
+        Mockito.doThrow(new AtlasBaseException("reload failed")).when(typeDefStore).init();
+
+        try {
+            reloadTypeRegistry(consumer);
+
+            fail("expected the reload failure to propagate");
+        } catch (InvocationTargetException e) {
+            assertTrue(e.getCause() instanceof AtlasBaseException, "expected AtlasBaseException, got " + e.getCause());
+        }
+    }
+
+    @Test
     public void start_isNoopAndDoesNotCreateConsumerThread() throws Exception {
-        TypeDefSyncConsumer consumer = new TypeDefSyncConsumer(kafkaNotification, typeDefStore, configuration);
+        TypeDefSyncConsumer consumer = newConsumer();
 
         consumer.start();
 
@@ -103,9 +142,20 @@ public class TypeDefSyncConsumerTest {
 
     @Test
     public void getHandlerOrder_returnsDefaultMetadataOrder() {
-        TypeDefSyncConsumer consumer = new TypeDefSyncConsumer(kafkaNotification, typeDefStore, configuration);
+        TypeDefSyncConsumer consumer = newConsumer();
 
         assertEquals(consumer.getHandlerOrder(), TypeDefSyncConsumer.HandlerOrder.DEFAULT_METADATA_SERVICE.getOrder());
+    }
+
+    private TypeDefSyncConsumer newConsumer() {
+        return new TypeDefSyncConsumer(kafkaNotification, typeDefStore, graph, configuration);
+    }
+
+    private static void reloadTypeRegistry(TypeDefSyncConsumer consumer) throws Exception {
+        Method reloadMethod = TypeDefSyncConsumer.class.getDeclaredMethod("reloadTypeRegistry");
+        reloadMethod.setAccessible(true);
+
+        reloadMethod.invoke(consumer);
     }
 
     private static Object parseSignal(String payload) throws Exception {

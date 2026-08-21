@@ -20,6 +20,7 @@ package org.apache.atlas.tasks;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
@@ -29,56 +30,183 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Runs graph tasks on this node, one at a time, pulling work from {@link TaskRegistry}.
+ *
+ * <p>Nothing is assigned to this node: creating a task only wakes the worker, which then asks
+ * the registry for whichever task is next in the cluster and keeps going until the registry
+ * has nothing to hand out.  Any node can execute any task, so work is never stranded behind a
+ * busy peer, and the worker only ever holds a task it has already been granted.
+ */
 public class TaskExecutor {
     private static final Logger LOG = LoggerFactory.getLogger(TaskExecutor.class);
 
-    private static final TaskLogger TASK_LOG         = TaskLogger.getLogger();
-    private static final String     TASK_NAME_FORMAT = "atlas-task-%d-";
+    private static final TaskLogger TASK_LOG          = TaskLogger.getLogger();
+    private static final String     TASK_NAME_FORMAT  = "atlas-task-%d-";
+    private static final String     POLL_NAME_FORMAT  = "atlas-task-poll-%d-";
+    private static final long       SHUTDOWN_WAIT_SEC = 30L;
 
-    private final TaskRegistry              registry;
-    private final Map<String, TaskFactory>  taskTypeFactoryMap;
-    private final TaskManagement.Statistics statistics;
-    private final ExecutorService           executorService;
+    private final TaskRegistry               registry;
+    private final GraphClaimable<AtlasTask>  claimSource;
+    private final Map<String, TaskFactory>   taskTypeFactoryMap;
+    private final TaskManagement.Statistics  statistics;
+    private final ExecutorService            executorService;
+    private final ScheduledExecutorService   pollService;
+    private final AtomicBoolean              drainScheduled = new AtomicBoolean(false);
 
     public TaskExecutor(TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
+        this(registry, claimableOver(registry), taskTypeFactoryMap, statistics, TaskManagement.getPollIntervalMs());
+    }
+
+    /**
+     * Adapts the registry to {@link GraphClaimable}.  The calls are routed through the injected
+     * {@code registry} reference on purpose: that is the transaction-managed proxy, so each claim
+     * and recovery runs in its own graph transaction.  {@link TaskRegistry} cannot implement the
+     * interface itself — the generic signature would produce a synthetic bridge method that the
+     * transaction interceptor may bind to instead of the real one.
+     */
+    private static GraphClaimable<AtlasTask> claimableOver(TaskRegistry registry) {
+        return new GraphClaimable<AtlasTask>() {
+            @Override
+            public String claimName() {
+                return Constants.CLAIM_TASK_RUNNER;
+            }
+
+            @Override
+            public AtlasTask tryClaim() {
+                return registry.claimNextPendingTask();
+            }
+
+            @Override
+            public void recoverStaleClaims() {
+                registry.recoverStaleInProgressTasks();
+            }
+        };
+    }
+
+    @VisibleForTesting
+    TaskExecutor(TaskRegistry registry, GraphClaimable<AtlasTask> claimSource, Map<String, TaskFactory> taskTypeFactoryMap,
+                 TaskManagement.Statistics statistics, long pollIntervalMs) {
         this.registry           = registry;
+        this.claimSource        = claimSource;
         this.taskTypeFactoryMap = taskTypeFactoryMap;
         this.statistics         = statistics;
         this.executorService    = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
                 .setDaemon(true)
                 .setNameFormat(TASK_NAME_FORMAT + Thread.currentThread().getName())
                 .build());
+        this.pollService        = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder()
+                .setDaemon(true)
+                .setNameFormat(POLL_NAME_FORMAT + Thread.currentThread().getName())
+                .build());
+
+        // Wake-ups on task creation cover the common case, but a task can be left pending with
+        // every worker idle — a peer died holding it, or it outlived the run that created it.
+        this.pollService.scheduleWithFixedDelay(this::wakeUp, pollIntervalMs, pollIntervalMs, TimeUnit.MILLISECONDS);
     }
 
     public void addAll(List<AtlasTask> tasks) {
         for (AtlasTask task : tasks) {
-            if (task == null) {
-                continue;
+            if (task != null) {
+                TASK_LOG.log(task);
+            }
+        }
+
+        wakeUp();
+    }
+
+    /**
+     * Asks the worker to drain whatever the cluster has pending.  Cheap to call and safe to
+     * call often: overlapping requests collapse into the one drain that is already queued.
+     */
+    public void wakeUp() {
+        if (!drainScheduled.compareAndSet(false, true)) {
+            LOG.debug("TaskExecutor: wakeUp ignored, a drain is already scheduled");
+
+            return;
+        }
+
+        try {
+            LOG.debug("TaskExecutor: scheduling drain");
+
+            this.executorService.submit(this::drain);
+        } catch (Exception exception) {
+            drainScheduled.set(false);
+
+            LOG.warn("TaskExecutor: could not schedule task drain", exception);
+        }
+    }
+
+    public void shutdown() {
+        pollService.shutdownNow();
+        executorService.shutdown();
+
+        try {
+            if (!executorService.awaitTermination(SHUTDOWN_WAIT_SEC, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException exception) {
+            executorService.shutdownNow();
+
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * Claims and runs tasks until the registry has none to give.  Returning empty-handed is the
+     * normal way to finish: it means the queue is empty, or a peer is running a task and will
+     * carry on draining when it is done.
+     */
+    private void drain() {
+        // Cleared first so a task created while this drain is running schedules another one.
+        drainScheduled.set(false);
+
+        LOG.debug("TaskExecutor: drain starting");
+
+        try {
+            refreshGraphView();
+
+            claimSource.recoverStaleClaims();
+        } catch (Exception exception) {
+            LOG.warn("TaskExecutor: stale task recovery failed", exception);
+        }
+
+        while (true) {
+            AtlasTask task;
+
+            try {
+                refreshGraphView();
+
+                // A peer winning the race comes back as null here, same as an empty queue: either
+                // way there is nothing for this worker to run.
+                task = GraphClaim.attempt(claimSource::tryClaim);
+            } catch (Exception exception) {
+                LOG.warn("TaskExecutor: could not claim next task", exception);
+
+                return;
             }
 
-            TASK_LOG.log(task);
+            if (task == null) {
+                LOG.debug("TaskExecutor: nothing claimable, drain finished");
 
-            // Build a per-task GraphClaimable that atomically transitions
-            // PENDING → IN_PROGRESS for exactly this task's GUID.
-            // TaskConsumer uses GraphClaimable for both stale-claim recovery and
-            // the claim step, so callers stay decoupled from TaskRegistry.
-            final String              taskGuid    = task.getGuid();
-            GraphClaimable<Boolean>   claimAction = new GraphClaimable<Boolean>() {
-                @Override
-                public Boolean tryClaim() {
-                    return registry.tryClaimTask(taskGuid);
-                }
+                return;
+            }
 
-                @Override
-                public void recoverStaleClaims() {
-                    registry.recoverStaleInProgressTasks();
-                }
-            };
-
-            this.executorService.submit(new TaskConsumer(task, claimAction, this.registry, this.taskTypeFactoryMap, this.statistics));
+            new TaskConsumer(task, this.registry, this.taskTypeFactoryMap, this.statistics).run();
         }
+    }
+
+    /**
+     * Closes the graph transaction this worker thread is holding.  The thread is long-lived and
+     * its transaction would otherwise keep serving the snapshot taken on first use, leaving the
+     * drain permanently blind to tasks committed by request threads after that point.
+     */
+    private void refreshGraphView() {
+        registry.commit();
     }
 
     @VisibleForTesting
@@ -88,42 +216,25 @@ public class TaskExecutor {
 
     static class TaskConsumer implements Runnable {
         private static final int MAX_ATTEMPT_COUNT = 3;
-        private static final int DEFAULT_MAX_CLAIM_ATTEMPTS = 600;
-        private static final int DEFAULT_CLAIM_RETRY_WAIT_MS = (int) TimeUnit.SECONDS.toMillis(1);
 
-        private final GraphClaimable<Boolean>   claimAction;
         private final Map<String, TaskFactory>  taskTypeFactoryMap;
         private final TaskRegistry              registry;
         private final TaskManagement.Statistics statistics;
         private final AtlasTask                 task;
-        private final int                       maxClaimAttempts;
-        private final int                       claimRetryWaitMs;
 
         /**
-         * @param task        the task to execute
-         * @param claimAction the {@link GraphClaimable} that performs stale-claim
-         *                    recovery and CAS claim ({@code PENDING → IN_PROGRESS}).
-         *                    Only if {@code claimAction.tryClaim()} returns {@code true} does
-         *                    this consumer proceed to execute the task.
-         * @param registry    the registry used for vertex lookup, status updates and
-         *                    delete-on-complete (all graph operations except the claim)
+         * @param task       a task already claimed by this node, i.e. {@code IN_PROGRESS} in the
+         *                   graph.  Every exit path must leave it in a terminal state, because
+         *                   one task stuck {@code IN_PROGRESS} halts the whole cluster.
+         * @param registry   used for vertex lookup, status updates and delete-on-complete
          * @param taskTypeFactoryMap factories keyed by task type
-         * @param statistics  execution counters
+         * @param statistics execution counters
          */
-        public TaskConsumer(AtlasTask task, GraphClaimable<Boolean> claimAction, TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
-            this(task, claimAction, registry, taskTypeFactoryMap, statistics, DEFAULT_MAX_CLAIM_ATTEMPTS, DEFAULT_CLAIM_RETRY_WAIT_MS);
-        }
-
-        @VisibleForTesting
-        TaskConsumer(AtlasTask task, GraphClaimable<Boolean> claimAction, TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap,
-                     TaskManagement.Statistics statistics, int maxClaimAttempts, int claimRetryWaitMs) {
+        public TaskConsumer(AtlasTask task, TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
             this.task               = task;
-            this.claimAction        = claimAction;
             this.registry           = registry;
             this.taskTypeFactoryMap = taskTypeFactoryMap;
             this.statistics         = statistics;
-            this.maxClaimAttempts   = maxClaimAttempts;
-            this.claimRetryWaitMs   = claimRetryWaitMs;
         }
 
         @Override
@@ -132,22 +243,10 @@ public class TaskExecutor {
             int         attemptCount;
 
             try {
-                // GraphClaimable.recoverStaleClaims() + tryClaim(): recover stale
-                // claims first, then atomically transition PENDING → IN_PROGRESS.
-                // In active-active mode multiple nodes may queue the same PENDING task on
-                // startup.  Only the node whose @GraphTransaction commits first proceeds;
-                // all other nodes receive false and skip without executing the task.
-                // Same contract as AsyncImportService.claimNextWaitingImport().
-                boolean claimed = tryClaimWithWait();
-                if (!claimed) {
-                    TASK_LOG.warn("Task skipped - already claimed by another node or not PENDING.", task);
-                    return;
-                }
-
                 taskVertex = registry.getVertex(task.getGuid());
 
                 if (taskVertex == null) {
-                    TASK_LOG.warn("Task not scheduled as it was not found or status was COMPLETE!", task);
+                    TASK_LOG.warn("Task not scheduled as it was not found!", task);
 
                     return;
                 }
@@ -158,6 +257,8 @@ public class TaskExecutor {
 
                 if (attemptCount >= MAX_ATTEMPT_COUNT) {
                     TASK_LOG.warn("Max retry count for task exceeded! Skipping!", task);
+
+                    failTask(taskVertex);
 
                     return;
                 }
@@ -190,24 +291,14 @@ public class TaskExecutor {
             }
         }
 
-        private boolean tryClaimWithWait() throws Exception {
-            int claimAttempt = 0;
+        /**
+         * Moves a task this node cannot run out of {@code IN_PROGRESS}, so it stops holding up
+         * every other task in the cluster.
+         */
+        private void failTask(AtlasVertex taskVertex) {
+            task.setStatus(AtlasTask.Status.FAILED);
 
-            while (claimAttempt < maxClaimAttempts) {
-                claimAction.recoverStaleClaims();
-
-                if (claimAction.tryClaim()) {
-                    return true;
-                }
-
-                claimAttempt++;
-
-                if (claimAttempt < maxClaimAttempts) {
-                    Thread.sleep(claimRetryWaitMs);
-                }
-            }
-
-            return false;
+            registry.updateStatus(taskVertex, task);
         }
 
         private void performTask(AtlasVertex taskVertex, AtlasTask task) throws Exception {
@@ -215,6 +306,9 @@ public class TaskExecutor {
 
             if (factory == null) {
                 LOG.error("taskTypeFactoryMap does not contain task of type: {}", task.getType());
+
+                failTask(taskVertex);
+
                 return;
             }
 

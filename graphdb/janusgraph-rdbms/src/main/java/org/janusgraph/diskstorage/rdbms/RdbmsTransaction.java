@@ -76,7 +76,7 @@ public class RdbmsTransaction extends AbstractStoreTransaction implements Closea
             }
         } finally {
             removeFromActiveTransactions();
-            em.close();
+            closeEntityManager();
         }
 
         LOG.trace("<== RdbmsTransaction.commit()");
@@ -87,12 +87,12 @@ public class RdbmsTransaction extends AbstractStoreTransaction implements Closea
         LOG.trace("==> RdbmsTransaction.rollback()");
 
         try {
-            if (trx.isActive()) {
+            if (em.isOpen() && trx.isActive()) {
                 trx.rollback();
             }
         } finally {
             removeFromActiveTransactions();
-            em.close();
+            closeEntityManager();
         }
 
         LOG.trace("<== RdbmsTransaction.rollback()");
@@ -129,6 +129,20 @@ public class RdbmsTransaction extends AbstractStoreTransaction implements Closea
         }
 
         LOG.trace("<== RdbmsTransaction.close()");
+    }
+
+    /**
+     * Closes the entity manager, if a previous ending of this transaction has not closed it already.
+     *
+     * <p>A transaction is given back after its commit fails, and the commit has closed the entity
+     * manager by then; closing it a second time throws.  That exception took the place of the one
+     * that failed the commit, so a lock conflict the caller could have retried arrived as an
+     * {@code IllegalStateException} about a closed entity manager, which nothing recognises.
+     */
+    private void closeEntityManager() {
+        if (em.isOpen()) {
+            em.close();
+        }
     }
 
     static RdbmsTransaction getActiveTransaction() {

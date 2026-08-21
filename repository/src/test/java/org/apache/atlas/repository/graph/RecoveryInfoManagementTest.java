@@ -22,16 +22,19 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.repository.AtlasTestBase;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.tasks.GraphClaim;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import java.lang.reflect.Field;
+import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -46,6 +49,24 @@ public class RecoveryInfoManagementTest extends AtlasTestBase {
     public void setupTest() {
         RequestContext.clear();
         RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
+    }
+
+    /**
+     * The claim outlives a test method, so without this each test would inherit whichever node the
+     * previous one left holding it and the results would depend on execution order.
+     */
+    @BeforeMethod
+    public void releaseIndexClaim() {
+        Iterator<AtlasVertex> holders = atlasGraph.query().has(Constants.CLAIM_KEY, Constants.CLAIM_INDEX).vertices().iterator();
+
+        while (holders.hasNext()) {
+            AtlasVertex holder = holders.next();
+
+            GraphClaim.releaseClaim(holder);
+            atlasGraph.removeVertex(holder);
+        }
+
+        atlasGraph.commit();
     }
 
     @BeforeClass
@@ -95,28 +116,56 @@ public class RecoveryInfoManagementTest extends AtlasTestBase {
         assertTrue(rm.tryClaimOwnership("node-1", 60_000));
     }
 
+    /**
+     * A node that dies holding the claim must not keep it forever, or index recovery stops for good.
+     */
     @Test
     public void verifyOwnershipReclaimAfterLeaseExpiry() throws Exception {
         IndexRecoveryService.RecoveryInfoManagement rm = new IndexRecoveryService.RecoveryInfoManagement(atlasGraph);
-        String ownerKey = getIndexRecoveryStaticString("INDEX_RECOVERY_OWNER_KEY");
-        String leaseUntilKey = getIndexRecoveryStaticString("INDEX_RECOVERY_LEASE_UNTIL_KEY");
 
-        rm.tryClaimOwnership("seed-owner", 1);
-        AtlasVertex vertex = rm.findVertex();
-        assertTrue(vertex != null, "Recovery ownership vertex should exist");
-        AtlasGraphUtilsV2.setEncodedProperty(vertex, ownerKey, "stale-owner");
-        AtlasGraphUtilsV2.setEncodedProperty(vertex, leaseUntilKey, System.currentTimeMillis() - 1_000L);
-        atlasGraph.commit();
+        assertTrue(rm.tryClaimOwnership("stale-owner", 1), "First owner should take the claim");
+
+        Thread.sleep(10);
 
         assertTrue(rm.tryClaimOwnership("node-2", 60_000),
-                "Second owner should reclaim once stale owner lease expires");
+                "Second owner should reclaim once the stale owner's lease expires");
         assertFalse(rm.isOwner("stale-owner"), "Expired owner should no longer be recognized");
-        assertTrue(rm.isOwner("node-2"), "New owner should hold valid lease");
+        assertTrue(rm.isOwner("node-2"), "New owner should hold a valid lease");
     }
 
-    private String getIndexRecoveryStaticString(String fieldName) throws Exception {
-        Field field = IndexRecoveryService.class.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return (String) field.get(null);
+    /**
+     * Expiry is the holder's business.  A peer that checks with a shorter threshold than the holder
+     * asked for must not conclude the claim has lapsed, or long-running work gets displaced while
+     * it is still going.
+     */
+    @Test
+    public void ownershipSurvivesAPeerCheckingWithAShorterThreshold() {
+        IndexRecoveryService.RecoveryInfoManagement rm = new IndexRecoveryService.RecoveryInfoManagement(atlasGraph);
+
+        assertTrue(rm.tryClaimOwnership("long-runner", TimeUnit.HOURS.toMillis(6)),
+                "First owner should take the claim");
+
+        assertFalse(rm.tryClaimOwnership("impatient-peer", 1),
+                "A peer's own threshold must not decide when someone else's claim lapses");
+        assertTrue(rm.isOwner("long-runner"), "The original owner should still hold the claim");
+    }
+
+    /**
+     * The claim has to survive being handed back and forth, since the claim vertex is created and
+     * deleted each time and a leftover uniqueness entry would lock everyone out permanently.
+     */
+    @Test
+    public void ownershipCanBeTakenAgainAfterRepeatedHandover() {
+        IndexRecoveryService.RecoveryInfoManagement rm = new IndexRecoveryService.RecoveryInfoManagement(atlasGraph);
+
+        for (int round = 0; round < 3; round++) {
+            assertTrue(rm.tryClaimOwnership("node-1", 60_000), "node-1 should take the claim in round " + round);
+
+            rm.releaseOwnership("node-1");
+
+            assertTrue(rm.tryClaimOwnership("node-2", 60_000), "node-2 should take the claim in round " + round);
+
+            rm.releaseOwnership("node-2");
+        }
     }
 }

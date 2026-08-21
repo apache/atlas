@@ -22,6 +22,7 @@ import org.apache.atlas.model.PList;
 import org.apache.atlas.model.impexp.AsyncImportStatus;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.janusgraph.diskstorage.locking.PermanentLockingException;
@@ -50,6 +51,7 @@ import static org.apache.atlas.repository.Constants.PROPERTY_KEY_ASYNC_IMPORT_ID
 import static org.apache.atlas.repository.Constants.PROPERTY_KEY_ASYNC_IMPORT_STATUS;
 import static org.apache.atlas.repository.ogm.impexp.AtlasAsyncImportRequestDTO.ASYNC_IMPORT_TYPE_NAME;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyList;
 import static org.mockito.Mockito.doReturn;
@@ -70,6 +72,7 @@ import static org.testng.Assert.expectThrows;
 
 public class AsyncImportServiceTest {
     private DataAccess         dataAccess;
+    private AtlasGraph         graph;
     private AsyncImportService asyncImportService;
 
     @Mock
@@ -80,7 +83,8 @@ public class AsyncImportServiceTest {
         MockitoAnnotations.openMocks(this);
 
         dataAccess         = mock(DataAccess.class);
-        asyncImportService = new AsyncImportService(dataAccess);
+        graph              = mock(AtlasGraph.class, RETURNS_DEEP_STUBS);
+        asyncImportService = new AsyncImportService(dataAccess, graph);
     }
 
     @Test
@@ -279,7 +283,7 @@ public class AsyncImportServiceTest {
     public void testClaimNextWaitingImport_concurrentCall_onlyOneNodeClaims() throws Exception {
         AtomicBoolean globallyClaimed = new AtomicBoolean(false);
 
-        AsyncImportService service = new AsyncImportService(dataAccess, 60_000L) {
+        AsyncImportService service = new AsyncImportService(dataAccess, graph, 60_000L) {
             @Override
             boolean hasAnyActiveProcessingImport() {
                 return false;
@@ -448,6 +452,60 @@ public class AsyncImportServiceTest {
         }
     }
 
+    /**
+     * Imports run one at a time across the cluster, and only a claim's own holder can renew it.  So a
+     * claim left behind after an import finishes does not just linger - it locks every other node out
+     * of starting an import until the lease lapses.
+     */
+    @Test
+    public void finishedImportHandsTheClaimBack() throws Exception {
+        AsyncImportService service  = spy(new AsyncImportService(dataAccess, graph, 60_000L));
+        AtlasAsyncImportRequest finished = new AtlasAsyncImportRequest();
+
+        finished.setImportId("imp-finished");
+        finished.setStatus(SUCCESSFUL);
+
+        service.saveImportRequest(finished);
+
+        verify(service, times(1)).releaseImportClaim();
+    }
+
+    @Test
+    public void importStillRunningKeepsItsClaim() throws Exception {
+        AsyncImportService service = spy(new AsyncImportService(dataAccess, graph, 60_000L));
+        AtlasAsyncImportRequest running = new AtlasAsyncImportRequest();
+
+        running.setImportId("imp-running");
+        running.setStatus(PROCESSING);
+
+        service.saveImportRequest(running);
+
+        verify(service, never()).releaseImportClaim();
+    }
+
+    /**
+     * Failing to start after taking the claim must not leave the claim held, or the queue stalls for
+     * the whole lease with nothing running.
+     */
+    @Test
+    public void claimIsHandedBackWhenStartingTheImportFails() throws Exception {
+        AsyncImportService service = spy(new AsyncImportService(dataAccess, graph, 60_000L));
+
+        doReturn(false).when(service).hasAnyActiveProcessingImport();
+        doReturn(Collections.singletonList("imp-explodes")).when(service).fetchQueuedImportRequests();
+        doThrow(new IllegalStateException("graph unavailable")).when(service).fetchStatusFromGraph(anyString());
+
+        try {
+            service.claimNextWaitingImport();
+
+            org.testng.Assert.fail("The failure must reach the caller");
+        } catch (IllegalStateException expected) {
+            assertEquals(expected.getMessage(), "graph unavailable");
+        }
+
+        verify(service, times(1)).releaseImportClaim();
+    }
+
     // ----- fetchStatusFromGraph -----
 
     @Test
@@ -537,7 +595,7 @@ public class AsyncImportServiceTest {
 
     @Test
     public void testHasAnyActiveProcessingImport_reclaimsStaleProcessingImport() throws AtlasBaseException {
-        AsyncImportService service = spy(new AsyncImportService(dataAccess, 1000L));
+        AsyncImportService service = spy(new AsyncImportService(dataAccess, graph, 1000L));
         String staleImportId = "stale-processing";
 
         AtlasAsyncImportRequest stale = new AtlasAsyncImportRequest();
@@ -559,7 +617,7 @@ public class AsyncImportServiceTest {
 
     @Test
     public void testHasAnyActiveProcessingImport_keepsFreshProcessingImportActive() throws AtlasBaseException {
-        AsyncImportService service = spy(new AsyncImportService(dataAccess, 60000L));
+        AsyncImportService service = spy(new AsyncImportService(dataAccess, graph, 60000L));
         String activeImportId = "active-processing";
 
         AtlasAsyncImportRequest active = new AtlasAsyncImportRequest();

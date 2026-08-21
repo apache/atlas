@@ -51,9 +51,11 @@ import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.IAtlasEntityChangeNotifier;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.tasks.GraphClaim;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.testng.annotations.AfterClass;
@@ -80,7 +82,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -103,11 +104,6 @@ import static org.testng.Assert.fail;
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class PurgeServiceTest extends AtlasTestBase {
     private static final String CRON_ELIGIBLE_GUID = "11111111-1111-1111-1111-111111111111";
-    private static final String PURGE_OWNERSHIP_VERTEX_NAME = "__purgeOwnershipInfo";
-    private static final String PURGE_OWNERSHIP_NAME_KEY    = encodePropertyKey("__purgeOwnership_name");
-    private static final String PURGE_OWNER_KEY             = encodePropertyKey("__purge_owner");
-    private static final String PURGE_OWNER_LEASE_UNTIL_KEY = encodePropertyKey("__purge_leaseUntil");
-
     @Inject
     private AtlasTypeDefStore typeDefStore;
 
@@ -556,8 +552,7 @@ public class PurgeServiceTest extends AtlasTestBase {
         }
 
         verify(purgeService, never()).launchCleanUp(anyString());
-        AtlasVertex ownership = findPurgeOwnershipVertex();
-        assertEquals(ownership.getProperty(PURGE_OWNER_KEY, String.class), "owner-a");
+        assertEquals(purgeClaimOwner(), "owner-a");
         ApplicationProperties.get().setProperty("atlas.enable.process.soft.delete", "false");
     }
 
@@ -575,9 +570,8 @@ public class PurgeServiceTest extends AtlasTestBase {
         }
 
         verify(purgeService).launchCleanUp(anyString());
-        AtlasVertex ownership = findPurgeOwnershipVertex();
-        assertNotNull(ownership.getProperty(PURGE_OWNER_KEY, String.class));
-        assertTrue(ownership.getProperty(PURGE_OWNER_LEASE_UNTIL_KEY, Long.class) > System.currentTimeMillis());
+        assertNotNull(purgeClaimOwner());
+        assertTrue(purgeClaimExpiry() > System.currentTimeMillis());
         ApplicationProperties.get().setProperty("atlas.enable.process.soft.delete", "false");
     }
 
@@ -589,8 +583,7 @@ public class PurgeServiceTest extends AtlasTestBase {
         boolean claimed = invokeTryClaimPurgeOwnership(purgeService, "new-owner", TimeUnit.MINUTES.toMillis(1));
 
         assertFalse(claimed);
-        AtlasVertex ownership = findPurgeOwnershipVertex();
-        assertEquals(ownership.getProperty(PURGE_OWNER_KEY, String.class), "existing-owner");
+        assertEquals(purgeClaimOwner(), "existing-owner");
     }
 
     @Test
@@ -599,13 +592,64 @@ public class PurgeServiceTest extends AtlasTestBase {
         ensurePurgeOwnershipState("owner-to-keep", System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(5));
 
         invokeReleasePurgeOwnership(purgeService, "other-owner");
-        AtlasVertex ownershipAfterMismatch = findPurgeOwnershipVertex();
-        assertEquals(ownershipAfterMismatch.getProperty(PURGE_OWNER_KEY, String.class), "owner-to-keep");
+        assertEquals(purgeClaimOwner(), "owner-to-keep");
 
         invokeReleasePurgeOwnership(purgeService, "owner-to-keep");
-        AtlasVertex ownershipAfterMatch = findPurgeOwnershipVertex();
-        assertEquals(ownershipAfterMatch.getProperty(PURGE_OWNER_KEY, String.class), "");
-        assertEquals(ownershipAfterMatch.getProperty(PURGE_OWNER_LEASE_UNTIL_KEY, Long.class).longValue(), 0L);
+        assertNull(purgeClaimOwner(), "Releasing the claim must leave it available to any node");
+    }
+
+    @Test
+    public void stop_releasesOwnershipClaimedByThisNode() throws Exception {
+        ensurePurgeOwnershipState("", 0L);
+        ApplicationProperties.get().setProperty("atlas.enable.process.soft.delete", "true");
+
+        PurgeService purgeService = Mockito.spy(new PurgeService(atlasGraph, entityStore, typeRegistry, atlasAuditService));
+        doNothing().when(purgeService).launchCleanUp(anyString());
+
+        try (org.mockito.MockedStatic<AtlasRunMode> mockedMode = org.mockito.Mockito.mockStatic(AtlasRunMode.class)) {
+            mockedMode.when(AtlasRunMode::current).thenReturn(AtlasRunMode.METADATA_SERVER);
+            purgeService.start();
+
+            assertTrue(StringUtils.isNotBlank(purgeClaimOwner()), "start() should have claimed purge ownership");
+
+            purgeService.stop();
+        }
+
+        assertNull(purgeClaimOwner(), "stop() should release the claim taken by this node");
+
+        ApplicationProperties.get().setProperty("atlas.enable.process.soft.delete", "false");
+    }
+
+    @Test
+    public void stop_leavesOwnershipHeldByAnotherNodeUntouched() throws Exception {
+        long leaseUntil = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(10);
+        ensurePurgeOwnershipState("owner-b", leaseUntil);
+        ApplicationProperties.get().setProperty("atlas.enable.process.soft.delete", "true");
+
+        PurgeService purgeService = new PurgeService(atlasGraph, entityStore, typeRegistry, atlasAuditService);
+
+        try (org.mockito.MockedStatic<AtlasRunMode> mockedMode = org.mockito.Mockito.mockStatic(AtlasRunMode.class)) {
+            mockedMode.when(AtlasRunMode::current).thenReturn(AtlasRunMode.METADATA_SERVER);
+            purgeService.start();
+            purgeService.stop();
+        }
+
+        assertEquals(purgeClaimOwner(), "owner-b",
+                "A node that never claimed ownership must not release another node's lease");
+        assertEquals(purgeClaimExpiry().longValue(), leaseUntil);
+
+        ApplicationProperties.get().setProperty("atlas.enable.process.soft.delete", "false");
+    }
+
+    @Test
+    public void stop_isNoOpWhenPurgeServiceNeverStarted() throws Exception {
+        long leaseUntil = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(10);
+        ensurePurgeOwnershipState("owner-c", leaseUntil);
+
+        new PurgeService(atlasGraph, entityStore, typeRegistry, atlasAuditService).stop();
+
+        assertEquals(purgeClaimOwner(), "owner-c");
+        assertEquals(purgeClaimExpiry().longValue(), leaseUntil);
     }
 
     private AtlasEntity newHiveDb(String nameOpt) {
@@ -775,20 +819,34 @@ public class PurgeServiceTest extends AtlasTestBase {
         releasePurgeOwnership.invoke(purgeService, ownerId);
     }
 
-    private AtlasVertex findPurgeOwnershipVertex() {
-        Iterator<AtlasVertex> results = atlasGraph.query().has(PURGE_OWNERSHIP_NAME_KEY, PURGE_OWNERSHIP_VERTEX_NAME).vertices().iterator();
-        return results.hasNext() ? results.next() : null;
+    private String purgeClaimOwner() {
+        return GraphClaim.claimedBy(GraphClaim.holderOf(atlasGraph, Constants.CLAIM_PURGE));
     }
 
+    private Long purgeClaimExpiry() {
+        return GraphClaim.expiryOf(GraphClaim.holderOf(atlasGraph, Constants.CLAIM_PURGE));
+    }
+
+    /**
+     * Puts the purge claim into a known state.  A blank {@code ownerId} means unclaimed, which is the
+     * absence of a claim vertex rather than a vertex with an empty owner.
+     */
     private void ensurePurgeOwnershipState(String ownerId, long leaseUntil) {
-        AtlasVertex ownership = findPurgeOwnershipVertex();
-        if (ownership == null) {
-            ownership = atlasGraph.addVertex();
-            AtlasGraphUtilsV2.setEncodedProperty(ownership, PURGE_OWNERSHIP_NAME_KEY, PURGE_OWNERSHIP_VERTEX_NAME);
+        AtlasVertex existing = GraphClaim.holderOf(atlasGraph, Constants.CLAIM_PURGE);
+
+        if (existing != null) {
+            GraphClaim.releaseClaim(existing);
+            atlasGraph.removeVertex(existing);
         }
 
-        AtlasGraphUtilsV2.setEncodedProperty(ownership, PURGE_OWNER_KEY, ownerId);
-        AtlasGraphUtilsV2.setEncodedProperty(ownership, PURGE_OWNER_LEASE_UNTIL_KEY, leaseUntil);
+        if (StringUtils.isNotBlank(ownerId)) {
+            AtlasVertex claimVertex = atlasGraph.addVertex();
+
+            AtlasGraphUtilsV2.setEncodedProperty(claimVertex, Constants.CLAIM_VERTEX_TYPE_KEY, Constants.CLAIM_VERTEX_TYPE_NAME);
+            GraphClaim.claim(claimVertex, Constants.CLAIM_PURGE, ownerId);
+            AtlasGraphUtilsV2.setEncodedProperty(claimVertex, Constants.CLAIM_EXPIRY_KEY, leaseUntil);
+        }
+
         atlasGraph.commit();
         GraphTransactionInterceptor.clearCache();
     }

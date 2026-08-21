@@ -54,6 +54,7 @@ import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.patches.AtlasPatchRegistry;
 import org.apache.atlas.repository.patches.SuperTypesUpdatePatch;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.tasks.GraphClaim;
 import org.apache.atlas.tasks.GraphClaimable;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -120,12 +121,15 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     public static final String TYPEDEF_PATCH_TYPE     = "TYPEDEF_PATCH";
     private static final long TYPEDEF_BOOTSTRAP_STALE_THRESHOLD_MS =
             AtlasConfiguration.TYPEDEF_BOOTSTRAP_STALE_THRESHOLD_MS.getLong();
+    private static final long BOOTSTRAP_WAIT_INTERVAL_MS            = 2000L;
+    private static final int  BOOTSTRAP_CLAIM_MAX_UNEXPLAINED_TRIES = 5;
 
     private final AtlasTypeDefStore typeDefStore;
     private final AtlasTypeRegistry typeRegistry;
     private final Configuration     conf;
     private final AtlasGraph        graph;
     private final AtlasPatchManager patchManager;
+    private       boolean           peerLoadedTypeDefs;
 
     @Inject
     public AtlasTypeDefStoreInitializer(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
@@ -368,32 +372,95 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             AtlasPatchRegistry patchRegistry     = new AtlasPatchRegistry(graph);
             String             nodeId            = buildPatchNodeId();
 
+            List<File> modelFolders = new ArrayList<>();
+
             if (modelsDirContents != null && modelsDirContents.length > 0) {
                 Arrays.sort(modelsDirContents);
 
                 for (File folder : modelsDirContents) {
-                    if (folder.isFile()) {
-                        // ignore files
-                        continue;
-                    } else if (!folder.getName().equals(PATCHES_FOLDER_NAME)) {
-                        // load the models alphabetically in the subfolders apart from patches
-                        loadModelsInFolder(folder, patchRegistry, nodeId);
+                    // load the models alphabetically in the subfolders apart from patches
+                    if (folder.isDirectory() && !folder.getName().equals(PATCHES_FOLDER_NAME)) {
+                        modelFolders.add(folder);
                     }
                 }
             }
 
-            // load any files in the top models folder and any associated patches.
-            loadModelsInFolder(topModeltypesDir, patchRegistry, nodeId);
+            // the top models folder is loaded last, and carries patches of its own
+            modelFolders.add(topModeltypesDir);
+
+            loadTypes(modelFolders, patchRegistry, nodeId);
         }
 
         LOG.info("<== AtlasTypeDefStoreInitializer.loadBootstrapTypeDefs()");
     }
 
     /**
-     * Load all the model files in the supplied folder followed by the contents of the patches folder.
+     * Brings the type system up to date - the models and then the patches that amend them - as work
+     * for one node rather than shared out among them.
+     *
+     * <p>Both halves change types, and a node can only write a type it holds a current copy of.  Split
+     * the work and each node ends up amending a type from its own copy while the peer is amending the
+     * same type in the store: the loser writes back a definition missing whatever the peer added, and
+     * the store rejects it as an attempt to drop an attribute.  So one node does the lot.
+     *
+     * <p>A node that does not get the claim waits for the holder to finish rather than moving on: the
+     * types have to be in the store before anything downstream can use them.  The wait ends early if
+     * the holder dies, since its lease then lapses and this node takes over - picking up from the
+     * recorded per-file and per-patch state, so nothing the holder finished is done twice.
+     */
+    private void loadTypes(List<File> modelFolders, AtlasPatchRegistry patchRegistry, String nodeId) {
+        long leaseMillis      = TYPEDEF_BOOTSTRAP_STALE_THRESHOLD_MS;
+        int  unexplainedTries = 0;
+
+        while (!GraphClaim.claimLeaseAndCommit(graph, Constants.CLAIM_TYPEDEF_BOOTSTRAP, nodeId, leaseMillis)) {
+            // Waiting is only right while a peer is actually loading.  Being refused with nobody
+            // holding the claim means the store, not a peer, is turning us away, and waiting on that
+            // would hang startup indefinitely.
+            if (GraphClaim.hasLiveHolder(graph, Constants.CLAIM_TYPEDEF_BOOTSTRAP)) {
+                unexplainedTries = 0;
+
+                LOG.info("The types are being loaded by another node; node={} is waiting", nodeId);
+            } else if (++unexplainedTries > BOOTSTRAP_CLAIM_MAX_UNEXPLAINED_TRIES) {
+                LOG.error("Could not take the type bootstrap claim after {} attempts and no node holds it; node={} is continuing without loading the types",
+                        unexplainedTries, nodeId);
+
+                return;
+            }
+
+            try {
+                Thread.sleep(BOOTSTRAP_WAIT_INTERVAL_MS);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+
+                LOG.warn("Interrupted while waiting for the types; node={} is continuing without them", nodeId);
+
+                return;
+            }
+        }
+
+        try {
+            for (File folder : modelFolders) {
+                loadModelsInFolder(folder, nodeId, leaseMillis);
+            }
+
+            // Patches amend types held in memory, so a node that took over, or that is walking through
+            // work a peer has already done, has to read the store's types before touching any of them.
+            readBackTypesLoadedByPeers();
+
+            for (File folder : modelFolders) {
+                applyTypePatches(folder.getPath(), patchRegistry, nodeId, leaseMillis);
+            }
+        } finally {
+            GraphClaim.releaseLeaseAndCommit(graph, Constants.CLAIM_TYPEDEF_BOOTSTRAP, nodeId);
+        }
+    }
+
+    /**
+     * Load all the model files in the supplied folder.  Patches for the folder are applied later, once
+     * every model is in the store.
      * @param typesDir
      */
-    private void loadModelsInFolder(File typesDir, AtlasPatchRegistry patchRegistry, String nodeId) {
+    private void loadModelsInFolder(File typesDir, String nodeId, long leaseMillis) {
         LOG.info("==> AtlasTypeDefStoreInitializer({})", typesDir);
 
         String typesDirName = typesDir.getName();
@@ -410,6 +477,9 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     String fileKey = typeDefFile.getAbsolutePath();
                     if (!waitOrClaimTypeDefFile(fileKey, nodeId)) {
                         LOG.info("TypeDef file {} already applied by another node. Skipping.", fileKey);
+
+                        peerLoadedTypeDefs = true;
+
                         continue;
                     }
 
@@ -446,12 +516,40 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                             LOG.error("error while registering types in file {}", typeDefFile.getAbsolutePath(), t);
                         }
                     }
+
+                    // Tell peers this node is still loading.  They wait on the lease rather than on
+                    // this node being up, so a lease left to lapse mid-load invites a second loader.
+                    GraphClaim.claimLeaseAndCommit(graph, Constants.CLAIM_TYPEDEF_BOOTSTRAP, nodeId, leaseMillis);
                 }
             }
-
-            applyTypePatches(typesDir.getPath(), patchRegistry);
         }
         LOG.info("<== AtlasTypeDefStoreInitializer({})", typesDir);
+    }
+
+    /**
+     * Reloads the registry when a peer loaded models this node skipped.
+     *
+     * <p>Patches are applied against the in-memory registry, but the models are shared out between the
+     * nodes a file at a time, so each node ends the loading phase knowing only the types it loaded
+     * itself.  A patch then lands on whichever node claims it, which is regularly not the node that
+     * has the type - and the patch fails with "references unknown type" for a type that is sitting in
+     * the store.  Reading the types back costs one pass and only happens on a node that skipped
+     * something.
+     */
+    private void readBackTypesLoadedByPeers() {
+        if (!peerLoadedTypeDefs) {
+            return;
+        }
+
+        peerLoadedTypeDefs = false;
+
+        try {
+            typeDefStore.init();
+
+            LOG.info("AtlasTypeDefStoreInitializer: read back the types loaded by peers before applying patches");
+        } catch (AtlasBaseException exception) {
+            LOG.error("AtlasTypeDefStoreInitializer: could not read back the types loaded by peers; patches for those types will not apply", exception);
+        }
     }
 
     private boolean waitOrClaimTypeDefFile(String fileKey, String nodeId) {
@@ -625,6 +723,15 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         try {
             typeDefStore.init();
             loadBootstrapTypeDefs();
+
+            // Read the types back before announcing completion.  The first read happened before
+            // bootstrap, and bootstrap writes nothing this node's peer already did - so on a node that
+            // started while a peer was still writing the models, the first read came up empty and the
+            // files were then skipped as "already applied", leaving this node with no types at all and
+            // answering every request with "unknown typename".  Re-reading costs one pass over the
+            // typedefs at startup, the same pass a node that never bootstraps already makes.
+            typeDefStore.init();
+
             typeDefStore.notifyLoadCompletion();
             try {
                 AtlasAuthorizerFactory.getAtlasAuthorizer();
@@ -668,12 +775,11 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         return ret;
     }
 
-    private void applyTypePatches(String typesDirName, AtlasPatchRegistry patchRegistry) {
+    private void applyTypePatches(String typesDirName, AtlasPatchRegistry patchRegistry, String nodeId, long bootstrapLeaseMs) {
         String typePatchesDirName = typesDirName + File.separator + PATCHES_FOLDER_NAME;
         File   typePatchesDir     = new File(typePatchesDirName);
         File[] typePatchFiles     = typePatchesDir.exists() ? typePatchesDir.listFiles() : null;
-        String nodeId             = buildPatchNodeId();
-        long   processStartMs     = System.currentTimeMillis();
+        long   claimLeaseMs       = AtlasConfiguration.PATCH_CLAIM_LEASE_MS.getLong();
 
         if (typePatchFiles == null || typePatchFiles.length == 0) {
             LOG.info("Type patches directory {} does not exist or not readable or has no patches", typePatchesDirName);
@@ -682,6 +788,10 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
             // sort the files by filename
             Arrays.sort(typePatchFiles);
+
+            // Once for the whole directory rather than once per patch: recovery walks every patch left
+            // IN_PROGRESS, and there is nothing new for it to find between one patch and the next.
+            patchRegistry.recoverStaleInProgressClaims(nodeId);
 
             PatchHandler[] patchHandlers = new PatchHandler[] {
                     new UpdateEnumDefPatchHandler(typeDefStore, typeRegistry),
@@ -707,6 +817,10 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             for (File typePatchFile : typePatchFiles) {
                 if (typePatchFile.isFile()) {
                     String patchFile = typePatchFile.getAbsolutePath();
+
+                    // Peers wait on the bootstrap lease, not on this node being up, so it has to keep
+                    // saying it is still here for as long as the patches take.
+                    GraphClaim.claimLeaseAndCommit(graph, Constants.CLAIM_TYPEDEF_BOOTSTRAP, nodeId, bootstrapLeaseMs);
 
                     LOG.info("Applying patches in file {}", patchFile);
 
@@ -739,32 +853,37 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
                                 GraphClaimable<Boolean> claimAction = new GraphClaimable<Boolean>() {
                                     @Override
-                                    public Boolean tryClaim() {
-                                        return patchRegistry.tryClaimPatchExecution(patchId, nodeId, processStartMs);
+                                    public String claimName() {
+                                        return Constants.CLAIM_PATCH_PREFIX + patchId;
                                     }
 
                                     @Override
-                                    public void recoverStaleClaims() {
-                                        patchRegistry.recoverStaleInProgressClaims(nodeId, processStartMs);
+                                    public Boolean tryClaim() {
+                                        return patchRegistry.tryClaimPatchExecution(patchId, nodeId, claimLeaseMs);
                                     }
                                 };
 
-                                claimAction.recoverStaleClaims();
-                                if (!claimAction.tryClaim()) {
+                                if (!Boolean.TRUE.equals(claimAction.attemptClaim())) {
                                     LOG.info("{} in file: {} claim not acquired. Ignoring.", patchId, patchFile);
                                     continue;
                                 }
 
                                 try {
-                                    status = patchHandler.applyPatch(patch);
-                                } catch (AtlasBaseException ex) {
-                                    status = FAILED;
+                                    try {
+                                        status = patchHandler.applyPatch(patch);
+                                    } catch (AtlasBaseException ex) {
+                                        status = FAILED;
 
-                                    LOG.error("Failed to apply {} (status: {}; action: {}) in file: {}. Ignored.", patch.getId(), status, patch.getAction(), patchFile);
+                                        LOG.error("Failed to apply {} (status: {}; action: {}) in file: {}. Ignored.", patch.getId(), status, patch.getAction(), patchFile, ex);
+                                    }
+
+                                    patchRegistry.updateStatus(patchId, status);
+                                    LOG.info("{} (status: {}; action: {}) in file: {}", patchId, status.toString(), patch.getAction(), patchFile);
+                                } finally {
+                                    // A handler that fails in a way the catch above does not cover would otherwise
+                                    // leave the patch claimed by a node that has stopped working on it.
+                                    patchRegistry.releaseUnfinishedClaim(patchId);
                                 }
-
-                                patchRegistry.updateStatus(patchId, status);
-                                LOG.info("{} (status: {}; action: {}) in file: {}", patchId, status.toString(), patch.getAction(), patchFile);
                             } else {
                                 PatchStatus existingStatus = patchRegistry.getStatus(patchId);
                                 LOG.info("{} in file: {} already {}. Ignoring.", patchId, patchFile,

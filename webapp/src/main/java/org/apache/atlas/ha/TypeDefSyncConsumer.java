@@ -20,9 +20,11 @@ package org.apache.atlas.ha;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.commons.configuration2.Configuration;
@@ -88,6 +90,7 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
 
     private final KafkaNotification kafkaNotification;
     private final AtlasTypeDefStore typeDefStore;
+    private final AtlasGraph        graph;
     private final Configuration     configuration;
     private final String            topicName;
     private final String            consumerGroupId;
@@ -107,9 +110,11 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
     @Inject
     public TypeDefSyncConsumer(KafkaNotification kafkaNotification,
                                AtlasTypeDefStore typeDefStore,
+                               AtlasGraph        graph,
                                Configuration     configuration) {
         this.kafkaNotification = kafkaNotification;
         this.typeDefStore      = typeDefStore;
+        this.graph             = graph;
         this.configuration     = configuration;
         this.topicName         = configuration.getString(TOPIC_CONFIG, DEFAULT_TOPIC);
         this.localNodeId       = resolveNodeId(configuration);
@@ -251,7 +256,7 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
                         previousTimestamp < 0 ? "new" : previousTimestamp, trigger.timestamp);
 
                 try {
-                    typeDefStore.init();
+                    reloadTypeRegistry();
                     appliedTimestamps.put(trigger.nodeId, trigger.timestamp);
                     consumer.commitSync();
                     LOG.info("TypeDefSyncConsumer: type registry reloaded. Applied timestamps: {}", appliedTimestamps);
@@ -270,6 +275,24 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
             consumer.close();
             consumer = null;
         }
+    }
+
+    /**
+     * Reloads the type registry from the graph.
+     *
+     * <p>{@link AtlasTypeDefStore#init()} is not transactional, so its reads run in whatever
+     * transaction this long-lived consumer thread happens to be holding. That transaction was
+     * opened before the signal arrived, and a JanusGraph transaction reads the snapshot it was
+     * opened with, so reloading through it can return a view of the graph from before the peer
+     * committed the very typedef this signal is announcing. The reload would then report success
+     * and, since nothing re-checks, the type would stay missing from this node until unrelated
+     * typedef activity triggered another reload. Committing first drops the stale transaction so
+     * the reload reads a snapshot taken after the peer's commit.
+     */
+    private void reloadTypeRegistry() throws AtlasBaseException {
+        graph.commit();
+
+        typeDefStore.init();
     }
 
     /**

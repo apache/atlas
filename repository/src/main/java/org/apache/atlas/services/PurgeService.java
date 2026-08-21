@@ -33,9 +33,9 @@ import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.pc.WorkItemBuilder;
 import org.apache.atlas.pc.WorkItemConsumer;
 import org.apache.atlas.pc.WorkItemManager;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.purge.PurgeExecutionStats;
@@ -44,6 +44,8 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.service.Service;
+import org.apache.atlas.tasks.GraphClaim;
+import org.apache.atlas.tasks.GraphLeaseClaimable;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
@@ -73,13 +75,11 @@ import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
-import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 
 @AtlasService
 @Order(9)
 @Component
-public class PurgeService implements Service {
+public class PurgeService implements Service, GraphLeaseClaimable {
     private static final Logger LOG       = LoggerFactory.getLogger(PurgeService.class);
     private static final Logger PERF_LOG  = AtlasPerfTracer.getPerfLogger("service.Purge");
     private final AtlasGraph            atlasGraph;
@@ -87,6 +87,8 @@ public class PurgeService implements Service {
     private final AtlasEntityStore      entityStore;
     private final AtlasTypeRegistry     typeRegistry;
     private final AtlasAuditService     auditService;
+    private final String                ownerId;
+    private volatile String             purgeOwnerId;
 
     private static final String  ENABLE_PROCESS_SOFT_DELETION         = "atlas.enable.process.soft.delete";
     private static final boolean ENABLE_PROCESS_SOFT_DELETION_DEFAULT = false;
@@ -109,10 +111,6 @@ public class PurgeService implements Service {
     private static final String  DELETED                              = "DELETED";
     private static final String  ACTIVE                               = "ACTIVE";
     private static final String  AND_STR                              = " AND ";
-    private static final String  PURGE_OWNERSHIP_VERTEX_NAME          = "__purgeOwnershipInfo";
-    private static final String  PURGE_OWNERSHIP_NAME_KEY             = encodePropertyKey("__purgeOwnership_name");
-    private static final String  PURGE_OWNER_KEY                      = encodePropertyKey("__purge_owner");
-    private static final String  PURGE_OWNER_LEASE_UNTIL_KEY          = encodePropertyKey("__purge_leaseUntil");
 
     static {
         try {
@@ -129,6 +127,27 @@ public class PurgeService implements Service {
         this.entityStore           = entityStore;
         this.typeRegistry          = typeRegistry;
         this.auditService          = auditService;
+        this.ownerId               = buildOwnerId();
+    }
+
+    @Override
+    public String claimName() {
+        return Constants.CLAIM_PURGE;
+    }
+
+    @Override
+    public AtlasGraph graph() {
+        return atlasGraph;
+    }
+
+    @Override
+    public String ownerId() {
+        return ownerId;
+    }
+
+    @Override
+    public long leaseMillis() {
+        return getPurgeOwnerLeaseMs();
     }
 
     @Override
@@ -146,12 +165,14 @@ public class PurgeService implements Service {
             return;
         }
 
-        String ownerId = buildOwnerId();
-        if (!tryClaimPurgeOwnership(ownerId, getPurgeOwnerLeaseMs())) {
+        String ownerId = ownerId();
+        if (!tryClaimPurgeOwnership(ownerId, leaseMillis())) {
             LOG.info("PurgeService.start(): purge ownership already held by another node; skipping cleanup launch. ownerId={}",
                     ownerId);
             return;
         }
+
+        purgeOwnerId = ownerId;
 
         LOG.info("==> PurgeService.start()");
 
@@ -163,6 +184,11 @@ public class PurgeService implements Service {
     @Override
     public void stop() throws AtlasException {
         LOG.info("==> stopping the purge service");
+
+        // A shutdown while cleanup is still running would otherwise leave the lease pinned to this
+        // node's owner id until it expires. The restarted node builds a new owner id (the JVM id
+        // changes), so it would be denied ownership and no node would run cleanup until expiry.
+        releaseOwnedPurgeLease(purgeOwnerId);
     }
 
     public void launchCleanUp(String ownerId) {
@@ -178,7 +204,7 @@ public class PurgeService implements Service {
                         long endTime = System.currentTimeMillis();
                         LOG.info("==> completed cleanup {} seconds !", (endTime - startTime) / 1000);
                     } finally {
-                        releasePurgeOwnership(ownerId);
+                        releaseOwnedPurgeLease(ownerId);
                     }
                 });
 
@@ -660,74 +686,37 @@ public class PurgeService implements Service {
         return DEFAULT_PURGE_OWNER_LEASE_MS;
     }
 
+    /**
+     * Takes the cluster-wide purge claim, so that one node cleans up and the others stand down.
+     *
+     * <p>Deciding this among ourselves does not work: every node reads and writes the same ownership
+     * vertex, and a store will not refuse a write that leaves a field's value unchanged or replaces
+     * it.  Two nodes reading "unowned" together would both write their own id and both proceed.  So
+     * the claim is put where the store can adjudicate it - see {@link GraphClaim}.
+     */
     private boolean tryClaimPurgeOwnership(String ownerId, long leaseMillis) {
-        long now = System.currentTimeMillis();
+        boolean claimed = GraphClaim.claimLeaseAndCommit(atlasGraph, claimName(), ownerId, leaseMillis);
 
-        try {
-            AtlasVertex vertex       = findOrCreatePurgeOwnershipVertex();
-            String      currentOwner = vertex.getProperty(PURGE_OWNER_KEY, String.class);
-            Long        leaseUntil   = vertex.getProperty(PURGE_OWNER_LEASE_UNTIL_KEY, Long.class);
-            boolean     canClaim     = StringUtils.isBlank(currentOwner) || ownerId.equals(currentOwner)
-                    || leaseUntil == null || leaseUntil <= now;
-
-            if (!canClaim) {
-                LOG.info("Purge ownership claim denied ownerId={}, currentOwner={}, leaseUntil={}, now={}",
-                        ownerId, currentOwner, leaseUntil, now);
-                return false;
-            }
-
-            setEncodedProperty(vertex, PURGE_OWNER_KEY, ownerId);
-            setEncodedProperty(vertex, PURGE_OWNER_LEASE_UNTIL_KEY, now + leaseMillis);
-            LOG.info("Purge ownership claimed ownerId={}, leaseUntil={}", ownerId, now + leaseMillis);
-            return true;
-        } catch (Exception ex) {
-            LOG.error("Error while claiming purge ownership for {}", ownerId, ex);
-            return false;
-        } finally {
-            atlasGraph.commit();
+        if (!claimed) {
+            LOG.info("Purge ownership claim denied ownerId={}", ownerId);
         }
+
+        return claimed;
+    }
+
+    private void releaseOwnedPurgeLease(String ownerId) {
+        if (StringUtils.isBlank(ownerId)) {
+            return;
+        }
+
+        if (ownerId.equals(purgeOwnerId)) {
+            purgeOwnerId = null;
+        }
+
+        releasePurgeOwnership(ownerId);
     }
 
     private void releasePurgeOwnership(String ownerId) {
-        try {
-            AtlasVertex vertex = findPurgeOwnershipVertex();
-
-            if (vertex == null) {
-                return;
-            }
-
-            String currentOwner = vertex.getProperty(PURGE_OWNER_KEY, String.class);
-            if (!ownerId.equals(currentOwner)) {
-                return;
-            }
-
-            setEncodedProperty(vertex, PURGE_OWNER_KEY, "");
-            setEncodedProperty(vertex, PURGE_OWNER_LEASE_UNTIL_KEY, 0L);
-            LOG.info("Purge ownership released ownerId={}", ownerId);
-        } catch (Exception ex) {
-            LOG.error("Error while releasing purge ownership for {}", ownerId, ex);
-        } finally {
-            atlasGraph.commit();
-        }
-    }
-
-    private AtlasVertex findPurgeOwnershipVertex() {
-        AtlasGraphQuery       query   = atlasGraph.query().has(PURGE_OWNERSHIP_NAME_KEY, PURGE_OWNERSHIP_VERTEX_NAME);
-        Iterator<AtlasVertex> results = query.vertices().iterator();
-
-        return results.hasNext() ? results.next() : null;
-    }
-
-    private AtlasVertex findOrCreatePurgeOwnershipVertex() {
-        AtlasVertex vertex = findPurgeOwnershipVertex();
-
-        if (vertex == null) {
-            vertex = atlasGraph.addVertex();
-            setEncodedProperty(vertex, PURGE_OWNERSHIP_NAME_KEY, PURGE_OWNERSHIP_VERTEX_NAME);
-            setEncodedProperty(vertex, PURGE_OWNER_KEY, "");
-            setEncodedProperty(vertex, PURGE_OWNER_LEASE_UNTIL_KEY, 0L);
-        }
-
-        return vertex;
+        GraphClaim.releaseLeaseAndCommit(atlasGraph, claimName(), ownerId);
     }
 }

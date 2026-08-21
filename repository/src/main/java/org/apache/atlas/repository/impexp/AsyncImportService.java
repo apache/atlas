@@ -29,8 +29,11 @@ import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.impexp.AsyncImportStatus;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.tasks.GraphClaim;
 import org.apache.atlas.tasks.GraphClaimable;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -62,17 +65,19 @@ public class AsyncImportService implements GraphClaimable<AtlasAsyncImportReques
     private static final String EXCEPTION_CLASS_NAME_PERMANENT_LOCKING_EXCEPTION = "PermanentLockingException";
 
     private final DataAccess                                          dataAccess;
+    private final AtlasGraph                                          graph;
     private final ImportCacheManager<String, AtlasAsyncImportRequest> importCache;
     private final long                                                processingStaleThresholdMs;
     private final String                                              nodeId;
 
     @Inject
-    public AsyncImportService(DataAccess dataAccess) {
-        this(dataAccess, AtlasConfiguration.ASYNC_IMPORT_CLAIM_STALE_THRESHOLD_MS.getLong());
+    public AsyncImportService(DataAccess dataAccess, AtlasGraph graph) {
+        this(dataAccess, graph, AtlasConfiguration.ASYNC_IMPORT_CLAIM_STALE_THRESHOLD_MS.getLong());
     }
 
-    AsyncImportService(DataAccess dataAccess, long processingStaleThresholdMs) {
+    AsyncImportService(DataAccess dataAccess, AtlasGraph graph, long processingStaleThresholdMs) {
         this.dataAccess  = dataAccess;
+        this.graph       = graph;
         this.importCache = new ImportCacheManager<>();
         this.processingStaleThresholdMs = processingStaleThresholdMs;
         this.nodeId = buildNodeId();
@@ -127,6 +132,7 @@ public class AsyncImportService implements GraphClaimable<AtlasAsyncImportReques
             try {
                 dataAccess.saveNoLoad(importRequest);
                 LOG.debug("Save request ID: {} request: {}", importRequest.getImportId(), importRequest);
+                releaseClaimIfFinished(importRequest);
                 return;
             } catch (Throwable e) {
                 List<Throwable> throwableList = ExceptionUtils.getThrowableList(e);
@@ -259,6 +265,11 @@ public class AsyncImportService implements GraphClaimable<AtlasAsyncImportReques
                 PROPERTY_KEY_ASYNC_IMPORT_ID);
     }
 
+    @Override
+    public String claimName() {
+        return Constants.CLAIM_ASYNC_IMPORT;
+    }
+
     /**
      * Implements {@link GraphClaimable#tryClaim()}: claims the next WAITING import.
      * Delegates to {@link #claimNextWaitingImport()}.
@@ -266,6 +277,40 @@ public class AsyncImportService implements GraphClaimable<AtlasAsyncImportReques
     @Override
     public AtlasAsyncImportRequest tryClaim() throws AtlasBaseException {
         return claimNextWaitingImport();
+    }
+
+    /**
+     * Hands the cluster-wide import claim back, letting the next import start immediately instead of
+     * waiting for this node's lease to lapse.
+     */
+    public void releaseImportClaim() {
+        GraphClaim.releaseLeaseAndCommit(graph, claimName(), nodeId);
+    }
+
+    /**
+     * Releases the import claim once an import reaches a terminal status.
+     *
+     * <p>Without this the claim would sit until the lease lapsed, and since only its own holder can
+     * renew a claim, every <em>other</em> node would be locked out of starting an import for that
+     * whole window - turning a staleness safety net into a throughput limit.
+     *
+     * <p>Failing to release is not worth failing the save over: the lease still lapses on its own, so
+     * the cost of a swallowed error here is delay, not a stuck cluster.
+     */
+    private void releaseClaimIfFinished(AtlasAsyncImportRequest importRequest) {
+        ImportStatus status = importRequest == null ? null : importRequest.getStatus();
+
+        if (status == null || status == ImportStatus.STAGING || status == ImportStatus.WAITING
+                || status == ImportStatus.PROCESSING) {
+            return;
+        }
+
+        try {
+            releaseImportClaim();
+        } catch (Exception exception) {
+            LOG.warn("Could not release the import claim for node={} after import {} reached {}; it will lapse instead",
+                    nodeId, importRequest.getImportId(), status, exception);
+        }
     }
 
     @Override
@@ -287,13 +332,15 @@ public class AsyncImportService implements GraphClaimable<AtlasAsyncImportReques
     }
 
     /**
-     * Atomically claims the next WAITING import for processing on this node.
+     * Claims the next WAITING import for processing on this node.
      *
-     * <p>The entire check-then-act is wrapped in a single {@link GraphTransaction}: JanusGraph's
-     * row-level HBase locking ensures that when two nodes race, only one can commit the
-     * WAITING → PROCESSING transition.  The loser gets a locking conflict, the
-     * {@link org.apache.atlas.GraphTransactionInterceptor} retries the transaction, and on
-     * retry the loser finds the import already PROCESSING → returns {@code null}.
+     * <p>Imports run one at a time across the whole cluster, so the exclusion is on the right to run
+     * <em>an</em> import rather than on a particular one.  That right is taken as a claim the store
+     * adjudicates, because reading "nothing is PROCESSING" proves nothing: two nodes can read it
+     * together and both write their own import to PROCESSING without ever touching the same field.
+     *
+     * <p>The claim carries a lease, since a node can die mid-import; it lapses after
+     * {@code processingStaleThresholdMs} so the import can be picked up again.
      *
      * @return the claimed {@link AtlasAsyncImportRequest} (already persisted as PROCESSING),
      *         or {@code null} if nothing is claimable (another import is running or no WAITING imports exist).
@@ -311,8 +358,23 @@ public class AsyncImportService implements GraphClaimable<AtlasAsyncImportReques
             return null;
         }
 
-        String importId = waitingIds.get(0);
+        if (!GraphClaim.claimLeaseAndCommit(graph, claimName(), nodeId, processingStaleThresholdMs)) {
+            LOG.debug("claimNextWaitingImport(): node={} another node holds the import claim, skipping", nodeId);
+            return null;
+        }
 
+        try {
+            return startClaimedImport(waitingIds.get(0));
+        } catch (Exception exception) {
+            // Sitting on the claim while no import is running would keep every other node out until
+            // the lease lapsed, so give it back rather than hold it.
+            releaseImportClaim();
+
+            throw exception;
+        }
+    }
+
+    private AtlasAsyncImportRequest startClaimedImport(String importId) throws AtlasBaseException {
         // Status check: read fresh from JanusGraph — NOT from the per-JVM importCache.
         // The cache is node-local; in active-active mode another node may have already
         // transitioned this import to PROCESSING while our cache still shows WAITING.
@@ -322,6 +384,7 @@ public class AsyncImportService implements GraphClaimable<AtlasAsyncImportReques
         if (liveStatus == null || !ImportStatus.WAITING.equals(liveStatus)) {
             LOG.debug("claimNextWaitingImport(): node={} import {} is no longer WAITING (concurrent claim), liveStatus={}",
                     nodeId, importId, liveStatus);
+            releaseImportClaim();
             return null;
         }
 
@@ -331,6 +394,7 @@ public class AsyncImportService implements GraphClaimable<AtlasAsyncImportReques
         AtlasAsyncImportRequest importRequest = fetchImportRequestByImportId(importId);
         if (importRequest == null) {
             LOG.debug("claimNextWaitingImport(): node={} import {} not found", nodeId, importId);
+            releaseImportClaim();
             return null;
         }
 
@@ -374,6 +438,9 @@ public class AsyncImportService implements GraphClaimable<AtlasAsyncImportReques
         importRequest.setStatus(ImportStatus.WAITING);
         importRequest.setProcessingStartTime(0L);
         saveImportRequest(importRequest);
+
+        // The dead node's claim is left to lapse rather than deleted here: it was taken with the same
+        // staleness threshold, so an import old enough to recover has a claim old enough to take over.
     }
 
     /**

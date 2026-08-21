@@ -18,24 +18,23 @@
 
 package org.apache.atlas.repository.patches;
 
-import org.apache.atlas.AtlasRunMode;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.tasks.GraphClaimable;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
-import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -80,10 +79,14 @@ public class AtlasPatchManager {
         LOG.info("==> AtlasPatchManager.applyAll()");
 
         initIfNeeded();
-        String nodeId = buildPatchNodeId();
-        long processStartMs = System.currentTimeMillis();
         AtlasPatchRegistry registry = context.getPatchRegistry();
+        String nodeId = registry.getNodeId();
+        long claimLeaseMs = AtlasConfiguration.PATCH_CLAIM_LEASE_MS.getLong();
         List<AtlasPatchHandler> failedHandlers = new ArrayList<>();
+
+        // Once for the whole run rather than once per patch: recovery walks every patch left
+        // IN_PROGRESS, and there is nothing new for it to find between one patch and the next.
+        registry.recoverStaleInProgressClaims(nodeId);
 
         try {
             for (AtlasPatchHandler handler : handlers) {
@@ -93,14 +96,14 @@ public class AtlasPatchManager {
                     continue;
                 }
 
-                applyHandler(handler, patchStatus, registry, nodeId, processStartMs, includeNotApplied);
+                applyHandler(handler, patchStatus, registry, nodeId, claimLeaseMs, includeNotApplied);
             }
 
             if (!failedHandlers.isEmpty()) {
                 failedHandlers.sort(Comparator.comparing(AtlasPatchHandler::getPatchId));
                 for (AtlasPatchHandler handler : failedHandlers) {
                     PatchStatus patchStatus = handler.getStatusFromRegistry();
-                    applyHandler(handler, patchStatus, registry, nodeId, processStartMs, includeNotApplied);
+                    applyHandler(handler, patchStatus, registry, nodeId, claimLeaseMs, includeNotApplied);
                 }
             }
         } catch (Exception ex) {
@@ -114,7 +117,7 @@ public class AtlasPatchManager {
     }
 
     private void applyHandler(AtlasPatchHandler handler, PatchStatus patchStatus, AtlasPatchRegistry registry,
-            String nodeId, long processStartMs, boolean includeNotApplied) throws AtlasBaseException {
+            String nodeId, long claimLeaseMs, boolean includeNotApplied) throws AtlasBaseException {
         if (patchStatus == APPLIED || patchStatus == SKIPPED) {
             LOG.info("Ignoring java handler: {}; status: {}", handler.getPatchId(), patchStatus);
             return;
@@ -132,18 +135,17 @@ public class AtlasPatchManager {
 
         GraphClaimable<Boolean> claimAction = new GraphClaimable<Boolean>() {
             @Override
-            public Boolean tryClaim() {
-                return registry.tryClaimPatchExecution(handler.getPatchId(), nodeId, processStartMs);
+            public String claimName() {
+                return Constants.CLAIM_PATCH_PREFIX + handler.getPatchId();
             }
 
             @Override
-            public void recoverStaleClaims() {
-                registry.recoverStaleInProgressClaims(nodeId, processStartMs);
+            public Boolean tryClaim() {
+                return registry.tryClaimPatchExecution(handler.getPatchId(), nodeId, claimLeaseMs);
             }
         };
 
-        claimAction.recoverStaleClaims();
-        if (!claimAction.tryClaim()) {
+        if (!Boolean.TRUE.equals(claimAction.attemptClaim())) {
             LOG.info("Skipping java handler: {}; node={}; claim not acquired", handler.getPatchId(), nodeId);
             return;
         }
@@ -155,19 +157,9 @@ public class AtlasPatchManager {
         } catch (Exception ex) {
             LOG.error("Error applying patch {}. Marking FAILED.", handler.getPatchId(), ex);
             handler.setStatus(PatchStatus.FAILED);
+        } finally {
+            registry.releaseUnfinishedClaim(handler.getPatchId());
         }
-    }
-
-    private String buildPatchNodeId() {
-        String runMode  = AtlasRunMode.current().name();
-        String hostName = System.getenv("HOSTNAME");
-        String jvmId    = ManagementFactory.getRuntimeMXBean().getName();
-
-        if (StringUtils.isBlank(hostName)) {
-            hostName = "unknown-host";
-        }
-
-        return runMode + "@" + hostName + "#" + jvmId;
     }
 
     public void addPatchHandler(AtlasPatchHandler patchHandler) {

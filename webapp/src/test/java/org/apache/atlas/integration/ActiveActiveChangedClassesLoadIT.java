@@ -57,7 +57,7 @@ public class ActiveActiveChangedClassesLoadIT {
             "org.apache.atlas.ha.TypeDefSyncConsumer",
             "org.apache.atlas.notification.ImportTaskListenerImpl",
             "org.apache.atlas.notification.NotificationHookConsumer",
-            "org.apache.atlas.web.filters.ActiveServerFilter",
+            "org.apache.atlas.server.common.filters.ActiveServerFilter",
             "org.apache.atlas.web.security.AtlasSecurityConfig",
             "org.apache.atlas.web.service.AtlasActivationService",
             "org.apache.atlas.web.service.EmbeddedServer",

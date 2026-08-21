@@ -184,10 +184,15 @@ public class AtlasTypeDefStoreInitializerTest {
         verify(typeDefStore, never()).notifyLoadCompletion();
     }
 
+    /**
+     * Bootstrap reads the types twice on purpose: the second read is what saves a node that came up
+     * while a peer was still writing the models, which would otherwise skip those files as "already
+     * applied" and serve requests with no types at all.
+     */
     @Test
     public void testInstanceIsActive() throws Exception {
         initializer.instanceIsActive();
-        verify(typeDefStore, times(1)).init();
+        verify(typeDefStore, times(2)).init();
     }
 
     @Test
@@ -313,9 +318,9 @@ public class AtlasTypeDefStoreInitializerTest {
 
             when(typeRegistry.isRegisteredType("ValidType")).thenReturn(false);
 
-            Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, AtlasPatchRegistry.class, String.class);
+            Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, String.class, long.class);
             loadModelsMethod.setAccessible(true);
-            loadModelsMethod.invoke(initializer, tempDir.toFile(), patchRegistry, "test-node");
+            loadModelsMethod.invoke(initializer, tempDir.toFile(), "test-node", 120000L);
 
             // Verify valid files were processed, empty/invalid files handled gracefully
             verify(typeDefStore, times(2)).createUpdateTypesDef(any(), any());
@@ -357,9 +362,9 @@ public class AtlasTypeDefStoreInitializerTest {
             when(typeRegistry.getTypeDefByName("TestEntity")).thenReturn(existingEntity);
             when(patchRegistry.isApplicable(anyString(), anyString(), anyInt())).thenReturn(false); // Make patches not applicable to test skipped path
 
-            Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class);
+            Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class, String.class, long.class);
             applyPatchesMethod.setAccessible(true);
-            applyPatchesMethod.invoke(initializer, tempDir.toString(), patchRegistry);
+            applyPatchesMethod.invoke(initializer, tempDir.toString(), patchRegistry, "test-node", 120000L);
 
             verify(patchRegistry, never()).register(anyString(), any(), eq("TYPEDEF_PATCH"), anyString(), any(AtlasPatch.PatchStatus.class));
         } finally {
@@ -370,9 +375,9 @@ public class AtlasTypeDefStoreInitializerTest {
     @Test
     public void testApplyTypePatchesWithNonExistentPatchDirectory() throws Exception {
         // Test patch application with non-existent patch directory (covers line 450)
-        Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class);
+        Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class, String.class, long.class);
         applyPatchesMethod.setAccessible(true);
-        applyPatchesMethod.invoke(initializer, "/non/existent/path", patchRegistry);
+        applyPatchesMethod.invoke(initializer, "/non/existent/path", patchRegistry, "test-node", 120000L);
 
         verify(patchRegistry, never()).register(anyString(), any(), anyString(), anyString(), any(AtlasPatch.PatchStatus.class));
     }
@@ -523,13 +528,13 @@ public class AtlasTypeDefStoreInitializerTest {
 
     @Test
     public void testNonExistentDirectoriesHandling() throws Exception {
-        Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, AtlasPatchRegistry.class, String.class);
+        Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, String.class, long.class);
         loadModelsMethod.setAccessible(true);
-        loadModelsMethod.invoke(initializer, new File("/non/existent"), patchRegistry, "test-node");
+        loadModelsMethod.invoke(initializer, new File("/non/existent"), "test-node", 120000L);
 
-        Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class);
+        Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class, String.class, long.class);
         applyPatchesMethod.setAccessible(true);
-        applyPatchesMethod.invoke(initializer, "/non/existent", patchRegistry);
+        applyPatchesMethod.invoke(initializer, "/non/existent", patchRegistry, "test-node", 120000L);
 
         verify(typeDefStore, never()).createUpdateTypesDef(any(), any());
     }
@@ -549,9 +554,9 @@ public class AtlasTypeDefStoreInitializerTest {
             atlasTypeMock.when(() -> AtlasType.fromJson(eq(unknownPatchJson), any(Class.class)))
                     .thenReturn(unknownPatches);
 
-            Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class);
+            Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class, String.class, long.class);
             applyPatchesMethod.setAccessible(true);
-            applyPatchesMethod.invoke(initializer, tempDir.toString(), patchRegistry);
+            applyPatchesMethod.invoke(initializer, tempDir.toString(), patchRegistry, "test-node", 120000L);
 
             verify(patchRegistry, never()).register(anyString(), any(), anyString(), eq("UNKNOWN_ACTION"), any());
         } finally {

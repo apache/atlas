@@ -181,6 +181,15 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     private static final Set<String>    GLOBAL_UNIQUE_INDEX_KEYS = new HashSet<>();
     private static final Set<String>    TYPE_UNIQUE_INDEX_KEYS   = new HashSet<>();
 
+    static {
+        // Keys are normally registered as globally unique while the indexes are being created, which
+        // happens on one node only. The claim marker is how the other nodes stay out of each
+        // other's way, so it has to be enforced on every node regardless of who built the
+        // indexes. Registering the name is safe on its own: uniqueness is kept in a single generic
+        // side table keyed by property name and value, not in a per-key structure.
+        GLOBAL_UNIQUE_INDEX_KEYS.add(Constants.CLAIM_KEY);
+    }
+
     // Added for type lookup when indexing the new typedefs
     private final AtlasTypeRegistry         typeRegistry;
     private final List<IndexChangeListener> indexChangeListeners = new ArrayList<>();
@@ -193,6 +202,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     private boolean     recomputeEdgeIndexedKeys = true;
     private Set<String> vertexIndexKeys          = new HashSet<>();
     private Set<String> edgeIndexKeys            = new HashSet<>();
+
+    private volatile boolean stoodDownFromIndexSetup;
 
     @Inject
     public GraphBackedSearchIndexer(AtlasTypeRegistry typeRegistry) throws AtlasException {
@@ -254,6 +265,9 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         if (!AtlasRunMode.current().runsIndexSetup()) {
             LOG.info("GraphBackedSearchIndexer.instanceIsActive(): RUN_MODE={} — skipping index setup",
                     AtlasRunMode.current());
+
+            stoodDownFromIndexSetup = true;
+
             return;
         }
 
@@ -261,19 +275,24 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         IndexRecoveryService.RecoveryInfoManagement claimManager = new IndexRecoveryService.RecoveryInfoManagement(provider.get());
         GraphClaimable<Boolean> claimAction = new GraphClaimable<Boolean>() {
             @Override
+            public String claimName() {
+                return Constants.CLAIM_INDEX;
+            }
+
+            @Override
             public Boolean tryClaim() {
                 return claimManager.tryClaimOwnership(ownerId, INDEX_INIT_LEASE_MS);
             }
 
             @Override
             public void recoverStaleClaims() {
-                // lease-expiry based takeover is handled by tryClaimOwnership()
+                // taking over an expired lease is part of claiming it
             }
         };
 
         try {
             claimAction.recoverStaleClaims();
-            if (!claimAction.tryClaim()) {
+            if (!Boolean.TRUE.equals(claimAction.attemptClaim())) {
                 LOG.info("GraphBackedSearchIndexer.instanceIsActive(): index setup already claimed by another node; waiting for completion");
 
                 if (!waitForIndexSetupCompletion()) {
@@ -281,6 +300,9 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 }
 
                 LOG.info("GraphBackedSearchIndexer.instanceIsActive(): observed index setup completion by another node");
+
+                stoodDownFromIndexSetup = true;
+
                 return;
             }
         } catch (AtlasBaseException e) {
@@ -473,7 +495,17 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             management.setIsSuccess(true);
 
             populateUniqueIndexKeys();
-            notifyInitializationCompletion(changedTypeDefs);
+
+            // Index field names for keys such as __typeName reach the type registry through index
+            // setup. A node that stood down from it - a NOTIFICATION_PROCESSOR, or a node that waited
+            // for a peer to finish - would compute an incomplete search weight map and overwrite the
+            // valid Solr configuration published by the node that did the setup.
+            if (stoodDownFromIndexSetup) {
+                LOG.info("GraphBackedSearchIndexer.onLoadCompletion(): this node stood down from index setup (RUN_MODE={}) — leaving the search configuration to the node that ran it",
+                        AtlasRunMode.current());
+            } else {
+                notifyInitializationCompletion(changedTypeDefs);
+            }
         } catch (Exception e) {
             LOG.error("Failed to update indexes for changed typedefs", e);
         } finally {
@@ -728,6 +760,13 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, TASK_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, TASK_CREATED_TIME, UniqueKind.NONE, Long.class, SINGLE, true, false);
             createCommonVertexIndex(management, TASK_STATUS, UniqueKind.NONE, String.class, SINGLE, true, false);
+
+            // cluster-wide claim marker shared by all GraphClaimable implementations
+            createCommonVertexIndex(management, Constants.CLAIM_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
+            createCommonVertexIndex(management, Constants.CLAIM_OWNER_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+            createCommonVertexIndex(management, Constants.CLAIM_TIME_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
+            createCommonVertexIndex(management, Constants.CLAIM_EXPIRY_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
+            createCommonVertexIndex(management, Constants.CLAIM_VERTEX_TYPE_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
 
             // index recovery
             createCommonVertexIndex(management, PROPERTY_KEY_INDEX_RECOVERY_NAME, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
