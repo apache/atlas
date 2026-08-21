@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import '@testing-library/jest-dom';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
@@ -25,6 +26,7 @@ import * as rootClassificationSlice from '@redux/slice/rootClassificationSlice';
 import * as typeDefHeaderSlice from '@redux/slice/typeDefSlices/typeDefHeaderSlice';
 import * as allEntityTypesSlice from '@redux/slice/allEntityTypesSlice';
 import * as metricsSlice from '@redux/slice/metricsSlice';
+import * as sessionSlice from '@redux/slice/sessionSlice';
 
 // Mock react-quill-new
 jest.mock('react-quill-new', () => {
@@ -135,11 +137,12 @@ jest.mock('@redux/slice/rootClassificationSlice');
 jest.mock('@redux/slice/typeDefSlices/typeDefHeaderSlice');
 jest.mock('@redux/slice/allEntityTypesSlice');
 jest.mock('@redux/slice/metricsSlice');
+jest.mock('@redux/slice/sessionSlice');
 
 // Mock utils
 jest.mock('@utils/Enum', () => ({
   globalSessionData: {
-    relationshipSearch: {}
+    relationshipSearch: true
   },
   PathAssociateWithModule: {
     SEARCH: ['/search'],
@@ -153,7 +156,7 @@ const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
-  useLocation: () => ({ pathname: '/search' }),
+  useLocation: () => (global as any).mockLocation || { pathname: '/search', search: '' },
   useRoutes: () => null,
   matchRoutes: () => [{ route: { path: '/search' } }],
   Outlet: () => <div data-testid="outlet">Outlet Content</div>
@@ -170,16 +173,23 @@ describe('SideBarBody', () => {
     handleOpenAboutModal: mockHandleOpenAboutModal
   };
 
-  const createMockStore = (initialState = {}) => {
+  const createMockStore = (initialState: any = {}) => {
     return configureStore({
       reducer: {
         typeHeader: () => ({
           loading: false,
-          ...initialState
+          ...(initialState.typeHeader || initialState)
         }),
         entity: () => ({
           loading: false,
-          entityData: {}
+          entityData: {},
+          ...(initialState.entity || {})
+        }),
+        session: () => ({
+          sessionObj: { loading: false, data: null, error: null },
+          versionData: { loading: false, data: null, error: null },
+          globalSessionData: { relationshipSearch: true },
+          ...(initialState.session || {})
         })
       }
     });
@@ -207,6 +217,7 @@ describe('SideBarBody', () => {
     (typeDefHeaderSlice.fetchTypeHeaderData as jest.Mock) = jest.fn().mockReturnValue(mockDispatch);
     (allEntityTypesSlice.fetchRootEntity as jest.Mock) = jest.fn().mockReturnValue(mockDispatch);
     (metricsSlice.fetchMetricEntity as jest.Mock) = jest.fn().mockReturnValue(mockDispatch);
+    (sessionSlice.fetchVersionData as jest.Mock) = jest.fn().mockReturnValue(mockDispatch);
   });
 
   afterEach(() => {
@@ -252,7 +263,7 @@ describe('SideBarBody', () => {
     it('should render search bar when drawer is open', () => {
       renderWithProviders();
       
-      const searchInput = screen.getByPlaceholderText('Entities, Classifications, Glossaries');
+      const searchInput = screen.getByPlaceholderText('Search');
       expect(searchInput).toBeInTheDocument();
       // The data-cy attribute is on the parent InputBase, not the input itself
       expect(searchInput.closest('[data-cy="searchNode"]')).toBeInTheDocument();
@@ -275,7 +286,7 @@ describe('SideBarBody', () => {
     });
 
     it('should render relationships tree when relationshipSearch is enabled', () => {
-      // The relationshipSearch is enabled in our mock (globalSessionData.relationshipSearch = {})
+      // The relationshipSearch is enabled in our mock (globalSessionData.relationshipSearch = true)
       // The relationships tree is rendered by default in our test setup
       renderWithProviders();
       
@@ -348,7 +359,7 @@ describe('SideBarBody', () => {
     it('should update search term when typing in search bar', async () => {
       renderWithProviders();
       
-      const searchInput = screen.getByPlaceholderText('Entities, Classifications, Glossaries');
+      const searchInput = screen.getByPlaceholderText('Search');
       
       fireEvent.change(searchInput, { target: { value: 'test search' } });
       
@@ -360,7 +371,7 @@ describe('SideBarBody', () => {
     it('should pass search term to tree components', async () => {
       renderWithProviders();
       
-      const searchInput = screen.getByPlaceholderText('Entities, Classifications, Glossaries');
+      const searchInput = screen.getByPlaceholderText('Search');
       
       fireEvent.change(searchInput, { target: { value: 'entity' } });
       
@@ -454,6 +465,12 @@ describe('SideBarBody', () => {
       expect(metricsSlice.fetchMetricEntity).toHaveBeenCalled();
     });
 
+    it('should dispatch fetchVersionData on mount', () => {
+      renderWithProviders();
+      
+      expect(sessionSlice.fetchVersionData).toHaveBeenCalled();
+    });
+
     it('should pass loading state to tree components', () => {
       const store = createMockStore({ loading: true });
       renderWithProviders(defaultProps, { store });
@@ -462,34 +479,7 @@ describe('SideBarBody', () => {
     });
   });
 
-  describe('Mouse Events for Resizing', () => {
-    it('should handle mouse events for drawer resizing', () => {
-      // The dragger ref and mouse event handlers are internal implementation details
-      // Testing them directly would require exposing internal refs
-      // Instead, we verify the component renders and functions correctly
-      renderWithProviders();
-      
-      expect(screen.getByTestId('entities-tree')).toBeInTheDocument();
-    });
 
-    it('should maintain drawer width constraints', () => {
-      // Window width and drawer constraints are calculated internally
-      // The component should render without errors
-      renderWithProviders();
-      
-      expect(screen.getByTestId('entities-tree')).toBeInTheDocument();
-    });
-
-    it('should cleanup event listeners on unmount', () => {
-      const { unmount } = renderWithProviders();
-      
-      // Unmount should cleanup all event listeners
-      unmount();
-      
-      // Verify no errors during unmount
-      expect(true).toBe(true);
-    });
-  });
 
   describe('Props Handling', () => {
     it('should pass handleOpenModal to Header', () => {
@@ -510,11 +500,62 @@ describe('SideBarBody', () => {
       expect(mockHandleOpenAboutModal).toHaveBeenCalled();
     });
 
-    it('should pass loading prop to ClassificationTree', () => {
-      const props = { ...defaultProps, loading: true };
-      renderWithProviders(props);
+    it('should show "Version unavailable" if versionError is set', () => {
+      const stateWithVersionError = {
+        session: {
+          versionData: {
+            loading: false,
+            data: null,
+            error: { message: "Failed to fetch version" }
+          }
+        }
+      };
+      renderWithProviders({}, { store: createMockStore(stateWithVersionError) });
       
-      expect(screen.getByTestId('classification-tree')).toBeInTheDocument();
+      expect(screen.getByText('Version unavailable')).toBeInTheDocument();
+    });
+
+    it('should hide relationships icon and module when relationshipSearch is falsy', () => {
+      const stateWithoutRelSearch = {
+        session: {
+          globalSessionData: {
+            relationshipSearch: false
+          }
+        }
+      };
+      renderWithProviders({}, { store: createMockStore(stateWithoutRelSearch) });
+      
+      expect(screen.queryByTestId('relationship-icon')).not.toBeInTheDocument();
+      // Should also hide the tree in the expanded view
+      expect(screen.queryByTestId('r_relationshipTreeRender')).not.toBeInTheDocument();
+    });
+
+    it('should show V x.x display for version footer', () => {
+      const stateWithVersion = {
+        session: {
+          versionData: {
+            loading: false,
+            data: { Version: "3.12.1.0" },
+            error: null
+          }
+        }
+      };
+      renderWithProviders({}, { store: createMockStore(stateWithVersion) });
+      expect(screen.getByText('V 3.12.1.0')).toBeInTheDocument();
+    });
+
+    it('should show loading spinner for version footer when loading', () => {
+      const stateLoadingVersion = {
+        session: {
+          versionData: {
+            loading: true,
+            data: null,
+            error: null
+          }
+        }
+      };
+      renderWithProviders({}, { store: createMockStore(stateLoadingVersion) });
+      expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
   });
 
@@ -536,7 +577,7 @@ describe('SideBarBody', () => {
       fireEvent.click(toggleButton!);
       
       await waitFor(() => {
-        expect(screen.getByTestId('entities-tree')).toHaveTextContent('Open: false');
+        expect(screen.queryByTestId('entities-tree')).not.toBeInTheDocument();
       });
     });
   });
@@ -595,7 +636,7 @@ describe('SideBarBody', () => {
     it('should handle empty search term', () => {
       renderWithProviders();
       
-      const searchInput = screen.getByPlaceholderText('Entities, Classifications, Glossaries');
+      const searchInput = screen.getByPlaceholderText('Search');
       
       fireEvent.change(searchInput, { target: { value: '' } });
       
@@ -605,7 +646,7 @@ describe('SideBarBody', () => {
     it('should handle special characters in search', async () => {
       renderWithProviders();
       
-      const searchInput = screen.getByPlaceholderText('Entities, Classifications, Glossaries');
+      const searchInput = screen.getByPlaceholderText('Search');
       
       fireEvent.change(searchInput, { target: { value: '!@#$%^&*()' } });
       
@@ -634,6 +675,139 @@ describe('SideBarBody', () => {
       renderWithProviders();
       
       expect(screen.getByTestId('entities-tree')).toBeInTheDocument();
+    });
+  });
+
+  describe('Collapsed Sidebar Popovers', () => {
+    beforeEach(() => {
+      // Start with closed drawer to see popover icons
+      renderWithProviders();
+      const toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
+      fireEvent.click(toggleButton!);
+    });
+
+    it('should open correct popover when module icon is clicked', async () => {
+      // Find the glossary icon and click it
+      const glossaryIcon = screen.getByAltText('glossary');
+      fireEvent.click(glossaryIcon.closest('button')!);
+
+      await waitFor(() => {
+        // Popover should render the glossary tree
+        const glossaryTrees = screen.getAllByTestId('glossary-tree');
+        expect(glossaryTrees.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should share search term between sidebar and popover', async () => {
+      // Re-open sidebar to access main search input
+      const toggleOpenButton = screen.getByTestId('KeyboardDoubleArrowRightIcon').closest('button');
+      fireEvent.click(toggleOpenButton!);
+
+      // Set search term in the main search bar
+      const searchInput = screen.getAllByPlaceholderText('Search')[0];
+      fireEvent.change(searchInput, { target: { value: 'popover_search' } });
+
+      // Close sidebar
+      const toggleCloseButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
+      fireEvent.click(toggleCloseButton!);
+
+      // Click entities icon
+      const entitiesIcon = screen.getByAltText('entities');
+      fireEvent.click(entitiesIcon.closest('button')!);
+
+      await waitFor(() => {
+        // Popover should receive the search term
+        const entitiesTree = screen.getAllByTestId('entities-tree').find(
+          el => el.textContent?.includes('Search: popover_search')
+        );
+        expect(entitiesTree).toBeInTheDocument();
+      });
+    });
+
+    it('should close popover when clicking outside', async () => {
+      // Open glossary popover
+      const glossaryIcon = screen.getByAltText('glossary');
+      fireEvent.click(glossaryIcon.closest('button')!);
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId('glossary-tree').length).toBeGreaterThan(0);
+      });
+
+      // Press escape to close the popover (MUI Popover default behavior for outside click/escape)
+      const backdrop = document.querySelector('.MuiBackdrop-root');
+      if (backdrop) {
+        fireEvent.click(backdrop);
+      } else {
+        fireEvent.keyDown(document.body, { key: 'Escape', code: 'Escape' });
+      }
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('glossary-tree')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should NOT open popover when sidebar is expanded', async () => {
+      // Re-open sidebar that was closed in beforeEach
+      const toggleOpenButton = screen.getByTestId('KeyboardDoubleArrowRightIcon').closest('button');
+      fireEvent.click(toggleOpenButton!);
+
+      // Ensure sidebar is expanded
+      expect(screen.getByTestId('entities-tree')).toBeInTheDocument();
+      
+      // Module icons don't exist when expanded
+      const icons = screen.queryByAltText('glossary');
+      expect(icons).not.toBeInTheDocument();
+    });
+
+    it('should only open one popover at a time when switching modules', async () => {
+      // Find the glossary icon and click it
+      const glossaryIcon = screen.getByAltText('glossary');
+      fireEvent.click(glossaryIcon.closest('button')!);
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId('glossary-tree').length).toBeGreaterThan(0);
+      });
+
+      // Click entities icon
+      const entitiesIcon = screen.getByAltText('entities');
+      fireEvent.click(entitiesIcon.closest('button')!);
+
+      await waitFor(() => {
+        // Entities should be open
+        expect(screen.getAllByTestId('entities-tree').length).toBeGreaterThan(0);
+        // Glossary should be closed
+        expect(screen.queryByTestId('glossary-tree')).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Active State Markers', () => {
+    it('should apply active state markers correctly', async () => {
+      // Test Entities active (type param present but isCF is not true)
+      (global as any).mockLocation = { pathname: '/search', search: '?type=table' };
+      const { unmount: unmount1 } = renderWithProviders();
+      let toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
+      fireEvent.click(toggleButton!);
+      
+      let entitiesIcon = screen.getByAltText('entities');
+      expect(entitiesIcon.closest('.sidebar-icon-active')).toBeInTheDocument();
+      unmount1();
+
+      // Test Custom Filters active (isCF=true)
+      (global as any).mockLocation = { pathname: '/search', search: '?isCF=true&type=myFilter' };
+      const { unmount: unmount2 } = renderWithProviders();
+      toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
+      fireEvent.click(toggleButton!);
+      
+      let customFiltersIcon = screen.getByAltText('custom filters');
+      expect(customFiltersIcon.closest('.sidebar-icon-active')).toBeInTheDocument();
+      
+      // Entities should NOT be active if isCF=true
+      entitiesIcon = screen.getByAltText('entities');
+      expect(entitiesIcon.closest('.sidebar-icon-active')).not.toBeInTheDocument();
+      unmount2();
+
+      (global as any).mockLocation = undefined;
     });
   });
 });

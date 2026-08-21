@@ -38,12 +38,12 @@ import {
 import { fetchSavedSearchData } from "@redux/slice/savedSearchSlice.ts";
 import { globalSessionData } from "@utils/Enum.ts";
 
-const CustomFiltersTree = ({ sideBarOpen, searchTerm }: Props) => {
+const CustomFiltersTree = ({ sideBarOpen, searchTerm, isPopover }: Props) => {
   const dispatch = useAppDispatch();
   const { savedSearchData }: any = useAppSelector(
     (state: any) => state.savedSearch
   );
-  const { relationshipSearch = {} } = globalSessionData || {};
+  const { relationshipSearch = false } = globalSessionData || {};
 
   const [savedSearchTypeData, setSavedSearchTypeData] = useState<
     SavedSearchArrType<true>
@@ -174,6 +174,7 @@ const CustomFiltersTree = ({ sideBarOpen, searchTerm }: Props) => {
       sideBarOpen={sideBarOpen}
       loader={customFilterLoader}
       searchTerm={searchTerm}
+      isPopover={isPopover}
     />
   );
 };

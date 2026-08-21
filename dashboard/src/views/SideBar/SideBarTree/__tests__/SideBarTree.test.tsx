@@ -27,6 +27,7 @@
  */
 
 import React from 'react'
+import '@testing-library/jest-dom'
 import { render, screen, waitFor, fireEvent, act, cleanup } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
@@ -119,6 +120,12 @@ jest.mock('@components/SkeletonLoader', () => {
 	}
 })
 
+jest.mock('@components/TreeSkeletonLoader', () => {
+	return function MockTreeSkeletonLoader(props: any) {
+		return <div data-testid="tree-skeleton-loader" data-count={props.count}>Loading Tree Skeleton...</div>
+	}
+})
+
 // Mock MUI X Tree components - following pattern from FormTreeView.test.tsx
 jest.mock('@mui/x-tree-view', () => {
 	const React = require('react')
@@ -148,14 +155,14 @@ jest.mock('@mui/x-tree-view/TreeItem', () => {
 			<div data-testid={`tree-item-label-${itemId}`}>{label}</div>
 		)
 		return (
-			<div data-testid={`tree-item-${itemId}`} data-item-id={itemId}>
+			<div data-testid={`tree-item-${itemId}`} data-item-id={itemId} className={props.className}>
 				{Content}
 				{children}
 			</div>
 		)
 	}
-	return { 
-		TreeItem, 
+	return {
+		TreeItem,
 		useTreeItemState,
 		TreeItemProps: {},
 		TreeItemContentProps: {}
@@ -166,7 +173,7 @@ jest.mock('@components/muiComponents', () => ({
 	MoreVertIcon: ({ onClick, ...props }: any) => (
 		<div data-testid="more-vert-icon" onClick={onClick} {...props}>More</div>
 	),
-	LightTooltip: ({ children, title }: any) => <div title={title}>{children}</div>,
+	LightTooltip: ({ children, title, disableHoverListener }: any) => <div title={title} data-testid="light-tooltip" data-disabled={disableHoverListener}>{children}</div>,
 	FileDownloadIcon: () => <div data-testid="file-download-icon">Download</div>,
 	FormatListBulletedIcon: () => <div data-testid="format-list-icon">List</div>,
 	AccountTreeIcon: ({ onClick, ...props }: any) => (
@@ -283,7 +290,7 @@ describe('SideBarTree', () => {
 		mockFetchGlossaryData.mockReturnValue({ type: 'glossary/fetchGlossaryData' } as any)
 		global.URL.createObjectURL = jest.fn(() => 'blob:url')
 		global.URL.revokeObjectURL = jest.fn()
-		
+
 		// Restore original createElement for React Testing Library
 		document.createElement = originalCreateElement
 		document.body.appendChild = originalAppendChild
@@ -331,7 +338,7 @@ describe('SideBarTree', () => {
 			renderComponent({ loader: true })
 
 			await waitFor(() => {
-				expect(screen.getByTestId('skeleton-loader')).toBeInTheDocument()
+				expect(screen.getAllByTestId('tree-skeleton-loader').length).toBeGreaterThan(0)
 			})
 		})
 
@@ -339,7 +346,7 @@ describe('SideBarTree', () => {
 			renderComponent({ loader: false })
 
 			await waitFor(() => {
-				expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
+				expect(screen.queryByTestId('tree-skeleton-loader')).not.toBeInTheDocument()
 			})
 		})
 	})
@@ -593,7 +600,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-			
+
 			if (downloadItem) {
 				fireEvent.click(downloadItem)
 			}
@@ -643,7 +650,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-			
+
 			if (downloadItem) {
 				fireEvent.click(downloadItem)
 			}
@@ -672,7 +679,7 @@ describe('SideBarTree', () => {
 			await waitFor(() => {
 				const menuItems = screen.getAllByTestId('menu-item')
 				const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-				
+
 				if (downloadItem) {
 					expect(downloadItem).not.toHaveAttribute('data-disabled', 'true')
 				}
@@ -700,15 +707,15 @@ describe('SideBarTree', () => {
 			// Find menu item by text content
 			const importText = screen.getByText('Import Business Metadata')
 			expect(importText).toBeInTheDocument()
-			
+
 			const importMenuItem = importText.closest('[data-testid="menu-item"]')
 			expect(importMenuItem).toBeInTheDocument()
-			
+
 			if (importMenuItem) {
 				await act(async () => {
 					fireEvent.click(importMenuItem)
 				})
-				
+
 				// Wait for state update and dialog to appear
 				await waitFor(() => {
 					expect(screen.getByTestId('import-dialog')).toBeInTheDocument()
@@ -735,7 +742,7 @@ describe('SideBarTree', () => {
 			// Find menu item by text content
 			const importText = screen.getByText('Import Business Metadata')
 			const importMenuItem = importText.closest('[data-testid="menu-item"]')
-			
+
 			if (importMenuItem) {
 				await act(async () => {
 					fireEvent.click(importMenuItem)
@@ -768,7 +775,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const createItem = menuItems.find(item => item.textContent?.includes('Create'))
-			
+
 			if (createItem) {
 				fireEvent.click(createItem)
 			}
@@ -796,7 +803,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const createItem = menuItems.find(item => item.textContent?.includes('Create'))
-			
+
 			if (createItem) {
 				fireEvent.click(createItem)
 			}
@@ -1081,27 +1088,6 @@ describe('SideBarTree', () => {
 		})
 	})
 
-	describe('TreeLabelWithTooltip', () => {
-		it('should show tooltip when text is overflown', async () => {
-			renderComponent({
-				treeData: [{ id: 'node1', label: 'Very Long Node Name That Should Overflow', children: [] }]
-			})
-
-			await waitFor(() => {
-				expect(screen.getByTestId('simple-tree-view')).toBeInTheDocument()
-			})
-		})
-
-		it('should not show tooltip when text is not overflown', async () => {
-			renderComponent({
-				treeData: [{ id: 'node1', label: 'Short', children: [] }]
-			})
-
-			await waitFor(() => {
-				expect(screen.getByTestId('simple-tree-view')).toBeInTheDocument()
-			})
-		})
-	})
 
 	describe('getEmptyTypesTitle', () => {
 		it('should return correct title for Entities', async () => {
@@ -1424,10 +1410,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'ADVANCED', 
-						searchParameters: { query: 'test' } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'ADVANCED',
+						searchParameters: { query: 'test' }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1454,10 +1440,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { entityFilters: mockEntityFilters } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { entityFilters: mockEntityFilters }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1484,10 +1470,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { tagFilters: mockTagFilters } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { tagFilters: mockTagFilters }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1514,10 +1500,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC_RELATIONSHIP', 
-						searchParameters: { relationshipFilters: mockRelationshipFilters } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC_RELATIONSHIP',
+						searchParameters: { relationshipFilters: mockRelationshipFilters }
 					}]
 				}
 			}, ['/relationship/relationshipSearchresult'])
@@ -1537,10 +1523,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC_RELATIONSHIP', 
-						searchParameters: { limit: 50, offset: 10 } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC_RELATIONSHIP',
+						searchParameters: { limit: 50, offset: 10 }
 					}]
 				}
 			}, ['/relationship/relationshipSearchresult'])
@@ -1560,10 +1546,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { typeName: 'EntityType' } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { typeName: 'EntityType' }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1583,10 +1569,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { classification: 'Tag1' } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { classification: 'Tag1' }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1606,14 +1592,14 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { 
-							nullValue: null, 
-							undefinedValue: undefined, 
-							emptyValue: '' 
-						} 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: {
+							nullValue: null,
+							undefinedValue: undefined,
+							emptyValue: ''
+						}
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1718,7 +1704,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-			
+
 			if (downloadItem) {
 				await act(async () => {
 					fireEvent.click(downloadItem)
@@ -1764,7 +1750,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-			
+
 			if (downloadItem) {
 				await act(async () => {
 					fireEvent.click(downloadItem)
@@ -1802,10 +1788,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { entityFilters: nestedFilters } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { entityFilters: nestedFilters }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1832,10 +1818,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { entityFilters: qbFilters } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { entityFilters: qbFilters }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -1855,10 +1841,10 @@ describe('SideBarTree', () => {
 				treeData
 			}, {
 				savedSearch: {
-					savedSearchData: [{ 
-						name: 'filter1', 
-						searchType: 'BASIC', 
-						searchParameters: { entityFilters: 'invalid' } 
+					savedSearchData: [{
+						name: 'filter1',
+						searchType: 'BASIC',
+						searchParameters: { entityFilters: 'invalid' }
 					}]
 				}
 			}, ['/search/searchResult'])
@@ -2022,7 +2008,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const downloadItem = menuItems.find(item => item.textContent?.includes('Download'))
-			
+
 			if (downloadItem) {
 				expect(downloadItem).not.toHaveAttribute('data-disabled', 'true')
 			}
@@ -2047,7 +2033,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const importItem = menuItems.find(item => item.textContent?.includes('Import'))
-			
+
 			if (importItem) {
 				expect(importItem).not.toHaveAttribute('data-disabled', 'true')
 			}
@@ -2072,7 +2058,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const importItem = menuItems.find(item => item.textContent?.includes('Import'))
-			
+
 			if (importItem) {
 				expect(importItem).not.toHaveAttribute('data-disabled', 'true')
 			}
@@ -2155,7 +2141,7 @@ describe('SideBarTree', () => {
 
 			const menuItems = screen.getAllByTestId('menu-item')
 			const toggleItem = menuItems.find(item => item.textContent?.includes('flat'))
-			
+
 			if (toggleItem) {
 				await act(async () => {
 					fireEvent.click(toggleItem)
@@ -2179,6 +2165,77 @@ describe('SideBarTree', () => {
 			expect(screen.queryByTestId('account-tree-icon')).not.toBeInTheDocument()
 			expect(screen.queryByTestId('ant-switch')).not.toBeInTheDocument()
 			expect(mockSetIsEmptyServicetype).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('Reviewer Requested Tests', () => {
+		it('should render skeleton loader with 2 rows when isPopover is true', async () => {
+			renderComponent({ loader: true, isPopover: true })
+
+			await waitFor(() => {
+				const loader = screen.getByTestId('tree-skeleton-loader')
+				expect(loader).toBeInTheDocument()
+				expect(loader).toHaveAttribute('data-count', '2')
+			})
+		})
+
+		it('should persist selected state from URL params for custom filters when reopened in popover', async () => {
+			const treeData = [
+				{ id: 'customFilter1', label: 'Custom Filter 1', children: [] }
+			]
+			renderComponent({ 
+				treeData, 
+				treeName: 'CustomFilters', 
+				isPopover: true 
+			}, {}, ['/search/searchResult?searchType=BASIC&isCF=true&customFilter=customFilter1'])
+
+			await waitFor(() => {
+				const treeItem = screen.getByTestId('tree-item-customFilter1')
+				expect(treeItem).toBeInTheDocument()
+				expect(treeItem.querySelector('.Mui-selected')).toBeInTheDocument()
+			})
+		})
+
+		it('should enable tooltip when text overflows (scrollWidth > clientWidth)', async () => {
+			// Mock HTMLElement properties
+			const originalScrollWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollWidth')
+			const originalClientWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth')
+
+			Object.defineProperty(HTMLElement.prototype, 'scrollWidth', { configurable: true, value: 200 })
+			Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 100 })
+
+			renderComponent({ treeData: [{ id: 'node1', label: 'Long Text Node', children: [] }] })
+
+			await waitFor(() => {
+				const tooltips = screen.getAllByTestId('light-tooltip')
+				const tooltip = tooltips.find(t => t.getAttribute('title') === 'Long Text Node')
+				expect(tooltip).toBeDefined()
+				expect(tooltip).toHaveAttribute('data-disabled', 'false')
+			})
+
+			// Restore
+			if (originalScrollWidth) Object.defineProperty(HTMLElement.prototype, 'scrollWidth', originalScrollWidth)
+			if (originalClientWidth) Object.defineProperty(HTMLElement.prototype, 'clientWidth', originalClientWidth)
+		})
+
+		it('should disable tooltip when text fits (scrollWidth <= clientWidth)', async () => {
+			const originalScrollWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollWidth')
+			const originalClientWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth')
+
+			Object.defineProperty(HTMLElement.prototype, 'scrollWidth', { configurable: true, value: 100 })
+			Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 100 })
+
+			renderComponent({ treeData: [{ id: 'node1', label: 'Short Text Node', children: [] }] })
+
+			await waitFor(() => {
+				const tooltips = screen.getAllByTestId('light-tooltip')
+				const tooltip = tooltips.find(t => t.getAttribute('title') === 'Short Text Node')
+				expect(tooltip).toBeDefined()
+				expect(tooltip).toHaveAttribute('data-disabled', 'true')
+			})
+
+			if (originalScrollWidth) Object.defineProperty(HTMLElement.prototype, 'scrollWidth', originalScrollWidth)
+			if (originalClientWidth) Object.defineProperty(HTMLElement.prototype, 'clientWidth', originalClientWidth)
 		})
 	})
 })
