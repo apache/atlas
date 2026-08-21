@@ -33,10 +33,7 @@ export const SidebarSearchInput: React.FC<SidebarSearchInputProps> = ({
 }) => (
   <Paper
     sx={{
-      width: "100%",
-      paddingLeft: "8px",
-      display: "flex",
-      alignItems: "center"
+      width: "100%"
     }}
     className="sidebar-searchbar"
   >
@@ -55,6 +52,12 @@ export const SidebarSearchInput: React.FC<SidebarSearchInputProps> = ({
               aria-label="Clear search"
               size="small"
               onClick={() => onChange("")}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onChange("");
+                }
+              }}
               edge="end"
               sx={{ padding: "4px" }}
             >
