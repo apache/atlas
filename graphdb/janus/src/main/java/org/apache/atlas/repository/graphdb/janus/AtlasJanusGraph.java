@@ -137,7 +137,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
             }
 
             if (StringUtils.equalsIgnoreCase(AtlasConfiguration.STORAGE_BACKEND_TYPE.getString(), "rdbms")) {
-                uniqueKeyHandler = new AtlasJanusRdbmsUniqueKeyHandler();
+                uniqueKeyHandler = newRdbmsUniqueKeyHandlerOrNull();
             } else {
                 uniqueKeyHandler = null;
             }
@@ -148,6 +148,20 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         }
 
         janusGraph = (StandardJanusGraph) graphInstance;
+    }
+
+    private static AtlasUniqueKeyHandler newRdbmsUniqueKeyHandlerOrNull() {
+        final String handlerClass = "org.apache.atlas.repository.graphdb.janus.AtlasJanusRdbmsUniqueKeyHandler";
+
+        try {
+            Class<?> clz = Class.forName(handlerClass);
+
+            return (AtlasUniqueKeyHandler) clz.getDeclaredConstructor().newInstance();
+        } catch (Throwable t) {
+            LOG.warn("RDBMS storage is configured but {} is not available on the classpath", handlerClass, t);
+
+            return null;
+        }
     }
 
     @Override

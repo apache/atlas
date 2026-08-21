@@ -40,7 +40,8 @@
         </dependency>
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-intg</artifactId>
+            <artifactId>atlas-graphdb-api</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.persistence</groupId>
