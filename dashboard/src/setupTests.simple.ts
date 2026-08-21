@@ -18,8 +18,15 @@
 /** Simplified test setup file for Node 12 compatibility */
 
 import '@testing-library/jest-dom';
+import { TextEncoder, TextDecoder } from 'util';
 
 export {};
+
+// Polyfill TextEncoder and TextDecoder for React Router DOM in Jest
+if (typeof global.TextEncoder === 'undefined') {
+  global.TextEncoder = TextEncoder;
+  global.TextDecoder = TextDecoder as any;
+}
 
 
 // Basic mocks that don't rely on newer JS features
