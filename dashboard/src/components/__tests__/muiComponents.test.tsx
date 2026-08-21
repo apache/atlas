@@ -21,7 +21,7 @@
  */
 
 import React from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
 	CustomButton,
@@ -71,6 +71,24 @@ describe('muiComponents', () => {
 	})
 
 	describe('OverflowTooltip', () => {
+		let triggerResize: any
+		const originalResizeObserver = global.ResizeObserver
+
+		beforeAll(() => {
+			global.ResizeObserver = class {
+				constructor(callback: any) {
+					triggerResize = callback
+				}
+				observe = jest.fn()
+				unobserve = jest.fn()
+				disconnect = jest.fn()
+			} as any
+		})
+
+		afterAll(() => {
+			global.ResizeObserver = originalResizeObserver
+		})
+
 		it('renders OverflowTooltip children', () => {
 			render(
 				<OverflowTooltip title="overflow tip">
@@ -80,26 +98,49 @@ describe('muiComponents', () => {
 			expect(screen.getByText('Overflow Child')).toBeTruthy()
 		})
 
-		it('disables tooltip when not overflowed', () => {
+		it('disables tooltip when not overflowed', async () => {
 			render(
 				<OverflowTooltip title="overflow tip">
 					<span data-testid="short-text">Short</span>
 				</OverflowTooltip>
 			)
-			// Element scrollWidth and clientWidth are 0 in JSDOM, so isOverflowed is false
-			// We can verify it renders successfully and handles the basic case
-			expect(screen.getByTestId('short-text')).toBeInTheDocument()
+			const span = screen.getByTestId('short-text').parentElement!
+			
+			// Mock no overflow
+			Object.defineProperty(span, 'scrollWidth', { configurable: true, value: 100 })
+			Object.defineProperty(span, 'clientWidth', { configurable: true, value: 100 })
+			
+			act(() => {
+				if (triggerResize) triggerResize()
+			})
+
+			fireEvent.mouseOver(span)
+			
+			// Tooltip should not be in the document
+			expect(screen.queryByText('overflow tip')).not.toBeInTheDocument()
 		})
 
-		it('enables tooltip on resize if overflow occurs', () => {
+		it('enables tooltip on resize if overflow occurs', async () => {
 			render(
 				<OverflowTooltip title="overflow tip">
 					<span data-testid="resize-text">Will be long</span>
 				</OverflowTooltip>
 			)
-			// Trigger resize
-			window.dispatchEvent(new Event('resize'))
-			expect(screen.getByTestId('resize-text')).toBeInTheDocument()
+			const span = screen.getByTestId('resize-text').parentElement!
+			
+			// Mock overflow condition
+			Object.defineProperty(span, 'scrollWidth', { configurable: true, value: 200 })
+			Object.defineProperty(span, 'clientWidth', { configurable: true, value: 100 })
+			
+			// Trigger resize observer callback
+			act(() => {
+				if (triggerResize) triggerResize()
+			})
+			
+			fireEvent.mouseOver(span)
+			
+			// Tooltip should appear
+			expect(await screen.findByText('overflow tip')).toBeInTheDocument()
 		})
 	})
 

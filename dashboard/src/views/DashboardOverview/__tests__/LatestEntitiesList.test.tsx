@@ -632,7 +632,7 @@ describe('LatestEntitiesList', () => {
 							name: 'EntityWithoutGuid',
 							typeName: 'T',
 							attributes: { __timestamp: Date.now() },
-						} as any,
+						},
 					]}
 				/>
 			</MemoryRouter>,
@@ -655,7 +655,7 @@ describe('LatestEntitiesList', () => {
 							name: longName,
 							typeName: 'T',
 							attributes: { __timestamp: Date.now() },
-						} as any,
+						},
 					]}
 				/>
 			</MemoryRouter>,
@@ -679,7 +679,7 @@ describe('LatestEntitiesList', () => {
 							guid: 'g1',
 							name: 'NamelessType',
 							attributes: { __timestamp: Date.now() },
-						} as any,
+						},
 					]}
 				/>
 			</MemoryRouter>,

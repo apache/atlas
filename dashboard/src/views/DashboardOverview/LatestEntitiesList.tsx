@@ -138,6 +138,9 @@ const formatRelativeTime = (raw: unknown): string => {
 	return formatCreatedRelativeFromMs(ms);
 };
 
+const nameWrapperSx = { display: "block", flex: "0 1 auto", width: "auto" };
+const typeWrapperSx = { display: "block", flex: "0 0 auto", width: "auto" };
+
 const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesListProps) => {
 	const navigate = useNavigate();
 
@@ -197,7 +200,7 @@ const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesL
 								<Stack width="100%" direction="row" justifyContent="space-between" alignItems="center">
 									<Stack direction="row" spacing={0.5} alignItems="center" flexWrap="nowrap" flex={1} minWidth={0} mr={1}>
 										{detailHref ? (
-											<OverflowTooltip title={displayName} arrow placement="top" wrapperSx={{ display: "block", flex: "1 1 auto" }}>
+											<OverflowTooltip title={displayName} arrow placement="top" wrapperSx={nameWrapperSx}>
 												<Link
 													component={RouterLink}
 													to={detailHref}
@@ -209,7 +212,7 @@ const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesL
 												</Link>
 											</OverflowTooltip>
 										) : (
-											<OverflowTooltip title={displayName} arrow placement="top" wrapperSx={{ display: "block", flex: "1 1 auto" }}>
+											<OverflowTooltip title={displayName} arrow placement="top" wrapperSx={nameWrapperSx}>
 												<Typography
 													component="span"
 													className="latest-entities-entity-name latest-entities-entity-name-fallback"
@@ -218,7 +221,7 @@ const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesL
 												</Typography>
 											</OverflowTooltip>
 										)}
-										<OverflowTooltip title={`(${typeName})`} arrow placement="top" wrapperSx={{ display: "block", flex: "0 1 auto", width: "auto" }}>
+										<OverflowTooltip title={`(${typeName})`} arrow placement="top" wrapperSx={typeWrapperSx}>
 											<Typography
 												component="span"
 												className="latest-entities-type-name"
