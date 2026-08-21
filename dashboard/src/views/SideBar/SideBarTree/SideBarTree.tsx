@@ -150,7 +150,7 @@ const CustomContentRoot = styled("div")<CustomContentRootProps>(
       props.selectedNodeCustomFilter === props.node) && {
       "&.Mui-selected .MuiTreeItem-contentBar": {
         backgroundColor: "rgba(255,255,255,0.08)",
-        borderLeft: "4px solid #2ccebb",
+        borderLeft: "4px solid var(--sidebar-active)",
         // color: "white"
         // borderRadius: "4px"
       },
@@ -353,15 +353,21 @@ const BarTreeView: FC<{
     );
 
     const filteredData = useMemo(() => {
-      return treeData.filter((node) => {
-        return (
-          node.label?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (node.children &&
-            node.children.some((child) =>
-              child.label?.toLowerCase().includes(searchTerm.toLowerCase())
-            ))
-        );
-      });
+      if (!searchTerm) return treeData;
+      const lowerSearch = searchTerm.toLowerCase();
+      return treeData.reduce((acc: any[], node: any) => {
+        const nodeMatches = node.label?.toLowerCase().includes(lowerSearch);
+        let filteredChildren = node.children;
+        if (!nodeMatches && node.children) {
+          filteredChildren = node.children.filter((child: any) =>
+            child.label?.toLowerCase().includes(lowerSearch)
+          );
+        }
+        if (nodeMatches || (filteredChildren && filteredChildren.length > 0)) {
+          acc.push({ ...node, children: filteredChildren });
+        }
+        return acc;
+      }, []);
     }, [treeData, searchTerm]);
 
     const displayTreeName = useMemo(() => {
@@ -391,14 +397,12 @@ const BarTreeView: FC<{
     }, [searchTerm]);
 
     const expandedItemsMemo = useMemo(() => {
-      const allNodeIds = filteredData.flatMap((node) => {
-        return [
-          node.id,
-          ...(node.children ? node.children.map((child) => child.id) : []),
-        ];
-      });
-      return [...allNodeIds, ...[treeName]];
-    }, [filteredData, treeName]);
+      if (!searchTerm) {
+        return [treeName];
+      }
+      const parentNodeIds = filteredData.map((node) => node.id);
+      return [...parentNodeIds, treeName];
+    }, [filteredData, treeName, searchTerm]);
 
     useEffect(() => {
       setExpandedItems(expandedItemsMemo);
@@ -970,7 +974,7 @@ const BarTreeView: FC<{
         <LightTooltip title={label} disableHoverListener={!isOverflown}>
           <span
             ref={labelRef}
-            className="tree-item-label sidebar-tree-label-nowrap"
+            className="tree-item-label"
           >
             {highlightText(label)}
           </span>

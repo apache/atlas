@@ -142,7 +142,7 @@ jest.mock('@redux/slice/sessionSlice');
 // Mock utils
 jest.mock('@utils/Enum', () => ({
   globalSessionData: {
-    relationshipSearch: {}
+    relationshipSearch: true
   },
   PathAssociateWithModule: {
     SEARCH: ['/search'],
@@ -286,7 +286,7 @@ describe('SideBarBody', () => {
     });
 
     it('should render relationships tree when relationshipSearch is enabled', () => {
-      // The relationshipSearch is enabled in our mock (globalSessionData.relationshipSearch = {})
+      // The relationshipSearch is enabled in our mock (globalSessionData.relationshipSearch = true)
       // The relationships tree is rendered by default in our test setup
       renderWithProviders();
       
@@ -515,7 +515,7 @@ describe('SideBarBody', () => {
       expect(screen.getByText('Version unavailable')).toBeInTheDocument();
     });
 
-    it('should hide relationships icon when relationshipSearch is falsy', () => {
+    it('should hide relationships icon and module when relationshipSearch is falsy', () => {
       const stateWithoutRelSearch = {
         session: {
           globalSessionData: {
@@ -526,6 +526,36 @@ describe('SideBarBody', () => {
       renderWithProviders({}, { store: createMockStore(stateWithoutRelSearch) });
       
       expect(screen.queryByTestId('relationship-icon')).not.toBeInTheDocument();
+      // Should also hide the tree in the expanded view
+      expect(screen.queryByTestId('r_relationshipTreeRender')).not.toBeInTheDocument();
+    });
+
+    it('should show V x.x display for version footer', () => {
+      const stateWithVersion = {
+        session: {
+          versionData: {
+            loading: false,
+            data: { Version: "3.12.1.0" },
+            error: null
+          }
+        }
+      };
+      renderWithProviders({}, { store: createMockStore(stateWithVersion) });
+      expect(screen.getByText('V 3.12.1.0')).toBeInTheDocument();
+    });
+
+    it('should show loading spinner for version footer when loading', () => {
+      const stateLoadingVersion = {
+        session: {
+          versionData: {
+            loading: true,
+            data: null,
+            error: null
+          }
+        }
+      };
+      renderWithProviders({}, { store: createMockStore(stateLoadingVersion) });
+      expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
   });
 
@@ -712,6 +742,40 @@ describe('SideBarBody', () => {
       }
 
       await waitFor(() => {
+        expect(screen.queryByTestId('glossary-tree')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should NOT open popover when sidebar is expanded', async () => {
+      // Re-open sidebar that was closed in beforeEach
+      const toggleOpenButton = screen.getByTestId('KeyboardDoubleArrowRightIcon').closest('button');
+      fireEvent.click(toggleOpenButton!);
+
+      // Ensure sidebar is expanded
+      expect(screen.getByTestId('entities-tree')).toBeInTheDocument();
+      
+      // Module icons don't exist when expanded
+      const icons = screen.queryByAltText('glossary');
+      expect(icons).not.toBeInTheDocument();
+    });
+
+    it('should only open one popover at a time when switching modules', async () => {
+      // Find the glossary icon and click it
+      const glossaryIcon = screen.getByAltText('glossary');
+      fireEvent.click(glossaryIcon.closest('button')!);
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId('glossary-tree').length).toBeGreaterThan(0);
+      });
+
+      // Click entities icon
+      const entitiesIcon = screen.getByAltText('entities');
+      fireEvent.click(entitiesIcon.closest('button')!);
+
+      await waitFor(() => {
+        // Entities should be open
+        expect(screen.getAllByTestId('entities-tree').length).toBeGreaterThan(0);
+        // Glossary should be closed
         expect(screen.queryByTestId('glossary-tree')).not.toBeInTheDocument();
       });
     });
