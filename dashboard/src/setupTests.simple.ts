@@ -19,11 +19,6 @@
 
 import '@testing-library/jest-dom';
 
-// Polyfills for Node 12 / Jest jsdom compatibility
-import { TextEncoder, TextDecoder } from 'util';
-(global as any).TextEncoder = TextEncoder;
-(global as any).TextDecoder = TextDecoder;
-
 export {};
 
 
