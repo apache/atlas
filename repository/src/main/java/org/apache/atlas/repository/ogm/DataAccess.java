@@ -63,6 +63,12 @@ public class DataAccess {
         return this.load(obj);
     }
 
+    public <T extends AtlasBaseModelObject> T savePartial(T obj) throws AtlasBaseException {
+        savePartialNoLoad(obj);
+
+        return this.load(obj);
+    }
+
     public <T extends AtlasBaseModelObject> void saveNoLoad(T obj) throws AtlasBaseException {
         requireNonNull(obj, "Can't save a null object");
 
@@ -77,6 +83,34 @@ public class DataAccess {
 
             AtlasEntityWithExtInfo entityWithExtInfo      = dto.toEntityWithExtInfo(obj);
             EntityMutationResponse entityMutationResponse = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), false);
+
+            // Update GUID assignment for newly created entity
+            if (CollectionUtils.isNotEmpty(entityMutationResponse.getCreatedEntities())) {
+                String assignedGuid = entityMutationResponse.getGuidAssignments().get(obj.getGuid());
+
+                if (!obj.getGuid().equals(assignedGuid)) {
+                    obj.setGuid(assignedGuid);
+                }
+            }
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    public <T extends AtlasBaseModelObject> void savePartialNoLoad(T obj) throws AtlasBaseException {
+        requireNonNull(obj, "Can't save a null object");
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataAccess.savePartial()");
+            }
+
+            DataTransferObject<T> dto = dtoRegistry.get((Class<T>) obj.getClass());
+
+            AtlasEntityWithExtInfo entityWithExtInfo      = dto.toEntityWithExtInfo(obj);
+            EntityMutationResponse entityMutationResponse = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), true);
 
             // Update GUID assignment for newly created entity
             if (CollectionUtils.isNotEmpty(entityMutationResponse.getCreatedEntities())) {
