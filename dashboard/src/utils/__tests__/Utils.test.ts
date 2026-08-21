@@ -22,6 +22,7 @@
  * Coverage Target: 100% for Statements, Branches, Functions, and Lines
  */
 
+
 import {
 	customSortBy,
 	customSortByObjectKeys,
@@ -878,11 +879,52 @@ describe('Utils', () => {
 	});
 
 	describe('sanitizeHtmlContent', () => {
-		it('should sanitize HTML content', () => {
-			const html = '<script>alert("xss")</script><p>Safe content</p>';
-			const result = sanitizeHtmlContent(html);
+		it('should allow configured positive HTML tags and attributes', () => {
+			const safeHtml = `
+				<h1>Heading</h1>
+				<p>This is a <b>bold</b> and <em>italic</em> text.</p>
+				<ul><li>List item</li></ul>
+				<a href="https://example.com">Valid link</a>
+			`;
+			const result = sanitizeHtmlContent(safeHtml);
+			expect(result).toContain('<h1>Heading</h1>');
+			expect(result).toContain('<b>bold</b>');
+			expect(result).toContain('<em>italic</em>');
+			expect(result).toContain('<ul><li>List item</li></ul>');
+			expect(result).toContain('<a href="https://example.com">Valid link</a>');
+		});
+
+		it('should strip malicious and unconfigured tags (negative XSS cases)', () => {
+			const xssHtml = `
+				<script>alert("xss")</script>
+				<p>Safe content <iframe src="javascript:alert(1)"></iframe></p>
+				<a href="javascript:alert('xss')">Malicious link</a>
+				<img src="x" onerror="alert(1)" />
+				<div onclick="alert(1)">Click me</div>
+			`;
+			const result = sanitizeHtmlContent(xssHtml);
+			
+			// <script> is stripped
 			expect(result).not.toContain('<script>');
-			expect(result).toContain('<p>');
+			expect(result).not.toContain('alert("xss")');
+			
+			// <iframe> is stripped
+			expect(result).not.toContain('<iframe');
+			
+			// javascript: protocol is stripped in href
+			expect(result).not.toContain('javascript:alert');
+			expect(result).toContain('<a>Malicious link</a>');
+			
+			// <img> and onerror are stripped
+			expect(result).not.toContain('<img');
+			expect(result).not.toContain('onerror');
+			
+			// <div> is stripped (only its text remains)
+			expect(result).not.toContain('<div');
+			expect(result).toContain('Click me');
+			
+			// Allowed <p> remains
+			expect(result).toContain('<p>Safe content');
 		});
 	});
 

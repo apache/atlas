@@ -15,5 +15,22 @@
  * limitations under the License.
  */
 
-const sanitizeHtml = (html: string) => typeof html === 'string' ? html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') : html;
+const actualSanitizeModule = jest.requireActual('sanitize-html/index.js') as any;
+
+const getSanitizeFn = () => {
+    if (typeof actualSanitizeModule === 'function') return actualSanitizeModule;
+    if (actualSanitizeModule && typeof actualSanitizeModule.default === 'function') return actualSanitizeModule.default;
+    return null;
+};
+
+const sanitizeHtml = (html: string, _options?: Record<string, unknown>) => {
+  const sanitizeFn = getSanitizeFn();
+  
+  if (_options && typeof sanitizeFn === 'function') {
+    return sanitizeFn(html, _options);
+  }
+  
+  const htmlStr = typeof html === 'string' ? html : String(html);
+  return htmlStr.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+};
 export default sanitizeHtml;
