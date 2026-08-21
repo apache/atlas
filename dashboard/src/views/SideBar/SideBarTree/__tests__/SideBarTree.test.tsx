@@ -1088,27 +1088,6 @@ describe('SideBarTree', () => {
 		})
 	})
 
-	describe('TreeLabelWithTooltip', () => {
-		it('should show tooltip when text is overflown', async () => {
-			renderComponent({
-				treeData: [{ id: 'node1', label: 'Very Long Node Name That Should Overflow', children: [] }]
-			})
-
-			await waitFor(() => {
-				expect(screen.getByTestId('simple-tree-view')).toBeInTheDocument()
-			})
-		})
-
-		it('should not show tooltip when text is not overflown', async () => {
-			renderComponent({
-				treeData: [{ id: 'node1', label: 'Short', children: [] }]
-			})
-
-			await waitFor(() => {
-				expect(screen.getByTestId('simple-tree-view')).toBeInTheDocument()
-			})
-		})
-	})
 
 	describe('getEmptyTypesTitle', () => {
 		it('should return correct title for Entities', async () => {

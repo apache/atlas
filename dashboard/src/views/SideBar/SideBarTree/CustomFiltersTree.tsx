@@ -43,7 +43,7 @@ const CustomFiltersTree = ({ sideBarOpen, searchTerm, isPopover }: Props) => {
   const { savedSearchData }: any = useAppSelector(
     (state: any) => state.savedSearch
   );
-  const { relationshipSearch = {} } = globalSessionData || {};
+  const { relationshipSearch = false } = globalSessionData || {};
 
   const [savedSearchTypeData, setSavedSearchTypeData] = useState<
     SavedSearchArrType<true>

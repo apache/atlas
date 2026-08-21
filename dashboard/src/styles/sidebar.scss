@@ -20,7 +20,6 @@
 .sidebar-box {
   display: flex !important;
   height: 100%;
-  // margin-bottom: 20px;
 }
 
 .sidebar-appbar {
@@ -30,13 +29,13 @@
   box-shadow: none !important;
   z-index: 12000 !important;
   background: transparent !important;
-  color: #4a90e2 !important;
+  color: v.$text-blue !important;
   top: 60px !important;
 }
 
 .sidebar-toggle {
   margin: 0 !important;
-  border: 1px solid #4a90e2 !important;
+  border: 1px solid v.$text-blue !important;
   background: white !important;
 }
 
@@ -45,11 +44,8 @@
 }
 
 .sidebar-tree-box {
-  // min-height: 180px;
   flex-grow: 1;
-  // position: fixed;
   top: 128px;
-  // height: calc(100vh - 128px);
   width: inherit;
 }
 
@@ -68,14 +64,10 @@
   position: relative;
 }
 
-// .sidebar-refresh {
-//   height: 30px !important;
-//   width: 30px !important;
-//   padding: 6px;
-// }
+
 
 .sidebar-divider {
-  background-color: #ddd;
+  background-color: v.$sidebar-divider;
   height: 20px !important;
   align-self: center !important;
   margin: 0px 4px !important;
@@ -124,7 +116,7 @@
 }
 
 .modal-title {
-  color: #686868;
+  color: v.$text-grey;
   font-weight: 600 !important;
   font-size: 18px !important;
   display: flex;
@@ -132,7 +124,7 @@
 }
 
 .modal-error-title {
-  color: #686868;
+  color: v.$text-grey;
   font-weight: 600 !important;
   font-size: 18px !important;
   display: flex;
@@ -160,10 +152,11 @@
   font-size: 14px;
   line-height: 29px;
   height: 29px;
+  white-space: nowrap;
 }
 
 .sidebar-wrapper {
-  background: #034858 !important;
+  background: v.$sidebar-bg !important;
   top: 20px;
   height: 100%;
   overflow-y: auto;
@@ -198,10 +191,11 @@
 
 
 .sidebar-searchbar {
-  background: #f1f1f1 !important;
+  background: v.$sidebar-search-bg !important;
   display: flex;
   justify-content: space-between;
-  padding: 0 10px 0 16px;
+  align-items: center;
+  padding: 0 10px 0 8px;
   color: rgba(0, 0, 0, 0.7);
   font-size: 14px;
 
@@ -243,7 +237,7 @@ button.MuiButtonBase-root.MuiIconButton-root.MuiIconButton-sizeSmall.tree-item-m
 }
 
 .sidebar-icon-active {
-  border-left: 4px solid #2ccebb !important;
+  border-left: 4px solid v.$sidebar-active !important;
   background: rgba(255, 255, 255, 0.08) !important;
 }
 .layout-header-container {
@@ -301,7 +295,7 @@ button.MuiButtonBase-root.MuiIconButton-root.MuiIconButton-sizeSmall.tree-item-m
   bottom: 0px;
   z-index: 9;
   left: 0;
-  background: #034858;
+  background: v.$sidebar-bg;
   display: flex;
   align-items: center;
 }
@@ -319,7 +313,7 @@ button.MuiButtonBase-root.MuiIconButton-root.MuiIconButton-sizeSmall.tree-item-m
 }
 
 .sidebar-tree-highlight {
-  color: #D3D3D3;
+  color: v.$sidebar-highlight;
   font-weight: 600;
 }
 
@@ -329,6 +323,3 @@ button.MuiButtonBase-root.MuiIconButton-root.MuiIconButton-sizeSmall.tree-item-m
   opacity: 1;
 }
 
-.sidebar-tree-label-nowrap {
-  white-space: nowrap;
-}
