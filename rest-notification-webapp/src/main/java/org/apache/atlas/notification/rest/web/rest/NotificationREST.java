@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.authorize.AtlasAdminAccessRequest;
+import org.apache.atlas.authorize.AtlasNotificationRequest;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -91,7 +91,7 @@ public class NotificationREST {
     public void handleNotifications(@PathParam("topicName") String topicName, @Context HttpServletRequest request) throws AtlasBaseException, IOException {
         LOG.debug("Handling notifications for topic {}", topicName);
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.SERVICE_NOTIFICATION_POST), "post on rest notification service");
+        AtlasAuthorizationUtils.verifyAccess(new AtlasNotificationRequest(AtlasPrivilege.POST_NOTIFICATION, topicName), "post on notification topic ", topicName);
 
         if (!TOPICS.contains(topicName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_TOPIC_NAME, topicName);

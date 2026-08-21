@@ -66,6 +66,16 @@ public interface AtlasAuthorizer {
     }
 
     /**
+     * authorize operations on a notification topic
+     * @param request
+     * @return
+     * @throws AtlasAuthorizationException
+     */
+    default boolean isAccessAllowed(AtlasNotificationRequest request) throws AtlasAuthorizationException {
+        return false;
+    }
+
+    /**
      * scrub search-results to handle entities for which the user doesn't have access
      * @param request
      * @return

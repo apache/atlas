@@ -36,6 +36,12 @@
           "end2EntityId":             [ ".*" ],
           "end2EntityClassification": [ ".*" ]
         }
+      ],
+      "notificationPermissions": [
+        {
+          "privileges":  [ ".*" ],
+          "topicNames":  [ ".*" ]
+        }
       ]
     },
 
@@ -49,6 +55,15 @@
           "labels":                [ ".*" ],
           "businessMetadata":      [ ".*" ],
           "attributes":            [ ".*" ]
+        }
+      ]
+    },
+
+    "HIVE_HOOK_SERVICE": {
+      "notificationPermissions": [
+        {
+          "privileges":  [ "post-notification" ],
+          "topicNames":  [ "ATLAS_HOOK" ]
         }
       ]
     },
@@ -83,7 +98,8 @@
 
   "userRoles": {
     "admin": [ "ROLE_ADMIN" ],
-    "rangertagsync": [ "DATA_SCIENTIST" ]
+    "rangertagsync": [ "DATA_SCIENTIST" ],
+    "hivehook": [ "HIVE_HOOK_SERVICE" ]
   },
 
   "groupRoles": {

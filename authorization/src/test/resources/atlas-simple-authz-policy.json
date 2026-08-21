@@ -35,6 +35,12 @@
           "endTwoEntityId":             [ ".*" ],
           "endTwoEntityClassification": [ ".*" ]
         }
+      ],
+      "notificationPermissions": [
+        {
+          "privileges":  [ ".*" ],
+          "topicNames":  [ ".*" ]
+        }
       ]
     },
 
@@ -127,6 +133,15 @@
           "classifications":       [ "PII.*" ]
         }
       ]
+    },
+
+    "HIVE_HOOK_SERVICE": {
+      "notificationPermissions": [
+        {
+          "privileges":  [ "post-notification" ],
+          "topicNames":  [ "ATLAS_HOOK" ]
+        }
+      ]
     }
   },
 
@@ -134,7 +149,8 @@
     "admin":          [ "ROLE_ADMIN" ],
     "rangertagsync":  [ "DATA_SCIENTIST" ],
     "dataScientist1": [ "DATA_SCIENTIST"],
-    "dataSteward1":   [ "DATA_STEWARD"]
+    "dataSteward1":   [ "DATA_STEWARD"],
+    "hivehook":       [ "HIVE_HOOK_SERVICE" ]
   },
 
   "groupRoles": {
