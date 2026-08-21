@@ -112,7 +112,7 @@ const SideBarBody = (props: {
   const dispatch = useAppDispatch();
   const { handleOpenModal, handleOpenAboutModal } = props;
   const navigate = useNavigate();
-  const { relationshipSearch = {} } = globalSessionData || {};
+  const { relationshipSearch = false } = globalSessionData || {};
   const [open, setOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const { data: versionData, loading: isVersionLoading, error: versionError } = useAppSelector((state) => state.session?.versionData || {});
@@ -310,7 +310,7 @@ const SideBarBody = (props: {
             visibility: "visible !important",
           }),
           "& .MuiDrawer-paper": {
-            background: "#034858",
+            background: "var(--sidebar-bg)",
             boxSizing: "border-box",
             overflow: "hidden",
             position: "fixed",
@@ -335,7 +335,7 @@ const SideBarBody = (props: {
           sx={{
             height: "100vh",
             width: "100%",
-            backgroundColor: "#034858",
+            backgroundColor: "var(--sidebar-bg)",
           }}
         >
           {/* Collapsed sidebar logo and module icons */}
@@ -412,7 +412,7 @@ const SideBarBody = (props: {
                     maxHeight: popoverMaxHeight,
                     display: 'flex',
                     flexDirection: 'column',
-                    backgroundColor: '#034858',
+                    backgroundColor: 'var(--sidebar-bg)',
                     border: '1px solid rgba(255, 255, 255, 0.15)',
                     borderRadius: 1,
                     boxShadow: 6,
@@ -427,7 +427,7 @@ const SideBarBody = (props: {
                       left: -6,
                       width: 10,
                       height: 10,
-                      backgroundColor: '#034858',
+                      backgroundColor: 'var(--sidebar-bg)',
                       borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
                       borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
                       transform: 'rotate(45deg)',
@@ -458,7 +458,7 @@ const SideBarBody = (props: {
                 position: "sticky",
                 top: 0,
                 zIndex: 10,
-                backgroundColor: "#034858",
+                backgroundColor: "var(--sidebar-bg)",
                 flexShrink: 0,
               }}
             >
@@ -487,21 +487,16 @@ const SideBarBody = (props: {
               </Stack>
             </DrawerHeader>
           )}
-          <Paper
-            className="sidebar-wrapper"
-            sx={{
-              flex: 1,
-              overflowX: "hidden",
-              overflowY: "auto",
-              paddingBottom: "48px", // Added space so it doesn't touch the bottom toggle button
-              ...(!open && {
-                overflow: "hidden",
-                display: "none",
-              }),
-            }}
-          >
-            {open && (
-              <>
+          {open && (
+            <Paper
+              className="sidebar-wrapper"
+              sx={{
+                flex: 1,
+                overflowX: "hidden",
+                overflowY: "auto",
+                paddingBottom: "48px", // Added space so it doesn't touch the bottom toggle button
+              }}
+            >
                 <div
                   className="sidebar-treeview-container"
                   data-cy="r_entityTreeRender"
@@ -580,9 +575,8 @@ const SideBarBody = (props: {
                     <CustomFiltersTree sideBarOpen={open} searchTerm={searchTerm} />
                   </Suspense>
                 </div>
-              </>
-            )}
-          </Paper>
+            </Paper>
+          )}
           <div
             className={`sidebar-toggle-container ${open ? 'sidebar-toggle-open' : 'sidebar-toggle-closed'}`}
           >
