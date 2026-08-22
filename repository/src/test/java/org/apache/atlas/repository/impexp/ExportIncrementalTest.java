@@ -24,6 +24,7 @@ import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.AtlasTestBase;
@@ -49,6 +50,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,6 +80,24 @@ public class ExportIncrementalTest extends AtlasTestBase {
     private static final String EXPORT_REQUEST_INCREMENTAL   = "export-incremental";
     private static final String EXPORT_REQUEST_CONNECTED     = "export-connected";
 
+    private static final String FIRSTPARENT                  = "589a233a-f00e-4928-8efd-e7e72e30d370";
+    private static final String HIVEDB                       = "12eb7a9b-3b4d-48c9-902c-1fa2401823f7";
+    private static final String CTASLEVEL13                  = "6f1c413c-1b35-421a-aabd-d5f94873ddf0";
+    private static final String CTASLEVEL12                  = "58a68a94-67bb-488d-b111-3dfdd3a220eb";
+    private static final String CTASLEVEL11                  = "c6657df3-3bea-44cc-a356-a81c9e72f9c7";
+    private static final String SECONDPARENT                 = "0ce3573b-c535-4bf9-970e-4d37f01806ef";
+    private static final String CTLASLEVEL11_1               = "80a3ead2-6ad7-4881-bd85-5e8b4fdb01c5";
+    private static final String HDFS_PATH                    = "d9c50322-b130-405e-b560-2b15bcdddb97";
+    private static final String SECONDPARENT_PROCESS         = "f611662a-4ea6-4707-b7e9-02848fb28529";
+    private static final String CTASLEVEL13_PROCESS          = "da34b191-5ab9-4934-94c6-5a97d3e59608";
+    private static final String CTASLEVEL12_PROCESS          = "33fc0f3c-3522-4aaa-83c7-258752abe824";
+    private static final String CTASLEVEL11_1_PROCESS        = "1339782e-fde7-402b-8271-2f91a65396e9";
+    private static final String CTASLEVEL11_PROCESS          = "64cde929-195a-4c90-a921-b8c4d79ddfcf";
+
+    // Resolved after import
+    private static final String CTASLEVEL11_1_TABLE_QUALIFIED_NAME = "default.ctaslevel11_1@cm";
+    private static final String CTASLEVEL13_TABLE_QUALIFIED_NAME   = "default.ctaslevel13@cm";
+
     @Inject
     AtlasTypeRegistry typeRegistry;
 
@@ -96,11 +116,17 @@ public class ExportIncrementalTest extends AtlasTestBase {
     private AtlasClassificationType classificationTypeT1;
     private AtlasClassificationType classificationTypeT2;
     private AtlasClassificationType classificationTypeT3;
+
     private long                    nextTimestamp;
 
     @DataProvider(name = "hiveDb")
     public static Object[][] getData(ITestContext context) throws IOException, AtlasBaseException {
         return getZipSource("hive_db_lineage.zip");
+    }
+
+    @DataProvider(name = "classificationLineage")
+    public static Object[][] getClassificationData(ITestContext context) throws IOException, AtlasBaseException {
+        return getZipSource("classificationLineage.zip");
     }
 
     @BeforeClass
@@ -226,6 +252,11 @@ public class ExportIncrementalTest extends AtlasTestBase {
         runImportWithNoParameters(importService, stream);
     }
 
+    @Test(dataProvider = "classificationLineage")
+    public void classificationineageDb(InputStream stream) throws AtlasBaseException, IOException {
+        runImportWithNoParameters(importService, stream);
+    }
+
     @Test(dependsOnMethods = "importHiveDb")
     public void exportTableInrementalConnected() throws AtlasBaseException, IOException {
         InputStream source     = runExportWithParameters(exportService, getExportRequestForHiveTable(QUALIFIED_NAME_TABLE_LINEAGE, EXPORT_INCREMENTAL, 0, true));
@@ -245,6 +276,25 @@ public class ExportIncrementalTest extends AtlasTestBase {
 
         source = runExportWithParameters(exportService, getExportRequestForHiveTable(QUALIFIED_NAME_TABLE_LINEAGE, EXPORT_INCREMENTAL, nextTimestamp, true));
         verifyExpectedEntities(getFileNames(getZipSourceCopy(source)), GUID_TABLE_CTAS_2);
+    }
+
+    @Test(dependsOnMethods = "classificationineageDb")
+    public void exportTableInrementalConnectedClassificationLineage() throws AtlasBaseException, IOException {
+        InputStream source     = runExportWithParameters(exportService, getExportRequestForHiveTable(CTASLEVEL11_1_TABLE_QUALIFIED_NAME, EXPORT_INCREMENTAL, 0, false));
+        ZipSource   sourceCopy = getZipSourceCopy(source);
+        if  (entityStore.getClassification(FIRSTPARENT, "firstclassi") == null) {
+            entityStore.addClassification(Arrays.asList(FIRSTPARENT), new AtlasClassification("firstclassi", null));
+        }
+
+        verifyExpectedEntities(getFileNames(sourceCopy), HDFS_PATH, HIVEDB, CTLASLEVEL11_1, CTASLEVEL11_1_PROCESS, CTASLEVEL11_PROCESS, CTASLEVEL11, SECONDPARENT_PROCESS,
+                SECONDPARENT, FIRSTPARENT);
+
+        nextTimestamp = updateTimesampForNextIncrementalExport(sourceCopy);
+
+        entityStore.deleteClassification(FIRSTPARENT, "firstclassi", FIRSTPARENT);
+
+        source = runExportWithParameters(exportService, getExportRequestForHiveTable(CTASLEVEL11_1_TABLE_QUALIFIED_NAME, EXPORT_INCREMENTAL, nextTimestamp, false));
+        verifyExpectedEntities(getFileNames(getZipSourceCopy(source)), CTLASLEVEL11_1, CTASLEVEL11_1_PROCESS, CTASLEVEL11_PROCESS, CTASLEVEL11, SECONDPARENT);
     }
 
     @Test(dependsOnMethods = "importHiveDb")
