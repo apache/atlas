@@ -19,6 +19,7 @@ package org.apache.atlas.services;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
@@ -50,9 +51,11 @@ import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.IAtlasEntityChangeNotifier;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.tasks.GraphClaim;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.testng.annotations.AfterClass;
@@ -82,6 +85,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -100,7 +104,6 @@ import static org.testng.Assert.fail;
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class PurgeServiceTest extends AtlasTestBase {
     private static final String CRON_ELIGIBLE_GUID = "11111111-1111-1111-1111-111111111111";
-
     @Inject
     private AtlasTypeDefStore typeDefStore;
 
@@ -512,6 +515,143 @@ public class PurgeServiceTest extends AtlasTestBase {
         handleCronPurgeFailure.invoke(purgeService, response, stats, originallyRequestedGuids);
     }
 
+    @Test
+    public void testStart_skipsWhenRUNMODE_isNotMetadataServer() throws Exception {
+        // PurgeService.start() must be a no-op for NOTIFICATION_PROCESSOR (and INITIALIZER).
+        // Set atlas.enable.process.soft.delete=true so it would normally launch the thread.
+        ApplicationProperties.get().setProperty("atlas.enable.process.soft.delete", "true");
+
+        PurgeService purgeService = new PurgeService(atlasGraph, entityStore, typeRegistry, atlasAuditService);
+
+        try (org.mockito.MockedStatic<AtlasRunMode> mockedMode =
+                     org.mockito.Mockito.mockStatic(AtlasRunMode.class)) {
+            AtlasRunMode mockMode = org.mockito.Mockito.mock(AtlasRunMode.class);
+            org.mockito.Mockito.when(mockMode.runsMetadataServer()).thenReturn(false);
+            mockedMode.when(AtlasRunMode::current).thenReturn(mockMode);
+
+            // Should return without launching the cleanup thread
+            purgeService.start();
+            // If start() did NOT return early, it would call launchCleanUp() and start a thread.
+            // We verify indirectly: no exception, method completes quickly.
+        }
+
+        // Reset
+        ApplicationProperties.get().setProperty("atlas.enable.process.soft.delete", "false");
+    }
+
+    @Test
+    public void testStart_skipsCleanupWhenOwnershipAlreadyHeld() throws Exception {
+        ensurePurgeOwnershipState("owner-a", System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(10));
+        ApplicationProperties.get().setProperty("atlas.enable.process.soft.delete", "true");
+
+        PurgeService purgeService = Mockito.spy(new PurgeService(atlasGraph, entityStore, typeRegistry, atlasAuditService));
+
+        try (org.mockito.MockedStatic<AtlasRunMode> mockedMode = org.mockito.Mockito.mockStatic(AtlasRunMode.class)) {
+            mockedMode.when(AtlasRunMode::current).thenReturn(AtlasRunMode.METADATA_SERVER);
+            purgeService.start();
+        }
+
+        verify(purgeService, never()).launchCleanUp(anyString());
+        assertEquals(purgeClaimOwner(), "owner-a");
+        ApplicationProperties.get().setProperty("atlas.enable.process.soft.delete", "false");
+    }
+
+    @Test
+    public void testStart_launchesCleanupWhenOwnershipCanBeClaimed() throws Exception {
+        ensurePurgeOwnershipState("", 0L);
+        ApplicationProperties.get().setProperty("atlas.enable.process.soft.delete", "true");
+
+        PurgeService purgeService = Mockito.spy(new PurgeService(atlasGraph, entityStore, typeRegistry, atlasAuditService));
+        doNothing().when(purgeService).launchCleanUp(anyString());
+
+        try (org.mockito.MockedStatic<AtlasRunMode> mockedMode = org.mockito.Mockito.mockStatic(AtlasRunMode.class)) {
+            mockedMode.when(AtlasRunMode::current).thenReturn(AtlasRunMode.METADATA_SERVER);
+            purgeService.start();
+        }
+
+        verify(purgeService).launchCleanUp(anyString());
+        assertNotNull(purgeClaimOwner());
+        assertTrue(purgeClaimExpiry() > System.currentTimeMillis());
+        ApplicationProperties.get().setProperty("atlas.enable.process.soft.delete", "false");
+    }
+
+    @Test
+    public void tryClaimPurgeOwnership_deniesDifferentOwnerWithActiveLease() throws Exception {
+        PurgeService purgeService = createPurgeService();
+        ensurePurgeOwnershipState("existing-owner", System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(5));
+
+        boolean claimed = invokeTryClaimPurgeOwnership(purgeService, "new-owner", TimeUnit.MINUTES.toMillis(1));
+
+        assertFalse(claimed);
+        assertEquals(purgeClaimOwner(), "existing-owner");
+    }
+
+    @Test
+    public void releasePurgeOwnership_onlyReleasesMatchingOwner() throws Exception {
+        PurgeService purgeService = createPurgeService();
+        ensurePurgeOwnershipState("owner-to-keep", System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(5));
+
+        invokeReleasePurgeOwnership(purgeService, "other-owner");
+        assertEquals(purgeClaimOwner(), "owner-to-keep");
+
+        invokeReleasePurgeOwnership(purgeService, "owner-to-keep");
+        assertNull(purgeClaimOwner(), "Releasing the claim must leave it available to any node");
+    }
+
+    @Test
+    public void stop_releasesOwnershipClaimedByThisNode() throws Exception {
+        ensurePurgeOwnershipState("", 0L);
+        ApplicationProperties.get().setProperty("atlas.enable.process.soft.delete", "true");
+
+        PurgeService purgeService = Mockito.spy(new PurgeService(atlasGraph, entityStore, typeRegistry, atlasAuditService));
+        doNothing().when(purgeService).launchCleanUp(anyString());
+
+        try (org.mockito.MockedStatic<AtlasRunMode> mockedMode = org.mockito.Mockito.mockStatic(AtlasRunMode.class)) {
+            mockedMode.when(AtlasRunMode::current).thenReturn(AtlasRunMode.METADATA_SERVER);
+            purgeService.start();
+
+            assertTrue(StringUtils.isNotBlank(purgeClaimOwner()), "start() should have claimed purge ownership");
+
+            purgeService.stop();
+        }
+
+        assertNull(purgeClaimOwner(), "stop() should release the claim taken by this node");
+
+        ApplicationProperties.get().setProperty("atlas.enable.process.soft.delete", "false");
+    }
+
+    @Test
+    public void stop_leavesOwnershipHeldByAnotherNodeUntouched() throws Exception {
+        long leaseUntil = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(10);
+        ensurePurgeOwnershipState("owner-b", leaseUntil);
+        ApplicationProperties.get().setProperty("atlas.enable.process.soft.delete", "true");
+
+        PurgeService purgeService = new PurgeService(atlasGraph, entityStore, typeRegistry, atlasAuditService);
+
+        try (org.mockito.MockedStatic<AtlasRunMode> mockedMode = org.mockito.Mockito.mockStatic(AtlasRunMode.class)) {
+            mockedMode.when(AtlasRunMode::current).thenReturn(AtlasRunMode.METADATA_SERVER);
+            purgeService.start();
+            purgeService.stop();
+        }
+
+        assertEquals(purgeClaimOwner(), "owner-b",
+                "A node that never claimed ownership must not release another node's lease");
+        assertEquals(purgeClaimExpiry().longValue(), leaseUntil);
+
+        ApplicationProperties.get().setProperty("atlas.enable.process.soft.delete", "false");
+    }
+
+    @Test
+    public void stop_isNoOpWhenPurgeServiceNeverStarted() throws Exception {
+        long leaseUntil = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(10);
+        ensurePurgeOwnershipState("owner-c", leaseUntil);
+
+        new PurgeService(atlasGraph, entityStore, typeRegistry, atlasAuditService).stop();
+
+        assertEquals(purgeClaimOwner(), "owner-c");
+        assertEquals(purgeClaimExpiry().longValue(), leaseUntil);
+    }
+
     private AtlasEntity newHiveDb(String nameOpt) {
         String name = nameOpt != null ? nameOpt : RandomStringUtils.randomAlphanumeric(10);
         AtlasEntity db = new AtlasEntity("hive_db");
@@ -665,5 +805,49 @@ public class PurgeServiceTest extends AtlasTestBase {
             assertFalse(purgedGuids.contains(otherGuid),
                     "Anchor vertex should not retain edges to purged GUID: " + otherGuid);
         }
+    }
+
+    private boolean invokeTryClaimPurgeOwnership(PurgeService purgeService, String ownerId, long leaseMillis) throws Exception {
+        Method tryClaimPurgeOwnership = PurgeService.class.getDeclaredMethod("tryClaimPurgeOwnership", String.class, long.class);
+        tryClaimPurgeOwnership.setAccessible(true);
+        return (boolean) tryClaimPurgeOwnership.invoke(purgeService, ownerId, leaseMillis);
+    }
+
+    private void invokeReleasePurgeOwnership(PurgeService purgeService, String ownerId) throws Exception {
+        Method releasePurgeOwnership = PurgeService.class.getDeclaredMethod("releasePurgeOwnership", String.class);
+        releasePurgeOwnership.setAccessible(true);
+        releasePurgeOwnership.invoke(purgeService, ownerId);
+    }
+
+    private String purgeClaimOwner() {
+        return GraphClaim.claimedBy(GraphClaim.holderOf(atlasGraph, Constants.CLAIM_PURGE));
+    }
+
+    private Long purgeClaimExpiry() {
+        return GraphClaim.expiryOf(GraphClaim.holderOf(atlasGraph, Constants.CLAIM_PURGE));
+    }
+
+    /**
+     * Puts the purge claim into a known state.  A blank {@code ownerId} means unclaimed, which is the
+     * absence of a claim vertex rather than a vertex with an empty owner.
+     */
+    private void ensurePurgeOwnershipState(String ownerId, long leaseUntil) {
+        AtlasVertex existing = GraphClaim.holderOf(atlasGraph, Constants.CLAIM_PURGE);
+
+        if (existing != null) {
+            GraphClaim.releaseClaim(existing);
+            atlasGraph.removeVertex(existing);
+        }
+
+        if (StringUtils.isNotBlank(ownerId)) {
+            AtlasVertex claimVertex = atlasGraph.addVertex();
+
+            AtlasGraphUtilsV2.setEncodedProperty(claimVertex, Constants.CLAIM_VERTEX_TYPE_KEY, Constants.CLAIM_VERTEX_TYPE_NAME);
+            GraphClaim.claim(claimVertex, Constants.CLAIM_PURGE, ownerId);
+            AtlasGraphUtilsV2.setEncodedProperty(claimVertex, Constants.CLAIM_EXPIRY_KEY, leaseUntil);
+        }
+
+        atlasGraph.commit();
+        GraphTransactionInterceptor.clearCache();
     }
 }

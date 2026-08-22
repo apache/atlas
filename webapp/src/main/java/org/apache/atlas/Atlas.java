@@ -64,6 +64,12 @@ public final class Atlas {
     }
 
     public static void main(String[] args) throws Exception {
+        // Resolve RUN_MODE before Spring, Jetty, or any service is created
+        // so every handler sees the correct mode at class-load time.
+        AtlasRunMode            runMode            = AtlasRunMode.current();
+
+        LOG.info("Atlas starting in RUN_MODE={}", runMode);
+
         CommandLine             cmd                = parseArgs(args);
         PropertiesConfiguration buildConfiguration = new PropertiesConfiguration();
         FileHandler fileHandler = new FileHandler(buildConfiguration);

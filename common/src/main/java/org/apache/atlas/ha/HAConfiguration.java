@@ -21,6 +21,8 @@ package org.apache.atlas.ha;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +32,8 @@ import java.util.Objects;
  * A wrapper for getting configuration entries related to HighAvailability.
  */
 public final class HAConfiguration {
+    private static final Logger LOG = LoggerFactory.getLogger(HAConfiguration.class);
+
     public static final String ATLAS_SERVER_ZK_ROOT_DEFAULT               = "/apache_atlas";
     public static final String ATLAS_SERVER_HA_PREFIX                     = "atlas.server.ha.";
     public static final String ZOOKEEPER_PREFIX                           = "zookeeper.";
@@ -57,14 +61,13 @@ public final class HAConfiguration {
      * @return
      */
     public static boolean isHAEnabled(Configuration configuration) {
-        boolean ret;
+        boolean ret = false;
 
         if (configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)) {
             ret = configuration.getBoolean(ATLAS_SERVER_HA_ENABLED_KEY);
+            LOG.info("isHAEnabled: key '{}' found in config, value={}", ATLAS_SERVER_HA_ENABLED_KEY, ret);
         } else {
-            String[] ids = configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS);
-
-            ret = ids != null && ids.length > 1;
+            LOG.info("isHAEnabled: key '{}' NOT found in config, defaulting to false", ATLAS_SERVER_HA_ENABLED_KEY);
         }
 
         return ret;

@@ -108,6 +108,19 @@ public final class Constants {
     public static final String PATCH_TYPE_PROPERTY_KEY        = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "patch.type");
     public static final String PATCH_ACTION_PROPERTY_KEY      = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "patch.action");
     public static final String PATCH_STATE_PROPERTY_KEY       = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "patch.state");
+    public static final String PATCH_APPLIED_BY_PROPERTY_KEY  = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "patch.appliedBy");
+    public static final String PATCH_APPLIED_AT_PROPERTY_KEY  = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "patch.appliedAt");
+    public static final String PATCH_CLAIMED_BY_PROPERTY_KEY  = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "patch.claimedBy");
+    public static final String PATCH_CLAIM_STARTED_AT_KEY     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "patch.claimStartedAt");
+    /**
+     * TypeDef bootstrap claim keys.
+     */
+    public static final String TYPEDEF_BOOTSTRAP_FILE_KEY         = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "typedef.bootstrap.file");
+    public static final String TYPEDEF_BOOTSTRAP_STATE_KEY        = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "typedef.bootstrap.state");
+    public static final String TYPEDEF_BOOTSTRAP_CLAIMED_BY_KEY   = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "typedef.bootstrap.claimedBy");
+    public static final String TYPEDEF_BOOTSTRAP_CLAIM_STARTED_AT = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "typedef.bootstrap.claimStartedAt");
+    public static final String TYPEDEF_BOOTSTRAP_APPLIED_BY_KEY   = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "typedef.bootstrap.appliedBy");
+    public static final String TYPEDEF_BOOTSTRAP_APPLIED_AT_KEY   = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "typedef.bootstrap.appliedAt");
     /**
      * The homeId field is used when saving into Atlas a copy of an object that is being imported from another
      * repository. The homeId will be set to a String that identifies the other repository. The specific format
@@ -218,6 +231,68 @@ public final class Constants {
     public static final String TASK_START_TIME        = encodePropertyKey(TASK_PREFIX + "startTime");
     public static final String TASK_END_TIME          = encodePropertyKey(TASK_PREFIX + "endTime");
     public static final String TASK_TYPE_NAME         = INTERNAL_PROPERTY_KEY_PREFIX + "AtlasTaskDef";
+
+    /**
+     * Cluster-wide claim marker, used by {@code GraphClaimable} implementations to guarantee that a
+     * single node performs a deferred action at a time.
+     *
+     * <p>{@link #CLAIM_KEY} is registered as a globally unique property key, so the compare in the
+     * Compare-And-Swap is performed by the store rather than by the claimant.  Two nodes reading a
+     * claimable state and both writing their own marker is not a swap at all - neither write fails
+     * - and on the rdbms backend there is no locking exception to lose the race with.  Uniqueness
+     * of the claim name is what makes exactly one write succeed.
+     *
+     * <p>The claim name identifies what is being serialised; the holder vertex is whatever the
+     * claimant is working on (for tasks, the task vertex itself).
+     */
+    public static final String CLAIM_KEY       = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "claim");
+    public static final String CLAIM_OWNER_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "claimOwner");
+    public static final String CLAIM_TIME_KEY  = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "claimTime");
+
+    /**
+     * When a leased claim stops being honoured, so peers can take over from a holder that died.
+     *
+     * <p>The instant is stored rather than a duration because it is the <em>holder's</em> lease that
+     * decides when its claim lapses.  A peer must not apply its own idea of how long the work should
+     * take: a six-hour purge would be displaced by anyone checking with a two-minute threshold.
+     */
+    public static final String CLAIM_EXPIRY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "claimExpiry");
+
+    /**
+     * Marks a vertex that exists only to hold a claim.
+     *
+     * <p>Uniqueness discriminates between vertices, not between writers of one vertex: a second
+     * write of the same claim to the same vertex changes nothing, and a write of a different value
+     * drops the old uniqueness entry before adding its own.  So a claim recorded on a shared
+     * singleton vertex is not exclusive at all.  Claimants that have no natural per-claimant vertex
+     * (leases such as purge or index recovery, where the resource is a single vertex shared by
+     * every node) create one of these instead, and creation is what the store adjudicates.
+     */
+    public static final String CLAIM_VERTEX_TYPE_KEY  = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "claim_v_type");
+    public static final String CLAIM_VERTEX_TYPE_NAME = INTERNAL_PROPERTY_KEY_PREFIX + "AtlasClaim";
+
+    /** Claim names serialising each deferred action across the cluster. */
+    public static final String CLAIM_TASK_RUNNER  = "ATLAS_TASK_RUNNER";
+    public static final String CLAIM_PURGE        = "ATLAS_PURGE";
+    public static final String CLAIM_ASYNC_IMPORT = "ATLAS_ASYNC_IMPORT";
+    /**
+     * Guards loading the bootstrap models, which one node does for the whole cluster.
+     *
+     * <p>Sharing the model files out between nodes looked like the faster way to start, but a node
+     * only holds the types it loaded itself, so every node ended up with part of the schema.  Patches
+     * are claimed individually and land on whichever node takes them, and one that had not loaded the
+     * model failed against a type that was already in the store.  Loading is therefore done by one
+     * node, and the others read the finished types back.
+     */
+    public static final String CLAIM_TYPEDEF_BOOTSTRAP = "ATLAS_TYPEDEF_BOOTSTRAP";
+    /** Patches are claimed one at a time each, so unrelated patches can still proceed in parallel. */
+    public static final String CLAIM_PATCH_PREFIX = "ATLAS_PATCH:";
+
+    /**
+     * Guards index work.  Index initialization and index recovery share one claim deliberately, so
+     * that recovery never runs against a half-built index.
+     */
+    public static final String CLAIM_INDEX = "ATLAS_INDEX";
     /**
      * Index Recovery vertex property keys.
      */

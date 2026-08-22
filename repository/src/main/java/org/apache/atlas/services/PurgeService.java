@@ -21,6 +21,7 @@ package org.apache.atlas.services;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.annotation.AtlasService;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -32,6 +33,7 @@ import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.pc.WorkItemBuilder;
 import org.apache.atlas.pc.WorkItemConsumer;
 import org.apache.atlas.pc.WorkItemManager;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
@@ -42,10 +44,13 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.service.Service;
+import org.apache.atlas.tasks.GraphClaim;
+import org.apache.atlas.tasks.GraphLeaseClaimable;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -53,6 +58,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -73,7 +79,7 @@ import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
 @AtlasService
 @Order(9)
 @Component
-public class PurgeService implements Service {
+public class PurgeService implements Service, GraphLeaseClaimable {
     private static final Logger LOG       = LoggerFactory.getLogger(PurgeService.class);
     private static final Logger PERF_LOG  = AtlasPerfTracer.getPerfLogger("service.Purge");
     private final AtlasGraph            atlasGraph;
@@ -81,6 +87,8 @@ public class PurgeService implements Service {
     private final AtlasEntityStore      entityStore;
     private final AtlasTypeRegistry     typeRegistry;
     private final AtlasAuditService     auditService;
+    private final String                ownerId;
+    private volatile String             purgeOwnerId;
 
     private static final String  ENABLE_PROCESS_SOFT_DELETION         = "atlas.enable.process.soft.delete";
     private static final boolean ENABLE_PROCESS_SOFT_DELETION_DEFAULT = false;
@@ -98,6 +106,8 @@ public class PurgeService implements Service {
     private final        String  indexSearchPrefix                    = AtlasGraphUtilsV2.getIndexSearchPrefix();
     private static final int     DEFAULT_CLEANUP_BATCH_SIZE           = 1000;
     private static final String  CLEANUP_WORKERS_NAME                 = "Process-Cleanup-Worker";
+    private static final String  PURGE_OWNER_LEASE_MS                 = "atlas.purge.owner.lease.ms";
+    private static final long    DEFAULT_PURGE_OWNER_LEASE_MS         = 21600000L; // 6 hours
     private static final String  DELETED                              = "DELETED";
     private static final String  ACTIVE                               = "ACTIVE";
     private static final String  AND_STR                              = " AND ";
@@ -117,18 +127,56 @@ public class PurgeService implements Service {
         this.entityStore           = entityStore;
         this.typeRegistry          = typeRegistry;
         this.auditService          = auditService;
+        this.ownerId               = buildOwnerId();
+    }
+
+    @Override
+    public String claimName() {
+        return Constants.CLAIM_PURGE;
+    }
+
+    @Override
+    public AtlasGraph graph() {
+        return atlasGraph;
+    }
+
+    @Override
+    public String ownerId() {
+        return ownerId;
+    }
+
+    @Override
+    public long leaseMillis() {
+        return getPurgeOwnerLeaseMs();
     }
 
     @Override
     public void start() throws AtlasException {
+        // PurgeService is a metadata-plane operation — runs only on MONOLITHIC and
+        // METADATA_SERVER nodes.  NOTIFICATION_PROCESSOR handles hook messages only;
+        // INITIALIZER exits after init.  No purge work on either.
+        if (!AtlasRunMode.current().runsMetadataServer()) {
+            LOG.info("PurgeService.start(): RUN_MODE={} — skipping purge service",
+                    AtlasRunMode.current());
+            return;
+        }
         if (!getSoftDeletionFlag()) {
             LOG.info("==> cleanup not enabled");
             return;
         }
 
+        String ownerId = ownerId();
+        if (!tryClaimPurgeOwnership(ownerId, leaseMillis())) {
+            LOG.info("PurgeService.start(): purge ownership already held by another node; skipping cleanup launch. ownerId={}",
+                    ownerId);
+            return;
+        }
+
+        purgeOwnerId = ownerId;
+
         LOG.info("==> PurgeService.start()");
 
-        launchCleanUp();
+        launchCleanUp(ownerId);
 
         LOG.info("<== Launched the clean up thread");
     }
@@ -136,19 +184,28 @@ public class PurgeService implements Service {
     @Override
     public void stop() throws AtlasException {
         LOG.info("==> stopping the purge service");
+
+        // A shutdown while cleanup is still running would otherwise leave the lease pinned to this
+        // node's owner id until it expires. The restarted node builds a new owner id (the JVM id
+        // changes), so it would be denied ownership and no node would run cleanup until expiry.
+        releaseOwnedPurgeLease(purgeOwnerId);
     }
 
-    public void launchCleanUp() {
+    public void launchCleanUp(String ownerId) {
         LOG.info("==> launching the new thread");
 
         Thread thread = new Thread(
                 () -> {
                     long startTime = System.currentTimeMillis();
                     LOG.info("==> {} started", PROCESS_ENTITY_CLEANER_THREAD_NAME);
-                    softDeleteProcessEntities();
-                    LOG.info("==> exiting thread {}", PROCESS_ENTITY_CLEANER_THREAD_NAME);
-                    long endTime = System.currentTimeMillis();
-                    LOG.info("==> completed cleanup {} seconds !", (endTime - startTime) / 1000);
+                    try {
+                        softDeleteProcessEntities();
+                        LOG.info("==> exiting thread {}", PROCESS_ENTITY_CLEANER_THREAD_NAME);
+                        long endTime = System.currentTimeMillis();
+                        LOG.info("==> completed cleanup {} seconds !", (endTime - startTime) / 1000);
+                    } finally {
+                        releaseOwnedPurgeLease(ownerId);
+                    }
                 });
 
         thread.setName(PROCESS_ENTITY_CLEANER_THREAD_NAME);
@@ -607,5 +664,59 @@ public class PurgeService implements Service {
             return atlasProperties.getInt(CLEANUP_WORKER_BATCH_SIZE, DEFAULT_CLEANUP_WORKER_BATCH_SIZE);
         }
         return DEFAULT_CLEANUP_WORKER_BATCH_SIZE;
+    }
+
+    private String buildOwnerId() {
+        String runMode  = AtlasRunMode.current().name();
+        String hostName = System.getenv("HOSTNAME");
+        String jvmId    = ManagementFactory.getRuntimeMXBean().getName();
+
+        if (StringUtils.isBlank(hostName)) {
+            hostName = "unknown-host";
+        }
+
+        return runMode + "@" + hostName + "#" + jvmId;
+    }
+
+    private long getPurgeOwnerLeaseMs() {
+        if (atlasProperties != null) {
+            return atlasProperties.getLong(PURGE_OWNER_LEASE_MS, DEFAULT_PURGE_OWNER_LEASE_MS);
+        }
+
+        return DEFAULT_PURGE_OWNER_LEASE_MS;
+    }
+
+    /**
+     * Takes the cluster-wide purge claim, so that one node cleans up and the others stand down.
+     *
+     * <p>Deciding this among ourselves does not work: every node reads and writes the same ownership
+     * vertex, and a store will not refuse a write that leaves a field's value unchanged or replaces
+     * it.  Two nodes reading "unowned" together would both write their own id and both proceed.  So
+     * the claim is put where the store can adjudicate it - see {@link GraphClaim}.
+     */
+    private boolean tryClaimPurgeOwnership(String ownerId, long leaseMillis) {
+        boolean claimed = GraphClaim.claimLeaseAndCommit(atlasGraph, claimName(), ownerId, leaseMillis);
+
+        if (!claimed) {
+            LOG.info("Purge ownership claim denied ownerId={}", ownerId);
+        }
+
+        return claimed;
+    }
+
+    private void releaseOwnedPurgeLease(String ownerId) {
+        if (StringUtils.isBlank(ownerId)) {
+            return;
+        }
+
+        if (ownerId.equals(purgeOwnerId)) {
+            purgeOwnerId = null;
+        }
+
+        releasePurgeOwnership(ownerId);
+    }
+
+    private void releasePurgeOwnership(String ownerId) {
+        GraphClaim.releaseLeaseAndCommit(atlasGraph, claimName(), ownerId);
     }
 }

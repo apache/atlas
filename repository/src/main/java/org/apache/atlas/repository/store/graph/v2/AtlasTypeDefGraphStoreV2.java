@@ -85,6 +85,24 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         return RequestContext.getCurrentUser();
     }
 
+    @Override
+    protected TypeCategory typeCategoryInStore(String typeName) {
+        AtlasVertex vertex = findTypeVertexByName(typeName);
+
+        if (vertex == null) {
+            return null;
+        }
+
+        // Depending on the backend the category comes back as the enum or as its name.
+        Object category = vertex.getProperty(TYPE_CATEGORY_PROPERTY_KEY, Object.class);
+
+        if (category instanceof TypeCategory) {
+            return (TypeCategory) category;
+        }
+
+        return category == null ? null : TypeCategory.valueOf(category.toString());
+    }
+
     @VisibleForTesting
     public AtlasVertex findTypeVertexByName(String typeName) {
         Iterator<?> results = atlasGraph.query().has(VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE)
