@@ -60,8 +60,8 @@ public class ActiveActiveChangedClassesLoadIT {
             "org.apache.atlas.server.common.filters.ActiveServerFilter",
             "org.apache.atlas.web.security.AtlasSecurityConfig",
             "org.apache.atlas.web.service.AtlasActivationService",
-            "org.apache.atlas.web.service.EmbeddedServer",
-            "org.apache.atlas.web.service.ServiceState"
+            "org.apache.atlas.server.common.service.EmbeddedServer",
+            "org.apache.atlas.server.common.service.ServiceState"
     };
 
     @Test
