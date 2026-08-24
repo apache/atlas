@@ -190,6 +190,9 @@ describe('About', () => {
 		// Verify no skeleton is stuck
 		expect(screen.queryByTestId('skeleton-loader')).not.toBeInTheDocument()
 		
+		// Verify exact error message
+		expect(screen.getByText('Unknown (failed to fetch version)')).toBeInTheDocument()
+		
 		// Verify no crash, UI still renders
 		expect(screen.getByText(/Version:/i)).toBeInTheDocument()
 		expect(screen.getByText('Get involved!')).toBeInTheDocument()

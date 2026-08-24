@@ -34,14 +34,14 @@ const DisplayImage = ({
   avatarDisplay,
   isProcess
 }: DisplayImageProps) => {
-  const entityData = { ...entity, isProcess: isProcess };
+  const entityData = { ...entity, isProcess };
   
   const primaryUrl = getEntityIconPath({ entityData }) || "";
   const fallbackUrl = getEntityIconPath({ entityData, errorUrl: primaryUrl }) || "";
 
   const handleError = (e: SyntheticEvent<HTMLImageElement, Event>) => {
     const target = e.currentTarget;
-    if (target.src !== fallbackUrl) {
+    if (!target.src.endsWith(fallbackUrl)) {
       target.onerror = null;
       target.src = fallbackUrl;
     }
@@ -52,8 +52,8 @@ const DisplayImage = ({
       {avatarDisplay === undefined ? (
         <img
           className="search-result-table-img"
-          id={entity.guid as string}
-          data-cy={entity.guid as string}
+          id={entity.guid ? String(entity.guid) : undefined}
+          data-cy={entity.guid ? String(entity.guid) : undefined}
           src={primaryUrl}
           alt="Entity Icon"
           onError={handleError}
