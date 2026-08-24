@@ -51,9 +51,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -63,8 +65,9 @@ import static org.apache.atlas.TestRelationshipUtilsV2.MANAGER_TYPE;
 import static org.apache.atlas.TestRelationshipUtilsV2.getDepartmentEmployeeTypes;
 import static org.apache.atlas.TestUtilsV2.COLUMNS_ATTR_NAME;
 import static org.apache.atlas.TestUtilsV2.NAME;
-import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
 import static org.apache.atlas.type.AtlasTypeUtil.getAtlasObjectId;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadBaseModel;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadHiveModel;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -78,6 +81,14 @@ import static org.testng.Assert.assertTrue;
  */
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class DeleteHandlerV1Test extends AtlasTestBase {
+    private static final String HIVE_DB_TYPE             = "hive_db";
+    private static final String HIVE_TABLE_TYPE          = "hive_table";
+    private static final String HIVE_COLUMN_TYPE         = "hive_column";
+    private static final String HIVE_PROCESS_TYPE        = "hive_process";
+    private static final String HIVE_COLUMN_LINEAGE_TYPE = "hive_column_lineage";
+    private static final String HIVE_STORAGE_DESC_TYPE   = "hive_storagedesc";
+    private static final String HIVE_CLUSTER             = "cl1";
+
     @Inject
     private AtlasTypeRegistry typeRegistry;
 
@@ -344,25 +355,11 @@ public class DeleteHandlerV1Test extends AtlasTestBase {
      */
     @Test
     public void testDeleteTableWithHollowOwnedColumnVertex() throws Exception {
-        ensureHiveTypesRegistered();
+        String prefix = "hollow_owned_col";
 
-        AtlasEntity dbEntity = TestUtilsV2.createDBEntityV2().getEntity();
-        AtlasEntity tableEntity = TestUtilsV2.createTableEntity(dbEntity, "hollow_col_table");
-        AtlasEntity col1 = TestUtilsV2.createColumnEntity(tableEntity, "col1");
-        AtlasEntity col2 = TestUtilsV2.createColumnEntity(tableEntity, "col2");
-        tableEntity.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(getAtlasObjectId(col1), getAtlasObjectId(col2)));
-
-        AtlasEntitiesWithExtInfo batch = new AtlasEntitiesWithExtInfo(tableEntity);
-        batch.addReferredEntity(dbEntity);
-        batch.addReferredEntity(col1);
-        batch.addReferredEntity(col2);
-
-        initRequestContext();
-        EntityMutationResponse createResp = entityStore.createOrUpdate(new AtlasEntityStream(batch), false);
-        assertNotNull(createResp);
-
-        String tableGuid = createResp.getFirstCreatedEntityByTypeName(TABLE_TYPE).getGuid();
-        String col2Guid  = getGuidForName(createResp, "col2");
+        EntityMutationResponse createResp = createHiveTableWithOwnedColumns(prefix, "tbl");
+        String                 tableGuid  = getGuidForQualifiedName(createResp, qualifiedTableName(prefix, "tbl"));
+        String                 col2Guid   = getGuidForQualifiedName(createResp, qualifiedColumnName(prefix, "tbl", "col2"));
         assertNotNull(tableGuid);
         assertNotNull(col2Guid);
 
@@ -381,14 +378,247 @@ public class DeleteHandlerV1Test extends AtlasTestBase {
         assertTrue(deleteResp.getDeletedEntities().stream().anyMatch(h -> tableGuid.equals(h.getGuid())));
     }
 
+    /**
+     * Delete must succeed when an upstream process vertex on {@code PROCESS_OUTPUTS_EDGE}
+     * is an empty reference vertex.
+     */
+    @Test
+    public void testDeleteOutputTableWhenProcessVertexIsHollow() throws Exception {
+        String                 prefix      = "hollow_proc_out";
+        long                   timestamp   = System.currentTimeMillis();
+        EntityMutationResponse createResp  = createHiveProcessOutputLineage(prefix, timestamp);
+        String                 processGuid = getGuidForQualifiedName(createResp, qualifiedProcessName(prefix, timestamp));
+        String                 outputGuid  = getGuidForQualifiedName(createResp, qualifiedTableName(prefix, "dst"));
+        assertNotNull(processGuid);
+        assertNotNull(outputGuid);
+
+        AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(processGuid);
+        assertNotNull(processVertex);
+        stripAllVertexProperties(processVertex);
+        assertTrue(processVertex.getPropertyKeys().isEmpty());
+
+        initRequestContext();
+        EntityMutationResponse deleteResp = entityStore.deleteById(outputGuid);
+        assertNotNull(deleteResp);
+        assertNotNull(deleteResp.getDeletedEntities());
+        assertTrue(deleteResp.getDeletedEntities().stream().anyMatch(h -> outputGuid.equals(h.getGuid())));
+    }
+
+    /**
+     * Process delete must succeed when a linked column-lineage vertex is an empty reference vertex.
+     */
+    @Test
+    public void testDeleteProcessSkipsHollowColumnLineageVertex() throws Exception {
+        String                 prefix            = "hollow_col_lineage";
+        long                   timestamp           = System.currentTimeMillis();
+        EntityMutationResponse createResp        = createHiveProcessWithColumnLineage(prefix, timestamp);
+        String                 processGuid       = getGuidForQualifiedName(createResp, qualifiedProcessName(prefix, timestamp));
+        String                 columnLineageGuid = getGuidForQualifiedName(createResp,
+                prefix + "_column_lineage@" + HIVE_CLUSTER + ":" + timestamp);
+        assertNotNull(processGuid);
+        assertNotNull(columnLineageGuid);
+
+        AtlasVertex columnLineageVertex = AtlasGraphUtilsV2.findByGuid(columnLineageGuid);
+        assertNotNull(columnLineageVertex);
+        stripAllVertexProperties(columnLineageVertex);
+        assertTrue(columnLineageVertex.getPropertyKeys().isEmpty());
+
+        initRequestContext();
+        EntityMutationResponse deleteResp = entityStore.deleteById(processGuid);
+        assertNotNull(deleteResp);
+        assertNotNull(deleteResp.getDeletedEntities());
+        assertTrue(deleteResp.getDeletedEntities().stream().anyMatch(h -> processGuid.equals(h.getGuid())));
+    }
+
+    /**
+     * Subordinate delete must succeed when the manager endpoint on a relationship edge
+     * is an empty reference vertex ({@link DeleteHandlerV1#deleteEdgeReference} skips inverse update).
+     */
+    @Test
+    public void testDeleteSubordinateWhenManagerVertexIsHollow() throws Exception {
+        EntityMutationResponse createResp = createManagerWithSubordinates("hollow_mgr", 1);
+        String                 subGuid    = getGuidForName(createResp, "hollow_mgr_sub1");
+        String                 mgrGuid    = getGuidForName(createResp, "hollow_mgr_mgr");
+
+        assertNotNull(subGuid);
+        assertNotNull(mgrGuid);
+
+        AtlasVertex managerVertex = AtlasGraphUtilsV2.findByGuid(mgrGuid);
+        assertNotNull(managerVertex);
+        stripAllVertexProperties(managerVertex);
+        assertTrue(managerVertex.getPropertyKeys().isEmpty());
+
+        initRequestContext();
+        EntityMutationResponse deleteResp = entityStore.deleteById(subGuid);
+        assertNotNull(deleteResp);
+        assertNotNull(deleteResp.getDeletedEntities());
+        assertTrue(deleteResp.getDeletedEntities().stream().anyMatch(h -> subGuid.equals(h.getGuid())));
+    }
+
     // ---------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------
 
-    private void ensureHiveTypesRegistered() throws Exception {
-        if (typeRegistry.getEntityTypeByName(TABLE_TYPE) == null) {
-            typeDefStore.createTypesDef(TestUtilsV2.defineHiveTypes());
+    private void ensureHiveModelRegistered() throws Exception {
+        if (typeRegistry.getEntityTypeByName(HIVE_DB_TYPE) == null) {
+            loadBaseModel(typeDefStore, typeRegistry);
+            loadHiveModel(typeDefStore, typeRegistry);
         }
+    }
+
+    private EntityMutationResponse createHiveTableWithOwnedColumns(String prefix, String tableName) throws Exception {
+        ensureHiveModelRegistered();
+
+        AtlasEntity db     = createHiveDb(prefix);
+        AtlasEntity sd     = createHiveStorageDesc(prefix + "_" + tableName);
+        AtlasEntity table  = createHiveTable(prefix, tableName, db, sd);
+        AtlasEntity col1   = createHiveColumn(prefix, tableName, "col1", table);
+        AtlasEntity col2   = createHiveColumn(prefix, tableName, "col2", table);
+
+        table.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(getAtlasObjectId(col1), getAtlasObjectId(col2)));
+
+        AtlasEntitiesWithExtInfo batch = new AtlasEntitiesWithExtInfo(table);
+        batch.addReferredEntity(db);
+        batch.addReferredEntity(sd);
+        batch.addReferredEntity(col1);
+        batch.addReferredEntity(col2);
+
+        return createEntities(batch);
+    }
+
+    private EntityMutationResponse createHiveProcessOutputLineage(String prefix, long timestamp) throws Exception {
+        ensureHiveModelRegistered();
+
+        AtlasEntity db          = createHiveDb(prefix);
+        AtlasEntity srcSd       = createHiveStorageDesc(prefix + "_src_sd");
+        AtlasEntity dstSd       = createHiveStorageDesc(prefix + "_dst_sd");
+        AtlasEntity srcTable    = createHiveTable(prefix, "src", db, srcSd);
+        AtlasEntity dstTable    = createHiveTable(prefix, "dst", db, dstSd);
+        AtlasEntity process     = createHiveProcess(prefix, timestamp,
+                Collections.singletonList(srcTable), Collections.singletonList(dstTable));
+
+        AtlasEntitiesWithExtInfo batch = new AtlasEntitiesWithExtInfo(process);
+        batch.addReferredEntity(db);
+        batch.addReferredEntity(srcSd);
+        batch.addReferredEntity(dstSd);
+        batch.addReferredEntity(srcTable);
+        batch.addReferredEntity(dstTable);
+
+        return createEntities(batch);
+    }
+
+    private EntityMutationResponse createHiveProcessWithColumnLineage(String prefix, long timestamp) throws Exception {
+        ensureHiveModelRegistered();
+
+        String      columnLineageQn = prefix + "_column_lineage@" + HIVE_CLUSTER + ":" + timestamp;
+        AtlasEntity process         = createHiveProcess(prefix, timestamp, Collections.emptyList(), Collections.emptyList());
+        AtlasEntity columnLineage   = new AtlasEntity(HIVE_COLUMN_LINEAGE_TYPE);
+
+        columnLineage.setAttribute(NAME, prefix + "_column_lineage");
+        columnLineage.setAttribute("qualifiedName", columnLineageQn);
+        columnLineage.setAttribute("depenendencyType", "SIMPLE");
+        columnLineage.setRelationshipAttribute("query", getAtlasObjectId(process));
+
+        AtlasEntitiesWithExtInfo batch = new AtlasEntitiesWithExtInfo(columnLineage);
+        batch.addReferredEntity(process);
+
+        return createEntities(batch);
+    }
+
+    private AtlasEntity createHiveDb(String prefix) {
+        AtlasEntity db = new AtlasEntity(HIVE_DB_TYPE);
+
+        db.setAttribute(NAME, prefix + "_db");
+        db.setAttribute("qualifiedName", prefix + "_db@" + HIVE_CLUSTER);
+        db.setAttribute("clusterName", HIVE_CLUSTER);
+
+        return db;
+    }
+
+    private AtlasEntity createHiveStorageDesc(String name) {
+        AtlasEntity sd = new AtlasEntity(HIVE_STORAGE_DESC_TYPE);
+
+        sd.setAttribute("qualifiedName", name + "@" + HIVE_CLUSTER);
+        sd.setAttribute("compressed", false);
+
+        return sd;
+    }
+
+    private AtlasEntity createHiveTable(String prefix, String tableName, AtlasEntity db, AtlasEntity sd) {
+        AtlasEntity table = new AtlasEntity(HIVE_TABLE_TYPE);
+
+        table.setAttribute(NAME, tableName);
+        table.setAttribute("qualifiedName", qualifiedTableName(prefix, tableName));
+        table.setRelationshipAttribute("db", getAtlasObjectId(db));
+        table.setRelationshipAttribute("sd", getAtlasObjectId(sd));
+        sd.setRelationshipAttribute("table", getAtlasObjectId(table));
+
+        return table;
+    }
+
+    private AtlasEntity createHiveColumn(String prefix, String tableName, String columnName, AtlasEntity table) {
+        AtlasEntity column = new AtlasEntity(HIVE_COLUMN_TYPE);
+
+        column.setAttribute(NAME, columnName);
+        column.setAttribute("type", "int");
+        column.setAttribute("qualifiedName", qualifiedColumnName(prefix, tableName, columnName));
+        column.setRelationshipAttribute("table", getAtlasObjectId(table));
+
+        return column;
+    }
+
+    private AtlasEntity createHiveProcess(String prefix, long timestamp, List<AtlasEntity> inputs, List<AtlasEntity> outputs) {
+        AtlasEntity process = new AtlasEntity(HIVE_PROCESS_TYPE);
+
+        process.setAttribute(NAME, prefix + "_process");
+        process.setAttribute("qualifiedName", qualifiedProcessName(prefix, timestamp));
+        process.setAttribute("startTime", new Date(timestamp));
+        process.setAttribute("endTime", new Date(timestamp + 1000));
+        process.setAttribute("userName", TestUtilsV2.TEST_USER);
+        process.setAttribute("operationType", "CREATETABLE_AS_SELECT");
+        process.setAttribute("queryText", "select 1");
+        process.setAttribute("queryPlan", "Not Supported");
+        process.setAttribute("queryId", prefix + "_query");
+
+        if (!inputs.isEmpty()) {
+            process.setRelationshipAttribute("inputs",
+                    inputs.stream().map(e -> getAtlasObjectId(e)).collect(Collectors.toList()));
+        }
+
+        if (!outputs.isEmpty()) {
+            process.setRelationshipAttribute("outputs",
+                    outputs.stream().map(e -> getAtlasObjectId(e)).collect(Collectors.toList()));
+        }
+
+        return process;
+    }
+
+    private EntityMutationResponse createEntities(AtlasEntitiesWithExtInfo batch) throws Exception {
+        initRequestContext();
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(batch), false);
+        assertNotNull(response);
+        return response;
+    }
+
+    private String qualifiedTableName(String prefix, String tableName) {
+        return prefix + "_db." + tableName + "@" + HIVE_CLUSTER;
+    }
+
+    private String qualifiedColumnName(String prefix, String tableName, String columnName) {
+        return prefix + "_db." + tableName + "." + columnName + "@" + HIVE_CLUSTER;
+    }
+
+    private String qualifiedProcessName(String prefix, long timestamp) {
+        return prefix + "_process@" + HIVE_CLUSTER + ":" + timestamp;
+    }
+
+    private String getGuidForQualifiedName(EntityMutationResponse response, String qualifiedName) {
+        for (AtlasEntityHeader header : response.getCreatedEntities()) {
+            if (qualifiedName.equals(header.getAttribute("qualifiedName"))) {
+                return header.getGuid();
+            }
+        }
+        return null;
     }
 
     private void stripAllVertexProperties(AtlasVertex vertex) {
