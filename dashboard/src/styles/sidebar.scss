@@ -323,3 +323,120 @@ button.MuiButtonBase-root.MuiIconButton-root.MuiIconButton-sizeSmall.tree-item-m
   opacity: 1;
 }
 
+
+/* Refactored from SideBarBody.tsx sx props */
+.sidebar-drawer {
+  flex-shrink: 0;
+  min-height: calc(100vh - 64px);
+  min-width: 60px;
+  transition: width 0.2s;
+
+  &.open {
+    width: 20%;
+  }
+
+  &.closed {
+    width: 60px;
+    transform: none !important;
+    visibility: visible !important;
+  }
+
+  .MuiDrawer-paper {
+    background: v.$sidebar-bg;
+    box-sizing: border-box;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    transition: width 0.2s;
+  }
+
+  &.open .MuiDrawer-paper {
+    width: 20%;
+  }
+
+  &.closed .MuiDrawer-paper {
+    width: 60px;
+    transform: none !important;
+    visibility: visible !important;
+  }
+}
+
+.sidebar-popover-paper {
+  margin-left: 16px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  background-color: v.$sidebar-bg !important;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  box-shadow: 0px 3px 5px -1px rgba(0,0,0,0.2), 0px 6px 10px 0px rgba(0,0,0,0.14), 0px 1px 18px 0px rgba(0,0,0,0.12);
+  padding-bottom: 16px;
+  overflow: visible !important;
+
+  &::before {
+    content: "";
+    display: block;
+    position: absolute;
+    left: -6px;
+    width: 10px;
+    height: 10px;
+    background-color: v.$sidebar-bg !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.15);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    transform: rotate(45deg);
+    z-index: 1;
+  }
+
+  &.top-half::before {
+    top: 16px;
+    bottom: auto;
+  }
+
+  &.bottom-half::before {
+    top: auto;
+    bottom: 16px;
+  }
+}
+
+.sidebar-module-box {
+  display: flex;
+  justify-content: center;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  background: transparent;
+}
+
+.sidebar-module-btn {
+  color: rgba(255, 255, 255, 0.6) !important;
+  &:hover {
+    color: white !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+  }
+  &.active {
+    color: white !important;
+  }
+}
+
+.sidebar-version-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  padding-left: 4px;
+}
+
+.sidebar-version-text {
+  color: rgba(255, 255, 255, 0.6) !important;
+  padding-left: 4px !important;
+}
+
+.sidebar-version-loader {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.sidebar-stack {
+  height: 100vh;
+  width: 100%;
+  background-color: v.$sidebar-bg;
+}

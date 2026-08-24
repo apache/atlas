@@ -18,6 +18,9 @@
 /** Simplified test setup file for Node 12 compatibility */
 
 import '@testing-library/jest-dom';
+import { TextEncoder, TextDecoder } from 'util';
+
+Object.assign(global, { TextDecoder, TextEncoder });
 
 export {};
 
