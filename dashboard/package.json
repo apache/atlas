@@ -3,9 +3,6 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "engines": {
-    "node": ">=20"
-  },
   "scripts": {
     "postinstall": "node scripts/ensure-native-deps.mjs",
     "dev": "vite",
