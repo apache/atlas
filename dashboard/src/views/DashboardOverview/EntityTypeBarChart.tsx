@@ -47,6 +47,9 @@ import {
 
 const ACTIVE_COLOR = CHART_BAR_ACTIVE_BLUE;
 const DELETED_COLOR = ENTITY_STATUS_DONUT_COLORS.Deleted;
+const RESPONSIVE_CONTAINER_STYLE = { cursor: "pointer" };
+const LABEL_LIST_STYLE = { fontSize: 12, fontWeight: 500, fill: ACTIVE_COLOR };
+const getTickGStyle = (value: string | undefined) => ({ cursor: value ? "pointer" : "default" });
 
 interface EntityTypeBarChartProps {
 	entity: Record<string, unknown> | undefined;
@@ -213,7 +216,7 @@ const EntityTypeBarChart = memo(
 								</Typography>
 							</Stack>
 						</Stack>
-						<ResponsiveContainer width="100%" height="100%" style={{ cursor: "pointer" }}>
+						<ResponsiveContainer width="100%" height="100%" style={RESPONSIVE_CONTAINER_STYLE}>
 							<BarChart data={data} layout="vertical" margin={{ ...HORIZONTAL_BAR_CHART_MARGIN }}>
 								<CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
 								<XAxis
@@ -249,7 +252,7 @@ const EntityTypeBarChart = memo(
 											<g
 												transform={`translate(${x},${y})`}
 												onClick={() => (value ? handleLabelClick(value) : undefined)}
-												style={{ cursor: value ? "pointer" : "default" }}
+												style={getTickGStyle(value)}
 												role={value ? "button" : undefined}
 												tabIndex={value ? 0 : undefined}
 												onKeyDown={
@@ -305,12 +308,8 @@ const EntityTypeBarChart = memo(
 										dataKey="count"
 										position="right"
 										offset={10}
-										formatter={(v: number) => numberFormatWithComma(v)}
-										style={{
-											fontSize: 12,
-											fontWeight: 500,
-											fill: ACTIVE_COLOR,
-										}}
+										formatter={(v: unknown) => numberFormatWithComma(Number(v))}
+										style={LABEL_LIST_STYLE}
 									/>
 									{data.map((_, index) => (
 										<Cell key={`deleted-${index}`} fill={DELETED_COLOR} />

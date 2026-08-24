@@ -165,15 +165,20 @@ jest.mock('recharts', () => ({
 	YAxis: ({ domain, tickFormatter }: any) => <div data-testid="y-axis" data-domain={JSON.stringify(domain)} data-tick-formatter={tickFormatter ? tickFormatter(10) : ''} />,
 	CartesianGrid: () => <div data-testid="cartesian-grid" />,
 	Tooltip: ({ content }: any) => <div data-testid="tooltip">{content}</div>,
-	Legend: ({ onClick, payload }: any) => (
-		<div data-testid="legend" onClick={() => onClick && onClick({ id: 'Active' })}>
-			{payload?.map((p: any) => (
-				<div key={p.id} data-testid={`legend-${p.id}`} data-active={p.inactive === false}>
-					{p.value}
-				</div>
-			))}
-		</div>
-	)
+	Legend: ({ onClick, payload, content }: any) => {
+		if (content) {
+			return <div data-testid="legend" onClick={() => onClick && onClick({ id: 'Active' })}>{content()}</div>;
+		}
+		return (
+			<div data-testid="legend" onClick={() => onClick && onClick({ id: 'Active' })}>
+				{payload?.map((p: any) => (
+					<div key={p.id} data-testid={`legend-${p.id}`} data-active={p.inactive === false}>
+						{p.value}
+					</div>
+				))}
+			</div>
+		);
+	}
 }))
 
 jest.mock('../StatsGraphs/GraphCustomTooltip', () => ({
@@ -486,7 +491,7 @@ describe('EntityStats', () => {
 		render(<EntityStats {...defaultProps} />)
 
 		await waitFor(() => {
-			const legend = screen.getByTestId('legend')
+			const legend = screen.getByTestId('legend-Active')
 			if (legend) {
 				fireEvent.click(legend)
 			}
@@ -502,7 +507,7 @@ describe('EntityStats', () => {
 		render(<EntityStats {...defaultProps} />)
 
 		await waitFor(() => {
-			const legend = screen.getByTestId('legend')
+			const legend = screen.getByTestId('legend-Active')
 			if (legend) {
 				const mockOnClick = jest.fn()
 				legend.onclick = mockOnClick
@@ -515,7 +520,7 @@ describe('EntityStats', () => {
 		render(<EntityStats {...defaultProps} />)
 
 		await waitFor(() => {
-			const legend = screen.getByTestId('legend')
+			const legend = screen.getByTestId('legend-Active')
 			if (legend) {
 				const mockOnClick = jest.fn((e: any) => {
 					if (e && !e.id) {
@@ -1043,7 +1048,7 @@ describe('EntityStats', () => {
 		render(<EntityStats {...defaultProps} />)
 
 		await waitFor(() => {
-			const legend = screen.getByTestId('legend')
+			const legend = screen.getByTestId('legend-Active')
 			if (legend) {
 				fireEvent.click(legend)
 			}
@@ -1054,26 +1059,16 @@ describe('EntityStats', () => {
 		})
 
 		await waitFor(() => {
-			const legend2 = screen.getByTestId('legend')
-			if (legend2) {
-				const mockOnClick = jest.fn((e: any) => {
-					if (e && e.id === 'Deleted') {
-						return
-					}
-				})
-				fireEvent.click(legend2)
+			const legendDeleted = screen.getByTestId('legend-Deleted')
+			if (legendDeleted) {
+				fireEvent.click(legendDeleted)
 			}
 		})
 
 		await waitFor(() => {
-			const legend3 = screen.getByTestId('legend')
-			if (legend3) {
-				const mockOnClick = jest.fn((e: any) => {
-					if (e && e.id === 'Shell') {
-						return
-					}
-				})
-				fireEvent.click(legend3)
+			const legendShell = screen.getByTestId('legend-Shell')
+			if (legendShell) {
+				fireEvent.click(legendShell)
 			}
 		})
 	})
@@ -1347,7 +1342,7 @@ describe('EntityStats', () => {
 		render(<EntityStats {...defaultProps} />)
 
 		await waitFor(() => {
-			const legend = screen.getByTestId('legend')
+			const legend = screen.getByTestId('legend-Active')
 			if (legend) {
 				fireEvent.click(legend)
 			}
@@ -1554,15 +1549,9 @@ describe('EntityStats', () => {
 		render(<EntityStats {...defaultProps} />)
 
 		await waitFor(() => {
-			const legend = screen.getByTestId('legend')
-			if (legend) {
-				const mockOnClick = jest.fn((e: any) => {
-					if (e && e.id) {
-						return true
-					}
-				})
-				legend.onclick = mockOnClick
-				fireEvent.click(legend)
+			const legendActive = screen.getByTestId('legend-Active')
+			if (legendActive) {
+				fireEvent.click(legendActive)
 			}
 		})
 	})

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback } from "react";
 import { Paper, Stack, Typography, Box } from "@mui/material";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Sector } from "recharts";
 import { useNavigate } from "react-router-dom";
@@ -24,13 +24,14 @@ import { getEntityStatusTotals } from "@utils/metricsUtils";
 import { navigateToSearch } from "@utils/dashboardSearchUtils";
 import { ENTITY_STATUS_DONUT_COLORS as COLORS } from "./dashboardChartPalette";
 
+const RESPONSIVE_CONTAINER_STYLE = { cursor: "pointer" };
+
 interface EntityStatusDonutProps {
 	entity: Record<string, unknown> | undefined;
 	isLoading?: boolean;
 }
 
 const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) => {
-	const [activeIndex, setActiveIndex] = useState<number>(-1);
 	const navigate = useNavigate();
 	const totals = getEntityStatusTotals(entity);
 	const total = totals.active + totals.shell + totals.deleted;
@@ -134,7 +135,7 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 						</Box>
 					))}
 				</Stack>
-				<ResponsiveContainer width="50%" height="100%" style={{ cursor: "pointer" }}>
+				<ResponsiveContainer width="50%" height="100%" style={RESPONSIVE_CONTAINER_STYLE}>
 					<PieChart>
 						<Pie
 							data={chartData}
@@ -147,10 +148,7 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 							isAnimationActive
 							animationDuration={800}
 							animationEasing="ease-out"
-							activeIndex={activeIndex}
 							activeShape={renderActiveShape}
-							onMouseEnter={(_, index) => setActiveIndex(index)}
-							onMouseLeave={() => setActiveIndex(-1)}
 							onClick={(data) => handleStatusClick(data.name as "Active" | "Shell" | "Deleted")}
 						>
 							{chartData.map((entry, index) => (
@@ -158,7 +156,7 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 							))}
 						</Pie>
 						<Tooltip
-							formatter={(value: number) => numberFormatWithComma(value)}
+							formatter={(value: unknown) => numberFormatWithComma(Number(value || 0))}
 							contentStyle={{ borderRadius: 8 }}
 						/>
 					</PieChart>
