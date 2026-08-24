@@ -25,30 +25,30 @@ export {};
 // Polyfill TextEncoder and TextDecoder for React Router DOM in Jest
 if (typeof global.TextEncoder === 'undefined') {
   global.TextEncoder = TextEncoder;
-  global.TextDecoder = TextDecoder as any;
+  global.TextDecoder = TextDecoder as unknown as typeof global.TextDecoder;
 }
 
 
 // Basic mocks that don't rely on newer JS features
-(global as any).ResizeObserver = function() {
-  return {
-    observe: function() {},
-    unobserve: function() {},
-    disconnect: function() {}
-  };
-};
+Object.assign(global, {
+  ResizeObserver: class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+});
 
-(global as any).IntersectionObserver = function() {
-  return {
-    observe: function() {},
-    unobserve: function() {},
-    disconnect: function() {},
-    takeRecords: function() { return []; },
-    root: null,
-    rootMargin: '',
-    thresholds: []
-  };
-};
+Object.assign(global, {
+  IntersectionObserver: class IntersectionObserver {
+    root = null;
+    rootMargin = '';
+    thresholds = [];
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() { return []; }
+  }
+});
 
 // Mock window.matchMedia (jsdom / browser tests only)
 if (typeof window !== 'undefined') {

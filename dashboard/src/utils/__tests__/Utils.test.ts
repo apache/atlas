@@ -926,6 +926,34 @@ describe('Utils', () => {
 			// Allowed <p> remains
 			expect(result).toContain('<p>Safe content');
 		});
+
+		it('should handle edge cases: non-string input, empty string, mailto links, and remaining allowed tags', () => {
+			// non-string input and empty string
+			expect(sanitizeHtmlContent(null)).toBe('');
+			expect(sanitizeHtmlContent(undefined)).toBe('');
+			expect(sanitizeHtmlContent('')).toBe('');
+			
+			// mailto links
+			const mailtoHtml = '<a href="mailto:test@example.com">Email Me</a>';
+			expect(sanitizeHtmlContent(mailtoHtml)).toContain('<a href="mailto:test@example.com">Email Me</a>');
+			
+			// remaining allowed tags (strong, u, ol, h2-h4)
+			const remainingTagsHtml = `
+				<h2>Heading 2</h2>
+				<h3>Heading 3</h3>
+				<h4>Heading 4</h4>
+				<strong>Strong text</strong>
+				<u>Underlined text</u>
+				<ol><li>Ordered item</li></ol>
+			`;
+			const result = sanitizeHtmlContent(remainingTagsHtml);
+			expect(result).toContain('<h2>Heading 2</h2>');
+			expect(result).toContain('<h3>Heading 3</h3>');
+			expect(result).toContain('<h4>Heading 4</h4>');
+			expect(result).toContain('<strong>Strong text</strong>');
+			expect(result).toContain('<u>Underlined text</u>');
+			expect(result).toContain('<ol><li>Ordered item</li></ol>');
+		});
 	});
 
 	describe('getTagObj', () => {

@@ -15,19 +15,33 @@
  * limitations under the License.
  */
 
-const actualSanitizeModule = jest.requireActual('sanitize-html/index.js') as any;
+type SanitizeFn = (html: string, options?: Record<string, unknown>) => string;
+let actualSanitizeModule: SanitizeFn | { default: SanitizeFn } | null | undefined;
 
-const getSanitizeFn = () => {
-    if (typeof actualSanitizeModule === 'function') return actualSanitizeModule;
-    if (actualSanitizeModule && typeof actualSanitizeModule.default === 'function') return actualSanitizeModule.default;
-    return null;
+const getSanitizeFn = (): SanitizeFn | null => {
+  if (actualSanitizeModule === undefined) {
+    try {
+      actualSanitizeModule = jest.requireActual('sanitize-html/index.js') as SanitizeFn | { default: SanitizeFn };
+    } catch (e) {
+      actualSanitizeModule = null;
+    }
+  }
+  
+  if (typeof actualSanitizeModule === 'function') {
+    return actualSanitizeModule;
+  }
+  if (actualSanitizeModule && typeof actualSanitizeModule === 'object' && 'default' in actualSanitizeModule && typeof actualSanitizeModule.default === 'function') {
+    return actualSanitizeModule.default;
+  }
+  
+  return null;
 };
 
-const sanitizeHtml = (html: string, _options?: Record<string, unknown>) => {
+const sanitizeHtml = (html: string, options?: Record<string, unknown>) => {
   const sanitizeFn = getSanitizeFn();
   
-  if (_options && typeof sanitizeFn === 'function') {
-    return sanitizeFn(html, _options);
+  if (options && typeof sanitizeFn === 'function') {
+    return sanitizeFn(html, options);
   }
   
   const htmlStr = typeof html === 'string' ? html : String(html);
