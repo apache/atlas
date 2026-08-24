@@ -563,7 +563,7 @@ const BusinessMetaDataForm = ({
               <CustomButton
                 variant="outlined"
                 color="primary"
-                onClick={(_e: Event) => {
+                onClick={(_e: React.MouseEvent<HTMLButtonElement>) => {
                   setForm(false);
                   setBMAttribute({});
                   dispatchState(setEditBMAttribute({}));
