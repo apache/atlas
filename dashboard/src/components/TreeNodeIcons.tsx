@@ -188,9 +188,8 @@ const TreeNodeIcons = (props: {
               handleClickNodeMenu(e);
             }}
             size="small"
-            className="tree-item-more-label"
+            className={`tree-item-more-label ${isHovered || openNode ? "" : "invisible"}`}
             data-cy="dropdownMenuButton"
-            style={{ visibility: isHovered || openNode ? "visible" : "hidden" }}
           >
             <MoreHorizOutlinedIcon />
           </IconButton>
@@ -208,10 +207,9 @@ const TreeNodeIcons = (props: {
           onClick={(e) => {
             handleClickNodeMenu(e);
           }}
-          className="tree-item-more-label"
+          className={`tree-item-more-label ${isHovered || openNode ? "" : "invisible"}`}
           size="small"
           data-cy="dropdownMenuButton"
-          style={{ visibility: isHovered || openNode ? "visible" : "hidden" }}
         >
           <MoreHorizOutlinedIcon className="treeitem-dropdown-toggle" />
         </IconButton>

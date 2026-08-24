@@ -402,7 +402,7 @@ const QuickSearch = () => {
 						onChange={handleScopeChange}
 						aria-label="Search scope"
 						displayEmpty
-						sx={{ height: "32px", boxSizing: "border-box" }}
+						className="quick-search-select"
 						renderValue={(v) => SCOPE_LABELS[v as QuickSearchScope]}
 					>
 						<MenuItem value="default">Select All</MenuItem>
@@ -650,15 +650,8 @@ const QuickSearch = () => {
 								}}
 								className="text-black-default"
 								InputProps={{
-									sx: {
-										height: "32px",
-										padding: "0 10px !important",
-										borderRadius: "4px",
-										color: "#1a1a1a",
-										backgroundColor: "white",
-										boxSizing: "border-box"
-									},
 									...params.InputProps,
+									className: `quick-search-input ${params.InputProps.className || ""}`,
 									type: "search",
 									endAdornment: (
 										<InputAdornment position="end">
@@ -689,23 +682,8 @@ const QuickSearch = () => {
 				<CustomButton
 					variant="contained"
 					size="small"
-					className="global-search-submit-btn"
+					className="quick-search-btn"
 					disabled={!isSearchEnabled}
-					sx={{
-						backgroundColor: "#4a90e2 !important",
-						color: "#fff !important",
-						textTransform: "none",
-						fontWeight: 600,
-						height: "32px !important",
-						minHeight: "32px !important",
-						maxHeight: "32px !important",
-						boxSizing: "border-box",
-						"&.Mui-disabled": {
-							backgroundColor: "#a8c8eb !important",
-							color: "#fff !important",
-							opacity: 0.7
-						}
-					}}
 					onClick={handleSubmitSearch}
 					aria-label="Run search"
 				>
@@ -715,19 +693,7 @@ const QuickSearch = () => {
 				<CustomButton
 					variant="outlined"
 					size="small"
-					sx={{
-						backgroundColor: "white !important",
-						color: "#4a90e2 !important",
-						borderColor: "#dddddd !important",
-						height: "32px !important",
-						minHeight: "32px !important",
-						maxHeight: "32px !important",
-						boxSizing: "border-box",
-						"&:hover": {
-							backgroundColor: "rgba(74, 144, 226, 0.08) !important",
-							color: "#4a90e2 !important"
-						}
-					}}
+					className="quick-search-advanced-btn"
 					onClick={() => {
 						setOpenAdvanceSearch(true);
 					}}
