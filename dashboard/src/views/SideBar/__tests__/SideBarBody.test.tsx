@@ -515,19 +515,23 @@ describe('SideBarBody', () => {
       expect(screen.getByText('Version unavailable')).toBeInTheDocument();
     });
 
-    it('should hide relationships icon and module when relationshipSearch is falsy', () => {
-      const stateWithoutRelSearch = {
-        session: {
-          globalSessionData: {
-            relationshipSearch: false
-          }
-        }
-      };
-      renderWithProviders({}, { store: createMockStore(stateWithoutRelSearch) });
+    it('should hide relationships icon when relationshipSearch is falsy', () => {
+      const { globalSessionData } = require('@utils/Enum');
+      const originalValue = globalSessionData.relationshipSearch;
+      globalSessionData.relationshipSearch = false;
+
+      renderWithProviders();
       
-      expect(screen.queryByTestId('relationship-icon')).not.toBeInTheDocument();
+      // Collapse drawer to check icon
+      const toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
+      fireEvent.click(toggleButton!);
+
+      expect(screen.queryByAltText('relationships')).not.toBeInTheDocument();
       // Should also hide the tree in the expanded view
-      expect(screen.queryByTestId('r_relationshipTreeRender')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('relationships-tree')).not.toBeInTheDocument();
+
+      // Restore value
+      globalSessionData.relationshipSearch = originalValue;
     });
 
     it('should show V x.x display for version footer', () => {
@@ -806,6 +810,46 @@ describe('SideBarBody', () => {
       entitiesIcon = screen.getByAltText('entities');
       expect(entitiesIcon.closest('.sidebar-icon-active')).not.toBeInTheDocument();
       unmount2();
+
+      // Test Glossary active
+      (global as any).mockLocation = { pathname: '/glossary', search: '' };
+      const { unmount: unmount3 } = renderWithProviders();
+      toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
+      fireEvent.click(toggleButton!);
+      
+      let glossaryIcon = screen.getByAltText('glossary');
+      expect(glossaryIcon.closest('.sidebar-icon-active')).toBeInTheDocument();
+      unmount3();
+
+      // Test Classification active
+      (global as any).mockLocation = { pathname: '/search', search: '?tag=PII' };
+      const { unmount: unmount4 } = renderWithProviders();
+      toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
+      fireEvent.click(toggleButton!);
+      
+      let classificationIcon = screen.getByAltText('classifications');
+      expect(classificationIcon.closest('.sidebar-icon-active')).toBeInTheDocument();
+      unmount4();
+
+      // Test Business Metadata active
+      (global as any).mockLocation = { pathname: '/administrator/businessMetadata', search: '' };
+      const { unmount: unmount5 } = renderWithProviders();
+      toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
+      fireEvent.click(toggleButton!);
+      
+      let bmIcon = screen.getByAltText('business metadata');
+      expect(bmIcon.closest('.sidebar-icon-active')).toBeInTheDocument();
+      unmount5();
+
+      // Test Relationships active
+      (global as any).mockLocation = { pathname: '/search', search: '?relationshipName=Employee' };
+      const { unmount: unmount6 } = renderWithProviders();
+      toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
+      fireEvent.click(toggleButton!);
+      
+      let relIcon = screen.getByAltText('relationships');
+      expect(relIcon.closest('.sidebar-icon-active')).toBeInTheDocument();
+      unmount6();
 
       (global as any).mockLocation = undefined;
     });
