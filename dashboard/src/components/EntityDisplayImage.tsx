@@ -18,6 +18,7 @@
 import { useEffect, useState } from "react";
 import { Avatar, Skeleton } from "@mui/material";
 import { getEntityIconPath } from "../utils/Utils";
+import axios from "axios";
 
 const DisplayImage = ({
   entity,
@@ -36,10 +37,12 @@ const DisplayImage = ({
       let entityData = { ...entity, ...{ isProcess: isProcess } };
       let imagePath: any = getEntityIconPath({ entityData: entityData });
       try {
-        const response = await fetch(imagePath);
-        const contentType: any = response.headers.get("Content-Type");
+        const response = await axios.get(imagePath, {
+                    responseType: "blob"
+        });
+        const contentType: any = response.headers["content-type"];
 
-        if (contentType.startsWith("image/")) {
+        if (contentType && contentType.startsWith("image/")) {
           let cache = { [entityData.guid]: imagePath };
           setCheckEntityImage(cache);
           setImageUrl(getEntityIconPath({ entityData: entityData }));
@@ -48,7 +51,7 @@ const DisplayImage = ({
             getEntityIconPath({ entityData: entityData, errorUrl: imagePath })
           );
         }
-      } catch (error) {
+      } catch (_error) {
         setImageUrl(
           getEntityIconPath({ entityData: entityData, errorUrl: imagePath })
         );
