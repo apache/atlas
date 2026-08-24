@@ -18,6 +18,9 @@
 /** Test setup file for Jest and React Testing Library */
 
 import '@testing-library/jest-dom';
+import { TextEncoder, TextDecoder } from 'util';
+
+Object.assign(global, { TextDecoder, TextEncoder });
 
 // Mock ResizeObserver
 (global as any).ResizeObserver = class ResizeObserver {

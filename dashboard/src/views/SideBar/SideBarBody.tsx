@@ -116,9 +116,8 @@ const SideBarBody = (props: {
   const [open, setOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const { data: versionData, loading: isVersionLoading, error: versionError } = useAppSelector((state) => state.session?.versionData || {});
-  const searchParams = new URLSearchParams(location.search);
-
   const activeModule = useMemo(() => {
+    const searchParams = new URLSearchParams(location.search);
     if (searchParams.get("isCF") === "true") return "customFilters";
     if (location.pathname.includes("/glossary") || !!searchParams.get("gtype") || !!searchParams.get("term") || !!searchParams.get("category")) return "glossary";
     if (location.pathname.includes("/administrator/businessMetadata")) return "businessMetadata";
@@ -299,45 +298,15 @@ const SideBarBody = (props: {
       <CssBaseline />
 
       <Drawer
-        sx={{
-          width: open ? defaultDrawerWidth : "60px",
-          flexShrink: 0,
-          minHeight: "calc(100vh - 64px)",
-          minWidth: "60px",
-          transition: "width 0.2s",
-          ...(!open && {
-            transform: "none !important",
-            visibility: "visible !important",
-          }),
-          "& .MuiDrawer-paper": {
-            background: "var(--sidebar-bg)",
-            boxSizing: "border-box",
-            overflow: "hidden",
-            position: "fixed",
-            top: "0",
-            left: "0",
-            width: open ? defaultDrawerWidth : "60px",
-            transition: "width 0.2s",
-            ...(!open && {
-              transform: "none !important",
-              visibility: "visible !important",
-            }),
-          },
-        }}
+        className={`sidebar-drawer ${open ? 'open' : 'closed'}`}
         PaperProps={{
-          style: { width: open ? defaultDrawerWidth : "60px", minWidth: "60px" },
+          className: "sidebar-drawer-paper"
         }}
         variant="persistent"
         anchor="left"
         open={open}
       >
-        <Stack
-          sx={{
-            height: "100vh",
-            width: "100%",
-            backgroundColor: "var(--sidebar-bg)",
-          }}
-        >
+        <Stack className="sidebar-stack">
           {/* Collapsed sidebar logo and module icons */}
           {!open && (
             <Stack
@@ -363,9 +332,9 @@ const SideBarBody = (props: {
               {/* Module Icons for Mini Drawer */}
               <Stack alignItems="stretch" gap="1rem" sx={{ width: "100%" }}>
                 {/* Search */}
-                <Box sx={{ display: "flex", justifyContent: "center", borderLeft: "4px solid transparent", borderRight: "4px solid transparent", background: "transparent" }}>
+                <Box className="sidebar-module-box">
                   <Tooltip title="Search" placement="right">
-                    <IconButton aria-label="Expand sidebar search" onClick={() => { setOpen(true); handlePopoverClose(); }} sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.1)' } }}>
+                    <IconButton aria-label="Expand sidebar search" onClick={() => { setOpen(true); handlePopoverClose(); }} className="sidebar-module-btn">
                       <img src="/img/sidebar-icons/icon-search.svg" className="sidebar-module-icon" alt="search" />
                     </IconButton>
                   </Tooltip>
@@ -374,17 +343,10 @@ const SideBarBody = (props: {
                 {modules.filter(m => m.isVisible).map(m => (
                   <Box
                     key={m.id}
-                    className={m.isActive ? "sidebar-icon-active" : ""}
-                    sx={{
-                      display: "flex",
-                      justifyContent: "center",
-                      borderLeft: "4px solid transparent",
-                      borderRight: "4px solid transparent",
-                      background: "transparent"
-                    }}
+                    className={`sidebar-module-box ${m.isActive ? "sidebar-icon-active" : ""}`}
                   >
                     <Tooltip title={m.title} placement="right">
-                      <IconButton aria-haspopup="dialog" aria-label={m.title} aria-expanded={activePopover === m.id} onClick={(e) => handlePopoverOpen(e, m.id)} sx={{ color: m.isActive ? "white" : "rgba(255, 255, 255, 0.6)", '&:hover': { color: 'white', background: 'rgba(255, 255, 255, 0.1)' } }}>
+                      <IconButton aria-haspopup="dialog" aria-label={m.title} aria-expanded={activePopover === m.id} onClick={(e) => handlePopoverOpen(e, m.id)} className={`sidebar-module-btn ${m.isActive ? "active" : ""}`}>
                         <img src={m.iconUrl} className="sidebar-module-icon" alt={m.title.toLowerCase()} />
                       </IconButton>
                     </Tooltip>
@@ -406,34 +368,8 @@ const SideBarBody = (props: {
                   horizontal: 'left'
                 }}
                 PaperProps={{
-                  sx: {
-                    ml: 2,
-                    width: 320,
-                    maxHeight: popoverMaxHeight,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    backgroundColor: 'var(--sidebar-bg)',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    borderRadius: 1,
-                    boxShadow: 6,
-                    pb: 2,
-                    overflow: 'visible',
-                    '&::before': {
-                      content: '""',
-                      display: 'block',
-                      position: 'absolute',
-                      top: isBottomHalf ? 'auto' : 16,
-                      bottom: isBottomHalf ? 16 : 'auto',
-                      left: -6,
-                      width: 10,
-                      height: 10,
-                      backgroundColor: 'var(--sidebar-bg)',
-                      borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
-                      transform: 'rotate(45deg)',
-                      zIndex: 1
-                    }
-                  }
+                  className: `sidebar-popover-paper ${isBottomHalf ? 'bottom-half' : 'top-half'}`,
+                  style: { maxHeight: popoverMaxHeight }
                 }}
               >
                 {renderPopoverSearch()}
@@ -581,10 +517,10 @@ const SideBarBody = (props: {
             className={`sidebar-toggle-container ${open ? 'sidebar-toggle-open' : 'sidebar-toggle-closed'}`}
           >
             {open && (
-              <Box display="flex" flexDirection="column" gap="4px" alignItems="flex-start" pl="4px">
-                <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.6)", pl: '4px' }}>
+              <div className="sidebar-version-container">
+                <Typography variant="body2" className="sidebar-version-text">
                   {isVersionLoading ? (
-                    <CircularProgress size={12} sx={{ color: "rgba(255, 255, 255, 0.6)" }} />
+                    <CircularProgress size={12} className="sidebar-version-loader" />
                   ) : versionError ? (
                     'Version unavailable'
                   ) : versionData?.Version ? (
@@ -593,7 +529,7 @@ const SideBarBody = (props: {
                     ''
                   )}
                 </Typography>
-              </Box>
+              </div>
             )}
 
             <IconButton aria-label={open ? "Collapse sidebar" : "Expand sidebar"} size="medium" onClick={() => handleDrawerOpen()}>

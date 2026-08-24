@@ -548,6 +548,27 @@ describe('SideBarBody', () => {
       expect(screen.getByText('V 3.12.1.0')).toBeInTheDocument();
     });
 
+    it('should not display version footer when drawer is closed', async () => {
+      const stateWithVersion = {
+        session: {
+          versionData: {
+            loading: false,
+            data: { Version: "3.12.1.0" },
+            error: null
+          }
+        }
+      };
+      renderWithProviders({}, { store: createMockStore(stateWithVersion) });
+      expect(screen.getByText('V 3.12.1.0')).toBeInTheDocument();
+
+      const toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
+      fireEvent.click(toggleButton!);
+
+      await waitFor(() => {
+        expect(screen.queryByText('V 3.12.1.0')).not.toBeInTheDocument();
+      });
+    });
+
     it('should show loading spinner for version footer when loading', () => {
       const stateLoadingVersion = {
         session: {
@@ -737,13 +758,29 @@ describe('SideBarBody', () => {
         expect(screen.getAllByTestId('glossary-tree').length).toBeGreaterThan(0);
       });
 
-      // Press escape to close the popover (MUI Popover default behavior for outside click/escape)
       const backdrop = document.querySelector('.MuiBackdrop-root');
+      expect(backdrop).toBeInTheDocument();
       if (backdrop) {
         fireEvent.click(backdrop);
-      } else {
-        fireEvent.keyDown(document.body, { key: 'Escape', code: 'Escape' });
       }
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('glossary-tree')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should close popover on Escape key press', async () => {
+      // Open glossary popover
+      const glossaryIcon = screen.getByAltText('glossary');
+      fireEvent.click(glossaryIcon.closest('button')!);
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId('glossary-tree').length).toBeGreaterThan(0);
+      });
+
+      // Press Escape to close the popover
+      // MUI Popover listens for Escape on the document or active element
+      fireEvent.keyDown(document.activeElement || document.body, { key: 'Escape', code: 'Escape' });
 
       await waitFor(() => {
         expect(screen.queryByTestId('glossary-tree')).not.toBeInTheDocument();
