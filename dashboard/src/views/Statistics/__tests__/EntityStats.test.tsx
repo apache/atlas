@@ -503,33 +503,35 @@ describe('EntityStats', () => {
 		})
 	})
 
-	it('handles legend click with null event', async () => {
+	it('handles legend click to toggle deleted keys', async () => {
 		render(<EntityStats {...defaultProps} />)
 
 		await waitFor(() => {
-			const legend = screen.getByTestId('legend-Active')
+			const legend = screen.getByTestId('legend-Deleted')
 			if (legend) {
-				const mockOnClick = jest.fn()
-				legend.onclick = mockOnClick
 				fireEvent.click(legend)
 			}
 		})
+
+		await waitFor(() => {
+			const deletedArea = screen.queryByTestId('area-Deleted')
+			expect(deletedArea).not.toBeInTheDocument()
+		})
 	})
 
-	it('handles legend click with event but no id', async () => {
+	it('handles legend click to toggle shell keys', async () => {
 		render(<EntityStats {...defaultProps} />)
 
 		await waitFor(() => {
-			const legend = screen.getByTestId('legend-Active')
+			const legend = screen.getByTestId('legend-Shell')
 			if (legend) {
-				const mockOnClick = jest.fn((e: any) => {
-					if (e && !e.id) {
-						return
-					}
-				})
-				legend.onclick = mockOnClick
 				fireEvent.click(legend)
 			}
+		})
+
+		await waitFor(() => {
+			const shellArea = screen.queryByTestId('area-Shell')
+			expect(shellArea).not.toBeInTheDocument()
 		})
 	})
 

@@ -17,7 +17,7 @@
 
 import { useMemo } from "react";
 import moment from "moment";
-import { Stack, Typography, Box } from "@mui/material";
+import { Stack, Typography, Box, ButtonBase } from "@mui/material";
 import {
 	Area,
 	AreaChart,
@@ -101,20 +101,18 @@ const EntityStatsChart = ({
 					content={() => (
 						<Stack direction="row" spacing={2} justifyContent="center" mt={1}>
 							{legendPayload.map((entry) => (
-								<Stack
+								<ButtonBase
 									key={entry.id}
 									data-testid={`legend-${entry.id}`}
-									direction="row"
-									alignItems="center"
-									spacing={0.5}
 									onClick={() => onLegendClick(String(entry.value))}
-									sx={{ cursor: "pointer" }}
+									aria-label={String(entry.value)}
+									className="legend-button"
 								>
-									<Box sx={{ width: 12, height: 12, backgroundColor: entry.color, borderRadius: "2px" }} />
-									<Typography variant="body2" sx={{ color: entry.inactive ? "#d3d3d3" : "#333", fontSize: "0.875rem" }}>
+									<Box className="legend-color-box" style={{ backgroundColor: entry.color }} />
+									<Typography variant="body2" className={`legend-typography ${entry.inactive ? 'legend-inactive' : 'legend-active'}`}>
 										{entry.value}
 									</Typography>
-								</Stack>
+								</ButtonBase>
 							))}
 						</Stack>
 					)}
