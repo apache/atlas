@@ -44,6 +44,9 @@ import {
 } from "./dashboardChartPalette";
 
 const BAR_COLOR = CHART_BAR_ACTIVE_BLUE;
+const RESPONSIVE_CONTAINER_STYLE = { cursor: "pointer" };
+const LABEL_LIST_STYLE = { fontSize: 12, fontWeight: 500, fill: BAR_COLOR };
+const getTickGStyle = (value: string | undefined) => ({ cursor: value ? "pointer" : "default" });
 
 interface ClassificationDistributionCardProps {
 	tag: Record<string, unknown> | undefined;
@@ -141,7 +144,7 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 				</Stack>
 			) : (
 				<Box sx={{ mt: 2, minHeight: 260, height: 260, width: "100%", minWidth: 280 }}>
-					<ResponsiveContainer width="100%" height="100%" style={{ cursor: "pointer" }}>
+					<ResponsiveContainer width="100%" height="100%" style={RESPONSIVE_CONTAINER_STYLE}>
 						<BarChart
 							data={data}
 							layout="vertical"
@@ -174,7 +177,7 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 										<g
 											transform={`translate(${x},${y})`}
 											onClick={() => (value ? handleLabelClick(value) : undefined)}
-											style={{ cursor: value ? "pointer" : "default" }}
+											style={getTickGStyle(value)}
 											role={value ? "button" : undefined}
 											tabIndex={value ? 0 : undefined}
 											aria-label={value || undefined}
@@ -203,19 +206,15 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 								name="Entities"
 								fill={BAR_COLOR}
 								radius={[0, 4, 4, 0]}
-								onClick={(entry) => handleBarClick(entry)}
+								onClick={(entry: unknown) => handleBarClick({ name: (entry as Record<string, string>)?.name || '' })}
 								cursor="pointer"
 							>
 								<LabelList
 									dataKey="count"
 									position="right"
 									offset={10}
-									formatter={(v: number) => numberFormatWithComma(v)}
-									style={{
-										fontSize: 12,
-										fontWeight: 500,
-										fill: BAR_COLOR,
-									}}
+									formatter={(v: unknown) => numberFormatWithComma(Number(v))}
+									style={LABEL_LIST_STYLE}
 								/>
 								{data.map((_, index) => <Cell key={index} fill={BAR_COLOR} />)}
 							</Bar>

@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
+import { useMemo } from "react";
 import moment from "moment";
+import { Stack, Typography, Box } from "@mui/material";
 import {
 	Area,
 	AreaChart,
@@ -56,6 +58,15 @@ const EntityStatsChart = ({
 	onLegendClick,
 	getColorForKey,
 }: EntityStatsChartProps) => {
+	const legendPayload = useMemo(() => {
+		return Object.keys(activeKeys).map((key) => ({
+			id: key,
+			value: key,
+			color: activeKeys[key as keyof ActiveKeys] === true ? getColorForKey(key) : "#d3d3d3",
+			inactive: !activeKeys[key as keyof ActiveKeys],
+		}));
+	}, [activeKeys, getColorForKey]);
+
 	return (
 		<ResponsiveContainer width="100%" height={400}>
 			<AreaChart
@@ -87,21 +98,26 @@ const EntityStatsChart = ({
 					cursor={{ stroke: "rgba(0, 0, 0, 0.1)", strokeWidth: 2 }}
 				/>
 				<Legend
-					onClick={(e) => {
-						if (e && e.id) {
-							onLegendClick(String(e.id));
-						}
-					}}
-					payload={Object.keys(activeKeys).map((key) => ({
-						id: key,
-						type: "square",
-						value: key,
-						color:
-							activeKeys[key as keyof ActiveKeys] === true
-								? getColorForKey(key)
-								: "#d3d3d3",
-						inactive: !activeKeys[key as keyof ActiveKeys],
-					}))}
+					content={() => (
+						<Stack direction="row" spacing={2} justifyContent="center" mt={1}>
+							{legendPayload.map((entry) => (
+								<Stack
+									key={entry.id}
+									data-testid={`legend-${entry.id}`}
+									direction="row"
+									alignItems="center"
+									spacing={0.5}
+									onClick={() => onLegendClick(String(entry.value))}
+									sx={{ cursor: "pointer" }}
+								>
+									<Box sx={{ width: 12, height: 12, backgroundColor: entry.color, borderRadius: "2px" }} />
+									<Typography variant="body2" sx={{ color: entry.inactive ? "#d3d3d3" : "#333", fontSize: "0.875rem" }}>
+										{entry.value}
+									</Typography>
+								</Stack>
+							))}
+						</Stack>
+					)}
 				/>
 				{activeKeys.Active && (
 					<Area
