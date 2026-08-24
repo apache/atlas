@@ -225,7 +225,7 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		expect(screen.getByText('Just now')).toBeInTheDocument()
+		expect(screen.getByText('Created just now')).toBeInTheDocument()
 
 		jest.setSystemTime(new Date(base))
 		rerender(
@@ -242,7 +242,7 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		expect(screen.getByText('30 seconds ago')).toBeInTheDocument()
+		expect(screen.getByText('Created 30 seconds ago')).toBeInTheDocument()
 
 		jest.setSystemTime(new Date(base))
 		rerender(
@@ -259,7 +259,7 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		expect(screen.getByText('1 minute ago')).toBeInTheDocument()
+		expect(screen.getByText('Created 1 minute ago')).toBeInTheDocument()
 
 		jest.setSystemTime(new Date(base))
 		rerender(
@@ -276,7 +276,7 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		expect(screen.getByText('2 minutes ago')).toBeInTheDocument()
+		expect(screen.getByText('Created 2 minutes ago')).toBeInTheDocument()
 
 		jest.setSystemTime(new Date(base))
 		rerender(
@@ -293,7 +293,7 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		expect(screen.getByText('1 hour ago')).toBeInTheDocument()
+		expect(screen.getByText('Created 1 hour ago')).toBeInTheDocument()
 
 		jest.setSystemTime(new Date(base))
 		rerender(
@@ -310,7 +310,7 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		expect(screen.getByText('2 hours ago')).toBeInTheDocument()
+		expect(screen.getByText('Created 2 hours ago')).toBeInTheDocument()
 
 		jest.setSystemTime(new Date(base))
 		rerender(
@@ -556,7 +556,7 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		expect(screen.getByText('1 second ago')).toBeInTheDocument()
+		expect(screen.getByText('Created 1 second ago')).toBeInTheDocument()
 	})
 
 	it('uses Created today when Date.now is non-finite for relative time', () => {

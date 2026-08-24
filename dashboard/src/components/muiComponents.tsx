@@ -25,7 +25,7 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import React from "react";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
-import Button from "@mui/material/Button";
+import Button, { ButtonProps } from "@mui/material/Button";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
@@ -75,16 +75,19 @@ const LightTooltip = styled(({ className, ...props }: any) => (
 interface OverflowTooltipProps extends Omit<TooltipProps, "children"> {
   children: React.ReactElement;
   wrapperSx?: SxProps<Theme>;
+  wrapperClassName?: string;
 }
 
-const OverflowTooltip = ({ title, children, wrapperSx, ...props }: OverflowTooltipProps) => {
+const OverflowTooltip = ({ title, children, wrapperSx, wrapperClassName, ...props }: OverflowTooltipProps) => {
   const textElementRef = React.useRef<HTMLElement>(null);
   const [isOverflowed, setIsOverflowed] = React.useState(false);
 
   const checkOverflow = React.useCallback(() => {
     if (textElementRef.current) {
+      const el = textElementRef.current;
       setIsOverflowed(
-        textElementRef.current.scrollWidth > textElementRef.current.clientWidth
+        el.scrollWidth > el.clientWidth || 
+        el.scrollWidth > el.getBoundingClientRect().width
       );
     }
   }, []);
@@ -97,12 +100,13 @@ const OverflowTooltip = ({ title, children, wrapperSx, ...props }: OverflowToolt
       resizeObserver.observe(element);
       return () => resizeObserver.disconnect();
     }
-  }, [title, children, checkOverflow]);
+  }, [title, checkOverflow]);
 
   const child = (
     <Box
       component="span"
       ref={textElementRef}
+      className={wrapperClassName}
       sx={{
         display: "inline-flex",
         minWidth: 0,
@@ -112,6 +116,7 @@ const OverflowTooltip = ({ title, children, wrapperSx, ...props }: OverflowToolt
         whiteSpace: "nowrap",
         ...wrapperSx
       }}
+      onMouseEnter={checkOverflow}
     >
       {children}
     </Box>
@@ -130,37 +135,24 @@ const OverflowTooltip = ({ title, children, wrapperSx, ...props }: OverflowToolt
   );
 };
 
-interface ButtonProps {
-  children?: any;
-  variant?: string;
-  color: string;
-  onClick: any;
-  sx?: any;
-  size?: string;
-  endIcon?: any;
-  startIcon?: any;
-  className?: string;
-  disabled?: boolean;
-}
-
 const ButtonWrapper = styled(Box)({
   display: "inline-flex"
 });
 
 const StyledButton = styled(Button)(({ variant }) => ({
-  fontWeight: "600 !important",
-  letterSpacing: "0 !important",
-  fontSize: "0.875rem !important",
-  cursor: "pointer !important",
-  minWidth: "unset !important",
-  ...(variant === "outlined" && { border: "1px solid #dddddd !important" })
+  fontWeight: "600",
+  letterSpacing: "0",
+  fontSize: "0.875rem",
+  cursor: "pointer",
+  minWidth: "unset",
+  ...(variant === "outlined" && { border: "1px solid #dddddd" })
 }));
 
 const CustomButton = ({
   children,
   sx,
   ...rest
-}: ButtonProps | any) => {
+}: ButtonProps) => {
   return (
     <ButtonWrapper component="span">
       <StyledButton sx={sx} {...rest}>

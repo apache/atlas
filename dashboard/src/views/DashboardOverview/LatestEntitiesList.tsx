@@ -106,30 +106,30 @@ const formatCreatedRelativeFromMs = (ms: number): string => {
 	const deltaMs = now - ms;
 	if (!Number.isFinite(deltaMs)) return INVALID_TS_LABEL;
 	if (deltaMs < 0) {
-		return moment(ms).fromNow();
+		return `Created ${moment(ms).fromNow()}`;
 	}
 	const totalSec = Math.floor(deltaMs / 1000);
 	if (totalSec < 1) {
-		return "Just now";
+		return "Created just now";
 	}
 	if (totalSec < 60) {
 		return totalSec === 1
-			? "1 second ago"
-			: `${totalSec} seconds ago`;
+			? "Created 1 second ago"
+			: `Created ${totalSec} seconds ago`;
 	}
 	const totalMin = Math.floor(totalSec / 60);
 	if (totalMin < 60) {
 		return totalMin === 1
-			? "1 minute ago"
-			: `${totalMin} minutes ago`;
+			? "Created 1 minute ago"
+			: `Created ${totalMin} minutes ago`;
 	}
 	const totalHr = Math.floor(totalMin / 60);
 	if (totalHr < 24) {
 		return totalHr === 1
-			? "1 hour ago"
-			: `${totalHr} hours ago`;
+			? "Created 1 hour ago"
+			: `Created ${totalHr} hours ago`;
 	}
-	return moment(ms).fromNow();
+	return `Created ${moment(ms).fromNow()}`;
 };
 
 const formatRelativeTime = (raw: unknown): string => {
@@ -138,8 +138,7 @@ const formatRelativeTime = (raw: unknown): string => {
 	return formatCreatedRelativeFromMs(ms);
 };
 
-const nameWrapperSx = { display: "block", flex: "0 1 auto", width: "auto" };
-const typeWrapperSx = { display: "block", flex: "0 0 auto", width: "auto" };
+
 
 const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesListProps) => {
 	const navigate = useNavigate();
@@ -200,7 +199,7 @@ const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesL
 								<Stack width="100%" direction="row" justifyContent="space-between" alignItems="center">
 									<Stack direction="row" spacing={0.5} alignItems="center" flexWrap="nowrap" flex={1} minWidth={0} mr={1}>
 										{detailHref ? (
-											<OverflowTooltip title={displayName} arrow placement="top" wrapperSx={nameWrapperSx}>
+											<OverflowTooltip title={displayName} arrow placement="top" wrapperClassName="latest-entities-name-wrapper">
 												<Link
 													component={RouterLink}
 													to={detailHref}
@@ -212,7 +211,7 @@ const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesL
 												</Link>
 											</OverflowTooltip>
 										) : (
-											<OverflowTooltip title={displayName} arrow placement="top" wrapperSx={nameWrapperSx}>
+											<OverflowTooltip title={displayName} arrow placement="top" wrapperClassName="latest-entities-name-wrapper">
 												<Typography
 													component="span"
 													className="latest-entities-entity-name latest-entities-entity-name-fallback"
@@ -221,7 +220,7 @@ const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesL
 												</Typography>
 											</OverflowTooltip>
 										)}
-										<OverflowTooltip title={`(${typeName})`} arrow placement="top" wrapperSx={typeWrapperSx}>
+										<OverflowTooltip title={`(${typeName})`} arrow placement="top" wrapperClassName="latest-entities-type-wrapper">
 											<Typography
 												component="span"
 												className="latest-entities-type-name"

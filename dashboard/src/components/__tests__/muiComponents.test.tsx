@@ -142,6 +142,26 @@ describe('muiComponents', () => {
 			// Tooltip should appear
 			expect(await screen.findByText('overflow tip')).toBeInTheDocument()
 		})
+
+		it('enables tooltip for subpixel overflow where clientWidth matches scrollWidth', async () => {
+			render(
+				<OverflowTooltip title="subpixel tip">
+					<span data-testid="subpixel-text">Subpixel</span>
+				</OverflowTooltip>
+			)
+			const span = screen.getByTestId('subpixel-text').parentElement!
+
+			// Mock subpixel overflow condition (scrollWidth matches clientWidth, but rect is smaller)
+			Object.defineProperty(span, 'scrollWidth', { configurable: true, value: 100 })
+			Object.defineProperty(span, 'clientWidth', { configurable: true, value: 100 })
+			span.getBoundingClientRect = jest.fn(() => ({ width: 99.5 } as DOMRect))
+
+			// Trigger hover to fire the onMouseEnter checkOverflow logic
+			fireEvent.mouseEnter(span)
+			fireEvent.mouseOver(span)
+
+			expect(await screen.findByText('subpixel tip')).toBeInTheDocument()
+		})
 	})
 
 	it('prevents default navigation in LinkTab', async () => {
