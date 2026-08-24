@@ -27,6 +27,7 @@ import {
   useRef,
   useState,
   useMemo,
+  useCallback,
   SyntheticEvent,
   memo,
 } from "react";
@@ -396,26 +397,23 @@ const BarTreeView: FC<{
       };
     }, [searchTerm]);
 
-    const expandedItemsMemo = useMemo(() => {
-      if (!searchTerm) {
-        return [treeName];
-      }
-      const parentNodeIds = filteredData.map((node) => node.id);
-      return [...parentNodeIds, treeName];
-    }, [filteredData, treeName, searchTerm]);
-
-    useEffect(() => {
-      setExpandedItems(expandedItemsMemo);
-    }, [expandedItemsMemo]);
-
-    const getNodeId = (node: TreeNode) => {
+    const getNodeId = useCallback((node: TreeNode) => {
       if (treeName == "Classifications" && node.types == "parent") {
         return node.label;
       } else if (treeName == "Classifications" && node.types == "child") {
         return `${node.id}@${node.label}`;
       }
       return !isEmpty(node?.parent) ? `${node.id}@${node?.parent}` : node.id;
-    };
+    }, [treeName]);
+
+    const expandedItemsMemo = useMemo(() => {
+      const parentNodeIds = filteredData.map((node) => getNodeId(node));
+      return [...parentNodeIds, treeName];
+    }, [filteredData, treeName, getNodeId]);
+
+    useEffect(() => {
+      setExpandedItems(expandedItemsMemo);
+    }, [expandedItemsMemo]);
 
     useEffect(() => {
       const searchParams = new URLSearchParams(location.search);
@@ -480,7 +478,7 @@ const BarTreeView: FC<{
           customFilter: null,
         });
       }
-    }, [location.search, treeData, treeName, businessMetaData, bmguid]);
+    }, [location.pathname, location.search, treeData, treeName, businessMetaData, bmguid, getNodeId]);
 
     const getEmptyTypesTitle = () => {
       switch (treeName) {

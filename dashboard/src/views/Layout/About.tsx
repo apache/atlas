@@ -26,7 +26,7 @@ import {
 } from "@mui/material";
 
 const About = () => {
-  const { data: versionData, loading: loader, error } = useAppSelector((state: any) => state.session.versionData);
+  const { data: versionData, loading: loader, error } = useAppSelector((state) => state.session.versionData);
 
   return (
     <>
