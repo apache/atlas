@@ -217,6 +217,24 @@ describe('sessionSlice', () => {
 			expect(state.versionData.loading).toBe(false);
 			expect(state.versionData.data).toEqual(mockVersionData);
 		});
+
+		it('should handle fetchVersionData error', async () => {
+			const { getVersion } = require('../../../api/apiMethods/headerApiMethods');
+			const error = 'API Error';
+			getVersion.mockRejectedValue(error);
+	
+			const store = configureStore({
+				reducer: {
+					session: sessionReducer
+				}
+			});
+	
+			await store.dispatch(fetchVersionData());
+	
+			const state = store.getState().session;
+			expect(state.versionData.loading).toBe(false);
+			expect(state.versionData.error).toBeTruthy();
+		});
 	});
 });
 

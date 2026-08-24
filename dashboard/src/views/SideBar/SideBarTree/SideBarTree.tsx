@@ -968,7 +968,7 @@ const BarTreeView: FC<{
         if (el) {
           setIsOverflown(el.scrollWidth > el.clientWidth);
         }
-      }, [label, searchTerm]);
+      }, [label]);
 
       return (
         <LightTooltip title={label} disableHoverListener={!isOverflown}>
