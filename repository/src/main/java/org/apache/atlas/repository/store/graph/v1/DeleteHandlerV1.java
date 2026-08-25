@@ -979,7 +979,7 @@ public abstract class DeleteHandlerV1 {
             return;
         }
 
-        // Step 4: Write propagateTags or blocked list to the edge; skipped on background task unless legacy.
+        // Step 4: Write propagateTags or blocked list to the edge (not both; propagateTags wins if both changed). Skipped on background task unless legacy.
         if (!isAsyncExecution || isLegacyTask) {
             if (propagationChanged) {
                 AtlasGraphUtilsV2.setEncodedProperty(edge, RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, newTagPropagation.name());
@@ -989,7 +989,8 @@ public abstract class DeleteHandlerV1 {
 
             // Step 5: Tasks enabled — edge written above; defer entity tags to background task with pre-change state.
             if (!isAsyncExecution && DEFERRED_ACTION_ENABLED) {
-                createAndQueueTask(CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE, edge, relationship, oldTagPropagation.name(), oldBlocked);
+                createAndQueueTask(CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE, edge, relationship,
+                        oldTagPropagation != null ? oldTagPropagation.name() : null, oldBlocked);
                 return;
             }
         }
