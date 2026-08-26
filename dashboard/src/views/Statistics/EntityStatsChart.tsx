@@ -26,6 +26,7 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import type { LegendPayload } from "recharts";
 import GraphCustomTooltip from "./StatsGraphs/GraphCustomTooltip";
 
 type ChartDataPoint = {
@@ -87,21 +88,24 @@ const EntityStatsChart = ({
 					cursor={{ stroke: "rgba(0, 0, 0, 0.1)", strokeWidth: 2 }}
 				/>
 				<Legend
-					onClick={(e) => {
-						if (e && e.id) {
-							onLegendClick(String(e.id));
+					onClick={(e: LegendPayload) => {
+						const key = e?.value || e?.id;
+						if (key) {
+							onLegendClick(key);
 						}
 					}}
-					payload={Object.keys(activeKeys).map((key) => ({
-						id: key,
-						type: "square",
-						value: key,
-						color:
-							activeKeys[key as keyof ActiveKeys] === true
-								? getColorForKey(key)
-								: "#d3d3d3",
-						inactive: !activeKeys[key as keyof ActiveKeys],
-					}))}
+					{...({
+						payload: Object.keys(activeKeys).map((key): LegendPayload => ({
+							id: key,
+							value: key,
+							type: "square",
+							color:
+								activeKeys[key as keyof ActiveKeys] === true
+									? getColorForKey(key)
+									: "#d3d3d3",
+							inactive: !activeKeys[key as keyof ActiveKeys],
+						}))
+					} as Record<string, unknown>)}
 				/>
 				{activeKeys.Active && (
 					<Area

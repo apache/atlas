@@ -60,8 +60,10 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 	);
 
 	const handleBarClick = useCallback(
-		(entry: { name: string }) => {
-			navigateToClassificationSearch(navigate, entry.name);
+		(entry: { name?: string }) => {
+			if (entry?.name) {
+				navigateToClassificationSearch(navigate, entry.name);
+			}
 		},
 		[navigate]
 	);
@@ -203,14 +205,14 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 								name="Entities"
 								fill={BAR_COLOR}
 								radius={[0, 4, 4, 0]}
-								onClick={(entry) => handleBarClick(entry)}
+								onClick={handleBarClick}
 								cursor="pointer"
 							>
 								<LabelList
 									dataKey="count"
 									position="right"
 									offset={10}
-									formatter={(v: number) => numberFormatWithComma(v)}
+									formatter={(v: unknown) => (typeof v === "number" ? numberFormatWithComma(v) : "")}
 									style={{
 										fontSize: 12,
 										fontWeight: 500,
