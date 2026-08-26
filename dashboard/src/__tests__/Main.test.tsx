@@ -40,6 +40,31 @@ jest.mock('../App', () => ({
 	default: () => <div data-testid="app">App Component</div>
 }))
 
+jest.mock('@emotion/cache', () => ({
+	__esModule: true,
+	default: jest.fn(() => ({ key: 'css' }))
+}))
+
+jest.mock('@emotion/react', () => {
+	const actual = jest.requireActual('@emotion/react')
+
+	return {
+		...actual,
+		CacheProvider: ({ children }: { children: React.ReactNode }) => (
+			<div data-testid="cache-provider">{children}</div>
+		)
+	}
+})
+
+const mockGetCspNonce = jest.fn()
+const mockCreateEmotionCache = jest.fn(() => ({ key: 'css' }))
+jest.mock('../utils/cspNonce.ts', () => ({
+	getCspNonce: () => mockGetCspNonce()
+}))
+jest.mock('../utils/emotionCache.ts', () => ({
+	createEmotionCache: (...args: unknown[]) => mockCreateEmotionCache(...args)
+}))
+
 // Mock all CSS imports
 jest.mock('../index.scss', () => {})
 jest.mock('react-toastify/dist/ReactToastify.css', () => {})
@@ -92,6 +117,8 @@ describe('Main.tsx', () => {
 	beforeEach(() => {
 		jest.clearAllMocks()
 		jest.resetModules()
+		mockGetCspNonce.mockReturnValue(undefined)
+		mockCreateEmotionCache.mockReturnValue({ key: 'css' })
 		mockStore = createMockStore()
 		
 		// Mock document.getElementById to return root element
@@ -113,6 +140,37 @@ describe('Main.tsx', () => {
 	afterEach(() => {
 		jest.clearAllMocks()
 		jest.resetModules()
+	})
+
+	describe('CSP Nonce Wiring', () => {
+		it('should read csp nonce and create emotion cache without nonce when unavailable', async () => {
+			mockGetCspNonce.mockReturnValue(undefined)
+
+			await import('../Main.tsx')
+
+			expect(mockGetCspNonce).toHaveBeenCalled()
+			expect(mockCreateEmotionCache).toHaveBeenCalledWith(undefined)
+		})
+
+		it('should pass csp nonce to createEmotionCache when available', async () => {
+			mockGetCspNonce.mockReturnValue('server-generated-nonce')
+
+			await import('../Main.tsx')
+
+			expect(mockCreateEmotionCache).toHaveBeenCalledWith('server-generated-nonce')
+		})
+
+		it('should invoke createRoot.render after configuring emotion cache', async () => {
+			mockGetCspNonce.mockReturnValue('server-generated-nonce')
+
+			await import('../Main.tsx')
+
+			const ReactDOM = require('react-dom/client')
+			const mockRoot = ReactDOM.createRoot.mock.results[0].value
+
+			expect(mockCreateEmotionCache).toHaveBeenCalled()
+			expect(mockRoot.render).toHaveBeenCalled()
+		})
 	})
 
 	describe('Module Execution', () => {
