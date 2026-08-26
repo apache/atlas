@@ -59,7 +59,7 @@ const TreeNodeIcons = (props: {
 }) => {
   const { node, treeName, updatedData, isEmptyServicetype, isHovered } = props;
   const navigate = useNavigate();
-  const toastId: any = useRef(null);
+  const toastId = useRef<number | string | null>(null);
   const [expandNode, setExpandNode] = useState<null | HTMLElement>(null);
   const [renameModal, setRenameModal] = useState<boolean>(false);
   const [deleteModal, setDeleteModal] = useState<boolean>(false);
@@ -144,7 +144,7 @@ const TreeNodeIcons = (props: {
         },
         { replace: true }
       );
-      toast.dismiss(toastId.current);
+      if (toastId.current) toast.dismiss(toastId.current);
       toastId.current = toast.success(`${node.id} was deleted successfully`);
     } catch (error) {
       serverError(error, toastId);
@@ -161,7 +161,7 @@ const TreeNodeIcons = (props: {
         updatedData();
         setRenameModal(false);
         setExpandNode(null);
-        toast.dismiss(toastId.current);
+        if (toastId.current) toast.dismiss(toastId.current);
         toastId.current = toast.success(
           `${filterData.name} was updated successfully`
         );

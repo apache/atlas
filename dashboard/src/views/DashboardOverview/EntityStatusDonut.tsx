@@ -35,7 +35,7 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 	const totals = getEntityStatusTotals(entity);
 	const total = totals.active + totals.shell + totals.deleted;
 
-	const chartData = [
+	const chartData: Array<{ name: string; value: number; color: string }> = [
 		{ name: "Active", value: totals.active, color: COLORS.Active },
 		{ name: "Shell", value: totals.shell, color: COLORS.Shell },
 		{ name: "Deleted", value: totals.deleted, color: COLORS.Deleted }
@@ -147,18 +147,21 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 							isAnimationActive
 							animationDuration={800}
 							animationEasing="ease-out"
-							activeIndex={activeIndex}
+							{...({ activeIndex: activeIndex >= 0 ? activeIndex : undefined } as Record<string, unknown>)}
 							activeShape={renderActiveShape}
 							onMouseEnter={(_, index) => setActiveIndex(index)}
 							onMouseLeave={() => setActiveIndex(-1)}
-							onClick={(data) => handleStatusClick(data.name as "Active" | "Shell" | "Deleted")}
+							onClick={(data) => {
+								const d = data as { name?: "Active" | "Shell" | "Deleted" };
+								if (d?.name) handleStatusClick(d.name);
+							}}
 						>
 							{chartData.map((entry, index) => (
 								<Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
 							))}
 						</Pie>
 						<Tooltip
-							formatter={(value: number) => numberFormatWithComma(value)}
+							formatter={(value: unknown) => (typeof value === "number" ? numberFormatWithComma(value) : "")}
 							contentStyle={{ borderRadius: 8 }}
 						/>
 					</PieChart>

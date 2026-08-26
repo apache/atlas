@@ -21,8 +21,8 @@ import SkeletonLoader from "./SkeletonLoader";
 const TreeSkeletonLoader = ({ count = 7 }: { count?: number }) => {
   const treeItemSkeleton = (indentLevel: number, textWidth: string, key: number) => (
     <Stack key={key} direction="row" alignItems="center" gap="12px" paddingLeft={`${indentLevel * 24}px`}>
-      <SkeletonLoader animation="pulse" variant="rectangular" width={16} height={16} sx={{ borderRadius: "4px", backgroundColor: "rgba(255,255,255,0.08)" }} count={1} />
-      <SkeletonLoader animation="pulse" variant="rectangular" width={textWidth} height={20} sx={{ borderRadius: "4px", backgroundColor: "rgba(255,255,255,0.08)" }} count={1} />
+      <SkeletonLoader animation="pulse" variant="rectangular" width={16} height={16} sx={{ borderRadius: "4px", backgroundColor: "var(--skeleton-bg, rgba(255,255,255,0.08))" }} count={1} />
+      <SkeletonLoader animation="pulse" variant="rectangular" width={textWidth} height={20} sx={{ borderRadius: "4px", backgroundColor: "var(--skeleton-bg, rgba(255,255,255,0.08))" }} count={1} />
     </Stack>
   );
 
