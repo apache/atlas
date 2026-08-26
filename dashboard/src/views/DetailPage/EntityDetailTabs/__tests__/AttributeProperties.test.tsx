@@ -617,6 +617,70 @@ describe('AttributeProperties', () => {
 			expect(screen.queryByTestId('custom-button')).not.toBeInTheDocument();
 		});
 
+		it('should show Edit button for enumchecking when type is allowed (positive)', () => {
+			mockUseAppSelector.mockImplementation((selector: any) => {
+				const mockState = {
+					session: {
+						sessionObj: {
+							data: {
+								'atlas.entity.update.allowed': true,
+								'atlas.ui.editable.entity.types': 'hdfs_path,enumchecking'
+							}
+						}
+					}
+				};
+				return selector(mockState);
+			});
+
+			render(
+				<TestWrapper>
+					<AttributeProperties
+						entity={{
+							...defaultMockEntity,
+							typeName: 'enumchecking'
+						}}
+						referredEntities={defaultMockReferredEntities}
+						loading={false}
+						propertiesName="Technical"
+					/>
+				</TestWrapper>
+			);
+
+			expect(screen.getByTestId('custom-button')).toBeInTheDocument();
+		});
+
+		it('should hide Edit button for enumchecking when type is not allowed (negative)', () => {
+			mockUseAppSelector.mockImplementation((selector: any) => {
+				const mockState = {
+					session: {
+						sessionObj: {
+							data: {
+								'atlas.entity.update.allowed': true,
+								'atlas.ui.editable.entity.types': 'hdfs_path'
+							}
+						}
+					}
+				};
+				return selector(mockState);
+			});
+
+			render(
+				<TestWrapper>
+					<AttributeProperties
+						entity={{
+							...defaultMockEntity,
+							typeName: 'enumchecking'
+						}}
+						referredEntities={defaultMockReferredEntities}
+						loading={false}
+						propertiesName="Technical"
+					/>
+				</TestWrapper>
+			);
+
+			expect(screen.queryByTestId('custom-button')).not.toBeInTheDocument();
+		});
+
 		it('should not show Edit button when atlas.entity.update.allowed is empty', () => {
 			mockUseAppSelector.mockImplementation((selector: any) => {
 				const mockState = {
@@ -636,6 +700,64 @@ describe('AttributeProperties', () => {
 				<TestWrapper>
 					<AttributeProperties
 						entity={defaultMockEntity}
+						referredEntities={defaultMockReferredEntities}
+						loading={false}
+						propertiesName="Technical"
+					/>
+				</TestWrapper>
+			);
+
+			expect(screen.queryByTestId('custom-button')).not.toBeInTheDocument();
+		});
+
+		it('should not show Edit button for DELETED entities', () => {
+			mockUseAppSelector.mockImplementation((selector: any) => {
+				const mockState = {
+					session: {
+						sessionObj: {
+							data: {
+								'atlas.entity.update.allowed': true,
+								'atlas.ui.editable.entity.types': '*'
+							}
+						}
+					}
+				};
+				return selector(mockState);
+			});
+
+			render(
+				<TestWrapper>
+					<AttributeProperties
+						entity={{ ...defaultMockEntity, status: 'DELETED' }}
+						referredEntities={defaultMockReferredEntities}
+						loading={false}
+						propertiesName="Technical"
+					/>
+				</TestWrapper>
+			);
+
+			expect(screen.queryByTestId('custom-button')).not.toBeInTheDocument();
+		});
+
+		it('should not show Edit button for PURGED entities', () => {
+			mockUseAppSelector.mockImplementation((selector: any) => {
+				const mockState = {
+					session: {
+						sessionObj: {
+							data: {
+								'atlas.entity.update.allowed': true,
+								'atlas.ui.editable.entity.types': '*'
+							}
+						}
+					}
+				};
+				return selector(mockState);
+			});
+
+			render(
+				<TestWrapper>
+					<AttributeProperties
+						entity={{ ...defaultMockEntity, status: 'PURGED' }}
 						referredEntities={defaultMockReferredEntities}
 						loading={false}
 						propertiesName="Technical"

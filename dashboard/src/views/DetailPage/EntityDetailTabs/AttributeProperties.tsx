@@ -24,6 +24,7 @@ import {
   LightTooltip
 } from "@components/muiComponents";
 import { isArray, isEmpty, isNull } from "@utils/Utils";
+import { isEntityTypeEditable } from "@utils/entityTypeConfigUtils";
 import SkeletonLoader from "@components/SkeletonLoader";
 import { getValues } from "@components/commonComponents";
 import { useState } from "react";
@@ -33,6 +34,8 @@ import EntityForm from "@views/Entity/EntityForm";
 import { useAppSelector } from "@hooks/reducerHook";
 import { AntSwitch } from "@utils/Muiutils";
 import { cloneDeep } from "@utils/Helper";
+
+import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const AttributeProperties = ({
   entity,
@@ -55,28 +58,13 @@ const AttributeProperties = ({
   const { entityDefs = [] } = entityData || {};
   const { data = {} } = sessionObj || {};
 
-  const key = "atlas.entity.update.allowed";
+  const updateAllowedKey = "atlas.entity.update.allowed";
+  const editableTypesKey = "atlas.ui.editable.entity.types";
 
-  let entityUpdate: boolean = false;
-  let entityTypeConfList: string[] = [];
-  
-  // Only process if the key exists and is not empty
-  if (!isEmpty(data?.[key])) {
-    let entityTypeList = data["atlas.ui.editable.entity.types"]
-      .trim()
-      .split(",");
-    if (entityTypeList.length) {
-      if (entityTypeList[0] === "*") {
-        entityTypeConfList = [];
-        entityUpdate = true; // Wildcard means all types are allowed
-      } else if (entityTypeList.length > 0) {
-        entityTypeConfList = entityTypeList;
-        // Check if current entity type is in the allowed list
-        if (entityTypeConfList.includes(typeName)) {
-          entityUpdate = true;
-        }
-      }
-    }
+  let entityUpdate = false;
+
+  if (!isEmpty(data?.[updateAllowedKey])) {
+    entityUpdate = isEntityTypeEditable(typeName, data?.[editableTypesKey]);
   }
 
   const [entityModal, setEntityModal] = useState<boolean>(false);
@@ -202,7 +190,7 @@ const AttributeProperties = ({
                     inputProps={{ "aria-label": "controlled" }}
                   />
                 </LightTooltip>
-                {entityUpdate && (
+                {entityUpdate && !loading && isEntityModificationAllowed(entity?.status) && (
                   <LightTooltip title={"Edit Entity"}>
                     <CustomButton
                       variant="outlined"
