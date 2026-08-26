@@ -359,7 +359,7 @@ define([
                     var content = href
                         ? "<a href='" + href + "' class='entity-type-name " + colorClass + "' title='" + _.escape(displayLabel) + "'>" + _.escape(displayLabel) + "</a>"
                         : "<span class='entity-type-name " + colorClass + "' title='" + _.escape(displayLabel) + "'>" + _.escape(displayLabel) + "</span>";
-                    return "<li class='entity-list-item' title='" + _.escape(displayLabel) + "'>" + content + "</li>";
+                    return "<li class='entity-list-item'>" + content + "</li>";
                 };
                 if (_.isArray(data)) {
                     data = _.map(data, function (item) {
@@ -384,6 +384,9 @@ define([
                 } else {
                     data = buildEntityObj(data);
                     listString += buildListItem(data);
+                }
+                if ($.fn.tooltip) {
+                    this.$("[data-id='entityList']").find('[title]').tooltip('destroy');
                 }
                 this.$("[data-id='entityList']").html(listString);
                 if ($.fn.tooltip) {
@@ -745,6 +748,9 @@ define([
             },
 
             onDestroy: function () {
+                if ($.fn.tooltip && this.$el) {
+                    this.$el.find('[title]').tooltip('destroy');
+                }
                 this.cardsViewLoadInProgress = false;
                 if (this.relationshipCardsViewInstance) {
                     this.relationshipCardsViewInstance.destroy();

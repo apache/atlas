@@ -51,7 +51,6 @@ import { Link as MUILink } from "@mui/material";
 interface CustomLinkProps {
   href: string;
   status: string;
-  entityColor: string;
   guid: string;
   name: string;
   typeName: string;
@@ -61,13 +60,12 @@ interface CustomLinkProps {
 const CustomLink = ({
   href,
   status,
-  entityColor,
   guid,
   name,
   typeName,
   params
 }: CustomLinkProps): JSX.Element => {
-  const displayLabel = `${name} (${typeName})`;
+  const displayLabel = typeName ? `${name} (${typeName})` : name;
   return (
     <li className={status}>
       <LightTooltip title={displayLabel}>
@@ -77,7 +75,7 @@ const CustomLink = ({
             pathname: href,
             search: params.toString() ? params.toString() : ""
           }}
-          className={`relationship-node-link ${entityColor === "#1976d2" ? "text-blue" : "text-red"}`}
+          className={`relationship-node-link ${status.includes("deleted-relation") ? "text-deleted" : "text-active"}`}
           replace={true}
           underline="hover"
         >
@@ -93,8 +91,8 @@ const RelationshipLineage = ({
   relationshipAttributes,
   isLoading
 }: {
-  entity: Record<string, any>;
-  relationshipAttributes?: Record<string, any[]>;
+  entity: Record<string, unknown>;
+  relationshipAttributes?: Record<string, unknown[]>;
   isLoading?: boolean;
 }) => {
   const entityData = cloneDeep(entity);
@@ -109,13 +107,13 @@ const RelationshipLineage = ({
   const zoomOutButtonRef = useRef(null);
   const relationshipSVG = useRef(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [nodeDetails, setNodeDetails] = useState<any>({});
+  const [nodeDetails, setNodeDetails] = useState<Record<string, unknown>>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [zoomId, setZoomId] = useState("");
 
-  const createData = (entityData: Record<string, any>) => {
+  const createData = (entityData: Record<string, unknown>) => {
     let links = [];
-    let nodes: Record<string, any> = {};
+    let nodes: Record<string, unknown> = {};
     if (entityData && entityData.relationshipAttributes) {
       for (const obj in entityData.relationshipAttributes) {
         if (!isEmpty(entityData.relationshipAttributes[obj])) {
@@ -201,7 +199,7 @@ const RelationshipLineage = ({
 
     var forceLink = d3
       .forceLink()
-      .id(function (d: any) {
+      .id(function (d: Record<string, unknown>) {
         return d.id;
       })
       .distance(function (d) {
@@ -266,7 +264,7 @@ const RelationshipLineage = ({
           d.radius = 25;
           return d.radius;
         })
-        .attr("fill", function (d: any) {
+        .attr("fill", function (d: Record<string, unknown>) {
           if (d && d.value && d.value.guid == guid) {
             if (isAllEntityRelationDeleted({ data: d, type: "node" })) {
               return deletedEntityColor;
@@ -486,7 +484,6 @@ const RelationshipLineage = ({
           ? " deleted-relation"
           : "";
         let nodeGuid = options.guid;
-        let entityColor = obj.color;
         let name = obj.name;
         let typeName = options.typeName;
         let keys = Array.from(searchParams.keys());
@@ -505,7 +502,6 @@ const RelationshipLineage = ({
             <CustomLink
               href={tempLink}
               status={status}
-              entityColor={entityColor}
               guid={nodeGuid}
               name={name}
               typeName={typeName}
@@ -518,7 +514,6 @@ const RelationshipLineage = ({
             <CustomLink
               href={`/detailPage/${nodeGuid}`}
               status={status}
-              entityColor={entityColor}
               guid={nodeGuid}
               name={name}
               typeName={typeName}
@@ -533,7 +528,6 @@ const RelationshipLineage = ({
         let status = entityStateReadOnly[entityStatus]
           ? " deleted-relation"
           : "";
-        let entityColor = obj.color;
         let name = obj.name;
 
         if (obj.relationship) {
@@ -541,14 +535,14 @@ const RelationshipLineage = ({
             ? "deleted-relation"
             : "";
         }
-        const displayLabel = `${name} (${options.typeName})`;
+        const displayLabel = options.typeName ? `${name} (${options.typeName})` : name;
         return (
           <li className={status}>
             <LightTooltip title={displayLabel}>
               <MUILink
                 component={RouterLink}
                 to={`/detailPage/${options.guid}?tabActive=relationship`}
-                className={`relationship-node-link ${entityColor === "#1976d2" ? "text-blue" : "text-red"}`}
+                className={`relationship-node-link ${status.includes("deleted-relation") ? "text-deleted" : "text-active"}`}
               >
                 {displayLabel}
               </MUILink>
