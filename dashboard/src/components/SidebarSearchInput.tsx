@@ -32,14 +32,11 @@ export const SidebarSearchInput: React.FC<SidebarSearchInputProps> = ({
   dataCy
 }) => (
   <Paper
-    sx={{
-      width: "100%"
-    }}
     className="sidebar-searchbar"
   >
     <InputBase
       fullWidth
-      sx={{ color: "rgba(0, 0, 0, 0.7)" }}
+      className="sidebar-searchbar-input"
       placeholder="Search"
       inputProps={{ "aria-label": "search" }}
       value={searchTerm}
@@ -59,9 +56,9 @@ export const SidebarSearchInput: React.FC<SidebarSearchInputProps> = ({
                 }
               }}
               edge="end"
-              sx={{ padding: "4px" }}
+              className="sidebar-searchbar-clear-btn"
             >
-              <ClearIcon fontSize="small" sx={{ color: "rgba(0, 0, 0, 0.4)" }} />
+              <ClearIcon fontSize="small" className="sidebar-searchbar-clear-icon" />
             </IconButton>
           )}
           <img

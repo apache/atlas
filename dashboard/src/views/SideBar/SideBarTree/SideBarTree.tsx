@@ -398,9 +398,9 @@ const BarTreeView: FC<{
     }, [searchTerm]);
 
     const getNodeId = useCallback((node: TreeNode) => {
-      if (treeName == "Classifications" && node.types == "parent") {
+      if (treeName === "Classifications" && node.types === "parent") {
         return node.label;
-      } else if (treeName == "Classifications" && node.types == "child") {
+      } else if (treeName === "Classifications" && node.types === "child") {
         return `${node.id}@${node.label}`;
       }
       return !isEmpty(node?.parent) ? `${node.id}@${node?.parent}` : node.id;
@@ -429,7 +429,7 @@ const BarTreeView: FC<{
 
       const bmObj = !isEmpty(businessMetaData?.businessMetadataDefs)
         ? businessMetaData?.businessMetadataDefs?.find((obj: EnumTypeDefData) => {
-          if (bmguid == obj.guid) {
+          if (bmguid === obj.guid) {
             return obj;
           }
         })
@@ -926,8 +926,8 @@ const BarTreeView: FC<{
         case "Relationships":
         case "CustomFilters":
           if (
-            treeName == "Relationships" ||
-            (treeName == "CustomFilters" && node.parent == "BASIC_RELATIONSHIP")
+            treeName === "Relationships" ||
+            (treeName === "CustomFilters" && node.parent === "BASIC_RELATIONSHIP")
           ) {
             navigate(
               {
@@ -1011,7 +1011,7 @@ const BarTreeView: FC<{
             >
               {(isHovered: boolean) => (
                 <>
-                  {node.id != "No Records Found" && (
+                  {node.id !== "No Records Found" && (
                     <TreeIcons
                       node={node}
                       treeName={treeName}
@@ -1019,11 +1019,11 @@ const BarTreeView: FC<{
                     />
                   )}
                   <TreeLabelWithTooltip label={node.label} />
-                  {(treeName == "Entities" ||
-                    treeName == "Classifications" ||
-                    treeName == "CustomFilters" ||
-                    treeName == "Glossary") &&
-                    node.id != "No Records Found" && (
+                  {(treeName === "Entities" ||
+                    treeName === "Classifications" ||
+                    treeName === "CustomFilters" ||
+                    treeName === "Glossary") &&
+                    node.id !== "No Records Found" && (
                       <TreeNodeIcons
                         node={node}
                         treeName={treeName}
@@ -1043,7 +1043,7 @@ const BarTreeView: FC<{
 
     const downloadFile = async () => {
       try {
-        if (treeName == "Glossary") {
+        if (treeName === "Glossary") {
           await downloadGlossaryImportTemplate();
           return;
         }
@@ -1074,7 +1074,7 @@ const BarTreeView: FC<{
         <Stack
           className="sidebar-tree-box"
           sx={{
-            ...(sideBarOpen == false && {
+            ...(sideBarOpen === false && {
               visibility: "hidden !important",
               top: "62px !important",
             }),
@@ -1098,11 +1098,11 @@ const BarTreeView: FC<{
                   className="tree-item-parent-label"
                 >
                   <Stack flexGrow={1} direction="row" alignItems="center" gap="12px">
-                    {treeName === "Entities" && <img src="/img/sidebar-icons/icon-entities.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
-                    {treeName === "Classifications" && <img src="/img/sidebar-icons/icon-classifications.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
-                    {treeName === "Business MetaData" && <img src="/img/sidebar-icons/icon-business-metadata.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
-                    {treeName === "Glossary" && <img src="/img/sidebar-icons/icon-glossary.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
-                    {treeName === "CustomFilters" && <img src="/img/sidebar-icons/icon-custom-filters.svg" style={{ width: "20px", height: "20px", opacity: 1 }} alt="" />}
+                    {treeName === "Entities" && <img src="/img/sidebar-icons/icon-entities.svg" className="sidebar-tree-icon" alt="" />}
+                    {treeName === "Classifications" && <img src="/img/sidebar-icons/icon-classifications.svg" className="sidebar-tree-icon" alt="" />}
+                    {treeName === "Business MetaData" && <img src="/img/sidebar-icons/icon-business-metadata.svg" className="sidebar-tree-icon" alt="" />}
+                    {treeName === "Glossary" && <img src="/img/sidebar-icons/icon-glossary.svg" className="sidebar-tree-icon" alt="" />}
+                    {treeName === "CustomFilters" && <img src="/img/sidebar-icons/icon-custom-filters.svg" className="sidebar-tree-icon" alt="" />}
                     <Typography sx={{ fontWeight: "500", fontSize: "14px", color: "rgba(255, 255, 255, 0.9)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{displayTreeName}</Typography>
                   </Stack>
                   <Stack direction="row" alignItems="center" gap="0.375rem">
@@ -1121,9 +1121,9 @@ const BarTreeView: FC<{
                     </LightTooltip>
 
 
-                    {(treeName == "Entities" ||
-                      treeName == "Classifications" ||
-                      treeName == "Glossary") && (
+                    {(treeName === "Entities" ||
+                      treeName === "Classifications" ||
+                      treeName === "Glossary") && (
                         <>
                           {
                             <LightTooltip title={getEmptyTypesTitle()}>
@@ -1144,9 +1144,9 @@ const BarTreeView: FC<{
                         </>
                       )}
 
-                    {(treeName == "Entities" ||
-                      treeName == "Classifications" ||
-                      treeName == "Glossary") && (
+                    {(treeName === "Entities" ||
+                      treeName === "Classifications" ||
+                      treeName === "Glossary") && (
                         <MoreVertIcon
                           onClick={(e: any) => {
                             e.stopPropagation();
@@ -1157,7 +1157,7 @@ const BarTreeView: FC<{
                         />
                       )}
 
-                    {treeName == "Business MetaData" && (
+                    {treeName === "Business MetaData" && (
                       <LightTooltip title="Open Business Metadata">
                         <LaunchOutlinedIcon
                           fontSize="small"
@@ -1196,8 +1196,8 @@ const BarTreeView: FC<{
                     }}
                     disableScrollLock={true}
                   >
-                    {(treeName == "Entities" ||
-                      treeName == "Classifications") && (
+                    {(treeName === "Entities" ||
+                      treeName === "Classifications") && (
                         <MenuItem
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1230,14 +1230,14 @@ const BarTreeView: FC<{
                           </Typography>
                         </MenuItem>
                       )}
-                    {(treeName == "Classifications" ||
-                      treeName == "Glossary") && (
+                    {(treeName === "Classifications" ||
+                      treeName === "Glossary") && (
                         <MenuItem
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (treeName == "Classifications") {
+                            if (treeName === "Classifications") {
                               setTagModal(true);
-                            } else if (treeName == "Glossary") {
+                            } else if (treeName === "Glossary") {
                               setGlossaryModal(true);
                             }
                             handleClose();
@@ -1253,13 +1253,13 @@ const BarTreeView: FC<{
                           </ListItemIcon>
                           <Typography className="menuitem-label">
                             Create{" "}
-                            {treeName == "Classifications"
+                            {treeName === "Classifications"
                               ? "Classifications"
                               : "Glossary"}
                           </Typography>
                         </MenuItem>
                       )}
-                    {(treeName == "Entities" || treeName == "Glossary") && (
+                    {(treeName === "Entities" || treeName === "Glossary") && (
                       <MenuItem
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1280,7 +1280,7 @@ const BarTreeView: FC<{
                         </Typography>
                       </MenuItem>
                     )}
-                    {(treeName == "Entities" || treeName == "Glossary") && (
+                    {(treeName === "Entities" || treeName === "Glossary") && (
                       <MenuItem
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1298,13 +1298,13 @@ const BarTreeView: FC<{
                         </ListItemIcon>
 
                         <Typography className="menuitem-label">
-                          {treeName == "Entities"
+                          {treeName === "Entities"
                             ? "Import Business Metadata"
                             : "Import Glossary Term"}
                         </Typography>
                       </MenuItem>
                     )}
-                    {treeName == "Glossary" && (
+                    {treeName === "Glossary" && (
                       <MenuItem
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1352,12 +1352,12 @@ const BarTreeView: FC<{
               open={openModal}
               onClose={handleCloseModal}
               title={
-                treeName == "Entities"
+                treeName === "Entities"
                   ? "Import Business Metadata"
                   : "Import Glossary Term"
               }
               onImportSuccess={
-                treeName == "Glossary"
+                treeName === "Glossary"
                   ? () => {
                     void dispatch(fetchGlossaryData());
                   }

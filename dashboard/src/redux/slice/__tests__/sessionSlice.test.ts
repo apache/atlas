@@ -77,6 +77,24 @@ describe('sessionSlice', () => {
 		expect(state.sessionObj.error).toBeNull();
 	});
 
+	it('should handle fetchSessionData.pending while retaining previous data', () => {
+		const previousState = {
+			...initialState,
+			sessionObj: {
+				loading: false,
+				data: { 'atlas.entity.create.allowed': true },
+				error: null
+			}
+		};
+		const action = { type: fetchSessionData.pending.type };
+		const state = sessionReducer(previousState, action);
+
+		expect(state.sessionObj.loading).toBe(true);
+		expect(state.sessionObj.data).toEqual({ 'atlas.entity.create.allowed': true });
+		expect(state.sessionObj.error).toBeNull();
+	});
+
+
 	it('should handle fetchSessionData.fulfilled', () => {
 		const mockData = {
 			'atlas.entity.create.allowed': true,
@@ -170,6 +188,23 @@ describe('sessionSlice', () => {
 	
 			expect(state.versionData.loading).toBe(true);
 			expect(state.versionData.data).toBeNull();
+			expect(state.versionData.error).toBeNull();
+		});
+
+		it('should handle fetchVersionData.pending while retaining previous data', () => {
+			const previousState = {
+				...initialState,
+				versionData: {
+					loading: false,
+					data: { Version: '3.0.0' },
+					error: null
+				}
+			};
+			const action = { type: fetchVersionData.pending.type };
+			const state = sessionReducer(previousState, action);
+	
+			expect(state.versionData.loading).toBe(true);
+			expect(state.versionData.data).toEqual({ Version: '3.0.0' });
 			expect(state.versionData.error).toBeNull();
 		});
 	

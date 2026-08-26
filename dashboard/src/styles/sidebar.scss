@@ -20,6 +20,7 @@
 .sidebar-box {
   display: flex !important;
   height: 100%;
+  overflow: hidden;
 }
 
 .sidebar-appbar {
@@ -160,7 +161,9 @@
   top: 20px;
   height: 100%;
   overflow-y: auto;
-  padding-bottom: 16px;
+  overflow-x: hidden;
+  flex: 1;
+  padding-bottom: 48px;
   padding-left: 8px;
   padding-right: 8px;
 }
@@ -191,6 +194,7 @@
 
 
 .sidebar-searchbar {
+  width: 100%;
   background: v.$sidebar-search-bg !important;
   display: flex;
   justify-content: space-between;
@@ -198,6 +202,18 @@
   padding: 0 10px 0 8px;
   color: rgba(0, 0, 0, 0.7);
   font-size: 14px;
+
+  &-input {
+    color: rgba(0, 0, 0, 0.7) !important;
+  }
+
+  &-clear-btn {
+    padding: 4px !important;
+  }
+
+  &-clear-icon {
+    color: rgba(0, 0, 0, 0.4) !important;
+  }
 
   &-icon {
     width: 16px;
@@ -440,3 +456,45 @@ button.MuiButtonBase-root.MuiIconButton-root.MuiIconButton-sizeSmall.tree-item-m
   width: 100%;
   background-color: v.$sidebar-bg;
 }
+
+.sidebar-mini-module-container {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding-bottom: 60px;
+}
+
+.sidebar-drawer-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: v.$sidebar-bg;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle-icon {
+  color: white;
+}
+
+.sidebar-main-content {
+  margin: 0;
+  overflow-x: auto;
+  background: #f5f7f9;
+  padding: 0;
+}
+
+.sidebar-circular-progress {
+  display: inline-block;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.sidebar-module-stack {
+  width: 100%;
+}
+

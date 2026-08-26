@@ -38,7 +38,7 @@ const TreeSkeletonLoader = ({ count = 7 }: { count?: number }) => {
 
   return (
     <Stack gap="16px" padding="16px 16px" width="100%">
-      {allRows.slice(0, count)}
+      {allRows.slice(0, Math.max(0, count))}
     </Stack>
   );
 };

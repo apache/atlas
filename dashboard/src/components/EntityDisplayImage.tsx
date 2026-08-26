@@ -41,7 +41,8 @@ const DisplayImage = ({
 
   const handleError = (e: SyntheticEvent<HTMLImageElement, Event>) => {
     const target = e.currentTarget;
-    if (!target.src.endsWith(fallbackUrl)) {
+    if (target.dataset.fallbackApplied !== "true") {
+      target.dataset.fallbackApplied = "true";
       target.onerror = null;
       target.src = fallbackUrl;
     }
