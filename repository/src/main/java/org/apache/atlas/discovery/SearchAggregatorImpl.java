@@ -57,10 +57,18 @@ public class SearchAggregatorImpl implements SearchAggregator {
         postProcessors.add(new ServiceTypeAggregator(searchContext.getTypeRegistry()));
 
         try {
-            AtlasGraphIndexClient graphIndexClient    = graph.getGraphIndexClient();
+            AtlasGraphIndexClient graphIndexClient = graph.getGraphIndexClient();
             Set<AtlasEntityType>  searchForEntityType = searchContext.getEntityTypes();
 
+            if (FreeTextSearchProcessor.isOpenSearchIndexBackend()) {
+                searchForEntityType = FreeTextSearchProcessor.resolveOpenSearchEntityTypes(searchContext);
+            }
+
             Map<String, String> indexFieldNameCache = new HashMap<>();
+
+            if (FreeTextSearchProcessor.isOpenSearchIndexBackend()) {
+                indexFieldNameCache.putAll(FreeTextSearchProcessor.buildOpenSearchIndexFieldNameCache(typeRegistry));
+            }
 
             for (String fieldName : aggregationFields) {
                 String indexFieldName = getIndexFieldNameForCommonFieldName(typeRegistry, fieldName);
@@ -79,8 +87,13 @@ public class SearchAggregatorImpl implements SearchAggregator {
                 indexFieldNameCache.put(attribute.getQualifiedName(), indexFieldName);
             }
 
-            AggregationContext aggregatorContext = new AggregationContext(queryString, searchParameters.getEntityFilters(), searchForEntityType,
-                    aggregationFields, aggregationAttributes, indexFieldNameCache, searchParameters.getExcludeDeletedEntities(), searchParameters.getIncludeSubTypes());
+            Set<String> classificationTypeNames = FreeTextSearchProcessor.isOpenSearchIndexBackend()
+                    ? FreeTextSearchProcessor.resolveOpenSearchClassificationTypeNames(searchContext)
+                    : Collections.emptySet();
+
+            AggregationContext aggregatorContext = new AggregationContext(queryString, searchParameters.getEntityFilters(),
+                    searchForEntityType, classificationTypeNames, aggregationFields, aggregationAttributes,
+                    indexFieldNameCache, searchParameters.getExcludeDeletedEntities(), searchParameters.getIncludeSubTypes());
 
             Map<String, List<AtlasAggregationEntry>> aggregatedMetrics = graphIndexClient.getAggregatedMetrics(aggregatorContext);
 

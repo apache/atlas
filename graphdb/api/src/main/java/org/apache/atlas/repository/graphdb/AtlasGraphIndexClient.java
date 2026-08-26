@@ -21,6 +21,7 @@ import org.apache.atlas.model.discovery.AtlasAggregationEntry;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents a graph client work with indices used by Jansgraph.
@@ -43,6 +44,14 @@ public interface AtlasGraphIndexClient {
     List<String> getSuggestions(String prefixString, String indexFieldName);
 
     /**
+     * Weighted quick search for OpenSearch backends. Non-OpenSearch implementations return an empty result.
+     *
+     * @param quickSearchContext quick-search inputs (query, filters, pagination)
+     * @return matching entity GUIDs in score order and total hit count
+     */
+    QuickSearchResult quickSearch(QuickSearchContext quickSearchContext);
+
+    /**
      * The implementers should apply the search weights for the passed in properties.
      *
      * @param collectionName the name of the collection for which the search weight needs to be applied
@@ -57,6 +66,15 @@ public interface AtlasGraphIndexClient {
      * @param suggestionProperties the list of suggestion properties.
      */
     void applySuggestionFields(String collectionName, List<String> suggestionProperties);
+
+    /**
+     * Registers OpenSearch index fields that use a text mapping with a {@code keyword} subfield for terms queries.
+     * Non-OpenSearch implementations ignore this call.
+     *
+     * @param collectionName mixed index collection name
+     * @param indexFieldNames index field names that require {@code .keyword} for terms aggregations/suggestions
+     */
+    void applyKeywordSubfieldFields(String collectionName, Set<String> indexFieldNames);
 
     /**
      * Returns status of index client

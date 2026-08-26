@@ -153,7 +153,20 @@ public interface AtlasGraphManagement extends AutoCloseable {
      * @param isStringField
      * @return the index field name used for the given property
      */
-    String addMixedIndex(String vertexIndex, AtlasPropertyKey propertyKey, boolean isStringField);
+    default String addMixedIndex(String vertexIndex, AtlasPropertyKey propertyKey, boolean isStringField) {
+        return addMixedIndex(vertexIndex, propertyKey, isStringField, false);
+    }
+
+    /**
+     * Adds a property key to the given index in the graph.
+     *
+     * @param vertexIndex vertex mixed index name
+     * @param propertyKey property key to index
+     * @param isStringField when true, maps as OpenSearch/Solr keyword/string
+     * @param withKeywordSubfield when true on OpenSearch, maps as text with a {@code keyword} subfield for terms aggs
+     * @return the index field name used for the given property
+     */
+    String addMixedIndex(String vertexIndex, AtlasPropertyKey propertyKey, boolean isStringField, boolean withKeywordSubfield);
 
     /**
      * Gets the index field name for the vertex property.
@@ -161,7 +174,14 @@ public interface AtlasGraphManagement extends AutoCloseable {
      * @param propertyKey
      * @return the encoded name for the index
      */
-    String getIndexFieldName(String indexName, AtlasPropertyKey propertyKey, boolean isStringField);
+    default String getIndexFieldName(String indexName, AtlasPropertyKey propertyKey, boolean isStringField) {
+        return getIndexFieldName(indexName, propertyKey, isStringField, false);
+    }
+
+    /**
+     * Gets the index field name for the vertex property.
+     */
+    String getIndexFieldName(String indexName, AtlasPropertyKey propertyKey, boolean isStringField, boolean withKeywordSubfield);
 
     /**
      * Set consistency to ConsistencyModifier.LOCK for all vertex and edge indexes.

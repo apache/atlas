@@ -39,6 +39,7 @@ import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.StandardIndexProvider;
 import org.janusgraph.diskstorage.StandardStoreManager;
 import org.janusgraph.diskstorage.es.ElasticSearch7Index;
+import org.janusgraph.diskstorage.opensearch.AtlasOpenSearchIndex;
 import org.janusgraph.diskstorage.hbase.HBaseStoreManager;
 import org.janusgraph.diskstorage.rdbms.RdbmsStoreManager;
 import org.janusgraph.diskstorage.solr.Solr6Index;
@@ -221,10 +222,8 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
     @VisibleForTesting
     static JanusGraph initJanusGraph(Configuration config) {
-        org.apache.commons.configuration2.Configuration conf2 = createConfiguration2(config);
-
         try {
-            return JanusGraphFactory.open(conf2);
+            return JanusGraphFactory.open(config);
         } catch (JanusGraphException e) {
             LOG.warn("JanusGraphException: {}", e.getMessage());
 
@@ -233,7 +232,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
                 config.addProperty("graph.allow-upgrade", true);
 
-                return JanusGraphFactory.open(conf2);
+                return JanusGraphFactory.open(config);
             } else {
                 throw new RuntimeException(e);
             }
@@ -454,6 +453,40 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         }
     }
 
+    private static void addOpenSearchIndex() {
+        try {
+            Field field = StandardIndexProvider.class.getDeclaredField("ALL_MANAGER_CLASSES");
+
+            field.setAccessible(true);
+
+            Method getDeclaredFields0 = Class.class.getDeclaredMethod("getDeclaredFields0", boolean.class);
+            getDeclaredFields0.setAccessible(true);
+            Field[] fields = (Field[]) getDeclaredFields0.invoke(Field.class, false);
+            Field modifiersField = null;
+            for (Field each : fields) {
+                if ("modifiers".equals(each.getName())) {
+                    modifiersField = each;
+                    break;
+                }
+            }
+
+            modifiersField.setAccessible(true);
+            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+
+            Map<String, String> customMap = new HashMap<>(StandardIndexProvider.getAllProviderClasses());
+
+            customMap.put("opensearch", AtlasOpenSearchIndex.class.getName());
+
+            ImmutableMap<String, String> immap = ImmutableMap.copyOf(customMap);
+
+            field.set(null, immap);
+
+            LOG.debug("Injected opensearch index - {}", AtlasOpenSearchIndex.class.getName());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private static void updateGlobalConfiguration(Map<String, Object> map) {
         JanusGraph           graph            = null;
         JanusGraphManagement managementSystem = null;
@@ -527,6 +560,8 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         addSolr6Index();
 
         addElasticSearch7Index();
+
+        addOpenSearchIndex();
     }
 
     public static void logArgs() {

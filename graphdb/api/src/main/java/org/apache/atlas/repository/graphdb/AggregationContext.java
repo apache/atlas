@@ -21,6 +21,7 @@ import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,6 +29,7 @@ public class AggregationContext {
     private final String               queryString;
     private final FilterCriteria       filterCriteria;
     private final Set<AtlasEntityType> searchForEntityTypes;
+    private final Set<String>          classificationTypeNames;
     private final Set<String>          aggregationFieldNames;
     private final Set<AtlasAttribute>  aggregationAttributes;
     private final Map<String, String>  indexFieldNameCache;
@@ -41,15 +43,34 @@ public class AggregationContext {
      * @param indexFieldNameCache
      * @param excludeDeletedEntities a boolean flag to indicate if the deleted entities need to be excluded in search
      */
-    public AggregationContext(String queryString, FilterCriteria filterCriteria, Set<AtlasEntityType> searchForEntityType, Set<String> aggregationFieldNames, Set<AtlasAttribute> aggregationAttributes, Map<String, String> indexFieldNameCache, boolean excludeDeletedEntities, boolean includeSubTypes) {
-        this.queryString            = queryString;
-        this.filterCriteria         = filterCriteria;
-        this.searchForEntityTypes   = searchForEntityType;
-        this.aggregationFieldNames  = aggregationFieldNames;
-        this.aggregationAttributes  = aggregationAttributes;
-        this.indexFieldNameCache    = indexFieldNameCache;
-        this.excludeDeletedEntities = excludeDeletedEntities;
-        this.includeSubTypes        = includeSubTypes;
+    public AggregationContext(String queryString, FilterCriteria filterCriteria, Set<AtlasEntityType> searchForEntityType,
+                              Set<String> classificationTypeNames, Set<String> aggregationFieldNames,
+                              Set<AtlasAttribute> aggregationAttributes, Map<String, String> indexFieldNameCache,
+                              boolean excludeDeletedEntities, boolean includeSubTypes) {
+        this.queryString              = queryString;
+        this.filterCriteria           = filterCriteria;
+        this.searchForEntityTypes     = searchForEntityType;
+        this.classificationTypeNames  = classificationTypeNames == null ? Collections.emptySet() : classificationTypeNames;
+        this.aggregationFieldNames    = aggregationFieldNames;
+        this.aggregationAttributes    = aggregationAttributes;
+        this.indexFieldNameCache      = indexFieldNameCache;
+        this.excludeDeletedEntities   = excludeDeletedEntities;
+        this.includeSubTypes          = includeSubTypes;
+    }
+
+    /**
+     * Backward-compatible constructor for callers that do not pass classification filters.
+     */
+    public AggregationContext(String queryString, FilterCriteria filterCriteria, Set<AtlasEntityType> searchForEntityType,
+                              Set<String> aggregationFieldNames, Set<AtlasAttribute> aggregationAttributes,
+                              Map<String, String> indexFieldNameCache, boolean excludeDeletedEntities,
+                              boolean includeSubTypes) {
+        this(queryString, filterCriteria, searchForEntityType, Collections.emptySet(), aggregationFieldNames,
+                aggregationAttributes, indexFieldNameCache, excludeDeletedEntities, includeSubTypes);
+    }
+
+    public Set<String> getClassificationTypeNames() {
+        return classificationTypeNames;
     }
 
     public String getQueryString() {

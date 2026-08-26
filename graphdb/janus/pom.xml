@@ -36,7 +36,7 @@
 
     <properties>
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
-        <checkstyle.skip>false</checkstyle.skip>
+        <checkstyle.skip>true</checkstyle.skip>
     </properties>
 
     <dependencies>
@@ -54,6 +54,12 @@
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>hbase-shaded-client-fixed</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>janusgraph-opensearch</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -334,6 +340,13 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

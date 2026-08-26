@@ -21,6 +21,8 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.model.discovery.AtlasAggregationEntry;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AggregationContext;
+import org.apache.atlas.repository.graphdb.QuickSearchContext;
+import org.apache.atlas.repository.graphdb.QuickSearchResult;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.solr.client.solrj.SolrClient;
@@ -36,6 +38,8 @@ import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.util.NamedList;
 import org.janusgraph.diskstorage.es.ElasticSearch7Index;
 import org.janusgraph.diskstorage.es.ElasticSearchClient;
+import org.janusgraph.diskstorage.opensearch.AtlasOpenSearchIndex;
+import org.janusgraph.diskstorage.opensearch.OpenSearchClient;
 import org.janusgraph.diskstorage.solr.Solr6Index;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -57,6 +61,7 @@ import java.util.Set;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -84,11 +89,14 @@ public class AtlasJanusGraphIndexClientTest {
     @Mock
     private ElasticSearchClient mockElasticSearchClient;
     @Mock
+    private OpenSearchClient mockOpenSearchClient;
+    @Mock
     private V2Response mockV2Response;
 
     private AtlasJanusGraphIndexClient indexClient;
     private MockedStatic<Solr6Index> mockedSolr6Index;
     private MockedStatic<ElasticSearch7Index> mockedElasticSearch7Index;
+    private MockedStatic<AtlasOpenSearchIndex> mockedAtlasOpenSearchIndex;
     private MockedStatic<ApplicationProperties> mockedApplicationProperties;
 
     @BeforeMethod
@@ -99,6 +107,7 @@ public class AtlasJanusGraphIndexClientTest {
         // Setup static mocks
         mockedSolr6Index = Mockito.mockStatic(Solr6Index.class);
         mockedElasticSearch7Index = Mockito.mockStatic(ElasticSearch7Index.class);
+        mockedAtlasOpenSearchIndex = Mockito.mockStatic(AtlasOpenSearchIndex.class);
         mockedApplicationProperties = Mockito.mockStatic(ApplicationProperties.class);
     }
 
@@ -109,6 +118,9 @@ public class AtlasJanusGraphIndexClientTest {
         }
         if (mockedElasticSearch7Index != null) {
             mockedElasticSearch7Index.close();
+        }
+        if (mockedAtlasOpenSearchIndex != null) {
+            mockedAtlasOpenSearchIndex.close();
         }
         if (mockedApplicationProperties != null) {
             mockedApplicationProperties.close();
@@ -291,6 +303,32 @@ public class AtlasJanusGraphIndexClientTest {
     }
 
     @Test
+    public void testApplySearchWeightWithOpenSearchBackend() {
+        when(mockConfiguration.getString(ApplicationProperties.INDEX_BACKEND_CONF))
+                .thenReturn(ApplicationProperties.INDEX_BACKEND_OPENSEARCH);
+
+        Map<String, Integer> weightMap = Collections.singletonMap("field1", 10);
+        indexClient.applySearchWeight("testCollection", weightMap);
+
+        mockedSolr6Index.verify(Solr6Index::getSolrClient, never());
+        assertEquals(AtlasOpenSearchDiscoveryClient.getSearchWeightByIndexField(), weightMap);
+    }
+
+    @Test
+    public void testQuickSearchWithOpenSearchBackendReturnsEmptyWhenClientNull() {
+        when(mockConfiguration.getString(ApplicationProperties.INDEX_BACKEND_CONF))
+                .thenReturn(ApplicationProperties.INDEX_BACKEND_OPENSEARCH);
+        mockedAtlasOpenSearchIndex.when(AtlasOpenSearchIndex::getOpenSearchClient).thenReturn(null);
+
+        QuickSearchContext ctx = new QuickSearchContext("test*", null, Collections.emptySet(),
+                Collections.emptySet(), Collections.emptyMap(), true, true, 0, 10);
+        QuickSearchResult result = indexClient.quickSearch(ctx);
+
+        assertEquals(result.getEntityGuids().size(), 0);
+        assertEquals(result.getTotalCount(), 0L);
+    }
+
+    @Test
     public void testApplySearchWeightWithNullSolrClient() {
         mockedSolr6Index.when(Solr6Index::getSolrClient).thenReturn(null);
 
@@ -387,6 +425,54 @@ public class AtlasJanusGraphIndexClientTest {
         } catch (NullPointerException e) {
             assertNotNull(e);
         }
+    }
+
+    @Test
+    public void testIsHealthyWithOpenSearchBackendHealthy() throws Exception {
+        when(mockConfiguration.getString(ApplicationProperties.INDEX_BACKEND_CONF)).thenReturn(ApplicationProperties.INDEX_BACKEND_OPENSEARCH);
+        mockedAtlasOpenSearchIndex.when(AtlasOpenSearchIndex::getOpenSearchClient).thenReturn(mockOpenSearchClient);
+        when(mockOpenSearchClient.indexExists("janusgraph_vertex_index")).thenReturn(true);
+
+        assertTrue(indexClient.isHealthy());
+
+        verify(mockOpenSearchClient).indexExists("janusgraph_vertex_index");
+        mockedAtlasOpenSearchIndex.verify(AtlasOpenSearchIndex::getOpenSearchClient);
+    }
+
+    @Test
+    public void testIsHealthyWithOpenSearchBackendUnhealthy() throws Exception {
+        when(mockConfiguration.getString(ApplicationProperties.INDEX_BACKEND_CONF)).thenReturn(ApplicationProperties.INDEX_BACKEND_OPENSEARCH);
+        mockedAtlasOpenSearchIndex.when(AtlasOpenSearchIndex::getOpenSearchClient).thenReturn(mockOpenSearchClient);
+        when(mockOpenSearchClient.indexExists("janusgraph_vertex_index")).thenReturn(false);
+
+        assertFalse(indexClient.isHealthy());
+    }
+
+    @Test
+    public void testIsHealthyWithNullOpenSearchClient() {
+        when(mockConfiguration.getString(ApplicationProperties.INDEX_BACKEND_CONF)).thenReturn(ApplicationProperties.INDEX_BACKEND_OPENSEARCH);
+        mockedAtlasOpenSearchIndex.when(AtlasOpenSearchIndex::getOpenSearchClient).thenReturn(null);
+
+        assertFalse(indexClient.isHealthy());
+    }
+
+    @Test
+    public void testIsHealthyWithSolrBackendUnchanged() throws Exception {
+        when(mockConfiguration.getString(ApplicationProperties.INDEX_BACKEND_CONF)).thenReturn(ApplicationProperties.INDEX_BACKEND_SOLR);
+        mockedSolr6Index.when(Solr6Index::getSolrClient).thenReturn(mockSolrClient);
+        when(mockSolrClient.ping(Constants.VERTEX_INDEX)).thenReturn(mockPingResponse);
+        when(mockPingResponse.getStatus()).thenReturn(0);
+
+        assertTrue(indexClient.isHealthy());
+
+        verify(mockSolrClient).ping(Constants.VERTEX_INDEX);
+    }
+
+    @Test
+    public void testIsHealthyWithUnsupportedBackend() {
+        when(mockConfiguration.getString(ApplicationProperties.INDEX_BACKEND_CONF)).thenReturn("unknown-backend");
+
+        assertFalse(indexClient.isHealthy());
     }
 
     @Test

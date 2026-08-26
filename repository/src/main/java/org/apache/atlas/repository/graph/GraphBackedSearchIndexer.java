@@ -174,6 +174,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     private static final List<Class<?>> INDEX_EXCLUSION_CLASSES  = new ArrayList<>(Arrays.asList(Boolean.class, BigDecimal.class, BigInteger.class));
     private static final Set<String>    GLOBAL_UNIQUE_INDEX_KEYS = new HashSet<>();
     private static final Set<String>    TYPE_UNIQUE_INDEX_KEYS   = new HashSet<>();
+    private static final int            MIN_SEARCH_WEIGHT_FOR_KEYWORD_SUBFIELD = 8;
 
     // Added for type lookup when indexing the new typedefs
     private final AtlasTypeRegistry         typeRegistry;
@@ -222,6 +223,29 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
 
         return true;
+    }
+
+    static boolean needsKeywordSubfield(String propertyName, boolean isStringField, int searchWeight) {
+        if (isStringField || !ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(getIndexBackend())) {
+            return false;
+        }
+
+        if (STATE_PROPERTY_KEY.equals(propertyName)
+                || ENTITY_TYPE_PROPERTY_KEY.equals(propertyName)
+                || LABELS_PROPERTY_KEY.equals(propertyName)
+                || CLASSIFICATION_TEXT_KEY.equals(propertyName)) {
+            return true;
+        }
+
+        return searchWeight >= MIN_SEARCH_WEIGHT_FOR_KEYWORD_SUBFIELD;
+    }
+
+    private static String getIndexBackend() {
+        try {
+            return ApplicationProperties.get().getString(ApplicationProperties.INDEX_BACKEND_CONF);
+        } catch (AtlasException e) {
+            return null;
+        }
     }
 
     public static boolean isStringAttribute(AtlasAttribute attribute) {
@@ -439,7 +463,13 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     }
 
     public String createVertexIndex(AtlasGraphManagement management, String propertyName, UniqueKind uniqueKind, Class<?> propertyClass, AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes, boolean isStringField) {
+        return createVertexIndex(management, propertyName, uniqueKind, propertyClass, cardinality, createCompositeIndex,
+                createCompositeIndexWithTypeAndSuperTypes, isStringField, AtlasAttributeDef.DEFAULT_SEARCHWEIGHT);
+    }
+
+    public String createVertexIndex(AtlasGraphManagement management, String propertyName, UniqueKind uniqueKind, Class<?> propertyClass, AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes, boolean isStringField, int searchWeight) {
         String indexFieldName = null;
+        boolean withKeywordSubfield = needsKeywordSubfield(propertyName, isStringField, searchWeight);
 
         if (propertyName != null) {
             AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
@@ -458,14 +488,14 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 if (isIndexApplicable(propertyClass, cardinality)) {
                     LOG.debug("Creating backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
 
-                    indexFieldName = management.addMixedIndex(VERTEX_INDEX, propertyKey, isStringField);
+                    indexFieldName = management.addMixedIndex(VERTEX_INDEX, propertyKey, isStringField, withKeywordSubfield);
 
                     LOG.info("Created backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
                 }
             }
 
             if (indexFieldName == null && isIndexApplicable(propertyClass, cardinality)) {
-                indexFieldName = management.getIndexFieldName(VERTEX_INDEX, propertyKey, isStringField);
+                indexFieldName = management.getIndexFieldName(VERTEX_INDEX, propertyKey, isStringField, withKeywordSubfield);
             }
 
             if (propertyKey != null) {
@@ -698,9 +728,12 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 } else if (isIndexApplicable(getPrimitiveClass(attribute.getTypeName()), toAtlasCardinality(attribute.getAttributeDef().getCardinality()))) {
                     AtlasPropertyKey propertyKey   = managementSystem.getPropertyKey(attribute.getVertexPropertyName());
                     boolean          isStringField = AtlasAttributeDef.IndexType.STRING.equals(attribute.getIndexType());
+                    boolean          withKeywordSubfield = needsKeywordSubfield(attribute.getVertexPropertyName(), isStringField,
+                            attribute.getSearchWeight());
 
                     if (propertyKey != null) {
-                        String indexFieldName = managementSystem.getIndexFieldName(Constants.VERTEX_INDEX, propertyKey, isStringField);
+                        String indexFieldName = managementSystem.getIndexFieldName(Constants.VERTEX_INDEX, propertyKey,
+                                isStringField, withKeywordSubfield);
 
                         attribute.setIndexFieldName(indexFieldName);
 
@@ -834,10 +867,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                         isStringField = AtlasAttributeDef.IndexType.STRING.equals(indexType);
                     }
 
-                    createVertexIndex(management, propertyName, UniqueKind.NONE, getPrimitiveClass(attribTypeName), cardinality, isIndexable, false, isStringField);
+                    createVertexIndex(management, propertyName, UniqueKind.NONE, getPrimitiveClass(attribTypeName), cardinality, isIndexable, false, isStringField, attributeDef.getSearchWeight());
 
                     if (uniqPropName != null) {
-                        createVertexIndex(management, uniqPropName, UniqueKind.PER_TYPE_UNIQUE, getPrimitiveClass(attribTypeName), cardinality, isIndexable, true, isStringField);
+                        createVertexIndex(management, uniqPropName, UniqueKind.PER_TYPE_UNIQUE, getPrimitiveClass(attribTypeName), cardinality, isIndexable, true, isStringField, attributeDef.getSearchWeight());
                     }
                 }
             } else if (isEnumType(attributeType)) {

@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.graphdb.janus;
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -57,6 +58,7 @@ import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
+import org.janusgraph.graphdb.types.ParameterType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,6 +85,21 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
     private static final boolean        lockEnabled            = AtlasConfiguration.STORAGE_CONSISTENCY_LOCK_ENABLED.getBoolean();
     private static final Parameter<?>[] STRING_PARAMETER_ARRAY = new Parameter[] {Mapping.STRING.asParameter()};
+
+    private static final Parameter<?>[] TEXT_WITH_KEYWORD_SUBFIELD_PARAMETERS = new Parameter[] {
+        Mapping.TEXT.asParameter(),
+        Parameter.of(ParameterType.customParameterName("fields"), createKeywordSubfieldsParameter())
+    };
+
+    private static Map<String, Object> createKeywordSubfieldsParameter() {
+        Map<String, Object> keywordMapping = new HashMap<>();
+        keywordMapping.put("type", "keyword");
+
+        Map<String, Object> fields = new HashMap<>();
+        fields.put("keyword", keywordMapping);
+
+        return fields;
+    }
 
     private static final char[] RESERVED_CHARS = {'{', '}', '"', '$', Token.SEPARATOR_CHAR};
 
@@ -328,26 +345,24 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     }
 
     @Override
-    public String addMixedIndex(String indexName, AtlasPropertyKey propertyKey, boolean isStringField) {
+    public String addMixedIndex(String indexName, AtlasPropertyKey propertyKey, boolean isStringField, boolean withKeywordSubfield) {
         PropertyKey     janusKey        = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
         JanusGraphIndex janusGraphIndex = management.getGraphIndex(indexName);
+        Parameter<?>[]  indexParameters = resolveIndexParameters(isStringField, withKeywordSubfield);
 
-        if (isStringField) {
-            management.addIndexKey(janusGraphIndex, janusKey, Mapping.STRING.asParameter());
-
-            LOG.debug("created a string type for {} with janueKey {}.", propertyKey.getName(), janusKey);
-        } else {
+        if (indexParameters.length == 0) {
             management.addIndexKey(janusGraphIndex, janusKey);
-
             LOG.debug("created a default type for {} with janueKey {}.", propertyKey.getName(), janusKey);
+        } else {
+            management.addIndexKey(janusGraphIndex, janusKey, indexParameters);
+            LOG.debug("created indexed type for {} with janueKey {} using {} parameter(s).",
+                    propertyKey.getName(), janusKey, indexParameters.length);
         }
 
-        String encodedName;
+        String encodedName = graph.getIndexFieldName(propertyKey, janusGraphIndex, indexParameters);
 
-        if (isStringField) {
-            encodedName = graph.getIndexFieldName(propertyKey, janusGraphIndex, STRING_PARAMETER_ARRAY);
-        } else {
-            encodedName = graph.getIndexFieldName(propertyKey, janusGraphIndex);
+        if (usesKeywordSubfieldMapping(isStringField, withKeywordSubfield)) {
+            AtlasOpenSearchDiscoveryClient.registerKeywordSubfieldField(encodedName);
         }
 
         LOG.info("property '{}' is encoded to '{}'.", propertyKey.getName(), encodedName);
@@ -356,13 +371,34 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     }
 
     @Override
-    public String getIndexFieldName(String indexName, AtlasPropertyKey propertyKey, boolean isStringField) {
+    public String getIndexFieldName(String indexName, AtlasPropertyKey propertyKey, boolean isStringField, boolean withKeywordSubfield) {
         JanusGraphIndex janusGraphIndex = management.getGraphIndex(indexName);
 
+        return graph.getIndexFieldName(propertyKey, janusGraphIndex, resolveIndexParameters(isStringField, withKeywordSubfield));
+    }
+
+    private static Parameter<?>[] resolveIndexParameters(boolean isStringField, boolean withKeywordSubfield) {
         if (isStringField) {
-            return graph.getIndexFieldName(propertyKey, janusGraphIndex, STRING_PARAMETER_ARRAY);
-        } else {
-            return graph.getIndexFieldName(propertyKey, janusGraphIndex);
+            return STRING_PARAMETER_ARRAY;
+        }
+
+        if (usesKeywordSubfieldMapping(isStringField, withKeywordSubfield)) {
+            return TEXT_WITH_KEYWORD_SUBFIELD_PARAMETERS;
+        }
+
+        return new Parameter[0];
+    }
+
+    private static boolean usesKeywordSubfieldMapping(boolean isStringField, boolean withKeywordSubfield) {
+        return withKeywordSubfield && !isStringField && isOpenSearchIndexBackend();
+    }
+
+    private static boolean isOpenSearchIndexBackend() {
+        try {
+            return ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(
+                    ApplicationProperties.get().getString(ApplicationProperties.INDEX_BACKEND_CONF));
+        } catch (Exception e) {
+            return false;
         }
     }
 
