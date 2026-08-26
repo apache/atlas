@@ -153,7 +153,7 @@ const SideBarBody = (props: {
 
   const [popoverAnchor, setPopoverAnchor] = useState<HTMLButtonElement | null>(null);
   const [activePopover, setActivePopover] = useState<string | null>(null);
-  const [popoverMaxHeight, setPopoverMaxHeight] = useState<string>('calc(100vh - 100px)');
+  const [popoverMaxHeight, setPopoverMaxHeight] = useState<string>("calc(100vh - 100px)");
   const [isBottomHalf, setIsBottomHalf] = useState<boolean>(false);
 
 
@@ -264,13 +264,7 @@ const SideBarBody = (props: {
               <div className="layout-loading-container">
                 <CircularProgress
                   color="primary"
-                  sx={{
-                    display: "inline-block",
-                    position: "absolute",
-                    left: "50%",
-                    top: "50%",
-                    transform: "translate(-50%, -50%)",
-                  }}
+                  className="sidebar-circular-progress"
                 />
               </div>
             }
@@ -293,12 +287,11 @@ const SideBarBody = (props: {
     <Stack
       flexDirection="row"
       className="sidebar-box"
-      sx={{ overflow: "hidden" }}
     >
       <CssBaseline />
 
       <Drawer
-        className={`sidebar-drawer ${open ? 'open' : 'closed'}`}
+        className={`sidebar-drawer ${open ? "open" : "closed"}`}
         PaperProps={{
           className: "sidebar-drawer-paper"
         }}
@@ -311,7 +304,7 @@ const SideBarBody = (props: {
           {!open && (
             <Stack
               alignItems="center"
-              sx={{ width: "100%", flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", boxSizing: "border-box", pb: "60px" }}
+              className="sidebar-mini-module-container"
             >
               <div
                 className="collapsed-logo-container"
@@ -330,7 +323,7 @@ const SideBarBody = (props: {
               </div>
 
               {/* Module Icons for Mini Drawer */}
-              <Stack alignItems="stretch" gap="1rem" sx={{ width: "100%" }}>
+              <Stack alignItems="stretch" gap="1rem" className="sidebar-module-stack">
                 {/* Search */}
                 <Box className="sidebar-module-box">
                   <Tooltip title="Search" placement="right">
@@ -360,15 +353,15 @@ const SideBarBody = (props: {
                 anchorEl={popoverAnchor}
                 onClose={handlePopoverClose}
                 anchorOrigin={{
-                  vertical: isBottomHalf ? 'bottom' : 'top',
-                  horizontal: 'right'
+                  vertical: isBottomHalf ? "bottom" : "top",
+                  horizontal: "right"
                 }}
                 transformOrigin={{
-                  vertical: isBottomHalf ? 'bottom' : 'top',
-                  horizontal: 'left'
+                  vertical: isBottomHalf ? "bottom" : "top",
+                  horizontal: "left"
                 }}
                 PaperProps={{
-                  className: `sidebar-popover-paper ${isBottomHalf ? 'bottom-half' : 'top-half'}`,
+                  className: `sidebar-popover-paper ${isBottomHalf ? "bottom-half" : "top-half"}`,
                   style: { maxHeight: popoverMaxHeight }
                 }}
               >
@@ -390,13 +383,7 @@ const SideBarBody = (props: {
           {open && (
             <DrawerHeader
               ref={headerRef}
-              sx={{
-                position: "sticky",
-                top: 0,
-                zIndex: 10,
-                backgroundColor: "var(--sidebar-bg)",
-                flexShrink: 0,
-              }}
+              className="sidebar-drawer-header"
             >
               <Stack gap="1.5rem" width="100%" marginTop="1rem">
                 <span
@@ -423,16 +410,10 @@ const SideBarBody = (props: {
               </Stack>
             </DrawerHeader>
           )}
-          {open && (
-            <Paper
-              className="sidebar-wrapper"
-              sx={{
-                flex: 1,
-                overflowX: "hidden",
-                overflowY: "auto",
-                paddingBottom: "48px", // Added space so it doesn't touch the bottom toggle button
-              }}
-            >
+          <Paper
+            className="sidebar-wrapper"
+            style={{ display: open ? "block" : "none" }}
+          >
                 <div
                   className="sidebar-treeview-container"
                   data-cy="r_entityTreeRender"
@@ -512,9 +493,8 @@ const SideBarBody = (props: {
                   </Suspense>
                 </div>
             </Paper>
-          )}
           <div
-            className={`sidebar-toggle-container ${open ? 'sidebar-toggle-open' : 'sidebar-toggle-closed'}`}
+            className={`sidebar-toggle-container ${open ? "sidebar-toggle-open" : "sidebar-toggle-closed"}`}
           >
             {open && (
               <div className="sidebar-version-container">
@@ -535,12 +515,12 @@ const SideBarBody = (props: {
             <IconButton aria-label={open ? "Collapse sidebar" : "Expand sidebar"} size="medium" onClick={() => handleDrawerOpen()}>
               {open ? (
                 <KeyboardDoubleArrowLeftIcon
-                  sx={{ color: "white" }}
+                  className="sidebar-toggle-icon"
                   fontSize="medium"
                 />
               ) : (
                 <KeyboardDoubleArrowRightIcon
-                  sx={{ color: "white" }}
+                  className="sidebar-toggle-icon"
                   fontSize="medium"
                 />
               )}
@@ -551,12 +531,7 @@ const SideBarBody = (props: {
 
       <Main
         open={open}
-        sx={{
-          margin: "0",
-          overflowX: "auto",
-          background: "#f5f7f9",
-          padding: "0",
-        }}
+        className="sidebar-main-content"
       >
         {rightSideContent}
       </Main>

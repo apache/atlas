@@ -86,7 +86,6 @@ const SCOPE_LABELS: Record<QuickSearchScope, string> = {
 };
 
 const hasValidSearchQuery = (value: string) => value.trim().length > 0;
-
 const QuickSearch = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
