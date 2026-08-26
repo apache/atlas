@@ -691,6 +691,9 @@ define([
             }
             
             if (this.$el && this.$el.length) {
+                if ($.fn.tooltip) {
+                    this.$el.find('[title]').tooltip('destroy');
+                }
                 this.$el.html(html);
                 this.bindCardEvents();
                 if ($.fn.tooltip) {
@@ -701,6 +704,12 @@ define([
                 }
             } else {
                 console.warn("[RelationshipCardsLayoutView] $el not available, cannot render cards");
+            }
+        },
+
+        onDestroy: function() {
+            if ($.fn.tooltip && this.$el) {
+                this.$el.find('[title]').tooltip('destroy');
             }
         }
     });
