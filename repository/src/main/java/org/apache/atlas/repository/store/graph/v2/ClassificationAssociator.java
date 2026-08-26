@@ -18,6 +18,9 @@
 
 package org.apache.atlas.repository.store.graph.v2;
 
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -51,10 +54,12 @@ public class ClassificationAssociator {
     public static class Retriever {
         private final EntityAuditRepository auditRepository;
         private final EntityGraphRetriever  entityRetriever;
+        private final AtlasTypeRegistry     typeRegistry;
 
         public Retriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry, EntityAuditRepository auditRepository) {
             this.entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
             this.auditRepository = auditRepository;
+            this.typeRegistry    = typeRegistry;
         }
 
         public Retriever(AtlasTypeRegistry typeRegistry, EntityAuditRepository auditRepository) {
@@ -62,8 +67,13 @@ public class ClassificationAssociator {
         }
 
         Retriever(EntityGraphRetriever entityGraphRetriever, EntityAuditRepository auditRepository) {
+            this(entityGraphRetriever, auditRepository, null);
+        }
+
+        Retriever(EntityGraphRetriever entityGraphRetriever, EntityAuditRepository auditRepository, AtlasTypeRegistry typeRegistry) {
             this.entityRetriever = entityGraphRetriever;
             this.auditRepository = auditRepository;
+            this.typeRegistry    = typeRegistry;
         }
 
         public AtlasEntityHeaders get(long fromTimestamp, long toTimestamp) throws AtlasBaseException {
@@ -86,12 +96,26 @@ public class ClassificationAssociator {
 
         private AtlasEntityHeader getEntityHeaderByGuid(String guid) {
             try {
-                return entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+                AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+
+                if (entityHeader == null || !isEntityReadAllowed(entityHeader)) {
+                    return null;
+                }
+
+                return entityHeader;
             } catch (AtlasBaseException e) {
                 LOG.error("Error fetching entity: {}", guid, e);
             }
 
             return null;
+        }
+
+        private boolean isEntityReadAllowed(AtlasEntityHeader entityHeader) {
+            if (typeRegistry == null) {
+                return true;
+            }
+
+            return AtlasAuthorizationUtils.isAccessAllowed(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, entityHeader));
         }
 
         private long incrementTimestamp(long t) {
