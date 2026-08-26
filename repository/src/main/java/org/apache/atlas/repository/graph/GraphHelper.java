@@ -428,10 +428,16 @@ public final class GraphHelper {
     }
 
     public static List<AtlasVertex> getPropagatableClassifications(AtlasEdge edge) {
+        if (edge != null && getStatus(edge) != DELETED) {
+            return getPropagatableClassifications(edge, getPropagateTags(edge));
+        }
+        return new ArrayList<>();
+    }
+
+    public static List<AtlasVertex> getPropagatableClassifications(AtlasEdge edge, PropagateTags propagateTags) {
         List<AtlasVertex> ret = new ArrayList<>();
 
-        if (edge != null && getStatus(edge) != DELETED) {
-            PropagateTags propagateTags = getPropagateTags(edge);
+        if (edge != null && getStatus(edge) != DELETED && propagateTags != null) {
             AtlasVertex   outVertex     = edge.getOutVertex();
             AtlasVertex   inVertex      = edge.getInVertex();
 

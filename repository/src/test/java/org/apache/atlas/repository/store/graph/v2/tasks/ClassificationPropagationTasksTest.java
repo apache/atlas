@@ -184,11 +184,11 @@ public class ClassificationPropagationTasksTest {
         parameters.put(PARAM_RELATIONSHIP_EDGE_ID, "relationship-edge-id");
         parameters.put(PARAM_RELATIONSHIP_OBJECT, relationshipJson);
 
-        doNothing().when(entityGraphMapper).updateTagPropagations(anyString(), any(AtlasRelationship.class));
+        doNothing().when(entityGraphMapper).updateTagPropagations(anyString(), any(AtlasRelationship.class), any(), any());
 
         invokeRunMethod(updateTask, parameters);
 
-        verify(entityGraphMapper).updateTagPropagations(eq("relationship-edge-id"), eq(relationship));
+        verify(entityGraphMapper).updateTagPropagations(eq("relationship-edge-id"), eq(relationship), any(), any());
     }
 
     @Test
@@ -205,7 +205,7 @@ public class ClassificationPropagationTasksTest {
         parameters.put(PARAM_RELATIONSHIP_EDGE_ID, "relationship-edge-id");
         parameters.put(PARAM_RELATIONSHIP_OBJECT, relationshipJson);
 
-        doThrow(new AtlasBaseException("Test exception")).when(entityGraphMapper).updateTagPropagations(anyString(), any(AtlasRelationship.class));
+        doThrow(new AtlasBaseException("Test exception")).when(entityGraphMapper).updateTagPropagations(anyString(), any(AtlasRelationship.class), any(), any());
 
         expectThrows(AtlasBaseException.class, () -> invokeRunMethod(updateTask, parameters));
     }
@@ -222,7 +222,7 @@ public class ClassificationPropagationTasksTest {
 
         invokeRunMethod(updateTask, parameters);
 
-        verify(entityGraphMapper).updateTagPropagations(null, null);
+        verify(entityGraphMapper).updateTagPropagations(null, null, null, null);
     }
 
     @Test
@@ -293,7 +293,7 @@ public class ClassificationPropagationTasksTest {
 
         invokeRunMethod(updateTask, parameters);
 
-        verify(entityGraphMapper).updateTagPropagations(null, null);
+        verify(entityGraphMapper).updateTagPropagations(null, null, null, null);
     }
 
     // Helper methods
