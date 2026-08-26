@@ -85,8 +85,6 @@ const SCOPE_LABELS: Record<QuickSearchScope, string> = {
 	businessMetadata: "Business Metadata"
 };
 
-
-
 const QuickSearch = () => {
 	const navigate = useNavigate();
 	const location = useLocation();

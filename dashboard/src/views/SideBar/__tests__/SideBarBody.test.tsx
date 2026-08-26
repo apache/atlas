@@ -602,7 +602,8 @@ describe('SideBarBody', () => {
       fireEvent.click(toggleButton!);
       
       await waitFor(() => {
-        expect(screen.queryByTestId('entities-tree')).not.toBeInTheDocument();
+        expect(screen.getByTestId('entities-tree')).toBeInTheDocument();
+        expect(screen.getByTestId('entities-tree').closest('.sidebar-wrapper')).toHaveStyle({ display: 'none' });
       });
     });
   });
@@ -765,7 +766,7 @@ describe('SideBarBody', () => {
       }
 
       await waitFor(() => {
-        expect(screen.queryByTestId('glossary-tree')).not.toBeInTheDocument();
+        expect(screen.getAllByTestId('glossary-tree')).toHaveLength(1);
       });
     });
 
@@ -783,7 +784,7 @@ describe('SideBarBody', () => {
       fireEvent.keyDown(document.activeElement || document.body, { key: 'Escape', code: 'Escape' });
 
       await waitFor(() => {
-        expect(screen.queryByTestId('glossary-tree')).not.toBeInTheDocument();
+        expect(screen.getAllByTestId('glossary-tree')).toHaveLength(1);
       });
     });
 
@@ -814,10 +815,8 @@ describe('SideBarBody', () => {
       fireEvent.click(entitiesIcon.closest('button')!);
 
       await waitFor(() => {
-        // Entities should be open
-        expect(screen.getAllByTestId('entities-tree').length).toBeGreaterThan(0);
-        // Glossary should be closed
-        expect(screen.queryByTestId('glossary-tree')).not.toBeInTheDocument();
+        expect(screen.getAllByTestId('entities-tree')).toHaveLength(2);
+        expect(screen.getAllByTestId('glossary-tree')).toHaveLength(1);
       });
     });
   });

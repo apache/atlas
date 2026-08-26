@@ -74,11 +74,8 @@ const sessionSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(fetchSessionData.pending, (state) => {
-      state.sessionObj = {
-        loading: true,
-        data: null,
-        error: null
-      };
+      state.sessionObj.loading = true;
+      state.sessionObj.error = null;
     }),
       builder.addCase(
         fetchSessionData.fulfilled,
@@ -98,11 +95,8 @@ const sessionSlice = createSlice({
         };
       }),
       builder.addCase(fetchVersionData.pending, (state) => {
-        state.versionData = {
-          loading: true,
-          data: null,
-          error: null
-        };
+        state.versionData.loading = true;
+        state.versionData.error = null;
       }),
       builder.addCase(
         fetchVersionData.fulfilled,
