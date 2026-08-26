@@ -44,4 +44,20 @@ describe('TreeSkeletonLoader', () => {
     const skeletons = container.querySelectorAll('.MuiSkeleton-root');
     expect(skeletons.length).toBe(0);
   });
+
+  it('renders correctly with negative count', () => {
+    const { container } = render(<TreeSkeletonLoader count={-5} />);
+
+    const skeletons = container.querySelectorAll('.MuiSkeleton-root');
+    expect(skeletons.length).toBe(0);
+  });
+
+  it('renders default number of skeletons when count is explicitly undefined', () => {
+    const { container } = render(<TreeSkeletonLoader count={undefined} />);
+
+    // By default count is 7
+    const skeletons = container.querySelectorAll('.MuiSkeleton-root');
+    // 7 rows * 2 = 14 skeletons
+    expect(skeletons.length).toBe(14);
+  });
 });
