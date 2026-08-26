@@ -234,7 +234,7 @@ const MessageConsumptionChart = memo(
 								dataKey="count"
 								position="top"
 								offset={8}
-								formatter={(v: number) => numberFormatWithComma(v)}
+								formatter={(v: unknown) => (typeof v === "number" ? numberFormatWithComma(v) : "")}
 								style={{
 									fontSize: 11,
 									fontWeight: 600,
