@@ -94,14 +94,14 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 		const row = p.payload[0]?.payload;
 		if (!row) return null;
 		return (
-			<Box className="chart-tooltip-box">
+			<Paper className="chart-tooltip-box">
 				<Typography variant="body2" className="chart-tooltip-title">
 					{row.name}
 				</Typography>
 				<Typography variant="caption" display="block">
 					Entities: {numberFormatWithComma(row.count)}
 				</Typography>
-			</Box>
+			</Paper>
 		);
 	}, []);
 

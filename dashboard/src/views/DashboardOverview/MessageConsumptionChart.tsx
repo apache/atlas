@@ -38,7 +38,6 @@ import {
 const CREATES_COLOR = ENTITY_STATUS_DONUT_COLORS.Active;
 const UPDATES_COLOR = CHART_BAR_ACTIVE_BLUE;
 const DELETES_COLOR = ENTITY_STATUS_DONUT_COLORS.Deleted;
-const LABEL_LIST_STYLE = { fontSize: 11, fontWeight: 600, fill: "#374151" };
 
 interface MessageConsumptionChartProps {
 	/** Rows must already exclude the Total period when used from Kafka Topic Summary. */
@@ -236,7 +235,7 @@ const MessageConsumptionChart = memo(
 								position="top"
 								offset={8}
 								formatter={(v: unknown) => numberFormatWithComma(Number(v))}
-								style={LABEL_LIST_STYLE}
+								className="chart-label-list-sm"
 							/>
 							{data.map((_, index) => (
 								<Cell key={`deletes-${index}`} fill={DELETES_COLOR} />

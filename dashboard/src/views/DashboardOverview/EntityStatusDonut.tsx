@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { memo, useCallback } from "react";
+import { memo, useCallback, useState } from "react";
 import { Paper, Stack, Typography, Box } from "@mui/material";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Sector } from "recharts";
 import { useNavigate } from "react-router-dom";
@@ -31,6 +31,7 @@ interface EntityStatusDonutProps {
 
 const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) => {
 	const navigate = useNavigate();
+	const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
 	const totals = getEntityStatusTotals(entity);
 	const total = totals.active + totals.shell + totals.deleted;
 
@@ -117,8 +118,14 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 							isAnimationActive
 							animationDuration={800}
 							animationEasing="ease-out"
+							activeIndex={activeIndex}
 							activeShape={renderActiveShape}
-							onClick={(data) => handleStatusClick(data.name as "Active" | "Shell" | "Deleted")}
+							onMouseEnter={(_, index) => setActiveIndex(index)}
+							onMouseLeave={() => setActiveIndex(undefined)}
+							onClick={(data: unknown) => {
+								const d = data as { name?: string } | undefined | null;
+								handleStatusClick(d?.name as "Active" | "Shell" | "Deleted");
+							}}
 						>
 							{chartData.map((entry, index) => (
 								<Cell key={`cell-${index}`} fill={entry.color} stroke="none" />

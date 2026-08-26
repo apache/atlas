@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import moment from "moment";
 import { Stack, Typography, Box, ButtonBase } from "@mui/material";
 import {
@@ -67,6 +67,28 @@ const EntityStatsChart = ({
 		}));
 	}, [activeKeys, getColorForKey]);
 
+	const renderLegend = useCallback(
+		() => (
+			<Stack direction="row" spacing={2} justifyContent="center" mt={1}>
+				{legendPayload.map((entry) => (
+					<ButtonBase
+						key={entry.id}
+						data-testid={`legend-${entry.id}`}
+						onClick={() => onLegendClick(String(entry.value))}
+						aria-label={String(entry.value)}
+						className="legend-button"
+					>
+						<Box className="legend-color-box" style={{ backgroundColor: entry.color }} />
+						<Typography variant="body2" className={`legend-typography ${entry.inactive ? "legend-inactive" : "legend-active"}`}>
+							{entry.value}
+						</Typography>
+					</ButtonBase>
+				))}
+			</Stack>
+		),
+		[legendPayload, onLegendClick]
+	);
+
 	return (
 		<ResponsiveContainer width="100%" height={400}>
 			<AreaChart
@@ -97,26 +119,7 @@ const EntityStatsChart = ({
 					content={<GraphCustomTooltip />}
 					cursor={{ stroke: "rgba(0, 0, 0, 0.1)", strokeWidth: 2 }}
 				/>
-				<Legend
-					content={() => (
-						<Stack direction="row" spacing={2} justifyContent="center" mt={1}>
-							{legendPayload.map((entry) => (
-								<ButtonBase
-									key={entry.id}
-									data-testid={`legend-${entry.id}`}
-									onClick={() => onLegendClick(String(entry.value))}
-									aria-label={String(entry.value)}
-									className="legend-button"
-								>
-									<Box className="legend-color-box" style={{ backgroundColor: entry.color }} />
-									<Typography variant="body2" className={`legend-typography ${entry.inactive ? 'legend-inactive' : 'legend-active'}`}>
-										{entry.value}
-									</Typography>
-								</ButtonBase>
-							))}
-						</Stack>
-					)}
-				/>
+				<Legend content={renderLegend} />
 				{activeKeys.Active && (
 					<Area
 						type={chartMode === "stream" ? "basis" : "monotone"}

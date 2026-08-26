@@ -25,8 +25,6 @@ export const ENTITY_STATUS_DONUT_COLORS = {
 /** Active primary series / bar fill (aligned with Classification Distribution bars) */
 export const CHART_BAR_ACTIVE_BLUE = "#1976d2";
 
-
-
 /** Horizontal bar charts: Y-axis title + ticks; keep left tight to reduce card gutter */
 export const HORIZONTAL_BAR_CHART_MARGIN = {
 	top: 8,
