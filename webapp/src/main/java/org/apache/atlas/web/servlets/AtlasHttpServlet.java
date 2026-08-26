@@ -36,7 +36,7 @@ public class AtlasHttpServlet extends HttpServlet {
         try {
             response.setContentType(TEXT_HTML);
             AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(response);
-            HeadersUtil.setSecurityHeaders(responseWrapper);
+            HeadersUtil.setSecurityHeaders(responseWrapper, request);
 
             getServletContext()
                     .getRequestDispatcher(template)

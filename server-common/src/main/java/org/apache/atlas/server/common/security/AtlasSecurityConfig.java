@@ -129,7 +129,13 @@ public abstract class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests().anyRequest().authenticated()
                 .and()
                 .headers()
-                .addHeaderWriter(new StaticHeadersWriter(HeadersUtil.CONTENT_SEC_POLICY_KEY, HeadersUtil.getHeaderMap(HeadersUtil.CONTENT_SEC_POLICY_KEY)))
+                .addHeaderWriter((request, response) -> {
+                    String cspNonce = HeadersUtil.getOrCreateCspNonce(request);
+                    String cspValue = HeadersUtil.getContentSecurityPolicyValue(cspNonce);
+                    if (cspValue != null) {
+                        response.setHeader(HeadersUtil.CONTENT_SEC_POLICY_KEY, cspValue);
+                    }
+                })
                 .addHeaderWriter(new StaticHeadersWriter(HeadersUtil.SERVER_KEY, HeadersUtil.getHeaderMap(HeadersUtil.SERVER_KEY)))
                 .and()
                 .servletApi()

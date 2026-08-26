@@ -73,7 +73,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.DelegatingAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
-import org.springframework.security.web.header.writers.StaticHeadersWriter;
+import org.springframework.security.web.header.HeaderWriter;
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.testng.annotations.BeforeMethod;
@@ -511,7 +511,7 @@ public class AtlasSecurityConfigTest {
         when(mockAuthRequests.and()).thenReturn(httpSecurity);
 
         when(httpSecurity.headers()).thenReturn(mockHeadersConfigurer);
-        when(mockHeadersConfigurer.addHeaderWriter(any(StaticHeadersWriter.class))).thenReturn(mockHeadersConfigurer);
+        when(mockHeadersConfigurer.addHeaderWriter(any(HeaderWriter.class))).thenReturn(mockHeadersConfigurer);
         when(mockHeadersConfigurer.and()).thenReturn(httpSecurity);
 
         when(httpSecurity.servletApi()).thenReturn(mockServletApiConfigurer);
@@ -851,7 +851,7 @@ public class AtlasSecurityConfigTest {
         when(mockAuthRequests.and()).thenReturn(mockHttpSecurity);
 
         when(mockHttpSecurity.headers()).thenReturn(mockHeadersConfigurer);
-        when(mockHeadersConfigurer.addHeaderWriter(any(StaticHeadersWriter.class))).thenReturn(mockHeadersConfigurer);
+        when(mockHeadersConfigurer.addHeaderWriter(any(HeaderWriter.class))).thenReturn(mockHeadersConfigurer);
         when(mockHeadersConfigurer.and()).thenReturn(mockHttpSecurity);
 
         when(mockHttpSecurity.servletApi()).thenReturn(mockServletApiConfigurer);

@@ -165,7 +165,7 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
         HttpServletResponse         httpResponse    = (HttpServletResponse) servletResponse;
         AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
 
-        HeadersUtil.setSecurityHeaders(responseWrapper);
+        HeadersUtil.setSecurityHeaders(responseWrapper, servletRequest);
 
         if (!ssoEnabled) {
             filterChain.doFilter(servletRequest, servletResponse);
