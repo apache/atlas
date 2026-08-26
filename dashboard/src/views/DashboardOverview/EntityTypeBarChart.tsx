@@ -121,7 +121,7 @@ const EntityTypeBarChart = memo(
 			const row = pl[0]?.payload;
 			if (!row) return null;
 			return (
-				<Box className="chart-tooltip-box">
+				<Paper className="chart-tooltip-box">
 					<Typography variant="body2" className="chart-tooltip-title">
 						{row.name}
 					</Typography>
@@ -134,7 +134,7 @@ const EntityTypeBarChart = memo(
 					<Typography variant="caption" display="block" fontWeight={600}>
 						Total: {numberFormatWithComma(row.count)}
 					</Typography>
-				</Box>
+				</Paper>
 			);
 		}, []);
 

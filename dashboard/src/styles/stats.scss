@@ -75,6 +75,12 @@
   fill: #1976d2;
 }
 
+.chart-label-list-sm {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #374151;
+}
+
 .legend-button {
   display: flex;
   flex-direction: row;
@@ -97,11 +103,11 @@
 }
 
 .legend-inactive {
-  color: #d3d3d3;
+  color: #868e96;
 }
 
 .legend-active {
-  color: #333;
+  // Color inherits from Typography (text.primary)
 }
 
 .chart-card {
@@ -115,8 +121,8 @@
   box-shadow: 0px 4px 6px -1px rgba(0,0,0,0.1), 0px 2px 4px -1px rgba(0,0,0,0.06);
 }
 
-.chart-card-min-340 {
-  min-height: 340px;
+html[data-theme="dark"] .chart-card:hover {
+  box-shadow: 0px 4px 6px -1px rgba(255,255,255,0.05), 0px 2px 4px -1px rgba(255,255,255,0.03);
 }
 
 .chart-card-header {
@@ -124,11 +130,17 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
 
+html[data-theme="dark"] .chart-card-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
 .chart-card-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #1a1a1a;
+  // Color inherits from Typography (text.primary)
 }
+
+
 
 .donut-status-button {
   display: flex;
@@ -182,7 +194,7 @@
   font-size: 0.875rem;
   cursor: pointer;
   text-decoration: none;
-  color: #1976d2;
+  // Color inherits from Link (primary.main)
 }
 
 .classification-assoc-total {
@@ -208,7 +220,6 @@
 
 .chart-tooltip-box {
   padding: 12px;
-  background-color: #fff;
   border-radius: 4px;
   box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.1), 0px 4px 5px 0px rgba(0,0,0,0.07), 0px 1px 10px 0px rgba(0,0,0,0.06);
   min-width: 140px;
