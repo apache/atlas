@@ -47,7 +47,13 @@
 .sidebar-tree-box {
   flex-grow: 1;
   top: 128px;
-  width: inherit;
+  width: 100%;
+  min-width: 30px;
+
+  &--hidden {
+    visibility: hidden;
+    top: 62px;
+  }
 }
 
 .loader-box {
@@ -108,6 +114,10 @@
   display: block;
 }
 
+.custom-treeitem-content {
+  position: relative;
+}
+
 .treeitem-loader {
   width: 20px !important;
   position: absolute;
@@ -166,6 +176,10 @@
   padding-bottom: 48px;
   padding-left: 8px;
   padding-right: 8px;
+
+  &--hidden {
+    display: none !important;
+  }
 }
 
 .tree-item-loader {
@@ -498,3 +512,19 @@ button.MuiButtonBase-root.MuiIconButton-root.MuiIconButton-sizeSmall.tree-item-m
   width: 100%;
 }
 
+.sidebar-menuitem-icon {
+  min-width: 28px !important;
+}
+
+.sidebar-tree-typography {
+  font-weight: 500;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-menu-paper {
+  transition: none !important;
+}

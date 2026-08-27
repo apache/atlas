@@ -26,8 +26,18 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
-import type { LegendPayload } from "recharts";
 import GraphCustomTooltip from "./StatsGraphs/GraphCustomTooltip";
+
+// Workaround: Recharts in the current version does not export LegendPayload.
+// This type is manually defined here to fix a TS2305 error and should be 
+// refactored to use the exported type once Recharts is upgraded.
+type LegendPayload = {
+	id?: string;
+	value?: string;
+	type?: string;
+	color?: string;
+	inactive?: boolean;
+};
 
 type ChartDataPoint = {
 	timestamp: number;
