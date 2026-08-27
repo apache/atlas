@@ -400,7 +400,7 @@ describe('SideBarBody', () => {
       expect(atlasLogo).toBeInTheDocument();
       fireEvent.click(atlasLogo);
       
-      expect(atlasLogo).toBeInTheDocument();
+      expect(mockNavigate).toHaveBeenCalledWith({ pathname: '/search' }, { replace: true });
     });
 
     it('should navigate to search page when Apache Atlas logo is clicked', async () => {
@@ -413,7 +413,7 @@ describe('SideBarBody', () => {
       await waitFor(() => {
         const apacheLogo = screen.getByAltText('Apache Atlas logo');
         fireEvent.click(apacheLogo);
-        expect(apacheLogo).toBeInTheDocument();
+        expect(mockNavigate).toHaveBeenCalledWith({ pathname: '/search' }, { replace: true });
       });
     });
 
@@ -603,7 +603,7 @@ describe('SideBarBody', () => {
       
       await waitFor(() => {
         expect(screen.getByTestId('entities-tree')).toBeInTheDocument();
-        expect(screen.getByTestId('entities-tree').closest('.sidebar-wrapper')).toHaveStyle({ display: 'none' });
+        expect(screen.getByTestId('entities-tree').closest('.sidebar-wrapper')).toHaveClass('sidebar-wrapper--hidden');
       });
     });
   });
@@ -689,20 +689,7 @@ describe('SideBarBody', () => {
     });
   });
 
-  describe('Window Resize', () => {
-    it('should handle window resize for drawer width constraints', () => {
-      // Mock window.innerWidth
-      Object.defineProperty(window, 'innerWidth', {
-        writable: true,
-        configurable: true,
-        value: 1920
-      });
-      
-      renderWithProviders();
-      
-      expect(screen.getByTestId('entities-tree')).toBeInTheDocument();
-    });
-  });
+
 
   describe('Collapsed Sidebar Popovers', () => {
     beforeEach(() => {
