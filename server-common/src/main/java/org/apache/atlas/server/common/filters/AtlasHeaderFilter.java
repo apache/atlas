@@ -34,7 +34,7 @@ public class AtlasHeaderFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
-        setHeaders((HttpServletResponse) response);
+        setHeaders((HttpServletResponse) response, request);
         filterChain.doFilter(request, response);
     }
 
@@ -42,9 +42,15 @@ public class AtlasHeaderFilter implements Filter {
     public void destroy() {
     }
 
-    public void setHeaders(HttpServletResponse httpResponse) {
+    public void setHeaders(HttpServletResponse httpResponse, ServletRequest request) {
         AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
 
-        HeadersUtil.setSecurityHeaders(responseWrapper);
+        HeadersUtil.setSecurityHeaders(responseWrapper, request);
+    }
+
+    public void setHeaders(HttpServletResponse httpResponse, String cspNonce) {
+        AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
+
+        HeadersUtil.setSecurityHeaders(responseWrapper, cspNonce);
     }
 }

@@ -18,10 +18,8 @@
 package org.apache.atlas.web.filters;
 
 import org.apache.atlas.server.common.filters.AtlasHeaderFilter;
-import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
 import org.apache.atlas.server.common.filters.HeadersUtil;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -39,13 +37,14 @@ import java.util.Map;
 import java.util.Properties;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.testng.Assert.assertNotNull;
 
 public class AtlasHeaderFilterTest {
     @Mock
@@ -59,9 +58,6 @@ public class AtlasHeaderFilterTest {
 
     @Mock
     private FilterChain mockFilterChain;
-
-    @Mock
-    private AtlasResponseRequestWrapper mockResponseWrapper;
 
     private AtlasHeaderFilter atlasHeaderFilter;
     private Map<String, String> originalHeaders;
@@ -103,23 +99,9 @@ public class AtlasHeaderFilterTest {
 
     @Test
     public void testSetHeaders() throws Exception {
-        // Use MockedStatic to mock the static HeadersUtil.setSecurityHeaders method
-        try (MockedStatic<HeadersUtil> mockedHeadersUtil = mockStatic(HeadersUtil.class)) {
-            // Mock the static method
-            mockedHeadersUtil.when(() -> HeadersUtil.setSecurityHeaders(any(AtlasResponseRequestWrapper.class)))
-                    .thenAnswer(invocation -> {
-                        AtlasResponseRequestWrapper wrapper = invocation.getArgument(0);
-                        // Verify the wrapper was created with the correct response
-                        assertNotNull(wrapper);
-                        return null;
-                    });
+        atlasHeaderFilter.setHeaders(mockHttpServletResponse, "testNonce123");
 
-            // Call the method under test
-            atlasHeaderFilter.setHeaders(mockHttpServletResponse);
-
-            // Verify that HeadersUtil.setSecurityHeaders was called
-            mockedHeadersUtil.verify(() -> HeadersUtil.setSecurityHeaders(any(AtlasResponseRequestWrapper.class)));
-        }
+        verify(mockHttpServletResponse, atLeastOnce()).setHeader(eq(HeadersUtil.CONTENT_SEC_POLICY_KEY), contains("nonce-testNonce123"));
     }
 
     @Test(expectedExceptions = ClassCastException.class)

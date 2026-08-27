@@ -26,10 +26,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.servlet.ServletRequest;
+
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 public class HeadersUtil {
@@ -40,11 +45,13 @@ public class HeadersUtil {
     public static final String X_XSS_PROTECTION_KEY                = "X-XSS-Protection";
     public static final String STRICT_TRANSPORT_SEC_KEY            = "Strict-Transport-Security";
     public static final String CONTENT_SEC_POLICY_KEY              = "Content-Security-Policy";
+    public static final String CONTENT_SEC_POLICY_NONCE_PLACEHOLDER = "${nonce}";
+    public static final String CONTENT_SEC_POLICY_NONCE_REQUEST_ATTRIBUTE = "atlas.csp.nonce";
     public static final String X_FRAME_OPTIONS_VAL                 = "DENY";
     public static final String X_CONTENT_TYPE_OPTIONS_VAL          = "nosniff";
     public static final String X_XSS_PROTECTION_VAL                = "1; mode=block";
     public static final String STRICT_TRANSPORT_SEC_VAL            = "max-age=31536000; includeSubDomains";
-    public static final String CONTENT_SEC_POLICY_VAL              = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:; connect-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline';font-src 'self' data:";
+    public static final String CONTENT_SEC_POLICY_VAL              = "default-src 'self'; script-src 'self' 'nonce-${nonce}' blob:; connect-src 'self'; img-src 'self' blob: data:; style-src 'self' 'nonce-${nonce}'; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none';";
     public static final String SERVER_KEY                          = "Server";
     public static final String USER_AGENT_KEY                      = "User-Agent";
     public static final String USER_AGENT_VALUE                    = "Mozilla";
@@ -54,6 +61,9 @@ public class HeadersUtil {
     public static final String CONFIG_PREFIX_HTTP_RESPONSE_HEADER  = "atlas.headers";
 
     private static final Map<String, String> HEADER_MAP = new HashMap<>();
+    private static final SecureRandom CSP_NONCE_RANDOM  = new SecureRandom();
+    private static final int          CSP_NONCE_BYTES   = 16;
+    private static final AtomicBoolean CSP_NONCE_PLACEHOLDER_WARNING_LOGGED = new AtomicBoolean(false);
 
     private HeadersUtil() {
         // to block instantiation
@@ -71,8 +81,71 @@ public class HeadersUtil {
         responseWrapper.setHeader(headerKey, HEADER_MAP.get(headerKey));
     }
 
+    public static String generateCspNonce() {
+        byte[] nonceBytes = new byte[CSP_NONCE_BYTES];
+
+        CSP_NONCE_RANDOM.nextBytes(nonceBytes);
+
+        return Base64.getEncoder().withoutPadding().encodeToString(nonceBytes);
+    }
+
+    public static String getOrCreateCspNonce(ServletRequest request) {
+        if (request == null) {
+            return generateCspNonce();
+        }
+
+        Object existingNonce = request.getAttribute(CONTENT_SEC_POLICY_NONCE_REQUEST_ATTRIBUTE);
+        if (existingNonce instanceof String) {
+            String nonce = ((String) existingNonce).trim();
+            if (!nonce.isEmpty()) {
+                return nonce;
+            }
+        }
+
+        String generatedNonce = generateCspNonce();
+        request.setAttribute(CONTENT_SEC_POLICY_NONCE_REQUEST_ATTRIBUTE, generatedNonce);
+
+        return generatedNonce;
+    }
+
+    public static String getContentSecurityPolicyValue(String cspNonce) {
+        String cspTemplate = HEADER_MAP.get(CONTENT_SEC_POLICY_KEY);
+
+        if (cspTemplate == null) {
+            return null;
+        }
+
+        if (!cspTemplate.contains(CONTENT_SEC_POLICY_NONCE_PLACEHOLDER)) {
+            if (CSP_NONCE_PLACEHOLDER_WARNING_LOGGED.compareAndSet(false, true)) {
+                LOG.warn("Configured {} does not include '{}' placeholder; CSP nonce will not be applied.",
+                        CONTENT_SEC_POLICY_KEY, CONTENT_SEC_POLICY_NONCE_PLACEHOLDER);
+            }
+            return cspTemplate;
+        }
+
+        if (cspNonce == null || cspNonce.trim().isEmpty()) {
+            cspNonce = generateCspNonce();
+        }
+
+        return cspTemplate.replace(CONTENT_SEC_POLICY_NONCE_PLACEHOLDER, cspNonce);
+    }
+
+    public static void setSecurityHeaders(AtlasResponseRequestWrapper responseWrapper, String cspNonce) {
+        HEADER_MAP.forEach((key, value) -> {
+            if (CONTENT_SEC_POLICY_KEY.equals(key)) {
+                responseWrapper.setHeader(key, getContentSecurityPolicyValue(cspNonce));
+            } else {
+                responseWrapper.setHeader(key, value);
+            }
+        });
+    }
+
+    public static void setSecurityHeaders(AtlasResponseRequestWrapper responseWrapper, ServletRequest request) {
+        setSecurityHeaders(responseWrapper, getOrCreateCspNonce(request));
+    }
+
     public static void setSecurityHeaders(AtlasResponseRequestWrapper responseWrapper) {
-        HEADER_MAP.forEach((key, value) -> responseWrapper.setHeader(key, value));
+        setSecurityHeaders(responseWrapper, generateCspNonce());
     }
 
     @VisibleForTesting
