@@ -106,9 +106,7 @@
   color: #868e96;
 }
 
-.legend-active {
-  // Color inherits from Typography (text.primary)
-}
+
 
 .chart-card {
   padding: 16px;
@@ -166,6 +164,29 @@ html[data-theme="dark"] .chart-card-header {
   flex-shrink: 0;
 }
 
+.donut-status-active {
+  background-color: #10b981;
+}
+
+.donut-status-shell {
+  background-color: #f59e0b;
+}
+
+.donut-status-deleted {
+  background-color: #ef4444;
+}
+
+.chart-axis-label {
+  font-size: 11px;
+  fill: #6c757d;
+}
+
+.chart-axis-label-y {
+  font-size: 11px;
+  fill: #6c757d;
+  text-anchor: middle;
+}
+
 .donut-status-text {
   font-size: 0.875rem;
   color: #374151;
@@ -173,6 +194,10 @@ html[data-theme="dark"] .chart-card-header {
 
 .donut-status-stack {
   padding-top: 16px;
+}
+
+.donut-tooltip-wrapper .recharts-default-tooltip {
+  border-radius: 8px !important;
 }
 
 .classification-card-wrapper {

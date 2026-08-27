@@ -33,6 +33,8 @@ import { numberFormatWithComma } from "@utils/Helper";
 import {
 	getClassificationDistribution,
 	getTagEntityAssociationTotal,
+	getPayloadFromRechartsEvent,
+	type ClassificationDistributionItem,
 } from "@utils/metricsUtils";
 import { navigateToSearch, navigateToClassificationSearch } from "@utils/dashboardSearchUtils";
 import {
@@ -50,11 +52,7 @@ interface ClassificationDistributionCardProps {
 	isLoading?: boolean;
 }
 
-interface RechartsEventPayload {
-	payload?: {
-		name: string;
-	};
-}
+
 
 const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationDistributionCardProps) => {
 	const navigate = useNavigate();
@@ -67,9 +65,7 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 
 	const handleBarClick = useCallback(
 		(barProps: unknown) => {
-			if (!barProps || typeof barProps !== "object") return;
-			const rec = barProps as RechartsEventPayload;
-			const name = rec.payload?.name;
+			const name = getPayloadFromRechartsEvent<ClassificationDistributionItem>(barProps)?.name;
 			if (name) {
 				navigateToClassificationSearch(navigate, name);
 			}
@@ -154,7 +150,7 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 									value: "Entity Count",
 									position: "bottom",
 									offset: 12,
-									style: { fontSize: 11, fill: "#6c757d" },
+									className: "chart-axis-label",
 								}}
 							/>
 							<YAxis
