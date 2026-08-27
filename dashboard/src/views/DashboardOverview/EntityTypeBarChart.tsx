@@ -30,7 +30,10 @@ import {
 } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { numberFormatWithComma } from "@utils/Helper";
-import type { EntityTypeDistributionItem } from "@utils/metricsUtils";
+import {
+	getPayloadFromRechartsEvent,
+	type EntityTypeDistributionItem,
+} from "@utils/metricsUtils";
 import {
 	getServiceTypeDistribution,
 	type TypeHeaderCatalogRow,
@@ -54,12 +57,6 @@ interface EntityTypeBarChartProps {
 	isLoading?: boolean;
 }
 
-const payloadFromBarEvent = (item: unknown): EntityTypeDistributionItem | undefined => {
-	if (!item || typeof item !== "object") return undefined;
-	const rec = item as { payload?: EntityTypeDistributionItem };
-	return rec.payload;
-};
-
 const EntityTypeBarChart = memo(
 	({ entity, typeHeaderData, isLoading }: EntityTypeBarChartProps) => {
 		const navigate = useNavigate();
@@ -81,7 +78,7 @@ const EntityTypeBarChart = memo(
 
 		const handleActiveBarClick = useCallback(
 			(barProps: unknown) => {
-				const row = payloadFromBarEvent(barProps);
+				const row = getPayloadFromRechartsEvent<EntityTypeDistributionItem>(barProps);
 				if (row) navigateForRow(row, false);
 			},
 			[navigateForRow]
@@ -89,7 +86,7 @@ const EntityTypeBarChart = memo(
 
 		const handleDeletedBarClick = useCallback(
 			(barProps: unknown) => {
-				const row = payloadFromBarEvent(barProps);
+				const row = getPayloadFromRechartsEvent<EntityTypeDistributionItem>(barProps);
 				if (row) navigateForRow(row, true);
 			},
 			[navigateForRow]
@@ -190,7 +187,7 @@ const EntityTypeBarChart = memo(
 										value: "Entity Count",
 										position: "bottom",
 										offset: 12,
-										style: { fontSize: 11, fill: "#6c757d" },
+										className: "chart-axis-label",
 									}}
 								/>
 								<YAxis
@@ -202,7 +199,7 @@ const EntityTypeBarChart = memo(
 										angle: -90,
 										position: "left",
 										offset: 4,
-										style: { fontSize: 11, fill: "#6c757d", textAnchor: "middle" },
+										className: "chart-axis-label-y",
 									}}
 									tick={(props: Record<string, unknown>) => {
 										const { x = 0, y = 0, payload } = props;

@@ -44,6 +44,7 @@ const truncatedLongName = `${'a'.repeat(CLASSIFICATION_Y_AXIS_LABEL_MAX_LENGTH)}
 let mockBarClickPayload: unknown = undefined;
 
 jest.mock('@utils/metricsUtils', () => ({
+	...jest.requireActual('@utils/metricsUtils'),
 	getClassificationDistribution: jest.fn(() => [
 		{ name: shortName, count: 12 },
 		{ name: longName, count: 8 },
