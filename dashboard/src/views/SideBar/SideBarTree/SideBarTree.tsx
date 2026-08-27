@@ -233,7 +233,7 @@ const CustomContent = forwardRef(function CustomContent(
 
   return (
     <CustomContentRoot
-      className={clsx(className, classes.root, {
+      className={clsx("custom-treeitem-content", className, classes.root, {
         "Mui-expanded": expanded,
         "Mui-selected":
           (isValidElement(props.label) &&
@@ -248,7 +248,6 @@ const CustomContent = forwardRef(function CustomContent(
         "Mui-focused": focused,
         "Mui-disabled": disabled,
       })}
-      sx={{ position: "relative" }}
       // selectedNode={props.label.props.selectedNode}
       selectedNodeType={labelProps?.selectedNodeType}
       selectedNodeTag={labelProps?.selectedNodeTag}
@@ -272,26 +271,40 @@ const CustomContent = forwardRef(function CustomContent(
   );
 });
 
+const StyledCustomTreeItem = styled(TreeItem)(() => ({
+  "& .MuiTreeItem-label": {
+    // fontWeight: "400  !important",
+    fontSize: "14px  !important",
+    lineHeight: "24px !important",
+    color: "rgba(255,255,255,0.8)",
+  },
+
+  "& .MuiTreeItem-content svg": {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: "14px !important",
+  },
+}));
+
+export const StyledParentTreeItem = styled(TreeItem)(() => ({
+  "& .MuiTreeItem-label": {
+    fontWeight: "600 !important",
+    fontSize: "14px !important",
+    lineHeight: "26px !important",
+    color: "white",
+  },
+  "& .MuiTreeItem-content svg": {
+    color: "white",
+    fontSize: "20px !important",
+  },
+}));
+
 const CustomTreeItem = memo(
   forwardRef(function CustomTreeItem(
     props: TreeItemProps,
     ref: Ref<HTMLLIElement>
   ) {
     return (
-      <TreeItem
-        sx={{
-          "& .MuiTreeItem-label": {
-            // fontWeight: "400  !important",
-            fontSize: "14px  !important",
-            lineHeight: "24px !important",
-            color: "rgba(255,255,255,0.8)",
-          },
-
-          "& .MuiTreeItem-content svg": {
-            color: "rgba(255,255,255,0.8)",
-            fontSize: "14px !important",
-          },
-        }}
+      <StyledCustomTreeItem
         ContentComponent={CustomContent}
         {...props}
         ref={ref}
@@ -1072,15 +1085,7 @@ const BarTreeView: FC<{
     return (
       <>
         <Stack
-          className="sidebar-tree-box"
-          sx={{
-            ...(sideBarOpen === false && {
-              visibility: "hidden !important",
-              top: "62px !important",
-            }),
-            minWidth: "30px",
-            width: `100% !important`,
-          }}
+          className={`sidebar-tree-box ${sideBarOpen === false ? "sidebar-tree-box--hidden" : ""}`}
         >
           <SimpleTreeView
             expandedItems={expandedItems}
@@ -1088,7 +1093,7 @@ const BarTreeView: FC<{
             aria-label="customized"
             className="sidebar-treeview"
           >
-            <TreeItem
+            <StyledParentTreeItem
               itemId={treeName}
               label={
                 <Stack
@@ -1103,7 +1108,7 @@ const BarTreeView: FC<{
                     {treeName === "Business MetaData" && <img src="/img/sidebar-icons/icon-business-metadata.svg" className="sidebar-tree-icon" alt="" />}
                     {treeName === "Glossary" && <img src="/img/sidebar-icons/icon-glossary.svg" className="sidebar-tree-icon" alt="" />}
                     {treeName === "CustomFilters" && <img src="/img/sidebar-icons/icon-custom-filters.svg" className="sidebar-tree-icon" alt="" />}
-                    <Typography sx={{ fontWeight: "500", fontSize: "14px", color: "rgba(255, 255, 255, 0.9)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{displayTreeName}</Typography>
+                    <Typography className="sidebar-tree-typography">{displayTreeName}</Typography>
                   </Stack>
                   <Stack direction="row" alignItems="center" gap="0.375rem">
                     <LightTooltip title="Refresh">
@@ -1189,10 +1194,8 @@ const BarTreeView: FC<{
                     onClose={handleClose}
                     transformOrigin={{ horizontal: "right", vertical: "top" }}
                     anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-                    sx={{
-                      "& .MuiPaper-root": {
-                        transition: "none !important",
-                      },
+                    PaperProps={{
+                      className: "sidebar-menu-paper",
                     }}
                     disableScrollLock={true}
                   >
@@ -1210,7 +1213,7 @@ const BarTreeView: FC<{
                           className="sidebar-menu-item"
                         >
                           <ListItemIcon
-                            sx={{ minWidth: "28px !important" }}
+                            className="sidebar-menuitem-icon"
                             data-cy="groupOrFlatTreeView"
                           >
                             {isGroupView ? (
@@ -1246,7 +1249,7 @@ const BarTreeView: FC<{
                           className="sidebar-menu-item"
                         >
                           <ListItemIcon
-                            sx={{ minWidth: "28px !important" }}
+                            className="sidebar-menuitem-icon"
                             data-cy="createTag"
                           >
                             <AddIcon fontSize="small" className="menuitem-icon" />
@@ -1269,7 +1272,7 @@ const BarTreeView: FC<{
                         data-cy="downloadBusinessMetadata"
                         className="sidebar-menu-item"
                       >
-                        <ListItemIcon sx={{ minWidth: "28px !important" }}>
+                        <ListItemIcon className="sidebar-menuitem-icon">
                           <FileDownloadIcon
                             fontSize="small"
                             className="menuitem-icon"
@@ -1290,7 +1293,7 @@ const BarTreeView: FC<{
                         data-cy="importBusinessMetadata"
                         className="sidebar-menu-item"
                       >
-                        <ListItemIcon sx={{ minWidth: "28px !important" }}>
+                        <ListItemIcon className="sidebar-menuitem-icon">
                           <FileUploadIcon
                             fontSize="small"
                             className="menuitem-icon"
@@ -1314,7 +1317,7 @@ const BarTreeView: FC<{
                         data-cy="glossaryTermsListNavigate"
                         className="sidebar-menu-item"
                       >
-                        <ListItemIcon sx={{ minWidth: "28px !important" }}>
+                        <ListItemIcon className="sidebar-menuitem-icon">
                           <FileDownloadIcon
                             fontSize="small"
                             className="menuitem-icon"
@@ -1328,25 +1331,13 @@ const BarTreeView: FC<{
                   </Menu>
                 </Stack>
               }
-              sx={{
-                "& .MuiTreeItem-label": {
-                  fontWeight: "600  !important",
-                  fontSize: "14px  !important",
-                  lineHeight: "26px !important",
-                  color: "white",
-                },
-                "& .MuiTreeItem-content svg": {
-                  color: "white",
-                  fontSize: "20px !important",
-                },
-              }}
             >
               {loader ? (
                 <TreeSkeletonLoader count={isPopover ? 2 : 7} />
               ) : (
                 filteredData.map((node: TreeNode) => renderTreeItem(node))
               )}
-            </TreeItem>
+            </StyledParentTreeItem>
 
             <ImportDialog
               open={openModal}

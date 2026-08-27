@@ -54,6 +54,17 @@ describe('EntityDisplayImage', () => {
     expect(img?.getAttribute('data-cy')).toBe('entity-1')
   })
 
+  it('does not render undefined for id or data-cy when entity lacks guid', () => {
+    const { container } = render(
+      <DisplayImage entity={{}} width={20} height={20} />
+    )
+
+    const img = container.querySelector('img')
+    expect(img).toBeInTheDocument()
+    expect(img?.getAttribute('id')).toBeNull()
+    expect(img?.getAttribute('data-cy')).toBeNull()
+  })
+
   it('switches to fallback image when native onError is triggered', () => {
     const { container } = render(
       <DisplayImage entity={entity} width={20} height={20} />

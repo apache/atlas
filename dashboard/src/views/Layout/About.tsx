@@ -37,7 +37,7 @@ const About = () => {
           <Stack direction="column" spacing={1}>
             <Typography variant="body1">
               <strong>Version: </strong>
-              {error ? "Unknown (failed to fetch version)" : (versionData?.Version || "N/A")}
+              {error ? "Unknown (failed to fetch version)" : ((versionData?.Version as string) || "N/A")}
             </Typography>
             <Typography variant="body2" color="info.main">
               Get involved!

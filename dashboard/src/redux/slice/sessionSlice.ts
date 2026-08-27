@@ -21,7 +21,7 @@ import { getVersion } from "@api/apiMethods/headerApiMethods";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { globalSession } from "@utils/Global";
 
-type DynamicData = Record<any, any>;
+type DynamicData = Record<string, unknown>;
 
 interface SessionState {
   sessionObj: {
