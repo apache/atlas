@@ -171,7 +171,7 @@ const AddValidityPeriod = (props: { control: any }) => {
     control
   });
 
-  const { timezones = [] } = sessionObj.data || {};
+  const timezones = (sessionObj.data?.timezones as string[]) || [];
   const timeZonesList = timezones.map((obj: string) => ({
     label: obj,
     value: obj

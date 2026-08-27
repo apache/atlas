@@ -151,25 +151,21 @@ const SideBarBody = (props: {
   const handlePopoverOpen = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
     const target = event.currentTarget;
 
-    const openNewPopover = () => {
-      setPopoverAnchor(target);
-      setActivePopover(id);
+    setPopoverAnchor(target);
+    setActivePopover(id);
 
-      // Calculate remaining screen height from the anchor to the bottom
-      const rect = target.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.top - 24;
-      const isBottom = spaceBelow < 350;
-      setIsBottomHalf(isBottom);
+    // Calculate remaining screen height from the anchor to the bottom
+    const rect = target.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.top - 24;
+    const isBottom = spaceBelow < 350;
+    setIsBottomHalf(isBottom);
 
-      if (isBottom) {
-        const spaceAbove = rect.bottom - 24;
-        setPopoverMaxHeight(`${Math.max(250, spaceAbove)}px`);
-      } else {
-        setPopoverMaxHeight(`${Math.max(250, spaceBelow)}px`);
-      }
-    };
-
-    openNewPopover();
+    if (isBottom) {
+      const spaceAbove = rect.bottom - 24;
+      setPopoverMaxHeight(`${Math.max(250, spaceAbove)}px`);
+    } else {
+      setPopoverMaxHeight(`${Math.max(250, spaceBelow)}px`);
+    }
   };
 
   const handlePopoverClose = () => {
@@ -402,8 +398,7 @@ const SideBarBody = (props: {
             </DrawerHeader>
           )}
           <Paper
-            className="sidebar-wrapper"
-            style={{ display: open ? "block" : "none" }}
+            className={`sidebar-wrapper ${!open ? "sidebar-wrapper--hidden" : ""}`}
           >
                 <div
                   className="sidebar-treeview-container"
