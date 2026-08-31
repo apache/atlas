@@ -1,0 +1,145 @@
+diff --git a/repository/src/main/java/org/apache/atlas/discovery/EntitySearchProcessor.java b/repository/src/main/java/org/apache/atlas/discovery/EntitySearchProcessor.java
+index e002ecf7f..b110f1951 100644
+--- a/repository/src/main/java/org/apache/atlas/discovery/EntitySearchProcessor.java
++++ b/repository/src/main/java/org/apache/atlas/discovery/EntitySearchProcessor.java
+@@ -57,8 +57,9 @@ import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
+ import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
+ 
+ public class EntitySearchProcessor extends SearchProcessor {
+-    private static final Logger LOG      = LoggerFactory.getLogger(EntitySearchProcessor.class);
+-    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("EntitySearchProcessor");
++    private static final Logger LOG              = LoggerFactory.getLogger(EntitySearchProcessor.class);
++    private static final Logger PERF_LOG         = AtlasPerfTracer.getPerfLogger("EntitySearchProcessor");
++    private static final int    COUNT_BATCH_SIZE = 1000;
+ 
+     private final AtlasIndexQuery indexQuery;
+     private final AtlasGraphQuery graphQuery;
+@@ -316,7 +317,9 @@ public class EntitySearchProcessor extends SearchProcessor {
+ 
+     @Override
+     public long getResultCount() {
+-        if (indexQuery != null) {
++        if (isEntityRootType()) {                     //when `typeName` is `_ALL_ENTITY_TYPES` (`isEntityRootType()`
++            return getFilteredResultCount();
++        } else if (indexQuery != null) {              //specific types like `hive_table`
+             return indexQuery.vertexTotals();
+         } else if (graphQuery != null) {
+             return StreamSupport.stream(graphQuery.vertexIds().spliterator(), false).count();
+@@ -325,6 +328,82 @@ public class EntitySearchProcessor extends SearchProcessor {
+         }
+     }
+ 
++    private long getFilteredResultCount() {
++        if (indexQuery != null) {
++            return countFilteredIndexResults();
++        } else if (graphQuery != null) {
++            return countFilteredGraphResults();
++        }
++
++        return -1L;
++    }
++
++    private long countFilteredIndexResults() {
++        long                                count                 = 0;
++        int                                 qryOffset             = 0;
++        LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap = new LinkedHashMap<>();
++
++        while (true) {
++            offsetEntityVertexMap.clear();
++
++            if (context.terminateSearch()) {
++                break;
++            }
++
++            Iterator<AtlasIndexQuery.Result> idxQueryResult = executeIndexQuery(context, indexQuery, qryOffset, COUNT_BATCH_SIZE);
++
++            offsetEntityVertexMap = getVerticesFromIndexQueryResult(idxQueryResult, offsetEntityVertexMap, qryOffset);
++
++            boolean isLastResultPage = offsetEntityVertexMap.size() < COUNT_BATCH_SIZE;
++
++            offsetEntityVertexMap = applyCountFilters(offsetEntityVertexMap);
++            count += offsetEntityVertexMap.size();
++
++            if (isLastResultPage) {
++                break;
++            }
++
++            qryOffset += COUNT_BATCH_SIZE;
++        }
++
++        return count;
++    }
++
++    private long countFilteredGraphResults() {
++        long count     = 0;
++        int  qryOffset = 0;
++
++        while (true) {
++            LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap = new LinkedHashMap<>();
++            Iterator<AtlasVertex>               queryResult             = graphQuery.vertices(qryOffset, COUNT_BATCH_SIZE).iterator();
++
++            offsetEntityVertexMap = getVertices(queryResult, offsetEntityVertexMap, qryOffset);
++
++            boolean isLastResultPage = offsetEntityVertexMap.size() < COUNT_BATCH_SIZE;
++
++            offsetEntityVertexMap = applyCountFilters(offsetEntityVertexMap);
++            count += offsetEntityVertexMap.size();
++
++            if (isLastResultPage) {
++                break;
++            }
++
++            qryOffset += COUNT_BATCH_SIZE;
++        }
++
++        return count;
++    }
++
++    private LinkedHashMap<Integer, AtlasVertex> applyCountFilters(LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap) {
++        offsetEntityVertexMap = super.filter(offsetEntityVertexMap, inMemoryPredicate);
++
++        if (graphQueryPredicate != null) {
++            offsetEntityVertexMap = super.filter(offsetEntityVertexMap, graphQueryPredicate);
++        }
++
++        return super.filter(offsetEntityVertexMap);
++    }
++
+     @Override
+     public LinkedHashMap<Integer, AtlasVertex> filter(LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap) {
+         LOG.debug("==> EntitySearchProcessor.filter({})", offsetEntityVertexMap.size());
+diff --git a/repository/src/test/java/org/apache/atlas/discovery/EntitySearchProcessorTest.java b/repository/src/test/java/org/apache/atlas/discovery/EntitySearchProcessorTest.java
+index 0e4eff780..59ef33761 100644
+--- a/repository/src/test/java/org/apache/atlas/discovery/EntitySearchProcessorTest.java
++++ b/repository/src/test/java/org/apache/atlas/discovery/EntitySearchProcessorTest.java
+@@ -256,6 +256,22 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
+         assertEquals(processor.execute().size(), 20);
+     }
+ 
++    @Test
++    public void approximateCountForAllEntityTypes() throws AtlasBaseException {
++        SearchParameters params = new SearchParameters();
++
++        params.setTypeName(SearchParameters.ALL_ENTITY_TYPES);
++        params.setExcludeDeletedEntities(true);
++        params.setLimit(10000);
++
++        SearchContext         context   = new SearchContext(params, typeRegistry, graph, Collections.emptySet());
++        EntitySearchProcessor processor = new EntitySearchProcessor(context);
++        List<AtlasVertex>     results   = processor.execute();
++
++        assertTrue(results.size() > 0);
++        assertEquals(processor.getResultCount(), results.size());
++    }
++
+     @Test
+     public void allEntityTypeWithTag() throws AtlasBaseException {
+         SearchParameters params = new SearchParameters();
+@@ -267,6 +283,7 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
+ 
+         EntitySearchProcessor processor = new EntitySearchProcessor(context);
+         assertEquals(processor.execute().size(), 5);
++        assertEquals(processor.getResultCount(), 5);
+     }
+ 
+     @Test
