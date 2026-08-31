@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntSupplier;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -47,6 +48,10 @@ import static org.testng.Assert.assertTrue;
 public class TaskExecutorTest extends BaseTaskFixture {
     /** Long enough that the background poll never interferes with what a test is asserting. */
     private static final long LONG_POLL_MS = TimeUnit.HOURS.toMillis(1);
+
+    /** Only ever waited out when the work is not going to arrive, so it can afford to be generous. */
+    private static final long COMPLETION_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+    private static final long COMPLETION_POLL_MS    = 25L;
 
     @Inject
     private AtlasGraph graph;
@@ -145,7 +150,8 @@ public class TaskExecutorTest extends BaseTaskFixture {
         TaskExecutor              taskExecutor = new TaskExecutor(taskRegistry, taskFactoryMap, statistics);
 
         taskExecutor.addAll(queued);
-        taskExecutor.waitUntilDone();
+
+        awaitAtLeast(statistics::getTotalSuccess, queued.size());
 
         assertEquals(statistics.getTotalSuccess(), queued.size(),
                 "Every queued task must be executed, not just the first claimable one");
@@ -177,7 +183,8 @@ public class TaskExecutorTest extends BaseTaskFixture {
         graph.commit();
 
         taskExecutor.wakeUp();
-        taskExecutor.waitUntilDone();
+
+        awaitAtLeast(statistics::getTotalSuccess, 1);
 
         assertEquals(statistics.getTotalSuccess(), 1,
                 "A task committed after the first drain must still be claimed by the next one");
@@ -223,7 +230,10 @@ public class TaskExecutorTest extends BaseTaskFixture {
         TaskExecutor              taskExecutor = new TaskExecutor(taskRegistry, claimSource, taskFactoryMap, statistics, LONG_POLL_MS);
 
         taskExecutor.wakeUp();
-        taskExecutor.waitUntilDone();
+
+        awaitAtLeast(statistics::getTotalSuccess, 2);
+        // The claim that comes back empty is what ends the drain, and it follows the last task.
+        awaitAtLeast(claimCalls::get, 3);
 
         assertEquals(statistics.getTotalSuccess(), 2, "Both handed-out tasks must be executed");
         assertEquals(claimCalls.get(), 3, "Drain must keep claiming until the registry returns nothing");
@@ -279,6 +289,25 @@ public class TaskExecutorTest extends BaseTaskFixture {
         assertNotNull(stored);
         assertEquals(stored.getStatus(), AtlasTask.Status.FAILED,
                 "An unrunnable task must not stay IN_PROGRESS — it would block every other task in the cluster");
+    }
+
+    /**
+     * Waits for the work to arrive rather than for a fixed interval.  {@link
+     * TaskExecutor#waitUntilDone()} sleeps for a set time, which is a guess at how long the graph
+     * transactions behind it will take.  The suite runs several JVMs at once and the guess is
+     * sometimes short under that load, so the assertion after it fails for want of waiting rather
+     * than for anything it checks.  Waiting on the count the test goes on to assert cannot be short,
+     * and it returns as soon as the work is done instead of always paying the whole interval.
+     *
+     * <p>Kept for the counts a test expects to <em>rise</em>.  Asserting that nothing ran is still a
+     * fixed wait, since there is no arrival to wait for.
+     */
+    private static void awaitAtLeast(IntSupplier counter, int expected) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + COMPLETION_TIMEOUT_MS;
+
+        while (counter.getAsInt() < expected && System.currentTimeMillis() < deadline) {
+            Thread.sleep(COMPLETION_POLL_MS);
+        }
     }
 
     private void assertTaskUntilFail(AtlasTask errorThrowingTask, Map<String, TaskFactory> taskFactoryMap, TaskManagement.Statistics statistics)
