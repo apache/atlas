@@ -652,6 +652,71 @@ public class PurgeServiceTest extends AtlasTestBase {
         assertEquals(purgeClaimExpiry().longValue(), leaseUntil);
     }
 
+    @Test
+    public void purgeEntitiesAsClusterOwner_standsDownWhenAPeerOwnsTheCycle() {
+        long leaseUntil = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(10);
+        ensureClaimState(Constants.CLAIM_SCHEDULED_PURGE, "peer-node", leaseUntil);
+
+        PurgeService purgeService = Mockito.spy(new PurgeService(atlasGraph, entityStore, typeRegistry, atlasAuditService));
+
+        EntityMutationResponse response = purgeService.purgeEntitiesAsClusterOwner();
+
+        verify(purgeService, never()).purgeEntities();
+        assertNotNull(response);
+        assertNull(response.getPurgedEntities());
+        assertEquals(claimOwner(Constants.CLAIM_SCHEDULED_PURGE), "peer-node");
+        assertEquals(claimExpiry(Constants.CLAIM_SCHEDULED_PURGE).longValue(), leaseUntil);
+    }
+
+    @Test
+    public void purgeEntitiesAsClusterOwner_releasesTheCycleClaimWhenDone() {
+        ensureClaimState(Constants.CLAIM_SCHEDULED_PURGE, "", 0L);
+
+        PurgeService purgeService = Mockito.spy(new PurgeService(atlasGraph, entityStore, typeRegistry, atlasAuditService));
+        Mockito.doReturn(new EntityMutationResponse()).when(purgeService).purgeEntities();
+
+        purgeService.purgeEntitiesAsClusterOwner();
+
+        verify(purgeService).purgeEntities();
+        assertNull(claimOwner(Constants.CLAIM_SCHEDULED_PURGE), "the next cycle must be open to any node");
+    }
+
+    @Test
+    public void purgeEntitiesAsClusterOwner_releasesTheCycleClaimWhenPurgeFails() {
+        ensureClaimState(Constants.CLAIM_SCHEDULED_PURGE, "", 0L);
+
+        PurgeService purgeService = Mockito.spy(new PurgeService(atlasGraph, entityStore, typeRegistry, atlasAuditService));
+        Mockito.doThrow(new RuntimeException("purge failed")).when(purgeService).purgeEntities();
+
+        try {
+            purgeService.purgeEntitiesAsClusterOwner();
+
+            fail("the failure should reach the scheduler rather than be swallowed");
+        } catch (RuntimeException expected) {
+            // the claim, not the exception, is what this test is about
+        }
+
+        assertNull(claimOwner(Constants.CLAIM_SCHEDULED_PURGE), "a failed cycle must not pin the claim until it lapses");
+    }
+
+    @Test
+    public void purgeEntitiesAsClusterOwner_leavesTheCleanupLeaseAlone() {
+        long leaseUntil = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(10);
+
+        ensurePurgeOwnershipState("cleanup-owner", leaseUntil);
+        ensureClaimState(Constants.CLAIM_SCHEDULED_PURGE, "", 0L);
+
+        PurgeService purgeService = Mockito.spy(new PurgeService(atlasGraph, entityStore, typeRegistry, atlasAuditService));
+        Mockito.doReturn(new EntityMutationResponse()).when(purgeService).purgeEntities();
+
+        purgeService.purgeEntitiesAsClusterOwner();
+
+        // the cycle is claimed under its own name on purpose: sharing CLAIM_PURGE would release the
+        // cleanup thread's lease on the way out and let a peer start a second cleanup
+        assertEquals(purgeClaimOwner(), "cleanup-owner");
+        assertEquals(purgeClaimExpiry().longValue(), leaseUntil);
+    }
+
     private AtlasEntity newHiveDb(String nameOpt) {
         String name = nameOpt != null ? nameOpt : RandomStringUtils.randomAlphanumeric(10);
         AtlasEntity db = new AtlasEntity("hive_db");
@@ -820,19 +885,31 @@ public class PurgeServiceTest extends AtlasTestBase {
     }
 
     private String purgeClaimOwner() {
-        return GraphClaim.claimedBy(GraphClaim.holderOf(atlasGraph, Constants.CLAIM_PURGE));
+        return claimOwner(Constants.CLAIM_PURGE);
     }
 
     private Long purgeClaimExpiry() {
-        return GraphClaim.expiryOf(GraphClaim.holderOf(atlasGraph, Constants.CLAIM_PURGE));
+        return claimExpiry(Constants.CLAIM_PURGE);
+    }
+
+    private String claimOwner(String claimName) {
+        return GraphClaim.claimedBy(GraphClaim.holderOf(atlasGraph, claimName));
+    }
+
+    private Long claimExpiry(String claimName) {
+        return GraphClaim.expiryOf(GraphClaim.holderOf(atlasGraph, claimName));
+    }
+
+    private void ensurePurgeOwnershipState(String ownerId, long leaseUntil) {
+        ensureClaimState(Constants.CLAIM_PURGE, ownerId, leaseUntil);
     }
 
     /**
-     * Puts the purge claim into a known state.  A blank {@code ownerId} means unclaimed, which is the
+     * Puts a claim into a known state.  A blank {@code ownerId} means unclaimed, which is the
      * absence of a claim vertex rather than a vertex with an empty owner.
      */
-    private void ensurePurgeOwnershipState(String ownerId, long leaseUntil) {
-        AtlasVertex existing = GraphClaim.holderOf(atlasGraph, Constants.CLAIM_PURGE);
+    private void ensureClaimState(String claimName, String ownerId, long leaseUntil) {
+        AtlasVertex existing = GraphClaim.holderOf(atlasGraph, claimName);
 
         if (existing != null) {
             GraphClaim.releaseClaim(existing);
@@ -843,7 +920,7 @@ public class PurgeServiceTest extends AtlasTestBase {
             AtlasVertex claimVertex = atlasGraph.addVertex();
 
             AtlasGraphUtilsV2.setEncodedProperty(claimVertex, Constants.CLAIM_VERTEX_TYPE_KEY, Constants.CLAIM_VERTEX_TYPE_NAME);
-            GraphClaim.claim(claimVertex, Constants.CLAIM_PURGE, ownerId);
+            GraphClaim.claim(claimVertex, claimName, ownerId);
             AtlasGraphUtilsV2.setEncodedProperty(claimVertex, Constants.CLAIM_EXPIRY_KEY, leaseUntil);
         }
 

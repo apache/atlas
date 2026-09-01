@@ -23,6 +23,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
+import org.apache.atlas.notification.NotificationHookConsumer;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.service.Service;
@@ -95,6 +96,8 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
     private final String            topicName;
     private final String            consumerGroupId;
     private final String            localNodeId;
+    private final long              minRetryBackoffMs;
+    private final long              maxRetryBackoffMs;
 
     /**
      * Last successfully applied signal timestamp (epoch-ms) per source nodeId.
@@ -120,8 +123,15 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
         this.localNodeId       = resolveNodeId(configuration);
         this.consumerGroupId   = "atlas-typedef-refresh-" + localNodeId;
 
-        LOG.info("TypeDefSyncConsumer: topic='{}', consumerGroup='{}', localNodeId='{}'",
-                topicName, consumerGroupId, localNodeId);
+        // Reuse the notification consumers' retry settings: this is one of them, and an operator
+        // who has tuned how long Atlas waits before retrying a Kafka-driven action means it here too.
+        int retryInterval = configuration.getInt(NotificationHookConsumer.CONSUMER_RETRY_INTERVAL, 500);
+
+        this.minRetryBackoffMs = configuration.getInt(NotificationHookConsumer.CONSUMER_MIN_RETRY_INTERVAL, retryInterval);
+        this.maxRetryBackoffMs = configuration.getInt(NotificationHookConsumer.CONSUMER_MAX_RETRY_INTERVAL, (int) (minRetryBackoffMs * 60));
+
+        LOG.info("TypeDefSyncConsumer: topic='{}', consumerGroup='{}', localNodeId='{}', retryBackoff={}..{}ms",
+                topicName, consumerGroupId, localNodeId, minRetryBackoffMs, maxRetryBackoffMs);
     }
 
     // -------------------------------------------------------------------------
@@ -203,66 +213,57 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
             consumer.subscribe(Collections.singletonList(topicName));
             LOG.info("TypeDefSyncConsumer: subscribed to '{}' (group='{}')", topicName, consumerGroupId);
 
+            String pendingSignal  = null;
+            long   nextRetryAtMs  = 0L;
+            long   retryBackoffMs = minRetryBackoffMs;
+
             while (running) {
                 ConsumerRecords<String, String> records = consumer.poll(CONSUMER_POLL_TIMEOUT);
+                String                          signal  = latestUnappliedSignal(records);
 
-                if (records.isEmpty()) {
+                if (signal != null) {
+                    // A reload picks up every change committed before it runs, so the newest signal
+                    // stands in for any earlier one still waiting to be retried.
+                    pendingSignal  = signal;
+                    nextRetryAtMs  = 0L;
+                    retryBackoffMs = minRetryBackoffMs;
+                }
+
+                if (pendingSignal == null) {
+                    if (!records.isEmpty()) {
+                        consumer.commitSync();
+                    }
+
                     continue;
                 }
 
-                String latestSignal    = null;
-                long   latestTimestamp = Long.MIN_VALUE;
-
-                for (ConsumerRecord<String, String> record : records) {
-                    String payload = record.value();
-                    if (payload == null) {
-                        continue;
-                    }
-
-                    ParsedSignal parsed = parseSignal(payload);
-                    if (parsed == null) {
-                        continue;
-                    }
-
-                    if (localNodeId.equals(parsed.nodeId)) {
-                        appliedTimestamps.put(parsed.nodeId, parsed.timestamp);
-                        LOG.debug("TypeDefSyncConsumer: own signal '{}' — timestamp recorded, no reload needed", payload);
-                        continue;
-                    }
-
-                    long applied = appliedTimestamps.getOrDefault(parsed.nodeId, -1L);
-                    if (parsed.timestamp <= applied) {
-                        LOG.debug("TypeDefSyncConsumer: skipping stale signal '{}' — already applied timestamp {} for node '{}'",
-                                payload, applied, parsed.nodeId);
-                        continue;
-                    }
-
-                    if (parsed.timestamp > latestTimestamp) {
-                        latestTimestamp = parsed.timestamp;
-                        latestSignal    = payload;
-                    }
-                }
-
-                if (latestSignal == null) {
-                    consumer.commitSync();
+                if (System.currentTimeMillis() < nextRetryAtMs) {
                     continue;
                 }
 
-                ParsedSignal trigger           = parseSignal(latestSignal);
+                ParsedSignal trigger           = parseSignal(pendingSignal);
                 long         previousTimestamp = appliedTimestamps.getOrDefault(trigger.nodeId, -1L);
 
                 LOG.info("TypeDefSyncConsumer: applying signal '{}' (node='{}' ts {} → {}), reloading type registry",
-                        latestSignal, trigger.nodeId,
+                        pendingSignal, trigger.nodeId,
                         previousTimestamp < 0 ? "new" : previousTimestamp, trigger.timestamp);
 
                 try {
                     reloadTypeRegistry();
                     appliedTimestamps.put(trigger.nodeId, trigger.timestamp);
                     consumer.commitSync();
+
+                    pendingSignal  = null;
+                    retryBackoffMs = minRetryBackoffMs;
+
                     LOG.info("TypeDefSyncConsumer: type registry reloaded. Applied timestamps: {}", appliedTimestamps);
                 } catch (Exception e) {
-                    LOG.warn("TypeDefSyncConsumer: type registry reload failed for signal '{}' — will retry on next signal",
-                            latestSignal, e);
+                    nextRetryAtMs = System.currentTimeMillis() + retryBackoffMs;
+
+                    LOG.warn("TypeDefSyncConsumer: type registry reload failed for signal '{}' — retrying in {}ms",
+                            pendingSignal, retryBackoffMs, e);
+
+                    retryBackoffMs = Math.min(retryBackoffMs * 2, maxRetryBackoffMs);
                 } finally {
                     RequestContext.clear();
                 }
@@ -275,6 +276,55 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
             consumer.close();
             consumer = null;
         }
+    }
+
+    /**
+     * Picks the signal in this batch worth reloading for: the newest one from a peer that this node
+     * has not already applied. Signals this node published itself are recorded but never reloaded
+     * for, since its registry is already up to date with its own writes.
+     *
+     * @return the signal payload, or null if the batch holds nothing this node needs to act on.
+     */
+    private String latestUnappliedSignal(ConsumerRecords<String, String> records) {
+        String latestSignal    = null;
+        long   latestTimestamp = Long.MIN_VALUE;
+
+        for (ConsumerRecord<String, String> record : records) {
+            String payload = record.value();
+
+            if (payload == null) {
+                continue;
+            }
+
+            ParsedSignal parsed = parseSignal(payload);
+
+            if (parsed == null) {
+                continue;
+            }
+
+            if (localNodeId.equals(parsed.nodeId)) {
+                appliedTimestamps.put(parsed.nodeId, parsed.timestamp);
+                LOG.debug("TypeDefSyncConsumer: own signal '{}' — timestamp recorded, no reload needed", payload);
+
+                continue;
+            }
+
+            long applied = appliedTimestamps.getOrDefault(parsed.nodeId, -1L);
+
+            if (parsed.timestamp <= applied) {
+                LOG.debug("TypeDefSyncConsumer: skipping stale signal '{}' — already applied timestamp {} for node '{}'",
+                        payload, applied, parsed.nodeId);
+
+                continue;
+            }
+
+            if (parsed.timestamp > latestTimestamp) {
+                latestTimestamp = parsed.timestamp;
+                latestSignal    = payload;
+            }
+        }
+
+        return latestSignal;
     }
 
     /**

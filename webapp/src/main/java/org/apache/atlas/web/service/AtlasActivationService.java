@@ -51,10 +51,12 @@ import java.util.Set;
  * {@code HandlerOrder}, calls {@code instanceIsActive()} on each in sequence,
  * then marks the node ACTIVE.
  *
- * <h3>SERVICE_TYPE=INITIALIZATION</h3>
- * After all handlers complete the process calls {@code System.exit(0)} so the
- * JVM terminates cleanly.  Designed for a Kubernetes init-container that
- * prepares the store once before the actual server pods start.
+ * <h3>RUN_MODE=INITIALIZER</h3>
+ * Activation is all this mode needs, and the JVM is expected to terminate once it
+ * is done - it is a Kubernetes init container that prepares the store before the
+ * server pods start.  Terminating is {@code Atlas.main()}'s job, not this class's:
+ * activation runs inside the web application's deployment, and exiting from here
+ * deadlocks the shutdown hook against the deployment it is trying to stop.
  */
 @Component
 public class AtlasActivationService implements Service {
@@ -119,8 +121,10 @@ public class AtlasActivationService implements Service {
         }
 
         if (mode.exitsAfterInit()) {
-            LOG.info("AtlasActivationService: RUN_MODE=INITIALIZER — initialization complete, exiting");
-            exitAfterInitialization();
+            // terminating is left to Atlas.main(): this runs inside the web application's deployment,
+            // so a System.exit() here parks the deploying thread in the shutdown sequence while it
+            // still holds the locks that the hook needs in order to stop the server
+            LOG.info("AtlasActivationService: RUN_MODE={} — initialization complete, handing back to the launcher to exit", mode);
         }
     }
 
@@ -141,7 +145,4 @@ public class AtlasActivationService implements Service {
         }
     }
 
-    protected void exitAfterInitialization() {
-        System.exit(0);
-    }
 }

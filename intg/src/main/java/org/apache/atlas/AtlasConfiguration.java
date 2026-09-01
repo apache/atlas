@@ -141,6 +141,12 @@ public enum AtlasConfiguration {
     PATCH_CLAIM_LEASE_MS("atlas.patch.claim.lease.ms", 3600000L),
     TYPEDEF_BOOTSTRAP_STALE_THRESHOLD_MS("atlas.typedef.bootstrap.claim.stale.threshold.ms", 120000L),
     /**
+     * Shortest gap between two on-demand type registry reloads triggered by a request naming a type
+     * a peer created but this node has not synced yet. A reload rebuilds the whole registry, so this
+     * keeps a burst of such requests to one rebuild rather than one each.
+     */
+    TYPEDEF_CATCHUP_MIN_RELOAD_INTERVAL_MS("atlas.typedef.catchup.min.reload.interval.ms", 1000L),
+    /**
      * Maximum number of times the {GraphTransactionInterceptor} will
      * retry a failed outer transaction when JanusGraph reports a locking conflict
      * ({@code PermanentLockingException} / {@code TemporaryLockingException}).

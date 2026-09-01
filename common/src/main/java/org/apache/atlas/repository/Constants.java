@@ -276,6 +276,12 @@ public final class Constants {
     public static final String CLAIM_PURGE        = "ATLAS_PURGE";
     public static final String CLAIM_ASYNC_IMPORT = "ATLAS_ASYNC_IMPORT";
     /**
+     * Held for one scheduled purge cycle, and deliberately not {@link #CLAIM_PURGE}: that one is held
+     * for as long as the startup cleanup thread runs, so a cycle that shared it would release the
+     * cleanup's lease on the way out and let a peer start a second cleanup.
+     */
+    public static final String CLAIM_SCHEDULED_PURGE = "ATLAS_SCHEDULED_PURGE";
+    /**
      * Guards loading the bootstrap models, which one node does for the whole cluster.
      *
      * <p>Sharing the model files out between nodes looked like the faster way to start, but a node

@@ -38,10 +38,8 @@ import java.util.Set;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.isNull;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -116,12 +114,17 @@ public class AtlasActivationServiceTest {
         verify(auditService, never()).add(any(), any(), any(), any(), any(), anyLong());
     }
 
+    /**
+     * Activation runs inside the web application's deployment, so terminating the JVM from here
+     * would park the deploying thread in the shutdown sequence still holding the locks that the
+     * shutdown hook needs to stop the server.  Initializer mode must therefore activate and return,
+     * leaving the exit to {@code Atlas.main()}.
+     */
     @Test
-    public void start_initializerModeInvokesExitHook() throws Exception {
+    public void start_initializerModeActivatesAndReturnsWithoutTerminatingTheJvm() throws Exception {
         when(handlerOne.getHandlerOrder()).thenReturn(1);
         Set<ActiveStateChangeHandler> handlers = new HashSet<>(Arrays.asList(handlerOne));
-        AtlasActivationService service = spy(new AtlasActivationService(handlers, serviceState, metricsUtil, auditService));
-        doNothing().when(service).exitAfterInitialization();
+        AtlasActivationService service = new AtlasActivationService(handlers, serviceState, metricsUtil, auditService);
 
         try (MockedStatic<AtlasRunMode> runModeMock = org.mockito.Mockito.mockStatic(AtlasRunMode.class)) {
             AtlasRunMode initializerMode = org.mockito.Mockito.mock(AtlasRunMode.class);
@@ -132,6 +135,6 @@ public class AtlasActivationServiceTest {
         }
 
         verify(handlerOne).instanceIsActive();
-        verify(service).exitAfterInitialization();
+        verify(serviceState).setActive();
     }
 }

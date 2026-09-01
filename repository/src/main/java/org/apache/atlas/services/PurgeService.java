@@ -213,6 +213,30 @@ public class PurgeService implements Service, GraphLeaseClaimable {
         LOG.info("==> launched the thread for the clean up");
     }
 
+    /**
+     * Runs one purge cycle on whichever node takes the claim, and stands the rest down.
+     *
+     * <p>The scheduler fires on every node, and the caller's own guards cannot serialise it: a
+     * {@link java.util.concurrent.locks.ReentrantLock} is local to one JVM, and every node reports
+     * ACTIVE once HA is disabled, as it is in an active-active deployment. Without a claim each node
+     * hard-deletes the same entities at the same time.
+     *
+     * @return what this node purged, or an empty response when a peer owns the cycle
+     */
+    public EntityMutationResponse purgeEntitiesAsClusterOwner() {
+        if (!tryClaimScheduledPurge()) {
+            LOG.info("Scheduled purge is owned by another node this cycle, standing down. ownerId={}", ownerId);
+
+            return new EntityMutationResponse();
+        }
+
+        try {
+            return purgeEntities();
+        } finally {
+            releaseScheduledPurgeClaim();
+        }
+    }
+
     @SuppressWarnings("unchecked")
     @Timed
     public EntityMutationResponse purgeEntities() {
@@ -702,6 +726,14 @@ public class PurgeService implements Service, GraphLeaseClaimable {
         }
 
         return claimed;
+    }
+
+    private boolean tryClaimScheduledPurge() {
+        return GraphClaim.claimLeaseAndCommit(atlasGraph, Constants.CLAIM_SCHEDULED_PURGE, ownerId, leaseMillis());
+    }
+
+    private void releaseScheduledPurgeClaim() {
+        GraphClaim.releaseLeaseAndCommit(atlasGraph, Constants.CLAIM_SCHEDULED_PURGE, ownerId);
     }
 
     private void releaseOwnedPurgeLease(String ownerId) {
