@@ -19,8 +19,10 @@ package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -40,7 +42,8 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 
 public class TypeRegistryCatchUpTest {
-    private static final String TYPE_NAME = "PII";
+    private static final String TYPE_NAME        = "PII";
+    private static final String ENTITY_TYPE_NAME = "hive_table";
 
     @Mock
     private AtlasTypeRegistry typeRegistry;
@@ -49,6 +52,7 @@ public class TypeRegistryCatchUpTest {
     private AtlasTypeDefStore typeDefStore;
 
     private AtlasClassificationType classificationType;
+    private AtlasEntityType         entityType;
     private TypeRegistryCatchUp     catchUp;
     private int                     storeLookups;
 
@@ -57,6 +61,7 @@ public class TypeRegistryCatchUpTest {
         MockitoAnnotations.openMocks(this);
 
         classificationType = mock(AtlasClassificationType.class);
+        entityType         = mock(AtlasEntityType.class);
         storeLookups       = 0;
 
         // Counted so a test can assert the store is never resolved during construction: asking for it
@@ -121,5 +126,49 @@ public class TypeRegistryCatchUpTest {
         doThrow(new AtlasBaseException("reload failed")).when(typeDefStore).init();
 
         assertNull(catchUp.classificationType(TYPE_NAME));
+    }
+
+    @Test
+    public void registryAlreadyHasEntityTypeSoStoreIsNotConsulted() {
+        when(typeRegistry.getEntityTypeByName(ENTITY_TYPE_NAME)).thenReturn(entityType);
+
+        assertSame(catchUp.entityType(ENTITY_TYPE_NAME), entityType);
+
+        verifyNoInteractions(typeDefStore);
+    }
+
+    @Test
+    public void unknownEntityTypeDoesNotTriggerReload() throws AtlasBaseException {
+        when(typeRegistry.getEntityTypeByName(ENTITY_TYPE_NAME)).thenReturn(null);
+        when(typeDefStore.getEntityDefByName(ENTITY_TYPE_NAME)).thenThrow(new AtlasBaseException("no such type"));
+
+        assertNull(catchUp.entityType(ENTITY_TYPE_NAME));
+
+        verify(typeDefStore, never()).init();
+    }
+
+    @Test
+    public void entityTypeInStoreButNotRegistryTriggersReload() throws AtlasBaseException {
+        when(typeRegistry.getEntityTypeByName(ENTITY_TYPE_NAME)).thenReturn(null, null, entityType);
+        when(typeDefStore.getEntityDefByName(ENTITY_TYPE_NAME)).thenReturn(new AtlasEntityDef(ENTITY_TYPE_NAME));
+
+        assertSame(catchUp.entityType(ENTITY_TYPE_NAME), entityType);
+
+        verify(typeDefStore, times(1)).init();
+    }
+
+    @Test
+    public void reloadIntervalIsSharedAcrossTypeCategories() throws AtlasBaseException {
+        // One rebuild refreshes every category, so a classification miss that has just reloaded
+        // must not let an entity-type miss immediately reload again.
+        when(typeRegistry.getClassificationTypeByName(TYPE_NAME)).thenReturn(null);
+        when(typeDefStore.getClassificationDefByName(TYPE_NAME)).thenReturn(new AtlasClassificationDef(TYPE_NAME));
+        when(typeRegistry.getEntityTypeByName(ENTITY_TYPE_NAME)).thenReturn(null);
+        when(typeDefStore.getEntityDefByName(ENTITY_TYPE_NAME)).thenReturn(new AtlasEntityDef(ENTITY_TYPE_NAME));
+
+        assertNull(catchUp.classificationType(TYPE_NAME));
+        assertNull(catchUp.entityType(ENTITY_TYPE_NAME));
+
+        verify(typeDefStore, times(1)).init();
     }
 }

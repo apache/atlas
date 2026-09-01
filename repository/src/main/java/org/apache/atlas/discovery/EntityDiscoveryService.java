@@ -57,6 +57,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.TypeRegistryCatchUp;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.tasks.AuditReductionTaskFactory;
@@ -138,9 +139,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final SuggestionsProvider       suggestionsProvider;
     private final DSLQueryExecutor          dslQueryExecutor;
     private final TaskManagement            taskManagement;
+    private final TypeRegistryCatchUp       typeRegistryCatchUp;
 
     @Inject
-    EntityDiscoveryService(AtlasTypeRegistry typeRegistry, AtlasGraph graph, GraphBackedSearchIndexer indexer, SearchTracker searchTracker, UserProfileService userProfileService, TaskManagement taskManagement) throws AtlasException {
+    EntityDiscoveryService(AtlasTypeRegistry typeRegistry, AtlasGraph graph, GraphBackedSearchIndexer indexer, SearchTracker searchTracker, UserProfileService userProfileService, TaskManagement taskManagement, TypeRegistryCatchUp typeRegistryCatchUp) throws AtlasException {
         this.graph                    = graph;
         this.entityRetriever          = new EntityGraphRetriever(this.graph, typeRegistry);
         this.indexer                  = indexer;
@@ -155,6 +157,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.suggestionsProvider      = new SuggestionsProviderImpl(graph, typeRegistry);
         this.dslQueryExecutor         = new TraversalBasedExecutor(typeRegistry, graph, entityRetriever);
         this.taskManagement           = taskManagement;
+        this.typeRegistryCatchUp      = typeRegistryCatchUp;
 
         LOG.info("DSL Executor: {}", this.dslQueryExecutor.getClass().getSimpleName());
     }
@@ -219,10 +222,17 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         String queryStr = query == null ? "" : query;
 
         if (StringUtils.isNotEmpty(typeName)) {
+            // Last point at which the type is a name rather than part of a query string. The DSL
+            // parser resolves it against this node's registry only, so a type a peer created moments
+            // ago reads as a syntax error until the typedef-sync path catches up.
+            typeRegistryCatchUp.entityType(typeName);
+
             queryStr = escapeTypeName(typeName) + " " + queryStr;
         }
 
         if (StringUtils.isNotEmpty(classification)) {
+            typeRegistryCatchUp.classificationType(classification);
+
             // isa works with a type name only - like hive_column isa PII; it doesn't work with more complex query
             if (StringUtils.isEmpty(query)) {
                 queryStr += (" isa " + classification);
