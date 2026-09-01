@@ -111,14 +111,17 @@ public class StartEntityFetchByExportRequest {
             }
 
             if (StringUtils.isEmpty(item.getTypeName()) && MapUtils.isNotEmpty(item.getUniqueAttributes())) {
-                LOG.info("Request missing typeName but has uniqueAttributes. Attempting generic type search.");
-                return getEntitiesForMatchTypeType(item, MATCH_TYPE_FOR_TYPE);
+                LOG.info("Request missing typeName but has uniqueAttributes. Searching across all entity types with attribute filter.");
+                ret = getEntitiesForUniqueAttributesAcrossAllTypes(item, matchType);
+
+                return ret;
             }
         } catch (AtlasBaseException ex) {
             LOG.error("Error fetching starting entity for: {}", item, ex);
         } finally {
+            int resultCount = ret != null ? ret.size() : 0;
             LOG.info("export(item={}; matchType={}, fetchType={}): found {} entities: options: {}", item,
-                    exportRequest.getMatchTypeOptionValue(), exportRequest.getFetchTypeOptionValue(), ret.size(), AtlasType.toJson(exportRequest));
+                    exportRequest.getMatchTypeOptionValue(), exportRequest.getFetchTypeOptionValue(), resultCount, AtlasType.toJson(exportRequest));
         }
 
         return ret;
@@ -145,7 +148,7 @@ public class StartEntityFetchByExportRequest {
             return (List<String>) atlasGraph.executeGremlinScript(getScriptEngine(), bindings, query, false);
         } catch (ScriptException e) {
             LOG.error("Script execution failed for query: {}, {} ", query, e);
-            return null;
+            return new ArrayList<>();
         }
     }
 
@@ -178,6 +181,42 @@ public class StartEntityFetchByExportRequest {
 
             for (String typeToSearch : typeNamesToQuery) {
                 List<String> guids = executeGremlinQuery(queryTemplate, getBindingsForObjectId(typeToSearch, attribute.getQualifiedName(), e.getValue()));
+
+                if (CollectionUtils.isNotEmpty(guids)) {
+                    ret.addAll(guids);
+                }
+            }
+        }
+
+        return new ArrayList<>(ret);
+    }
+
+    private List<String> getEntitiesForUniqueAttributesAcrossAllTypes(AtlasObjectId item, String matchType) {
+        final String queryTemplate = getQueryTemplateForMatchType(matchType);
+        Set<String>  ret           = new HashSet<>();
+
+        for (Map.Entry<String, Object> e : item.getUniqueAttributes().entrySet()) {
+            String attrName  = e.getKey();
+            Object attrValue = e.getValue();
+
+            if (attrValue == null) {
+                continue;
+            }
+
+            for (String typeName : typeRegistry.getAllEntityDefNames()) {
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+                if (entityType == null) {
+                    continue;
+                }
+
+                AtlasStructType.AtlasAttribute attribute = entityType.getAttribute(attrName);
+
+                if (attribute == null) {
+                    continue;
+                }
+
+                List<String> guids = executeGremlinQuery(queryTemplate, getBindingsForObjectId(typeName, attribute.getQualifiedName(), attrValue));
 
                 if (CollectionUtils.isNotEmpty(guids)) {
                     ret.addAll(guids);

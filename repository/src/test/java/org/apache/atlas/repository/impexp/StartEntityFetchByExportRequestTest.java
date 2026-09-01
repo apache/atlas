@@ -138,14 +138,23 @@ public class StartEntityFetchByExportRequestTest extends AtlasTestBase {
         startEntityFetchByExportRequestSpy.clearRecordedCalls();
         startEntityFetchByExportRequestSpy.get(exportRequest);
 
-        Map<String, Object> lastBindings = startEntityFetchByExportRequestSpy.getSuppliedBindingsMap();
+        List<Map<String, Object>> allBindings = startEntityFetchByExportRequestSpy.getRecordedBindings();
 
-        assertTrue(lastBindings != null && lastBindings.containsKey(BINDING_PARAMETER_TYPENAME), "Bindings should contain typeName");
+        assertFalse(allBindings.isEmpty(), "Should have triggered attribute-filtered queries");
 
-        Set<String> boundTypes = (Set<String>) lastBindings.get(BINDING_PARAMETER_TYPENAME);
-        int expectedSize = typeRegistry.getAllEntityDefNames().size();
+        boolean foundAttributeFilter = allBindings.stream()
+                .anyMatch(b -> b.containsKey(BINDING_PARAMETER_ATTR_NAME) &&
+                        b.containsKey(BINDING_PARAMTER_ATTR_VALUE) &&
+                        "stocks@cl1".equals(b.get(BINDING_PARAMTER_ATTR_VALUE)));
 
-        assertEquals(boundTypes.size(), expectedSize, "Should contain all entity types from registry");
+        assertTrue(foundAttributeFilter, "Should filter by uniqueAttributes, not export all entities");
+
+        boolean usesPerTypeAttributeQuery = allBindings.stream()
+                .allMatch(b -> b.get(BINDING_PARAMETER_TYPENAME) instanceof String &&
+                        b.containsKey(BINDING_PARAMETER_ATTR_NAME) &&
+                        b.containsKey(BINDING_PARAMTER_ATTR_VALUE));
+
+        assertTrue(usesPerTypeAttributeQuery, "Each query should target a single type with attribute bindings");
     }
 
     @Test
