@@ -114,10 +114,8 @@ public class RestNotification extends AbstractNotification {
             String[] atlasEndPoint = configuration.getStringArray(ATLAS_HOOK_REST_NOTIFICATION_ENDPOINT);
 
             if (isEndpointNotSpecified(atlasEndPoint)) {
-                throw new AtlasException("atlas.hook.rest.notification.address must be configured when REST notification is enabled. "
-                        + "Hook REST ingress is served only by rest-notification-webapp (port 41000); "
-                        + "the main Atlas webapp notification endpoint has been removed. "
-                        + "Example: " + AtlasConstants.DEFAULT_REST_NOTIFICATION_ADDRESS);
+                throw new AtlasException(ATLAS_HOOK_REST_NOTIFICATION_ENDPOINT + " is required for rest-notification-webapp (e.g. "
+                        + AtlasConstants.DEFAULT_REST_NOTIFICATION_ADDRESS + ")");
             }
 
             if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {

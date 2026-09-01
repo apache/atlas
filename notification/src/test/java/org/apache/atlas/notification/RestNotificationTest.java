@@ -191,7 +191,7 @@ public class RestNotificationTest {
             new RestNotification(localConf);
             fail("Expected AtlasException when atlas.hook.rest.notification.address is not configured");
         } catch (AtlasException e) {
-            assertTrue(e.getMessage().contains("atlas.hook.rest.notification.address must be configured"));
+            assertTrue(e.getMessage().contains("atlas.hook.rest.notification.address is required"));
             assertTrue(e.getMessage().contains("http://localhost:41000/rest"));
         }
     }
