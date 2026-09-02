@@ -980,6 +980,44 @@ describe('DrawerBodyChipView', () => {
 				expect(mockNavigate).toHaveBeenCalled();
 			}
 		});
+
+		it('should not show delete icon for DELETED entities', () => {
+			render(
+				<TestWrapper>
+					<DrawerBodyChipView
+						{...defaultProps}
+						currentEntity={{ ...mockCurrentEntity, status: 'DELETED' }}
+					/>
+				</TestWrapper>
+			);
+
+			const chips = screen.getAllByTestId('chip');
+			chips.forEach(chip => {
+				const deleteIcon = chip.querySelector('[data-testid="chip-delete-icon"]');
+				expect(deleteIcon).toBeNull();
+				const deleteButton = chip.querySelector('[data-testid="chip-delete-button"]');
+				expect(deleteButton).toBeNull();
+			});
+		});
+
+		it('should not show delete icon for PURGED entities', () => {
+			render(
+				<TestWrapper>
+					<DrawerBodyChipView
+						{...defaultProps}
+						currentEntity={{ ...mockCurrentEntity, status: 'PURGED' }}
+					/>
+				</TestWrapper>
+			);
+
+			const chips = screen.getAllByTestId('chip');
+			chips.forEach(chip => {
+				const deleteIcon = chip.querySelector('[data-testid="chip-delete-icon"]');
+				expect(deleteIcon).toBeNull();
+				const deleteButton = chip.querySelector('[data-testid="chip-delete-button"]');
+				expect(deleteButton).toBeNull();
+			});
+		});
 	});
 
 	describe('Modal Functionality', () => {
