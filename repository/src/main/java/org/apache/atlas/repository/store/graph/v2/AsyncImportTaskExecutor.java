@@ -19,7 +19,9 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
@@ -33,8 +35,10 @@ import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.impexp.AsyncImportService;
 import org.apache.atlas.repository.store.graph.v2.asyncimport.ImportTaskListener;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +48,9 @@ import javax.inject.Inject;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.atlas.notification.NotificationInterface.NotificationType.ASYNC_IMPORT;
 
@@ -52,14 +58,25 @@ import static org.apache.atlas.notification.NotificationInterface.NotificationTy
 public class AsyncImportTaskExecutor {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncImportTaskExecutor.class);
 
-    private static final String MESSAGE_SOURCE = AsyncImportTaskExecutor.class.getSimpleName();
-    private static final int MAX_RETRIES       = 3;
-    private static final int BASE_BACKOFF_MS   = 500;
+    private static final String MESSAGE_SOURCE         = AsyncImportTaskExecutor.class.getSimpleName();
+    private static final int    DEFAULT_MAX_ATTEMPTS   = 3;
+    private static final long   DEFAULT_RETRY_DELAY_MS = 1000;
+
+    // importIds this instance is currently registering/publishing. Import submissions are always routed
+    // to the active instance, so an in-process guard is enough to keep a single publisher per importId.
+    private final Set<String> registrationsInFlight = ConcurrentHashMap.newKeySet();
 
     private final AsyncImportService    importService;
     private final NotificationInterface notificationInterface;
     private final ImportTaskListener    importTaskListener;
     private final MessageSource         messageSource;
+
+    /** Graph storage retry settings, shared with the rest of the repository layer. */
+    @VisibleForTesting
+    int maxAttempts;
+
+    @VisibleForTesting
+    long retryDelayMs;
 
     @Inject
     public AsyncImportTaskExecutor(AsyncImportService importService, ImportTaskListener importTaskListener) {
@@ -67,11 +84,31 @@ public class AsyncImportTaskExecutor {
         this.notificationInterface = NotificationProvider.get();
         this.importTaskListener    = importTaskListener;
         this.messageSource         = new MessageSource(MESSAGE_SOURCE);
+        this.maxAttempts           = DEFAULT_MAX_ATTEMPTS;
+        this.retryDelayMs          = DEFAULT_RETRY_DELAY_MS;
+
+        try {
+            Configuration configuration = ApplicationProperties.get();
+
+            this.maxAttempts  = configuration.getInt(GraphHelper.RETRY_COUNT, DEFAULT_MAX_ATTEMPTS);
+            this.retryDelayMs = configuration.getLong(GraphHelper.RETRY_DELAY, DEFAULT_RETRY_DELAY_MS);
+        } catch (AtlasException e) {
+            LOG.error("Could not load configuration, using defaults for {} and {}", GraphHelper.RETRY_COUNT, GraphHelper.RETRY_DELAY, e);
+        }
     }
 
     public AtlasAsyncImportRequest run(AtlasImportResult result, EntityImportStream entityImportStream) throws AtlasBaseException {
+        String  importId = entityImportStream.getMd5Hash();
+        boolean claimed  = registrationsInFlight.add(importId);
+
         try {
-            String                  importId      = entityImportStream.getMd5Hash();
+            // registering and publishing are a single critical section per importId: without it two
+            // concurrent submissions of the same archive both resolve to STAGING and each publishes
+            // the full entity set to the same topic
+            if (!claimed) {
+                return awaitInFlightRequest(importId);
+            }
+
             AtlasAsyncImportRequest importRequest = registerRequest(result, importId, entityImportStream.size(), entityImportStream.getCreationOrder());
 
             if (ObjectUtils.equals(importRequest.getStatus(), ImportStatus.WAITING) || ObjectUtils.equals(importRequest.getStatus(), ImportStatus.PROCESSING)) {
@@ -87,10 +124,47 @@ public class AsyncImportTaskExecutor {
 
             return importRequest;
         } catch (AtlasBaseException abe) {
+            if (abe.getAtlasErrorCode() == AtlasErrorCode.IMPORT_ALREADY_IN_PROGRESS) {
+                throw abe;
+            }
+
             throw new AtlasBaseException(AtlasErrorCode.IMPORT_FAILED, abe);
         } finally {
+            if (claimed) {
+                registrationsInFlight.remove(importId);
+            }
+
             entityImportStream.close();
         }
+    }
+
+    /**
+     * Returns the request being submitted concurrently for the same importId, without publishing.
+     * The winning thread may not have committed the request vertex yet, so the lookup is retried
+     * briefly before giving up.
+     */
+    private AtlasAsyncImportRequest awaitInFlightRequest(String importId) throws AtlasBaseException {
+        LOG.warn("AsyncImportTaskExecutor.run(): import request with id={} is already being submitted by another request, skipping publish", importId);
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            AtlasAsyncImportRequest inFlightRequest = importService.fetchImportRequestByImportId(importId);
+
+            if (inFlightRequest != null) {
+                return inFlightRequest;
+            }
+
+            if (attempt < maxAttempts) {
+                try {
+                    Thread.sleep(retryDelayMs);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+
+                    break;
+                }
+            }
+        }
+
+        throw new AtlasBaseException(AtlasErrorCode.IMPORT_ALREADY_IN_PROGRESS, importId);
     }
 
     public void publishTypeDefNotification(AtlasAsyncImportRequest importRequest, AtlasTypesDef atlasTypesDef) throws AtlasBaseException {
@@ -144,10 +218,27 @@ public class AsyncImportTaskExecutor {
             importService.populateCache(importRequest);
 
             importTaskListener.onReceiveImportRequest(importRequest);
+        } catch (AtlasBaseException | RuntimeException e) {
+            persistPublishProgress(importRequest);
+
+            throw e;
         } finally {
             notificationInterface.closeProducer(ASYNC_IMPORT, importRequest.getTopicName());
 
             LOG.info("<== publishImportRequest(importId={})", importRequest.getImportId());
+        }
+    }
+
+    /**
+     * The published position and counters are only kept in the cache while publishing, and reach the
+     * graph when the request is handed to the listener. If publishing fails before that, persist them
+     * once so a resubmit resumes where publishing stopped instead of republishing from the start.
+     */
+    private void persistPublishProgress(AtlasAsyncImportRequest importRequest) {
+        try {
+            importService.saveImportRequest(importRequest);
+        } catch (Exception e) {
+            LOG.warn("AsyncImport(id={}): failed to persist publish progress, a resubmit may republish entities", importRequest.getImportId(), e);
         }
     }
 
@@ -217,7 +308,7 @@ public class AsyncImportTaskExecutor {
         LOG.info("==> registerRequest(importId={})", importId);
 
         try {
-            AtlasAsyncImportRequest existingImportRequest = importService.fetchImportRequestByImportId(importId);
+            AtlasAsyncImportRequest existingImportRequest = importService.resolveRequestStatus(importId);
 
             // handle new , successful and failed request from scratch
             if (existingImportRequest == null
@@ -233,19 +324,24 @@ public class AsyncImportTaskExecutor {
                 newImportRequest.setReceivedTime(System.currentTimeMillis());
                 newImportRequest.getImportDetails().setTotalEntitiesCount(totalEntities);
                 newImportRequest.getImportDetails().setCreationOrder(creationOrder);
+                newImportRequest.getImportDetails().setPublishedEntityCount(0);
+
                 return withRetry(() -> {
                     importService.saveImportRequest(newImportRequest);
                     LOG.info("registerRequest(importId={}): registered new request", importId);
-                    return importService.fetchImportRequestByImportId(newImportRequest.getImportId()); }, importId);
+                    return importService.fetchImportRequestByImportId(newImportRequest.getImportId());
+                }, importId);
             } else if (ObjectUtils.equals(existingImportRequest.getStatus(), ImportStatus.STAGING)) {
                 // if we are resuming staging, we need to update the latest request received at
                 existingImportRequest.setReceivedTime(System.currentTimeMillis());
 
-                return withRetry(() -> {
-                    importService.updateImportRequest(existingImportRequest);
-                    LOG.info("registerRequest(importId={}): resumed {}", importId, existingImportRequest);
-                    return existingImportRequest;
-                }, importId);
+                // updateImportRequest retries internally and logs rather than throwing, so wrapping it
+                // in withRetry() only ever ran the body once
+                importService.updateImportRequest(existingImportRequest);
+
+                LOG.info("registerRequest(importId={}): resumed {}", importId, existingImportRequest);
+
+                return existingImportRequest;
             }
 
             // handle request in / WAITING / PROCESSING status as resume
@@ -279,11 +375,11 @@ public class AsyncImportTaskExecutor {
                     }
                 }
 
-                boolean canRetry = lockingConflict && attempt < (MAX_RETRIES - 1);
+                boolean canRetry = lockingConflict && attempt < (maxAttempts - 1);
                 if (canRetry) {
-                    long backoff = (long) BASE_BACKOFF_MS * (attempt + 1);
+                    long backoff = retryDelayMs * (attempt + 1);
                     LOG.warn("Lock conflict for importId={} on attempt {}/{}, backing off {} ms",
-                            importId, attempt + 1, MAX_RETRIES, backoff);
+                            importId, attempt + 1, maxAttempts, backoff);
                     try {
                         Thread.sleep(backoff);
                     } catch (InterruptedException ignored) {
@@ -293,7 +389,7 @@ public class AsyncImportTaskExecutor {
                 }
 
                 // Non-retryable OR last attempt failed
-                LOG.error("Failed to process importId={} on attempt {}/{}", importId, attempt + 1, MAX_RETRIES, e);
+                LOG.error("Failed to process importId={} on attempt {}/{}", importId, attempt + 1, maxAttempts, e);
                 if (e instanceof AtlasBaseException) {
                     throw (AtlasBaseException) e;
                 }

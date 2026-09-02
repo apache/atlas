@@ -20,10 +20,22 @@ package org.apache.atlas.kafka;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.DescribeTopicsResult;
+import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsResult;
+import org.apache.kafka.clients.admin.ListOffsetsResult;
+import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
+import org.apache.kafka.clients.admin.ListTopicsResult;
+import org.apache.kafka.clients.admin.TopicDescription;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.KafkaFuture;
+import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.TopicPartitionInfo;
+import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -32,18 +44,25 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import static org.mockito.Mockito.anyCollection;
+import static org.mockito.Mockito.anyMap;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class KafkaNotificationMockTest {
+    private static final String TOPIC = "ATLAS_IMPORT_test-import";
+
     @Test
     public void testCreateConsumers() {
         Properties properties = mock(Properties.class);
@@ -151,6 +170,88 @@ public class KafkaNotificationMockTest {
             assertEquals(e.getFailedMessages().get(0), "This is a test message1");
             assertEquals(e.getFailedMessages().get(1), "This is a test message2");
         }
+    }
+
+    @Test
+    public void testIsTopicFullyConsumedWhenCommittedIsAtEnd() {
+        KafkaNotification kafkaNotification = kafkaNotificationBackedBy(adminClientFor(TOPIC, 10L, 10L));
+
+        assertTrue(kafkaNotification.isTopicFullyConsumed(NotificationInterface.NotificationType.ASYNC_IMPORT, TOPIC));
+    }
+
+    @Test
+    public void testIsTopicFullyConsumedWhenMessagesRemain() {
+        KafkaNotification kafkaNotification = kafkaNotificationBackedBy(adminClientFor(TOPIC, 4L, 10L));
+
+        assertFalse(kafkaNotification.isTopicFullyConsumed(NotificationInterface.NotificationType.ASYNC_IMPORT, TOPIC));
+    }
+
+    @Test
+    public void testIsTopicFullyConsumedWhenNothingWasEverCommitted() {
+        AdminClient adminClient = adminClientFor(TOPIC, 0L, 10L);
+
+        ListConsumerGroupOffsetsResult noOffsets = mock(ListConsumerGroupOffsetsResult.class);
+        when(noOffsets.partitionsToOffsetAndMetadata()).thenReturn(KafkaFuture.completedFuture(Collections.emptyMap()));
+        when(adminClient.listConsumerGroupOffsets(anyString())).thenReturn(noOffsets);
+
+        assertFalse(kafkaNotificationBackedBy(adminClient).isTopicFullyConsumed(NotificationInterface.NotificationType.ASYNC_IMPORT, TOPIC));
+    }
+
+    @Test
+    public void testIsTopicFullyConsumedWhenTopicNoLongerExists() {
+        AdminClient adminClient = adminClientFor(TOPIC, 10L, 10L);
+
+        ListTopicsResult noTopics = mock(ListTopicsResult.class);
+        when(noTopics.names()).thenReturn(KafkaFuture.completedFuture(Collections.emptySet()));
+        when(adminClient.listTopics()).thenReturn(noTopics);
+
+        // a deleted topic cannot deliver anything, so the import must not be left holding the queue
+        assertTrue(kafkaNotificationBackedBy(adminClient).isTopicFullyConsumed(NotificationInterface.NotificationType.ASYNC_IMPORT, TOPIC));
+    }
+
+    @Test
+    public void testIsTopicFullyConsumedWhenOffsetLookupFails() {
+        AdminClient adminClient = adminClientFor(TOPIC, 10L, 10L);
+
+        when(adminClient.listTopics()).thenThrow(new RuntimeException("broker unreachable"));
+
+        // an unreadable topic must not be reported as consumed, or an import would be resolved early
+        assertFalse(kafkaNotificationBackedBy(adminClient).isTopicFullyConsumed(NotificationInterface.NotificationType.ASYNC_IMPORT, TOPIC));
+    }
+
+    private KafkaNotification kafkaNotificationBackedBy(AdminClient adminClient) {
+        KafkaNotification kafkaNotification = Mockito.spy(new KafkaNotification(new Properties()));
+
+        Mockito.doReturn(adminClient).when(kafkaNotification).createAdminClient();
+
+        return kafkaNotification;
+    }
+
+    private AdminClient adminClientFor(String topic, long committedOffset, long endOffset) {
+        AdminClient    adminClient = mock(AdminClient.class);
+        TopicPartition partition   = new TopicPartition(topic, 0);
+        Node           node        = new Node(0, "localhost", 9092);
+
+        ListTopicsResult listTopicsResult = mock(ListTopicsResult.class);
+        when(listTopicsResult.names()).thenReturn(KafkaFuture.completedFuture(Collections.singleton(topic)));
+        when(adminClient.listTopics()).thenReturn(listTopicsResult);
+
+        TopicDescription topicDescription = new TopicDescription(topic, false,
+                Collections.singletonList(new TopicPartitionInfo(0, node, Collections.singletonList(node), Collections.singletonList(node))));
+
+        DescribeTopicsResult describeTopicsResult = mock(DescribeTopicsResult.class);
+        when(describeTopicsResult.allTopicNames()).thenReturn(KafkaFuture.completedFuture(Collections.singletonMap(topic, topicDescription)));
+        when(adminClient.describeTopics(anyCollection())).thenReturn(describeTopicsResult);
+
+        ListConsumerGroupOffsetsResult committedResult = mock(ListConsumerGroupOffsetsResult.class);
+        when(committedResult.partitionsToOffsetAndMetadata()).thenReturn(KafkaFuture.completedFuture(Collections.singletonMap(partition, new OffsetAndMetadata(committedOffset))));
+        when(adminClient.listConsumerGroupOffsets(anyString())).thenReturn(committedResult);
+
+        ListOffsetsResult listOffsetsResult = mock(ListOffsetsResult.class);
+        when(listOffsetsResult.all()).thenReturn(KafkaFuture.completedFuture(Collections.singletonMap(partition, new ListOffsetsResultInfo(endOffset, 0L, Optional.empty()))));
+        when(adminClient.listOffsets(anyMap())).thenReturn(listOffsetsResult);
+
+        return adminClient;
     }
 
     static class TestKafkaNotification<T> extends KafkaNotification {

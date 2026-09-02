@@ -257,6 +257,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         return HandlerOrder.NOTIFICATION_HOOK_CONSUMER.getOrder();
     }
 
+    public boolean isImportTopicFullyConsumed(String topic) {
+        return notificationInterface.isTopicFullyConsumed(ASYNC_IMPORT, topic);
+    }
+
     public void closeImportConsumer(String importId, String topic) {
         try {
             LOG.info("==> closeImportConsumer(importId={}, topic={})", importId, topic);
