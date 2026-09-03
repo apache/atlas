@@ -81,6 +81,10 @@
 .latest-entities-type-name {
   font-size: 0.875rem;
   color: rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .latest-entities-timestamp {
@@ -93,13 +97,17 @@
 
 .latest-entities-name-wrapper {
   display: block;
-  flex: 0 10 auto;
+  /* Allow this column to grow and shrink; min-width: 0 enables text truncation inside flex */
+  flex: 1 1 auto;
+  min-width: 0;
   width: auto;
 }
 
 .latest-entities-type-wrapper {
   display: block;
   flex: 0 1 auto;
+  flex-shrink: 0;
+  max-width: 45%;
   width: auto;
   min-width: 0;
 }

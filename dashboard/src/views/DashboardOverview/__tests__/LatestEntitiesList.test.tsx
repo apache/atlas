@@ -187,7 +187,7 @@ describe('LatestEntitiesList', () => {
 		)
 		const row = screen.getByText('X').closest('li') as HTMLElement
 		expect(row).toBeTruthy()
-		expect(within(row).getByText(/ago/)).toBeInTheDocument()
+		expect(within(row).getByText(/^Created /)).toBeInTheDocument()
 	})
 
 	it('shows Created today for unusable timestamp', () => {
@@ -328,7 +328,7 @@ describe('LatestEntitiesList', () => {
 			</MemoryRouter>,
 		)
 		const li = screen.getByText('A').closest('li') as HTMLElement
-		expect(within(li).getByText(/in /)).toBeInTheDocument()
+		expect(within(li).getByText(/^Created /)).toBeInTheDocument()
 	})
 
 	it('normalizeEntityTimestampMs: $numberLong and longValue wrappers', () => {
@@ -534,7 +534,7 @@ describe('LatestEntitiesList', () => {
 		)
 		expect(
 			within(screen.getByText('Old').closest('li') as HTMLElement).getByText(
-				/ago/,
+				/^Created /,
 			),
 		).toBeInTheDocument()
 	})
@@ -600,7 +600,7 @@ describe('LatestEntitiesList', () => {
 		)
 		const row = screen.getByText('Historic').closest('li') as HTMLElement
 		expect(
-			within(row).getByText(/ago/).textContent,
+			within(row).getByText(/^Created /).textContent,
 		).not.toMatch(/^Created today$/)
 	})
 
@@ -685,5 +685,26 @@ describe('LatestEntitiesList', () => {
 			</MemoryRouter>,
 		)
 		expect(screen.getByText('(Entity)')).toBeInTheDocument()
+	})
+
+	it('renders extremely long typeName without breaking layout', () => {
+		const longTypeName = 'B'.repeat(300)
+		render(
+			<MemoryRouter>
+				<LatestEntitiesList
+					entities={[
+						{
+							guid: 'g1',
+							name: 'EntityWithLongType',
+							typeName: longTypeName,
+							attributes: { __timestamp: Date.now() },
+						},
+					]}
+				/>
+			</MemoryRouter>,
+		)
+		const typeElement = screen.getByText(`(${longTypeName})`)
+		expect(typeElement).toBeInTheDocument()
+		expect(typeElement.parentElement).toHaveClass('latest-entities-type-wrapper')
 	})
 })
