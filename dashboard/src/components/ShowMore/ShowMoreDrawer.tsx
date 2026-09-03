@@ -119,8 +119,7 @@ const ShowMoreDrawer = ({
                 variant="text"
                 color="primary"
                 aria-label="save"
-                primary={true}
-                onClick={(e: Event) => {
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                   e.stopPropagation();
                   dispatch(toggleDrawer());
                 }}
@@ -132,8 +131,7 @@ const ShowMoreDrawer = ({
               variant="text"
               color="primary"
               aria-label="close"
-              primary={true}
-              onClick={(e: Event) => {
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
                 dispatch(toggleDrawer());
               }}

@@ -185,11 +185,9 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		const row = screen.getByText('X').closest('li')
+		const row = screen.getByText('X').closest('li') as HTMLElement
 		expect(row).toBeTruthy()
-		expect(
-			within(row as HTMLElement).getByText(/^Created /),
-		).toBeInTheDocument()
+		expect(within(row).getByText(/^Created /)).toBeInTheDocument()
 	})
 
 	it('shows Created today for unusable timestamp', () => {
@@ -330,7 +328,7 @@ describe('LatestEntitiesList', () => {
 			</MemoryRouter>,
 		)
 		const li = screen.getByText('A').closest('li') as HTMLElement
-		expect(within(li).getByText(/Created in /)).toBeInTheDocument()
+		expect(within(li).getByText(/^Created /)).toBeInTheDocument()
 	})
 
 	it('normalizeEntityTimestampMs: $numberLong and longValue wrappers', () => {
@@ -578,7 +576,7 @@ describe('LatestEntitiesList', () => {
 			</MemoryRouter>,
 		)
 		expect(
-			within(screen.getByRole('listitem')).getByText(/^Created /),
+			within(screen.getByRole('listitem')).getByText('Created today'),
 		).toHaveTextContent('Created today')
 		spy.mockRestore()
 	})
@@ -623,5 +621,90 @@ describe('LatestEntitiesList', () => {
 			</MemoryRouter>,
 		)
 		expect(screen.getByText('Created today')).toBeInTheDocument()
+	})
+
+	it('renders fallback Typography when detailHref is absent (no guid)', () => {
+		render(
+			<MemoryRouter>
+				<LatestEntitiesList
+					entities={[
+						{
+							name: 'EntityWithoutGuid',
+							typeName: 'T',
+							attributes: { __timestamp: Date.now() },
+						},
+					]}
+				/>
+			</MemoryRouter>,
+		)
+		const fallbackText = screen.getByText('EntityWithoutGuid')
+		expect(fallbackText).toBeInTheDocument()
+		expect(fallbackText.tagName).toBe('SPAN')
+		expect(fallbackText).toHaveClass('latest-entities-entity-name-fallback')
+	})
+
+
+	it('renders extremely long entity name without crashing', () => {
+		const longName = 'A'.repeat(500)
+		render(
+			<MemoryRouter>
+				<LatestEntitiesList
+					entities={[
+						{
+							guid: 'g1',
+							name: longName,
+							typeName: 'T',
+							attributes: { __timestamp: Date.now() },
+						},
+					]}
+				/>
+			</MemoryRouter>,
+		)
+		const link = screen.getByRole('link', { name: longName })
+		expect(link).toBeInTheDocument()
+		expect(link.textContent).toBe(longName)
+		
+		const span = link.parentElement
+		expect(span).toHaveStyle('overflow: hidden')
+		expect(span).toHaveStyle('text-overflow: ellipsis')
+		expect(span).toHaveStyle('white-space: nowrap')
+	})
+
+	it('renders gracefully when typeName is missing', () => {
+		render(
+			<MemoryRouter>
+				<LatestEntitiesList
+					entities={[
+						{
+							guid: 'g1',
+							name: 'NamelessType',
+							attributes: { __timestamp: Date.now() },
+						},
+					]}
+				/>
+			</MemoryRouter>,
+		)
+		expect(screen.getByText('(Entity)')).toBeInTheDocument()
+	})
+
+	it('renders extremely long typeName without breaking layout', () => {
+		const longTypeName = 'B'.repeat(300)
+		render(
+			<MemoryRouter>
+				<LatestEntitiesList
+					entities={[
+						{
+							guid: 'g1',
+							name: 'EntityWithLongType',
+							typeName: longTypeName,
+							attributes: { __timestamp: Date.now() },
+						},
+					]}
+				/>
+			</MemoryRouter>,
+		)
+		const typeElement = screen.getByText(`(${longTypeName})`)
+		expect(typeElement).toBeInTheDocument()
+		expect(typeElement.parentElement).toHaveClass('latest-entities-type-wrapper')
 	})
 })

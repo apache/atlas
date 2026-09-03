@@ -22,9 +22,10 @@ import Switch from "@mui/material/Switch";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
+import React from "react";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
-import Button from "@mui/material/Button";
+import Button, { ButtonProps } from "@mui/material/Button";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
@@ -51,8 +52,10 @@ import MuiAccordionSummary, {
   AccordionSummaryProps
 } from "@mui/material/AccordionSummary";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
+import { TooltipProps } from "@mui/material/Tooltip";
+import { SxProps, Theme } from "@mui/material/styles";
 
-const LightTooltip = styled(({ className, ...props }: any) => (
+const LightTooltip = styled(({ className, ...props }: TooltipProps) => (
   <Tooltip
     sx={{ transition: "none" }}
     {...props}
@@ -68,58 +71,97 @@ const LightTooltip = styled(({ className, ...props }: any) => (
   }
 }));
 
-interface ButtonProps {
-  children?: any;
-  variant?: string;
-  color: string;
-  onClick: any;
-  sx?: any;
-  size?: string;
-  endIcon?: any;
-  startIcon?: any;
-  className?: string;
-  disabled?: boolean;
+
+interface OverflowTooltipProps extends Omit<TooltipProps, "children"> {
+  children: React.ReactElement;
+  wrapperSx?: SxProps<Theme>;
+  wrapperClassName?: string;
 }
+
+const OverflowTooltip = ({ title, children, wrapperSx, wrapperClassName, ...props }: OverflowTooltipProps) => {
+  const textElementRef = React.useRef<HTMLElement>(null);
+  const [isOverflowed, setIsOverflowed] = React.useState(false);
+
+  const checkOverflow = React.useCallback(() => {
+    if (textElementRef.current) {
+      const el = textElementRef.current;
+      setIsOverflowed(
+        el.scrollWidth > el.clientWidth || 
+        el.scrollWidth > el.getBoundingClientRect().width
+      );
+    }
+  }, []);
+
+  React.useEffect(() => {
+    checkOverflow();
+    const element = textElementRef.current;
+    if (element) {
+      // One ResizeObserver per instance — acceptable for small lists (e.g. dashboard widgets).
+      // If this component is used in large virtualized lists, consider lifting a shared
+      // ResizeObserver to a context provider to reduce observer count.
+      const resizeObserver = new ResizeObserver(() => checkOverflow());
+      resizeObserver.observe(element);
+      return () => resizeObserver.disconnect();
+    }
+  }, [title, checkOverflow]);
+
+  const child = (
+    <Box
+      component="span"
+      ref={textElementRef}
+      className={wrapperClassName}
+      sx={{
+        display: "inline-flex",
+        minWidth: 0,
+        width: "100%",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        ...wrapperSx
+      }}
+      onMouseEnter={checkOverflow}
+    >
+      {children}
+    </Box>
+  );
+
+  return (
+    <LightTooltip
+      title={title}
+      disableHoverListener={!isOverflowed}
+      disableFocusListener={!isOverflowed}
+      disableTouchListener={!isOverflowed}
+      {...props}
+    >
+      {child}
+    </LightTooltip>
+  );
+};
+
+const ButtonWrapper = styled(Box)({
+  display: "inline-flex"
+});
+
+const StyledButton = styled(Button)(({ variant }) => ({
+  fontWeight: "600",
+  letterSpacing: "0",
+  fontSize: "0.875rem",
+  cursor: "pointer",
+  minWidth: "unset",
+  ...(variant === "outlined" && { border: "1px solid #dddddd" })
+}));
 
 const CustomButton = ({
   children,
-  variant,
-  color,
-  sx: customStyles = {},
-  onClick,
-  size,
-  endIcon,
-  startIcon,
-  disabled,
+  sx,
   ...rest
-}: ButtonProps | any) => {
-  let defaultStyles = {
-    fontWeight: "600 !important",
-    letterSpacing: "0 !important",
-    fontSize: "0.875rem !important",
-    cursor: "pointer !important",
-    minWidth: "unset !important",
-    ...(variant == "outlined" && { border: "1px solid #dddddd !important" })
-  };
-
-  let mergedStyle = { ...defaultStyles, ...customStyles };
-
+}: ButtonProps) => {
   return (
-    <Box component="span" sx={{ display: 'inline-flex' }}>
-      <Button
-        variant={variant}
-        color={color}
-        sx={mergedStyle}
-        onClick={onClick}
-        size={size}
-        endIcon={endIcon}
-        startIcon={startIcon}
-        disabled={disabled}
-        {...rest}
-      >
+    <ButtonWrapper component="span">
+      <StyledButton sx={sx} {...rest}>
         {children}
-      </Button>
-    </Box>
+      </StyledButton>
+    </ButtonWrapper>
   );
 };
 
@@ -202,5 +244,6 @@ export {
   CustomButton,
   Accordion,
   AccordionSummary,
-  AccordionDetails
+  AccordionDetails,
+  OverflowTooltip
 };
