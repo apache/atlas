@@ -60,3 +60,228 @@
 .classification-name-cell {
   max-width: 400px;
 }
+
+.chart-cursor-pointer {
+  cursor: pointer;
+}
+
+.chart-cursor-default {
+  cursor: default;
+}
+
+.chart-label-list {
+  font-size: 12px;
+  font-weight: 500;
+  fill: #1976d2;
+}
+
+.chart-label-list-sm {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #374151;
+}
+
+.legend-button {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  padding: 0;
+  margin: 0;
+  border-radius: 4px;
+}
+
+.legend-color-box {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background-color: var(--legend-color, #d3d3d3);
+}
+
+.legend-typography {
+  font-size: 0.875rem;
+}
+
+.legend-inactive {
+  color: #868e96;
+}
+
+
+
+.chart-card {
+  padding: 16px;
+  border-radius: 8px;
+  min-height: 200px;
+  transition: box-shadow 0.3s ease;
+}
+
+.chart-card:hover {
+  box-shadow: 0px 4px 6px -1px rgba(0,0,0,0.1), 0px 2px 4px -1px rgba(0,0,0,0.06);
+}
+
+html[data-theme="dark"] .chart-card:hover {
+  box-shadow: 0px 4px 6px -1px rgba(255,255,255,0.05), 0px 2px 4px -1px rgba(255,255,255,0.03);
+}
+
+.chart-card-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+html[data-theme="dark"] .chart-card-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.chart-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  // Color inherits from Typography (text.primary)
+}
+
+
+
+.donut-status-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  text-align: left;
+}
+
+.donut-status-button:hover {
+  opacity: 0.85;
+}
+
+.donut-status-box {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.donut-status-active {
+  background-color: #10b981;
+}
+
+.donut-status-shell {
+  background-color: #f59e0b;
+}
+
+.donut-status-deleted {
+  background-color: #ef4444;
+}
+
+.chart-axis-label {
+  font-size: 11px;
+  fill: #6c757d;
+}
+
+.chart-axis-label-y {
+  font-size: 11px;
+  fill: #6c757d;
+  text-anchor: middle;
+}
+
+.donut-status-text {
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.donut-status-stack {
+  padding-top: 16px;
+}
+
+.donut-tooltip-wrapper .recharts-default-tooltip {
+  border-radius: 8px !important;
+}
+
+.classification-card-wrapper {
+  padding: 16px;
+  border-radius: 8px;
+  min-height: 340px;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  transition: box-shadow 0.3s ease;
+}
+
+.classification-card-wrapper:hover {
+  box-shadow: 0px 4px 6px -1px rgba(0,0,0,0.1), 0px 2px 4px -1px rgba(0,0,0,0.06);
+}
+
+.chart-view-all-link {
+  font-size: 0.875rem;
+  cursor: pointer;
+  text-decoration: none;
+  // Color inherits from Link (primary.main)
+}
+
+.classification-assoc-total {
+  color: #6c757d;
+  margin-top: 16px;
+  line-height: 1.4;
+}
+
+.classification-caption {
+  color: #868e96;
+  display: block;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.classification-chart-container {
+  margin-top: 16px;
+  min-height: 260px;
+  height: 260px;
+  width: 100%;
+  min-width: 280px;
+}
+
+.chart-tooltip-box {
+  padding: 12px;
+  border-radius: 4px;
+  box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.1), 0px 4px 5px 0px rgba(0,0,0,0.07), 0px 1px 10px 0px rgba(0,0,0,0.06);
+  min-width: 140px;
+}
+
+.chart-tooltip-title {
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.entity-type-deleted-text {
+  color: #ef4444;
+}
+
+.chart-legend-container {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  gap: 16px;
+}
+
+.chart-legend-item-text {
+  color: #6c757d;
+  font-size: 0.8125rem;
+}
+
+.chart-legend-dot-active {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #1976d2;
+}
+
+.chart-legend-dot-deleted {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #ef4444;
+}

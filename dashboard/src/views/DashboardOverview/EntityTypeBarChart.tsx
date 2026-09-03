@@ -30,7 +30,10 @@ import {
 } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { numberFormatWithComma } from "@utils/Helper";
-import type { EntityTypeDistributionItem } from "@utils/metricsUtils";
+import {
+	getPayloadFromRechartsEvent,
+	type EntityTypeDistributionItem,
+} from "@utils/metricsUtils";
 import {
 	getServiceTypeDistribution,
 	type TypeHeaderCatalogRow,
@@ -54,12 +57,6 @@ interface EntityTypeBarChartProps {
 	isLoading?: boolean;
 }
 
-const payloadFromBarEvent = (item: unknown): EntityTypeDistributionItem | undefined => {
-	if (!item || typeof item !== "object") return undefined;
-	const rec = item as { payload?: EntityTypeDistributionItem };
-	return rec.payload;
-};
-
 const EntityTypeBarChart = memo(
 	({ entity, typeHeaderData, isLoading }: EntityTypeBarChartProps) => {
 		const navigate = useNavigate();
@@ -81,7 +78,7 @@ const EntityTypeBarChart = memo(
 
 		const handleActiveBarClick = useCallback(
 			(barProps: unknown) => {
-				const row = payloadFromBarEvent(barProps);
+				const row = getPayloadFromRechartsEvent<EntityTypeDistributionItem>(barProps);
 				if (row) navigateForRow(row, false);
 			},
 			[navigateForRow]
@@ -89,7 +86,7 @@ const EntityTypeBarChart = memo(
 
 		const handleDeletedBarClick = useCallback(
 			(barProps: unknown) => {
-				const row = payloadFromBarEvent(barProps);
+				const row = getPayloadFromRechartsEvent<EntityTypeDistributionItem>(barProps);
 				if (row) navigateForRow(row, true);
 			},
 			[navigateForRow]
@@ -121,54 +118,36 @@ const EntityTypeBarChart = memo(
 			const row = pl[0]?.payload;
 			if (!row) return null;
 			return (
-				<Box sx={{ p: 1.5, bgcolor: "background.paper", borderRadius: 1, boxShadow: 2, minWidth: 140 }}>
-					<Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
+				<Paper className="chart-tooltip-box">
+					<Typography variant="body2" className="chart-tooltip-title">
 						{row.name}
 					</Typography>
 					<Typography variant="caption" display="block" color="primary">
 						Active: {numberFormatWithComma(row.active)}
 					</Typography>
-					<Typography variant="caption" display="block" sx={{ color: DELETED_COLOR }}>
+					<Typography variant="caption" display="block" className="entity-type-deleted-text">
 						Deleted: {numberFormatWithComma(row.deleted)}
 					</Typography>
 					<Typography variant="caption" display="block" fontWeight={600}>
 						Total: {numberFormatWithComma(row.count)}
 					</Typography>
-				</Box>
+				</Paper>
 			);
 		}, []);
 
 		if (isLoading) return null;
 
 		return (
-			<Paper
-				elevation={1}
-				sx={{
-					padding: 2,
-					borderRadius: 2,
-					minHeight: 340,
-					minWidth: 0,
-					width: "100%",
-					height: "100%",
-					boxSizing: "border-box",
-					transition: "box-shadow 0.3s ease",
-					"&:hover": { boxShadow: 4 },
-				}}
-			>
-				<Box sx={{ pb: 2, borderBottom: "1px solid", borderColor: "divider" }}>
+			<Paper elevation={1} className="classification-card-wrapper">
+				<Box className="chart-card-header">
 					<Stack direction="row" justifyContent="space-between" alignItems="center">
-						<Typography sx={{ fontSize: "1rem", fontWeight: 600, color: "#1a1a1a" }}>
+						<Typography className="chart-card-title">
 							Service Type Distribution
 						</Typography>
 						<Link
 							component="button"
 							onClick={handleViewAll}
-							sx={{
-								fontSize: "0.875rem",
-								cursor: "pointer",
-								textDecoration: "none",
-								color: "primary.main",
-							}}
+							className="chart-view-all-link"
 							aria-label="View all entities"
 						>
 							View All
@@ -182,38 +161,22 @@ const EntityTypeBarChart = memo(
 						</Typography>
 					</Stack>
 				) : (
-					<Box sx={{ mt: 2, minHeight: 260, height: 260, width: "100%", minWidth: 280 }}>
-						<Stack direction="row" spacing={2} sx={{ mb: 1, flexWrap: "wrap" }} aria-label="Chart legend">
+					<Box className="classification-chart-container">
+						<Box className="chart-legend-container" aria-label="Chart legend">
 							<Stack direction="row" alignItems="center" spacing={0.75}>
-								<Box
-									sx={{
-										width: 10,
-										height: 10,
-										borderRadius: "50%",
-										backgroundColor: ACTIVE_COLOR,
-									}}
-									aria-hidden
-								/>
-								<Typography variant="caption" sx={{ color: "#6c757d", fontSize: "0.8125rem" }}>
+								<Box className="chart-legend-dot-active" aria-hidden />
+								<Typography variant="caption" className="chart-legend-item-text">
 									Active
 								</Typography>
 							</Stack>
 							<Stack direction="row" alignItems="center" spacing={0.75}>
-								<Box
-									sx={{
-										width: 10,
-										height: 10,
-										borderRadius: "50%",
-										backgroundColor: DELETED_COLOR,
-									}}
-									aria-hidden
-								/>
-								<Typography variant="caption" sx={{ color: "#6c757d", fontSize: "0.8125rem" }}>
+								<Box className="chart-legend-dot-deleted" aria-hidden />
+								<Typography variant="caption" className="chart-legend-item-text">
 									Deleted
 								</Typography>
 							</Stack>
-						</Stack>
-						<ResponsiveContainer width="100%" height="100%" style={{ cursor: "pointer" }}>
+						</Box>
+						<ResponsiveContainer width="100%" height="100%" className="chart-cursor-pointer">
 							<BarChart data={data} layout="vertical" margin={{ ...HORIZONTAL_BAR_CHART_MARGIN }}>
 								<CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
 								<XAxis
@@ -224,7 +187,7 @@ const EntityTypeBarChart = memo(
 										value: "Entity Count",
 										position: "bottom",
 										offset: 12,
-										style: { fontSize: 11, fill: "#6c757d" },
+										className: "chart-axis-label",
 									}}
 								/>
 								<YAxis
@@ -236,7 +199,7 @@ const EntityTypeBarChart = memo(
 										angle: -90,
 										position: "left",
 										offset: 4,
-										style: { fontSize: 11, fill: "#6c757d", textAnchor: "middle" },
+										className: "chart-axis-label-y",
 									}}
 									tick={(props: Record<string, unknown>) => {
 										const { x = 0, y = 0, payload } = props;
@@ -249,7 +212,7 @@ const EntityTypeBarChart = memo(
 											<g
 												transform={`translate(${x},${y})`}
 												onClick={() => (value ? handleLabelClick(value) : undefined)}
-												style={{ cursor: value ? "pointer" : "default" }}
+												className={value ? "chart-cursor-pointer" : "chart-cursor-default"}
 												role={value ? "button" : undefined}
 												tabIndex={value ? 0 : undefined}
 												onKeyDown={
@@ -305,12 +268,8 @@ const EntityTypeBarChart = memo(
 										dataKey="count"
 										position="right"
 										offset={10}
-										formatter={(v: number) => numberFormatWithComma(v)}
-										style={{
-											fontSize: 12,
-											fontWeight: 500,
-											fill: ACTIVE_COLOR,
-										}}
+										formatter={(v: unknown) => numberFormatWithComma(Number(v))}
+										className="chart-label-list"
 									/>
 									{data.map((_, index) => (
 										<Cell key={`deleted-${index}`} fill={DELETED_COLOR} />

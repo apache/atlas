@@ -18,6 +18,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
 import ClassificationDistributionCard from '../ClassificationDistributionCard';
 import {
 	CLASSIFICATION_Y_AXIS_LABEL_MAX_LENGTH,
@@ -40,7 +41,10 @@ const shortName = 'PII';
 const longName = 'a'.repeat(CLASSIFICATION_Y_AXIS_LABEL_MAX_LENGTH + 10);
 const truncatedLongName = `${'a'.repeat(CLASSIFICATION_Y_AXIS_LABEL_MAX_LENGTH)}${CLASSIFICATION_Y_AXIS_LABEL_SUFFIX}`;
 
+let mockBarClickPayload: unknown = undefined;
+
 jest.mock('@utils/metricsUtils', () => ({
+	...jest.requireActual('@utils/metricsUtils'),
 	getClassificationDistribution: jest.fn(() => [
 		{ name: shortName, count: 12 },
 		{ name: longName, count: 8 },
@@ -68,8 +72,30 @@ jest.mock('recharts', () => ({
 		);
 	},
 	Tooltip: () => <div data-testid="tooltip-mock" />,
-	Bar: ({ children }: { children?: React.ReactNode }) => (
-		<div data-testid="bar">{children}</div>
+	Bar: ({
+		onClick,
+		children,
+	}: {
+		onClick?: (e: unknown) => void;
+		children?: React.ReactNode;
+	}) => (
+		<button
+			type="button"
+			data-testid="bar"
+			onClick={() =>
+				onClick?.(
+					mockBarClickPayload !== undefined
+						? mockBarClickPayload
+						: {
+								payload: {
+									name: shortName,
+								},
+						  },
+				)
+			}
+		>
+			{children}
+		</button>
 	),
 	Cell: () => <div data-testid="cell" />,
 	LabelList: () => <div data-testid="label-list" />,
@@ -78,6 +104,7 @@ jest.mock('recharts', () => ({
 describe('ClassificationDistributionCard', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
+		mockBarClickPayload = undefined;
 	});
 
 	it('renders short Y-axis labels without truncation or title tooltip', () => {
@@ -110,4 +137,110 @@ describe('ClassificationDistributionCard', () => {
 		expect(visibleTextNodes?.length).toBe(1);
 		expect(visibleTextNodes?.[0]?.textContent).toBe(truncatedLongName);
 	});
+
+	it('navigates to classification search on valid bar click', async () => {
+		const user = userEvent.setup();
+		render(
+			<MemoryRouter>
+				<ClassificationDistributionCard tag={{}} />
+			</MemoryRouter>,
+		);
+
+		await user.click(screen.getByTestId('bar'));
+		expect(mockNavigateToClassificationSearch).toHaveBeenCalledWith(expect.anything(), shortName);
+	});
+
+	it('ignores bar click when payload is invalid/missing', async () => {
+		const user = userEvent.setup();
+		render(
+			<MemoryRouter>
+				<ClassificationDistributionCard tag={{}} />
+			</MemoryRouter>,
+		);
+
+		mockNavigateToClassificationSearch.mockClear();
+		mockBarClickPayload = null;
+		await user.click(screen.getByTestId('bar'));
+		expect(mockNavigateToClassificationSearch).not.toHaveBeenCalled();
+
+		mockBarClickPayload = 'bad' as unknown;
+		await user.click(screen.getByTestId('bar'));
+		expect(mockNavigateToClassificationSearch).not.toHaveBeenCalled();
+
+		mockBarClickPayload = {};
+		await user.click(screen.getByTestId('bar'));
+		expect(mockNavigateToClassificationSearch).not.toHaveBeenCalled();
+	});
+
+	it('navigates to classification search on YAxis tick click', async () => {
+		const user = userEvent.setup();
+		render(
+			<MemoryRouter>
+				<ClassificationDistributionCard tag={{}} />
+			</MemoryRouter>,
+		);
+
+		const tickButtons = document.querySelectorAll('g[role="button"]');
+		expect(tickButtons.length).toBeGreaterThan(0);
+
+		mockNavigateToClassificationSearch.mockClear();
+		await user.click(tickButtons[0]);
+		expect(mockNavigateToClassificationSearch).toHaveBeenCalledWith(expect.anything(), shortName);
+	});
+
+	it('navigates to classification search on YAxis tick Enter key press', () => {
+		render(
+			<MemoryRouter>
+				<ClassificationDistributionCard tag={{}} />
+			</MemoryRouter>,
+		);
+
+		const tickButtons = document.querySelectorAll('g[role="button"]');
+		mockNavigateToClassificationSearch.mockClear();
+
+		const preventDefault = jest.fn();
+		const group = tickButtons[0];
+		const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+		Object.defineProperty(event, 'preventDefault', { value: preventDefault });
+		group.dispatchEvent(event);
+
+		expect(mockNavigateToClassificationSearch).toHaveBeenCalledWith(expect.anything(), shortName);
+	});
+
+	it('navigates to classification search on YAxis tick Space key press', () => {
+		render(
+			<MemoryRouter>
+				<ClassificationDistributionCard tag={{}} />
+			</MemoryRouter>,
+		);
+
+		const tickButtons = document.querySelectorAll('g[role="button"]');
+		mockNavigateToClassificationSearch.mockClear();
+
+		const preventDefault = jest.fn();
+		const group = tickButtons[0];
+		const event = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
+		Object.defineProperty(event, 'preventDefault', { value: preventDefault });
+		group.dispatchEvent(event);
+
+		expect(mockNavigateToClassificationSearch).toHaveBeenCalledWith(expect.anything(), shortName);
+	});
+
+	it('ignores non-Enter/Space key presses on YAxis tick', () => {
+		render(
+			<MemoryRouter>
+				<ClassificationDistributionCard tag={{}} />
+			</MemoryRouter>,
+		);
+
+		const tickButtons = document.querySelectorAll('g[role="button"]');
+		mockNavigateToClassificationSearch.mockClear();
+
+		const group = tickButtons[0];
+		const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+		group.dispatchEvent(event);
+
+		expect(mockNavigateToClassificationSearch).not.toHaveBeenCalled();
+	});
 });
+

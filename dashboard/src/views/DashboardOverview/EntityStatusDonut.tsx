@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback } from "react";
 import { Paper, Stack, Typography, Box } from "@mui/material";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Sector } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { numberFormatWithComma } from "@utils/Helper";
-import { getEntityStatusTotals } from "@utils/metricsUtils";
+import { getEntityStatusTotals, getPayloadFromRechartsEvent } from "@utils/metricsUtils";
 import { navigateToSearch } from "@utils/dashboardSearchUtils";
 import { ENTITY_STATUS_DONUT_COLORS as COLORS } from "./dashboardChartPalette";
 
@@ -29,8 +29,13 @@ interface EntityStatusDonutProps {
 	isLoading?: boolean;
 }
 
+interface StatusDonutDataItem {
+	name: "Active" | "Shell" | "Deleted";
+	value: number;
+	color: string;
+}
+
 const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) => {
-	const [activeIndex, setActiveIndex] = useState<number>(-1);
 	const navigate = useNavigate();
 	const totals = getEntityStatusTotals(entity);
 	const total = totals.active + totals.shell + totals.deleted;
@@ -69,34 +74,14 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 
 	if (isLoading) return null;
 
-	const renderActiveShape = (props: unknown) => {
-		const p = props as { outerRadius?: number; innerRadius?: number; [k: string]: unknown };
-		return (
-			<Sector
-				{...p}
-				outerRadius={(p.outerRadius ?? 60) * 1.08}
-				innerRadius={p.innerRadius ?? 40}
-			/>
-		);
-	};
-
 	return (
-		<Paper
-			elevation={1}
-			sx={{
-				padding: 2,
-				borderRadius: 2,
-				minHeight: 200,
-				transition: "box-shadow 0.3s ease",
-				"&:hover": { boxShadow: 4 }
-			}}
-		>
-			<Box sx={{ pb: 2, borderBottom: "1px solid", borderColor: "divider" }}>
-				<Typography sx={{ fontSize: "1rem", fontWeight: 600, color: "#1a1a1a" }}>
+		<Paper elevation={1} className="chart-card">
+			<Box className="chart-card-header">
+				<Typography className="chart-card-title">
 					Entity Status Overview
 				</Typography>
 			</Box>
-			<Stack direction="row" spacing={2} alignItems="center" height={160} sx={{ pt: 2 }}>
+			<Stack direction="row" spacing={2} alignItems="center" height={160} className="donut-status-stack">
 				<Stack spacing={1.5} flex={1}>
 					{(["Active", "Shell", "Deleted"] as const).map((status) => (
 						<Box
@@ -105,36 +90,16 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 							type="button"
 							onClick={() => handleStatusClick(status)}
 							aria-label={`View ${status} entities`}
-							sx={{
-								display: "flex",
-								alignItems: "center",
-								gap: 1.5,
-								cursor: "pointer",
-								background: "none",
-								border: "none",
-								padding: 0,
-								margin: 0,
-								font: "inherit",
-								textAlign: "left",
-								"&:hover": { opacity: 0.85 }
-							}}
+							className="donut-status-button"
 						>
-							<Box
-								sx={{
-									width: 12,
-									height: 12,
-									borderRadius: "50%",
-									backgroundColor: COLORS[status],
-									flexShrink: 0
-								}}
-							/>
-							<Typography component="span" sx={{ fontSize: "0.875rem", color: "#374151" }}>
+							<Box className={`donut-status-box donut-status-${status.toLowerCase()}`} />
+							<Typography component="span" className="donut-status-text">
 								{status} {getPercent(totals[status.toLowerCase() as keyof typeof totals])}%
 							</Typography>
 						</Box>
 					))}
 				</Stack>
-				<ResponsiveContainer width="50%" height="100%" style={{ cursor: "pointer" }}>
+				<ResponsiveContainer width="50%" height="100%" className="chart-cursor-pointer">
 					<PieChart>
 						<Pie
 							data={chartData}
@@ -147,19 +112,21 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 							isAnimationActive
 							animationDuration={800}
 							animationEasing="ease-out"
-							activeIndex={activeIndex}
-							activeShape={renderActiveShape}
-							onMouseEnter={(_, index) => setActiveIndex(index)}
-							onMouseLeave={() => setActiveIndex(-1)}
-							onClick={(data) => handleStatusClick(data.name as "Active" | "Shell" | "Deleted")}
+							onClick={(data: unknown) => {
+								const payload = getPayloadFromRechartsEvent<StatusDonutDataItem>(data);
+								const name = payload?.name ?? (data as { name?: "Active" | "Shell" | "Deleted" })?.name;
+								if (name === "Active" || name === "Shell" || name === "Deleted") {
+									handleStatusClick(name);
+								}
+							}}
 						>
 							{chartData.map((entry, index) => (
 								<Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
 							))}
 						</Pie>
 						<Tooltip
-							formatter={(value: number) => numberFormatWithComma(value)}
-							contentStyle={{ borderRadius: 8 }}
+							formatter={(value: unknown) => numberFormatWithComma(Number(value || 0))}
+							wrapperClassName="donut-tooltip-wrapper"
 						/>
 					</PieChart>
 				</ResponsiveContainer>

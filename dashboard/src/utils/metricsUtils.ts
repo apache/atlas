@@ -239,3 +239,13 @@ export const getClassificationDistribution = (
 		.sort((a, b) => b.count - a.count)
 		.slice(0, topN);
 };
+
+export interface RechartsEventPayload<T> {
+	payload?: T;
+}
+
+export const getPayloadFromRechartsEvent = <T>(item: unknown): T | undefined => {
+	if (!item || typeof item !== "object") return undefined;
+	const rec = item as RechartsEventPayload<T>;
+	return rec.payload;
+};
