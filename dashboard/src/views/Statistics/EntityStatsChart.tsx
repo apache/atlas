@@ -78,7 +78,7 @@ const EntityStatsChart = ({
 						aria-label={String(entry.value)}
 						className="legend-button"
 					>
-						<Box className="legend-color-box" style={{ backgroundColor: entry.color }} />
+						<Box className="legend-color-box" style={{ "--legend-color": entry.color } as React.CSSProperties} />
 						<Typography variant="body2" className={`legend-typography ${entry.inactive ? "legend-inactive" : "legend-active"}`}>
 							{entry.value}
 						</Typography>

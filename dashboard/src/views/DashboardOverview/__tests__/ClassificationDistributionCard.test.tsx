@@ -171,4 +171,76 @@ describe('ClassificationDistributionCard', () => {
 		await user.click(screen.getByTestId('bar'));
 		expect(mockNavigateToClassificationSearch).not.toHaveBeenCalled();
 	});
+
+	it('navigates to classification search on YAxis tick click', async () => {
+		const user = userEvent.setup();
+		render(
+			<MemoryRouter>
+				<ClassificationDistributionCard tag={{}} />
+			</MemoryRouter>,
+		);
+
+		const tickButtons = document.querySelectorAll('g[role="button"]');
+		expect(tickButtons.length).toBeGreaterThan(0);
+
+		mockNavigateToClassificationSearch.mockClear();
+		await user.click(tickButtons[0]);
+		expect(mockNavigateToClassificationSearch).toHaveBeenCalledWith(expect.anything(), shortName);
+	});
+
+	it('navigates to classification search on YAxis tick Enter key press', () => {
+		render(
+			<MemoryRouter>
+				<ClassificationDistributionCard tag={{}} />
+			</MemoryRouter>,
+		);
+
+		const tickButtons = document.querySelectorAll('g[role="button"]');
+		mockNavigateToClassificationSearch.mockClear();
+
+		const preventDefault = jest.fn();
+		const group = tickButtons[0];
+		const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+		Object.defineProperty(event, 'preventDefault', { value: preventDefault });
+		group.dispatchEvent(event);
+
+		expect(mockNavigateToClassificationSearch).toHaveBeenCalledWith(expect.anything(), shortName);
+	});
+
+	it('navigates to classification search on YAxis tick Space key press', () => {
+		render(
+			<MemoryRouter>
+				<ClassificationDistributionCard tag={{}} />
+			</MemoryRouter>,
+		);
+
+		const tickButtons = document.querySelectorAll('g[role="button"]');
+		mockNavigateToClassificationSearch.mockClear();
+
+		const preventDefault = jest.fn();
+		const group = tickButtons[0];
+		const event = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
+		Object.defineProperty(event, 'preventDefault', { value: preventDefault });
+		group.dispatchEvent(event);
+
+		expect(mockNavigateToClassificationSearch).toHaveBeenCalledWith(expect.anything(), shortName);
+	});
+
+	it('ignores non-Enter/Space key presses on YAxis tick', () => {
+		render(
+			<MemoryRouter>
+				<ClassificationDistributionCard tag={{}} />
+			</MemoryRouter>,
+		);
+
+		const tickButtons = document.querySelectorAll('g[role="button"]');
+		mockNavigateToClassificationSearch.mockClear();
+
+		const group = tickButtons[0];
+		const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+		group.dispatchEvent(event);
+
+		expect(mockNavigateToClassificationSearch).not.toHaveBeenCalled();
+	});
 });
+

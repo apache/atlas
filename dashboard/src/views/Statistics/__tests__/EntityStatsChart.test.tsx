@@ -16,7 +16,8 @@
  */
 
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import EntityStatsChart from "../EntityStatsChart";
 
 jest.mock("recharts", () => {
@@ -85,7 +86,7 @@ describe("EntityStatsChart custom legend", () => {
 
 		expect(typography).toHaveClass("legend-active");
 		expect(typography).not.toHaveClass("legend-inactive");
-		expect(colorBox).toHaveStyle("background-color: blue");
+		expect(colorBox).toHaveStyle({ "--legend-color": "blue" });
 	});
 
 	it("applies inactive styling when key is inactive", () => {
@@ -97,8 +98,39 @@ describe("EntityStatsChart custom legend", () => {
 
 		expect(typography).toHaveClass("legend-inactive");
 		expect(typography).not.toHaveClass("legend-active");
-		// The value is rgb equivalent for '#d3d3d3' or just string depending on jsdom, but typically testing library normalizes it to rgb(211, 211, 211) or allows matching string.
-		// using string matching for '#d3d3d3'
-		expect(colorBox).toHaveStyle({ backgroundColor: "#d3d3d3" });
+		expect(colorBox).toHaveStyle({ "--legend-color": "#d3d3d3" });
+	});
+
+	it("triggers onLegendClick on keyboard Enter and Space key presses on legend ButtonBase", async () => {
+		const user = userEvent.setup();
+		render(<EntityStatsChart {...defaultProps} />);
+
+		const activeLegend = screen.getByTestId("legend-Active");
+		mockOnLegendClick.mockClear();
+
+		act(() => {
+			activeLegend.focus();
+		});
+		await user.keyboard("{Enter}");
+		expect(mockOnLegendClick).toHaveBeenCalledWith("Active");
+
+		mockOnLegendClick.mockClear();
+		await user.keyboard(" ");
+		expect(mockOnLegendClick).toHaveBeenCalledWith("Active");
+	});
+
+	it("does not call onLegendClick when an unhandled key is pressed on legend ButtonBase", async () => {
+		const user = userEvent.setup();
+		render(<EntityStatsChart {...defaultProps} />);
+
+		const activeLegend = screen.getByTestId("legend-Active");
+		mockOnLegendClick.mockClear();
+
+		act(() => {
+			activeLegend.focus();
+		});
+		await user.keyboard("{ArrowDown}");
+		expect(mockOnLegendClick).not.toHaveBeenCalled();
 	});
 });
+

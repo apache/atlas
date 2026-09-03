@@ -30,6 +30,7 @@ jest.mock("@utils/Helper", () => ({
 }));
 
 jest.mock("@utils/metricsUtils", () => ({
+	...jest.requireActual("@utils/metricsUtils"),
 	getEntityStatusTotals: jest.fn(() => ({ active: 10, shell: 5, deleted: 2 })),
 }));
 
