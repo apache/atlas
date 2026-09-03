@@ -44,12 +44,12 @@ describe('sessionSlice', () => {
 	const initialState = {
 		sessionObj: {
 			loading: false,
-			data: null,
+			data: null as unknown as Record<string, unknown>,
 			error: null
 		},
 		versionData: {
 			loading: false,
-			data: null,
+			data: null as unknown as Record<string, unknown>,
 			error: null
 		}
 	};

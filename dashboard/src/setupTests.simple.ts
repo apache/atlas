@@ -26,7 +26,7 @@ export {};
 
 
 // Basic mocks that don't rely on newer JS features
-(global as any).ResizeObserver = function() {
+(global as unknown as Record<string, unknown>).ResizeObserver = function() {
   return {
     observe: function() {},
     unobserve: function() {},
@@ -34,7 +34,7 @@ export {};
   };
 };
 
-(global as any).IntersectionObserver = function() {
+(global as unknown as Record<string, unknown>).IntersectionObserver = function() {
   return {
     observe: function() {},
     unobserve: function() {},

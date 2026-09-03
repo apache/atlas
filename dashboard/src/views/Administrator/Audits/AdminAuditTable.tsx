@@ -40,7 +40,7 @@ const AdminAuditTable = () => {
   const toastId: any = useRef(null);
   const [loader, setLoader] = useState<boolean>(true);
   const [auditData, setAuditData] = useState([]);
-  const [updateTable, setupdateTable] = useState(moment.now());
+  const [_updateTable, setupdateTable] = useState(moment.now());
   const [queryApiObj, setQueryApiObj] = useState({});
   const [filtersPopover, setFiltersPopover] =
     useState<HTMLButtonElement | null>(null);
@@ -99,7 +99,7 @@ const AdminAuditTable = () => {
         setLoader(false);
       }
     },
-    [updateTable]
+    [queryApiObj]
   );
 
   const defaultColumns = useMemo<ColumnDef<AuditTableType>[]>(
@@ -242,10 +242,7 @@ const AdminAuditTable = () => {
                       <KeyboardArrowDownOutlinedIcon />
                     )
                   }
-                  sx={{
-                    marginTop: "13px !important",
-                    marginLeft: "13px !important"
-                  }}
+                  className="admin-audit-table-element-1"
                 >
                   Filters
                 </CustomButton>

@@ -32,7 +32,7 @@ const About = () => {
     <>
       <Stack spacing={2}>
         {loader ? (
-          <SkeletonLoader animation="wave" variant="text" width={'100%'} count={3} sx={{marginTop: '0px !important'}}/>
+          <SkeletonLoader animation="wave" variant="text" width={'100%'} count={3} className="about-skeleton-loader-44"/>
         ) : (
           <Stack direction="column" spacing={1}>
             <Typography variant="body1">

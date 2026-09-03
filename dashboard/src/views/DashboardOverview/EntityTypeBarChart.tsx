@@ -121,14 +121,14 @@ const EntityTypeBarChart = memo(
 			const row = pl[0]?.payload;
 			if (!row) return null;
 			return (
-				<Box sx={{ p: 1.5, bgcolor: "background.paper", borderRadius: 1, boxShadow: 2, minWidth: 140 }}>
-					<Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
+				<Box className="classification-distribution-card-box-9">
+					<Typography variant="body2" fontWeight={600} className="classification-distribution-card-typography-10">
 						{row.name}
 					</Typography>
 					<Typography variant="caption" display="block" color="primary">
 						Active: {numberFormatWithComma(row.active)}
 					</Typography>
-					<Typography variant="caption" display="block" sx={{ color: DELETED_COLOR }}>
+					<Typography variant="caption" display="block" className="entity-type-bar-chart-typography-26">
 						Deleted: {numberFormatWithComma(row.deleted)}
 					</Typography>
 					<Typography variant="caption" display="block" fontWeight={600}>
@@ -155,20 +155,15 @@ const EntityTypeBarChart = memo(
 					"&:hover": { boxShadow: 4 },
 				}}
 			>
-				<Box sx={{ pb: 2, borderBottom: "1px solid", borderColor: "divider" }}>
+				<Box className="classification-distribution-card-box-11">
 					<Stack direction="row" justifyContent="space-between" alignItems="center">
-						<Typography sx={{ fontSize: "1rem", fontWeight: 600, color: "#1a1a1a" }}>
+						<Typography className="classification-distribution-card-typography-12">
 							Service Type Distribution
 						</Typography>
 						<Link
 							component="button"
 							onClick={handleViewAll}
-							sx={{
-								fontSize: "0.875rem",
-								cursor: "pointer",
-								textDecoration: "none",
-								color: "primary.main",
-							}}
+							className="entity-type-bar-chart-link-27"
 							aria-label="View all entities"
 						>
 							View All
@@ -182,38 +177,28 @@ const EntityTypeBarChart = memo(
 						</Typography>
 					</Stack>
 				) : (
-					<Box sx={{ mt: 2, minHeight: 260, height: 260, width: "100%", minWidth: 280 }}>
-						<Stack direction="row" spacing={2} sx={{ mb: 1, flexWrap: "wrap" }} aria-label="Chart legend">
+					<Box className="classification-distribution-card-box-16">
+						<Stack direction="row" spacing={2} className="entity-type-bar-chart-stack-28" aria-label="Chart legend">
 							<Stack direction="row" alignItems="center" spacing={0.75}>
 								<Box
-									sx={{
-										width: 10,
-										height: 10,
-										borderRadius: "50%",
-										backgroundColor: ACTIVE_COLOR,
-									}}
+									className="entity-type-bar-chart-box-29"
 									aria-hidden
 								/>
-								<Typography variant="caption" sx={{ color: "#6c757d", fontSize: "0.8125rem" }}>
+								<Typography variant="caption" className="entity-type-bar-chart-typography-30">
 									Active
 								</Typography>
 							</Stack>
 							<Stack direction="row" alignItems="center" spacing={0.75}>
 								<Box
-									sx={{
-										width: 10,
-										height: 10,
-										borderRadius: "50%",
-										backgroundColor: DELETED_COLOR,
-									}}
+									className="entity-type-bar-chart-box-31"
 									aria-hidden
 								/>
-								<Typography variant="caption" sx={{ color: "#6c757d", fontSize: "0.8125rem" }}>
+								<Typography variant="caption" className="entity-type-bar-chart-typography-30">
 									Deleted
 								</Typography>
 							</Stack>
 						</Stack>
-						<ResponsiveContainer width="100%" height="100%" style={{ cursor: "pointer" }}>
+						<ResponsiveContainer width="100%" height="100%" className="classification-distribution-card-responsive-container-17">
 							<BarChart data={data} layout="vertical" margin={{ ...HORIZONTAL_BAR_CHART_MARGIN }}>
 								<CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
 								<XAxis
@@ -249,7 +234,7 @@ const EntityTypeBarChart = memo(
 											<g
 												transform={`translate(${x},${y})`}
 												onClick={() => (value ? handleLabelClick(value) : undefined)}
-												style={{ cursor: value ? "pointer" : "default" }}
+												className="classification-distribution-card-element-18"
 												role={value ? "button" : undefined}
 												tabIndex={value ? 0 : undefined}
 												onKeyDown={
@@ -306,11 +291,7 @@ const EntityTypeBarChart = memo(
 										position="right"
 										offset={10}
 										formatter={(v: unknown) => (typeof v === "number" ? numberFormatWithComma(v) : "")}
-										style={{
-											fontSize: 12,
-											fontWeight: 500,
-											fill: ACTIVE_COLOR,
-										}}
+										className="entity-type-bar-chart-element-32"
 									/>
 									{data.map((_, index) => (
 										<Cell key={`deleted-${index}`} fill={DELETED_COLOR} />

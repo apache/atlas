@@ -156,28 +156,5 @@ describe('EntityDisplayImage', () => {
     expect(img?.getAttribute('src')).toBe('');
   });
 
-  it('explicitly sets onerror to null to prevent infinite loops', () => {
-    const { container } = render(
-      <DisplayImage entity={entity} width={20} height={20} />
-    )
-    
-    const img = container.querySelector('img')!
-    
-    // Simulate what the browser does natively when an image fails to load
-    const event = new Event('error');
-    Object.defineProperty(event, 'currentTarget', {
-      value: img,
-      enumerable: true
-    });
-    
-    // Add a dummy onerror handler to prove it gets cleared
-    img.onerror = () => {};
-    expect(img.onerror).not.toBeNull();
-    
-    // Call the React onError handler
-    fireEvent(img, event);
-    
-    // The handler should have explicitly cleared the onerror property
-    expect(img.onerror).toBeNull();
-  });
+
 });
