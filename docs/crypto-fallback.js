@@ -18,11 +18,21 @@
 
 const crypto = require("crypto");
 const originalCreateHash = crypto.createHash;
-crypto.createHash = (algorithm) => originalCreateHash(algorithm === "md4" ? "sha256" : algorithm);
+
+crypto.createHash = (algorithm, options) => {
+  if (algorithm === "md4") {
+    try {
+      return originalCreateHash("md4", options);
+    } catch (e) {
+      return originalCreateHash("sha256", options);
+    }
+  }
+  return originalCreateHash(algorithm, options);
+};
 
 process.on("uncaughtException", function (err) {
-  if (err.code === "ECONNRESET") {
-    console.log("Ignoring expected ECONNRESET error on Node 22");
+  if (err && err.code === "ECONNRESET") {
+    console.warn("Handled Docz build process ECONNRESET:", err.message);
     return;
   }
   throw err;
