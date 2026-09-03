@@ -94,16 +94,25 @@
         padding-left: 15px;
     }
 
+    ol>li,
     ul>li {
         word-wrap: break-word;
         margin-bottom: 5px;
         text-align: left;
+        line-height: 1.5;
 
         &.entity-list-item {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
             max-width: 100%;
+
+            .entity-type-name {
+                display: inline-block;
+                max-width: calc(100% - 25px);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                vertical-align: top;
+                line-height: inherit;
+            }
         }
 
         &.deleted-relation {

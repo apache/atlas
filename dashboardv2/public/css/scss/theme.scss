@@ -537,7 +537,8 @@ hr[size="10"] {
 }
 
 .tooltip-inner {
-    max-width: 300px;
+    max-width: none;
+    overflow-wrap: break-word;
     word-wrap: break-word;
     color: #2c2c2c;
     background-color: #f9f9f9;
