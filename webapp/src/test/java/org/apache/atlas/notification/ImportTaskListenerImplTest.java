@@ -29,6 +29,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
@@ -128,6 +129,50 @@ public class ImportTaskListenerImplTest {
 
         verify(asyncImportService, atLeastOnce()).recoverStaleClaims();
         verify(asyncImportService, atLeastOnce()).tryClaim();
+    }
+
+    // -------------------------------------------------------------------------
+    // recoverAbandonedImports (scenario 6)
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testRecoverAbandonedImports_ResolvesDrainedProcessingImport() throws Exception {
+        when(asyncImportService.fetchInProgressImportIds()).thenReturn(Collections.singletonList(IMPORT_ID));
+        when(asyncImportService.getAsyncImportRequest(IMPORT_ID)).thenReturn(importRequest);
+        when(importRequest.getStatus()).thenReturn(ImportStatus.PROCESSING);
+        when(notificationHookConsumer.isImportTopicFullyConsumed(TOPIC)).thenReturn(true);
+
+        importTaskListener.recoverAbandonedImports();
+
+        // a drained topic can never fire completion, so the import is resolved to a terminal state
+        verify(asyncImportService, times(1)).resolveAbandonedRequest(IMPORT_ID);
+    }
+
+    @Test
+    public void testRecoverAbandonedImports_SkipsImportWithPendingMessages() throws Exception {
+        when(asyncImportService.fetchInProgressImportIds()).thenReturn(Collections.singletonList(IMPORT_ID));
+        when(asyncImportService.getAsyncImportRequest(IMPORT_ID)).thenReturn(importRequest);
+        when(importRequest.getStatus()).thenReturn(ImportStatus.PROCESSING);
+        when(notificationHookConsumer.isImportTopicFullyConsumed(TOPIC)).thenReturn(false);
+
+        importTaskListener.recoverAbandonedImports();
+
+        // the topic still has messages, so the normal consumer-driven path must be left to run
+        verify(asyncImportService, never()).resolveAbandonedRequest(anyString());
+    }
+
+    @Test
+    public void testRecoverAbandonedImports_ContinuesWhenResolutionFails() throws Exception {
+        when(asyncImportService.fetchInProgressImportIds()).thenReturn(Collections.singletonList(IMPORT_ID));
+        when(asyncImportService.getAsyncImportRequest(IMPORT_ID)).thenReturn(importRequest);
+        when(importRequest.getStatus()).thenReturn(ImportStatus.PROCESSING);
+        when(notificationHookConsumer.isImportTopicFullyConsumed(TOPIC)).thenReturn(true);
+        doThrow(new AtlasBaseException("resolution failed")).when(asyncImportService).resolveAbandonedRequest(IMPORT_ID);
+
+        // a failed resolution must not propagate out of recovery
+        importTaskListener.recoverAbandonedImports();
+
+        verify(asyncImportService, times(1)).resolveAbandonedRequest(IMPORT_ID);
     }
 
     // -------------------------------------------------------------------------

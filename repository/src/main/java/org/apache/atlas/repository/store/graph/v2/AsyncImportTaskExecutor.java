@@ -44,7 +44,9 @@ import javax.inject.Inject;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.atlas.notification.NotificationInterface.NotificationType.ASYNC_IMPORT;
 
@@ -55,6 +57,11 @@ public class AsyncImportTaskExecutor {
     private static final String MESSAGE_SOURCE = AsyncImportTaskExecutor.class.getSimpleName();
     private static final int MAX_RETRIES       = 3;
     private static final int BASE_BACKOFF_MS   = 500;
+
+    // importIds this instance is currently registering/publishing. Import submissions are always
+    // routed to the active metadata node, so an in-process guard is enough to keep a single publisher
+    // per importId and stop a duplicate REST call from republishing the whole archive to the topic.
+    private final Set<String> registrationsInFlight = ConcurrentHashMap.newKeySet();
 
     private final AsyncImportService    importService;
     private final NotificationInterface notificationInterface;
@@ -70,8 +77,18 @@ public class AsyncImportTaskExecutor {
     }
 
     public AtlasAsyncImportRequest run(AtlasImportResult result, EntityImportStream entityImportStream) throws AtlasBaseException {
+        String  importId = entityImportStream.getMd5Hash();
+        boolean claimed  = registrationsInFlight.add(importId);
+
         try {
-            String                  importId      = entityImportStream.getMd5Hash();
+            // registering and publishing are a single critical section per importId: without it two
+            // concurrent submissions of the same archive both resolve past registration and each
+            // publishes the full entity set to the same topic (duplicate messages, unique-constraint
+            // races on the tracking entity). The loser waits for the winner's request instead.
+            if (!claimed) {
+                return awaitInFlightRequest(importId);
+            }
+
             AtlasAsyncImportRequest importRequest = registerRequest(result, importId, entityImportStream.size(), entityImportStream.getCreationOrder());
 
             if (ObjectUtils.equals(importRequest.getStatus(), ImportStatus.WAITING) || ObjectUtils.equals(importRequest.getStatus(), ImportStatus.PROCESSING)) {
@@ -87,10 +104,41 @@ public class AsyncImportTaskExecutor {
 
             return importRequest;
         } catch (AtlasBaseException abe) {
+            if (abe.getAtlasErrorCode() == AtlasErrorCode.IMPORT_ALREADY_IN_PROGRESS) {
+                throw abe;
+            }
+
             throw new AtlasBaseException(AtlasErrorCode.IMPORT_FAILED, abe);
         } finally {
+            if (claimed) {
+                registrationsInFlight.remove(importId);
+            }
+
             entityImportStream.close();
         }
+    }
+
+    /**
+     * Returns the request being submitted concurrently for the same importId, without publishing.
+     * The winning thread may not have committed the request vertex yet, so the lookup is retried
+     * briefly before giving up with {@code IMPORT_ALREADY_IN_PROGRESS} (409).
+     */
+    private AtlasAsyncImportRequest awaitInFlightRequest(String importId) throws AtlasBaseException {
+        LOG.warn("AsyncImportTaskExecutor.run(): import request with id={} is already being submitted by another request, skipping publish", importId);
+
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            AtlasAsyncImportRequest inFlightRequest = importService.fetchImportRequestByImportIdWithRetry(importId);
+
+            if (inFlightRequest != null) {
+                return inFlightRequest;
+            }
+
+            if (attempt < MAX_RETRIES) {
+                sleepQuietly((long) BASE_BACKOFF_MS * attempt);
+            }
+        }
+
+        throw new AtlasBaseException(AtlasErrorCode.IMPORT_ALREADY_IN_PROGRESS, importId);
     }
 
     public void publishTypeDefNotification(AtlasAsyncImportRequest importRequest, AtlasTypesDef atlasTypesDef) throws AtlasBaseException {
@@ -144,10 +192,27 @@ public class AsyncImportTaskExecutor {
             importService.populateCache(importRequest);
 
             importTaskListener.onReceiveImportRequest(importRequest);
+        } catch (AtlasBaseException | RuntimeException e) {
+            persistPublishProgress(importRequest);
+
+            throw e;
         } finally {
             notificationInterface.closeProducer(ASYNC_IMPORT, importRequest.getTopicName());
 
             LOG.info("<== publishImportRequest(importId={})", importRequest.getImportId());
+        }
+    }
+
+    /**
+     * The published position and counters are only kept in the cache while publishing, and reach the
+     * graph when the request is handed to the listener. If publishing fails before that, persist them
+     * once so a resubmit resumes from the last published position instead of republishing from zero.
+     */
+    private void persistPublishProgress(AtlasAsyncImportRequest importRequest) {
+        try {
+            importService.saveImportRequest(importRequest);
+        } catch (Exception e) {
+            LOG.warn("AsyncImport(id={}): failed to persist publish progress, a resubmit may republish entities", importRequest.getImportId(), e);
         }
     }
 

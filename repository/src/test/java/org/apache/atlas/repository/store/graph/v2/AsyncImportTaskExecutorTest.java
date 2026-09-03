@@ -40,10 +40,17 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyList;
 import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
@@ -56,6 +63,7 @@ import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.expectThrows;
 
 public class AsyncImportTaskExecutorTest {
@@ -176,6 +184,135 @@ public class AsyncImportTaskExecutorTest {
 
         verify(spyPublisher, never()).skipToStartEntityPosition(mockRequest, mockEntityImportStream);
         verify(spyPublisher, never()).publishImportRequest(mockRequest, mockEntityImportStream);
+    }
+
+    // scenario 2: a duplicate concurrent submission for the same importId must not republish; it
+    // returns the in-flight request the winning thread is submitting.
+    @Test
+    void testConcurrentDuplicateSubmissionReturnsInFlightWithoutPublishing() throws Exception {
+        AtlasImportResult       mockResult = mock(AtlasImportResult.class);
+        AsyncImportTaskExecutor executor   = spy(asyncImportTaskExecutor);
+
+        AtlasAsyncImportRequest staged = new AtlasAsyncImportRequest(mockResult);
+        staged.setImportId("import-md5");
+        staged.setStatus(AtlasAsyncImportRequest.ImportStatus.STAGING);
+
+        CountDownLatch winnerInside  = new CountDownLatch(1);
+        CountDownLatch releaseWinner = new CountDownLatch(1);
+
+        // hold the winning thread inside the critical section (past the in-flight claim) while the
+        // duplicate is submitted
+        doAnswer(invocation -> {
+            winnerInside.countDown();
+            releaseWinner.await(5, TimeUnit.SECONDS);
+            return staged;
+        }).when(executor).registerRequest(any(), eq("import-md5"), anyInt(), anyList());
+        doNothing().when(executor).skipToStartEntityPosition(any(), any());
+        doNothing().when(executor).publishImportRequest(any(), any());
+
+        // the duplicate sees the in-flight request through the service
+        when(importService.fetchImportRequestByImportIdWithRetry("import-md5")).thenReturn(staged);
+
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+
+        try {
+            Future<AtlasAsyncImportRequest> winner = pool.submit(() -> executor.run(mockResult, entityStream("import-md5")));
+
+            assertTrue(winnerInside.await(5, TimeUnit.SECONDS), "winning thread never entered critical section");
+
+            AtlasAsyncImportRequest duplicate = executor.run(mockResult, entityStream("import-md5"));
+
+            assertSame(duplicate, staged);
+            // the duplicate must not have registered or published anything
+            verify(executor, never()).publishImportRequest(eq(staged), any());
+            verify(executor, times(1)).registerRequest(any(), eq("import-md5"), anyInt(), anyList());
+
+            releaseWinner.countDown();
+            winner.get(5, TimeUnit.SECONDS);
+        } finally {
+            releaseWinner.countDown();
+            pool.shutdownNow();
+        }
+    }
+
+    // scenario 2: if the in-flight request is not yet visible, the duplicate gets a 409 instead of
+    // publishing a second copy.
+    @Test
+    void testConcurrentDuplicateSubmissionThrows409WhenInFlightNotVisible() throws Exception {
+        AtlasImportResult       mockResult = mock(AtlasImportResult.class);
+        AsyncImportTaskExecutor executor   = spy(asyncImportTaskExecutor);
+
+        AtlasAsyncImportRequest staged = new AtlasAsyncImportRequest(mockResult);
+        staged.setImportId("import-md5");
+        staged.setStatus(AtlasAsyncImportRequest.ImportStatus.STAGING);
+
+        CountDownLatch winnerInside  = new CountDownLatch(1);
+        CountDownLatch releaseWinner = new CountDownLatch(1);
+
+        doAnswer(invocation -> {
+            winnerInside.countDown();
+            releaseWinner.await(5, TimeUnit.SECONDS);
+            return staged;
+        }).when(executor).registerRequest(any(), eq("import-md5"), anyInt(), anyList());
+        doNothing().when(executor).skipToStartEntityPosition(any(), any());
+        doNothing().when(executor).publishImportRequest(any(), any());
+
+        // the winner has not committed its request yet, so the duplicate cannot see it
+        when(importService.fetchImportRequestByImportIdWithRetry("import-md5")).thenReturn(null);
+
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+
+        try {
+            Future<AtlasAsyncImportRequest> winner = pool.submit(() -> executor.run(mockResult, entityStream("import-md5")));
+
+            assertTrue(winnerInside.await(5, TimeUnit.SECONDS), "winning thread never entered critical section");
+
+            AtlasBaseException abe = expectThrows(AtlasBaseException.class, () -> executor.run(mockResult, entityStream("import-md5")));
+
+            assertEquals(abe.getAtlasErrorCode(), AtlasErrorCode.IMPORT_ALREADY_IN_PROGRESS);
+
+            releaseWinner.countDown();
+            winner.get(5, TimeUnit.SECONDS);
+        } finally {
+            releaseWinner.countDown();
+            pool.shutdownNow();
+        }
+    }
+
+    // scenario 5: a failure partway through publishing persists the published position once, so a
+    // resubmit resumes instead of republishing from zero.
+    @Test
+    void testPublishImportRequestPersistsProgressOnFailure() throws AtlasBaseException, NotificationException {
+        AtlasAsyncImportRequest mockImportRequest      = mock(AtlasAsyncImportRequest.class);
+        AtlasImportResult       mockResult             = mock(AtlasImportResult.class);
+        EntityImportStream      mockEntityImportStream = mock(EntityImportStream.class);
+
+        when(mockImportRequest.getTopicName()).thenReturn("test-topic");
+        when(mockImportRequest.getImportId()).thenReturn("import-md5");
+        when(mockImportRequest.getImportResult()).thenReturn(mockResult);
+        when(mockResult.getUserName()).thenReturn("test-user-1");
+        when(mockEntityImportStream.getTypesDef()).thenReturn(null);
+
+        doThrow(new NotificationException(new Exception("publish failed")))
+                .when(notificationInterface)
+                .send(eq("test-topic"), anyList(), any());
+
+        expectThrows(AtlasBaseException.class, () -> asyncImportTaskExecutor.publishImportRequest(mockImportRequest, mockEntityImportStream));
+
+        // progress persisted exactly once, and the producer still closed
+        verify(importService, times(1)).saveImportRequest(mockImportRequest);
+        verify(notificationInterface).closeProducer(NotificationInterface.NotificationType.ASYNC_IMPORT, "test-topic");
+        verify(importTaskListener, never()).onReceiveImportRequest(any(AtlasAsyncImportRequest.class));
+    }
+
+    private EntityImportStream entityStream(String md5Hash) {
+        EntityImportStream stream = mock(EntityImportStream.class);
+
+        when(stream.getMd5Hash()).thenReturn(md5Hash);
+        when(stream.size()).thenReturn(5);
+        when(stream.getCreationOrder()).thenReturn(Collections.emptyList());
+
+        return stream;
     }
 
     @Test

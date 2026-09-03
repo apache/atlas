@@ -233,6 +233,7 @@ public enum AtlasErrorCode {
     METRICSSTAT_ALREADY_EXISTS(409, "ATLAS-409-00-012", "Metric Statistics already collected at {0}"),
     PENDING_TASKS_ALREADY_IN_PROGRESS(409, "ATLAS-409-00-013", "There are already {0} pending tasks in queue"),
     IMPORT_ABORT_NOT_ALLOWED(409, "ATLAS-409-00-016", "Import id {0} is currently in state {1}, cannot be aborted"),
+    IMPORT_ALREADY_IN_PROGRESS(409, "ATLAS-409-00-017", "Import id {0} is already being submitted by another request, please try again later"),
 
     // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),

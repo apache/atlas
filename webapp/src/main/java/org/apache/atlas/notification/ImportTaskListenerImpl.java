@@ -240,11 +240,58 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
         startScheduler();
 
         // Immediately attempt to pick up any WAITING imports left from before this node started.
-        CompletableFuture.runAsync(this::tryClaimAndStartImport)
-                .exceptionally(ex -> {
-                    LOG.error("startInternal: error during initial claim attempt", ex);
-                    return null;
-                });
+        // Before that, resolve any PROCESSING import whose Kafka topic is already drained: such an
+        // import can never complete via the consumer, so recovering it here stops it from holding the
+        // cluster import claim until its lease lapses (and from being re-claimed onto an empty topic).
+        CompletableFuture.runAsync(() -> {
+            recoverAbandonedImports();
+            tryClaimAndStartImport();
+        }).exceptionally(ex -> {
+            LOG.error("startInternal: error during initial recovery/claim attempt", ex);
+            return null;
+        });
+    }
+
+    /**
+     * Resolves any import found PROCESSING at startup whose topic has already been fully consumed.
+     *
+     * <p>Runs once per node start (not on every poll) to mirror the crash-recovery intent and avoid
+     * racing an import that another node is actively consuming: a topic that is still being consumed
+     * reports committed offsets behind its end offsets, so {@code isImportTopicFullyConsumed} returns
+     * {@code false} and the import is left alone.
+     */
+    @VisibleForTesting
+    void recoverAbandonedImports() {
+        if (!AtlasRunMode.current().runsMetadataServer()) {
+            return;
+        }
+
+        try {
+            for (String importId : asyncImportService.fetchInProgressImportIds()) {
+                resolveIfTopicDrained(importId);
+            }
+        } catch (Exception e) {
+            LOG.error("recoverAbandonedImports(): failed to scan in-progress imports", e);
+        }
+    }
+
+    private void resolveIfTopicDrained(String importId) {
+        try {
+            AtlasAsyncImportRequest importRequest = asyncImportService.getAsyncImportRequest(importId);
+
+            if (importRequest == null || importRequest.getStatus() != ImportStatus.PROCESSING) {
+                return;
+            }
+
+            if (notificationHookConsumer.isImportTopicFullyConsumed(importRequest.getTopicName())) {
+                LOG.warn("recoverAbandonedImports(): import {} is PROCESSING but its topic {} is drained; resolving it",
+                        importId, importRequest.getTopicName());
+
+                asyncImportService.resolveAbandonedRequest(importId);
+            }
+        } catch (Exception e) {
+            LOG.error("resolveIfTopicDrained(): failed to resolve possibly-abandoned import {}", importId, e);
+        }
     }
 
     /**

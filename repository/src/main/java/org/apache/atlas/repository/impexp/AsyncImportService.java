@@ -62,6 +62,7 @@ import static org.apache.atlas.repository.ogm.impexp.AtlasAsyncImportRequestDTO.
 public class AsyncImportService implements GraphClaimable<AtlasAsyncImportRequest> {
     private static final Logger LOG                                              = LoggerFactory.getLogger(AsyncImportService.class);
     private static final int    MAX_ATTEMPTS                                     = 3;
+    private static final int    BASE_BACKOFF_MS                                  = 500;
     private static final String EXCEPTION_CLASS_NAME_PERMANENT_LOCKING_EXCEPTION = "PermanentLockingException";
 
     private final DataAccess                                          dataAccess;
@@ -78,9 +79,19 @@ public class AsyncImportService implements GraphClaimable<AtlasAsyncImportReques
     AsyncImportService(DataAccess dataAccess, AtlasGraph graph, long processingStaleThresholdMs) {
         this.dataAccess  = dataAccess;
         this.graph       = graph;
-        this.importCache = new ImportCacheManager<>();
+        this.importCache = new ImportCacheManager<>(AsyncImportService::isTerminal);
         this.processingStaleThresholdMs = processingStaleThresholdMs;
         this.nodeId = buildNodeId();
+    }
+
+    /**
+     * An import that has not reached a terminal state keeps live progress only in the cache, so those
+     * entries must survive size and TTL pressure. Terminal requests are already durable in the graph.
+     */
+    static boolean isTerminal(AtlasAsyncImportRequest importRequest) {
+        ImportStatus status = importRequest == null ? null : importRequest.getStatus();
+
+        return status != ImportStatus.STAGING && status != ImportStatus.WAITING && status != ImportStatus.PROCESSING;
     }
 
     public void populateCache(AtlasAsyncImportRequest importRequest) {
@@ -112,6 +123,74 @@ public class AsyncImportService implements GraphClaimable<AtlasAsyncImportReques
             LOG.error("Error fetching request with importId: {}", importId, e);
 
             return null;
+        }
+    }
+
+    /**
+     * Reads a request, retrying transient failures before giving up. Callers that have already
+     * committed to acting on an importId (e.g. after removing it from a claim/queue, or a duplicate
+     * submission waiting on the in-flight winner) use this, because a null from a one-shot read is
+     * indistinguishable from "no such request" and would silently drop it.
+     *
+     * <p>A request that genuinely does not exist is reported immediately: retrying a definitive
+     * answer only delays the caller.
+     */
+    public AtlasAsyncImportRequest fetchImportRequestByImportIdWithRetry(String importId) {
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            try {
+                AtlasAsyncImportRequest cachedRequest = importCache.get(importId);
+
+                if (cachedRequest != null) {
+                    return cachedRequest;
+                }
+
+                AtlasAsyncImportRequest request = new AtlasAsyncImportRequest();
+
+                request.setImportId(importId);
+
+                request = dataAccess.load(request);
+
+                populateCache(request);
+
+                return request;
+            } catch (Exception e) {
+                if (isRequestNotFound(e)) {
+                    LOG.warn("No import request exists with importId: {}", importId);
+
+                    return null;
+                }
+
+                if (attempt == MAX_ATTEMPTS) {
+                    LOG.error("Error fetching request with importId: {}, giving up after {} attempts", importId, MAX_ATTEMPTS, e);
+
+                    return null;
+                }
+
+                LOG.warn("Error fetching request with importId: {} on attempt {} of {}, retrying", importId, attempt, MAX_ATTEMPTS, e);
+
+                sleepQuietly((long) BASE_BACKOFF_MS * attempt);
+            }
+        }
+
+        return null;
+    }
+
+    private boolean isRequestNotFound(Exception e) {
+        for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+            if (cause instanceof AtlasBaseException
+                    && ((AtlasBaseException) cause).getAtlasErrorCode() == AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -168,17 +247,25 @@ public class AsyncImportService implements GraphClaimable<AtlasAsyncImportReques
      * Returns a fresh view of the import request, resolving a stuck PROCESSING request to a
      * terminal status when all published entities have already been processed.
      *
-     * <p>Entity progress is often only in the local cache until {@code onImportComplete} persists
-     * it, so the cache is consulted before invalidating. If the cache is incomplete, a fresh
-     * JanusGraph read is used (required for active-active correctness).
+     * <p>While an import is PROCESSING, entity counters live only in the node-local cache until
+     * {@code onImportComplete} persists them. That cached copy is therefore authoritative for an
+     * in-flight import: it must not be invalidated and reloaded, or a duplicate submission (or a
+     * status query) would replace live progress with the stale graph copy and the import could
+     * never satisfy its completion check.
+     *
+     * <p>Only when there is no in-flight cached PROCESSING state is a fresh JanusGraph read used
+     * (required for active-active correctness on nodes that never held this import).
      */
     public AtlasAsyncImportRequest resolveRequestStatus(String importId) throws AtlasBaseException {
         AtlasAsyncImportRequest cached = importCache.get(importId);
 
-        if (cached != null
-                && cached.getStatus() == ImportStatus.PROCESSING
-                && isProcessingComplete(cached)) {
-            return finalizeCompletedProcessingRequest(cached);
+        if (cached != null && cached.getStatus() == ImportStatus.PROCESSING) {
+            if (isProcessingComplete(cached)) {
+                return finalizeCompletedProcessingRequest(cached);
+            }
+
+            // in-flight: the cache is the only record of live progress; keep it authoritative
+            return cached;
         }
 
         importCache.invalidate(importId);
@@ -189,6 +276,34 @@ public class AsyncImportService implements GraphClaimable<AtlasAsyncImportReques
                 || !isProcessingComplete(importRequest)) {
             return importRequest;
         }
+
+        return finalizeCompletedProcessingRequest(importRequest);
+    }
+
+    /**
+     * Resolves a request that can no longer make progress, regardless of how far its counters got.
+     *
+     * <p>Used when an import is found PROCESSING but its Kafka topic has already been fully consumed:
+     * there is nothing left to deliver and the normal completion path (driven by the consumer) can
+     * never run, so without this the import would stay PROCESSING forever and the cluster import
+     * claim would only free when its lease lapsed. A fresh graph read is used because the node
+     * resolving it may not be the one that was processing it.
+     *
+     * @return the resolved request (terminal), or the untouched request if it is not PROCESSING,
+     *         or {@code null} if no such request exists
+     */
+    public AtlasAsyncImportRequest resolveAbandonedRequest(String importId) throws AtlasBaseException {
+        AtlasAsyncImportRequest importRequest = loadFresh(importId);
+
+        if (importRequest == null || importRequest.getStatus() != ImportStatus.PROCESSING) {
+            return importRequest;
+        }
+
+        LOG.warn("resolveAbandonedRequest(): resolving abandoned PROCESSING import {} (topic drained); imported={} failed={} published={}",
+                importId,
+                importRequest.getImportDetails() != null ? importRequest.getImportDetails().getImportedEntitiesCount() : -1,
+                importRequest.getImportDetails() != null ? importRequest.getImportDetails().getFailedEntitiesCount() : -1,
+                importRequest.getImportDetails() != null ? importRequest.getImportDetails().getPublishedEntityCount() : -1);
 
         return finalizeCompletedProcessingRequest(importRequest);
     }
@@ -390,7 +505,9 @@ public class AsyncImportService implements GraphClaimable<AtlasAsyncImportReques
 
         // Status confirmed WAITING in JanusGraph — now load the full object.
         // Use the cache for the remaining fields (avoids a second graph read for metadata
-        // that cannot have changed since creation).
+        // that cannot have changed since creation). A transient read failure here returns null and
+        // releases the claim; the import stays WAITING in the graph and is retried on the next poll,
+        // so it is never permanently dropped (scenario 7 is structurally avoided in this design).
         AtlasAsyncImportRequest importRequest = fetchImportRequestByImportId(importId);
         if (importRequest == null) {
             LOG.debug("claimNextWaitingImport(): node={} import {} not found", nodeId, importId);
