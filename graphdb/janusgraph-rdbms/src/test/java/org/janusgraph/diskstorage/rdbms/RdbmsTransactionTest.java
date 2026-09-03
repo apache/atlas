@@ -26,11 +26,14 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertSame;
 
 public class RdbmsTransactionTest {
     private EntityManager     entityManager;
@@ -108,5 +111,30 @@ public class RdbmsTransactionTest {
 
         verify(entityTransaction).rollback();
         verify(entityManager, times(1)).close();
+    }
+
+    /**
+     * When rollback and close both fail, the rollback failure is what the caller sees: it is the
+     * reason close was invoked, and replacing it with a close failure hides the root cause.
+     */
+    @Test
+    public void closePreservesTheFirstFailureWhenRollbackAndCloseBothFail() throws Exception {
+        transactionActive = true;
+
+        RuntimeException rollbackFailure = new RuntimeException("rollback failed");
+        RuntimeException closeFailure    = new RuntimeException("close failed");
+
+        doThrow(rollbackFailure).when(entityTransaction).rollback();
+        doThrow(closeFailure).when(entityManager).close();
+
+        RdbmsTransaction transaction = new RdbmsTransaction(mock(BaseTransactionConfig.class), daoManager);
+
+        try {
+            transaction.close();
+            throw new AssertionError("expected IOException");
+        } catch (java.io.IOException excp) {
+            assertSame(rollbackFailure, excp.getCause());
+            assertEquals("rollback failed", excp.getCause().getMessage());
+        }
     }
 }

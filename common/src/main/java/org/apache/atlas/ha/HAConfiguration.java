@@ -21,8 +21,6 @@ package org.apache.atlas.ha;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,8 +30,6 @@ import java.util.Objects;
  * A wrapper for getting configuration entries related to HighAvailability.
  */
 public final class HAConfiguration {
-    private static final Logger LOG = LoggerFactory.getLogger(HAConfiguration.class);
-
     public static final String ATLAS_SERVER_ZK_ROOT_DEFAULT               = "/apache_atlas";
     public static final String ATLAS_SERVER_HA_PREFIX                     = "atlas.server.ha.";
     public static final String ZOOKEEPER_PREFIX                           = "zookeeper.";
@@ -56,21 +52,26 @@ public final class HAConfiguration {
     }
 
     /**
-     * Return whether HA is enabled or not.
-     * @param configuration underlying configuration instance
-     * @return
+     * Whether legacy ZooKeeper active-passive HA is enabled.
+     *
+     * <p>This flag belonged to the old model where Curator elected a single ACTIVE leader and
+     * followers stayed passive.  AMRA active-active peers do not use it: every node becomes ACTIVE
+     * through {@code AtlasActivationService}, and multi-instance behaviour is governed by
+     * {@link org.apache.atlas.AtlasRunMode} and cluster-wide graph claims instead.
+     *
+     * <p>{@link #ATLAS_SERVER_IDS} still names each JVM in a multi-node cluster (typedef-sync signals,
+     * address lookup) but does <em>not</em> imply HA mode.  Some older releases inferred HA from
+     * multiple IDs when this flag was absent; that inference is removed because modular topologies
+     * list several IDs while {@code atlas.server.ha.enabled=false}.
+     *
+     * @return {@code true} only when {@link #ATLAS_SERVER_HA_ENABLED_KEY} is explicitly {@code true}
      */
     public static boolean isHAEnabled(Configuration configuration) {
-        boolean ret = false;
-
         if (configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)) {
-            ret = configuration.getBoolean(ATLAS_SERVER_HA_ENABLED_KEY);
-            LOG.info("isHAEnabled: key '{}' found in config, value={}", ATLAS_SERVER_HA_ENABLED_KEY, ret);
-        } else {
-            LOG.info("isHAEnabled: key '{}' NOT found in config, defaulting to false", ATLAS_SERVER_HA_ENABLED_KEY);
+            return configuration.getBoolean(ATLAS_SERVER_HA_ENABLED_KEY);
         }
 
-        return ret;
+        return false;
     }
 
     /**

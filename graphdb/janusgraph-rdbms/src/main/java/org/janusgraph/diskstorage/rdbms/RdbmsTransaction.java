@@ -116,7 +116,7 @@ public class RdbmsTransaction extends AbstractStoreTransaction implements Closea
             try {
                 em.close();
             } catch (Exception excp) {
-                if (ret != null) {
+                if (ret == null) {
                     ret = new IOException(excp);
                 }
             }

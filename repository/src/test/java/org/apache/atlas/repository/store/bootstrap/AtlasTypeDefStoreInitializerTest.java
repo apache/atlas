@@ -19,7 +19,6 @@ package org.apache.atlas.repository.store.bootstrap;
 
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.patches.AtlasPatch;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
@@ -104,7 +103,6 @@ public class AtlasTypeDefStoreInitializerTest {
     @Mock private AtlasVertex mockVertex;
 
     private AtlasTypeDefStoreInitializer initializer;
-    private MockedStatic<HAConfiguration> haConfigMock;
     private MockedStatic<AtlasType> atlasTypeMock;
     private MockedStatic<RequestContext> requestContextMock;
 
@@ -138,7 +136,6 @@ public class AtlasTypeDefStoreInitializerTest {
 
         initializer = new AtlasTypeDefStoreInitializer(typeDefStore, typeRegistry, graph, conf, patchManager);
 
-        haConfigMock = mockStatic(HAConfiguration.class);
         atlasTypeMock = mockStatic(AtlasType.class);
         requestContextMock = mockStatic(RequestContext.class);
 
@@ -152,9 +149,6 @@ public class AtlasTypeDefStoreInitializerTest {
 
     @AfterMethod
     public void tearDown() {
-        if (haConfigMock != null) {
-            haConfigMock.close();
-        }
         if (atlasTypeMock != null) {
             atlasTypeMock.close();
         }
@@ -169,16 +163,7 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     @Test
-    public void testInitWhenHADisabled_isNoOp() throws Exception {
-        haConfigMock.when(() -> HAConfiguration.isHAEnabled(conf)).thenReturn(false);
-        initializer.init();
-        verify(typeDefStore, never()).init();
-        verify(typeDefStore, never()).notifyLoadCompletion();
-    }
-
-    @Test
-    public void testInitWhenHAEnabled_isNoOp() throws Exception {
-        haConfigMock.when(() -> HAConfiguration.isHAEnabled(conf)).thenReturn(true);
+    public void testInit_doesNotLoadTypes() throws Exception {
         initializer.init();
         verify(typeDefStore, never()).init();
         verify(typeDefStore, never()).notifyLoadCompletion();
