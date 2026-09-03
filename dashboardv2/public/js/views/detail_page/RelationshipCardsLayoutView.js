@@ -699,7 +699,8 @@ define([
                 if ($.fn.tooltip) {
                     this.$el.find('[title]').tooltip({
                         placement: 'bottom',
-                        container: 'body'
+                        container: 'body',
+                        template: '<div class="tooltip relationship-tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
                     });
                 }
             } else {

@@ -29,7 +29,7 @@ define([
     "utils/Enums",
     "utils/UrlLinks",
     "platform"
-], function (require, Backbone, RelationshipLayoutViewtmpl, VLineageList, VEntity, Utils, CommonViewFunction, d3, d3Tip, Enums, UrlLinks, platform) {
+], function(require, Backbone, RelationshipLayoutViewtmpl, VLineageList, VEntity, Utils, CommonViewFunction, d3, d3Tip, Enums, UrlLinks, platform) {
     "use strict";
 
     var RelationshipLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -60,17 +60,17 @@ define([
             },
 
             /** ui events hash */
-            events: function () {
+            events: function() {
                 var events = {};
-                events["click " + this.ui.relationshipDetailClose] = function () {
+                events["click " + this.ui.relationshipDetailClose] = function() {
                     this.toggleInformationSlider({ close: true });
                 };
                 events["keyup " + this.ui.searchNode] = "searchNode";
                 events["click " + this.ui.boxClose] = "toggleBoxPanel";
-                events["change " + this.ui.relationshipViewToggle] = function (e) {
+                events["change " + this.ui.relationshipViewToggle] = function(e) {
                     this.relationshipViewToggle(e.currentTarget.checked);
                 };
-                events["click " + this.ui.noValueToggle] = function (e) {
+                events["click " + this.ui.noValueToggle] = function(e) {
                     Utils.togglePropertyRelationshipTableEmptyValues({
                         inputType: this.ui.noValueToggle,
                         tableEl: this.ui.relationshipDetailValue
@@ -84,19 +84,19 @@ define([
              * intialize a new RelationshipLayoutView Layout
              * @constructs
              */
-            initialize: function (options) {
+            initialize: function(options) {
                 _.extend(this, _.pick(options, "entity", "entityName", "guid", "actionCallBack", "attributeDefs", "referredEntities", "entityDefCollection"));
                 this.graphData = this.createData(this.entity);
                 this.relationshipCardCounts = {};
                 this.relationshipLoadedCounts = {};
                 this.cardsViewLoadInProgress = false;
-
-                this.handleRelationshipDataUpdate = _.bind(function (payload) {
+                
+                this.handleRelationshipDataUpdate = _.bind(function(payload) {
                     var relationshipAttributes = payload && payload.data ? payload.data : payload;
                     var relationshipCounts = payload && payload.counts ? payload.counts : this.relationshipCardCounts;
                     var loadedCounts = payload && payload.loadedCounts ? payload.loadedCounts : this.relationshipLoadedCounts;
                     var referredEntities = payload && payload.referredEntities ? payload.referredEntities : null;
-
+                    
                     if (!relationshipAttributes) {
                         return;
                     }
@@ -116,7 +116,7 @@ define([
                         }
                     }
                 }, this);
-                this.handleRelationshipLoading = _.bind(function (isLoading) {
+                this.handleRelationshipLoading = _.bind(function(isLoading) {
                     if (isLoading) {
                         this.$(".fontLoader").show();
                     } else {
@@ -124,12 +124,12 @@ define([
                     }
                 }, this);
             },
-            createData: function (entity) {
+            createData: function(entity) {
                 var that = this,
                     links = [],
                     nodes = {};
                 if (entity && entity.relationshipAttributes) {
-                    _.each(entity.relationshipAttributes, function (obj, key) {
+                    _.each(entity.relationshipAttributes, function(obj, key) {
                         var relationValue = obj;
                         if (relationValue && relationValue.entities) {
                             relationValue = relationValue.entities;
@@ -152,14 +152,14 @@ define([
                 }
                 return { nodes: nodes, links: links };
             },
-            onRender: function () {
+            onRender: function() {
                 this.isRendered = true;
 
                 // Initialize: show card view by default (checked = Card)
                 this.ui.relationshipViewToggle.prop('checked', true);
                 this.relationshipViewToggle(true);
             },
-            onShow: function (argument) {
+            onShow: function(argument) {
                 // Always create graph on show if graph view is active
                 var isGraphView = !this.ui.relationshipViewToggle.is(':checked');
                 if (isGraphView) {
@@ -170,12 +170,12 @@ define([
                     }
                 }
                 this.createTable();
-
+                
                 this.ensureCardsView();
             },
-            ensureCardsView: function (forceRefresh) {
+            ensureCardsView: function(forceRefresh) {
                 var that = this;
-
+                
                 if (this.relationshipCardsViewInstance) {
                     if (forceRefresh) {
                         this.relationshipCardsViewInstance.cardData = {};
@@ -198,7 +198,7 @@ define([
                     return;
                 }
                 this.cardsViewLoadInProgress = true;
-                require(['views/detail_page/RelationshipCardsLayoutView'], function (RelationshipCardsLayoutView) {
+                require(['views/detail_page/RelationshipCardsLayoutView'], function(RelationshipCardsLayoutView) {
                     try {
                         if (!that.relationshipCardsView) {
                             console.warn("[RelationshipLayoutView] Region not available");
@@ -221,22 +221,22 @@ define([
                     } finally {
                         that.cardsViewLoadInProgress = false;
                     }
-                }, function (err) {
+                }, function(err) {
                     console.error("[RelationshipLayoutView] Failed to load RelationshipCardsLayoutView:", err);
                     that.cardsViewLoadInProgress = false;
                 });
             },
-            updateCardsShowEmptyValues: function (showEmptyValues) {
+            updateCardsShowEmptyValues: function(showEmptyValues) {
                 if (!this.relationshipCardsViewInstance) {
                     return;
                 }
                 this.relationshipCardsViewInstance.showEmptyValues = !!showEmptyValues;
                 this.relationshipCardsViewInstance.renderCards();
             },
-            noRelationship: function () {
+            noRelationship: function() {
                 this.$("svg").html('<text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle">No relationship data found</text>');
             },
-            toggleInformationSlider: function (options) {
+            toggleInformationSlider: function(options) {
                 var panel = this.$(".relationship-node-details");
                 if (options && options.close) {
                     panel.removeClass("slide-to-left").addClass("slide-from-left");
@@ -248,18 +248,15 @@ define([
                     }
                 }
             },
-            toggleBoxPanel: function () {
+            toggleBoxPanel: function() {
                 this.$(".relationship-node-details").removeClass("slide-to-left").addClass("slide-from-left");
             },
-            searchNode: function (e) {
+            searchNode: function(e) {
                 var searchString = $(e.currentTarget).val(),
                     listString = "",
                     data = this.selectedNodeData,
                     typeName = this.selectedNodeType,
-                    activeEntityColor = "#1976d2",
-                    deletedEntityColor = "#BB5838",
-                    defaultEntityColor = "#e0e0e0",
-                    normalizeEntity = function (entity) {
+                    normalizeEntity = function(entity) {
                         if (!entity) {
                             return entity;
                         }
@@ -270,71 +267,10 @@ define([
                             return _.extend({}, entity, this.referredEntities[entity.guid]);
                         }
                         return entity;
-                    }.bind(this),
-                    getdefault = function (options) {
-                        var colorClass = options.color === deletedEntityColor ? "deleted" : "active";
-                        return "<pre class='entity-type-name " + colorClass + "'>" + options.name + "</pre>";
-                    },
-                    getWithButton = function (options) {
-                        var name = options.name,
-                            guid = options.options.guid,
-                            entityTypeButton = "",
-                            colorClass = options.color === deletedEntityColor ? "deleted" : "active";
-                        if (guid) {
-                            if (options.entity) {
-                                entityTypeButton = "<a href='#!/detailPage/" + guid + "' class='entity-type-name " + colorClass + "'>" + name + "</a>";
-                            } else if (options.relationship) {
-                                entityTypeButton = "<a href='#/relationshipDetailPage/" + guid + "' class='entity-type-name " + colorClass + "'>" + name + "</a>";
-                            } else {
-                                entityTypeButton = "<a href='#!/detailPage/" + guid + "' class='entity-type-name " + colorClass + "'>" + name + "</a>";
-                            }
-                        } else {
-                            entityTypeButton = "<pre class='entity-type-name " + colorClass + "'>" + name + "</pre>";
-                        }
-                        return entityTypeButton;
-                    },
-                    getEntityTypelist = function (options) {
-                        var name = options.entityName ? options.entityName : Utils.getName(options, "displayText"),
-                            entityTypeHtml = "";
-                        if (options.entityStatus == "ACTIVE" || options.status == "ACTIVE") {
-                            if (options.relationshipStatus == "ACTIVE") {
-                                entityTypeHtml = getWithButton({
-                                    color: activeEntityColor,
-                                    options: options,
-                                    name: name
-                                });
-                            } else if (options.relationshipStatus == "DELETED") {
-                                entityTypeHtml = getWithButton({
-                                    color: activeEntityColor,
-                                    options: options,
-                                    name: name,
-                                    relationship: true
-                                });
-                            }
-                        } else if (options.entityStatus == "DELETED") {
-                            entityTypeHtml = getWithButton({
-                                color: deletedEntityColor,
-                                options: options,
-                                name: name,
-                                entity: true
-                            });
-                        } else {
-                            entityTypeHtml = getdefault({
-                                color: activeEntityColor,
-                                options: options,
-                                name: name
-                            });
-                        }
-                        return entityTypeHtml + "</pre>";
-                    };
+                    }.bind(this);
                 this.ui.searchNode.hide();
                 this.$("[data-id='typeName']").text(typeName);
-                var getElement = function (options) {
-                    var name = options.entityName ? options.entityName : Utils.getName(options, "displayText");
-                    var entityTypeButton = getEntityTypelist(options);
-                    return entityTypeButton;
-                };
-                var buildEntityObj = function (item) {
+                var buildEntityObj = function(item) {
                     var normalized = normalizeEntity(item);
                     var ref = normalized && normalized.guid ? this.referredEntities && this.referredEntities[normalized.guid] : null;
                     var displayText = (ref && (ref.displayText || (ref.attributes && ref.attributes.name))) ||
@@ -349,7 +285,7 @@ define([
                         typeName: typeName
                     });
                 }.bind(this);
-                var buildListItem = function (item) {
+                var buildListItem = function(item) {
                     var name = item.entityName || Utils.getName(item, "displayText");
                     var typeName = item.typeName || "";
                     var displayLabel = typeName ? name + " (" + typeName + ")" : name;
@@ -362,13 +298,13 @@ define([
                     return "<li class='entity-list-item'>" + content + "</li>";
                 };
                 if (_.isArray(data)) {
-                    data = _.map(data, function (item) {
+                    data = _.map(data, function(item) {
                         return buildEntityObj(item);
                     });
                     if (data.length > 1) {
                         this.ui.searchNode.show();
                     }
-                    _.each(_.sortBy(data, "entityName"), function (val) {
+                    _.each(_.sortBy(data, "entityName"), function(val) {
                         var name = val.entityName || Utils.getName(val, "displayText");
                         var searchTarget = (name + " " + (val.typeName || "")).toLowerCase();
                         if (searchString) {
@@ -392,11 +328,12 @@ define([
                 if ($.fn.tooltip) {
                     this.$("[data-id='entityList']").find('[title]').tooltip({
                         placement: 'bottom',
-                        container: 'body'
+                        container: 'body',
+                        template: '<div class="tooltip relationship-tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
                     });
                 }
             },
-            createGraph: function (data) {
+            createGraph: function(data) {
                 //Ref - http://bl.ocks.org/fancellu/2c782394602a93921faff74e594d1bb1
 
                 var that = this,
@@ -409,7 +346,7 @@ define([
                     deletedEntityColor = "#BB5838",
                     defaultEntityColor = "#e0e0e0",
                     selectedNodeColor = "#4a90e2";
-                var getNodeCount = function (node) {
+                var getNodeCount = function(node) {
                     if (!node) {
                         return 0;
                     }
@@ -445,7 +382,7 @@ define([
                 var zoom = d3
                     .zoom()
                     .scaleExtent([0.1, 4])
-                    .on("zoom", function () {
+                    .on("zoom", function() {
                         container.attr("transform", d3.event.transform);
                     });
 
@@ -467,7 +404,7 @@ define([
                     .attr("xoverflow", "visible")
                     .append("svg:path")
                     .attr("d", "M 0,-5 L 10,0 L 0,5")
-                    .attr("fill", function (d) {
+                    .attr("fill", function(d) {
                         return d === "deletedLink" ? deletedEntityColor : activeEntityColor;
                     })
                     .attr("stroke", "none");
@@ -478,7 +415,7 @@ define([
                         "link",
                         d3
                             .forceLink(links)
-                            .id(function (d) {
+                            .id(function(d) {
                                 return d.name;
                             })
                             .distance(150)
@@ -487,45 +424,45 @@ define([
                     .force("center", d3.forceCenter(width / 2, height / 2))
                     .force("collision", d3.forceCollide().radius(50));
 
-                path = container
+                    path = container
                     .append("g")
-                    .selectAll("path")
-                    .data(links)
-                    .enter()
+                        .selectAll("path")
+                        .data(links)
+                        .enter()
                     .append("path")
-                    .attr("class", "relatioship-link")
-                    .attr("marker-end", function (d) {
+                        .attr("class", "relatioship-link")
+                    .attr("marker-end", function(d) {
                         return isAllEntityRelationDeleted({ data: d, type: "link" }) ? "url(#deletedLink)" : "url(#activeLink)";
                     })
-                    .attr("stroke", function (d) {
+                        .attr("stroke", function(d) {
                         return isAllEntityRelationDeleted({ data: d, type: "link" }) ? deletedEntityColor : activeEntityColor;
-                    });
+                        });
 
-                node = container
+                    node = container
                     .append("g")
-                    .selectAll(".node")
-                    .data(nodes)
-                    .enter()
-                    .append("g")
-                    .attr("class", "node")
-                    .on("mousedown", function () {
-                        d3.event.preventDefault();
-                    })
-                    .on("click", function (d) {
-                        if (d3.event.defaultPrevented) return; // ignore drag
-                        if (d && d.value && d.value.guid == that.guid) {
-                            that.ui.boxClose.trigger("click");
-                            return;
-                        }
-                        that.toggleBoxPanel({ el: that.$(".relationship-node-details") });
-                        that.ui.searchNode.data({ obj: d });
-                        $(this)
-                            .find("circle")
-                            .addClass("node-detail-highlight");
-                        that.updateRelationshipDetails({ obj: d });
-                    })
-                    .call(
-                        d3
+                        .selectAll(".node")
+                        .data(nodes)
+                        .enter()
+                        .append("g")
+                        .attr("class", "node")
+                        .on("mousedown", function() {
+                            d3.event.preventDefault();
+                        })
+                        .on("click", function(d) {
+                            if (d3.event.defaultPrevented) return; // ignore drag
+                            if (d && d.value && d.value.guid == that.guid) {
+                                that.ui.boxClose.trigger("click");
+                                return;
+                            }
+                            that.toggleBoxPanel({ el: that.$(".relationship-node-details") });
+                            that.ui.searchNode.data({ obj: d });
+                            $(this)
+                                .find("circle")
+                                .addClass("node-detail-highlight");
+                            that.updateRelationshipDetails({ obj: d });
+                        })
+                        .call(
+                            d3
                             .drag()
                             .on("start", dragstarted)
                             .on("drag", dragged)
@@ -533,105 +470,105 @@ define([
                     );
 
                 node.append("circle")
-                    .attr("r", function () {
+                        .attr("r", function() {
                         return 25;
-                    })
-                    .attr("fill", function (d) {
+                        })
+                        .attr("fill", function(d) {
                         if (d.name === that.entity.typeName) {
-                            return selectedNodeColor;
-                        } else {
+                                    return selectedNodeColor;
+                            } else {
                             return isAllEntityRelationDeleted({ data: d, type: "node" }) ? deletedEntityColor : activeEntityColor;
-                        }
-                    })
+                            }
+                        })
                     .attr("stroke", "#fff")
                     .attr("stroke-width", "2px")
                     .style("cursor", "pointer")
-                    .on("click", function (d) {
+                    .on("click", function(d) {
                         if (d && d.value && d.value.guid == that.guid) {
                             return;
                         }
                         that.selectedNodeData = d.value;
                         that.selectedNodeType = d.name;
-
+                        
                         // Show the panel
                         var panel = that.$(".relationship-node-details");
                         panel.removeClass("slide-to-left").addClass("slide-from-left");
-
+                        
                         // Trigger after a small delay to ensure DOM is ready
-                        setTimeout(function () {
+                        setTimeout(function() {
                             panel.removeClass("slide-from-left").addClass("slide-to-left");
                             that.searchNode({ currentTarget: that.ui.searchNode });
                         }, 10);
-                    });
+                        });
 
-                node.append("text")
-                    .attr("x", 0)
-                    .attr("y", 0)
-                    .attr("dy", function () {
-                        return 25 - 17;
-                    })
-                    .attr("text-anchor", "middle")
-                    .style("font-family", "FontAwesome")
-                    .style("font-size", "25px")
-                    .attr("class", "relationship-node-icon")
-                    .text(function (d) {
-                        var iconObj = Enums.graphIcon[d.name];
-                        if (iconObj && iconObj.textContent) {
-                            return iconObj.textContent;
-                        }
-                        if (d && _.isArray(d.value) && d.value.length > 1) {
-                            return "\uf0c5";
-                        }
-                        return "\uf016";
-                    })
-                    .attr("fill", "#fff");
+                    node.append("text")
+                        .attr("x", 0)
+                        .attr("y", 0)
+                        .attr("dy", function() {
+                            return 25 - 17;
+                        })
+                        .attr("text-anchor", "middle")
+                        .style("font-family", "FontAwesome")
+                        .style("font-size", "25px")
+                        .attr("class", "relationship-node-icon")
+                        .text(function(d) {
+                            var iconObj = Enums.graphIcon[d.name];
+                            if (iconObj && iconObj.textContent) {
+                                return iconObj.textContent;
+                            }
+                            if (d && _.isArray(d.value) && d.value.length > 1) {
+                                return "\uf0c5";
+                            }
+                            return "\uf016";
+                        })
+                        .attr("fill", "#fff");
 
-                var countBox = node.append("g");
+                    var countBox = node.append("g");
 
-                countBox
-                    .append("circle")
-                    .attr("cx", 18)
-                    .attr("cy", -20)
-                    .attr("class", "relationship-node-count")
-                    .attr("r", function (d) {
-                        var count = getNodeCount(d);
-                        if (count > 1) {
-                            return 9;
-                        }
-                    });
+                    countBox
+                        .append("circle")
+                        .attr("cx", 18)
+                        .attr("cy", -20)
+                        .attr("class", "relationship-node-count")
+                        .attr("r", function(d) {
+                            var count = getNodeCount(d);
+                            if (count > 1) {
+                                return 9;
+                            }
+                        });
 
-                countBox
-                    .append("text")
-                    .attr("dx", 18)
-                    .attr("dy", -16)
-                    .attr("text-anchor", "middle")
-                    .attr("fill", defaultEntityColor)
-                    .attr("class", "relationship-node-count")
-                    .text(function (d) {
-                        var count = getNodeCount(d);
-                        if (count > 1) {
-                            return count;
-                        }
-                    });
+                    countBox
+                        .append("text")
+                        .attr("dx", 18)
+                        .attr("dy", -16)
+                        .attr("text-anchor", "middle")
+                        .attr("fill", defaultEntityColor)
+                        .attr("class", "relationship-node-count")
+                        .text(function(d) {
+                            var count = getNodeCount(d);
+                            if (count > 1) {
+                                return count;
+                            }
+                        });
 
-                node
-                    .append("text")
-                    .attr("x", -15)
-                    .attr("y", "35")
-                    .attr("class", "relationship-node-label")
-                    .text(function (d) {
-                        return d.name;
-                    });
+                    node
+                        .append("text")
+                        .attr("x", -15)
+                        .attr("y", "35")
+                        .attr("class", "relationship-node-label")
+                        .text(function(d) {
+                            return d.name;
+                        });
 
-                simulation.on("tick", function () {
-                    path.attr("d", function (d) {
+                simulation.on("tick", function() {
+                    path.attr("d", function(d) {
                         var dx = d.target.x - d.source.x,
                             dy = d.target.y - d.source.y,
                             dr = Math.sqrt(dx * dx + dy * dy);
                         return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
                     });
 
-                    node.attr("transform", function (d) {
+                    node.attr("transform", function(d) {
                         return "translate(" + d.x + "," + d.y + ")";
                     });
                 });
@@ -670,7 +607,7 @@ define([
                     }
 
                     return (
-                        _.findIndex(d.value, function (val) {
+                        _.findIndex(d.value, function(val) {
                             if (type == "node") {
                                 return (val.entityStatus || val.status) == "ACTIVE";
                             } else {
@@ -679,7 +616,7 @@ define([
                         }) == -1
                     );
                 }
-                var zoomClick = function () {
+                var zoomClick = function() {
                     var scaleFactor = 0.8;
                     if (this.id === 'zoom_in') {
                         scaleFactor = 1.3;
@@ -689,7 +626,7 @@ define([
 
                 d3.selectAll(this.$('.lineageZoomButton')).on('click', zoomClick);
             },
-            createTable: function () {
+            createTable: function() {
                 this.entityModel = new VEntity({});
                 var table = CommonViewFunction.propertyTable({
                     scope: this,
@@ -702,7 +639,7 @@ define([
                     tableEl: this.ui.relationshipDetailValue
                 });
             },
-            relationshipViewToggle: function (checked) {
+            relationshipViewToggle: function(checked) {
                 var that = this;
 
                 // In the original code: checked = Table, unchecked = Graph
@@ -716,12 +653,12 @@ define([
                     this.ui.relationshipDetailTable.hide();
                     this.ui.relationshipDetailValue.hide();
                     this.ui.relationshipCardsView.show();
-
+                    
                     // Render card view if not already rendered
                     this.ensureCardsView();
-
+                    
                     // Force a re-render after a short delay to ensure DOM is ready
-                    setTimeout(function () {
+                    setTimeout(function() {
                         if (that.relationshipCardsViewInstance) {
                             that.relationshipCardsViewInstance.renderCards();
                         }
@@ -735,7 +672,7 @@ define([
                     this.ui.relationshipDetailTable.show();
                     this.ui.relationshipDetailValue.show();
                     this.ui.relationshipCardsView.hide();
-
+                    
                     // Ensure graph is created if it hasn't been created yet
                     if (this.graphData && !_.isEmpty(this.graphData.links)) {
                         // Clear existing graph and recreate
@@ -746,8 +683,8 @@ define([
                     }
                 }
             },
-
-            onDestroy: function () {
+            
+            onDestroy: function() {
                 if ($.fn.tooltip && this.$el) {
                     this.$el.find('[title]').tooltip('destroy');
                 }

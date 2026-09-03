@@ -51,6 +51,27 @@
     }
 }
 
+.relationship-box,
+.relationship-node-details,
+.relationship-cards-container,
+.box-panel,
+.relationship-tooltip {
+    .tooltip-inner {
+        max-width: 300px;
+        word-break: break-all;
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+}
+
+.tooltip.relationship-tooltip .tooltip-inner,
+.relationship-tooltip .tooltip-inner {
+    max-width: 300px;
+    word-break: break-all;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
 // Relationship Cards Styles - Match React UI structure and breakpoints
 .relationship-cards-container {
     padding: 0;

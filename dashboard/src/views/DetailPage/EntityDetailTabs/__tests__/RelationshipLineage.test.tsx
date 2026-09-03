@@ -25,13 +25,13 @@ var mockCloneDeep: jest.Mock;
 var mockExtractKeyValueFromEntity: jest.Mock;
 var mockCustomSortBy: jest.Mock;
 
-var mockZoomInstance: any;
+var mockZoomInstance: Record<string, unknown>;
 
 jest.mock('@utils/Helper', () => {
 	const actualHelper = jest.requireActual('@utils/Helper');
 	return {
 		...actualHelper,
-		cloneDeep: (...args: any[]) => {
+		cloneDeep: (...args: unknown[]) => {
 			if (mockCloneDeep) {
 				return mockCloneDeep(...args);
 			}
@@ -44,13 +44,13 @@ jest.mock('@utils/Utils', () => {
 	const actualUtils = jest.requireActual('@utils/Utils');
 	return {
 		...actualUtils,
-		extractKeyValueFromEntity: (...args: any[]) => {
+		extractKeyValueFromEntity: (...args: unknown[]) => {
 			if (mockExtractKeyValueFromEntity) {
 				return mockExtractKeyValueFromEntity(...args);
 			}
 			return actualUtils.extractKeyValueFromEntity(...args);
 		},
-		customSortBy: (...args: any[]) => {
+		customSortBy: (...args: unknown[]) => {
 			if (mockCustomSortBy) {
 				return mockCustomSortBy(...args);
 			}
@@ -61,7 +61,7 @@ jest.mock('@utils/Utils', () => {
 
 // Mock D3 with proper hoisting
 jest.mock('d3', () => {
-	const mockEnterSelection: any = {
+	const mockEnterSelection: Record<string, unknown> = {
 		append: jest.fn(),
 		attr: jest.fn(),
 		text: jest.fn(),
@@ -70,7 +70,7 @@ jest.mock('d3', () => {
 		on: jest.fn()
 	};
 	Object.keys(mockEnterSelection).forEach((key) => {
-		mockEnterSelection[key].mockReturnValue(mockEnterSelection);
+		(mockEnterSelection[key] as jest.Mock).mockReturnValue(mockEnterSelection);
 	});
 
 	const mockTransition = {
@@ -78,12 +78,12 @@ jest.mock('d3', () => {
 		scaleBy: jest.fn().mockReturnThis()
 	};
 
-	const mockZoomInSelection: any = { on: jest.fn() };
-	const mockZoomOutSelection: any = { on: jest.fn() };
-	mockZoomInSelection.on.mockReturnValue(mockZoomInSelection);
-	mockZoomOutSelection.on.mockReturnValue(mockZoomOutSelection);
+	const mockZoomInSelection: Record<string, unknown> = { on: jest.fn() };
+	const mockZoomOutSelection: Record<string, unknown> = { on: jest.fn() };
+	(mockZoomInSelection.on as jest.Mock).mockReturnValue(mockZoomInSelection);
+	(mockZoomOutSelection.on as jest.Mock).mockReturnValue(mockZoomOutSelection);
 
-	const mockSelection: any = {
+	const mockSelection: Record<string, unknown> = {
 		attr: jest.fn(),
 		append: jest.fn(),
 		selectAll: jest.fn(),
@@ -99,17 +99,17 @@ jest.mock('d3', () => {
 	};
 	Object.keys(mockSelection).forEach((key) => {
 		if (key === 'enter') {
-			mockSelection[key].mockReturnValue(mockEnterSelection);
+			(mockSelection[key] as jest.Mock).mockReturnValue(mockEnterSelection);
 		} else if (key === 'transition') {
-			mockSelection[key].mockReturnValue(mockTransition);
+			(mockSelection[key] as jest.Mock).mockReturnValue(mockTransition);
 		} else {
-			mockSelection[key].mockReturnValue(mockSelection);
+			(mockSelection[key] as jest.Mock).mockReturnValue(mockSelection);
 		}
 	});
 
 	Object.keys(mockEnterSelection).forEach((key) => {
 		if (typeof mockEnterSelection[key] === 'function') {
-			mockEnterSelection[key].mockReturnValue(mockEnterSelection);
+			(mockEnterSelection[key] as jest.Mock).mockReturnValue(mockEnterSelection);
 		}
 	});
 
@@ -126,7 +126,7 @@ jest.mock('d3', () => {
 	};
 
 	const createMockForceLink = () => {
-		const forceLinkInstance: any = {
+		const forceLinkInstance: Record<string, unknown> = {
 			id: jest.fn().mockImplementation(function () {
 				return forceLinkInstance;
 			}),
@@ -144,9 +144,9 @@ jest.mock('d3', () => {
 	};
 
 	const createMockSimulation = () => {
-		const simulation: any = {
+		const simulation: Record<string, unknown> = {
 			nodes: jest.fn().mockReturnThis(),
-			force: jest.fn((name?: string, forceInstance?: any) => {
+			force: jest.fn((name?: string, forceInstance?: unknown) => {
 				if (name && forceInstance) {
 					if (name === 'link') {
 						simulation.linkForce = forceInstance;
@@ -183,9 +183,9 @@ jest.mock('d3', () => {
 				return [];
 			}
 			const values = Object.values(obj);
-			return values.map((node: any, index: number) => {
-				if (node && typeof node === 'object' && !node.id) {
-					return { ...node, id: node.name || `node-${index}` };
+			return values.map((node: unknown, index: number) => {
+				if (node && typeof node === 'object' && !(node as { id?: string }).id) {
+					return { ...node, id: (node as { name?: string }).name || `node-${index}` };
 				}
 				return node;
 			});
@@ -209,7 +209,7 @@ jest.mock('d3', () => {
 		enumerable: true
 	});
 
-	(globalThis as any).__relationshipLineageD3 = {
+	(globalThis as unknown as Record<string, unknown>).__relationshipLineageD3 = {
 		mockEnterSelection,
 		mockSelection,
 		mockTransition,
@@ -259,14 +259,14 @@ jest.mock('react-router-dom', () => {
 // Mock MUI Components
 jest.mock('@components/muiComponents', () => ({
 	CloseIcon: () => <span data-testid="close-icon">×</span>,
-	LightTooltip: ({ children, title }: any) => (
+	LightTooltip: ({ children, title }: { children: React.ReactNode; title: string }) => (
 		<div data-testid="light-tooltip" title={title}>
 			{children}
 		</div>
 	)
 }));
 
-const rld3 = (globalThis as any).__relationshipLineageD3;
+const rld3 = (globalThis as unknown as Record<string, Record<string, unknown>>).__relationshipLineageD3;
 
 const {
 	mockEnterSelection,
@@ -280,7 +280,7 @@ const mockD3EventObj = rld3.mockD3EventObj;
 
 const theme = createTheme();
 
-const triggerDrawerOpen = (overrides: Partial<{ name: string; value: any[] }> = {}) => {
+const triggerDrawerOpen = (overrides: Partial<{ name: string; value: Record<string, unknown>[] }> = {}) => {
 	const mockNode = {
 		name: 'Process',
 		value: [
@@ -412,17 +412,17 @@ describe('RelationshipLineage', () => {
 		
 		// Initialize mock functions with proper implementations
 		mockCloneDeep = jest.fn((obj) => JSON.parse(JSON.stringify(obj)));
-		mockExtractKeyValueFromEntity = jest.fn((entity: any, key?: string) => {
+		mockExtractKeyValueFromEntity = jest.fn((entity: Record<string, unknown>, key?: string) => {
 			if (key === 'displayText') {
-				return { name: entity?.displayText || entity?.name || entity?.attributes?.name || '' };
+				return { name: entity?.displayText || entity?.name || (entity?.attributes as Record<string, string>)?.name || '' };
 			}
-			return { name: entity?.name || entity?.displayText || entity?.attributes?.name || '' };
+			return { name: entity?.name || entity?.displayText || (entity?.attributes as Record<string, string>)?.name || '' };
 		});
-		mockCustomSortBy = jest.fn((arr: any[], keys: string[]) => {
+		mockCustomSortBy = jest.fn((arr: Record<string, unknown>[], keys: string[]) => {
 			return [...arr].sort((a, b) => {
 				for (const key of keys) {
-					const aVal = a[key] || '';
-					const bVal = b[key] || '';
+					const aVal = (a[key] as string) || '';
+					const bVal = (b[key] as string) || '';
 					if (aVal < bVal) return -1;
 					if (aVal > bVal) return 1;
 				}
@@ -468,7 +468,7 @@ describe('RelationshipLineage', () => {
 		mockEnterSelection.text.mockReturnValue(mockEnterSelection);
 		mockEnterSelection.style.mockReturnValue(mockEnterSelection);
 		mockEnterSelection.call.mockReturnValue(mockEnterSelection);
-		mockEnterSelection.on.mockImplementation((eventName: string, handler?: (data?: any) => void) => {
+		mockEnterSelection.on.mockImplementation((eventName: string, handler?: (data?: unknown) => void) => {
 			if (eventName === 'click' && typeof handler === 'function') {
 				mockEnterSelection.clickHandler = handler;
 			}
@@ -1106,7 +1106,7 @@ describe('RelationshipLineage', () => {
 			expect(screen.getByTestId('relationshipSVG')).toBeInTheDocument();
 		});
 
-		it('should apply deleted-relation class for deleted entities', () => {
+		it('should apply deleted-relation class for deleted entities', async () => {
 			const entityWithDeleted = {
 				guid: 'test-guid-123',
 				typeName: 'DataSet',
@@ -1128,7 +1128,25 @@ describe('RelationshipLineage', () => {
 				</TestWrapper>
 			);
 
-			expect(screen.getByTestId('relationshipSVG')).toBeInTheDocument();
+			triggerDrawerOpen({
+				name: 'deletedProcess',
+				value: [
+					{
+						guid: 'proc-1',
+						typeName: 'Process',
+						displayText: 'Deleted Process',
+						entityStatus: 'DELETED',
+						relationshipStatus: 'DELETED'
+					}
+				]
+			});
+
+			await waitFor(() => {
+				const deletedLink = screen.getByText('Deleted Process (Process)');
+				expect(deletedLink).toBeInTheDocument();
+				expect(deletedLink.closest('li')).toHaveClass('deleted-relation');
+				expect(deletedLink).toHaveClass('text-deleted');
+			});
 		});
 	});
 
@@ -1218,20 +1236,21 @@ describe('RelationshipLineage', () => {
 	});
 
 	describe('Tooltip Rendering', () => {
-		it('should render LightTooltip for relationship nodes in drawer', async () => {
+		it('should render LightTooltip for relationship nodes in drawer with full untruncated title', async () => {
 			render(
 				<TestWrapper>
 					<RelationshipLineage entity={mockEntityWithRelationships} />
 				</TestWrapper>
 			);
 
+			const longName = 'Very Long Entity Display Name For Testing Tooltip Full Text Truncation';
 			const mockNode = {
 				name: 'Process',
 				value: [
 					{
 						guid: 'proc-1',
 						typeName: 'Process',
-						displayText: 'Test Tooltip Name',
+						displayText: longName,
 						entityStatus: 'ACTIVE',
 						relationshipStatus: 'ACTIVE'
 					}
@@ -1246,8 +1265,80 @@ describe('RelationshipLineage', () => {
 
 			await waitFor(() => {
 				const tooltips = screen.getAllByTestId('light-tooltip');
-				const targetTooltip = tooltips.find(t => t.getAttribute('title') === 'Test Tooltip Name (Process)');
+				const targetTooltip = tooltips.find(t => t.getAttribute('title') === `${longName} (Process)`);
 				expect(targetTooltip).toBeInTheDocument();
+				expect(targetTooltip).toHaveAttribute('title', `${longName} (Process)`);
+			}, { timeout: 3000 });
+		});
+
+		it('should render LightTooltip with deleted status styling for deleted entity', async () => {
+			render(
+				<TestWrapper>
+					<RelationshipLineage entity={mockEntityWithRelationships} />
+				</TestWrapper>
+			);
+
+			const mockNode = {
+				name: 'Process',
+				value: [
+					{
+						guid: 'proc-deleted',
+						typeName: 'Process',
+						displayText: 'Deleted Process Entity',
+						entityStatus: 'DELETED',
+						relationshipStatus: 'DELETED'
+					}
+				]
+			};
+
+			act(() => {
+				if (mockEnterSelection.clickHandler) {
+					mockEnterSelection.clickHandler(mockNode);
+				}
+			});
+
+			await waitFor(() => {
+				const tooltips = screen.getAllByTestId('light-tooltip');
+				const targetTooltip = tooltips.find(t => t.getAttribute('title') === 'Deleted Process Entity (Process)');
+				expect(targetTooltip).toBeInTheDocument();
+
+				const link = screen.getByText('Deleted Process Entity (Process)');
+				expect(link).toHaveClass('text-deleted');
+				expect(link.closest('li')).toHaveClass('deleted-relation');
+			}, { timeout: 3000 });
+		});
+
+		it('should render LightTooltip without typeName in parentheses when typeName is missing', async () => {
+			render(
+				<TestWrapper>
+					<RelationshipLineage entity={mockEntityWithRelationships} />
+				</TestWrapper>
+			);
+
+			const mockNode = {
+				name: 'Process',
+				value: [
+					{
+						guid: 'proc-no-type',
+						typeName: '',
+						displayText: 'Entity Without Type',
+						entityStatus: 'ACTIVE',
+						relationshipStatus: 'ACTIVE'
+					}
+				]
+			};
+
+			act(() => {
+				if (mockEnterSelection.clickHandler) {
+					mockEnterSelection.clickHandler(mockNode);
+				}
+			});
+
+			await waitFor(() => {
+				const tooltips = screen.getAllByTestId('light-tooltip');
+				const targetTooltip = tooltips.find(t => t.getAttribute('title') === 'Entity Without Type');
+				expect(targetTooltip).toBeInTheDocument();
+				expect(targetTooltip).toHaveAttribute('title', 'Entity Without Type');
 			}, { timeout: 3000 });
 		});
 	});
@@ -1277,7 +1368,7 @@ describe('RelationshipLineage', () => {
 
 			render(
 				<TestWrapper>
-					<RelationshipLineage entity={entityWithNull as any} />
+					<RelationshipLineage entity={entityWithNull as unknown as Record<string, unknown>} />
 				</TestWrapper>
 			);
 
@@ -1293,7 +1384,7 @@ describe('RelationshipLineage', () => {
 
 			render(
 				<TestWrapper>
-					<RelationshipLineage entity={entityWithUndefined as any} />
+					<RelationshipLineage entity={entityWithUndefined as unknown as Record<string, unknown>} />
 				</TestWrapper>
 			);
 
@@ -1343,7 +1434,7 @@ describe('RelationshipLineage', () => {
 
 			render(
 				<TestWrapper>
-					<RelationshipLineage entity={entityWithoutTypeName as any} />
+					<RelationshipLineage entity={entityWithoutTypeName as unknown as Record<string, unknown>} />
 				</TestWrapper>
 			);
 
