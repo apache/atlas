@@ -138,8 +138,6 @@ const formatRelativeTime = (raw: unknown): string => {
 	return formatCreatedRelativeFromMs(ms);
 };
 
-
-
 const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesListProps) => {
 	const navigate = useNavigate();
 

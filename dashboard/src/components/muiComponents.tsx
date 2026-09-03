@@ -55,7 +55,7 @@ import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import { TooltipProps } from "@mui/material/Tooltip";
 import { SxProps, Theme } from "@mui/material/styles";
 
-const LightTooltip = styled(({ className, ...props }: any) => (
+const LightTooltip = styled(({ className, ...props }: TooltipProps) => (
   <Tooltip
     sx={{ transition: "none" }}
     {...props}
@@ -96,6 +96,9 @@ const OverflowTooltip = ({ title, children, wrapperSx, wrapperClassName, ...prop
     checkOverflow();
     const element = textElementRef.current;
     if (element) {
+      // One ResizeObserver per instance — acceptable for small lists (e.g. dashboard widgets).
+      // If this component is used in large virtualized lists, consider lifting a shared
+      // ResizeObserver to a context provider to reduce observer count.
       const resizeObserver = new ResizeObserver(() => checkOverflow());
       resizeObserver.observe(element);
       return () => resizeObserver.disconnect();

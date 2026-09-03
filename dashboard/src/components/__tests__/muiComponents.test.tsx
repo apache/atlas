@@ -71,12 +71,12 @@ describe('muiComponents', () => {
 	})
 
 	describe('OverflowTooltip', () => {
-		let triggerResize: any
+		let triggerResize: ResizeObserverCallback | undefined
 		const originalResizeObserver = global.ResizeObserver
 
 		beforeAll(() => {
 			global.ResizeObserver = class {
-				constructor(callback: any) {
+				constructor(callback: ResizeObserverCallback) {
 					triggerResize = callback
 				}
 				observe = jest.fn()
@@ -111,7 +111,7 @@ describe('muiComponents', () => {
 			Object.defineProperty(span, 'clientWidth', { configurable: true, value: 100 })
 			
 			act(() => {
-				if (triggerResize) triggerResize()
+				if (triggerResize) triggerResize([], {} as ResizeObserver)
 			})
 
 			fireEvent.mouseOver(span)
@@ -134,7 +134,7 @@ describe('muiComponents', () => {
 			
 			// Trigger resize observer callback
 			act(() => {
-				if (triggerResize) triggerResize()
+				if (triggerResize) triggerResize([], {} as ResizeObserver)
 			})
 			
 			fireEvent.mouseOver(span)
