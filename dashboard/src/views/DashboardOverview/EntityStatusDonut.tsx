@@ -20,13 +20,19 @@ import { Paper, Stack, Typography, Box } from "@mui/material";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { numberFormatWithComma } from "@utils/Helper";
-import { getEntityStatusTotals } from "@utils/metricsUtils";
+import { getEntityStatusTotals, getPayloadFromRechartsEvent } from "@utils/metricsUtils";
 import { navigateToSearch } from "@utils/dashboardSearchUtils";
 import { ENTITY_STATUS_DONUT_COLORS as COLORS } from "./dashboardChartPalette";
 
 interface EntityStatusDonutProps {
 	entity: Record<string, unknown> | undefined;
 	isLoading?: boolean;
+}
+
+interface StatusDonutDataItem {
+	name: "Active" | "Shell" | "Deleted";
+	value: number;
+	color: string;
 }
 
 const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) => {
@@ -107,9 +113,10 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 							animationDuration={800}
 							animationEasing="ease-out"
 							onClick={(data: unknown) => {
-								const d = data as { name?: string } | undefined | null;
-								if (d?.name === "Active" || d?.name === "Shell" || d?.name === "Deleted") {
-									handleStatusClick(d.name);
+								const payload = getPayloadFromRechartsEvent<StatusDonutDataItem>(data);
+								const name = payload?.name ?? (data as { name?: "Active" | "Shell" | "Deleted" })?.name;
+								if (name === "Active" || name === "Shell" || name === "Deleted") {
+									handleStatusClick(name);
 								}
 							}}
 						>
