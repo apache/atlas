@@ -504,7 +504,7 @@ public final class OpenSearchAggregationsValidationDriver {
                                                  Map<String, String> indexFieldNameCache,
                                                  Set<String> commonFields, Set<AtlasAttribute> attributes,
                                                  boolean excludeDeleted, boolean includeSubTypes) {
-        return new AggregationContext(query, filter, entityTypes, Collections.emptySet(), commonFields, attributes,
+        return new AggregationContext(query, filter, entityTypes, commonFields, attributes,
                 indexFieldNameCache, excludeDeleted, includeSubTypes);
     }
 

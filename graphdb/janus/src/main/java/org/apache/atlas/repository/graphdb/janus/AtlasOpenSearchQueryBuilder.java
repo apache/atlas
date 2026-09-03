@@ -105,12 +105,6 @@ public class AtlasOpenSearchQueryBuilder {
         return this;
     }
 
-    public AtlasOpenSearchQueryBuilder withClassificationTypeNames(Set<String> classificationTypeNames) {
-        this.classificationTypeNames = classificationTypeNames;
-
-        return this;
-    }
-
     /**
      * @return OpenSearch Query DSL {@code query} clause for discovery (quick search hits and aggregations):
      * Solr edismax-style {@code dis_max} over weighted fields for plain terms and wildcards; structural
@@ -688,7 +682,7 @@ public class AtlasOpenSearchQueryBuilder {
     }
 
     static String toOsField(String indexFieldName) {
-        return AtlasOpenSearchDiscoveryClient.toOpenSearchFieldName(indexFieldName);
+        return AtlasOpenSearchIndexClient.toOpenSearchFieldName(indexFieldName);
     }
 
     private static Map<String, Object> singleKeyMap(String key, Object value) {

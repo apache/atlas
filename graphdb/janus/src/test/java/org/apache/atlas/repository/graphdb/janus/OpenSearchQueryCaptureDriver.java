@@ -93,12 +93,12 @@ public final class OpenSearchQueryCaptureDriver {
         emit("TC8-15", "atlas + owner=team-alpha filter", aggBody, "POST /search/quick aggregation on __typeName");
 
         Map<String, Object> suggestBody = new LinkedHashMap<>();
-        suggestBody.put("query", AtlasOpenSearchDiscoveryClient.buildSuggestionsFilterQuery());
-        suggestBody.put("aggs", AtlasOpenSearchDiscoveryClient.buildSuggestionsTermsAggs(
+        suggestBody.put("query", AtlasOpenSearchIndexClient.buildSuggestionsFilterQuery());
+        suggestBody.put("aggs", AtlasOpenSearchIndexClient.buildSuggestionsTermsAggs(
                 List.of("owner_index", "name_index"), "cust"));
         emit("TC5-01", "cust", suggestBody, "POST /search/suggestions prefixString=cust");
 
-        emitTermsPattern("TC9-05", "cust_", AtlasOpenSearchDiscoveryClient.toTermsIncludePattern("cust_"));
+        emitTermsPattern("TC9-05", "cust_", AtlasOpenSearchIndexClient.toTermsIncludePattern("cust_"));
     }
 
     private static void captureQuickSearch(String testId, String atlasQuery,

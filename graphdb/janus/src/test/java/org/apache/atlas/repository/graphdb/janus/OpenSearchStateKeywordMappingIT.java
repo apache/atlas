@@ -124,8 +124,8 @@ public class OpenSearchStateKeywordMappingIT extends OpenSearchITBase {
         assertTrue(mapping.contains("\"__typeName\""), "mapping should contain __typeName: " + mapping);
         assertTextWithKeywordSubfield(mapping, "__state");
         assertTextWithKeywordSubfield(mapping, "__typeName");
-        assertTrue(AtlasOpenSearchDiscoveryClient.usesKeywordSubfield("__state"));
-        assertTrue(AtlasOpenSearchDiscoveryClient.usesKeywordSubfield("__typeName"));
+        assertTrue(AtlasOpenSearchIndexClient.usesKeywordSubfield("__state"));
+        assertTrue(AtlasOpenSearchIndexClient.usesKeywordSubfield("__typeName"));
     }
 
     private static void deleteRecursively(Path path) throws IOException {

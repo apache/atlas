@@ -196,7 +196,7 @@ public final class OpenSearchSearchWeightValidationDriver {
             cache.put(Constants.STATE_PROPERTY_KEY, indexFields.stateIndexField);
             AggregationContext ctx = new AggregationContext("customer", null,
                     Collections.singleton(typeRegistry.getEntityTypeByName(TYPE_DATASET)),
-                    Collections.emptySet(), Collections.singleton(Constants.ENTITY_TYPE_PROPERTY_KEY),
+                    Collections.singleton(Constants.ENTITY_TYPE_PROPERTY_KEY),
                     Collections.emptySet(), cache, true, true);
             Map<String, List<AtlasAggregationEntry>> metrics = client.getAggregatedMetrics(ctx);
             long typeCount = metrics.getOrDefault(Constants.ENTITY_TYPE_PROPERTY_KEY, Collections.emptyList())

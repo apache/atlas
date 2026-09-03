@@ -37,7 +37,6 @@ import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.Mapping;
-import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.schema.SchemaAction;
 import org.apache.commons.configuration2.Configuration;
 import org.mockito.MockedStatic;
@@ -114,7 +113,7 @@ public class AtlasJanusGraphManagementTest {
     @BeforeMethod
     public void setup() {
         MockitoAnnotations.openMocks(this);
-        AtlasOpenSearchDiscoveryClient.clearKeywordSubfieldFieldsForTests();
+        AtlasOpenSearchIndexClient.clearKeywordSubfieldFieldsForTests();
         database = new AtlasJanusGraphDatabase();
         atlasGraph = database.getGraph();
         management = new AtlasJanusGraphManagement(mockAtlasGraph, mockJanusManagement);
@@ -490,7 +489,7 @@ public class AtlasJanusGraphManagementTest {
             verify(mockJanusManagement).addIndexKey(eq(mockJanusGraphIndex), eq(mockJanusPropertyKey), any());
             verify(mockJanusManagement, never()).addIndexKey(eq(mockJanusGraphIndex), eq(mockJanusPropertyKey),
                     eq(Mapping.STRING.asParameter()));
-            assertTrue(AtlasOpenSearchDiscoveryClient.usesKeywordSubfield("__state"));
+            assertTrue(AtlasOpenSearchIndexClient.usesKeywordSubfield("__state"));
         }
     }
 
@@ -517,7 +516,7 @@ public class AtlasJanusGraphManagementTest {
             verify(mockJanusManagement).addIndexKey(eq(mockJanusGraphIndex), eq(mockJanusPropertyKey), any());
             verify(mockJanusManagement, never()).addIndexKey(eq(mockJanusGraphIndex), eq(mockJanusPropertyKey),
                     eq(Mapping.STRING.asParameter()));
-            assertTrue(AtlasOpenSearchDiscoveryClient.usesKeywordSubfield("__typeName"));
+            assertTrue(AtlasOpenSearchIndexClient.usesKeywordSubfield("__typeName"));
         }
     }
 

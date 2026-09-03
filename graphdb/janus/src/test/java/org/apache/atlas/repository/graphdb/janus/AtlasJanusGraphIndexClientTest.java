@@ -311,7 +311,7 @@ public class AtlasJanusGraphIndexClientTest {
         indexClient.applySearchWeight("testCollection", weightMap);
 
         mockedSolr6Index.verify(Solr6Index::getSolrClient, never());
-        assertEquals(AtlasOpenSearchDiscoveryClient.getSearchWeightByIndexField(), weightMap);
+        assertEquals(AtlasOpenSearchIndexClient.getSearchWeightByIndexField(), weightMap);
     }
 
     @Test

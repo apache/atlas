@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Inputs for OpenSearch-native weighted quick search (C5.5.3).
+ * Inputs for OpenSearch-native weighted quick search.
  */
 public class QuickSearchContext {
     private final String               queryString;

@@ -48,10 +48,10 @@ import java.util.Set;
 /**
  * OpenSearch-native Atlas discovery helper for suggestions and aggregations. Uses
  * {@link OpenSearchClient#search} with terms aggregations and keeps suggestion-field configuration
- * in memory rather than reproducing Solr request-handler setup.
+ * in memory.
  */
-public final class AtlasOpenSearchDiscoveryClient {
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasOpenSearchDiscoveryClient.class);
+public final class AtlasOpenSearchIndexClient {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasOpenSearchIndexClient.class);
 
     private static final String ATLAS_INDEX_NAME_CONF = "atlas.graph.index.search.index-name";
 
@@ -66,7 +66,7 @@ public final class AtlasOpenSearchDiscoveryClient {
     private static volatile Map<String, Integer> searchWeightByIndexField = Collections.emptyMap();
     private static volatile Set<String> keywordSubfieldIndexFields = Collections.emptySet();
 
-    private AtlasOpenSearchDiscoveryClient() {
+    private AtlasOpenSearchIndexClient() {
     }
 
     public static void applySearchWeight(Map<String, Integer> indexFieldName2SearchWeightMap) {
@@ -101,7 +101,6 @@ public final class AtlasOpenSearchDiscoveryClient {
                     .withIncludeSubTypes(quickSearchContext.isIncludeSubTypes())
                     .withCommonIndexFieldNames(quickSearchContext.getIndexFieldNameCache())
                     .withSearchWeights(searchWeightByIndexField)
-                    .withClassificationTypeNames(quickSearchContext.getClassificationTypeNames())
                     .buildDiscoveryQuery();
 
             Map<String, Object> requestBody = new HashMap<>();
@@ -243,7 +242,6 @@ public final class AtlasOpenSearchDiscoveryClient {
                     .withIncludeSubTypes(aggregationContext.isIncludeSubTypes())
                     .withCommonIndexFieldNames(indexFieldNameCache)
                     .withSearchWeights(searchWeightByIndexField)
-                    .withClassificationTypeNames(aggregationContext.getClassificationTypeNames())
                     .buildDiscoveryQuery();
 
             Map<String, Object> aggs                     = new HashMap<>();

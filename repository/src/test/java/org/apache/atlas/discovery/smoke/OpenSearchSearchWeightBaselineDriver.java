@@ -424,7 +424,7 @@ public final class OpenSearchSearchWeightBaselineDriver {
         cache.put(Constants.ENTITY_TYPE_PROPERTY_KEY, indexFields.typeIndexField);
         cache.put(Constants.STATE_PROPERTY_KEY, indexFields.stateIndexField);
 
-        AggregationContext ctx = new AggregationContext("customer", null, types, Collections.emptySet(),
+        AggregationContext ctx = new AggregationContext("customer", null, types,
                 Collections.singleton(Constants.ENTITY_TYPE_PROPERTY_KEY), Collections.emptySet(),
                 cache, true, true);
 

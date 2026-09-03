@@ -56,7 +56,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -170,7 +169,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         String idxBackEnd = configuration != null ? configuration.getString(ApplicationProperties.INDEX_BACKEND_CONF) : null;
 
         if (ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(idxBackEnd)) {
-            return AtlasOpenSearchDiscoveryClient.getAggregatedMetrics(aggregationContext, configuration);
+            return AtlasOpenSearchIndexClient.getAggregatedMetrics(aggregationContext, configuration);
         }
 
         SolrClient solrClient = null;
@@ -280,7 +279,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         String idxBackEnd = configuration != null ? configuration.getString(ApplicationProperties.INDEX_BACKEND_CONF) : null;
 
         if (ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(idxBackEnd)) {
-            return AtlasOpenSearchDiscoveryClient.getSuggestions(prefixString, indexFieldName, configuration);
+            return AtlasOpenSearchIndexClient.getSuggestions(prefixString, indexFieldName, configuration);
         }
 
         SolrClient solrClient = null;
@@ -344,7 +343,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         String idxBackEnd = configuration != null ? configuration.getString(ApplicationProperties.INDEX_BACKEND_CONF) : null;
 
         if (ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(idxBackEnd)) {
-            return AtlasOpenSearchDiscoveryClient.quickSearch(quickSearchContext, configuration);
+            return AtlasOpenSearchIndexClient.quickSearch(quickSearchContext, configuration);
         }
 
         return new QuickSearchResult(Collections.emptyList(), 0L);
@@ -355,7 +354,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         String idxBackEnd = configuration != null ? configuration.getString(ApplicationProperties.INDEX_BACKEND_CONF) : null;
 
         if (ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(idxBackEnd)) {
-            AtlasOpenSearchDiscoveryClient.applySearchWeight(indexFieldName2SearchWeightMap);
+            AtlasOpenSearchIndexClient.applySearchWeight(indexFieldName2SearchWeightMap);
 
             return;
         }
@@ -434,7 +433,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         String idxBackEnd = configuration != null ? configuration.getString(ApplicationProperties.INDEX_BACKEND_CONF) : null;
 
         if (ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(idxBackEnd)) {
-            AtlasOpenSearchDiscoveryClient.applySuggestionFields(suggestionProperties);
+            AtlasOpenSearchIndexClient.applySuggestionFields(suggestionProperties);
 
             return;
         }
@@ -470,7 +469,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         String idxBackEnd = configuration != null ? configuration.getString(ApplicationProperties.INDEX_BACKEND_CONF) : null;
 
         if (ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(idxBackEnd)) {
-            AtlasOpenSearchDiscoveryClient.setKeywordSubfieldIndexFields(indexFieldNames);
+            AtlasOpenSearchIndexClient.setKeywordSubfieldIndexFields(indexFieldNames);
         }
     }
 

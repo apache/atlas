@@ -362,7 +362,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         String encodedName = graph.getIndexFieldName(propertyKey, janusGraphIndex, indexParameters);
 
         if (usesKeywordSubfieldMapping(isStringField, withKeywordSubfield)) {
-            AtlasOpenSearchDiscoveryClient.registerKeywordSubfieldField(encodedName);
+            AtlasOpenSearchIndexClient.registerKeywordSubfieldField(encodedName);
         }
 
         LOG.info("property '{}' is encoded to '{}'.", propertyKey.getName(), encodedName);

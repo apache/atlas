@@ -57,7 +57,7 @@ public class SearchAggregatorImpl implements SearchAggregator {
         postProcessors.add(new ServiceTypeAggregator(searchContext.getTypeRegistry()));
 
         try {
-            AtlasGraphIndexClient graphIndexClient = graph.getGraphIndexClient();
+            AtlasGraphIndexClient graphIndexClient    = graph.getGraphIndexClient();
             Set<AtlasEntityType>  searchForEntityType = searchContext.getEntityTypes();
 
             if (FreeTextSearchProcessor.isOpenSearchIndexBackend()) {
@@ -87,13 +87,8 @@ public class SearchAggregatorImpl implements SearchAggregator {
                 indexFieldNameCache.put(attribute.getQualifiedName(), indexFieldName);
             }
 
-            Set<String> classificationTypeNames = FreeTextSearchProcessor.isOpenSearchIndexBackend()
-                    ? FreeTextSearchProcessor.resolveOpenSearchClassificationTypeNames(searchContext)
-                    : Collections.emptySet();
-
-            AggregationContext aggregatorContext = new AggregationContext(queryString, searchParameters.getEntityFilters(),
-                    searchForEntityType, classificationTypeNames, aggregationFields, aggregationAttributes,
-                    indexFieldNameCache, searchParameters.getExcludeDeletedEntities(), searchParameters.getIncludeSubTypes());
+            AggregationContext aggregatorContext = new AggregationContext(queryString, searchParameters.getEntityFilters(), searchForEntityType,
+                    aggregationFields, aggregationAttributes, indexFieldNameCache, searchParameters.getExcludeDeletedEntities(), searchParameters.getIncludeSubTypes());
 
             Map<String, List<AtlasAggregationEntry>> aggregatedMetrics = graphIndexClient.getAggregatedMetrics(aggregatorContext);
 

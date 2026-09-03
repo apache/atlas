@@ -79,6 +79,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     public static final String SOLR_ZOOKEEPER_URLS       = "atlas.graph.index.search.solr.zookeeper-urls";
     public static final String INDEX_BACKEND_LUCENE      = "lucene";
     public static final String INDEX_BACKEND_ES          = "elasticsearch";
+    public static final String INDEX_BACKEND_OPENSEARCH  = "opensearch";
     public static final String GRAPH_TX_LOG_CONF         = "tx.log-tx";
     public static final String GRAPH_TX_LOG_VERBOSE_CONF = "tx.recovery.verbose";
     public static final String GRAPH_TX_LOG_TTL_CONF     = "log.tx.ttl";
@@ -475,7 +476,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
             Map<String, String> customMap = new HashMap<>(StandardIndexProvider.getAllProviderClasses());
 
-            customMap.put("opensearch", AtlasOpenSearchIndex.class.getName());
+            customMap.put(INDEX_BACKEND_OPENSEARCH, AtlasOpenSearchIndex.class.getName());
 
             ImmutableMap<String, String> immap = ImmutableMap.copyOf(customMap);
 

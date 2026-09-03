@@ -34,10 +34,8 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -48,74 +46,74 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
-public class AtlasOpenSearchDiscoveryClientTest {
+public class AtlasOpenSearchIndexClientTest {
 
     @BeforeMethod
     public void setUp() {
-        AtlasOpenSearchDiscoveryClient.clearKeywordSubfieldFieldsForTests();
-        AtlasOpenSearchDiscoveryClient.applySuggestionFields(Collections.emptyList());
+        AtlasOpenSearchIndexClient.clearKeywordSubfieldFieldsForTests();
+        AtlasOpenSearchIndexClient.applySuggestionFields(Collections.emptyList());
     }
 
     @AfterMethod
     public void tearDown() {
-        AtlasOpenSearchDiscoveryClient.clearKeywordSubfieldFieldsForTests();
-        AtlasOpenSearchDiscoveryClient.applySuggestionFields(Collections.emptyList());
+        AtlasOpenSearchIndexClient.clearKeywordSubfieldFieldsForTests();
+        AtlasOpenSearchIndexClient.applySuggestionFields(Collections.emptyList());
     }
 
     @Test
     public void toTermsIncludePatternEscapesRegexMetacharacters() {
-        assertEquals(AtlasOpenSearchDiscoveryClient.toTermsIncludePattern("cust"), "cust.*");
-        assertEquals(AtlasOpenSearchDiscoveryClient.toTermsIncludePattern("cust-"), "cust\\-.*");
-        assertEquals(AtlasOpenSearchDiscoveryClient.toTermsIncludePattern("cust_"), "cust\\_.*");
-        assertEquals(AtlasOpenSearchDiscoveryClient.toTermsIncludePattern("cust."), "cust\\..*");
-        assertEquals(AtlasOpenSearchDiscoveryClient.toTermsIncludePattern("cust+"), "cust\\+.*");
-        assertEquals(AtlasOpenSearchDiscoveryClient.toTermsIncludePattern("cust*"), "cust\\*.*");
-        assertEquals(AtlasOpenSearchDiscoveryClient.toTermsIncludePattern("cust?"), "cust\\?.*");
-        assertEquals(AtlasOpenSearchDiscoveryClient.toTermsIncludePattern("cust("), "cust\\(.*");
-        assertEquals(AtlasOpenSearchDiscoveryClient.toTermsIncludePattern("cust["), "cust\\[.*");
-        assertEquals(AtlasOpenSearchDiscoveryClient.toTermsIncludePattern("cust\\"), "cust\\\\.*");
+        assertEquals(AtlasOpenSearchIndexClient.toTermsIncludePattern("cust"), "cust.*");
+        assertEquals(AtlasOpenSearchIndexClient.toTermsIncludePattern("cust-"), "cust\\-.*");
+        assertEquals(AtlasOpenSearchIndexClient.toTermsIncludePattern("cust_"), "cust\\_.*");
+        assertEquals(AtlasOpenSearchIndexClient.toTermsIncludePattern("cust."), "cust\\..*");
+        assertEquals(AtlasOpenSearchIndexClient.toTermsIncludePattern("cust+"), "cust\\+.*");
+        assertEquals(AtlasOpenSearchIndexClient.toTermsIncludePattern("cust*"), "cust\\*.*");
+        assertEquals(AtlasOpenSearchIndexClient.toTermsIncludePattern("cust?"), "cust\\?.*");
+        assertEquals(AtlasOpenSearchIndexClient.toTermsIncludePattern("cust("), "cust\\(.*");
+        assertEquals(AtlasOpenSearchIndexClient.toTermsIncludePattern("cust["), "cust\\[.*");
+        assertEquals(AtlasOpenSearchIndexClient.toTermsIncludePattern("cust\\"), "cust\\\\.*");
     }
 
     @Test
     public void toTermsIncludePatternPreservesCase() {
-        assertEquals(AtlasOpenSearchDiscoveryClient.toTermsIncludePattern("Customer"), "Customer.*");
-        assertEquals(AtlasOpenSearchDiscoveryClient.toTermsIncludePattern("CUST"), "CUST.*");
+        assertEquals(AtlasOpenSearchIndexClient.toTermsIncludePattern("Customer"), "Customer.*");
+        assertEquals(AtlasOpenSearchIndexClient.toTermsIncludePattern("CUST"), "CUST.*");
     }
 
     @Test
     public void resolveTermsAggregationFieldUsesKeywordSubfieldWhenRegistered() {
-        AtlasOpenSearchDiscoveryClient.registerKeywordSubfieldField("storm_node.description");
+        AtlasOpenSearchIndexClient.registerKeywordSubfieldField("storm_node.description");
 
-        assertEquals(AtlasOpenSearchDiscoveryClient.resolveTermsAggregationFieldName("storm_node.description"),
+        assertEquals(AtlasOpenSearchIndexClient.resolveTermsAggregationFieldName("storm_node.description"),
                 "storm_node\u2022description.keyword");
     }
 
     @Test
     public void resolveTermsAggregationFieldUsesBaseFieldForStringMapping() {
-        assertEquals(AtlasOpenSearchDiscoveryClient.resolveTermsAggregationFieldName("c55_asset\u2022__s_owner"),
+        assertEquals(AtlasOpenSearchIndexClient.resolveTermsAggregationFieldName("c55_asset\u2022__s_owner"),
                 "c55_asset\u2022__s_owner");
     }
 
     @Test
     public void resolveTermsAggregationFieldUsesKeywordSubfieldWhenRegisteredForEntityType() {
-        AtlasOpenSearchDiscoveryClient.registerKeywordSubfieldField(Constants.ENTITY_TYPE_PROPERTY_KEY);
+        AtlasOpenSearchIndexClient.registerKeywordSubfieldField(Constants.ENTITY_TYPE_PROPERTY_KEY);
 
-        assertEquals(AtlasOpenSearchDiscoveryClient.resolveTermsAggregationFieldName(Constants.ENTITY_TYPE_PROPERTY_KEY),
+        assertEquals(AtlasOpenSearchIndexClient.resolveTermsAggregationFieldName(Constants.ENTITY_TYPE_PROPERTY_KEY),
                 Constants.ENTITY_TYPE_PROPERTY_KEY + ".keyword");
     }
 
     @Test
     public void resolveTermsAggregationFieldUsesNativeKeywordWhenSubfieldNotRegistered() {
-        AtlasOpenSearchDiscoveryClient.clearKeywordSubfieldFieldsForTests();
+        AtlasOpenSearchIndexClient.clearKeywordSubfieldFieldsForTests();
 
-        assertEquals(AtlasOpenSearchDiscoveryClient.resolveTermsAggregationFieldName(Constants.ENTITY_TYPE_PROPERTY_KEY),
+        assertEquals(AtlasOpenSearchIndexClient.resolveTermsAggregationFieldName(Constants.ENTITY_TYPE_PROPERTY_KEY),
                 Constants.ENTITY_TYPE_PROPERTY_KEY);
     }
 
     @Test
     public void buildSuggestionsTermsAggsCreatesOneAggPerField() {
         List<String> fields = Arrays.asList("field_a", "field_b", "field_c");
-        Map<String, Object> aggs = AtlasOpenSearchDiscoveryClient.buildSuggestionsTermsAggs(fields, "cust");
+        Map<String, Object> aggs = AtlasOpenSearchIndexClient.buildSuggestionsTermsAggs(fields, "cust");
 
         assertEquals(aggs.size(), 3);
         assertTrue(aggs.containsKey("sugg_0"));
@@ -131,9 +129,9 @@ public class AtlasOpenSearchDiscoveryClientTest {
 
     @Test
     public void buildSuggestionsFilterQueryExcludesDeletedEntities() {
-        AtlasOpenSearchDiscoveryClient.registerKeywordSubfieldField(Constants.STATE_PROPERTY_KEY);
+        AtlasOpenSearchIndexClient.registerKeywordSubfieldField(Constants.STATE_PROPERTY_KEY);
 
-        Map<String, Object> query = AtlasOpenSearchDiscoveryClient.buildSuggestionsFilterQuery();
+        Map<String, Object> query = AtlasOpenSearchIndexClient.buildSuggestionsFilterQuery();
         Map<String, Object> bool  = (Map<String, Object>) query.get("bool");
         List<Map<String, Object>> mustNot = (List<Map<String, Object>>) bool.get("must_not");
         Map<String, Object> termClause = mustNot.get(0);
@@ -153,8 +151,8 @@ public class AtlasOpenSearchDiscoveryClientTest {
                 bucket("customer", 5L),
                 bucket("customer_team", 3L));
 
-        AtlasOpenSearchDiscoveryClient.mergeTermBuckets(termsMap, nameBuckets);
-        AtlasOpenSearchDiscoveryClient.mergeTermBuckets(termsMap, ownerBuckets);
+        AtlasOpenSearchIndexClient.mergeTermBuckets(termsMap, nameBuckets);
+        AtlasOpenSearchIndexClient.mergeTermBuckets(termsMap, ownerBuckets);
 
         List<String> top = AtlasJanusGraphIndexClient.getTopTerms(termsMap);
 
@@ -173,7 +171,7 @@ public class AtlasOpenSearchDiscoveryClientTest {
         aggregations.put("sugg_1", aggResult(bucket("alpha", 2L), bucket("gamma", 4L)));
 
         Map<String, AtlasJanusGraphIndexClient.TermFreq> terms =
-                AtlasOpenSearchDiscoveryClient.collectTermsFromAggregations(
+                AtlasOpenSearchIndexClient.collectTermsFromAggregations(
                         aggregations, new LinkedHashSet<>(Arrays.asList("sugg_0", "sugg_1")));
 
         assertEquals(terms.get("alpha").getFreq(), 5L);
@@ -195,10 +193,10 @@ public class AtlasOpenSearchDiscoveryClientTest {
         try (MockedStatic<AtlasOpenSearchIndex> mockedIndex = Mockito.mockStatic(AtlasOpenSearchIndex.class)) {
             mockedIndex.when(AtlasOpenSearchIndex::getOpenSearchClient).thenReturn(mockClient);
 
-            AtlasOpenSearchDiscoveryClient.applySuggestionFields(
+            AtlasOpenSearchIndexClient.applySuggestionFields(
                     Arrays.asList("owner_field", "name_field"));
 
-            List<String> result = AtlasOpenSearchDiscoveryClient.getSuggestions("team", null, null);
+            List<String> result = AtlasOpenSearchIndexClient.getSuggestions("team", null, null);
 
             verify(mockClient, times(1)).search(any(), any(), eq(false));
             assertFalse(result.isEmpty());
