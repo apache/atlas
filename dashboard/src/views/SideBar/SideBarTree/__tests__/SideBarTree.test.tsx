@@ -75,7 +75,7 @@ jest.mock('@redux/slice/glossarySlice', () => ({
 }))
 
 jest.mock('@components/ImportDialog', () => {
-	return function MockImportDialog(props: any) {
+	return function MockImportDialog(props: Record<string, unknown>) {
 		return props.open ? (
 			<div data-testid="import-dialog">
 				<button
@@ -91,37 +91,37 @@ jest.mock('@components/ImportDialog', () => {
 })
 
 jest.mock('@views/Classification/ClassificationForm', () => {
-	return function MockClassificationForm(props: any) {
+	return function MockClassificationForm(props: Record<string, unknown>) {
 		return props.open ? <div data-testid="classification-form">Classification Form</div> : null
 	}
 })
 
 jest.mock('@views/Glossary/AddUpdateGlossaryForm', () => {
-	return function MockAddUpdateGlossaryForm(props: any) {
+	return function MockAddUpdateGlossaryForm(props: Record<string, unknown>) {
 		return props.open ? <div data-testid="glossary-form">Glossary Form</div> : null
 	}
 })
 
 jest.mock('@components/Treeicons', () => {
-	return function MockTreeIcons(props: any) {
+	return function MockTreeIcons(props: Record<string, unknown>) {
 		return <div data-testid="tree-icons">Tree Icons</div>
 	}
 })
 
 jest.mock('@components/TreeNodeIcons', () => {
-	return function MockTreeNodeIcons(props: any) {
+	return function MockTreeNodeIcons(props: Record<string, unknown>) {
 		return <div data-testid="tree-node-icons">TreeNode Icons</div>
 	}
 })
 
 jest.mock('@components/SkeletonLoader', () => {
-	return function MockSkeletonLoader(props: any) {
+	return function MockSkeletonLoader(props: Record<string, unknown>) {
 		return <div data-testid="skeleton-loader">Loading...</div>
 	}
 })
 
 jest.mock('@components/TreeSkeletonLoader', () => {
-	return function MockTreeSkeletonLoader(props: any) {
+	return function MockTreeSkeletonLoader(props: Record<string, unknown>) {
 		return <div data-testid="tree-skeleton-loader" data-count={props.count}>Loading Tree Skeleton...</div>
 	}
 })
@@ -129,7 +129,7 @@ jest.mock('@components/TreeSkeletonLoader', () => {
 // Mock MUI X Tree components - following pattern from FormTreeView.test.tsx
 jest.mock('@mui/x-tree-view', () => {
 	const React = require('react')
-	const SimpleTreeView = ({ children, expandedItems, onExpandedItemsChange }: any) => {
+	const SimpleTreeView = ({ children, expandedItems, onExpandedItemsChange }: Record<string, unknown>) => {
 		return <div data-testid="simple-tree-view" data-expanded-items={JSON.stringify(expandedItems)}>{children}</div>
 	}
 	const useTreeItemState = () => ({
@@ -147,8 +147,8 @@ jest.mock('@mui/x-tree-view', () => {
 jest.mock('@mui/x-tree-view/TreeItem', () => {
 	const React = require('react')
 	const { useTreeItemState } = require('@mui/x-tree-view')
-	const TreeItem = ({ children, itemId, label, sx, ContentComponent, ...props }: any) => {
-		const classes = { root: '', iconContainer: '', label: '' } as any
+	const TreeItem = ({ children, itemId, label, sx, ContentComponent, ...props }: Record<string, unknown>) => {
+		const classes = { root: '', iconContainer: '', label: '' } as unknown as Record<string, unknown>
 		const Content = ContentComponent ? (
 			<ContentComponent classes={classes} className="custom-content-root" itemId={itemId} label={label} />
 		) : (
@@ -170,20 +170,20 @@ jest.mock('@mui/x-tree-view/TreeItem', () => {
 })
 
 jest.mock('@components/muiComponents', () => ({
-	MoreVertIcon: ({ onClick, ...props }: any) => (
+	MoreVertIcon: ({ onClick, ...props }: Record<string, unknown>) => (
 		<div data-testid="more-vert-icon" onClick={onClick} {...props}>More</div>
 	),
-	LightTooltip: ({ children, title, disableHoverListener }: any) => <div title={title} data-testid="light-tooltip" data-disabled={disableHoverListener}>{children}</div>,
+	LightTooltip: ({ children, title, disableHoverListener }: Record<string, unknown>) => <div title={title} data-testid="light-tooltip" data-disabled={disableHoverListener}>{children}</div>,
 	FileDownloadIcon: () => <div data-testid="file-download-icon">Download</div>,
 	FormatListBulletedIcon: () => <div data-testid="format-list-icon">List</div>,
-	AccountTreeIcon: ({ onClick, ...props }: any) => (
+	AccountTreeIcon: ({ onClick, ...props }: Record<string, unknown>) => (
 		<div data-testid="account-tree-icon" onClick={onClick} {...props}>Tree</div>
 	),
 	FileUploadIcon: () => <div data-testid="file-upload-icon">Upload</div>,
-	Menu: ({ children, open, onClose, anchorEl }: any) => (
+	Menu: ({ children, open, onClose, anchorEl }: Record<string, unknown>) => (
 		open ? <div data-testid="menu" onClick={onClose}>{children}</div> : null
 	),
-	MenuItem: ({ children, onClick, disabled, ...props }: any) => (
+	MenuItem: ({ children, onClick, disabled, ...props }: Record<string, unknown>) => (
 		<div
 			data-testid="menu-item"
 			onClick={disabled ? undefined : onClick}
@@ -193,9 +193,9 @@ jest.mock('@components/muiComponents', () => ({
 			{children}
 		</div>
 	),
-	ListItemIcon: ({ children }: any) => <div data-testid="list-item-icon">{children}</div>,
-	Typography: ({ children }: any) => <div>{children}</div>,
-	IconButton: ({ children, onClick, disabled }: any) => (
+	ListItemIcon: ({ children }: Record<string, unknown>) => <div data-testid="list-item-icon">{children}</div>,
+	Typography: ({ children }: Record<string, unknown>) => <div>{children}</div>,
+	IconButton: ({ children, onClick, disabled }: Record<string, unknown>) => (
 		<button data-testid="icon-button" onClick={onClick} disabled={disabled}>
 			{children}
 		</button>
@@ -203,7 +203,7 @@ jest.mock('@components/muiComponents', () => ({
 }))
 
 jest.mock('@utils/Muiutils', () => ({
-	AntSwitch: ({ onClick, inputProps, ...props }: any) => (
+	AntSwitch: ({ onClick, inputProps, ...props }: Record<string, unknown>) => (
 		<div data-testid="ant-switch" onClick={onClick} {...props}>Switch</div>
 	)
 }))
@@ -220,13 +220,13 @@ jest.mock('@mui/icons-material/Refresh', () => ({
 
 jest.mock('@mui/icons-material/LaunchOutlined', () => ({
 	__esModule: true,
-	default: ({ onClick }: any) => <div data-testid="launch-icon" onClick={onClick}>Launch</div>
+	default: ({ onClick }: Record<string, unknown>) => <div data-testid="launch-icon" onClick={onClick}>Launch</div>
 }))
 
 
 jest.mock('@mui/material/Stack', () => ({
 	__esModule: true,
-	default: ({ children, className, sx }: any) => (
+	default: ({ children, className, sx }: Record<string, unknown>) => (
 		<div className={className} style={sx}>{children}</div>
 	)
 }))
@@ -237,7 +237,7 @@ describe('SideBarTree', () => {
 	const mockGetBusinessMetadataImportTmpl = getBusinessMetadataImportTmpl as jest.MockedFunction<typeof getBusinessMetadataImportTmpl>
 	const mockGetGlossaryImportTmpl = getGlossaryImportTmpl as jest.MockedFunction<typeof getGlossaryImportTmpl>
 
-	const createMockStore = (initialState: any = {}) => {
+	const createMockStore = (initialState: Record<string, unknown> = {}) => {
 		return configureStore({
 			reducer: {
 				savedSearch: (state = initialState.savedSearch || { savedSearchData: [] }) => state,
@@ -262,7 +262,7 @@ describe('SideBarTree', () => {
 		}
 	]
 
-	const renderComponent = (props: any = {}, storeState: any = {}, initialEntries = ['/']) => {
+	const renderComponent = (props: Record<string, unknown> = {}, storeState: Record<string, unknown> = {}, initialEntries = ['/']) => {
 		const store = createMockStore(storeState)
 
 		return render(
@@ -287,7 +287,7 @@ describe('SideBarTree', () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks()
-		mockFetchGlossaryData.mockReturnValue({ type: 'glossary/fetchGlossaryData' } as any)
+		mockFetchGlossaryData.mockReturnValue({ type: 'glossary/fetchGlossaryData' } as unknown as Record<string, unknown>)
 		global.URL.createObjectURL = jest.fn(() => 'blob:url')
 		global.URL.revokeObjectURL = jest.fn()
 
@@ -569,7 +569,7 @@ describe('SideBarTree', () => {
 		it('should download Business Metadata template', async () => {
 			mockGetBusinessMetadataImportTmpl.mockResolvedValue({
 				data: 'template content'
-			} as any)
+			} as unknown as Record<string, unknown>)
 
 			// Mock createElement for link creation
 			const mockLink = {
@@ -580,10 +580,10 @@ describe('SideBarTree', () => {
 			const originalCreateElement = document.createElement
 			document.createElement = jest.fn((tagName: string) => {
 				if (tagName === 'a') {
-					return mockLink as any
+					return mockLink as unknown as Record<string, unknown>
 				}
 				return originalCreateElement.call(document, tagName)
-			}) as any
+			}) as unknown as Record<string, unknown>
 
 			renderComponent({ treeName: 'Entities' })
 
@@ -616,7 +616,7 @@ describe('SideBarTree', () => {
 		it('should download Glossary template', async () => {
 			mockGetGlossaryImportTmpl.mockResolvedValue({
 				data: 'template content'
-			} as any)
+			} as unknown as Record<string, unknown>)
 
 			// Mock createElement for link creation
 			const mockLink = {
@@ -627,10 +627,10 @@ describe('SideBarTree', () => {
 			const originalCreateElement = document.createElement
 			document.createElement = jest.fn((tagName: string) => {
 				if (tagName === 'a') {
-					return mockLink as any
+					return mockLink as unknown as Record<string, unknown>
 				}
 				return originalCreateElement.call(document, tagName)
-			}) as any
+			}) as unknown as Record<string, unknown>
 
 			renderComponent({
 				treeName: 'Glossary',
@@ -1684,10 +1684,10 @@ describe('SideBarTree', () => {
 			const originalCreateElement = document.createElement
 			document.createElement = jest.fn((tagName: string) => {
 				if (tagName === 'a') {
-					return mockLink as any
+					return mockLink as unknown as Record<string, unknown>
 				}
 				return originalCreateElement.call(document, tagName)
-			}) as any
+			}) as unknown as Record<string, unknown>
 
 			renderComponent({ treeName: 'Entities' })
 
@@ -1720,7 +1720,7 @@ describe('SideBarTree', () => {
 		})
 
 		it('should handle empty API response', async () => {
-			mockGetBusinessMetadataImportTmpl.mockResolvedValue({ data: '' } as any)
+			mockGetBusinessMetadataImportTmpl.mockResolvedValue({ data: '' } as unknown as Record<string, unknown>)
 
 			const mockLink = {
 				href: '',
@@ -1730,10 +1730,10 @@ describe('SideBarTree', () => {
 			const originalCreateElement = document.createElement
 			document.createElement = jest.fn((tagName: string) => {
 				if (tagName === 'a') {
-					return mockLink as any
+					return mockLink as unknown as Record<string, unknown>
 				}
 				return originalCreateElement.call(document, tagName)
-			}) as any
+			}) as unknown as Record<string, unknown>
 
 			renderComponent({ treeName: 'Entities' })
 

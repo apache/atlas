@@ -23,8 +23,8 @@ import { TextEncoder, TextDecoder } from 'util';
 Object.assign(global, { TextDecoder, TextEncoder });
 
 // Mock ResizeObserver
-(global as any).ResizeObserver = class ResizeObserver {
-  constructor(cb: any) {
+(global as unknown as Record<string, unknown>).ResizeObserver = class ResizeObserver {
+  constructor(cb: Record<string, unknown>) {
     this.callback = cb;
   }
   
@@ -44,8 +44,8 @@ Object.assign(global, { TextDecoder, TextEncoder });
 };
 
 // Mock IntersectionObserver
-(global as any).IntersectionObserver = class IntersectionObserver {
-  constructor(cb: any) {
+(global as unknown as Record<string, unknown>).IntersectionObserver = class IntersectionObserver {
+  constructor(cb: Record<string, unknown>) {
     this.callback = cb;
   }
   
@@ -98,7 +98,7 @@ Object.defineProperty(window, 'getComputedStyle', {
 HTMLCanvasElement.prototype.getContext = jest.fn();
 
 // Polyfill structuredClone for Jest environment
-(global as any).structuredClone = (global as any).structuredClone || ((obj: any) => {
+(global as unknown as Record<string, unknown>).structuredClone = (global as unknown as Record<string, unknown>).structuredClone || ((obj: Record<string, unknown>) => {
   return JSON.parse(JSON.stringify(obj));
 });
 

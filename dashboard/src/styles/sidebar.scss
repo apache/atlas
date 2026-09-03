@@ -528,3 +528,8 @@ button.MuiButtonBase-root.MuiIconButton-root.MuiIconButton-sizeSmall.tree-item-m
 .sidebar-menu-paper {
   transition: none !important;
 }
+
+.tree-skeleton-item {
+  border-radius: 4px;
+  background-color: var(--skeleton-bg, rgba(255,255,255,0.08));
+}

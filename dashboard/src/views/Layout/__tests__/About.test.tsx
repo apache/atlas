@@ -31,7 +31,7 @@ import * as reducerHook from '@hooks/reducerHook'
 // Mock SkeletonLoader component
 jest.mock('@components/SkeletonLoader', () => ({
 	__esModule: true,
-	default: ({ count, animation, variant, width, sx }: any) => (
+	default: ({ count, animation, variant, width, sx }: Record<string, unknown>) => (
 		<div 
 			data-testid="skeleton-loader"
 			data-count={count}
@@ -47,7 +47,7 @@ jest.mock('@components/SkeletonLoader', () => ({
 
 // Mock MUI components
 jest.mock('@mui/material', () => ({
-	Stack: ({ children, spacing, direction, ...props }: any) => (
+	Stack: ({ children, spacing, direction, ...props }: Record<string, unknown>) => (
 		<div 
 			data-testid={direction === 'column' ? 'stack-column' : 'stack'}
 			data-spacing={spacing}
@@ -57,7 +57,7 @@ jest.mock('@mui/material', () => ({
 			{children}
 		</div>
 	),
-	Typography: ({ children, variant, color, ...props }: any) => (
+	Typography: ({ children, variant, color, ...props }: Record<string, unknown>) => (
 		<div 
 			data-testid={`typography-${variant}`}
 			data-variant={variant}
@@ -67,12 +67,12 @@ jest.mock('@mui/material', () => ({
 			{children}
 		</div>
 	),
-	List: ({ children, dense, ...props }: any) => (
+	List: ({ children, dense, ...props }: Record<string, unknown>) => (
 		<div data-testid="list" data-dense={dense} {...props}>
 			{children}
 		</div>
 	),
-	ListItem: ({ children, button, component, href, target, ...props }: any) => (
+	ListItem: ({ children, button, component, href, target, ...props }: Record<string, unknown>) => (
 		<div 
 			data-testid="list-item"
 			data-button={button}
@@ -84,7 +84,7 @@ jest.mock('@mui/material', () => ({
 			{children}
 		</div>
 	),
-	ListItemText: ({ primary, ...props }: any) => (
+	ListItemText: ({ primary, ...props }: Record<string, unknown>) => (
 		<div data-testid="list-item-text" data-primary={primary} {...props}>
 			{primary}
 		</div>

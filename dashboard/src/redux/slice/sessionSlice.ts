@@ -63,7 +63,7 @@ const sessionInitialState: SessionState = {
   },
   versionData: {
     loading: false,
-    data: null,
+    data: null as Record<string, unknown> | null,
     error: null
   }
 };
@@ -90,11 +90,12 @@ const sessionSlice = createSlice({
       builder.addCase(fetchSessionData.rejected, (state, action) => {
         state.sessionObj = {
           loading: false,
-          data: null,
+          data: null as Record<string, unknown> | null,
           error: (action.payload as string) || action.error?.message || 'An error occurred'
         };
       }),
       builder.addCase(fetchVersionData.pending, (state) => {
+        // Preserve existing state.versionData.data on pending (stale-while-revalidate)
         state.versionData.loading = true;
         state.versionData.error = null;
       }),
@@ -111,7 +112,7 @@ const sessionSlice = createSlice({
       builder.addCase(fetchVersionData.rejected, (state, action) => {
         state.versionData = {
           loading: false,
-          data: null,
+          data: null as Record<string, unknown> | null,
           error: (action.payload as string) || action.error?.message || 'An error occurred'
         };
       });
