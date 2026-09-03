@@ -66,30 +66,24 @@ const MessageConsumptionChart = memo(
 				if (!row) return null;
 				return (
 					<Box
-						sx={{
-							p: 1.5,
-							bgcolor: "background.paper",
-							borderRadius: 1,
-							boxShadow: 2,
-							minWidth: 160,
-						}}
+						className="message-consumption-chart-box-33"
 					>
-						<Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
+						<Typography variant="body2" fontWeight={600} className="classification-distribution-card-typography-10">
 							{row.period}
 						</Typography>
-						<Typography variant="caption" display="block" sx={{ color: CREATES_COLOR }}>
+						<Typography variant="caption" display="block" className="message-consumption-chart-typography-34">
 							Creates: {numberFormatWithComma(row.creates)}
 						</Typography>
-						<Typography variant="caption" display="block" sx={{ color: UPDATES_COLOR }}>
+						<Typography variant="caption" display="block" className="message-consumption-chart-typography-35">
 							Updates: {numberFormatWithComma(row.updates)}
 						</Typography>
-						<Typography variant="caption" display="block" sx={{ color: DELETES_COLOR }}>
+						<Typography variant="caption" display="block" className="message-consumption-chart-typography-36">
 							Deletes: {numberFormatWithComma(row.deletes)}
 						</Typography>
-						<Typography variant="caption" display="block" sx={{ color: "#6c757d", mt: 0.5 }}>
+						<Typography variant="caption" display="block" className="message-consumption-chart-typography-37">
 							Messages processed: {numberFormatWithComma(row.count)}
 						</Typography>
-						<Typography variant="caption" display="block" sx={{ color: "#6c757d" }}>
+						<Typography variant="caption" display="block" className="message-consumption-chart-typography-38">
 							Avg time (ms): {numberFormatWithComma(row.avgTime)}
 						</Typography>
 					</Box>
@@ -112,61 +106,46 @@ const MessageConsumptionChart = memo(
 			<Box
 				role={chartAriaLabel ? "region" : undefined}
 				aria-label={chartAriaLabel}
-				sx={{ minHeight: 260, height: 260, width: "100%", minWidth: 280 }}
+				className="message-consumption-chart-box-39"
 			>
 				<Stack
 					direction="row"
 					spacing={2}
-					sx={{ mb: 1, flexWrap: "wrap" }}
+					className="entity-type-bar-chart-stack-28"
 					aria-label="Chart legend"
 				>
 					<Stack direction="row" alignItems="center" spacing={0.75}>
 						<Box
-							sx={{
-								width: 10,
-								height: 10,
-								borderRadius: "50%",
-								backgroundColor: CREATES_COLOR,
-							}}
+							className="message-consumption-chart-box-40"
 							aria-hidden
 						/>
 						<Typography
 							variant="caption"
-							sx={{ color: "#6c757d", fontSize: "0.8125rem" }}
+							className="entity-type-bar-chart-typography-30"
 						>
 							Creates
 						</Typography>
 					</Stack>
 					<Stack direction="row" alignItems="center" spacing={0.75}>
 						<Box
-							sx={{
-								width: 10,
-								height: 10,
-								borderRadius: "50%",
-								backgroundColor: UPDATES_COLOR,
-							}}
+							className="message-consumption-chart-box-41"
 							aria-hidden
 						/>
 						<Typography
 							variant="caption"
-							sx={{ color: "#6c757d", fontSize: "0.8125rem" }}
+							className="entity-type-bar-chart-typography-30"
 						>
 							Updates
 						</Typography>
 					</Stack>
 					<Stack direction="row" alignItems="center" spacing={0.75}>
 						<Box
-							sx={{
-								width: 10,
-								height: 10,
-								borderRadius: "50%",
-								backgroundColor: DELETES_COLOR,
-							}}
+							className="message-consumption-chart-box-42"
 							aria-hidden
 						/>
 						<Typography
 							variant="caption"
-							sx={{ color: "#6c757d", fontSize: "0.8125rem" }}
+							className="entity-type-bar-chart-typography-30"
 						>
 							Deletes
 						</Typography>
@@ -235,11 +214,7 @@ const MessageConsumptionChart = memo(
 								position="top"
 								offset={8}
 								formatter={(v: unknown) => (typeof v === "number" ? numberFormatWithComma(v) : "")}
-								style={{
-									fontSize: 11,
-									fontWeight: 600,
-									fill: "#374151",
-								}}
+								className="message-consumption-chart-element-43"
 							/>
 							{data.map((_, index) => (
 								<Cell key={`deletes-${index}`} fill={DELETES_COLOR} />

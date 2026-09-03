@@ -33,7 +33,7 @@ jest.mock('react-quill-new', () => {
   const React = require('react');
   return {
     __esModule: true,
-    default: React.forwardRef(({ value, onChange }: any, ref: any) => (
+    default: React.forwardRef(({ value, onChange }: any, ref: Record<string, unknown>) => (
       <textarea
         ref={ref}
         value={value || ''}
@@ -47,7 +47,7 @@ jest.mock('react-quill-new', () => {
 // Mock lazy-loaded components
 jest.mock('@views/Layout/Header', () => ({
   __esModule: true,
-  default: ({ handleOpenModal, handleOpenAboutModal }: any) => (
+  default: ({ handleOpenModal, handleOpenAboutModal }: Record<string, unknown>) => (
     <div data-testid="header">
       <button onClick={handleOpenModal}>Open Modal</button>
       <button onClick={handleOpenAboutModal}>Open About</button>
@@ -57,7 +57,7 @@ jest.mock('@views/Layout/Header', () => ({
 
 jest.mock('../SideBarTree/EntitiesTree', () => ({
   __esModule: true,
-  default: ({ sideBarOpen, loading, searchTerm }: any) => (
+  default: ({ sideBarOpen, loading, searchTerm }: Record<string, unknown>) => (
     <div data-testid="entities-tree">
       Entities Tree - Open: {sideBarOpen.toString()} - Search: {searchTerm}
     </div>
@@ -66,7 +66,7 @@ jest.mock('../SideBarTree/EntitiesTree', () => ({
 
 jest.mock('../SideBarTree/ClassificationTree', () => ({
   __esModule: true,
-  default: ({ sideBarOpen, loading, searchTerm }: any) => (
+  default: ({ sideBarOpen, loading, searchTerm }: Record<string, unknown>) => (
     <div data-testid="classification-tree">
       Classification Tree - Open: {sideBarOpen.toString()} - Search: {searchTerm}
     </div>
@@ -75,7 +75,7 @@ jest.mock('../SideBarTree/ClassificationTree', () => ({
 
 jest.mock('../SideBarTree/BusinessMetadataTree', () => ({
   __esModule: true,
-  default: ({ sideBarOpen, searchTerm }: any) => (
+  default: ({ sideBarOpen, searchTerm }: Record<string, unknown>) => (
     <div data-testid="business-metadata-tree">
       Business Metadata Tree - Open: {sideBarOpen.toString()} - Search: {searchTerm}
     </div>
@@ -84,7 +84,7 @@ jest.mock('../SideBarTree/BusinessMetadataTree', () => ({
 
 jest.mock('../SideBarTree/GlossaryTree', () => ({
   __esModule: true,
-  default: ({ sideBarOpen, searchTerm }: any) => (
+  default: ({ sideBarOpen, searchTerm }: Record<string, unknown>) => (
     <div data-testid="glossary-tree">
       Glossary Tree - Open: {sideBarOpen.toString()} - Search: {searchTerm}
     </div>
@@ -93,7 +93,7 @@ jest.mock('../SideBarTree/GlossaryTree', () => ({
 
 jest.mock('../SideBarTree/RelationShipsTree', () => ({
   __esModule: true,
-  default: ({ sideBarOpen, searchTerm }: any) => (
+  default: ({ sideBarOpen, searchTerm }: Record<string, unknown>) => (
     <div data-testid="relationships-tree">
       Relationships Tree - Open: {sideBarOpen.toString()} - Search: {searchTerm}
     </div>
@@ -102,7 +102,7 @@ jest.mock('../SideBarTree/RelationShipsTree', () => ({
 
 jest.mock('../SideBarTree/CustomFiltersTree', () => ({
   __esModule: true,
-  default: ({ sideBarOpen, searchTerm }: any) => (
+  default: ({ sideBarOpen, searchTerm }: Record<string, unknown>) => (
     <div data-testid="custom-filters-tree">
       Custom Filters Tree - Open: {sideBarOpen.toString()} - Search: {searchTerm}
     </div>
@@ -111,7 +111,7 @@ jest.mock('../SideBarTree/CustomFiltersTree', () => ({
 
 jest.mock('@views/ErrorPage', () => ({
   __esModule: true,
-  default: ({ errorCode }: any) => <div data-testid="error-page">Error: {errorCode}</div>
+  default: ({ errorCode }: Record<string, unknown>) => <div data-testid="error-page">Error: {errorCode}</div>
 }));
 
 jest.mock('@views/AppRoutes', () => [
@@ -123,12 +123,12 @@ jest.mock('@views/AppRoutes', () => [
 
 jest.mock('../../../ErrorBoundary', () => ({
   __esModule: true,
-  default: ({ children }: any) => <div data-testid="error-boundary">{children}</div>
+  default: ({ children }: Record<string, unknown>) => <div data-testid="error-boundary">{children}</div>
 }));
 
 jest.mock('@components/SkeletonLoader', () => ({
   __esModule: true,
-  default: ({ count }: any) => <div data-testid="skeleton-loader">Loading... ({count} items)</div>
+  default: ({ count }: Record<string, unknown>) => <div data-testid="skeleton-loader">Loading... ({count} items)</div>
 }));
 
 // Mock Redux actions
@@ -156,7 +156,7 @@ const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
-  useLocation: () => (global as any).mockLocation || { pathname: '/search', search: '' },
+  useLocation: () => (global as unknown as Record<string, unknown>).mockLocation || { pathname: '/search', search: '' },
   useRoutes: () => null,
   matchRoutes: () => [{ route: { path: '/search' } }],
   Outlet: () => <div data-testid="outlet">Outlet Content</div>
@@ -168,12 +168,11 @@ describe('SideBarBody', () => {
   const mockDispatch = jest.fn();
 
   const defaultProps = {
-    loading: false,
     handleOpenModal: mockHandleOpenModal,
     handleOpenAboutModal: mockHandleOpenAboutModal
   };
 
-  const createMockStore = (initialState: any = {}) => {
+  const createMockStore = (initialState: Record<string, unknown> = {}) => {
     return configureStore({
       reducer: {
         typeHeader: () => ({
@@ -471,12 +470,7 @@ describe('SideBarBody', () => {
       expect(sessionSlice.fetchVersionData).toHaveBeenCalled();
     });
 
-    it('should pass loading state to tree components', () => {
-      const store = createMockStore({ loading: true });
-      renderWithProviders(defaultProps, { store });
-      
-      expect(screen.getByTestId('entities-tree')).toBeInTheDocument();
-    });
+
   });
 
 
@@ -699,15 +693,17 @@ describe('SideBarBody', () => {
       fireEvent.click(toggleButton!);
     });
 
-    it('should open correct popover when module icon is clicked', async () => {
+    it('should open correct popover and document that it mounts a duplicate tree instance (remount behavior)', async () => {
       // Find the glossary icon and click it
       const glossaryIcon = screen.getByAltText('glossary');
       fireEvent.click(glossaryIcon.closest('button')!);
 
       await waitFor(() => {
-        // Popover should render the glossary tree
+        // Document remount behavior: The glossary tree is rendered TWICE:
+        // 1. The original instance inside the hidden sidebar-wrapper
+        // 2. A new separate instance mounted inside the Popover
         const glossaryTrees = screen.getAllByTestId('glossary-tree');
-        expect(glossaryTrees.length).toBeGreaterThan(0);
+        expect(glossaryTrees.length).toBe(2);
       });
     });
 
@@ -806,12 +802,45 @@ describe('SideBarBody', () => {
         expect(screen.getAllByTestId('glossary-tree')).toHaveLength(1);
       });
     });
+
+    it('should calculate popover max height correctly when near viewport bottom', async () => {
+      const originalInnerHeight = window.innerHeight;
+      Object.defineProperty(window, 'innerHeight', { value: 600, configurable: true });
+
+      const originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+      Element.prototype.getBoundingClientRect = jest.fn(() => ({
+        top: 500, // Near bottom
+        bottom: 540,
+        left: 0,
+        right: 50,
+        width: 50,
+        height: 40,
+        x: 0,
+        y: 500,
+        toJSON: () => {}
+      }));
+
+      const glossaryIcon = screen.getByAltText('glossary');
+      fireEvent.click(glossaryIcon.closest('button')!);
+
+      await waitFor(() => {
+        const paper = document.querySelector('.sidebar-popover-paper') as HTMLElement;
+        expect(paper).toBeInTheDocument();
+        // spaceBelow = 600 - 500 - 24 = 76 (< 350, so isBottom = true)
+        // setPopoverMaxHeight = max(250, 540 - 24) = 516px
+        expect(paper.style.maxHeight).toBe('516px');
+      });
+      
+      // Restore
+      Object.defineProperty(window, 'innerHeight', { value: originalInnerHeight, configurable: true });
+      Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    });
   });
 
   describe('Active State Markers', () => {
     it('should apply active state markers correctly', async () => {
       // Test Entities active (type param present but isCF is not true)
-      (global as any).mockLocation = { pathname: '/search', search: '?type=table' };
+      (global as unknown as Record<string, unknown>).mockLocation = { pathname: '/search', search: '?type=table' };
       const { unmount: unmount1 } = renderWithProviders();
       let toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
       fireEvent.click(toggleButton!);
@@ -821,7 +850,7 @@ describe('SideBarBody', () => {
       unmount1();
 
       // Test Custom Filters active (isCF=true)
-      (global as any).mockLocation = { pathname: '/search', search: '?isCF=true&type=myFilter' };
+      (global as unknown as Record<string, unknown>).mockLocation = { pathname: '/search', search: '?isCF=true&type=myFilter' };
       const { unmount: unmount2 } = renderWithProviders();
       toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
       fireEvent.click(toggleButton!);
@@ -835,7 +864,7 @@ describe('SideBarBody', () => {
       unmount2();
 
       // Test Glossary active
-      (global as any).mockLocation = { pathname: '/glossary', search: '' };
+      (global as unknown as Record<string, unknown>).mockLocation = { pathname: '/glossary', search: '' };
       const { unmount: unmount3 } = renderWithProviders();
       toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
       fireEvent.click(toggleButton!);
@@ -845,7 +874,7 @@ describe('SideBarBody', () => {
       unmount3();
 
       // Test Classification active
-      (global as any).mockLocation = { pathname: '/search', search: '?tag=PII' };
+      (global as unknown as Record<string, unknown>).mockLocation = { pathname: '/search', search: '?tag=PII' };
       const { unmount: unmount4 } = renderWithProviders();
       toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
       fireEvent.click(toggleButton!);
@@ -855,7 +884,7 @@ describe('SideBarBody', () => {
       unmount4();
 
       // Test Business Metadata active
-      (global as any).mockLocation = { pathname: '/administrator/businessMetadata', search: '' };
+      (global as unknown as Record<string, unknown>).mockLocation = { pathname: '/administrator/businessMetadata', search: '' };
       const { unmount: unmount5 } = renderWithProviders();
       toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
       fireEvent.click(toggleButton!);
@@ -865,7 +894,7 @@ describe('SideBarBody', () => {
       unmount5();
 
       // Test Relationships active
-      (global as any).mockLocation = { pathname: '/search', search: '?relationshipName=Employee' };
+      (global as unknown as Record<string, unknown>).mockLocation = { pathname: '/search', search: '?relationshipName=Employee' };
       const { unmount: unmount6 } = renderWithProviders();
       toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
       fireEvent.click(toggleButton!);
@@ -874,7 +903,7 @@ describe('SideBarBody', () => {
       expect(relIcon.closest('.sidebar-icon-active')).toBeInTheDocument();
       unmount6();
 
-      (global as any).mockLocation = undefined;
+      (global as unknown as Record<string, unknown>).mockLocation = undefined;
     });
   });
 });

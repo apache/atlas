@@ -91,12 +91,12 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 				"&:hover": { boxShadow: 4 }
 			}}
 		>
-			<Box sx={{ pb: 2, borderBottom: "1px solid", borderColor: "divider" }}>
-				<Typography sx={{ fontSize: "1rem", fontWeight: 600, color: "#1a1a1a" }}>
+			<Box className="classification-distribution-card-box-11">
+				<Typography className="classification-distribution-card-typography-12">
 					Entity Status Overview
 				</Typography>
 			</Box>
-			<Stack direction="row" spacing={2} alignItems="center" height={160} sx={{ pt: 2 }}>
+			<Stack direction="row" spacing={2} alignItems="center" height={160} className="entity-status-donut-stack-23">
 				<Stack spacing={1.5} flex={1}>
 					{(["Active", "Shell", "Deleted"] as const).map((status) => (
 						<Box
@@ -120,21 +120,15 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 							}}
 						>
 							<Box
-								sx={{
-									width: 12,
-									height: 12,
-									borderRadius: "50%",
-									backgroundColor: COLORS[status],
-									flexShrink: 0
-								}}
+								className={`entity-status-donut-box-24 entity-status-donut-box-${status}`}
 							/>
-							<Typography component="span" sx={{ fontSize: "0.875rem", color: "#374151" }}>
+							<Typography component="span" className="entity-status-donut-typography-25">
 								{status} {getPercent(totals[status.toLowerCase() as keyof typeof totals])}%
 							</Typography>
 						</Box>
 					))}
 				</Stack>
-				<ResponsiveContainer width="50%" height="100%" style={{ cursor: "pointer" }}>
+				<ResponsiveContainer width="50%" height="100%" className="classification-distribution-card-responsive-container-17">
 					<PieChart>
 						<Pie
 							data={chartData}
