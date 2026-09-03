@@ -684,34 +684,80 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>fix-enunciate-css</id>
+                        <id>fix-enunciate-csp-assets</id>
                         <goals>
                             <goal>run</goal>
                         </goals>
                         <phase>prepare-package</phase>
                         <configuration>
+                            <skip>${skipEnunciate}</skip>
                             <tasks>
                                 <!-- Copy CSS -->
-                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/css/bootstrap.min.css" todir="${project.build.directory}/api/v2/css" />
-                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/css/bootstrap.min.css" todir="${project.build.directory}/api/v2/apidocs/css" />
-                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/css/bootstrap.min.css" todir="${project.build.directory}/api/v2/apidocs/ui/css" />
+                                <copy failonerror="true" todir="${project.build.directory}/api/v2/css">
+                                    <fileset dir="${project.basedir}/src/main/enunciate-assets/css" />
+                                </copy>
+                                <copy failonerror="true" todir="${project.build.directory}/api/v2/apidocs/css">
+                                    <fileset dir="${project.basedir}/src/main/enunciate-assets/css" />
+                                </copy>
+                                <copy failonerror="true" todir="${project.build.directory}/api/v2/apidocs/ui/css">
+                                    <fileset dir="${project.basedir}/src/main/enunciate-assets/css" />
+                                </copy>
 
-                                <!-- Copy JS -->
-                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/jquery-1.12.2.min.js" todir="${project.build.directory}/api/v2/js" />
-                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/bootstrap.min.js" todir="${project.build.directory}/api/v2/js" />
-                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/run_prettify.js" todir="${project.build.directory}/api/v2/js" />
-                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/jquery-1.12.2.min.js" todir="${project.build.directory}/api/v2/apidocs/js" />
-                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/bootstrap.min.js" todir="${project.build.directory}/api/v2/apidocs/js" />
-                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/run_prettify.js" todir="${project.build.directory}/api/v2/apidocs/js" />
-                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/jquery-1.12.2.min.js" todir="${project.build.directory}/api/v2/apidocs/ui/js" />
-                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/bootstrap.min.js" todir="${project.build.directory}/api/v2/apidocs/ui/js" />
-                                <copy failonerror="false" file="${project.basedir}/src/main/enunciate-assets/js/run_prettify.js" todir="${project.build.directory}/api/v2/apidocs/ui/js" />
+                                <!-- Copy JS (Note: jQuery 1.12.2 is pinned for compatibility with Bootstrap 3.4.1 in static Enunciate REST API documentation) -->
+                                <copy failonerror="true" todir="${project.build.directory}/api/v2/js">
+                                    <fileset dir="${project.basedir}/src/main/enunciate-assets/js" />
+                                </copy>
+                                <copy failonerror="true" todir="${project.build.directory}/api/v2/apidocs/js">
+                                    <fileset dir="${project.basedir}/src/main/enunciate-assets/js" />
+                                </copy>
+                                <copy failonerror="true" todir="${project.build.directory}/api/v2/apidocs/ui/js">
+                                    <fileset dir="${project.basedir}/src/main/enunciate-assets/js" />
+                                </copy>
 
                                 <!-- Replace URLs -->
                                 <replace dir="${project.build.directory}/api/v2" includes="**/*.html" token="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" value="css/bootstrap.min.css" />
                                 <replace dir="${project.build.directory}/api/v2" includes="**/*.html" token="https://code.jquery.com/jquery-1.12.2.min.js" value="js/jquery-1.12.2.min.js" />
                                 <replace dir="${project.build.directory}/api/v2" includes="**/*.html" token="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js" value="js/bootstrap.min.js" />
                                 <replace dir="${project.build.directory}/api/v2" includes="**/*.html" token="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js" value="js/run_prettify.js" />
+                                <replace dir="${project.build.directory}/api/v2" includes="**/*.js" token="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/" value="" />
+
+                                <!-- Verify no CDN URLs remain -->
+                                <fail message="Build failure: CDN references to bootstrapcdn.com found in generated API docs!">
+                                    <condition>
+                                        <and>
+                                            <available file="${project.build.directory}/api/v2" type="dir" />
+                                            <resourcecount count="0" when="greater">
+                                                <fileset dir="${project.build.directory}/api/v2" includes="**/*.html,**/*.js">
+                                                    <contains text="bootstrapcdn.com" />
+                                                </fileset>
+                                            </resourcecount>
+                                        </and>
+                                    </condition>
+                                </fail>
+                                <fail message="Build failure: CDN references to code.jquery.com found in generated API docs!">
+                                    <condition>
+                                        <and>
+                                            <available file="${project.build.directory}/api/v2" type="dir" />
+                                            <resourcecount count="0" when="greater">
+                                                <fileset dir="${project.build.directory}/api/v2" includes="**/*.html,**/*.js">
+                                                    <contains text="code.jquery.com" />
+                                                </fileset>
+                                            </resourcecount>
+                                        </and>
+                                    </condition>
+                                </fail>
+                                <fail message="Build failure: CDN references to cdn.jsdelivr.net found in generated API docs!">
+                                    <condition>
+                                        <and>
+                                            <available file="${project.build.directory}/api/v2" type="dir" />
+                                            <resourcecount count="0" when="greater">
+                                                <fileset dir="${project.build.directory}/api/v2" includes="**/*.html,**/*.js">
+                                                    <contains text="cdn.jsdelivr.net" />
+                                                </fileset>
+                                            </resourcecount>
+                                        </and>
+                                    </condition>
+                                </fail>
                             </tasks>
                         </configuration>
                     </execution>
