@@ -51,6 +51,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
@@ -88,6 +89,68 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
     public AtlasTypeRegistry getTypeRegistry() {
         return typeRegistry;
+    }
+
+    /**
+     * @return the category of the type the store holds by this name, or null if the store has no
+     * such type.
+     */
+    protected abstract TypeCategory typeCategoryInStore(String typeName);
+
+    /**
+     * Reads a typedef the registry does not have straight from the store.
+     *
+     * <p>A typedef created on one node is in the store before the change reaches its peers, so a
+     * peer asked for it in that window would otherwise answer "no such type" for a type that does
+     * exist. Reading the store answers correctly without touching the registry: bringing this node
+     * up to date is the typedef-sync path's job, not a read's.
+     *
+     * @return the typedef, or null if the store has no type by this name either.
+     */
+    private <T extends AtlasBaseTypeDef> T typeDefFromStore(String name, AtlasDefStore<T> defStore) {
+        try {
+            T ret = defStore.getByName(name);
+
+            if (ret != null) {
+                LOG.info("typeDefFromStore({}): served from the store; this node has not caught up with the change that created it", name);
+            }
+
+            return ret;
+        } catch (AtlasBaseException excp) {
+            LOG.debug("typeDefFromStore({}): the store has no type by this name", name, excp);
+
+            return null;
+        }
+    }
+
+    /**
+     * Reads a typedef of any category the registry does not have straight from the store.
+     *
+     * @return the typedef, or null if the store has no type by this name either.
+     */
+    private AtlasBaseTypeDef typeDefFromStore(String name) {
+        TypeCategory category = typeCategoryInStore(name);
+
+        if (category == null) {
+            return null;
+        }
+
+        switch (category) {
+            case ENUM:
+                return typeDefFromStore(name, getEnumDefStore(typeRegistry));
+            case STRUCT:
+                return typeDefFromStore(name, getStructDefStore(typeRegistry));
+            case TRAIT:
+                return typeDefFromStore(name, getClassificationDefStore(typeRegistry));
+            case CLASS:
+                return typeDefFromStore(name, getEntityDefStore(typeRegistry));
+            case RELATIONSHIP:
+                return typeDefFromStore(name, getRelationshipDefStore(typeRegistry));
+            case BUSINESS_METADATA:
+                return typeDefFromStore(name, getBusinessMetadataDefStore(typeRegistry));
+            default:
+                return null;
+        }
     }
 
     /**
@@ -147,6 +210,10 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         AtlasEnumDef ret = typeRegistry.getEnumDefByName(name);
 
         if (ret == null) {
+            ret = typeDefFromStore(name, getEnumDefStore(typeRegistry));
+        }
+
+        if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
         }
 
@@ -193,6 +260,10 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         AtlasStructDef ret = typeRegistry.getStructDefByName(name);
 
         if (ret == null) {
+            ret = typeDefFromStore(name, getStructDefStore(typeRegistry));
+        }
+
+        if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
         }
 
@@ -237,6 +308,10 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @Override
     public AtlasClassificationDef getClassificationDefByName(String name) throws AtlasBaseException {
         AtlasClassificationDef ret = typeRegistry.getClassificationDefByName(name);
+
+        if (ret == null) {
+            ret = typeDefFromStore(name, getClassificationDefStore(typeRegistry));
+        }
 
         if (ret == null) {
             ret = StringUtils.equalsIgnoreCase(name, ALL_CLASSIFICATION_TYPES) ? AtlasClassificationType.getClassificationRoot().getClassificationDef() : null;
@@ -291,6 +366,10 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         AtlasEntityDef ret = typeRegistry.getEntityDefByName(name);
 
         if (ret == null) {
+            ret = typeDefFromStore(name, getEntityDefStore(typeRegistry));
+        }
+
+        if (ret == null) {
             ret = StringUtils.equals(name, ALL_ENTITY_TYPES) ? AtlasEntityType.getEntityRoot().getEntityDef() : null;
 
             if (ret == null) {
@@ -342,6 +421,10 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         AtlasRelationshipDef ret = typeRegistry.getRelationshipDefByName(name);
 
         if (ret == null) {
+            ret = typeDefFromStore(name, getRelationshipDefStore(typeRegistry));
+        }
+
+        if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
         }
 
@@ -386,6 +469,10 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @Override
     public AtlasBusinessMetadataDef getBusinessMetadataDefByName(String name) throws AtlasBaseException {
         AtlasBusinessMetadataDef ret = typeRegistry.getBusinessMetadataDefByName(name);
+
+        if (ret == null) {
+            ret = typeDefFromStore(name, getBusinessMetadataDefStore(typeRegistry));
+        }
 
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
@@ -774,8 +861,17 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, "", name);
         }
 
-        AtlasType        type = typeRegistry.getType(name);
-        AtlasBaseTypeDef ret  = getTypeDefFromTypeWithNoAuthz(type);
+        AtlasBaseTypeDef ret;
+
+        if (typeRegistry.isRegisteredType(name)) {
+            ret = getTypeDefFromTypeWithNoAuthz(typeRegistry.getType(name));
+        } else {
+            ret = typeDefFromStore(name);
+
+            if (ret == null) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
+            }
+        }
 
         if (ret != null) {
             AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", name);

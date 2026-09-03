@@ -19,7 +19,6 @@
 package org.apache.atlas.web.service;
 
 import org.apache.atlas.web.model.DebugMetrics;
-import org.apache.hadoop.hbase.shaded.org.apache.commons.configuration2.SubsetConfiguration;
 import org.apache.hadoop.metrics2.AbstractMetric;
 import org.apache.hadoop.metrics2.MetricsRecord;
 import org.mockito.Mock;
@@ -44,9 +43,6 @@ public class AtlasDebugMetricsSinkTest {
 
     @Mock
     private AbstractMetric metric;
-
-    @Mock
-    private SubsetConfiguration subsetConfiguration;
 
     private AtlasDebugMetricsSink debugMetricsSink;
 
@@ -316,7 +312,7 @@ public class AtlasDebugMetricsSinkTest {
     @Test
     public void testInit() {
         // Test that init method doesn't throw any exception
-        debugMetricsSink.init(subsetConfiguration);
+        debugMetricsSink.init(null);
     }
 
     @Test

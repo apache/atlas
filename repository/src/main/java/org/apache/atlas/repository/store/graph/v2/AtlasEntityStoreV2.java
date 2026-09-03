@@ -50,6 +50,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
+import org.apache.atlas.repository.store.graph.TypeRegistryCatchUp;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEntityDiffResult;
 import org.apache.atlas.type.AtlasArrayType;
@@ -111,6 +112,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final EntityGraphMapper          entityGraphMapper;
     private final EntityGraphRetriever       entityRetriever;
     private       EntityRenameHandler        entityRenameHandler;
+    private       TypeRegistryCatchUp        typeRegistryCatchUp;
     private       boolean                    storeDifferentialAudits;
 
     @Inject
@@ -127,6 +129,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @Inject
     public void setEntityRenameHandler(EntityRenameHandler entityRenameHandler) {
         this.entityRenameHandler = entityRenameHandler;
+    }
+
+    @Inject
+    public void setTypeRegistryCatchUp(TypeRegistryCatchUp typeRegistryCatchUp) {
+        this.typeRegistryCatchUp = typeRegistryCatchUp;
     }
 
     @VisibleForTesting
@@ -1437,6 +1444,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private void validateAndNormalize(AtlasClassification classification) throws AtlasBaseException {
         AtlasClassificationType type = typeRegistry.getClassificationTypeByName(classification.getTypeName());
+
+        if (type == null && typeRegistryCatchUp != null) {
+            // A peer may have created this classification moments ago, too recently for the
+            // typedef-sync path to have rebuilt this node's registry yet.
+            type = typeRegistryCatchUp.classificationType(classification.getTypeName());
+        }
 
         if (type == null) {
             throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classification.getTypeName());

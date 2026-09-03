@@ -153,44 +153,46 @@ public class NotificationPreProcessor implements NotificationEntityProcessor, Ty
         HookNotification                    message   = kafkaMsg.getMessage();
         long                                startTime = System.currentTimeMillis();
         NotificationProcessorStats          stats     = new NotificationProcessorStats();
+        TopicPartitionOffsetResult          result    = new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
 
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, message.getType().name());
         }
 
-        for (int numRetries = 0; numRetries < maxRetries; numRetries++) {
-            try {
-                // Extract original source from JSON before deserializing
-                NotificationMetadata notificationMetadata = buildNotificationMetadataFromMessage(kafkaMsg, kafkaMsg.getTopic(), kafkaMsg.getOffset());
+        try {
+            for (int numRetries = 0; numRetries < maxRetries; numRetries++) {
+                try {
+                    // Extract original source from JSON before deserializing
+                    NotificationMetadata notificationMetadata = buildNotificationMetadataFromMessage(kafkaMsg, kafkaMsg.getTopic(), kafkaMsg.getOffset());
 
-                routeNotification(message, notificationMetadata);
+                    routeNotification(message, notificationMetadata);
 
-                break;
-            } catch (Exception e) {
-                LOG.error("Error processing notification: {}", e.getMessage(), e);
+                    break;
+                } catch (Exception e) {
+                    LOG.error("Error processing notification: {}", e.getMessage(), e);
 
-                if (numRetries == (maxRetries - 1)) {
-                    String strMessage = AbstractNotification.getMessageJson(message);
+                    if (numRetries == (maxRetries - 1)) {
+                        String strMessage = AbstractNotification.getMessageJson(message);
 
-                    LOG.warn("Offset: {}: Max retries: {} exceeded for message {}", kafkaMsg.getOffset(), maxRetries, strMessage, e);
+                        LOG.warn("Offset: {}: Max retries: {} exceeded for message {}", kafkaMsg.getOffset(), maxRetries, strMessage, e);
 
-                    stats.setFailed(true);
+                        stats.setFailed(true);
 
-                    failedMessages.add(strMessage);
+                        failedMessages.add(strMessage);
 
-                    if (failedMessages.size() >= failedMsgCacheSize) {
-                        recordFailedMessages(kafkaMsg.getTopic(), failedMessages);
+                        if (failedMessages.size() >= failedMsgCacheSize) {
+                            recordFailedMessages(kafkaMsg.getTopic(), failedMessages);
+                        }
                     }
-
-                    return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
                 }
-            } finally {
-                AtlasPerfTracer.log(perf);
-                stats.setProcessingTimeMs(System.currentTimeMillis() - startTime);
-                metricsUtil.onNotificationProcessorComplete(kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset(), stats);
             }
+        } finally {
+            AtlasPerfTracer.log(perf);
+            stats.setProcessingTimeMs(System.currentTimeMillis() - startTime);
+            metricsUtil.onNotificationProcessorComplete(kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset(), stats);
         }
-        return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
+
+        return result;
     }
 
     private NotificationMetadata buildNotificationMetadataFromMessage(AtlasKafkaMessage kafkaMessage, String sourceTopic, long sourceOffset) {
