@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+@use "variables" as v;
+
 .admin-audit-table-element-1 {
 	/* sx */
 	margin-top: 13px !important;
@@ -65,9 +67,9 @@
 .classification-distribution-card-box-9 {
 	/* sx */
 	padding: 12px;
-	background-color: #ffffff;
+	background-color: v.$card-bg;
 	border-radius: 4px;
-	box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+	box-shadow: v.$card-shadow;
 	min-width: 140px;
 }
 
@@ -87,7 +89,7 @@
 	/* sx */
 	font-size: 1rem;
 	font-weight: 600;
-	color: #1a1a1a;
+	color: v.$text-heading;
 }
 
 .classification-distribution-card-link-13 {
@@ -95,19 +97,19 @@
 	font-size: 0.875rem;
 	cursor: pointer;
 	text-decoration: none;
-	color: #1976d2;
+	color: v.$primary-blue;
 }
 
 .classification-distribution-card-typography-14 {
 	/* sx */
-	color: #6c757d;
+	color: v.$text-muted;
 	margin-top: 16px;
 	line-height: 1.4;
 }
 
 .classification-distribution-card-typography-15 {
 	/* sx */
-	color: #868e96;
+	color: v.$text-subtle;
 	display: block;
 	margin-top: 6px;
 	line-height: 1.4;
@@ -136,14 +138,14 @@
 	/* style */
 	font-size: 12px;
 	font-weight: 500;
-	fill: #1976d2;
+	fill: v.$primary-blue;
 }
 
 .dashboard-overview-stack-20 {
 	/* sx */
 	max-width: 100%;
 	box-sizing: border-box;
-	background-color: #f5f7f9;
+	background-color: v.$dashboard-bg;
 	border-radius: 8px;
 	padding: 24px;
 }
@@ -156,44 +158,6 @@
 	/* sx */
 	display: flex;
 	min-width: 0;
-}
-
-.dashboard-overview-grid-22 {
-	/* sx */
-	display: flex;
-	min-width: 0;
-}
-
-.dashboard-overview-grid-22 {
-	/* sx */
-	display: flex;
-	min-width: 0;
-}
-
-.dashboard-overview-grid-22 {
-	/* sx */
-	display: flex;
-	min-width: 0;
-}
-
-.dashboard-overview-grid-22 {
-	/* sx */
-	display: flex;
-	min-width: 0;
-}
-
-.classification-distribution-card-box-11 {
-	/* sx */
-	padding-bottom: 16px;
-	border-bottom: 1px solid;
-	border-color: divider;
-}
-
-.classification-distribution-card-typography-12 {
-	/* sx */
-	font-size: 1rem;
-	font-weight: 600;
-	color: #1a1a1a;
 }
 
 .entity-status-donut-stack-23 {
@@ -213,45 +177,12 @@
 .entity-status-donut-typography-25 {
 	/* sx */
 	font-size: 0.875rem;
-	color: #374151;
-}
-
-.classification-distribution-card-responsive-container-17 {
-	/* style */
-	cursor: pointer;
-}
-
-.classification-distribution-card-box-9 {
-	/* sx */
-	padding: 12px;
-	background-color: #ffffff;
-	border-radius: 4px;
-	box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
-	min-width: 140px;
-}
-
-.classification-distribution-card-typography-10 {
-	/* sx */
-	margin-bottom: 4px;
+	color: v.$text-dark-gray;
 }
 
 .entity-type-bar-chart-typography-26 {
 	/* sx */
-	color: #ef4444;
-}
-
-.classification-distribution-card-box-11 {
-	/* sx */
-	padding-bottom: 16px;
-	border-bottom: 1px solid;
-	border-color: divider;
-}
-
-.classification-distribution-card-typography-12 {
-	/* sx */
-	font-size: 1rem;
-	font-weight: 600;
-	color: #1a1a1a;
+	color: v.$status-deleted;
 }
 
 .entity-type-bar-chart-link-27 {
@@ -259,16 +190,7 @@
 	font-size: 0.875rem;
 	cursor: pointer;
 	text-decoration: none;
-	color: #1976d2;
-}
-
-.classification-distribution-card-box-16 {
-	/* sx */
-	margin-top: 16px;
-	min-height: 260px;
-	height: 260px;
-	width: 100%;
-	min-width: 280px;
+	color: v.$primary-blue;
 }
 
 .entity-type-bar-chart-stack-28 {
@@ -282,12 +204,12 @@
 	width: 10px;
 	height: 10px;
 	border-radius: 50%;
-	background-color: #1976d2;
+	background-color: v.$primary-blue;
 }
 
 .entity-type-bar-chart-typography-30 {
 	/* sx */
-	color: #6c757d;
+	color: v.$text-muted;
 	font-size: 0.8125rem;
 }
 
@@ -296,70 +218,49 @@
 	width: 10px;
 	height: 10px;
 	border-radius: 50%;
-	background-color: #ef4444;
-}
-
-.entity-type-bar-chart-typography-30 {
-	/* sx */
-	color: #6c757d;
-	font-size: 0.8125rem;
-}
-
-.classification-distribution-card-responsive-container-17 {
-	/* style */
-	cursor: pointer;
-}
-
-.classification-distribution-card-element-18 {
-	/* style */
-	cursor: pointer;
+	background-color: v.$status-deleted;
 }
 
 .entity-type-bar-chart-element-32 {
 	/* style */
 	font-size: 12px;
 	font-weight: 500;
-	fill: #1976d2;
+	fill: v.$primary-blue;
 }
 
 .message-consumption-chart-box-33 {
 	/* sx */
 	padding: 12px;
-	background-color: #ffffff;
+	background-color: v.$card-bg;
 	border-radius: 4px;
-	box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+	box-shadow: v.$card-shadow;
 	min-width: 160px;
-}
-
-.classification-distribution-card-typography-10 {
-	/* sx */
-	margin-bottom: 4px;
 }
 
 .message-consumption-chart-typography-34 {
 	/* sx */
-	color: #10b981;
+	color: v.$status-active;
 }
 
 .message-consumption-chart-typography-35 {
 	/* sx */
-	color: #1976d2;
+	color: v.$primary-blue;
 }
 
 .message-consumption-chart-typography-36 {
 	/* sx */
-	color: #ef4444;
+	color: v.$status-deleted;
 }
 
 .message-consumption-chart-typography-37 {
 	/* sx */
-	color: #6c757d;
+	color: v.$text-muted;
 	margin-top: 4px;
 }
 
 .message-consumption-chart-typography-38 {
 	/* sx */
-	color: #6c757d;
+	color: v.$text-muted;
 }
 
 .message-consumption-chart-box-39 {
@@ -370,24 +271,12 @@
 	min-width: 280px;
 }
 
-.entity-type-bar-chart-stack-28 {
-	/* sx */
-	margin-bottom: 8px;
-	flex-wrap: wrap;
-}
-
 .message-consumption-chart-box-40 {
 	/* sx */
 	width: 10px;
 	height: 10px;
 	border-radius: 50%;
-	background-color: #10b981;
-}
-
-.entity-type-bar-chart-typography-30 {
-	/* sx */
-	color: #6c757d;
-	font-size: 0.8125rem;
+	background-color: v.$status-active;
 }
 
 .message-consumption-chart-box-41 {
@@ -395,13 +284,7 @@
 	width: 10px;
 	height: 10px;
 	border-radius: 50%;
-	background-color: #1976d2;
-}
-
-.entity-type-bar-chart-typography-30 {
-	/* sx */
-	color: #6c757d;
-	font-size: 0.8125rem;
+	background-color: v.$primary-blue;
 }
 
 .message-consumption-chart-box-42 {
@@ -409,20 +292,14 @@
 	width: 10px;
 	height: 10px;
 	border-radius: 50%;
-	background-color: #ef4444;
-}
-
-.entity-type-bar-chart-typography-30 {
-	/* sx */
-	color: #6c757d;
-	font-size: 0.8125rem;
+	background-color: v.$status-deleted;
 }
 
 .message-consumption-chart-element-43 {
 	/* style */
 	font-size: 11px;
 	font-weight: 600;
-	fill: #374151;
+	fill: v.$text-dark-gray;
 }
 
 .about-skeleton-loader-44 {
@@ -439,15 +316,15 @@
 
 /* Dynamic Classes added for components */
 .entity-status-donut-box-Active {
-	background-color: #10b981 !important;
+	background-color: v.$status-active !important;
 }
 
 .entity-status-donut-box-Shell {
-	background-color: #f59e0b !important;
+	background-color: v.$status-shell !important;
 }
 
 .entity-status-donut-box-Deleted {
-	background-color: #ef4444 !important;
+	background-color: v.$status-deleted !important;
 }
 
 .classification-distribution-card-element-18-pointer {
