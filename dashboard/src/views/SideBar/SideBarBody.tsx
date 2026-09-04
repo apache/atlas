@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import { createPortal } from "react-dom";
 import { styled } from "@mui/material/styles";
 import {
   Suspense,
@@ -146,6 +147,17 @@ const SideBarBody = (props: {
   const [activePopover, setActivePopover] = useState<string | null>(null);
   const [popoverMaxHeight, setPopoverMaxHeight] = useState<string>("calc(100vh - 100px)");
   const [isBottomHalf, setIsBottomHalf] = useState<boolean>(false);
+  const [popoverContainer, setPopoverContainer] = useState<HTMLDivElement | null>(null);
+  const [sidebarRefs, setSidebarRefs] = useState<Record<string, HTMLDivElement | null>>({});
+  const refCallbacks = useRef<Record<string, (el: HTMLDivElement | null) => void>>({});
+  const setSidebarRef = useCallback((id: string) => {
+    if (!refCallbacks.current[id]) {
+      refCallbacks.current[id] = (el: HTMLDivElement | null) => {
+        setSidebarRefs(prev => prev[id] === el ? prev : { ...prev, [id]: el });
+      };
+    }
+    return refCallbacks.current[id];
+  }, []);
 
 
   const handlePopoverOpen = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
@@ -355,12 +367,10 @@ const SideBarBody = (props: {
                 {renderPopoverSearch()}
                 <div className="sidebar-module-icon-container">
                   <Suspense fallback={<TreeSkeletonLoader count={2} />}>
-                    <div className="sidebar-treeview-container sidebar-toolbar">
-                      {modules.filter(m => m.isVisible && activePopover === m.id).map(m => {
-                        const Component = m.Component;
-                        return <Component key={m.id} sideBarOpen={true} searchTerm={searchTerm} isPopover={true} />;
-                      })}
-                    </div>
+                    <div
+                      className="sidebar-treeview-container sidebar-toolbar"
+                      ref={setPopoverContainer}
+                    />
                   </Suspense>
                 </div>
               </Popover>
@@ -403,67 +413,110 @@ const SideBarBody = (props: {
                 <div
                   className="sidebar-treeview-container"
                   data-cy="r_entityTreeRender"
+                  ref={setSidebarRef("entities")}
                 >
                   <Suspense
                     fallback={<TreeSkeletonLoader count={2} />}
                   >
-                    <EntitiesTree
-                      sideBarOpen={open}
-                      searchTerm={searchTerm}
-                    />
+                    {sidebarRefs["entities"] &&
+                      createPortal(
+                        <EntitiesTree
+                          sideBarOpen={!open && activePopover === "entities" ? true : open}
+                          searchTerm={searchTerm}
+                          isPopover={!open && activePopover === "entities"}
+                        />,
+                        (!open && activePopover === "entities" && popoverContainer)
+                          ? popoverContainer
+                          : sidebarRefs["entities"]
+                      )}
                   </Suspense>
                 </div>
 
                 <div
                   className="sidebar-treeview-container"
                   data-cy="r_classificationTreeRender"
+                  ref={setSidebarRef("classification")}
                 >
                   <Suspense
                     fallback={<TreeSkeletonLoader count={2} />}
                   >
-                    <ClassificationTree
-                      sideBarOpen={open}
-                      searchTerm={searchTerm}
-                    />
+                    {sidebarRefs["classification"] &&
+                      createPortal(
+                        <ClassificationTree
+                          sideBarOpen={!open && activePopover === "classification" ? true : open}
+                          searchTerm={searchTerm}
+                          isPopover={!open && activePopover === "classification"}
+                        />,
+                        (!open && activePopover === "classification" && popoverContainer)
+                          ? popoverContainer
+                          : sidebarRefs["classification"]
+                      )}
                   </Suspense>
                 </div>
 
                 <div
                   className="sidebar-treeview-container"
                   data-cy="r_glossaryTreeRender"
+                  ref={setSidebarRef("glossary")}
                 >
                   <Suspense
                     fallback={<TreeSkeletonLoader count={2} />}
                   >
-                    <GlossaryTree sideBarOpen={open} searchTerm={searchTerm} />
+                    {sidebarRefs["glossary"] &&
+                      createPortal(
+                        <GlossaryTree
+                          sideBarOpen={!open && activePopover === "glossary" ? true : open}
+                          searchTerm={searchTerm}
+                          isPopover={!open && activePopover === "glossary"}
+                        />,
+                        (!open && activePopover === "glossary" && popoverContainer)
+                          ? popoverContainer
+                          : sidebarRefs["glossary"]
+                      )}
                   </Suspense>
                 </div>
 
                 <div
                   className="sidebar-treeview-container"
                   data-cy="r_businessMetadataTreeRender"
+                  ref={setSidebarRef("businessMetadata")}
                 >
                   <Suspense
                     fallback={<TreeSkeletonLoader count={2} />}
                   >
-                    <BusinessMetadataTree
-                      sideBarOpen={open}
-                      searchTerm={searchTerm}
-                    />
+                    {sidebarRefs["businessMetadata"] &&
+                      createPortal(
+                        <BusinessMetadataTree
+                          sideBarOpen={!open && activePopover === "businessMetadata" ? true : open}
+                          searchTerm={searchTerm}
+                          isPopover={!open && activePopover === "businessMetadata"}
+                        />,
+                        (!open && activePopover === "businessMetadata" && popoverContainer)
+                          ? popoverContainer
+                          : sidebarRefs["businessMetadata"]
+                      )}
                   </Suspense>
                 </div>
                 {relationshipSearch && (
                   <div
                     className="sidebar-treeview-container"
                     data-cy="r_relationshipTreeRender"
+                    ref={setSidebarRef("relationships")}
                   >
                     <Suspense
                       fallback={<TreeSkeletonLoader count={2} />}
                     >
-                      <RelationshipsTree
-                        sideBarOpen={open}
-                        searchTerm={searchTerm}
-                      />
+                      {sidebarRefs["relationships"] &&
+                        createPortal(
+                          <RelationshipsTree
+                            sideBarOpen={!open && activePopover === "relationships" ? true : open}
+                            searchTerm={searchTerm}
+                            isPopover={!open && activePopover === "relationships"}
+                          />,
+                          (!open && activePopover === "relationships" && popoverContainer)
+                            ? popoverContainer
+                            : sidebarRefs["relationships"]
+                        )}
                     </Suspense>
                   </div>
                 )}
@@ -471,11 +524,22 @@ const SideBarBody = (props: {
                 <div
                   className="sidebar-treeview-container"
                   data-cy="r_customFilterTreeRender"
+                  ref={setSidebarRef("customFilters")}
                 >
                   <Suspense
                     fallback={<TreeSkeletonLoader count={2} />}
                   >
-                    <CustomFiltersTree sideBarOpen={open} searchTerm={searchTerm} />
+                    {sidebarRefs["customFilters"] &&
+                      createPortal(
+                        <CustomFiltersTree
+                          sideBarOpen={!open && activePopover === "customFilters" ? true : open}
+                          searchTerm={searchTerm}
+                          isPopover={!open && activePopover === "customFilters"}
+                        />,
+                        (!open && activePopover === "customFilters" && popoverContainer)
+                          ? popoverContainer
+                          : sidebarRefs["customFilters"]
+                      )}
                   </Suspense>
                 </div>
             </Paper>
@@ -487,10 +551,10 @@ const SideBarBody = (props: {
                 <Typography variant="body2" className="sidebar-version-text">
                   {isVersionLoading ? (
                     <CircularProgress size={12} className="sidebar-version-loader" />
-                  ) : versionError ? (
-                    'Version unavailable'
                   ) : versionData?.Version ? (
                     `V ${versionData.Version}`
+                  ) : versionError ? (
+                    'Version unavailable'
                   ) : (
                     ''
                   )}

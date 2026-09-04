@@ -494,7 +494,7 @@ describe('SideBarBody', () => {
       expect(mockHandleOpenAboutModal).toHaveBeenCalled();
     });
 
-    it('should show "Version unavailable" if versionError is set', () => {
+    it('should show "Version unavailable" if versionError is set and data is null', () => {
       const stateWithVersionError = {
         session: {
           versionData: {
@@ -507,6 +507,22 @@ describe('SideBarBody', () => {
       renderWithProviders({}, { store: createMockStore(stateWithVersionError) });
       
       expect(screen.getByText('Version unavailable')).toBeInTheDocument();
+    });
+
+    it('should display stale version data if present even when versionError occurs', () => {
+      const stateWithStaleVersionAndError = {
+        session: {
+          versionData: {
+            loading: false,
+            data: { Version: "3.12.1.0" },
+            error: { message: "Transient network error" }
+          }
+        }
+      };
+      renderWithProviders({}, { store: createMockStore(stateWithStaleVersionAndError) });
+      
+      expect(screen.getByText('V 3.12.1.0')).toBeInTheDocument();
+      expect(screen.queryByText('Version unavailable')).not.toBeInTheDocument();
     });
 
     it('should hide relationships icon when relationshipSearch is falsy', () => {
@@ -693,17 +709,74 @@ describe('SideBarBody', () => {
       fireEvent.click(toggleButton!);
     });
 
-    it('should open correct popover and document that it mounts a duplicate tree instance (remount behavior)', async () => {
+    it('should open correct popover and portal the existing tree instance without creating duplicates', async () => {
       // Find the glossary icon and click it
       const glossaryIcon = screen.getByAltText('glossary');
       fireEvent.click(glossaryIcon.closest('button')!);
 
       await waitFor(() => {
-        // Document remount behavior: The glossary tree is rendered TWICE:
-        // 1. The original instance inside the hidden sidebar-wrapper
-        // 2. A new separate instance mounted inside the Popover
+        // Single instance behavior: The glossary tree is portaled into Popover instead of duplicated
         const glossaryTrees = screen.getAllByTestId('glossary-tree');
-        expect(glossaryTrees.length).toBe(2);
+        expect(glossaryTrees.length).toBe(1);
+      });
+    });
+
+    it('[Positive] should portal active tree element into the Popover container DOM structure', async () => {
+      const glossaryIcon = screen.getByAltText('glossary');
+      fireEvent.click(glossaryIcon.closest('button')!);
+
+      await waitFor(() => {
+        const glossaryTree = screen.getByTestId('glossary-tree');
+        const popoverPaper = document.querySelector('.sidebar-popover-paper');
+        expect(popoverPaper).toBeInTheDocument();
+        expect(popoverPaper?.contains(glossaryTree)).toBe(true);
+      });
+    });
+
+    it('[Positive] should return portaled tree element back to sidebar wrapper when popover closes', async () => {
+      const glossaryIcon = screen.getByAltText('glossary');
+      fireEvent.click(glossaryIcon.closest('button')!);
+
+      await waitFor(() => {
+        expect(document.querySelector('.sidebar-popover-paper')).toBeInTheDocument();
+      });
+
+      // Close popover via backdrop click
+      const backdrop = document.querySelector('.MuiBackdrop-root');
+      if (backdrop) {
+        fireEvent.click(backdrop);
+      }
+
+      await waitFor(() => {
+        const glossaryTree = screen.getByTestId('glossary-tree');
+        const sidebarWrapper = document.querySelector('.sidebar-wrapper');
+        expect(sidebarWrapper?.contains(glossaryTree)).toBe(true);
+        expect(document.querySelector('.sidebar-popover-paper')).not.toBeInTheDocument();
+      });
+    });
+
+    it('[Negative] should NOT create duplicate tree instances when popover is opened', async () => {
+      const entitiesIcon = screen.getByAltText('entities');
+      fireEvent.click(entitiesIcon.closest('button')!);
+
+      await waitFor(() => {
+        const entitiesTrees = screen.getAllByTestId('entities-tree');
+        expect(entitiesTrees).toHaveLength(1);
+        expect(entitiesTrees).not.toHaveLength(2);
+      });
+    });
+
+    it('[Negative] should NOT portal inactive tree elements into the popover container', async () => {
+      const glossaryIcon = screen.getByAltText('glossary');
+      fireEvent.click(glossaryIcon.closest('button')!);
+
+      await waitFor(() => {
+        const popoverPaper = document.querySelector('.sidebar-popover-paper');
+        const entitiesTree = screen.getByTestId('entities-tree');
+        const classificationTree = screen.getByTestId('classification-tree');
+
+        expect(popoverPaper?.contains(entitiesTree)).toBe(false);
+        expect(popoverPaper?.contains(classificationTree)).toBe(false);
       });
     });
 
@@ -798,7 +871,7 @@ describe('SideBarBody', () => {
       fireEvent.click(entitiesIcon.closest('button')!);
 
       await waitFor(() => {
-        expect(screen.getAllByTestId('entities-tree')).toHaveLength(2);
+        expect(screen.getAllByTestId('entities-tree')).toHaveLength(1);
         expect(screen.getAllByTestId('glossary-tree')).toHaveLength(1);
       });
     });
@@ -903,6 +976,19 @@ describe('SideBarBody', () => {
       expect(relIcon.closest('.sidebar-icon-active')).toBeInTheDocument();
       unmount6();
 
+      (global as unknown as Record<string, unknown>).mockLocation = undefined;
+    });
+
+    it('should have no active icon when on /search with no query parameters', async () => {
+      (global as unknown as Record<string, unknown>).mockLocation = { pathname: '/search', search: '' };
+      const { unmount } = renderWithProviders();
+      const toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
+      fireEvent.click(toggleButton!);
+
+      const activeIcons = document.querySelectorAll('.sidebar-icon-active');
+      expect(activeIcons.length).toBe(0);
+
+      unmount();
       (global as unknown as Record<string, unknown>).mockLocation = undefined;
     });
   });

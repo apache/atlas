@@ -101,7 +101,19 @@ type CustomContentRootProps = HTMLAttributes<HTMLDivElement> & {
   selectedNode?: SelectedNode;
 };
 
-const HoverableTreeItemContainer = ({ children, ...props }: { children: React.ReactNode | ((isHovered: boolean) => React.ReactNode) } & HTMLAttributes<HTMLDivElement>) => {
+interface SavedSearchItem {
+  name?: string;
+  searchType?: string;
+  searchParameters?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+const HoverableTreeItemContainer = ({
+  children,
+  ...props
+}: {
+  children: React.ReactNode | ((isHovered: boolean) => React.ReactNode);
+} & HTMLAttributes<HTMLDivElement> & CustomContentRootProps) => {
   const [isHovered, setIsHovered] = useState(false);
   return (
     <div
@@ -338,8 +350,8 @@ const BarTreeView: FC<{
   loader,
   isPopover,
 }) => {
-    const { savedSearchData }: any = useAppSelector(
-      (state: any) => state.savedSearch
+    const savedSearchData = useAppSelector(
+      (state) => state.savedSearch?.savedSearchData as SavedSearchItem[] | null
     );
     const { bmguid } = useParams();
     const dispatch = useAppDispatch();
@@ -357,23 +369,23 @@ const BarTreeView: FC<{
     });
 
     const [openModal, setOpenModal] = useState<boolean>(false);
-    const toastId: any = useRef(null);
+    const toastId = useRef<number | string | null>(null);
     const open = Boolean(expand);
     const [expandedItems, setExpandedItems] = useState<string[]>([]);
     const [tagModal, setTagModal] = useState<boolean>(false);
     const [glossaryModal, setGlossaryModal] = useState<boolean>(false);
-    const { businessMetaData }: any = useAppSelector(
-      (state: any) => state.businessMetaData
+    const businessMetaData = useAppSelector(
+      (state) => state.businessMetaData?.businessMetaData as Record<string, any> | null
     );
 
     const filteredData = useMemo(() => {
       if (!searchTerm) return treeData;
       const lowerSearch = searchTerm.toLowerCase();
-      return treeData.reduce((acc: any[], node: any) => {
+      return treeData.reduce((acc: TreeNode[], node: TreeNode) => {
         const nodeMatches = node.label?.toLowerCase().includes(lowerSearch);
         let filteredChildren = node.children;
         if (!nodeMatches && node.children) {
-          filteredChildren = node.children.filter((child: any) =>
+          filteredChildren = node.children.filter((child: TreeNode) =>
             child.label?.toLowerCase().includes(lowerSearch)
           );
         }
@@ -599,8 +611,8 @@ const BarTreeView: FC<{
       searchParams: URLSearchParams,
       navigate: NavigateFunction,
       isEmptyServicetype: boolean | undefined,
-      savedSearchData: any,
-      toastId: any
+      savedSearchData: SavedSearchItem[] | null | undefined,
+      toastId: React.MutableRefObject<number | string | null>
     ) => {
       globalSearchFilterInitialQuery.setQuery({});
       searchParams.delete("tabActive");
@@ -654,7 +666,7 @@ const BarTreeView: FC<{
       treeName: string,
       searchParams: URLSearchParams,
       isEmptyServicetype: boolean | undefined,
-      savedSearchData: any
+      savedSearchData: SavedSearchItem[] | null | undefined
     ) => {
       searchParams.set(
         "searchType",
@@ -720,7 +732,7 @@ const BarTreeView: FC<{
     const setCustomFiltersSearchParams = (
       node: TreeNode,
       searchParams: URLSearchParams,
-      savedSearchData: any[]
+      savedSearchData: SavedSearchItem[] | null | undefined
     ) => {
       // Clear all existing params except searchType
       const keys = Array.from(searchParams.keys());
@@ -733,10 +745,10 @@ const BarTreeView: FC<{
       // Clear globalSearchFilterInitialQuery when applying new saved search
       globalSearchFilterInitialQuery.setQuery({});
 
-      if (treeName === "CustomFilters") {
+      if (treeName === "CustomFilters" && savedSearchData) {
         const params = savedSearchData.find((obj) => obj.name === node.id);
         if (params) {
-          const searchParamsObj = params?.searchParameters || {};
+          const searchParamsObj = (params?.searchParameters || {}) as Record<string, unknown>;
 
           // Step 1: Set searchType based on saved search type
           if (params.searchType) {
@@ -764,7 +776,7 @@ const BarTreeView: FC<{
               searchParams.set("entityFilters", ruleUrl);
 
               // Convert API format to query builder format for Filters component UI
-              const qbFilter = convertApiToQueryBuilder(searchParamsObj.entityFilters);
+              const qbFilter = convertApiToQueryBuilder(searchParamsObj.entityFilters as Record<string, unknown>);
               if (qbFilter && (qbFilter.rules || qbFilter.combinator)) {
                 globalSearchFilterInitialQuery.setQuery({
                   entityFilters: qbFilter
@@ -785,7 +797,7 @@ const BarTreeView: FC<{
               searchParams.set("tagFilters", ruleUrl);
 
               // Convert API format to query builder format for Filters component UI
-              const qbFilter = convertApiToQueryBuilder(searchParamsObj.tagFilters);
+              const qbFilter = convertApiToQueryBuilder(searchParamsObj.tagFilters as Record<string, unknown>);
               if (qbFilter && (qbFilter.rules || qbFilter.combinator)) {
                 globalSearchFilterInitialQuery.setQuery({
                   tagFilters: qbFilter
@@ -806,7 +818,7 @@ const BarTreeView: FC<{
               searchParams.set("relationshipFilters", ruleUrl);
 
               // Convert API format to query builder format for Filters component UI
-              const qbFilter = convertApiToQueryBuilder(searchParamsObj.relationshipFilters);
+              const qbFilter = convertApiToQueryBuilder(searchParamsObj.relationshipFilters as Record<string, unknown>);
               if (qbFilter && (qbFilter.rules || qbFilter.combinator)) {
                 globalSearchFilterInitialQuery.setQuery({
                   relationshipFilters: qbFilter
@@ -824,38 +836,40 @@ const BarTreeView: FC<{
     };
 
     // Helper function to convert API format filter (criterion/condition) to query builder format (rules/combinator)
-    const convertApiToQueryBuilder = (apiFilter: any): any => {
+    const convertApiToQueryBuilder = (
+      apiFilter: Record<string, unknown> | null | undefined
+    ): Record<string, unknown> | null => {
       if (!apiFilter || typeof apiFilter !== "object") {
         return null;
       }
 
-      const result: any = {};
+      const result: Record<string, unknown> = {};
 
       // Convert condition to combinator
-      if (apiFilter.condition) {
+      if (typeof apiFilter.condition === "string") {
         result.combinator = apiFilter.condition.toLowerCase();
       } else {
         result.combinator = "and"; // default
       }
 
       // Convert criterion to rules
-      if (apiFilter.criterion && Array.isArray(apiFilter.criterion)) {
-        result.rules = apiFilter.criterion.map((rule: any) => {
+      if (Array.isArray(apiFilter.criterion)) {
+        result.rules = apiFilter.criterion.map((rule: Record<string, unknown>) => {
           // If nested condition, recurse
           if (rule.condition || rule.criterion) {
             return convertApiToQueryBuilder(rule);
           }
           // Convert API rule format to query builder format
           return {
-            field: rule.attributeName || rule.id,
-            operator: rule.operator,
+            field: String(rule.attributeName || rule.id || ""),
+            operator: rule.operator as string,
             value: rule.attributeValue || rule.value,
-            type: rule.type || rule.attributeType
+            type: String(rule.type || rule.attributeType || "")
           };
         });
-      } else if (apiFilter.rules && Array.isArray(apiFilter.rules)) {
+      } else if (Array.isArray(apiFilter.rules)) {
         // Already in query builder format
-        result.rules = apiFilter.rules.map((rule: any) =>
+        result.rules = apiFilter.rules.map((rule: Record<string, unknown>) =>
           rule.condition || rule.criterion ? convertApiToQueryBuilder(rule) : rule
         );
       }
@@ -875,23 +889,23 @@ const BarTreeView: FC<{
     const setCustomFilterParam = (
       searchParams: URLSearchParams,
       key: string,
-      value: any
+      value: unknown
     ) => {
       if (key === "limit") {
-        searchParams.set("pageLimit", value || 25);
+        searchParams.set("pageLimit", String(value || 25));
       } else if (key === "offset") {
-        searchParams.set("pageOffset", value);
+        searchParams.set("pageOffset", String(value));
       } else if (key === "typeName") {
-        searchParams.set("type", value);
+        searchParams.set("type", String(value));
       } else if (key === "classification") {
         // Map classification to tag parameter for URL (matching classic UI)
-        searchParams.set("tag", value);
+        searchParams.set("tag", String(value));
       } else if (key === "termName") {
         // Map termName (API format) to term parameter for URL (matching classic UI)
-        searchParams.set("term", value);
+        searchParams.set("term", String(value));
       } else if (value !== null && value !== undefined && value !== "") {
         // Only set parameter if value is not null, undefined, or empty string
-        searchParams.set(key, value);
+        searchParams.set(key, String(value));
       }
     };
 
@@ -901,7 +915,7 @@ const BarTreeView: FC<{
       searchParams: URLSearchParams,
       navigate: NavigateFunction,
       isEmptyServicetype: boolean | undefined,
-      toastId: any
+      toastId: React.MutableRefObject<number | string | null>
     ) => {
       switch (treeName) {
         case "Business MetaData":
@@ -923,7 +937,9 @@ const BarTreeView: FC<{
               { replace: true }
             );
           } else if (node.types === "parent") {
-            toast.dismiss(toastId.current);
+            if (toastId.current !== null) {
+              toast.dismiss(toastId.current);
+            }
             toastId.current = toast.warning("Create a Term or Category");
           } else {
             searchParams.delete("relationshipName");
@@ -1060,8 +1076,8 @@ const BarTreeView: FC<{
           await downloadGlossaryImportTemplate();
           return;
         }
-        const apiResp: any = await getBusinessMetadataImportTmpl({});
-        const text: string = apiResp ? apiResp.data : "";
+        const apiResp = await getBusinessMetadataImportTmpl({});
+        const text: string = apiResp && typeof apiResp === "object" && "data" in apiResp ? String(apiResp.data) : "";
         const blob = new Blob([text], { type: "text/plain" });
 
         const url = window.URL.createObjectURL(blob);
@@ -1153,9 +1169,9 @@ const BarTreeView: FC<{
                       treeName === "Classifications" ||
                       treeName === "Glossary") && (
                         <MoreVertIcon
-                          onClick={(e: any) => {
+                          onClick={(e: MouseEvent<SVGSVGElement>) => {
                             e.stopPropagation();
-                            handleClickMenu(e);
+                            handleClickMenu(e as unknown as MouseEvent<HTMLElement>);
                           }}
                           data-cy="dropdownMenuButton"
                           fontSize="small"

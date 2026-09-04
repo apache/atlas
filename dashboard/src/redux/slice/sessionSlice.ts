@@ -90,7 +90,7 @@ const sessionSlice = createSlice({
       builder.addCase(fetchSessionData.rejected, (state, action) => {
         state.sessionObj = {
           loading: false,
-          data: null as Record<string, unknown> | null,
+          data: state.sessionObj.data,
           error: (action.payload as string) || action.error?.message || 'An error occurred'
         };
       }),
@@ -112,7 +112,7 @@ const sessionSlice = createSlice({
       builder.addCase(fetchVersionData.rejected, (state, action) => {
         state.versionData = {
           loading: false,
-          data: null as Record<string, unknown> | null,
+          data: state.versionData.data,
           error: (action.payload as string) || action.error?.message || 'An error occurred'
         };
       });
