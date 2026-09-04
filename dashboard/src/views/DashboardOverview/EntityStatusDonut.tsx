@@ -114,7 +114,7 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 							animationEasing="ease-out"
 							onClick={(data: unknown) => {
 								const payload = getPayloadFromRechartsEvent<StatusDonutDataItem>(data);
-								const name = payload?.name ?? (data as { name?: "Active" | "Shell" | "Deleted" })?.name;
+								const name = payload?.name;
 								if (name === "Active" || name === "Shell" || name === "Deleted") {
 									handleStatusClick(name);
 								}

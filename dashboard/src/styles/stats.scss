@@ -15,6 +15,13 @@
  * limitations under the License.
  */
 
+:root {
+  --chart-active-color: #10b981;
+  --chart-shell-color: #f59e0b;
+  --chart-deleted-color: #ef4444;
+  --chart-bar-active-color: #1976d2;
+}
+
 .graph-custom-tooltip {
   background-color: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(0, 0, 0, 0.5);
@@ -107,6 +114,10 @@
   color: #868e96;
 }
 
+.legend-active {
+  color: inherit;
+}
+
 
 
 .chart-card {
@@ -166,15 +177,15 @@ html[data-theme="dark"] .chart-card-header {
 }
 
 .donut-status-active {
-  background-color: #10b981;
+  background-color: var(--chart-active-color);
 }
 
 .donut-status-shell {
-  background-color: #f59e0b;
+  background-color: var(--chart-shell-color);
 }
 
 .donut-status-deleted {
-  background-color: #ef4444;
+  background-color: var(--chart-deleted-color);
 }
 
 .chart-axis-label {
@@ -257,7 +268,7 @@ html[data-theme="dark"] .chart-card-header {
 }
 
 .entity-type-deleted-text {
-  color: #ef4444;
+  color: var(--chart-deleted-color);
 }
 
 .chart-legend-container {
@@ -276,12 +287,12 @@ html[data-theme="dark"] .chart-card-header {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: #1976d2;
+  background-color: var(--chart-bar-active-color);
 }
 
 .chart-legend-dot-deleted {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: #ef4444;
+  background-color: var(--chart-deleted-color);
 }

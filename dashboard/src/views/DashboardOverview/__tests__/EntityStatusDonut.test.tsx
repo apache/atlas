@@ -53,7 +53,7 @@ jest.mock("recharts", () => {
 						key={entry.name}
 						type="button"
 						data-testid={`pie-slice-${entry.name}`}
-						onClick={() => onClick?.(entry)}
+						onClick={() => onClick?.({ payload: entry })}
 					>
 						{entry.name}
 					</button>
