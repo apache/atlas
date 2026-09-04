@@ -4,11 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "NODE_OPTIONS=\"--require $PWD/crypto-fallback.js\" node ./docz-lib/docz/bin/index.js dev",
+    "start": "node scripts/run-docz.js dev",
     "fetch-team": "node scripts/fetchTeamList.js",
     "prebuild": "npm run fetch-team",
-    "build": "NODE_OPTIONS=\"--require $PWD/crypto-fallback.js\" node ./docz-lib/docz/bin/index.js build",
-    "predeploy": "npm install && NODE_OPTIONS=\"--require $PWD/crypto-fallback.js\" npm run build",
+    "build": "node scripts/run-docz.js build",
+    "predeploy": "npm install && npm run build",
     "deploy": "gh-pages -d site",
     "postinstall": "patch-package"
   },
