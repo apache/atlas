@@ -672,15 +672,27 @@
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>create-apidocs-dir</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <target>
+                                <mkdir dir="${project.build.directory}/api/v2/apidocs/ui" />
+                            </target>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <goals>
                             <goal>run</goal>
                         </goals>
                         <phase>pre-integration-test</phase>
                         <configuration>
-                            <tasks>
+                            <target>
                                 <delete dir="${project.build.directory}/data" />
                                 <delete dir="${project.build.directory}/logs" />
-                            </tasks>
+                            </target>
                         </configuration>
                     </execution>
                     <execution>
@@ -691,7 +703,7 @@
                         <phase>prepare-package</phase>
                         <configuration>
                             <skip>${skipEnunciate}</skip>
-                            <tasks>
+                            <target>
                                 <!-- Copy CSS -->
                                 <copy failonerror="true" todir="${project.build.directory}/api/v2/css">
                                     <fileset dir="${project.basedir}/src/main/enunciate-assets/css" />
@@ -714,12 +726,36 @@
                                     <fileset dir="${project.basedir}/src/main/enunciate-assets/js" />
                                 </copy>
 
-                                <!-- Replace URLs -->
+                                <!-- Replace URLs
+                                     Relative paths (css/..., js/...) are used here because the css and js 
+                                     directories are copied into every directory depth where Enunciate 
+                                     emits HTML (api/v2, api/v2/apidocs, and api/v2/apidocs/ui) in the steps above. 
+                                     Note: Enunciate's default usage of run_prettify.js does not append ?lang= or 
+                                     ?skin= query params, so we do not need to bundle the full prettify distribution.
+                                -->
                                 <replace dir="${project.build.directory}/api/v2" includes="**/*.html" token="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" value="css/bootstrap.min.css" />
                                 <replace dir="${project.build.directory}/api/v2" includes="**/*.html" token="https://code.jquery.com/jquery-1.12.2.min.js" value="js/jquery-1.12.2.min.js" />
                                 <replace dir="${project.build.directory}/api/v2" includes="**/*.html" token="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js" value="js/bootstrap.min.js" />
                                 <replace dir="${project.build.directory}/api/v2" includes="**/*.html" token="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js" value="js/run_prettify.js" />
                                 <replace dir="${project.build.directory}/api/v2" includes="**/*.js" token="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/" value="" />
+
+                                <!-- Verify bundled assets exist -->
+                                <fail message="Build failure: Bundled assets not found in generated API docs!">
+                                    <condition>
+                                        <and>
+                                            <available file="${project.build.directory}/api/v2" type="dir" />
+                                            <not>
+                                                <and>
+                                                    <available file="${project.build.directory}/api/v2/css/bootstrap.min.css" />
+                                                    <available file="${project.build.directory}/api/v2/js/jquery-1.12.2.min.js" />
+                                                    <available file="${project.build.directory}/api/v2/js/bootstrap.min.js" />
+                                                    <available file="${project.build.directory}/api/v2/js/run_prettify.js" />
+                                                    <available file="${project.build.directory}/api/v2/css/prettify.css" />
+                                                </and>
+                                            </not>
+                                        </and>
+                                    </condition>
+                                </fail>
 
                                 <!-- Verify no CDN URLs remain -->
                                 <fail message="Build failure: CDN references to bootstrapcdn.com found in generated API docs!">
@@ -758,7 +794,7 @@
                                         </and>
                                     </condition>
                                 </fail>
-                            </tasks>
+                            </target>
                         </configuration>
                     </execution>
                 </executions>

@@ -16,22 +16,24 @@
  * limitations under the License.
  */
 
-const crypto = require("crypto");
-const originalCreateHash = crypto.createHash;
+const { spawnSync } = require('child_process');
+const path = require('path');
 
-/**
- * Fallback from md4 to sha256 is safe for Webpack content hashing.
- * While the generated hash values will change, the build output remains 
- * perfectly valid. This is necessary for Node environments (e.g. Node 17+) 
- * where md4 is disabled by default in OpenSSL 3.0.
- */
-crypto.createHash = (algorithm, options) => {
-  if (algorithm === "md4") {
-    try {
-      return originalCreateHash("md4", options);
-    } catch (e) {
-      return originalCreateHash("sha256", options);
-    }
+const command = process.argv[2]; // 'dev' or 'build'
+if (!command) {
+  console.error("Please specify a command (dev or build)");
+  process.exit(1);
+}
+
+const cryptoFallbackPath = path.join(__dirname, '..', 'crypto-fallback.js');
+const doczBinPath = path.join(__dirname, '..', 'docz-lib', 'docz', 'bin', 'index.js');
+
+const result = spawnSync('node', [doczBinPath, command], {
+  stdio: 'inherit',
+  env: {
+    ...process.env,
+    NODE_OPTIONS: `${process.env.NODE_OPTIONS || ''} --require ${cryptoFallbackPath}`.trim()
   }
-  return originalCreateHash(algorithm, options);
-};
+});
+
+process.exit(result.status || 0);
