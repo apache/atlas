@@ -60,8 +60,10 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 	);
 
 	const handleBarClick = useCallback(
-		(entry: { name: string }) => {
-			navigateToClassificationSearch(navigate, entry.name);
+		(entry: { name?: string }) => {
+			if (entry?.name) {
+				navigateToClassificationSearch(navigate, entry.name);
+			}
 		},
 		[navigate]
 	);
@@ -83,8 +85,8 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 		const row = p.payload[0]?.payload;
 		if (!row) return null;
 		return (
-			<Box sx={{ p: 1.5, bgcolor: "background.paper", borderRadius: 1, boxShadow: 2, minWidth: 140 }}>
-				<Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
+			<Box className="classification-distribution-card-box-9">
+				<Typography variant="body2" fontWeight={600} className="classification-distribution-card-typography-10">
 					{row.name}
 				</Typography>
 				<Typography variant="caption" display="block">
@@ -111,26 +113,26 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 				"&:hover": { boxShadow: 4 }
 			}}
 		>
-			<Box sx={{ pb: 2, borderBottom: "1px solid", borderColor: "divider" }}>
+			<Box className="classification-distribution-card-box-11">
 				<Stack direction="row" justifyContent="space-between" alignItems="center">
-					<Typography sx={{ fontSize: "1rem", fontWeight: 600, color: "#1a1a1a" }}>
+					<Typography className="classification-distribution-card-typography-12">
 						Classification Distribution
 					</Typography>
 					<Link
 						component="button"
 						onClick={handleViewAll}
-						sx={{ fontSize: "0.875rem", cursor: "pointer", textDecoration: "none", color: "primary.main" }}
+						className="classification-distribution-card-link-13"
 						aria-label="View all classifications"
 					>
 						View All
 					</Link>
 				</Stack>
 			</Box>
-			<Typography variant="body2" sx={{ color: "#6c757d", mt: 2, lineHeight: 1.4 }}>
+			<Typography variant="body2" className="classification-distribution-card-typography-14">
 				<strong>Tag–entity associations (total):</strong>{" "}
 				{numberFormatWithComma(associationTotal)}
 			</Typography>
-			<Typography variant="caption" sx={{ color: "#868e96", display: "block", mt: 0.75, lineHeight: 1.4 }}>
+			<Typography variant="caption" className="classification-distribution-card-typography-15">
 				The chart shows the top 5 classifications by number of entities in use.
 			</Typography>
 			{data.length === 0 ? (
@@ -140,8 +142,8 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 					</Typography>
 				</Stack>
 			) : (
-				<Box sx={{ mt: 2, minHeight: 260, height: 260, width: "100%", minWidth: 280 }}>
-					<ResponsiveContainer width="100%" height="100%" style={{ cursor: "pointer" }}>
+				<Box className="classification-distribution-card-box-16">
+					<ResponsiveContainer width="100%" height="100%" className="classification-distribution-card-responsive-container-17">
 						<BarChart
 							data={data}
 							layout="vertical"
@@ -174,7 +176,7 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 										<g
 											transform={`translate(${x},${y})`}
 											onClick={() => (value ? handleLabelClick(value) : undefined)}
-											style={{ cursor: value ? "pointer" : "default" }}
+											className={`classification-distribution-card-element-18-${value ? 'pointer' : 'default'}`}
 											role={value ? "button" : undefined}
 											tabIndex={value ? 0 : undefined}
 											aria-label={value || undefined}
@@ -203,19 +205,15 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 								name="Entities"
 								fill={BAR_COLOR}
 								radius={[0, 4, 4, 0]}
-								onClick={(entry) => handleBarClick(entry)}
+								onClick={handleBarClick}
 								cursor="pointer"
 							>
 								<LabelList
 									dataKey="count"
 									position="right"
 									offset={10}
-									formatter={(v: number) => numberFormatWithComma(v)}
-									style={{
-										fontSize: 12,
-										fontWeight: 500,
-										fill: BAR_COLOR,
-									}}
+									formatter={(v: unknown) => (typeof v === "number" ? numberFormatWithComma(v) : "")}
+									className="classification-distribution-card-element-19"
 								/>
 								{data.map((_, index) => <Cell key={index} fill={BAR_COLOR} />)}
 							</Bar>

@@ -15,10 +15,17 @@
  * limitations under the License.
  */
 
-import { useEffect, useState } from "react";
-import { Avatar, Skeleton } from "@mui/material";
+import type { SyntheticEvent } from "react";
+import { Avatar } from "@mui/material";
 import { getEntityIconPath } from "../utils/Utils";
-import axios from "axios";
+
+interface DisplayImageProps {
+  entity: Record<string, unknown>;
+  width?: string | number;
+  height?: string | number;
+  avatarDisplay?: boolean;
+  isProcess?: boolean;
+}
 
 const DisplayImage = ({
   entity,
@@ -26,78 +33,42 @@ const DisplayImage = ({
   height,
   avatarDisplay,
   isProcess
-}: any) => {
-  const [imageUrl, setImageUrl] = useState<any>(null);
-  const [checkEntityImage, setCheckEntityImage] = useState<any>({
-    [entity.guid]: false
-  });
+}: DisplayImageProps) => {
+  const entityData = { ...entity, isProcess };
+  
+  const primaryUrl = getEntityIconPath({ entityData }) || "";
+  const fallbackUrl = getEntityIconPath({ entityData, errorUrl: primaryUrl }) || "";
 
-  useEffect(() => {
-    const fetchImagePath = async () => {
-      let entityData = { ...entity, ...{ isProcess: isProcess } };
-      let imagePath: any = getEntityIconPath({ entityData: entityData });
-      try {
-        const response = await axios.get(imagePath, {
-                    responseType: "blob"
-        });
-        const contentType: any = response.headers["content-type"];
+  const handleError = (e: SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.currentTarget;
+    if (target.dataset.fallbackApplied !== "true") {
+      target.dataset.fallbackApplied = "true";
+      target.onerror = null;
+      target.src = fallbackUrl;
+    }
+  };
 
-        if (contentType && contentType.startsWith("image/")) {
-          let cache = { [entityData.guid]: imagePath };
-          setCheckEntityImage(cache);
-          setImageUrl(getEntityIconPath({ entityData: entityData }));
-        } else {
-          setImageUrl(
-            getEntityIconPath({ entityData: entityData, errorUrl: imagePath })
-          );
-        }
-      } catch (_error) {
-        setImageUrl(
-          getEntityIconPath({ entityData: entityData, errorUrl: imagePath })
-        );
-      }
-    };
-
-    fetchImagePath();
-  }, []);
-
-  return imageUrl != undefined ? (
+  return (
     <div className="search-result-table-name-col" data-cy="entityIcon">
-      {checkEntityImage[entity.guid] !== false ? (
-        avatarDisplay == undefined ? (
-          <img
-            className="search-result-table-img"
-            id={entity.guid}
-            data-cy={entity.guid}
-            src={checkEntityImage[entity.guid]}
-            alt="Entity Icon"
-          />
-        ) : (
-          <Avatar
-            alt="entityImg"
-            src={checkEntityImage[entity.guid]}
-            sx={{ width: width, height: height }}
-            variant="square"
-          ></Avatar>
-        )
-      ) : avatarDisplay == undefined ? (
+      {avatarDisplay === undefined ? (
         <img
           className="search-result-table-img"
-          id={entity.guid}
-          data-cy={entity.guid}
-          src={imageUrl}
+          id={entity.guid ? String(entity.guid) : undefined}
+          data-cy={entity.guid ? String(entity.guid) : undefined}
+          src={primaryUrl}
           alt="Entity Icon"
+          onError={handleError}
         />
       ) : (
         <Avatar
           alt="entityImg"
-          src={imageUrl}
+          src={primaryUrl}
           sx={{ width: width, height: height }}
+          variant="square"
+          imgProps={{ onError: handleError }}
         ></Avatar>
       )}
     </div>
-  ) : (
-    <div>{<Skeleton variant="circular" width={22} height={20} />}</div>
   );
 };
 

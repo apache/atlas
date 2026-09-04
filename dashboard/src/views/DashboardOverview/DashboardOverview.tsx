@@ -93,15 +93,9 @@ const DashboardOverview = () => {
 		<Stack
 			spacing={3}
 			width="100%"
-			sx={{
-				maxWidth: "100%",
-				boxSizing: "border-box",
-				backgroundColor: "#f5f7f9",
-				padding: 3,
-				borderRadius: 2
-			}}
+			className="dashboard-overview-stack-20"
 		>
-			<Grid container spacing={3} sx={{ width: "100%", alignItems: "stretch" }}>
+			<Grid container spacing={3} className="dashboard-overview-grid-21" sx={{ width: "100%" }}>
 				<Grid item xs={12} md={4}>
 					{isLoading ? <DashboardSkeleton /> : <OverviewCard entityCount={entityCount} tagCount={tagCount} />}
 				</Grid>
@@ -118,27 +112,27 @@ const DashboardOverview = () => {
 						/>
 					)}
 				</Grid>
-				<Grid item xs={12} md={8} sx={{ display: "flex", minWidth: 0 }}>
+				<Grid item xs={12} md={8} className="dashboard-overview-grid-22">
 					{isLoading ? (
 						<EntityTypeBarChartSkeleton />
 					) : (
 						<EntityTypeBarChart entity={entity} typeHeaderData={typeHeaderData} />
 					)}
 				</Grid>
-				<Grid item xs={12} md={4} sx={{ display: "flex", minWidth: 0 }}>
+				<Grid item xs={12} md={4} className="dashboard-overview-grid-22">
 					{latestLoading ? (
 						<LatestEntitiesSkeleton />
 					) : (
 						<LatestEntitiesList entities={latestEntitiesList} error={latestError} />
 					)}
 				</Grid>
-				<Grid item xs={12} md={12} sx={{ display: "flex", minWidth: 0 }}>
+				<Grid item xs={12} md={12} className="dashboard-overview-grid-22">
 					<RecentActivity />
 				</Grid>
-				<Grid item xs={12} md={12} sx={{ display: "flex", minWidth: 0 }}>
+				<Grid item xs={12} md={12} className="dashboard-overview-grid-22">
 					{isLoading ? <EntityTypeBarChartSkeleton /> : <ClassificationDistributionCard tag={tag} isLoading={isLoading} />}
 				</Grid>
-				<Grid item xs={12} md={12} sx={{ display: "flex", minWidth: 0 }}>
+				<Grid item xs={12} md={12} className="dashboard-overview-grid-22">
 					{isLoading ? <EntityTypeBarChartSkeleton /> : <KafkaTopicSummaryCard stats={stats} isLoading={isLoading} />}
 				</Grid>
 			</Grid>

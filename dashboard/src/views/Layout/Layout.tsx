@@ -123,7 +123,6 @@ const Layout: React.FC = () => {
       <div className="row">
         <div className="column layout-sidebar">
           <SideBarBody
-            loading={false}
             handleOpenModal={handleOpenModal}
             handleOpenAboutModal={handleOpenAboutModal}
           />
@@ -140,7 +139,7 @@ const Layout: React.FC = () => {
               button2Label="Cancel"
               button2Handler={handleCloseModal}
             >
-              <CircularProgress size={32} sx={{ display: "block", mx: "auto" }} />
+              <CircularProgress size={32} className="layout-circular-progress-45" />
             </CustomModal>
           }
         >

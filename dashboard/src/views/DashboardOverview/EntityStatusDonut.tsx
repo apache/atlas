@@ -35,7 +35,7 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 	const totals = getEntityStatusTotals(entity);
 	const total = totals.active + totals.shell + totals.deleted;
 
-	const chartData = [
+	const chartData: Array<{ name: string; value: number; color: string }> = [
 		{ name: "Active", value: totals.active, color: COLORS.Active },
 		{ name: "Shell", value: totals.shell, color: COLORS.Shell },
 		{ name: "Deleted", value: totals.deleted, color: COLORS.Deleted }
@@ -91,12 +91,12 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 				"&:hover": { boxShadow: 4 }
 			}}
 		>
-			<Box sx={{ pb: 2, borderBottom: "1px solid", borderColor: "divider" }}>
-				<Typography sx={{ fontSize: "1rem", fontWeight: 600, color: "#1a1a1a" }}>
+			<Box className="classification-distribution-card-box-11">
+				<Typography className="classification-distribution-card-typography-12">
 					Entity Status Overview
 				</Typography>
 			</Box>
-			<Stack direction="row" spacing={2} alignItems="center" height={160} sx={{ pt: 2 }}>
+			<Stack direction="row" spacing={2} alignItems="center" height={160} className="entity-status-donut-stack-23">
 				<Stack spacing={1.5} flex={1}>
 					{(["Active", "Shell", "Deleted"] as const).map((status) => (
 						<Box
@@ -120,21 +120,15 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 							}}
 						>
 							<Box
-								sx={{
-									width: 12,
-									height: 12,
-									borderRadius: "50%",
-									backgroundColor: COLORS[status],
-									flexShrink: 0
-								}}
+								className={`entity-status-donut-box-24 entity-status-donut-box-${status}`}
 							/>
-							<Typography component="span" sx={{ fontSize: "0.875rem", color: "#374151" }}>
+							<Typography component="span" className="entity-status-donut-typography-25">
 								{status} {getPercent(totals[status.toLowerCase() as keyof typeof totals])}%
 							</Typography>
 						</Box>
 					))}
 				</Stack>
-				<ResponsiveContainer width="50%" height="100%" style={{ cursor: "pointer" }}>
+				<ResponsiveContainer width="50%" height="100%" className="classification-distribution-card-responsive-container-17">
 					<PieChart>
 						<Pie
 							data={chartData}
@@ -147,18 +141,21 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 							isAnimationActive
 							animationDuration={800}
 							animationEasing="ease-out"
-							activeIndex={activeIndex}
+							{...({ activeIndex: activeIndex >= 0 ? activeIndex : undefined } as Record<string, unknown>)}
 							activeShape={renderActiveShape}
 							onMouseEnter={(_, index) => setActiveIndex(index)}
 							onMouseLeave={() => setActiveIndex(-1)}
-							onClick={(data) => handleStatusClick(data.name as "Active" | "Shell" | "Deleted")}
+							onClick={(data) => {
+								const d = data as { name?: "Active" | "Shell" | "Deleted" };
+								if (d?.name) handleStatusClick(d.name);
+							}}
 						>
 							{chartData.map((entry, index) => (
 								<Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
 							))}
 						</Pie>
 						<Tooltip
-							formatter={(value: number) => numberFormatWithComma(value)}
+							formatter={(value: unknown) => (typeof value === "number" ? numberFormatWithComma(value) : "")}
 							contentStyle={{ borderRadius: 8 }}
 						/>
 					</PieChart>

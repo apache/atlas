@@ -24,6 +24,7 @@
 
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@utils/test-utils'
+import '@testing-library/jest-dom'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import DebugMetrics from '../DebugMetrics'
 
@@ -35,21 +36,21 @@ jest.mock('@api/apiMethods/metricsApiMethods', () => ({
 
 // Mock MUI components
 jest.mock('@components/muiComponents', () => ({
-	AutorenewIcon: ({ className }: any) => <div data-testid="autorenew-icon" className={className}>AutorenewIcon</div>,
-	CustomButton: ({ children, onClick, variant, size, 'data-cy': dataCy }: any) => (
+	AutorenewIcon: ({ className }: Record<string, unknown>) => <div data-testid="autorenew-icon" className={className}>AutorenewIcon</div>,
+	CustomButton: ({ children, onClick, variant, size, 'data-cy': dataCy }: Record<string, unknown>) => (
 		<button data-testid="custom-button" onClick={onClick} data-variant={variant} data-size={size} data-cy={dataCy}>
 			{children}
 		</button>
 	),
-	LightTooltip: ({ children, title }: any) => (
+	LightTooltip: ({ children, title }: Record<string, unknown>) => (
 		<div data-testid="light-tooltip" title={title}>{children}</div>
 	),
-	LinkTab: ({ label }: any) => <div data-testid="link-tab">{label}</div>
+	LinkTab: ({ label }: Record<string, unknown>) => <div data-testid="link-tab">{label}</div>
 }))
 
 // Mock TableLayout component
 jest.mock('@components/Table/TableLayout', () => ({
-	TableLayout: ({ data, columns, emptyText, isFetching, columnVisibility, clientSideSorting, columnSort, showPagination, showRowSelection, tableFilters }: any) => (
+	TableLayout: ({ data, columns, emptyText, isFetching, columnVisibility, clientSideSorting, columnSort, showPagination, showRowSelection, tableFilters }: Record<string, unknown>) => (
 		<div data-testid="table-layout" data-fetching={isFetching}>
 			{isFetching && <div data-testid="loading">Loading...</div>}
 			{!isFetching && (!data || data.length === 0) && <div data-testid="empty-text">{emptyText}</div>}
@@ -82,21 +83,21 @@ jest.mock('@components/Table/TableLayout', () => ({
 // Mock MUI components
 jest.mock('@mui/material', () => ({
 	Divider: () => <div data-testid="divider">Divider</div>,
-	Grid: ({ children, container }: any) => <div data-testid={container ? 'grid-container' : 'grid'}>{children}</div>,
-	List: ({ children, className }: any) => <div data-testid="list" className={className}>{children}</div>,
-	ListItem: ({ children, className }: any) => <div data-testid="list-item" className={className}>{children}</div>,
-	ListItemText: ({ primary, secondary }: any) => (
+	Grid: ({ children, container }: Record<string, unknown>) => <div data-testid={container ? 'grid-container' : 'grid'}>{children}</div>,
+	List: ({ children, className }: Record<string, unknown>) => <div data-testid="list" className={className}>{children}</div>,
+	ListItem: ({ children, className }: Record<string, unknown>) => <div data-testid="list-item" className={className}>{children}</div>,
+	ListItemText: ({ primary, secondary }: Record<string, unknown>) => (
 		<div data-testid="list-item-text">
 			<div data-testid="primary">{primary}</div>
 			<div data-testid="secondary">{secondary}</div>
 		</div>
 	),
-	Stack: ({ children, ...props }: any) => <div data-testid="stack" {...props}>{children}</div>,
-	styled: (component: any) => (styles: any) => component,
-	Tabs: ({ children, value, className, 'data-cy': dataCy }: any) => (
+	Stack: ({ children, ...props }: Record<string, unknown>) => <div data-testid="stack" {...props}>{children}</div>,
+	styled: (component: Record<string, unknown>) => (styles: Record<string, unknown>) => component,
+	Tabs: ({ children, value, className, 'data-cy': dataCy }: Record<string, unknown>) => (
 		<div data-testid="tabs" data-value={value} className={className} data-cy={dataCy}>{children}</div>
 	),
-	Tooltip: ({ children, title, arrow, placement, classes }: any) => {
+	Tooltip: ({ children, title, arrow, placement, classes }: Record<string, unknown>) => {
 		// Call the styled component's theme function to cover line 53
 		const theme = createTheme()
 		const styledStyles = {
@@ -118,7 +119,7 @@ jest.mock('@mui/material', () => ({
 	tooltipClasses: {
 		tooltip: 'tooltip-class'
 	},
-	Typography: ({ children, color, className }: any) => (
+	Typography: ({ children, color, className }: Record<string, unknown>) => (
 		<div data-testid="typography" data-color={color} className={className}>{children}</div>
 	)
 }))
@@ -136,9 +137,9 @@ const mockCustomSortBy = jest.fn()
 const mockServerError = jest.fn()
 
 jest.mock('@utils/Utils', () => ({
-	isEmpty: (val: any) => mockIsEmpty(val),
+	isEmpty: (val: Record<string, unknown>) => mockIsEmpty(val),
 	customSortBy: (arr: any, keys: string[]) => mockCustomSortBy(arr, keys),
-	serverError: (error: any, toastId: any) => mockServerError(error, toastId)
+	serverError: (error: any, toastId: Record<string, unknown>) => mockServerError(error, toastId)
 }))
 
 // Mock moment
@@ -153,7 +154,7 @@ jest.mock('moment', () => {
 
 // Mock Item component
 jest.mock('@utils/Muiutils', () => ({
-	Item: ({ children, variant, className }: any) => (
+	Item: ({ children, variant, className }: Record<string, unknown>) => (
 		<div data-testid="item" data-variant={variant} className={className}>{children}</div>
 	)
 }))
@@ -193,14 +194,14 @@ describe('DebugMetrics', () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks()
-		mockIsEmpty.mockImplementation((val: any) => {
+		mockIsEmpty.mockImplementation((val: Record<string, unknown>) => {
 			if (val == null) return true
 			if (Array.isArray(val)) return val.length === 0
 			if (typeof val === 'object') return Object.keys(val).length === 0
 			if (val === '') return true
 			return false
 		})
-		mockCustomSortBy.mockImplementation((arr: any) => arr || [])
+		mockCustomSortBy.mockImplementation((arr: Record<string, unknown>) => arr || [])
 		mockMomentNow.mockReturnValue(1234567890)
 		mockGetDebugMetrics.mockResolvedValue({
 			data: mockDebugMetricsData
@@ -354,7 +355,7 @@ describe('DebugMetrics', () => {
 			}
 		}
 		mockGetDebugMetrics.mockResolvedValue({ data: dataWithEmptyName })
-		mockIsEmpty.mockImplementation((val: any) => val === '')
+		mockIsEmpty.mockImplementation((val: Record<string, unknown>) => val === '')
 		mockCustomSortBy.mockReturnValue([dataWithEmptyName['api1']])
 
 		render(<DebugMetrics />)
@@ -375,7 +376,7 @@ describe('DebugMetrics', () => {
 			}
 		}
 		mockGetDebugMetrics.mockResolvedValue({ data: dataWithNullName })
-		mockIsEmpty.mockImplementation((val: any) => val == null)
+		mockIsEmpty.mockImplementation((val: Record<string, unknown>) => val == null)
 		mockCustomSortBy.mockReturnValue([dataWithNullName['api1']])
 
 		render(<DebugMetrics />)
@@ -406,7 +407,7 @@ describe('DebugMetrics', () => {
 			}
 		}
 		mockGetDebugMetrics.mockResolvedValue({ data: dataWithEmptyNumops })
-		mockIsEmpty.mockImplementation((val: any) => val == null)
+		mockIsEmpty.mockImplementation((val: Record<string, unknown>) => val == null)
 		mockCustomSortBy.mockReturnValue([dataWithEmptyNumops['api1']])
 
 		render(<DebugMetrics />)
@@ -438,7 +439,7 @@ describe('DebugMetrics', () => {
 			}
 		}
 		mockGetDebugMetrics.mockResolvedValue({ data: dataWithEmptyMinTime })
-		mockIsEmpty.mockImplementation((val: any) => val == null)
+		mockIsEmpty.mockImplementation((val: Record<string, unknown>) => val == null)
 		mockCustomSortBy.mockReturnValue([dataWithEmptyMinTime['api1']])
 
 		render(<DebugMetrics />)
@@ -491,7 +492,7 @@ describe('DebugMetrics', () => {
 			}
 		}
 		mockGetDebugMetrics.mockResolvedValue({ data: dataWithEmptyMaxTime })
-		mockIsEmpty.mockImplementation((val: any) => val == null)
+		mockIsEmpty.mockImplementation((val: Record<string, unknown>) => val == null)
 		mockCustomSortBy.mockReturnValue([dataWithEmptyMaxTime['api1']])
 
 		render(<DebugMetrics />)
@@ -544,7 +545,7 @@ describe('DebugMetrics', () => {
 			}
 		}
 		mockGetDebugMetrics.mockResolvedValue({ data: dataWithEmptyAvgTime })
-		mockIsEmpty.mockImplementation((val: any) => val == null)
+		mockIsEmpty.mockImplementation((val: Record<string, unknown>) => val == null)
 		mockCustomSortBy.mockReturnValue([dataWithEmptyAvgTime['api1']])
 
 		render(<DebugMetrics />)
@@ -673,7 +674,7 @@ describe('DebugMetrics', () => {
 
 	it('should handle empty debugMetricsData object', async () => {
 		mockGetDebugMetrics.mockResolvedValue({ data: {} })
-		mockIsEmpty.mockImplementation((val: any) => {
+		mockIsEmpty.mockImplementation((val: Record<string, unknown>) => {
 			if (val == null) return true
 			if (typeof val === 'object' && Object.keys(val).length === 0) return true
 			return false
@@ -1052,7 +1053,7 @@ describe('DebugMetrics', () => {
 			}
 		}
 		mockGetDebugMetrics.mockResolvedValue({ data: dataWithEmptyStringName })
-		mockIsEmpty.mockImplementation((val: any) => val === '')
+		mockIsEmpty.mockImplementation((val: Record<string, unknown>) => val === '')
 		mockCustomSortBy.mockReturnValue([dataWithEmptyStringName['api1']])
 
 		render(<DebugMetrics />)
@@ -1073,7 +1074,7 @@ describe('DebugMetrics', () => {
 			}
 		}
 		mockGetDebugMetrics.mockResolvedValue({ data: dataWithUndefinedName })
-		mockIsEmpty.mockImplementation((val: any) => val == null)
+		mockIsEmpty.mockImplementation((val: Record<string, unknown>) => val == null)
 		mockCustomSortBy.mockReturnValue([dataWithUndefinedName['api1']])
 
 		render(<DebugMetrics />)
@@ -1094,7 +1095,7 @@ describe('DebugMetrics', () => {
 			}
 		}
 		mockGetDebugMetrics.mockResolvedValue({ data: dataWithAllNullTimes })
-		mockIsEmpty.mockImplementation((val: any) => val == null)
+		mockIsEmpty.mockImplementation((val: Record<string, unknown>) => val == null)
 		mockCustomSortBy.mockReturnValue([dataWithAllNullTimes['api1']])
 
 		render(<DebugMetrics />)
@@ -1116,7 +1117,7 @@ describe('DebugMetrics', () => {
 			}
 		}
 		mockGetDebugMetrics.mockResolvedValue({ data: dataWithAllEmpty })
-		mockIsEmpty.mockImplementation((val: any) => val == null)
+		mockIsEmpty.mockImplementation((val: Record<string, unknown>) => val == null)
 		mockCustomSortBy.mockReturnValue([dataWithAllEmpty['api1']])
 
 		render(<DebugMetrics />)
@@ -1199,7 +1200,7 @@ describe('DebugMetrics', () => {
 
 	it('should handle API response with empty data object', async () => {
 		mockGetDebugMetrics.mockResolvedValue({ data: {} })
-		mockIsEmpty.mockImplementation((val: any) => {
+		mockIsEmpty.mockImplementation((val: Record<string, unknown>) => {
 			if (val == null) return true
 			if (typeof val === 'object' && Object.keys(val).length === 0) return true
 			return false

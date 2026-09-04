@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { getVersion } from "@api/apiMethods/headerApiMethods";
+import { useAppSelector } from "@hooks/reducerHook";
 import SkeletonLoader from "@components/SkeletonLoader";
 import {
   List,
@@ -24,42 +24,20 @@ import {
   Stack,
   Typography
 } from "@mui/material";
-import { serverError } from "@utils/Utils";
-import { useEffect, useRef, useState } from "react";
 
 const About = () => {
-  const [versionData, setVersionData] = useState<any>({});
-  const [loader, setLoader] = useState(false);
-  const toastId = useRef(null);
-
-  useEffect(() => {
-    fetchVersionDetails();
-  }, []);
-
-  const fetchVersionDetails = async () => {
-    setLoader(true);
-    try {
-      const versionResp = await getVersion();
-      const { data = {} } = versionResp || {};
-      setVersionData(data);
-      setLoader(false);
-    } catch (error) {
-      setLoader(false);
-      console.error(`Error occur while fetching version details`, error);
-      serverError(error, toastId);
-    }
-  };
+  const { data: versionData, loading: loader, error } = useAppSelector((state) => state.session.versionData);
 
   return (
     <>
       <Stack spacing={2}>
         {loader ? (
-          <SkeletonLoader animation="wave" variant="text" width={'100%'} count={3} sx={{marginTop: '0px !important'}}/>
+          <SkeletonLoader animation="wave" variant="text" width={'100%'} count={3} className="about-skeleton-loader-44"/>
         ) : (
           <Stack direction="column" spacing={1}>
             <Typography variant="body1">
               <strong>Version: </strong>
-              {versionData?.Version}
+              {error ? "Unknown (failed to fetch version)" : ((versionData?.Version as string) || "N/A")}
             </Typography>
             <Typography variant="body2" color="info.main">
               Get involved!

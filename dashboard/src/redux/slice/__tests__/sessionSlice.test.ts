@@ -21,11 +21,15 @@
  */
 
 import { configureStore } from '@reduxjs/toolkit';
-import { fetchSessionData, sessionReducer } from '../sessionSlice';
+import { fetchSessionData, fetchVersionData, sessionReducer } from '../sessionSlice';
 
 // Mock API methods
 jest.mock('../../../api/apiMethods/fetchApi', () => ({
 	fetchApi: jest.fn()
+}));
+
+jest.mock('../../../api/apiMethods/headerApiMethods', () => ({
+	getVersion: jest.fn()
 }));
 
 jest.mock('../../../api/apiUrlLinks/sessionApiUrl', () => ({
@@ -40,7 +44,12 @@ describe('sessionSlice', () => {
 	const initialState = {
 		sessionObj: {
 			loading: false,
-			data: null,
+			data: null as unknown as Record<string, unknown>,
+			error: null
+		},
+		versionData: {
+			loading: false,
+			data: null as unknown as Record<string, unknown>,
 			error: null
 		}
 	};
@@ -54,6 +63,9 @@ describe('sessionSlice', () => {
 		expect(state.sessionObj.loading).toBe(false);
 		expect(state.sessionObj.data).toBeNull();
 		expect(state.sessionObj.error).toBeNull();
+		expect(state.versionData.loading).toBe(false);
+		expect(state.versionData.data).toBeNull();
+		expect(state.versionData.error).toBeNull();
 	});
 
 	it('should handle fetchSessionData.pending', () => {
@@ -64,6 +76,24 @@ describe('sessionSlice', () => {
 		expect(state.sessionObj.data).toBeNull();
 		expect(state.sessionObj.error).toBeNull();
 	});
+
+	it('should handle fetchSessionData.pending while retaining previous data', () => {
+		const previousState = {
+			...initialState,
+			sessionObj: {
+				loading: false,
+				data: { 'atlas.entity.create.allowed': true },
+				error: null
+			}
+		};
+		const action = { type: fetchSessionData.pending.type };
+		const state = sessionReducer(previousState, action);
+
+		expect(state.sessionObj.loading).toBe(true);
+		expect(state.sessionObj.data).toEqual({ 'atlas.entity.create.allowed': true });
+		expect(state.sessionObj.error).toBeNull();
+	});
+
 
 	it('should handle fetchSessionData.fulfilled', () => {
 		const mockData = {
@@ -149,6 +179,118 @@ describe('sessionSlice', () => {
 		await store.dispatch(fetchSessionData());
 
 		expect(globalSession).toHaveBeenCalledWith(mockData);
+	});
+
+	describe('fetchVersionData', () => {
+		it('should handle fetchVersionData.pending', () => {
+			const action = { type: fetchVersionData.pending.type };
+			const state = sessionReducer(undefined, action);
+	
+			expect(state.versionData.loading).toBe(true);
+			expect(state.versionData.data).toBeNull();
+			expect(state.versionData.error).toBeNull();
+		});
+
+		it('should handle fetchVersionData.pending while retaining previous data', () => {
+			const previousState = {
+				...initialState,
+				versionData: {
+					loading: false,
+					data: { Version: '3.0.0' },
+					error: null
+				}
+			};
+			const action = { type: fetchVersionData.pending.type };
+			const state = sessionReducer(previousState, action);
+	
+			expect(state.versionData.loading).toBe(true);
+			expect(state.versionData.data).toEqual({ Version: '3.0.0' });
+			expect(state.versionData.error).toBeNull();
+		});
+	
+		it('should handle fetchVersionData.fulfilled', () => {
+			const mockVersionData = { Version: '3.0.0' };
+	
+			const action = {
+				type: fetchVersionData.fulfilled.type,
+				payload: mockVersionData
+			};
+			const state = sessionReducer(undefined, action);
+	
+			expect(state.versionData.loading).toBe(false);
+			expect(state.versionData.data).toEqual(mockVersionData);
+			expect(state.versionData.error).toBeNull();
+		});
+	
+		it('should handle fetchVersionData.rejected', () => {
+			const error = 'Error fetching version data';
+			const action = {
+				type: fetchVersionData.rejected.type,
+				payload: error
+			};
+			const state = sessionReducer(undefined, action);
+	
+			expect(state.versionData.loading).toBe(false);
+			expect(state.versionData.data).toBeNull();
+			expect(state.versionData.error).toBe(error);
+		});
+
+		it('should handle fetchVersionData.rejected while retaining previous stale data', () => {
+			const previousState = {
+				...initialState,
+				versionData: {
+					loading: true,
+					data: { Version: '3.0.0' },
+					error: null
+				}
+			};
+			const error = 'Network error';
+			const action = {
+				type: fetchVersionData.rejected.type,
+				payload: error
+			};
+			const state = sessionReducer(previousState, action);
+
+			expect(state.versionData.loading).toBe(false);
+			expect(state.versionData.data).toEqual({ Version: '3.0.0' });
+			expect(state.versionData.error).toBe(error);
+		});
+
+		it('should fetch version data successfully', async () => {
+			const { getVersion } = require('../../../api/apiMethods/headerApiMethods');
+			const mockVersionData = { Version: '3.0.0' };
+			getVersion.mockResolvedValue({ data: mockVersionData });
+	
+			const store = configureStore({
+				reducer: {
+					session: sessionReducer
+				}
+			});
+	
+			await store.dispatch(fetchVersionData());
+	
+			const state = store.getState().session;
+			expect(state.versionData.loading).toBe(false);
+			expect(state.versionData.data).toEqual(mockVersionData);
+		});
+
+		it('should handle fetchVersionData error', async () => {
+			const { getVersion } = require('../../../api/apiMethods/headerApiMethods');
+			const error = 'API Error';
+			getVersion.mockRejectedValue(error);
+	
+			const store = configureStore({
+				reducer: {
+					session: sessionReducer
+				}
+			});
+	
+			await store.dispatch(fetchVersionData());
+	
+			const state = store.getState().session;
+			expect(state.versionData.loading).toBe(false);
+			expect(state.versionData.error).toBeTruthy();
+		});
 	});
 });
 

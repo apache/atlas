@@ -171,7 +171,7 @@ const AddValidityPeriod = (props: { control: any }) => {
     control
   });
 
-  const { timezones = [] } = sessionObj.data || {};
+  const timezones = (sessionObj.data?.timezones as string[]) || [];
   const timeZonesList = timezones.map((obj: string) => ({
     label: obj,
     value: obj
@@ -179,14 +179,12 @@ const AddValidityPeriod = (props: { control: any }) => {
 
   return (
     <>
-      <Card variant="outlined" sx={{ marginBottom: "2rem" }}>
+      <Card variant="outlined" className="add-validity-period-card-2">
         <CardContent>
           <Stack gap="1rem">
             <LightTooltip title={"Add Validity Period"}>
               <CustomButton
-                sx={{
-                  alignSelf: "flex-end"
-                }}
+                className="add-validity-period-custom-button-3"
                 variant="outlined"
                 size="small"
                 onClick={(_e: any) => {
@@ -205,7 +203,7 @@ const AddValidityPeriod = (props: { control: any }) => {
                 key={field.id}
                 direction="row"
                 alignItems="center"
-                sx={{ minHeight: "56px" }}
+                className="add-validity-period-stack-4"
               >
                 <StartDatePicker
                   control={control}
@@ -224,13 +222,7 @@ const AddValidityPeriod = (props: { control: any }) => {
                   aria-label="back"
                   color="error"
                   size="small"
-                  sx={{
-                    display: "inline-flex",
-                    position: "relative",
-                    padding: "4px",
-                    marginLeft: "4px",
-                    marginTop: "1.5rem !important"
-                  }}
+                  className="add-validity-period-icon-button-5"
                   onClick={() => remove(index)}
                 >
                   <ClearOutlinedIcon fontSize="small" />

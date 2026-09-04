@@ -33,18 +33,18 @@ const DashBoard = () => {
 			height="100%"
 			flex="1"
 			padding={0}
-			spacing={2}
-			sx={{ boxSizing: "border-box", overflow: "hidden" }}
+			spacing={0}
+			className="dash-board-stack-6"
 		>
 			<Stack
 				direction="row"
 				width="100%"
 				justifyContent="center"
-				sx={{ mb: 2, flexShrink: 0 }}
+				className="dash-board-stack-7"
 			>
 				<QuickSearch key={dashboardRefreshVersion} />
 			</Stack>
-			<Stack width="100%" flex={1} sx={{ minWidth: 0 }}>
+			<Stack width="100%" flex={1} className="dash-board-stack-8">
 				<DashboardOverview />
 			</Stack>
 		</Stack>
