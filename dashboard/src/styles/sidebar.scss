@@ -178,7 +178,12 @@
   padding-right: 8px;
 
   &--hidden {
-    display: none !important;
+    visibility: hidden !important;
+    position: absolute !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
   }
 }
 
