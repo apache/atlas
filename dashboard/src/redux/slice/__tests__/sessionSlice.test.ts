@@ -235,6 +235,27 @@ describe('sessionSlice', () => {
 			expect(state.versionData.error).toBe(error);
 		});
 
+		it('should handle fetchVersionData.rejected while retaining previous stale data', () => {
+			const previousState = {
+				...initialState,
+				versionData: {
+					loading: true,
+					data: { Version: '3.0.0' },
+					error: null
+				}
+			};
+			const error = 'Network error';
+			const action = {
+				type: fetchVersionData.rejected.type,
+				payload: error
+			};
+			const state = sessionReducer(previousState, action);
+
+			expect(state.versionData.loading).toBe(false);
+			expect(state.versionData.data).toEqual({ Version: '3.0.0' });
+			expect(state.versionData.error).toBe(error);
+		});
+
 		it('should fetch version data successfully', async () => {
 			const { getVersion } = require('../../../api/apiMethods/headerApiMethods');
 			const mockVersionData = { Version: '3.0.0' };
