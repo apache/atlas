@@ -48,7 +48,13 @@ public class AtlasRulesEngine {
             result = defaultAction.getResult();
         }
         LOG.debug("DEFAULT rule action : {}", result);
-        final List<AtlasRule> rules = auditFilterService.fetchRules();
+        final List<AtlasRule> rules;
+        try {
+            rules = auditFilterService.fetchRules();
+        } catch (Exception e) {
+            LOG.error("Failed to load audit filter rules. Using default action {}", result, e);
+            return result == ACCEPT;
+        }
         if (CollectionUtils.isEmpty(rules)) {
             LOG.debug("No rules defined, DEFAULT action to {} will be taken", result);
         }
