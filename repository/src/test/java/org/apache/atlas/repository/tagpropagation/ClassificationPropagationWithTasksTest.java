@@ -300,6 +300,38 @@ public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
     }
 
     @Test
+    public void updateRelationship_block_putAndGetBeforeTaskCompletion() throws Exception {
+        setupRelationshipPropagationScenario();
+
+        AtlasEntity employees1 = getEntity(EMPLOYEES1_TABLE);
+
+        AtlasClassification piiTag2 = new AtlasClassification("PII");
+        piiTag2.setEntityGuid(employees1.getGuid());
+
+        AtlasRelationship relationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
+
+        assertTrue(CollectionUtils.isEmpty(relationship.getBlockedPropagatedClassifications()));
+
+        Set<AtlasClassification> blockTags = selectPropagatedClassifications(relationship, employees1.getGuid());
+
+        assertFalse(blockTags.isEmpty(), "Expected propagated PII on relationship before first block");
+
+        relationship.setBlockedPropagatedClassifications(blockTags);
+
+        AtlasRelationship putReturn = relationshipStore.update(relationship);
+
+        assertNotNull(putReturn);
+        assertFalse(putReturn.getBlockedPropagatedClassifications().isEmpty());
+        assertClassificationExistInList(putReturn.getBlockedPropagatedClassifications(), piiTag2);
+        assertFalse(classificationExistInList(putReturn.getPropagatedClassifications(), piiTag2));
+
+        AtlasRelationship getReturn = relationshipStore.getById(putReturn.getGuid());
+
+        assertClassificationExistInList(getReturn.getBlockedPropagatedClassifications(), piiTag2);
+        assertFalse(classificationExistInList(getReturn.getPropagatedClassifications(), piiTag2));
+    }
+
+    @Test
     public void updateRelationship_unblock_putAndGetBeforeTaskCompletion() throws Exception {
         setupRelationshipBlockScenario();
 
@@ -372,7 +404,7 @@ public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
         assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, piiTag3);
     }
 
-    private void setupRelationshipBlockScenario() throws AtlasBaseException {
+    private void setupRelationshipPropagationScenario() throws AtlasBaseException {
         AtlasEntity hdfsPath   = getEntity(HDFS_PATH_EMPLOYEES);
         AtlasEntity employees1 = getEntity(EMPLOYEES1_TABLE);
         AtlasEntity employees2 = getEntity(EMPLOYEES2_TABLE);
@@ -399,12 +431,45 @@ public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
         addClassificationIfMissing(employees1, piiTag2);
         addClassificationIfMissing(employees2, piiTag3);
 
+        resetRelationshipForPropagation();
+
         propagateClassificationIfPresent(hdfsPath.getGuid(), piiTag1.getTypeName());
         propagateClassificationIfPresent(employees1.getGuid(), piiTag2.getTypeName());
         propagateClassificationIfPresent(employees2.getGuid(), piiTag3.getTypeName());
 
         assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, piiTag2);
         assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, piiTag3);
+    }
+
+    private void resetRelationshipForPropagation() throws AtlasBaseException {
+        AtlasRelationship relationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
+        PropagateTags       oldPropagateTags = relationship.getPropagateTags();
+        List<String>        oldBlockedIds    = GraphHelper.getBlockedClassificationIds(
+                new GraphHelper(graph).getEdgeForGUID(relationship.getGuid()));
+
+        if (oldPropagateTags != ONE_TO_TWO || CollectionUtils.isNotEmpty(relationship.getBlockedPropagatedClassifications())) {
+            relationship.setPropagateTags(ONE_TO_TWO);
+            relationship.setBlockedPropagatedClassifications(Collections.emptySet());
+
+            AtlasRelationship resetReturn = relationshipStore.update(relationship);
+
+            if (resetReturn.getPendingTasks() != null && !resetReturn.getPendingTasks().isEmpty()) {
+                applyRelationshipTaskIfPending(resetReturn, oldPropagateTags, oldBlockedIds);
+            }
+        }
+    }
+
+    private void setupRelationshipBlockScenario() throws AtlasBaseException {
+        setupRelationshipPropagationScenario();
+
+        AtlasEntity employees1 = getEntity(EMPLOYEES1_TABLE);
+        AtlasEntity employees2 = getEntity(EMPLOYEES2_TABLE);
+
+        AtlasClassification piiTag2 = new AtlasClassification("PII");
+        piiTag2.setEntityGuid(employees1.getGuid());
+
+        AtlasClassification piiTag3 = new AtlasClassification("PII");
+        piiTag3.setEntityGuid(employees2.getGuid());
 
         AtlasRelationship relationship   = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
         PropagateTags       oldPropagateTags = relationship.getPropagateTags();
@@ -509,18 +574,24 @@ public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
     }
 
     private void assertClassificationExistInList(Set<AtlasClassification> classifications, AtlasClassification expected) {
+        if (!classificationExistInList(classifications, expected)) {
+            fail("Classification not found in relationship response");
+        }
+    }
+
+    private boolean classificationExistInList(Set<AtlasClassification> classifications, AtlasClassification expected) {
         if (classifications == null) {
-            fail("Propagated classifications list is null");
+            return false;
         }
 
         for (AtlasClassification classification : classifications) {
             if (classification.getTypeName().equals(expected.getTypeName())
                     && classification.getEntityGuid().equals(expected.getEntityGuid())) {
-                return;
+                return true;
             }
         }
 
-        fail("Propagated classification not found in relationship response");
+        return false;
     }
 
     private void loadModelFilesAndImportTestData() {
