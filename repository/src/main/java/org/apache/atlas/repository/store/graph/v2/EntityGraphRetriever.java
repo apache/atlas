@@ -20,6 +20,9 @@ package org.apache.atlas.repository.store.graph.v2;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
@@ -307,6 +310,10 @@ public class EntityGraphRetriever {
         ret.setClassifications(getAllClassifications(entityVertex));
 
         return ret;
+    }
+
+    public boolean isEntityReadAllowed(AtlasEntityHeader entityHeader) {
+        return AtlasAuthorizationUtils.isAccessAllowed(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, entityHeader));
     }
 
     public Map<String, Map<String, Object>> getBusinessMetadata(AtlasVertex entityVertex) throws AtlasBaseException {
