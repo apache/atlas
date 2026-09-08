@@ -15,11 +15,8 @@
  * limitations under the License.
  */
 
-// @ts-nocheck
-
 import {
   Button,
-  Chip,
   CircularProgress,
   IconButton,
   InputBase,
@@ -45,42 +42,73 @@ import {
 } from "@mui/icons-material";
 import ArrowRightAltIcon from "@mui/icons-material/ArrowRightAlt";
 import { CloseIcon, LightTooltip } from "@components/muiComponents";
-import { useAppSelector } from "@hooks/reducerHook";
 import { Link as MUILink } from "@mui/material";
+
+interface CustomLinkProps {
+  href: string;
+  status: string;
+  guid: string;
+  name: string;
+  typeName: string;
+  params: URLSearchParams | string;
+}
 
 const CustomLink = ({
   href,
   status,
-  entityColor,
   guid,
   name,
   typeName,
   params
-}: any): any => {
+}: CustomLinkProps): JSX.Element => {
+  const displayLabel = typeName ? `${name} (${typeName})` : name;
   return (
-    <li className={status}>
-      <MUILink
-        component={RouterLink}
-        to={{
-          pathname: href,
-          search: params.toString() ? params.toString() : ""
-        }}
-        style={{ color: entityColor }}
-        replace={true}
-      >
-        {name} ({typeName})
-      </MUILink>
+    <li className={status} data-guid={guid}>
+      <LightTooltip title={displayLabel}>
+        <span>
+          <MUILink
+            component={RouterLink}
+            to={{
+              pathname: href,
+              search: params.toString() ? params.toString() : ""
+            }}
+            className={`relationship-node-link ${status.includes("deleted-relation") ? "text-deleted" : "text-active"}`}
+            replace={true}
+            underline="hover"
+            data-testid={`relationship-link-${guid}`}
+          >
+            {displayLabel}
+          </MUILink>
+        </span>
+      </LightTooltip>
     </li>
   );
 };
+
+interface GraphNode {
+  name: string;
+  value: unknown;
+  radius?: number;
+  id?: string;
+  x?: number;
+  y?: number;
+  fx?: number | null;
+  fy?: number | null;
+}
+
+interface GraphLink {
+  source: GraphNode | string;
+  target: GraphNode | string;
+  value: unknown;
+}
 
 const RelationshipLineage = ({
   entity,
   relationshipAttributes,
   isLoading
 }: {
-  entity: Record<string, any>;
-  relationshipAttributes?: Record<string, any[]>;
+  entity: Record<string, unknown>;
+  relationshipAttributes?: Record<string, unknown[]>;
   isLoading?: boolean;
 }) => {
   const entityData = cloneDeep(entity);
@@ -95,13 +123,12 @@ const RelationshipLineage = ({
   const zoomOutButtonRef = useRef(null);
   const relationshipSVG = useRef(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [nodeDetails, setNodeDetails] = useState<any>({});
+  const [nodeDetails, setNodeDetails] = useState<Record<string, unknown>>({});
   const [searchTerm, setSearchTerm] = useState("");
-  const [zoomId, setZoomId] = useState("");
 
-  const createData = (entityData: Record<string, any>) => {
-    let links = [];
-    let nodes: Record<string, any> = {};
+  const createData = (entityData: Record<string, unknown>) => {
+    let links: GraphLink[] = [];
+    let nodes: Record<string, GraphNode> = {};
     if (entityData && entityData.relationshipAttributes) {
       for (const obj in entityData.relationshipAttributes) {
         if (!isEmpty(entityData.relationshipAttributes[obj])) {
@@ -129,10 +156,10 @@ const RelationshipLineage = ({
   };
 
   const graphData = useMemo(() => createData(entityData), [entityData]);
-  const createGraph = (data) => {
+  const createGraph = (data: { nodes: Record<string, GraphNode>; links: GraphLink[] }) => {
     // Use getBoundingClientRect to get the actual width and height
     const svgElement = svgRef?.current;
-    const rect = svgElement ? svgElement.getBoundingClientRect() : null;
+    const rect = svgElement ? (svgElement as Element).getBoundingClientRect() : null;
     const width = rect ? rect.width : 0;
     const height = rect ? rect.height : 0;
     const padding = 60;
@@ -142,15 +169,14 @@ const RelationshipLineage = ({
 
     var activeEntityColor = "#00b98b",
       deletedEntityColor = "#BB5838",
-      defaultEntityColor = "#e0e0e0",
       selectedNodeColor = "#4a90e2";
 
     var svg = d3
-        .select(svgElement)
-        .attr("viewBox", `${-padding} ${-padding} ${width + padding * 2} ${height + padding * 2}`)
-        .attr("enable-background", `new ${-padding} ${-padding} ${width + padding * 2} ${height + padding * 2}`),
-      node,
-      path;
+      .select(svgElement as Element)
+      .attr("viewBox", `${-padding} ${-padding} ${width + padding * 2} ${height + padding * 2}`)
+      .attr("enable-background", `new ${-padding} ${-padding} ${width + padding * 2} ${height + padding * 2}`),
+      node: d3.Selection<d3.BaseType, unknown, SVGElement, unknown>,
+      path: d3.Selection<d3.BaseType, unknown, SVGElement, unknown>;
 
     var container = svg
       .append("g")
@@ -161,7 +187,7 @@ const RelationshipLineage = ({
       .zoom()
       .scaleExtent([0.1, 4])
       .on("zoom", function () {
-        container.attr("transform", d3.event.transform);
+        container.attr("transform", (d3.event as { transform: string }).transform);
       });
     svg.call(zoom).on("dblclick.zoom", null);
 
@@ -180,17 +206,17 @@ const RelationshipLineage = ({
       .attr("markerHeight", 6)
       .append("svg:path")
       .attr("d", "M 0,-5 L 10 ,0 L 0,5")
-      .attr("fill", function (d) {
+      .attr("fill", function (d: string) {
         return d == "deletedLink" ? deletedEntityColor : activeEntityColor;
       })
       .style("stroke", "none");
 
     var forceLink = d3
       .forceLink()
-      .id(function (d: any) {
-        return d.id;
+      .id(function (d: Record<string, unknown>) {
+        return (d as { id?: string }).id || "";
       })
-      .distance(function (d) {
+      .distance(function () {
         return 100;
       })
       .strength(1);
@@ -210,10 +236,10 @@ const RelationshipLineage = ({
         .enter()
         .append("svg:path")
         .attr("class", "relationship-link")
-        .attr("stroke", function (d) {
+        .attr("stroke", function (d: GraphLink) {
           return getPathColor({ data: d, type: "path" });
         })
-        .attr("marker-end", function (d) {
+        .attr("marker-end", function (d: GraphLink) {
           return (
             "url(#" +
             (isAllEntityRelationDeleted({ data: d })
@@ -230,15 +256,15 @@ const RelationshipLineage = ({
         .append("g")
         .attr("class", "node")
         .on("mousedown", function () {
-          d3.event.preventDefault();
+          (d3.event as { preventDefault: () => void }).preventDefault();
         })
-        .on("click", function (d) {
-          if (d3.event.defaultPrevented) return; // ignore drag
-          if (d && d.value && d.value.guid == guid) {
+        .on("click", function (d: GraphNode) {
+          if ((d3.event as { defaultPrevented?: boolean }).defaultPrevented) return; // ignore drag
+          if (d && (d.value as { guid?: string })?.guid == guid) {
             return;
           }
           setDrawerOpen(true);
-          setNodeDetails(d);
+          setNodeDetails(d as unknown as Record<string, unknown>);
         })
         .call(d3.drag().on("start", dragstarted).on("drag", dragged));
 
@@ -248,12 +274,12 @@ const RelationshipLineage = ({
         .append("circle")
         .attr("cx", 0)
         .attr("cy", 0)
-        .attr("r", function (d) {
+        .attr("r", function (d: GraphNode) {
           d.radius = 25;
           return d.radius;
         })
-        .attr("fill", function (d: any) {
-          if (d && d.value && d.value.guid == guid) {
+        .attr("fill", function (d: GraphNode) {
+          if (d && (d.value as { guid?: string })?.guid == guid) {
             if (isAllEntityRelationDeleted({ data: d, type: "node" })) {
               return deletedEntityColor;
             } else {
@@ -265,7 +291,7 @@ const RelationshipLineage = ({
             return activeEntityColor;
           }
         })
-        .attr("typename", function (d) {
+        .attr("typename", function (d: GraphNode) {
           return d.name;
         });
 
@@ -276,22 +302,22 @@ const RelationshipLineage = ({
         .attr("dy", 25 - 17)
         .attr("text-anchor", "middle")
         .style("font-family", "FontAwesome")
-        .style("font-size", function (d) {
+        .style("font-size", function () {
           return "25px";
         })
-        .text(function (d) {
-          var iconObj = graphIcon[d.name];
+        .text(function (d: GraphNode) {
+          var iconObj = graphIcon[d.name as keyof typeof graphIcon];
           if (iconObj && iconObj.textContent) {
             return iconObj.textContent;
           } else {
-            if (d && isArray(d.value) && d.value.length > 1) {
+            if (d && isArray(d.value) && (d.value as unknown[]).length > 1) {
               return "\uf0c5";
             } else {
               return "\uf016";
             }
           }
         })
-        .attr("fill", function (d) {
+        .attr("fill", function () {
           return "#fff";
         });
 
@@ -301,8 +327,8 @@ const RelationshipLineage = ({
         .append("circle")
         .attr("cx", 22)
         .attr("cy", 32)
-        .attr("r", function (d) {
-          if (isArray(d.value) && d.value.length > 1) {
+        .attr("r", function (d: GraphNode) {
+          if (isArray(d.value) && (d.value as unknown[]).length > 1) {
             return 12;
           }
         })
@@ -319,9 +345,9 @@ const RelationshipLineage = ({
         .attr("fill", "#fff")
         .style("font-size", "11px")
         .style("font-weight", "600")
-        .text(function (d) {
-          if (isArray(d.value) && d.value.length > 1) {
-            return d.value.length;
+        .text(function (d: GraphNode) {
+          if (isArray(d.value) && (d.value as unknown[]).length > 1) {
+            return (d.value as unknown[]).length;
           }
         });
 
@@ -329,17 +355,17 @@ const RelationshipLineage = ({
         .append("text")
         .attr("x", -15)
         .attr("y", "35")
-        .text(function (d) {
+        .text(function (d: GraphNode) {
           return d.name;
         });
 
-      simulation.nodes(nodes).on("tick", ticked);
+      simulation.nodes(nodes as unknown as d3.SimulationNodeDatum[]).on("tick", ticked);
 
-      simulation.force("link").links(links);
+      (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>)?.links(links as unknown as d3.SimulationLinkDatum<d3.SimulationNodeDatum>[]);
     }
 
     function ticked() {
-      path.attr("d", function (d) {
+      path.attr("d", function (d: { source: { x: number; y: number }; target: { x: number; y: number; radius: number } }) {
         var diffX = d.target.x - d.source.x,
           diffY = d.target.y - d.source.y,
           // Length of path from center of source node to center of target node
@@ -364,43 +390,43 @@ const RelationshipLineage = ({
         );
       });
 
-      node.attr("transform", function (d) {
+      node.attr("transform", function (d: { x: number; y: number }) {
         return "translate(" + d.x + "," + d.y + ")";
       });
     }
 
-    function dragstarted(d) {
-      d3.event.sourceEvent.stopPropagation();
-      if (d && d.value && d.value.guid != guid) {
-        if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+    function dragstarted(d: GraphNode) {
+      ((d3.event as { sourceEvent?: { stopPropagation: () => void } }).sourceEvent)?.stopPropagation();
+      if (d && (d.value as { guid?: string })?.guid != guid) {
+        if (!(d3.event as { active?: boolean }).active) simulation.alphaTarget(0.3).restart();
         d.fx = d.x;
         d.fy = d.y;
       }
     }
 
-    function dragged(d) {
-      if (d && d.value && d.value.guid != guid) {
-        d.fx = d3.event.x;
-        d.fy = d3.event.y;
+    function dragged(d: GraphNode) {
+      if (d && (d.value as { guid?: string })?.guid != guid) {
+        d.fx = (d3.event as { x: number }).x;
+        d.fy = (d3.event as { y: number }).y;
       }
     }
 
-    function getPathColor(options) {
+    function getPathColor(options: { data: GraphLink; type?: string }) {
       return isAllEntityRelationDeleted(options)
         ? deletedEntityColor
         : activeEntityColor;
     }
 
-    function isAllEntityRelationDeleted(options) {
+    function isAllEntityRelationDeleted(options: { data: GraphLink | GraphNode; type?: string }) {
       let data = options.data;
       let type = options.type;
-      let d = extend(true, {}, data);
+      let d = extend(true, {}, data) as { value?: unknown };
       if (d && !isArray(d.value)) {
         d.value = [d.value];
       }
 
       return (
-        d.value.findIndex(function (val) {
+        (d.value as Record<string, unknown>[]).findIndex(function (val: Record<string, unknown>) {
           if (type == "node") {
             return (val.entityStatus || val.status) == "ACTIVE";
           } else {
@@ -434,7 +460,7 @@ const RelationshipLineage = ({
     if (!isEmpty(graphData.links)) {
       try {
         createGraph(graphData);
-      } catch (err) {
+      } catch (err: unknown) {
         // Swallow D3 errors to avoid breaking render
       }
     }
@@ -456,25 +482,24 @@ const RelationshipLineage = ({
     return <Typography>No relationship data found</Typography>;
   }
 
-  const updateRelationshipDetails = (options) => {
-    let data = options.obj.value;
-    let typeName = data.typeName || options.obj.name;
+  const updateRelationshipDetails = (options: { obj: Record<string, unknown>; searchString?: string }) => {
+    let data = (options.obj.value as Record<string, unknown>) || options.obj;
+    let typeName = (data.typeName as string) || (options.obj.name as string);
     let searchString = options.searchString;
     let listString = [];
-    const getEntityTypelist = (options) => {
+    const getEntityTypelist = (options: Record<string, unknown>) => {
       let activeEntityColor = "#1976d2";
       let deletedEntityColor = "#BB5838";
-      const entityStatus = options.entityStatus || options.status;
-      const relationshipStatus = options.relationshipStatus || options.status;
-      const getdefault = (obj) => {
+      const entityStatus = (options.entityStatus || options.status) as string;
+      const relationshipStatus = (options.relationshipStatus || options.status) as string;
+      const getdefault = (obj: { options: Record<string, unknown>; name?: string }) => {
         let options = obj.options;
-        let status = entityStateReadOnly[entityStatus]
+        let status = entityStateReadOnly[entityStatus as keyof typeof entityStateReadOnly]
           ? " deleted-relation"
           : "";
-        let nodeGuid = options.guid;
-        let entityColor = obj.color;
+        let nodeGuid = options.guid as string;
         let name = obj.name;
-        let typeName = options.typeName;
+        let typeName = options.typeName as string;
         let keys = Array.from(searchParams.keys());
         for (let i = 0; i < keys.length; i++) {
           if (keys[i] != "searchType") {
@@ -491,9 +516,8 @@ const RelationshipLineage = ({
             <CustomLink
               href={tempLink}
               status={status}
-              entityColor={entityColor}
               guid={nodeGuid}
-              name={name}
+              name={name || ""}
               typeName={typeName}
               params={searchParams}
             />
@@ -504,9 +528,8 @@ const RelationshipLineage = ({
             <CustomLink
               href={`/detailPage/${nodeGuid}`}
               status={status}
-              entityColor={entityColor}
               guid={nodeGuid}
-              name={name}
+              name={name || ""}
               typeName={typeName}
               // params={"searchParams"}
               params={""}
@@ -514,34 +537,38 @@ const RelationshipLineage = ({
           );
         }
       };
-      const getWithButton = (obj) => {
+      const getWithButton = (obj: { options: Record<string, unknown>; name?: string; relationship?: boolean; entity?: boolean }) => {
         let options = obj.options;
-        let status = entityStateReadOnly[entityStatus]
+        let status = entityStateReadOnly[entityStatus as keyof typeof entityStateReadOnly]
           ? " deleted-relation"
           : "";
-        let entityColor = obj.color;
         let name = obj.name;
 
         if (obj.relationship) {
-          status = entityStateReadOnly[relationshipStatus]
+          status = entityStateReadOnly[relationshipStatus as keyof typeof entityStateReadOnly]
             ? "deleted-relation"
             : "";
         }
+        const displayLabel = options.typeName ? `${name} (${options.typeName})` : name;
         return (
           <li className={status}>
-            <MUILink
-              component={RouterLink}
-              to={`/detailPage/${options.guid}?tabActive=relationship`}
-              style={{ color: entityColor }}
-            >
-              {name} ({options.typeName})
-            </MUILink>
+            <LightTooltip title={displayLabel || ""}>
+              <span>
+                <MUILink
+                  component={RouterLink}
+                  to={`/detailPage/${options.guid}?tabActive=relationship`}
+                  className={`relationship-node-link ${status.includes("deleted-relation") ? "text-deleted" : "text-active"}`}
+                >
+                  {displayLabel}
+                </MUILink>
+              </span>
+            </LightTooltip>
           </li>
         );
       };
 
       const name = options.entityName
-        ? options.entityName
+        ? (options.entityName as string)
         : extractKeyValueFromEntity(options, "displayText").name;
       if (entityStatus === "ACTIVE") {
         if (relationshipStatus === "ACTIVE") {
@@ -574,10 +601,7 @@ const RelationshipLineage = ({
       }
     };
 
-    var getElement = function (options) {
-      const name = options.entityName
-        ? options.entityName
-        : extractKeyValueFromEntity(options, "displayText").name;
+    var getElement = function (options: Record<string, unknown>) {
       return getEntityTypelist(options);
     };
     if (isArray(data)) {
@@ -617,7 +641,7 @@ const RelationshipLineage = ({
       listString.push(<Fragment key={itemKey}>{getElement(data)}</Fragment>);
     }
     return (
-      <Stack sx={{ background: "white" }} minHeight={"150px"} maxWidth="520px">
+      <Stack sx={{ background: "white" }} minHeight={"150px"} maxWidth="350px">
         {/* {listString?.length > 1 && ( */}
         <Paper
           variant="outlined"
@@ -754,7 +778,7 @@ const RelationshipLineage = ({
                     flex={1}
                     fontWeight="600"
                   >
-                    {nodeDetails?.name}
+                    {String(nodeDetails?.name || "")}
                   </Typography>
                   <Button
                     onClick={() => setDrawerOpen(false)}
