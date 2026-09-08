@@ -61,8 +61,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * C5.4 validation: Atlas aggregations through {@link AtlasGraphIndexClient#getAggregatedMetrics}
- * and {@link SearchAggregatorImpl} against OpenSearch 2.x.
+ * Validates Atlas aggregations through {@link AtlasGraphIndexClient#getAggregatedMetrics}
+ * and {@link SearchAggregatorImpl} against a real OpenSearch server. The server version is configurable (system
+ * property {@code opensearch.docker.version} / {@code opensearch.docker.image}) — the dedicated
+ * {@code opensearch-it} CI job validates OpenSearch 3.7 and 3.8. OpenSearch 2.x is NOT currently part of the CI
+ * matrix; this driver has not been verified against 2.x in CI.
  *
  * <pre>
  *   cd repository && mvn test-compile exec:java \
@@ -113,12 +116,12 @@ public final class OpenSearchAggregationsValidationDriver {
     }
 
     public static void main(String[] args) throws Exception {
-        System.out.println("C5.4 Atlas Aggregations Validation");
+        System.out.println("Atlas Aggregations Validation");
         boolean allPassed = execute();
         for (Map.Entry<String, String> entry : RESULTS.entrySet()) {
             System.out.printf("%-32s %s%n", entry.getKey(), entry.getValue());
         }
-        System.out.println(allPassed ? "C5.4 RESULT: PASS" : "C5.4 RESULT: FAIL");
+        System.out.println(allPassed ? "RESULT: PASS" : "RESULT: FAIL");
         if (!allPassed) {
             System.exit(1);
         }

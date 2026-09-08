@@ -360,6 +360,11 @@
                 <version>${surefire.version}</version>
                 <configuration>
                     <skip>${skipUTs}</skip>
+                    <excludes>
+                        <!-- Requires a live OpenSearch cluster (Testcontainers); only run via the opensearch-it
+                             profile so normal builds/JDKs are not affected. -->
+                        <exclude>**/OpenSearchRuntimeInitTest.java</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
 
@@ -386,5 +391,64 @@
 
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <!-- OpenSearch integration tests run against a real OpenSearch server provisioned by Testcontainers
+                 (Docker). Mirrors the repository/pom.xml opensearch-it profile: this module already carries
+                 janusgraph-opensearch, atlas-testtools and testcontainers as regular/test dependencies, so no
+                 additional dependencies are needed here — only the surefire include/exclude override. -->
+            <id>opensearch-it</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration combine.self="override">
+                            <skip>${skipUTs}</skip>
+                            <!-- combine.self="override" (needed so the base module's exclude of
+                                 OpenSearchRuntimeInitTest.java above does not re-apply and cancel out the include
+                                 below) replaces the ENTIRE effective configuration for this plugin, including
+                                 whatever this module inherits from the root pom.xml pluginManagement, so the
+                                 JDK17 module opens flags (argLine) must be re-declared here too. Without this,
+                                 AtlasJanusGraphDatabase's reflective static init fails with InaccessibleObjectException
+                                 because the forked test JVM no longer gets the java.lang reflective access flag. -->
+                            <argLine>${jdk.argLine} ${argLine}
+                                -Djava.awt.headless=true -Dproject.version=${project.version}
+                                -Dhadoop.tmp.dir="${project.build.directory}/tmp-hadoop-${user.name}"
+                                -Xmx1024m -Djava.net.preferIPv4Stack=true ${atlas.surefire.options}</argLine>
+                            <includes>
+                                <include>**/*OpenSearch*IT.java</include>
+                                <include>**/OpenSearchRuntimeInitTest.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <opensearch.docker.image>${opensearch.docker.image}</opensearch.docker.image>
+                                <opensearch.docker.version>${opensearch.docker.version}</opensearch.docker.version>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <!-- The root pom.xml binds maven-failsafe-plugin globally with forkCount=0 ("don't fork
+                             the IT until there's sandbox capability for IT env"), which also means its argLine
+                             (containing the JDK17 module opens flags) has no effect, since argLine only applies
+                             to a forked JVM. Failsafe's default **/*IT.java pattern already matches these
+                             OpenSearch ITs and re-runs them (redundantly with the surefire execution above) at
+                             the integration-test/verify phase, so it also needs a real fork here to load
+                             AtlasJanusGraphDatabase (JDK17 reflective static init) and the docker version
+                             system properties, without changing the forkCount=0 default for every other module. -->
+                        <configuration>
+                            <forkCount>1</forkCount>
+                            <systemPropertyVariables>
+                                <opensearch.docker.image>${opensearch.docker.image}</opensearch.docker.image>
+                                <opensearch.docker.version>${opensearch.docker.version}</opensearch.docker.version>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

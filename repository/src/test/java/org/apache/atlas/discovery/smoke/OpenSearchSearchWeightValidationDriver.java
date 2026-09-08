@@ -61,7 +61,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * C5.5.4 validation: weighted OpenSearch quick-search through production path
+ * Validates weighted OpenSearch quick-search through the production path
  * (SolrIndexHelper weight map → applySearchWeight → FreeTextSearchProcessor → quickSearch).
  *
  * <pre>
@@ -124,12 +124,12 @@ public final class OpenSearchSearchWeightValidationDriver {
     }
 
     public static void main(String[] args) throws Exception {
-        System.out.println("C5.5.4 Search-Weight Validation (production path)");
+        System.out.println("Search-Weight Validation (production path)");
         boolean allPassed = execute();
         for (Map.Entry<String, String> entry : RESULTS.entrySet()) {
             System.out.printf("%-32s %s%n", entry.getKey(), entry.getValue());
         }
-        System.out.println(allPassed ? "C5.5.4 RESULT: PASS" : "C5.5.4 RESULT: FAIL");
+        System.out.println(allPassed ? "RESULT: PASS" : "RESULT: FAIL");
         if (!allPassed) {
             System.exit(1);
         }

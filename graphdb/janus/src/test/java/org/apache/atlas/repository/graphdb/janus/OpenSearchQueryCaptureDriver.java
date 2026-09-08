@@ -35,8 +35,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Emits OpenSearch Query DSL (and related request fragments) for matrix documentation.
- * Output format: one JSON object per line with keys testId, atlasQuery, opensearchQuery, notes.
+ * Emits OpenSearch Query DSL (and related request fragments) for documentation and debugging.
+ * Output format: one JSON object per line with keys scenarioId, atlasQuery, opensearchQuery, notes.
  */
 public final class OpenSearchQueryCaptureDriver {
 
@@ -72,12 +72,12 @@ public final class OpenSearchQueryCaptureDriver {
 
         Set<AtlasEntityType> entityTypes = new HashSet<>(Collections.singletonList(datasetType));
 
-        captureQuickSearch("TC4-01", "atlas", indexFieldNameCache, searchWeights, entityTypes);
-        captureQuickSearch("TC7-01", "customer*", indexFieldNameCache, searchWeights, entityTypes);
-        captureQuickSearch("TC6-14", "custo*", indexFieldNameCache, searchWeights, entityTypes);
-        captureQuickSearch("TC8-14", "custo*", indexFieldNameCache, searchWeights, entityTypes);
-        captureQuickSearch("TC10-049", "A:B", indexFieldNameCache, searchWeights, entityTypes);
-        captureQuickSearch("SC-013", "A:B", indexFieldNameCache, searchWeights, entityTypes);
+        captureQuickSearch("quick-search-atlas-term", "atlas", indexFieldNameCache, searchWeights, entityTypes);
+        captureQuickSearch("quick-search-customer-wildcard", "customer*", indexFieldNameCache, searchWeights, entityTypes);
+        captureQuickSearch("quick-search-custo-prefix", "custo*", indexFieldNameCache, searchWeights, entityTypes);
+        captureQuickSearch("quick-search-custo-prefix-filtered", "custo*", indexFieldNameCache, searchWeights, entityTypes);
+        captureQuickSearch("quick-search-colon-in-query", "A:B", indexFieldNameCache, searchWeights, entityTypes);
+        captureQuickSearch("quick-search-colon-special-char", "A:B", indexFieldNameCache, searchWeights, entityTypes);
 
         Map<String, Object> aggQuery = new AtlasOpenSearchQueryBuilder()
                 .withEntityTypes(entityTypes)
@@ -90,18 +90,18 @@ public final class OpenSearchQueryCaptureDriver {
         aggBody.put("size", 0);
         aggBody.put("query", aggQuery);
         aggBody.put("aggs", Map.of("agg_0", Map.of("terms", Map.of("field", "__typeName", "size", 100))));
-        emit("TC8-15", "atlas + owner=team-alpha filter", aggBody, "POST /search/quick aggregation on __typeName");
+        emit("aggregation-type-name-filter", "atlas + owner=team-alpha filter", aggBody, "POST /search/quick aggregation on __typeName");
 
         Map<String, Object> suggestBody = new LinkedHashMap<>();
         suggestBody.put("query", AtlasOpenSearchIndexClient.buildSuggestionsFilterQuery());
         suggestBody.put("aggs", AtlasOpenSearchIndexClient.buildSuggestionsTermsAggs(
                 List.of("owner_index", "name_index"), "cust"));
-        emit("TC5-01", "cust", suggestBody, "POST /search/suggestions prefixString=cust");
+        emit("suggestions-cust-prefix", "cust", suggestBody, "POST /search/suggestions prefixString=cust");
 
-        emitTermsPattern("TC9-05", "cust_", AtlasOpenSearchIndexClient.toTermsIncludePattern("cust_"));
+        emitTermsPattern("suggestions-terms-include-pattern", "cust_", AtlasOpenSearchIndexClient.toTermsIncludePattern("cust_"));
     }
 
-    private static void captureQuickSearch(String testId, String atlasQuery,
+    private static void captureQuickSearch(String scenarioId, String atlasQuery,
                                            Map<String, String> indexFieldNameCache,
                                            Map<String, Integer> searchWeights,
                                            Set<AtlasEntityType> entityTypes) throws Exception {
@@ -119,21 +119,21 @@ public final class OpenSearchQueryCaptureDriver {
         body.put("size", 10);
         body.put("track_total_hits", true);
 
-        emit(testId, atlasQuery, body, "GET /search/quick weighted quick-search");
+        emit(scenarioId, atlasQuery, body, "GET /search/quick weighted quick-search");
     }
 
-    private static void emitTermsPattern(String testId, String prefix, String pattern) throws Exception {
+    private static void emitTermsPattern(String scenarioId, String prefix, String pattern) throws Exception {
         Map<String, Object> row = new LinkedHashMap<>();
-        row.put("testId", testId);
+        row.put("scenarioId", scenarioId);
         row.put("atlasQuery", prefix);
         row.put("opensearchQuery", Map.of("terms.include", pattern));
         row.put("notes", "terms aggregation include regex for suggestions");
         System.out.println(MAPPER.writeValueAsString(row));
     }
 
-    private static void emit(String testId, String atlasQuery, Object opensearchBody, String notes) throws Exception {
+    private static void emit(String scenarioId, String atlasQuery, Object opensearchBody, String notes) throws Exception {
         Map<String, Object> row = new LinkedHashMap<>();
-        row.put("testId", testId);
+        row.put("scenarioId", scenarioId);
         row.put("atlasQuery", atlasQuery);
         row.put("opensearchQuery", opensearchBody);
         row.put("notes", notes);

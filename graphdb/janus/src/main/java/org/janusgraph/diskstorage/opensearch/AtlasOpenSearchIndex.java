@@ -33,7 +33,7 @@ import java.lang.reflect.Field;
 public class AtlasOpenSearchIndex extends OpenSearchIndex {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasOpenSearchIndex.class);
 
-    private static AtlasOpenSearchIndex instance;
+    private static volatile AtlasOpenSearchIndex instance;
 
     private final OpenSearchClient client;
 
@@ -61,5 +61,40 @@ public class AtlasOpenSearchIndex extends OpenSearchIndex {
         AtlasOpenSearchIndex index = AtlasOpenSearchIndex.instance;
 
         return index != null ? index.client : null;
+    }
+
+    @Override
+    public void close() throws org.janusgraph.diskstorage.BackendException {
+        // Clear the shared static reference before closing the underlying client so that discovery-layer callers
+        // (AtlasOpenSearchIndexClient) never obtain a client that is about to be, or already, closed. Clear it only
+        // when it still points to this instance: a short-lived bulk-loading index closing must not wipe a different
+        // (e.g. primary) graph's live client reference.
+        clearInstanceIfCurrent(this);
+
+        super.close();
+    }
+
+    /**
+     * Compare-and-clear of the shared static instance. Package/test visible so the concurrency-sensitive
+     * "only clear when the static still points to this instance" rule can be verified without a live cluster.
+     *
+     * @return {@code true} if the static reference was cleared, {@code false} if it pointed elsewhere (or was null)
+     */
+    static synchronized boolean clearInstanceIfCurrent(AtlasOpenSearchIndex index) {
+        if (instance == index) {
+            instance = null;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    static AtlasOpenSearchIndex getInstanceForTests() {
+        return instance;
+    }
+
+    static void setInstanceForTests(AtlasOpenSearchIndex index) {
+        instance = index;
     }
 }

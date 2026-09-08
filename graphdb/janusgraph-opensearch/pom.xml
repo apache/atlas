@@ -121,10 +121,42 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <includes>
-                        <include>**/*OpenSearch*IT.java</include>
+                        <!-- Docker-free unit tests only (idempotent create, scroll cleanup, scroll wiring). The
+                             Testcontainers ITs (**/*OpenSearch*IT.java) are intentionally NOT included here — they
+                             run only under the opensearch-it profile below, so the normal docker-build job does not
+                             unintentionally start OpenSearch containers. -->
+                        <include>**/*Test.java</include>
                     </includes>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <!-- OpenSearch integration tests run against a real OpenSearch server provisioned by Testcontainers
+                 (Docker). Activated explicitly by the dedicated opensearch-it CI job; must not run as part of the
+                 default build/test lifecycle. -->
+            <id>opensearch-it</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration combine.self="override">
+                            <includes>
+                                <include>**/*OpenSearch*IT.java</include>
+                            </includes>
+                            <!-- Propagate the configurable OpenSearch server image/version to the forked test JVM so
+                                 the same IT suite can validate 3.7 (default) and 3.8 without code changes. -->
+                            <systemPropertyVariables>
+                                <opensearch.docker.image>${opensearch.docker.image}</opensearch.docker.image>
+                                <opensearch.docker.version>${opensearch.docker.version}</opensearch.docker.version>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

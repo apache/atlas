@@ -59,9 +59,12 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * C5.2 validation: exercises Atlas discovery quick-search through the existing stack
+ * Validates Atlas discovery quick-search through the existing stack
  * (EntityDiscoveryService query shaping → SearchContext → FreeTextSearchProcessor → graph.indexQuery)
- * against OpenSearch 2.x. No new discovery logic; validation only.
+ * against a real OpenSearch server. No new discovery logic; validation only. The server version is configurable
+ * (system property {@code opensearch.docker.version} / {@code opensearch.docker.image}) — the dedicated
+ * {@code opensearch-it} CI job validates OpenSearch 3.7 and 3.8. OpenSearch 2.x is NOT currently part of the CI
+ * matrix; this driver has not been verified against 2.x in CI.
  *
  * <pre>
  *   mvn -pl repository -am test-compile exec:java \
@@ -89,7 +92,7 @@ public final class OpenSearchQuickSearchValidationDriver {
 
         OpenSearchQuickSearchSmokeSupport.registerAtlasOpenSearchIndex();
         if (!AtlasRepositoryConfiguration.isFreeTextSearchEnabled()) {
-            throw new IllegalStateException("atlas.search.freetext.enable must be true for C5.2 validation");
+            throw new IllegalStateException("atlas.search.freetext.enable must be true for quick search validation");
         }
 
         OpenSearchQuickSearchSmokeSupport.deletePhysicalIndexIfPresent();
@@ -117,7 +120,7 @@ public final class OpenSearchQuickSearchValidationDriver {
         OpenSearchMajorVersion major = OpenSearchQuickSearchSmokeSupport.readOpenSearchMajorVersion();
 
         System.out.println();
-        System.out.println("C5.2 Atlas Quick Search Validation");
+        System.out.println("Atlas Quick Search Validation");
         System.out.println("----------------------------------");
         System.out.println("Backend: OpenSearch");
         System.out.println("OpenSearch: " + osVersion + " (major=" + major + ")");
@@ -132,7 +135,7 @@ public final class OpenSearchQuickSearchValidationDriver {
             System.out.printf("%-24s %s%n", entry.getKey(), entry.getValue());
         }
         System.out.println();
-        System.out.println(allPassed ? "C5.2 RESULT: PASS" : "C5.2 RESULT: FAIL");
+        System.out.println(allPassed ? "RESULT: PASS" : "RESULT: FAIL");
 
         if (!allPassed) {
             System.exit(1);

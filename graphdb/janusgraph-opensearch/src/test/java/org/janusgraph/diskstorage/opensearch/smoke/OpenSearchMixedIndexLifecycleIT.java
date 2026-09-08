@@ -21,7 +21,7 @@ import org.apache.atlas.runner.OpenSearchITBase;
 import org.testng.annotations.Test;
 
 /**
- * C3 integration test: mixed-index creation and mapping lifecycle via Testcontainers OpenSearch.
+ * Integration test: mixed-index creation and mapping lifecycle via Testcontainers OpenSearch.
  */
 public class OpenSearchMixedIndexLifecycleIT extends OpenSearchITBase {
 

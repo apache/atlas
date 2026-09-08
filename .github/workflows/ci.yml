@@ -158,3 +158,83 @@ jobs:
               docker stop $(docker ps -q) && docker rm $(docker ps -aq);
               exit 1;
           fi
+
+  # OpenSearch integration tests run against a real OpenSearch server provisioned by Testcontainers (Docker).
+  # This job keeps the Solr-based docker-build job above unchanged and adds OpenSearch backend coverage.
+  opensearch-it:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Delete huge unnecessary tools folder
+        run: rm -rf /opt/hostedtoolcache
+
+      - name: Cache for maven dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.m2/repository/*/*/*
+            !~/.m2/repository/org/apache/atlas
+          key: maven-repo-osit-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            maven-repo-osit-
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: 17
+          distribution: 'temurin'
+
+      - name: Set MAVEN_OPTS for JDK 17
+        run: |
+          echo "MAVEN_OPTS=-Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3 --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED" >> $GITHUB_ENV
+
+      # Fail fast if the runner has no Docker daemon: OpenSearch ITs require Testcontainers and must NOT be
+      # silently skipped in CI.
+      - name: Verify Docker is available
+        run: |
+          docker version
+          docker info
+
+      - name: Build modules under test (skip tests)
+        run: |
+          mvn -pl graphdb/janusgraph-opensearch,graphdb/janus,repository -am \
+            -DskipTests -DskipDocs -Dcheckstyle.skip=true clean install --no-transfer-progress -B -V
+
+      # Default OpenSearch server version is 3.7.0; override the matrix here to also cover 3.8.x.
+      - name: Run OpenSearch integration tests (OpenSearch ${{ matrix.opensearch }})
+        run: |
+          mvn -Popensearch-it -pl graphdb/janusgraph-opensearch,graphdb/janus,repository \
+            -Dopensearch.docker.version=${{ matrix.opensearch }} \
+            -Dcheckstyle.skip=true test --no-transfer-progress -B
+
+      # A green build with zero OpenSearch tests executed is a false pass: assert reports exist and none failed.
+      - name: Assert OpenSearch integration tests actually executed
+        if: always()
+        run: |
+          set -euo pipefail
+          reports=$(find . -path '*/surefire-reports/*OpenSearch*IT.txt' | wc -l | tr -d ' ')
+          echo "OpenSearch IT surefire report files found: ${reports}"
+          if [ "${reports}" -eq 0 ]; then
+            echo "ERROR: no OpenSearch integration tests were executed"
+            exit 1
+          fi
+          skipped_all=true
+          while IFS= read -r f; do
+            if grep -qE 'Tests run: [1-9]' "$f" && ! grep -qE 'Skipped: [1-9]+, Tests run: 0' "$f"; then
+              skipped_all=false
+            fi
+            cat "$f"
+          done < <(find . -path '*/surefire-reports/*OpenSearch*IT.txt')
+          if [ "${skipped_all}" = true ]; then
+            echo "ERROR: OpenSearch integration tests were all skipped (Docker/container unavailable?)"
+            exit 1
+          fi
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Co-primary OpenSearch targets. 2.x compatibility can be added here once validated on a runner.
+        opensearch: [ "3.7.0", "3.8.0" ]

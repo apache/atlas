@@ -315,7 +315,7 @@ public class AtlasJanusGraphIndexClientTest {
     }
 
     @Test
-    public void testQuickSearchWithOpenSearchBackendReturnsEmptyWhenClientNull() {
+    public void testQuickSearchWithOpenSearchBackendReturnsEmptyWhenClientNull() throws org.apache.atlas.exception.AtlasBaseException {
         when(mockConfiguration.getString(ApplicationProperties.INDEX_BACKEND_CONF))
                 .thenReturn(ApplicationProperties.INDEX_BACKEND_OPENSEARCH);
         mockedAtlasOpenSearchIndex.when(AtlasOpenSearchIndex::getOpenSearchClient).thenReturn(null);

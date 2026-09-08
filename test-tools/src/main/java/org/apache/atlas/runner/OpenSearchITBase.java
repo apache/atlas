@@ -15,20 +15,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.discovery.smoke;
+package org.apache.atlas.runner;
 
-import org.apache.atlas.runner.OpenSearchITBase;
-import org.testng.annotations.Test;
-
-import static org.testng.Assert.assertTrue;
+import org.testng.SkipException;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 
 /**
- * Integration test: Atlas aggregations via Testcontainers OpenSearch.
+ * TestNG base class that provisions OpenSearch via Testcontainers before each test class.
  */
-public class OpenSearchAggregationsIT extends OpenSearchITBase {
+public abstract class OpenSearchITBase {
+    @BeforeClass(alwaysRun = true)
+    public void startOpenSearchContainer() {
+        if (!OpenSearchTestContainerRunner.isDockerAvailable()) {
+            throw new SkipException("Docker is not available; skipping OpenSearch integration test");
+        }
+        OpenSearchTestContainerRunner.start();
+    }
 
-    @Test
-    public void aggregationsValidation() throws Exception {
-        assertTrue(OpenSearchAggregationsValidationDriver.execute(), "Aggregations validation failed");
+    @AfterClass(alwaysRun = true)
+    public void stopOpenSearchContainer() {
+        OpenSearchTestContainerRunner.stop();
     }
 }

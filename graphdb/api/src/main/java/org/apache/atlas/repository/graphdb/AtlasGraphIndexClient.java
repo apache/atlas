@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.graphdb;
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasAggregationEntry;
 
 import java.util.List;
@@ -45,11 +46,16 @@ public interface AtlasGraphIndexClient {
 
     /**
      * Weighted quick search for OpenSearch backends. Non-OpenSearch implementations return an empty result.
+     * <p>
+     * Backend failures (e.g. OpenSearch unavailable) and query-building failures (e.g. an unsupported operator)
+     * are surfaced as {@link AtlasBaseException} rather than being converted to an empty result, so that an outage
+     * is not mistaken for a legitimate zero-hit search.
      *
      * @param quickSearchContext quick-search inputs (query, filters, pagination)
      * @return matching entity GUIDs in score order and total hit count
+     * @throws AtlasBaseException if the query cannot be built or the backend request fails
      */
-    QuickSearchResult quickSearch(QuickSearchContext quickSearchContext);
+    QuickSearchResult quickSearch(QuickSearchContext quickSearchContext) throws AtlasBaseException;
 
     /**
      * The implementers should apply the search weights for the passed in properties.

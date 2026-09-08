@@ -505,17 +505,53 @@ public class OpenSearchIndex implements IndexProvider {
 
         // Create index if it does not useExternalMappings and if it does not already exist
         if (!useExternalMappings && !client.indexExists(index)) {
-            client.createIndex(index, indexSetting);
-            client.updateIndexSettings(index, MAX_RESULT_WINDOW);
-            try {
-                log.debug("Sleeping {} ms after {} index creation returned from actionGet()", createSleep, index);
-                Thread.sleep(createSleep);
-            } catch (final InterruptedException e) {
-                throw new JanusGraphException("Interrupted while waiting for index to settle in", e);
+            boolean created = createIndexIdempotent(client, index, indexSetting);
+
+            if (created) {
+                client.updateIndexSettings(index, MAX_RESULT_WINDOW);
+                try {
+                    log.debug("Sleeping {} ms after {} index creation returned from actionGet()", createSleep, index);
+                    Thread.sleep(createSleep);
+                } catch (final InterruptedException e) {
+                    throw new JanusGraphException("Interrupted while waiting for index to settle in", e);
+                }
             }
         }
         Preconditions.checkState(client.indexExists(index), "Could not create index: %s",index);
         client.addAlias(indexName, index);
+    }
+
+    /**
+     * Creates {@code index} idempotently so that concurrently starting Atlas nodes (HA) do not fail with a
+     * {@code resource_already_exists_exception}.
+     * <p>
+     * Index creation is inherently a check-then-act race: two nodes may both observe that the index is absent and
+     * both attempt to create it. Exactly one succeeds; the loser's create request fails. This is safe as long as the
+     * desired final state (the index existing) is reached. We therefore only treat a failed create as success when a
+     * follow-up existence check confirms the index is now present — i.e. another node created it. Any other failure
+     * (index still absent) is rethrown so real errors are not masked.
+     *
+     * @return {@code true} if this call created the index, {@code false} if it was created concurrently by another node
+     * @throws IOException if creation failed and the index does not exist afterwards
+     */
+    static boolean createIndexIdempotent(OpenSearchClient client, String index, Map<String, Object> indexSetting) throws IOException {
+        try {
+            client.createIndex(index, indexSetting);
+
+            return true;
+        } catch (final IOException createException) {
+            // Another node may have created the index between our existence check and this create request.
+            // Only swallow the error if the index actually exists now; otherwise surface the original failure.
+            if (client.indexExists(index)) {
+                log.info("Index {} was created concurrently by another node; treating create as successful.", index);
+
+                return false;
+            }
+
+            log.error("Failed to create index {} and it does not exist afterwards.", index, createException);
+
+            throw createException;
+        }
     }
 
 
@@ -1237,8 +1273,8 @@ public class OpenSearchIndex implements IndexProvider {
                 useScroll);
             log.debug("First Executed query [{}] in {} ms", query.getCondition(), response.getTook());
             final Iterator<RawQuery.Result<String>> resultIterator = getResultsIterator(useScroll, response, sr.getSize());
-            final Stream<RawQuery.Result<String>> toReturn
-                    = StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED), false);
+            final Stream<RawQuery.Result<String>> toReturn = withScrollCleanup(resultIterator,
+                    StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED), false));
             return (query.hasLimit() ? toReturn.limit(query.getLimit()) : toReturn).map(RawQuery.Result::getResult);
         } catch (final IOException | UncheckedIOException e) {
             throw new PermanentBackendException(e);
@@ -1247,6 +1283,25 @@ public class OpenSearchIndex implements IndexProvider {
 
     private Iterator<RawQuery.Result<String>> getResultsIterator(boolean useScroll, OpenSearchResponse response, int windowSize){
         return (useScroll)? new OpenSearchScroll(client, response, windowSize) : response.getResults().iterator();
+    }
+
+    /**
+     * Ensures the server-side scroll context is released when the returned stream is closed, including when a
+     * limit short-circuits consumption before the scroll is naturally exhausted. Shared by every {@code query(...)}
+     * overload that may back its result {@code Stream} with an {@link OpenSearchScroll}, so a new scroll-backed
+     * query path cannot be added later without this wiring. A no-op (returns {@code stream} unchanged) when
+     * {@code resultIterator} is not a scroll (i.e. the non-scroll, single-page result path).
+     * Package-visible for direct unit testing without a live cluster.
+     */
+    static Stream<RawQuery.Result<String>> withScrollCleanup(Iterator<RawQuery.Result<String>> resultIterator,
+                                                              Stream<RawQuery.Result<String>> stream) {
+        if (resultIterator instanceof OpenSearchScroll) {
+            final OpenSearchScroll scroll = (OpenSearchScroll) resultIterator;
+
+            return stream.onClose(scroll::close);
+        }
+
+        return stream;
     }
 
     private String convertToEsDataType(Class<?> dataType, Mapping mapping) {
@@ -1340,9 +1395,12 @@ public class OpenSearchIndex implements IndexProvider {
         final OpenSearchResponse response = runCommonQuery(query, information, tx, size, useScroll);
         log.debug("First Executed query [{}] in {} ms", query.getQuery(), response.getTook());
         final Iterator<RawQuery.Result<String>> resultIterator = getResultsIterator(useScroll, response, size);
-        final Stream<RawQuery.Result<String>> toReturn
-                = StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED),
-                false).skip(query.getOffset());
+        // Same server-side scroll-context release as query(IndexQuery, ...): without this, a RawQuery (e.g. Atlas'
+        // native "v.field:value" queries via graph.indexQuery(indexName, queryString)) that limits/skips results
+        // before the scroll is naturally exhausted leaks the OpenSearch scroll context.
+        final Stream<RawQuery.Result<String>> toReturn = withScrollCleanup(resultIterator,
+                StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED),
+                        false).skip(query.getOffset()));
         return query.hasLimit() ? toReturn.limit(query.getLimit()) : toReturn;
     }
 

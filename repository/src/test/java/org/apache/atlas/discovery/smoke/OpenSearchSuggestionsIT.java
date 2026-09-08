@@ -23,12 +23,12 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.assertTrue;
 
 /**
- * C5.3 integration test: Atlas suggestions via Testcontainers OpenSearch.
+ * Integration test: Atlas suggestions via Testcontainers OpenSearch.
  */
 public class OpenSearchSuggestionsIT extends OpenSearchITBase {
 
     @Test
     public void suggestionsValidation() throws Exception {
-        assertTrue(OpenSearchSuggestionsValidationDriver.execute(), "C5.3 suggestions validation failed");
+        assertTrue(OpenSearchSuggestionsValidationDriver.execute(), "Suggestions validation failed");
     }
 }

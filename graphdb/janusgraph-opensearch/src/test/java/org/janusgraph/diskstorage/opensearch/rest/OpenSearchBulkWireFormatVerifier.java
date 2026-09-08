@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * C4.1 bulk wire-format checks: typeless metadata and retry_on_conflict on updates.
+ * Bulk wire-format checks: typeless metadata and retry_on_conflict on updates.
  */
 public final class OpenSearchBulkWireFormatVerifier {
 
@@ -50,7 +50,7 @@ public final class OpenSearchBulkWireFormatVerifier {
             if (!indexLine.contains("\"_id\":\"doc-1\"")) {
                 throw new IllegalStateException("Index bulk metadata missing _id: " + indexLine);
             }
-            System.out.println("[OK] C4.1 bulk index metadata is typeless: " + indexLine.trim());
+            System.out.println("[OK] Bulk index metadata is typeless: " + indexLine.trim());
 
             OpenSearchMutation updateMutation = OpenSearchMutation.createUpdateRequest(
                     "c4janus_c4mixed", "c4mixed", "doc-1", ImmutableMap.of("doc", ImmutableMap.of("age", 31)));
@@ -63,14 +63,14 @@ public final class OpenSearchBulkWireFormatVerifier {
             if (updateLine.contains("_retry_on_conflict")) {
                 throw new IllegalStateException("Update bulk metadata uses legacy _retry_on_conflict: " + updateLine);
             }
-            System.out.println("[OK] C4.1 bulk update uses retry_on_conflict: " + updateLine.trim());
+            System.out.println("[OK] Bulk update uses retry_on_conflict: " + updateLine.trim());
 
             OpenSearchMutation deleteMutation = OpenSearchMutation.createDeleteRequest(
                     "c4janus_c4mixed", "c4mixed", "doc-1");
             RestOpenSearchClient.RequestBytes deleteBytes = client.new RequestBytes(deleteMutation);
             String deleteLine = new String(deleteBytes.requestBytes, StandardCharsets.UTF_8);
             assertNoType(deleteLine, "delete");
-            System.out.println("[OK] C4.1 bulk delete metadata is typeless: " + deleteLine.trim());
+            System.out.println("[OK] Bulk delete metadata is typeless: " + deleteLine.trim());
         }
     }
 

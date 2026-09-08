@@ -35,10 +35,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * C4 validation: mixed-index document mutations and basic query execution against OpenSearch 2.x
- * through the JanusGraph → OpenSearchIndex path (no Atlas discovery APIs).
+ * Validates mixed-index document mutations and basic query execution against a real OpenSearch server
+ * through the JanusGraph → OpenSearchIndex path (no Atlas discovery APIs). The server version is configurable
+ * (system property {@code opensearch.docker.version} / {@code opensearch.docker.image}) — the dedicated
+ * {@code opensearch-it} CI job validates OpenSearch 3.7 and 3.8. OpenSearch 2.x is NOT currently part of the CI
+ * matrix; this driver does not depend on any 3.x-only API, but has not been verified against 2.x in CI.
  *
  * <pre>
  *   mvn -pl graphdb/janusgraph-opensearch test-compile exec:java \
@@ -89,7 +93,7 @@ public final class OpenSearchMixedIndexMutationQueryDriver {
         execute();
 
         System.out.println();
-        System.out.println("C4 mixed-index mutation and query driver finished successfully.");
+        System.out.println("Mixed-index mutation and query driver finished successfully.");
         System.out.println("Inspect OpenSearch with:");
         System.out.println("  curl -s http://" + OpenSearchSmokeSupport.getOpenSearchHost() + ":"
                 + OpenSearchSmokeSupport.getOpenSearchPort() + "/" + PHYSICAL_INDEX + "/_count");
@@ -131,13 +135,13 @@ public final class OpenSearchMixedIndexMutationQueryDriver {
                 .buildMixedIndex(BACKING_INDEX_NAME);
 
         mgmt.commit();
-        System.out.println("[OK] C4 schema committed (mixed index: " + MIXED_INDEX_NAME + ")");
+        System.out.println("[OK] Schema committed (mixed index: " + MIXED_INDEX_NAME + ")");
         return new Schema(name, textField, textStringField, age, longField, active, birthDate, created,
                 batchGroup, listTags, setTags);
     }
 
     // -------------------------------------------------------------------------
-    // C4.1 Insert
+    // Insert
     // -------------------------------------------------------------------------
 
     private static void runInsertTests(JanusGraph graph, Schema s) {
@@ -153,7 +157,7 @@ public final class OpenSearchMixedIndexMutationQueryDriver {
         alice.property(s.batchGroup.name(), "c4insert");
         graph.tx().commit();
         assertVertexCount(graph, "v.name:Alice", 1);
-        System.out.println("[OK] C4.1 single document insert indexed (all field types)");
+        System.out.println("[OK] Single document insert indexed (all field types)");
 
         List<JanusGraphVertex> bulk = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
@@ -165,11 +169,11 @@ public final class OpenSearchMixedIndexMutationQueryDriver {
         }
         graph.tx().commit();
         assertVertexCount(graph, "v.batchGroup:c4bulk", 5);
-        System.out.println("[OK] C4.1 bulk insert indexed 5 documents");
+        System.out.println("[OK] Bulk insert indexed 5 documents");
     }
 
     // -------------------------------------------------------------------------
-    // C4.2 Update
+    // Update
     // -------------------------------------------------------------------------
 
     private static void runUpdateTests(JanusGraph graph, Schema s) {
@@ -184,11 +188,11 @@ public final class OpenSearchMixedIndexMutationQueryDriver {
         graph.tx().commit();
         assertVertexCount(graph, "v.name:Bob AND v.age:35", 1);
         assertVertexCount(graph, "v.name:Bob AND v.age:25", 0);
-        System.out.println("[OK] C4.2 property update visible via indexQuery (retry_on_conflict wired at bulk layer)");
+        System.out.println("[OK] Property update visible via indexQuery (retry_on_conflict wired at bulk layer)");
     }
 
     // -------------------------------------------------------------------------
-    // C4.3 Delete
+    // Delete
     // -------------------------------------------------------------------------
 
     private static void runDeleteTests(JanusGraph graph, Schema s) {
@@ -201,7 +205,7 @@ public final class OpenSearchMixedIndexMutationQueryDriver {
         doomed.remove();
         graph.tx().commit();
         assertVertexCount(graph, "v.name:ToDelete", 0);
-        System.out.println("[OK] C4.3 single delete removes document from index");
+        System.out.println("[OK] Single delete removes document from index");
 
         List<JanusGraphVertex> bulkDelete = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
@@ -218,11 +222,11 @@ public final class OpenSearchMixedIndexMutationQueryDriver {
         }
         graph.tx().commit();
         assertVertexCount(graph, "v.batchGroup:c4bulkdelete", 0);
-        System.out.println("[OK] C4.3 bulk delete removes multiple documents");
+        System.out.println("[OK] Bulk delete removes multiple documents");
     }
 
     // -------------------------------------------------------------------------
-    // C4.4 Cardinality / stored-script paths
+    // Cardinality / stored-script paths
     // -------------------------------------------------------------------------
 
     private static void runCardinalityTests(JanusGraph graph, Schema s) {
@@ -231,7 +235,7 @@ public final class OpenSearchMixedIndexMutationQueryDriver {
         single.property(s.batchGroup.name(), "c4card");
         graph.tx().commit();
         assertVertexCount(graph, "v.name:SingleCard", 1);
-        System.out.println("[OK] C4.4 SINGLE cardinality indexed");
+        System.out.println("[OK] SINGLE cardinality indexed");
 
         JanusGraphVertex listVertex = graph.addVertex();
         listVertex.property(s.name.name(), "ListCard");
@@ -243,7 +247,7 @@ public final class OpenSearchMixedIndexMutationQueryDriver {
         listVertex.property(s.listTags.name(), "gamma");
         graph.tx().commit();
         assertVertexCount(graph, "v.name:ListCard AND v.listTags:gamma", 1);
-        System.out.println("[OK] C4.4 LIST cardinality insert and stored-script add");
+        System.out.println("[OK] LIST cardinality insert and stored-script add");
 
         JanusGraphVertex setVertex = graph.addVertex();
         setVertex.property(s.name.name(), "SetCard");
@@ -255,11 +259,11 @@ public final class OpenSearchMixedIndexMutationQueryDriver {
         setVertex.property(s.setTags.name(), "green");
         graph.tx().commit();
         assertVertexCount(graph, "v.name:SetCard AND v.setTags:green", 1);
-        System.out.println("[OK] C4.4 SET cardinality insert and stored-script add");
+        System.out.println("[OK] SET cardinality insert and stored-script add");
     }
 
     // -------------------------------------------------------------------------
-    // C4.5 Basic queries (OpenSearchIndex.query via graph.indexQuery)
+    // Basic queries (OpenSearchIndex.query via graph.indexQuery)
     // -------------------------------------------------------------------------
 
     private static void runBasicQueryTests(JanusGraph graph, Schema s) {
@@ -267,31 +271,31 @@ public final class OpenSearchMixedIndexMutationQueryDriver {
         final String qfix = "v.batchGroup:queryfix";
 
         assertVertexCount(graph, "v.name:QueryAlice", 1);
-        System.out.println("[OK] C4.5 equality query");
+        System.out.println("[OK] Equality query");
 
         assertVertexCount(graph, qfix + " AND v.textField:(atlas search)", 1);
-        System.out.println("[OK] C4.5 text query");
+        System.out.println("[OK] Text query");
 
         assertVertexCount(graph, qfix + " AND v.age:30", 1);
         assertVertexCount(graph, qfix + " AND v.age:>20", 2);
         assertVertexCount(graph, qfix + " AND v.age:<40", 2);
         assertVertexCount(graph, qfix + " AND v.age:>=30", 1);
         assertVertexCount(graph, qfix + " AND v.age:<=30", 2);
-        System.out.println("[OK] C4.5 numeric range queries (>, <, >=, <=, ==)");
+        System.out.println("[OK] Numeric range queries (>, <, >=, <=, ==)");
 
         assertVertexCount(graph, qfix + " AND -v.age:30", 1);
-        System.out.println("[OK] C4.5 not-equal query");
+        System.out.println("[OK] Not-equal query");
 
         assertVertexCount(graph, qfix + " AND _exists_:v.longField", 1);
-        System.out.println("[OK] C4.5 exists query");
+        System.out.println("[OK] Exists query");
 
         assertVertexCount(graph, qfix + " AND v.age:[25 TO 35]", 2);
         assertVertexCount(graph, qfix + " AND v.active:true", 1);
         assertVertexCount(graph, "v.name:QueryAlice OR v.name:QueryBob", 2);
-        System.out.println("[OK] C4.5 compound AND/OR queries");
+        System.out.println("[OK] Compound AND/OR queries");
 
         assertVertexCount(graph, qfix + " AND v.textStringField__STRING:dualValue", 1);
-        System.out.println("[OK] C4.5 TEXTSTRING dual-mapping query");
+        System.out.println("[OK] TEXTSTRING dual-mapping query");
 
         List<String> ordered = graph.indexQuery(MIXED_INDEX_NAME, "v.batchGroup:queryfix")
                 .orderBy(s.age.name(), Order.asc)
@@ -302,7 +306,7 @@ public final class OpenSearchMixedIndexMutationQueryDriver {
         if (!ordered.get(0).equals("QueryBob") || !ordered.get(1).equals("QueryAlice")) {
             throw new IllegalStateException("Unexpected order: " + ordered);
         }
-        System.out.println("[OK] C4.5 ordering");
+        System.out.println("[OK] Ordering");
 
         long limited = graph.indexQuery(MIXED_INDEX_NAME, "v.batchGroup:queryfix")
                 .limit(1)
@@ -311,7 +315,7 @@ public final class OpenSearchMixedIndexMutationQueryDriver {
         if (limited != 1) {
             throw new IllegalStateException("Expected limit 1 but got " + limited);
         }
-        System.out.println("[OK] C4.5 limit");
+        System.out.println("[OK] Limit");
     }
 
     private static void seedQueryFixtures(JanusGraph graph, Schema s) {
@@ -335,7 +339,7 @@ public final class OpenSearchMixedIndexMutationQueryDriver {
     }
 
     // -------------------------------------------------------------------------
-    // C4.6 Pagination / scroll
+    // Pagination / scroll
     // -------------------------------------------------------------------------
 
     private static void runPaginationAndScrollTests(JanusGraph graph, Schema s) throws Exception {
@@ -365,29 +369,63 @@ public final class OpenSearchMixedIndexMutationQueryDriver {
         if (unique.size() != SCROLL_DOC_COUNT) {
             throw new IllegalStateException("Scroll query returned duplicate document IDs");
         }
-        System.out.println("[OK] C4.6 scroll retrieved all " + SCROLL_DOC_COUNT + " documents without duplicates");
+        System.out.println("[OK] Scroll retrieved all " + SCROLL_DOC_COUNT + " documents without duplicates");
 
-        List<String> page = graph.indexQuery(MIXED_INDEX_NAME, "v.batchGroup:" + SCROLL_GROUP)
-                .offset(5)
-                .limit(5)
-                .vertexStream()
-                .map(r -> (String) r.getElement().value(s.name.name()))
-                .collect(Collectors.toList());
+        // offset(5).limit(5) against SCROLL_BATCH_SIZE=5 forces a scroll (window size 5) that fetches exactly
+        // offset+limit=10 of the 18 total docs (page 1 skipped, page 2 taken) — i.e. it is NOT naturally exhausted
+        // (8 docs remain unfetched server-side). Must be explicitly closed, same as the early-terminated query
+        // below, or its OpenSearch scroll context is left open until the scroll-keep-alive TTL expires.
+        List<String> page = collectAndClose(
+                graph.indexQuery(MIXED_INDEX_NAME, "v.batchGroup:" + SCROLL_GROUP)
+                        .offset(5)
+                        .limit(5)
+                        .vertexStream()
+                        .map(r -> (String) r.getElement().value(s.name.name())));
         if (page.size() != 5) {
             throw new IllegalStateException("Offset/limit page expected 5 results but got " + page.size());
         }
-        System.out.println("[OK] C4.6 offset/limit pagination");
+        System.out.println("[OK] Offset/limit pagination");
+
+        // Early termination: request fewer documents (10) than exist (18) but enough to force scroll usage
+        // (limit >= SCROLL_BATCH_SIZE), then explicitly close the stream before the scroll is naturally exhausted.
+        // This is the exact scenario that used to leak an OpenSearch scroll context on the RawQuery path
+        // (graph.indexQuery(indexName, queryString) — used throughout this driver) before the onClose(scroll::close)
+        // wiring fix; it is intentionally NOT collected to completion so the fix's hard-assertion below is meaningful.
+        final int earlyLimit = SCROLL_BATCH_SIZE * 2;
+        List<String> earlyTerminated = collectAndClose(
+                graph.indexQuery(MIXED_INDEX_NAME, "v.batchGroup:" + SCROLL_GROUP)
+                        .limit(earlyLimit)
+                        .vertexStream()
+                        .map(r -> (String) r.getElement().value(s.name.name())));
+        if (earlyTerminated.size() != earlyLimit) {
+            throw new IllegalStateException("Early-terminated scroll query expected " + earlyLimit
+                    + " results but got " + earlyTerminated.size());
+        }
+        System.out.println("[OK] Early-terminated scroll query (limit " + earlyLimit + " of " + SCROLL_DOC_COUNT
+                + ") returned the expected subset");
 
         String scrollStats = OpenSearchSmokeSupport.httpGet("/_nodes/stats/indices/search?filter_path=nodes.*.indices.search.open_contexts");
         if (scrollStats.contains("\"open_contexts\":") && !scrollStats.contains("\"open_contexts\":0")) {
-            System.out.println("[WARN] C4.6 OpenSearch still reports open scroll contexts: " + scrollStats.trim());
-        } else {
-            System.out.println("[OK] C4.6 scroll contexts cleaned up (open_contexts=0 or unavailable)");
+            throw new IllegalStateException("OpenSearch still reports open scroll contexts after all scroll "
+                    + "queries (including the early-terminated one) were closed — scroll context leak: "
+                    + scrollStats.trim());
+        }
+        System.out.println("[OK] Scroll contexts cleaned up (open_contexts=0 or unavailable)");
+    }
+
+    /**
+     * Collects a {@code Stream} and always closes it, releasing any {@code onClose} handler attached to its
+     * source (e.g. an OpenSearch scroll context) — including when the stream is not fully exhausted (a limit()
+     * short-circuits collection). Generic so it works regardless of the concrete JanusGraph result-stream type.
+     */
+    private static <T> List<T> collectAndClose(Stream<T> stream) {
+        try (Stream<T> closeable = stream) {
+            return closeable.collect(Collectors.toList());
         }
     }
 
     // -------------------------------------------------------------------------
-    // C4.7 Mutation / query consistency
+    // Mutation / query consistency
     // -------------------------------------------------------------------------
 
     private static void runMutationQueryConsistencyTests(JanusGraph graph, Schema s) {
@@ -415,7 +453,7 @@ public final class OpenSearchMixedIndexMutationQueryDriver {
         graph.tx().commit();
         assertVertexCount(graph, "v.name:Target", 0);
         assertVertexCount(graph, "v.name:KeepMe", 1);
-        System.out.println("[OK] C4.7 insert → query → update → query → delete → query consistency");
+        System.out.println("[OK] Insert → query → update → query → delete → query consistency");
     }
 
     // -------------------------------------------------------------------------

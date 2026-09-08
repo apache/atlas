@@ -30,7 +30,10 @@ import java.util.Date;
 import java.util.Properties;
 
 /**
- * C3 validation: mixed-index creation and mapping lifecycle against OpenSearch 2.x.
+ * Validates mixed-index creation and mapping lifecycle against a real OpenSearch server. The server version
+ * is configurable (system property {@code opensearch.docker.version} / {@code opensearch.docker.image}) — the
+ * dedicated {@code opensearch-it} CI job validates OpenSearch 3.7 and 3.8. OpenSearch 2.x is NOT currently part
+ * of the CI matrix; this driver does not depend on any 3.x-only API, but has not been verified against 2.x in CI.
  */
 public final class OpenSearchMixedIndexLifecycleDriver {
 
@@ -97,7 +100,7 @@ public final class OpenSearchMixedIndexLifecycleDriver {
 
         System.out.println("[OK] Mixed index committed: " + MIXED_INDEX_NAME);
         System.out.println("[INFO] Expected physical OpenSearch index: " + PHYSICAL_INDEX);
-        System.out.println("C3 mixed-index lifecycle driver finished. Inspect OpenSearch with:");
+        System.out.println("Mixed-index lifecycle driver finished. Inspect OpenSearch with:");
         System.out.println("  curl -s http://" + OpenSearchSmokeSupport.getOpenSearchHost() + ":"
                 + OpenSearchSmokeSupport.getOpenSearchPort() + "/" + PHYSICAL_INDEX);
     }

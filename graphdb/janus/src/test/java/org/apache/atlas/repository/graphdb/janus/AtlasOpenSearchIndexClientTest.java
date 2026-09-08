@@ -17,8 +17,10 @@
  */
 package org.apache.atlas.repository.graphdb.janus;
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.QuickSearchContext;
 import org.janusgraph.diskstorage.opensearch.AtlasOpenSearchIndex;
 import org.janusgraph.diskstorage.opensearch.OpenSearchClient;
 import org.janusgraph.diskstorage.opensearch.rest.RestSearchResponse;
@@ -200,6 +202,71 @@ public class AtlasOpenSearchIndexClientTest {
 
             verify(mockClient, times(1)).search(any(), any(), eq(false));
             assertFalse(result.isEmpty());
+        }
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void quickSearchPropagatesBackendFailureInsteadOfReturningEmpty() throws Exception {
+        // An OpenSearch outage must surface as an exception, not be converted into a 0-result search.
+        OpenSearchClient mockClient = mock(OpenSearchClient.class);
+
+        when(mockClient.search(any(), any(), eq(false))).thenThrow(new java.io.IOException("OpenSearch unavailable"));
+
+        try (MockedStatic<AtlasOpenSearchIndex> mockedIndex = Mockito.mockStatic(AtlasOpenSearchIndex.class)) {
+            mockedIndex.when(AtlasOpenSearchIndex::getOpenSearchClient).thenReturn(mockClient);
+
+            QuickSearchContext ctx = new QuickSearchContext("atlas", null, Collections.emptySet(),
+                    Collections.emptySet(), new HashMap<>(), false, false, 0, 10);
+
+            AtlasOpenSearchIndexClient.quickSearch(ctx, null);
+        }
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void quickSearchPropagatesQueryBuildFailureInsteadOfReturningEmpty() throws Exception {
+        // A query-builder failure (here: exclude-deleted requested but no __state index field mapped)
+        // must propagate rather than silently becoming an empty result.
+        OpenSearchClient mockClient = mock(OpenSearchClient.class);
+
+        try (MockedStatic<AtlasOpenSearchIndex> mockedIndex = Mockito.mockStatic(AtlasOpenSearchIndex.class)) {
+            mockedIndex.when(AtlasOpenSearchIndex::getOpenSearchClient).thenReturn(mockClient);
+
+            QuickSearchContext ctx = new QuickSearchContext("atlas", null, Collections.emptySet(),
+                    Collections.emptySet(), new HashMap<>(), true, false, 0, 10);
+
+            AtlasOpenSearchIndexClient.quickSearch(ctx, null);
+        }
+    }
+
+    @Test
+    public void quickSearchReturnsEmptyWhenBackendIsNotOpenSearch() throws Exception {
+        // Documented contract: when the deployment is not OpenSearch-backed (null client), an empty result is
+        // returned — this is NOT a backend failure and must not throw.
+        try (MockedStatic<AtlasOpenSearchIndex> mockedIndex = Mockito.mockStatic(AtlasOpenSearchIndex.class)) {
+            mockedIndex.when(AtlasOpenSearchIndex::getOpenSearchClient).thenReturn(null);
+
+            QuickSearchContext ctx = new QuickSearchContext("atlas", null, Collections.emptySet(),
+                    Collections.emptySet(), new HashMap<>(), false, false, 0, 10);
+
+            assertTrue(AtlasOpenSearchIndexClient.quickSearch(ctx, null).getEntityGuids().isEmpty());
+        }
+    }
+
+    @Test
+    public void getSuggestionsReturnsEmptyOnBackendFailure() throws Exception {
+        // Suggestions intentionally return empty on backend errors (parity with Solr), and must not throw.
+        OpenSearchClient mockClient = mock(OpenSearchClient.class);
+
+        when(mockClient.search(any(), any(), eq(false))).thenThrow(new java.io.IOException("OpenSearch unavailable"));
+
+        try (MockedStatic<AtlasOpenSearchIndex> mockedIndex = Mockito.mockStatic(AtlasOpenSearchIndex.class)) {
+            mockedIndex.when(AtlasOpenSearchIndex::getOpenSearchClient).thenReturn(mockClient);
+
+            AtlasOpenSearchIndexClient.applySuggestionFields(Arrays.asList("owner_field"));
+
+            List<String> result = AtlasOpenSearchIndexClient.getSuggestions("team", null, null);
+
+            assertTrue(result.isEmpty());
         }
     }
 

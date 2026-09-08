@@ -21,7 +21,7 @@ import org.apache.atlas.runner.OpenSearchITBase;
 import org.testng.annotations.Test;
 
 /**
- * C4 integration test: mixed-index mutations and JanusGraph queries via Testcontainers OpenSearch.
+ * Integration test: mixed-index mutations and JanusGraph queries via Testcontainers OpenSearch.
  */
 public class OpenSearchMixedIndexMutationQueryIT extends OpenSearchITBase {
 

@@ -339,7 +339,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     }
 
     @Override
-    public QuickSearchResult quickSearch(QuickSearchContext quickSearchContext) {
+    public QuickSearchResult quickSearch(QuickSearchContext quickSearchContext) throws AtlasBaseException {
         String idxBackEnd = configuration != null ? configuration.getString(ApplicationProperties.INDEX_BACKEND_CONF) : null;
 
         if (ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(idxBackEnd)) {

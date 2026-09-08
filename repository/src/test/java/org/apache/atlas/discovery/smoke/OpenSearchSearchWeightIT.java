@@ -23,12 +23,12 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.assertTrue;
 
 /**
- * C5.5 integration test: Atlas search-weight parity via Testcontainers OpenSearch.
+ * Integration test: Atlas search-weight parity via Testcontainers OpenSearch.
  */
 public class OpenSearchSearchWeightIT extends OpenSearchITBase {
 
     @Test
     public void searchWeightValidation() throws Exception {
-        assertTrue(OpenSearchSearchWeightValidationDriver.execute(), "C5.5 search-weight validation failed");
+        assertTrue(OpenSearchSearchWeightValidationDriver.execute(), "Search-weight validation failed");
     }
 }

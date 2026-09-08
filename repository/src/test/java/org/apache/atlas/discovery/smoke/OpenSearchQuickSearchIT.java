@@ -23,12 +23,12 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.assertTrue;
 
 /**
- * C5.2 integration test: Atlas quick search via Testcontainers OpenSearch.
+ * Integration test: Atlas quick search via Testcontainers OpenSearch.
  */
 public class OpenSearchQuickSearchIT extends OpenSearchITBase {
 
     @Test
     public void quickSearchValidation() throws Exception {
-        assertTrue(OpenSearchQuickSearchValidationDriver.execute(), "C5.2 quick search validation failed");
+        assertTrue(OpenSearchQuickSearchValidationDriver.execute(), "Quick search validation failed");
     }
 }

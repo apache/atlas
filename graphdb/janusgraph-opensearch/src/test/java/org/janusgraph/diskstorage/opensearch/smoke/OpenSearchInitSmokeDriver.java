@@ -29,7 +29,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
 /**
- * Standalone smoke driver for OpenSearch REST client initialization (2.x and 3.x).
+ * Standalone smoke driver for OpenSearch REST client initialization. The client/version-parsing logic itself is
+ * not 3.x-specific, but the CI matrix (dedicated {@code opensearch-it} job) currently only validates against
+ * OpenSearch 3.7 and 3.8 — OpenSearch 2.x is NOT part of the CI matrix and has not been verified there.
  *
  * Run after starting OpenSearch on localhost:9200:
  * <pre>

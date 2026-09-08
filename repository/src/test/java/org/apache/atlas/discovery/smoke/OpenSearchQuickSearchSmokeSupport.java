@@ -19,6 +19,7 @@ package org.apache.atlas.discovery.smoke;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.repository.graphdb.janus.AtlasOpenSearchIndexClient;
 import org.janusgraph.diskstorage.configuration.ReadConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import java.io.IOException;
@@ -35,7 +36,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Shared helpers for C5.2 Atlas quick-search validation against a live OpenSearch cluster.
+ * Shared helpers for Atlas quick-search validation against a live OpenSearch cluster.
  */
 final class OpenSearchQuickSearchSmokeSupport {
 
@@ -127,6 +128,20 @@ final class OpenSearchQuickSearchSmokeSupport {
     }
 
     static void registerAtlasOpenSearchIndex() throws Exception {
+        // AtlasOpenSearchIndexClient keeps its keyword-subfield/suggestion/search-weight registrations in
+        // process-static fields (correct for a real Atlas server, which has exactly one schema for its whole
+        // lifetime). The discovery smoke drivers each build their OWN independent, differently-shaped schema, and when
+        // more than one driver runs in the same JVM/fork (the normal case under the opensearch-it profile, since
+        // Surefire bundles all matching *OpenSearch*IT classes into one suite), JanusGraph's deterministic
+        // property-key-to-field-name encoding means one driver's registered field names (e.g. from
+        // OpenSearchAggregationsValidationDriver's AtlasJanusGraphManagement#addMixedIndex calls) can collide with
+        // and incorrectly apply to another driver's differently-mapped fields of the same encoded name — silently
+        // turning EQ/type-filter queries into a filter on a non-existent ".keyword" field (zero results). Reset
+        // before each driver builds its own schema so no state leaks across driver classes.
+        AtlasOpenSearchIndexClient.setKeywordSubfieldIndexFields(java.util.Collections.emptySet());
+        AtlasOpenSearchIndexClient.applySearchWeight(java.util.Collections.emptyMap());
+        AtlasOpenSearchIndexClient.applySuggestionFields(java.util.Collections.emptyList());
+
         Class.forName(StandardIndexProvider.class.getName(), true, StandardIndexProvider.class.getClassLoader());
         Field field = StandardIndexProvider.class.getDeclaredField("ALL_MANAGER_CLASSES");
         Unsafe unsafe = obtainUnsafe();

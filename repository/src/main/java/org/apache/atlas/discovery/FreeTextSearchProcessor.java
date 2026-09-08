@@ -19,6 +19,7 @@ package org.apache.atlas.discovery;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -341,10 +342,13 @@ public class FreeTextSearchProcessor extends SearchProcessor {
             AtlasGraphIndexClient graphIndexClient = context.getGraph().getGraphIndexClient();
 
             return graphIndexClient.quickSearch(quickSearchContext);
-        } catch (AtlasException e) {
+        } catch (AtlasException | AtlasBaseException e) {
+            // Do not convert a backend outage or query-build failure into an empty result: that would make an
+            // OpenSearch outage look like a legitimate "0 results" search. Surface it the same way the Solr path
+            // surfaces index-query failures (as an unchecked exception out of execute()).
             LOG.error("Failed to run OpenSearch weighted quick search.", e);
 
-            return new QuickSearchResult(Collections.emptyList(), 0L);
+            throw new RuntimeException("OpenSearch quick search failed", e);
         }
     }
 

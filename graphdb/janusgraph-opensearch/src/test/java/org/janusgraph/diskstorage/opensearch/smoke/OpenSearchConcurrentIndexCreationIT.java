@@ -15,20 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.discovery.smoke;
+package org.janusgraph.diskstorage.opensearch.smoke;
 
 import org.apache.atlas.runner.OpenSearchITBase;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertTrue;
-
 /**
- * Integration test: Atlas aggregations via Testcontainers OpenSearch.
+ * Concurrent index-creation (HA) safety integration test against a real OpenSearch container.
  */
-public class OpenSearchAggregationsIT extends OpenSearchITBase {
+public class OpenSearchConcurrentIndexCreationIT extends OpenSearchITBase {
 
     @Test
-    public void aggregationsValidation() throws Exception {
-        assertTrue(OpenSearchAggregationsValidationDriver.execute(), "Aggregations validation failed");
+    public void concurrentIndexCreationSucceedsOnAllNodes() throws Exception {
+        OpenSearchConcurrentIndexCreationDriver.execute();
     }
 }

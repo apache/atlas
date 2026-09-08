@@ -171,6 +171,11 @@
         <npm-for-v2.version>6.13.7</npm-for-v2.version>
         <okio.version>3.4.0</okio.version>
         <opencsv.version>5.0</opencsv.version>
+        <!-- OpenSearch Testcontainers server image for integration tests. Default keeps 3.7 coverage; override with
+             -Dopensearch.docker.version=3.8.0 (co-primary target) or -Dopensearch.docker.version=2.19.0 (2.x compat),
+             or -Dopensearch.docker.image=<repo:tag> for a full image override. -->
+        <opensearch.docker.image />
+        <opensearch.docker.version>3.7.0</opensearch.docker.version>
         <opensearch.version>3.7.0</opensearch.version>
         <paranamer.version>2.7</paranamer.version>
         <poi-ooxml.version>5.4.0</poi-ooxml.version>

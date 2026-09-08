@@ -83,10 +83,11 @@ public final class AtlasOpenSearchIndexClient {
         return searchWeightByIndexField;
     }
 
-    public static QuickSearchResult quickSearch(QuickSearchContext quickSearchContext, Configuration configuration) {
+    public static QuickSearchResult quickSearch(QuickSearchContext quickSearchContext, Configuration configuration) throws AtlasBaseException {
         OpenSearchClient client = AtlasOpenSearchIndex.getOpenSearchClient();
 
         if (client == null) {
+            // Not an OpenSearch-backed deployment: an empty result is the documented contract, not a backend failure.
             LOG.warn("The indexing system is not OpenSearch based. Will return empty quick-search results.");
 
             return new QuickSearchResult(Collections.emptyList(), 0L);
@@ -100,6 +101,7 @@ public final class AtlasOpenSearchIndexClient {
                     .withExcludedDeletedEntities(quickSearchContext.isExcludeDeletedEntities())
                     .withIncludeSubTypes(quickSearchContext.isIncludeSubTypes())
                     .withCommonIndexFieldNames(quickSearchContext.getIndexFieldNameCache())
+                    .withClassificationTypeNames(quickSearchContext.getClassificationTypeNames())
                     .withSearchWeights(searchWeightByIndexField)
                     .buildDiscoveryQuery();
 
@@ -119,9 +121,10 @@ public final class AtlasOpenSearchIndexClient {
                     client.search(physicalIndex, requestBody, false);
 
             if (!(osResponse instanceof RestSearchResponse)) {
-                LOG.warn("OpenSearch quick-search response type {}", osResponse.getClass().getName());
-
-                return new QuickSearchResult(Collections.emptyList(), 0L);
+                // An unexpected response type indicates a backend/protocol problem; surface it rather than
+                // silently returning zero results (which could be mistaken for a legitimate empty search).
+                throw new AtlasBaseException("Unexpected OpenSearch quick-search response type: "
+                        + (osResponse == null ? "null" : osResponse.getClass().getName()));
             }
 
             RestSearchResponse response = (RestSearchResponse) osResponse;
@@ -139,11 +142,17 @@ public final class AtlasOpenSearchIndexClient {
             }
 
             return new QuickSearchResult(guids, total);
-        } catch (AtlasBaseException | IOException e) {
-            LOG.error("Error encountered in OpenSearch weighted quick search. Will return empty results.", e);
-        }
+        } catch (AtlasBaseException e) {
+            // Includes query-building failures such as unsupported operators — propagate, do not swallow.
+            LOG.error("Error building or executing OpenSearch weighted quick search.", e);
 
-        return new QuickSearchResult(Collections.emptyList(), 0L);
+            throw e;
+        } catch (IOException e) {
+            // Backend outage/transport failure: propagate so callers do not mistake it for a zero-hit search.
+            LOG.error("OpenSearch backend failure during weighted quick search.", e);
+
+            throw new AtlasBaseException("OpenSearch quick search failed", e);
+        }
     }
 
     static String resolveEntityGuid(RestSearchHit hit) {

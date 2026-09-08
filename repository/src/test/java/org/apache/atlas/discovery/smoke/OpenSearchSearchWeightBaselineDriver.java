@@ -69,7 +69,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * C5.5.1 read-only baseline: controlled ranking dataset + live payload capture.
+ * Read-only baseline: controlled ranking dataset and live payload capture.
  * Compares Atlas/JanusGraph quick-search ordering vs raw OpenSearch {@code query_string}
  * vs proposed {@code multi_match} field boosts. No production code changes.
  *
@@ -127,7 +127,7 @@ public final class OpenSearchSearchWeightBaselineDriver {
         Map<String, String> osFieldNames = fetchOpenSearchFieldNames();
 
         System.out.println();
-        System.out.println("C5.5.1 Search-Weight Ranking Baseline (read-only)");
+        System.out.println("Search-Weight Ranking Baseline (read-only)");
         System.out.println("================================================");
         System.out.println("OpenSearch: " + osVersion + " (major=" + major + ")");
         System.out.println("Physical index: " + OpenSearchQuickSearchSmokeSupport.PHYSICAL_INDEX);
@@ -182,7 +182,7 @@ public final class OpenSearchSearchWeightBaselineDriver {
         graph.shutdown();
 
         System.out.println();
-        System.out.println("C5.5.1 BASELINE COMPLETE (read-only — no production changes)");
+        System.out.println("BASELINE COMPLETE (read-only — no production changes)");
     }
 
     // -------------------------------------------------------------------------
@@ -344,7 +344,7 @@ public final class OpenSearchSearchWeightBaselineDriver {
                 + " (false implies weighted search path would change ranking)");
         System.out.println("query_string == multi_match:       " + queryStringMatchesMultiMatch);
         if (!atlasMatchesMultiMatch) {
-            System.out.println("→ C5.5.2 should target ranking parity via Atlas-level multi_match (Option B).");
+            System.out.println("→ Ranking parity should target Atlas-level multi_match weighting.");
         }
         System.out.println();
     }
@@ -432,7 +432,7 @@ public final class OpenSearchSearchWeightBaselineDriver {
         long typeCount = metrics.getOrDefault(Constants.ENTITY_TYPE_PROPERTY_KEY, Collections.emptyList())
                 .stream().mapToLong(AtlasAggregationEntry::getCount).sum();
 
-        System.out.println("--- Aggregation independence (C5.4 path, unaffected by search weights) ---");
+        System.out.println("--- Aggregation independence (unaffected by search weights) ---");
         System.out.println("typeName agg total with query=customer: " + typeCount + " (expect 4 baseline entities)");
         System.out.println();
     }

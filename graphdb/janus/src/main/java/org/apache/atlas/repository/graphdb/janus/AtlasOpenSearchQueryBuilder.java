@@ -105,6 +105,12 @@ public class AtlasOpenSearchQueryBuilder {
         return this;
     }
 
+    public AtlasOpenSearchQueryBuilder withClassificationTypeNames(Set<String> classificationTypeNames) {
+        this.classificationTypeNames = classificationTypeNames;
+
+        return this;
+    }
+
     /**
      * @return OpenSearch Query DSL {@code query} clause for discovery (quick search hits and aggregations):
      * Solr edismax-style {@code dis_max} over weighted fields for plain terms and wildcards; structural
@@ -133,15 +139,17 @@ public class AtlasOpenSearchQueryBuilder {
         }
 
         if (excludeDeletedEntities) {
-            String stateIndexFieldName = indexFieldNameCache != null
-                    ? toOsField(indexFieldNameCache.get(Constants.STATE_PROPERTY_KEY)) : null;
+            String rawStateFieldName = indexFieldNameCache != null
+                    ? indexFieldNameCache.get(Constants.STATE_PROPERTY_KEY) : null;
 
-            if (StringUtils.isEmpty(stateIndexFieldName)) {
+            if (StringUtils.isEmpty(rawStateFieldName)) {
                 throw new AtlasBaseException(String.format("There is no index field name defined for attribute '%s'",
                         Constants.STATE_PROPERTY_KEY));
             }
 
-            mustNotClauses.add(singleKeyMap("term", singleKeyMap(stateIndexFieldName, AtlasEntity.Status.DELETED.name())));
+            // Exact-match on __state must target the keyword field when the mapping uses a text+keyword subfield;
+            // an analyzed text field would index "DELETED" lower-cased and miss the term filter.
+            mustNotClauses.add(singleKeyMap("term", singleKeyMap(toKeywordField(rawStateFieldName), AtlasEntity.Status.DELETED.name())));
         }
 
         if (CollectionUtils.isNotEmpty(entityTypes)) {
@@ -367,8 +375,9 @@ public class AtlasOpenSearchQueryBuilder {
     }
 
     private Map<String, Object> buildClassificationTypeClause() {
-        String classIndexFieldName     = toOsField(indexFieldNameCache.get(CLASSIFICATION_NAMES_KEY));
-        String propagatedIndexFieldName = toOsField(indexFieldNameCache.get(PROPAGATED_CLASSIFICATION_NAMES_KEY));
+        // terms on classification-name fields is an exact-match filter; resolve to the keyword subfield when mapped.
+        String classIndexFieldName      = toKeywordField(indexFieldNameCache.get(CLASSIFICATION_NAMES_KEY));
+        String propagatedIndexFieldName = toKeywordField(indexFieldNameCache.get(PROPAGATED_CLASSIFICATION_NAMES_KEY));
 
         if (StringUtils.isEmpty(classIndexFieldName) || StringUtils.isEmpty(propagatedIndexFieldName)) {
             LOG.warn("Missing index field names for classification filters; skipping OpenSearch classification filter.");
@@ -405,15 +414,15 @@ public class AtlasOpenSearchQueryBuilder {
         }
 
         if (excludeDeletedEntities) {
-            String stateIndexFieldName = indexFieldNameCache != null
-                    ? toOsField(indexFieldNameCache.get(Constants.STATE_PROPERTY_KEY)) : null;
+            String rawStateFieldName = indexFieldNameCache != null
+                    ? indexFieldNameCache.get(Constants.STATE_PROPERTY_KEY) : null;
 
-            if (StringUtils.isEmpty(stateIndexFieldName)) {
+            if (StringUtils.isEmpty(rawStateFieldName)) {
                 throw new AtlasBaseException(String.format("There is no index field name defined for attribute '%s'",
                         Constants.STATE_PROPERTY_KEY));
             }
 
-            mustNotClauses.add(singleKeyMap("term", singleKeyMap(stateIndexFieldName, AtlasEntity.Status.DELETED.name())));
+            mustNotClauses.add(singleKeyMap("term", singleKeyMap(toKeywordField(rawStateFieldName), AtlasEntity.Status.DELETED.name())));
         }
 
         if (CollectionUtils.isNotEmpty(entityTypes)) {
@@ -446,7 +455,8 @@ public class AtlasOpenSearchQueryBuilder {
     }
 
     private Map<String, Object> buildEntityTypeClause() {
-        String typeIndexFieldName = toOsField(indexFieldNameCache.get(Constants.ENTITY_TYPE_PROPERTY_KEY));
+        // terms on __typeName is an exact-match filter — resolve to the keyword subfield when the mapping requires it.
+        String typeIndexFieldName = toKeywordField(indexFieldNameCache.get(Constants.ENTITY_TYPE_PROPERTY_KEY));
         Set<String> typesToSearch = new HashSet<>();
 
         for (AtlasEntityType type : entityTypes) {
@@ -498,7 +508,8 @@ public class AtlasOpenSearchQueryBuilder {
         Set<String>               indexAttributes = new HashSet<>();
 
         for (AtlasEntityType type : entityTypes) {
-            String indexAttributeName = toOsField(getIndexAttributeName(type, attributeName));
+            String rawIndexAttributeName = getIndexAttributeName(type, attributeName);
+            String indexAttributeName    = toOsField(rawIndexAttributeName);
 
             if (!indexAttributes.contains(indexAttributeName)) {
                 indexAttributes.add(indexAttributeName);
@@ -527,7 +538,7 @@ public class AtlasOpenSearchQueryBuilder {
                     }
                 }
 
-                Map<String, Object> clause = buildOperatorClause(indexAttributeName, operator, attributeValue, replaceWildcardChar);
+                Map<String, Object> clause = buildOperatorClause(rawIndexAttributeName, operator, attributeValue, replaceWildcardChar);
 
                 if (clause != null) {
                     orClauses.add(clause);
@@ -542,17 +553,22 @@ public class AtlasOpenSearchQueryBuilder {
         return orClauses.size() == 1 ? orClauses.get(0) : singleKeyMap("bool", singleKeyMap("should", orClauses));
     }
 
-    private Map<String, Object> buildOperatorClause(String indexFieldName, Operator operator, String attributeValue,
+    private Map<String, Object> buildOperatorClause(String rawIndexFieldName, Operator operator, String attributeValue,
                                                     boolean replaceWildCard) throws AtlasBaseException {
         if (operator == null) {
             return null;
         }
 
+        // Free-text/wildcard/range operators target the analyzed (default) physical field; exact-match term
+        // operators (EQ/NEQ) must target the keyword subfield when the mapping uses text+keyword.
+        String indexFieldName = toOsField(rawIndexFieldName);
+        String exactFieldName = toKeywordField(rawIndexFieldName);
+
         switch (operator) {
             case EQ:
-                return singleKeyMap("term", singleKeyMap(indexFieldName, attributeValue));
+                return singleKeyMap("term", singleKeyMap(exactFieldName, attributeValue));
             case NEQ:
-                return singleKeyMap("bool", singleKeyMap("must_not", singleKeyMap("term", singleKeyMap(indexFieldName, attributeValue))));
+                return singleKeyMap("bool", singleKeyMap("must_not", singleKeyMap("term", singleKeyMap(exactFieldName, attributeValue))));
             case STARTS_WITH:
                 return wildcardClause(indexFieldName, toWildcardPattern(attributeValue, replaceWildCard, true, false));
             case ENDS_WITH:
@@ -579,6 +595,12 @@ public class AtlasOpenSearchQueryBuilder {
             case CONTAINS_ANY:
             case CONTAINS_ALL:
             default:
+                // Operator parity with the Solr quick-search contract (AtlasSolrQueryBuilder): IN, LIKE, CONTAINS_ANY,
+                // CONTAINS_ALL, TIME_RANGE and NOT_EMPTY are NOT supported by the Solr index-query builder for this
+                // path either (they fall through to the same "not supported" branch there). We intentionally do not
+                // invent OpenSearch-only semantics for them so the two backends stay behaviorally identical. This
+                // exception now propagates to the caller (see AtlasOpenSearchIndexClient#quickSearch) rather than being
+                // swallowed into an empty result.
                 String msg = String.format("%s is not supported operation.", operator.getSymbol());
 
                 LOG.error(msg);
@@ -683,6 +705,16 @@ public class AtlasOpenSearchQueryBuilder {
 
     static String toOsField(String indexFieldName) {
         return AtlasOpenSearchIndexClient.toOpenSearchFieldName(indexFieldName);
+    }
+
+    /**
+     * Resolves the physical OpenSearch field for exact-match ({@code term}/{@code terms}) operations, appending the
+     * {@code .keyword} subfield when the field was registered as text+keyword (see
+     * {@link AtlasOpenSearchIndexClient#toOpenSearchTermsFieldName(String)}). For fields mapped as native keyword or
+     * as analyzed text without a keyword subfield, the bare field is returned (preserving prior behavior).
+     */
+    static String toKeywordField(String indexFieldName) {
+        return AtlasOpenSearchIndexClient.toOpenSearchTermsFieldName(indexFieldName);
     }
 
     private static Map<String, Object> singleKeyMap(String key, Object value) {

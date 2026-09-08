@@ -46,8 +46,11 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * C5.3 validation: Atlas suggestions through {@link SuggestionsProviderImpl} and
- * {@link AtlasJanusGraphIndexClient#getSuggestions(String, String)} against OpenSearch 2.x.
+ * Validates Atlas suggestions through {@link SuggestionsProviderImpl} and
+ * {@link AtlasJanusGraphIndexClient#getSuggestions(String, String)} against a real OpenSearch server. The server
+ * version is configurable (system property {@code opensearch.docker.version} / {@code opensearch.docker.image})
+ * — the dedicated {@code opensearch-it} CI job validates OpenSearch 3.7 and 3.8. OpenSearch 2.x is NOT currently
+ * part of the CI matrix; this driver has not been verified against 2.x in CI.
  *
  * <pre>
  *   cd repository && mvn test-compile exec:java \
@@ -102,12 +105,12 @@ public final class OpenSearchSuggestionsValidationDriver {
     }
 
     public static void main(String[] args) throws Exception {
-        System.out.println("C5.3 Atlas Suggestions Validation");
+        System.out.println("Atlas Suggestions Validation");
         boolean allPassed = execute();
         for (Map.Entry<String, String> entry : RESULTS.entrySet()) {
             System.out.printf("%-28s %s%n", entry.getKey(), entry.getValue());
         }
-        System.out.println(allPassed ? "C5.3 RESULT: PASS" : "C5.3 RESULT: FAIL");
+        System.out.println(allPassed ? "RESULT: PASS" : "RESULT: FAIL");
         if (!allPassed) {
             System.exit(1);
         }
@@ -242,7 +245,7 @@ public final class OpenSearchSuggestionsValidationDriver {
     }
 
     // -------------------------------------------------------------------------
-    // Fixture setup (extends C5.2 pattern; STRING mapping on name for Solr parity)
+    // Fixture setup (STRING mapping on name for Solr parity)
     // -------------------------------------------------------------------------
 
     private static IndexFieldNames createSchema(JanusGraph graph, AtlasTypeRegistry typeRegistry) throws Exception {
