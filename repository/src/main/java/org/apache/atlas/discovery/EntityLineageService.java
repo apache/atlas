@@ -117,6 +117,8 @@ public class EntityLineageService implements AtlasLineageService {
             ret = getLineageInfoV2(guid, direction, depth, isDataSet);
         }
 
+        scrubLineageEntities(ret);
+
         return ret;
     }
 
@@ -136,6 +138,8 @@ public class EntityLineageService implements AtlasLineageService {
 
         // filtering out on-demand relations which has input & output nodes within the limit
         cleanupRelationsOnDemand(ret);
+
+        scrubLineageEntities(ret);
 
         return ret;
     }
@@ -654,15 +658,22 @@ public class EntityLineageService implements AtlasLineageService {
         String      relationGuid = AtlasGraphUtilsV2.getEncodedProperty(edge, RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
         boolean     isInputEdge  = edge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
-        addEntityHeaderIfAuthorized(inVertex, inGuid, entities);
-        addEntityHeaderIfAuthorized(outVertex, outGuid, entities);
+        if (!entities.containsKey(inGuid)) {
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(inVertex);
 
-        if (entities.containsKey(inGuid) && entities.containsKey(outGuid)) {
-            if (isInputEdge) {
-                relations.add(new LineageRelation(inGuid, outGuid, relationGuid));
-            } else {
-                relations.add(new LineageRelation(outGuid, inGuid, relationGuid));
-            }
+            entities.put(inGuid, entityHeader);
+        }
+
+        if (!entities.containsKey(outGuid)) {
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(outVertex);
+
+            entities.put(outGuid, entityHeader);
+        }
+
+        if (isInputEdge) {
+            relations.add(new LineageRelation(inGuid, outGuid, relationGuid));
+        } else {
+            relations.add(new LineageRelation(outGuid, inGuid, relationGuid));
         }
 
         if (visitedEdges != null) {
@@ -672,20 +683,20 @@ public class EntityLineageService implements AtlasLineageService {
         }
     }
 
-    private void addEntityHeaderIfAuthorized(AtlasVertex vertex, String guid, Map<String, AtlasEntityHeader> entities) throws AtlasBaseException {
-        if (entities.containsKey(guid)) {
+    /**
+     * Scrub lineage entities the caller is not authorized (ENTITY_READ) to read - similar to search-result scrubbing
+     * in {@code EntityDiscoveryService.scrubSearchResults()}. The full lineage graph is gathered first; here we only
+     * redact the headers of unauthorized entities (attributes, classifications, meanings are cleared). Node guids and
+     * relations are retained so the lineage graph stays connected.
+     */
+    private void scrubLineageEntities(AtlasLineageInfo lineageInfo) {
+        if (lineageInfo == null || MapUtils.isEmpty(lineageInfo.getGuidEntityMap())) {
             return;
         }
 
-        AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(vertex);
-
-        if (isEntityReadAllowed(entityHeader)) {
-            entities.put(guid, entityHeader);
+        for (AtlasEntityHeader entityHeader : lineageInfo.getGuidEntityMap().values()) {
+            AtlasAuthorizationUtils.scrubEntityHeader(entityHeader, atlasTypeRegistry);
         }
-    }
-
-    private boolean isEntityReadAllowed(AtlasEntityHeader entityHeader) {
-        return AtlasAuthorizationUtils.isAccessAllowed(new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, entityHeader));
     }
 
     private AtlasLineageInfo getBothLineageInfoV1(String guid, int depth, boolean isDataSet) throws AtlasBaseException {
