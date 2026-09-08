@@ -42,6 +42,7 @@ import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import { isEntityPurged } from "@utils/Enum";
 import CustomModal from "@components/Modal";
 import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
+
 import { removeClassification } from "@api/apiMethods/classificationApiMethod";
 import { toast } from "react-toastify";
 import AttributeTable from "../AttributeTable";
@@ -50,6 +51,7 @@ import moment from "moment";
 import { useAppDispatch } from "@hooks/reducerHook";
 import { AntSwitch } from "@utils/Muiutils";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
+import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
   entity,
@@ -255,7 +257,7 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
           let values = info.row.original;
           return (
             <Stack direction="row" gap={1}>
-              {(guid == values?.entityGuid ||
+              {!loading && isEntityModificationAllowed(entity?.status) && (guid == values?.entityGuid ||
                 (guid != values?.entityGuid &&
                   values.entityStatus == "DELETED")) && (
                   <LightTooltip title={"Delete Classification"}>
@@ -279,7 +281,7 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
                     </CustomButton>
                   </LightTooltip>
                 )}
-              {guid == values?.entityGuid && (
+              {!loading && isEntityModificationAllowed(entity?.status) && guid == values?.entityGuid && (
                 <LightTooltip title={"Edit Classification"}>
                   <CustomButton
                     variant="outlined"
@@ -305,7 +307,7 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
         enableSorting: false
       }
     ],
-    [updateTable]
+    [updateTable, entity]
   );
 
   return (

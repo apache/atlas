@@ -41,6 +41,7 @@ const getDescriptionForDisplay = (desc: unknown): string => {
 };
 import { useState } from "react";
 import { useAppSelector } from "@hooks/reducerHook";
+
 import { toast } from "react-toastify";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { removeClassification } from "@api/apiMethods/classificationApiMethod";
@@ -57,6 +58,7 @@ import AddTagAttributes from "@views/Classification/AddTagAttributes";
 import AssignCategory from "@views/Glossary/AssignCategory";
 import AssignTerm from "@views/Glossary/AssignTerm";
 import ShowMoreText from "@components/ShowMore/ShowMoreText";
+import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const DetailPageAttribute = ({
   data,
@@ -147,7 +149,7 @@ const DetailPageAttribute = ({
                 {name}{" "}
               </Typography>
             </LightTooltip>
-            {isEmpty(bmguid) && (
+            {isEmpty(bmguid) && !loading && isEntityModificationAllowed(data?.status) && (
               <LightTooltip title={"Edit Classification"}>
                 <CustomButton
                   variant="outlined"
@@ -315,23 +317,25 @@ const DetailPageAttribute = ({
                       >
                         Classifications
                       </Typography>
-                      <LightTooltip title={"Add Classifications"}>
-                        <IconButton
-                          component="label"
-                          role={undefined}
-                          tabIndex={-1}
-                          size="small"
-                          color="primary"
-                          onClick={() => {
-                            setOpenAddTagModal(true);
-                          }}
-                        >
-                          <AddCircleOutlineIcon
-                            className="mr-0"
-                            fontSize="small"
-                          />{" "}
-                        </IconButton>
-                      </LightTooltip>
+                      {!loading && isEntityModificationAllowed(data?.status) && (
+                        <LightTooltip title={"Add Classifications"}>
+                          <IconButton
+                            component="label"
+                            role={undefined}
+                            tabIndex={-1}
+                            size="small"
+                            color="primary"
+                            onClick={() => {
+                              setOpenAddTagModal(true);
+                            }}
+                          >
+                            <AddCircleOutlineIcon
+                              className="mr-0"
+                              fontSize="small"
+                            />{" "}
+                          </IconButton>
+                        </LightTooltip>
+                      )}
                     </Stack>
                     <Stack
                       data-cy="tagListTerm"
@@ -383,28 +387,30 @@ const DetailPageAttribute = ({
                       >
                         Terms
                       </Typography>
-                      <LightTooltip title={"Add Term"}>
-                        <IconButton
-                          component="label"
-                          role={undefined}
-                          tabIndex={-1}
-                          size="small"
-                          color="primary"
-                          onClick={() => {
-                            if (!hasAnyGlossaryTerms) {
-                              toast.dismiss();
-                              toast.info("There are no available terms");
-                              return;
-                            }
-                            setOpenAddTermModal(true);
-                          }}
-                        >
-                          <AddCircleOutlineIcon
-                            className="mr-0"
-                            fontSize="small"
-                          />{" "}
-                        </IconButton>
-                      </LightTooltip>
+                      {!loading && isEntityModificationAllowed(data?.status) && (
+                        <LightTooltip title={"Add Term"}>
+                          <IconButton
+                            component="label"
+                            role={undefined}
+                            tabIndex={-1}
+                            size="small"
+                            color="primary"
+                            onClick={() => {
+                              if (!hasAnyGlossaryTerms) {
+                                toast.dismiss();
+                                toast.info("There are no available terms");
+                                return;
+                              }
+                              setOpenAddTermModal(true);
+                            }}
+                          >
+                            <AddCircleOutlineIcon
+                              className="mr-0"
+                              fontSize="small"
+                            />{" "}
+                          </IconButton>
+                        </LightTooltip>
+                      )}
                     </Stack>
                     <Stack
                       data-cy="termList"
@@ -455,23 +461,25 @@ const DetailPageAttribute = ({
                       >
                         Categories
                       </Typography>
-                      <LightTooltip title={"Add Categories"}>
-                        <IconButton
-                          component="label"
-                          role={undefined}
-                          tabIndex={-1}
-                          size="small"
-                          color="primary"
-                          onClick={() => {
-                            setCategoryModal(true);
-                          }}
-                        >
-                          <AddCircleOutlineIcon
-                            className="mr-0"
-                            fontSize="small"
-                          />{" "}
-                        </IconButton>
-                      </LightTooltip>
+                      {!loading && isEntityModificationAllowed(data?.status) && (
+                        <LightTooltip title={"Add Categories"}>
+                          <IconButton
+                            component="label"
+                            role={undefined}
+                            tabIndex={-1}
+                            size="small"
+                            color="primary"
+                            onClick={() => {
+                              setCategoryModal(true);
+                            }}
+                          >
+                            <AddCircleOutlineIcon
+                              className="mr-0"
+                              fontSize="small"
+                            />{" "}
+                          </IconButton>
+                        </LightTooltip>
+                      )}
                     </Stack>
                     <Stack
                       data-cy="categoryList"
@@ -614,23 +622,25 @@ const DetailPageAttribute = ({
                         >
                           Attributes:
                         </Typography>
-                        <LightTooltip title={"Add Attributes"}>
-                          <IconButton
-                            component="label"
-                            role={undefined}
-                            tabIndex={-1}
-                            size="small"
-                            color="primary"
-                            onClick={() => {
-                              setAttributeModal(true);
-                            }}
-                          >
-                            <AddCircleOutlineIcon
-                              className="mr-0"
-                              fontSize="small"
-                            />{" "}
-                          </IconButton>
-                        </LightTooltip>
+                        {!loading && isEntityModificationAllowed(data?.status) && (
+                          <LightTooltip title={"Add Attributes"}>
+                            <IconButton
+                              component="label"
+                              role={undefined}
+                              tabIndex={-1}
+                              size="small"
+                              color="primary"
+                              onClick={() => {
+                                setAttributeModal(true);
+                              }}
+                            >
+                              <AddCircleOutlineIcon
+                                className="mr-0"
+                                fontSize="small"
+                              />{" "}
+                            </IconButton>
+                          </LightTooltip>
+                        )}
                       </Stack>
 
                       <Stack

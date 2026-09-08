@@ -289,7 +289,7 @@ const ClassificationCoverage = memo(
 						aria-label="Open classification search"
 					>
 						{numberFormatWithComma(typesInUse)} of{" "}
-						{numberFormatWithComma(classificationTypeDefinitions)}
+						{numberFormatWithComma(classificationTypeDefinitions)}{" "}
 						classification types are in use (have at least one entity).
 					</Typography>
 				</Stack>

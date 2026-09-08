@@ -1864,6 +1864,11 @@ public class EntityGraphRetriever {
         // set propagated and blocked propagated classifications
         readClassificationsFromEdge(edge, relationshipWithExtInfo, extendedInfo);
 
+        List<String> pendingTasks = edge.getListProperty(org.apache.atlas.repository.Constants.EDGE_PENDING_TASKS_PROPERTY_KEY);
+        if (CollectionUtils.isNotEmpty(pendingTasks)) {
+            relationship.setPendingTasks(new HashSet<>(pendingTasks));
+        }
+
         return relationshipWithExtInfo;
     }
 
@@ -1873,6 +1878,8 @@ public class EntityGraphRetriever {
         AtlasRelationship        relationship              = relationshipWithExtInfo.getRelationship();
         Set<AtlasClassification> propagatedClassifications = new HashSet<>();
         Set<AtlasClassification> blockedClassifications    = new HashSet<>();
+        Set<String>              blockedIdSet               = CollectionUtils.isEmpty(blockedClassificationIds)
+                ? Collections.emptySet() : new HashSet<>(blockedClassificationIds);
 
         for (AtlasVertex classificationVertex : classificationVertices) {
             String              classificationId = classificationVertex.getIdForDisplay();
@@ -1882,7 +1889,7 @@ public class EntityGraphRetriever {
                 continue;
             }
 
-            if (blockedClassificationIds.contains(classificationId)) {
+            if (blockedIdSet.contains(classificationId)) {
                 blockedClassifications.add(classification);
             } else {
                 propagatedClassifications.add(classification);

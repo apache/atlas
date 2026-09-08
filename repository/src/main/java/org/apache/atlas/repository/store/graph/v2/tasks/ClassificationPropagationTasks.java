@@ -67,8 +67,14 @@ public class ClassificationPropagationTasks {
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
             String            relationshipEdgeId = (String) parameters.get(PARAM_RELATIONSHIP_EDGE_ID);
             AtlasRelationship relationship       = AtlasType.fromJson((String) parameters.get(PARAM_RELATIONSHIP_OBJECT), AtlasRelationship.class);
+            String            oldTagPropagation  = (String) parameters.get(PARAM_OLD_TAG_PROPAGATION);
 
-            entityGraphMapper.updateTagPropagations(relationshipEdgeId, relationship);
+            java.util.List<String> oldBlockedClassifications = null;
+            if (parameters.containsKey(PARAM_OLD_BLOCKED_CLASSIFICATIONS)) {
+                oldBlockedClassifications = AtlasType.fromJson((String) parameters.get(PARAM_OLD_BLOCKED_CLASSIFICATIONS), java.util.List.class);
+            }
+
+            entityGraphMapper.updateTagPropagations(relationshipEdgeId, relationship, oldTagPropagation, oldBlockedClassifications);
         }
     }
 }
