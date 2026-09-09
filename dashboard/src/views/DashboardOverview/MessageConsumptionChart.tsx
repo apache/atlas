@@ -18,21 +18,21 @@
 import { memo, useCallback } from "react";
 import { Stack, Typography, Box } from "@mui/material";
 import {
-	BarChart,
-	Bar,
-	XAxis,
-	YAxis,
-	CartesianGrid,
-	Tooltip,
-	ResponsiveContainer,
-	Cell,
-	LabelList,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  LabelList,
 } from "recharts";
 import { numberFormatWithComma } from "@utils/Helper";
 import { type MessageConsumptionItem } from "@utils/metricsUtils";
 import {
-	CHART_BAR_ACTIVE_BLUE,
-	ENTITY_STATUS_DONUT_COLORS,
+  CHART_BAR_ACTIVE_BLUE,
+  ENTITY_STATUS_DONUT_COLORS,
 } from "./dashboardChartPalette";
 
 const CREATES_COLOR = ENTITY_STATUS_DONUT_COLORS.Active;
@@ -40,191 +40,214 @@ const UPDATES_COLOR = CHART_BAR_ACTIVE_BLUE;
 const DELETES_COLOR = ENTITY_STATUS_DONUT_COLORS.Deleted;
 
 interface MessageConsumptionChartProps {
-	/** Rows must already exclude the Total period when used from Kafka Topic Summary. */
-	data: MessageConsumptionItem[];
-	/** Optional accessible name for the chart region (embedded context). */
-	chartAriaLabel?: string;
+  /** Rows must already exclude the Total period when used from Kafka Topic Summary. */
+  data: MessageConsumptionItem[];
+  /** Optional accessible name for the chart region (embedded context). */
+  chartAriaLabel?: string;
 }
 
 const MessageConsumptionChart = memo(
-	({ data, chartAriaLabel }: MessageConsumptionChartProps) => {
-		const renderTooltip = useCallback(
-			(props: unknown) => {
-				const p = props as {
-					active?: boolean;
-					label?: string | number;
-					payload?: Array<{ payload?: MessageConsumptionItem }>;
-				};
-				if (!p?.active) return null;
-				const periodLabel =
-					p.label !== undefined && p.label !== null ? String(p.label) : "";
-				const rowFromLabel = periodLabel
-					? data.find((d) => d.period === periodLabel)
-					: undefined;
-				const row =
-					rowFromLabel ?? p.payload?.[0]?.payload ?? undefined;
-				if (!row) return null;
-				return (
-					<Box
-						className="message-consumption-chart-box-33"
-					>
-						<Typography variant="body2" fontWeight={600} className="classification-distribution-card-typography-10">
-							{row.period}
-						</Typography>
-						<Typography variant="caption" display="block" className="message-consumption-chart-typography-34">
-							Creates: {numberFormatWithComma(row.creates)}
-						</Typography>
-						<Typography variant="caption" display="block" className="message-consumption-chart-typography-35">
-							Updates: {numberFormatWithComma(row.updates)}
-						</Typography>
-						<Typography variant="caption" display="block" className="message-consumption-chart-typography-36">
-							Deletes: {numberFormatWithComma(row.deletes)}
-						</Typography>
-						<Typography variant="caption" display="block" className="message-consumption-chart-typography-37">
-							Messages processed: {numberFormatWithComma(row.count)}
-						</Typography>
-						<Typography variant="caption" display="block" className="message-consumption-chart-typography-38">
-							Avg time (ms): {numberFormatWithComma(row.avgTime)}
-						</Typography>
-					</Box>
-				);
-			},
-			[data]
-		);
+  ({ data, chartAriaLabel }: MessageConsumptionChartProps) => {
+    const renderTooltip = useCallback(
+      (props: unknown) => {
+        const p = props as {
+          active?: boolean;
+          label?: string | number;
+          payload?: Array<{ payload?: MessageConsumptionItem }>;
+        };
+        if (!p?.active) return null;
+        const periodLabel =
+          p.label !== undefined && p.label !== null ? String(p.label) : "";
+        const rowFromLabel = periodLabel
+          ? data.find((d) => d.period === periodLabel)
+          : undefined;
+        const row = rowFromLabel ?? p.payload?.[0]?.payload ?? undefined;
+        if (!row) return null;
+        return (
+          <Box className="message-consumption-chart__tooltip">
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              className="classification-distribution-card__tooltip-title"
+            >
+              {row.period}
+            </Typography>
+            <Typography
+              variant="caption"
+              display="block"
+              className="message-consumption-chart__tooltip-active"
+            >
+              Creates: {numberFormatWithComma(row.creates)}
+            </Typography>
+            <Typography
+              variant="caption"
+              display="block"
+              className="message-consumption-chart__tooltip-total"
+            >
+              Updates: {numberFormatWithComma(row.updates)}
+            </Typography>
+            <Typography
+              variant="caption"
+              display="block"
+              className="message-consumption-chart__tooltip-deleted"
+            >
+              Deletes: {numberFormatWithComma(row.deletes)}
+            </Typography>
+            <Typography
+              variant="caption"
+              display="block"
+              className="message-consumption-chart__tooltip-date"
+            >
+              Messages processed: {numberFormatWithComma(row.count)}
+            </Typography>
+            <Typography
+              variant="caption"
+              display="block"
+              className="message-consumption-chart__description"
+            >
+              Avg time (ms): {numberFormatWithComma(row.avgTime)}
+            </Typography>
+          </Box>
+        );
+      },
+      [data],
+    );
 
-		if (data.length === 0) {
-			return (
-				<Stack alignItems="center" justifyContent="center" minHeight={200}>
-					<Typography variant="body2" color="text.secondary">
-						No message consumption data available
-					</Typography>
-				</Stack>
-			);
-		}
+    if (data.length === 0) {
+      return (
+        <Stack alignItems="center" justifyContent="center" minHeight={200}>
+          <Typography variant="body2" color="text.secondary">
+            No message consumption data available
+          </Typography>
+        </Stack>
+      );
+    }
 
-		return (
-			<Box
-				role={chartAriaLabel ? "region" : undefined}
-				aria-label={chartAriaLabel}
-				className="message-consumption-chart-box-39"
-			>
-				<Stack
-					direction="row"
-					spacing={2}
-					className="entity-type-bar-chart-stack-28"
-					aria-label="Chart legend"
-				>
-					<Stack direction="row" alignItems="center" spacing={0.75}>
-						<Box
-							className="message-consumption-chart-box-40"
-							aria-hidden
-						/>
-						<Typography
-							variant="caption"
-							className="entity-type-bar-chart-typography-30"
-						>
-							Creates
-						</Typography>
-					</Stack>
-					<Stack direction="row" alignItems="center" spacing={0.75}>
-						<Box
-							className="message-consumption-chart-box-41"
-							aria-hidden
-						/>
-						<Typography
-							variant="caption"
-							className="entity-type-bar-chart-typography-30"
-						>
-							Updates
-						</Typography>
-					</Stack>
-					<Stack direction="row" alignItems="center" spacing={0.75}>
-						<Box
-							className="message-consumption-chart-box-42"
-							aria-hidden
-						/>
-						<Typography
-							variant="caption"
-							className="entity-type-bar-chart-typography-30"
-						>
-							Deletes
-						</Typography>
-					</Stack>
-				</Stack>
-				<ResponsiveContainer width="100%" height="100%">
-					<BarChart
-						data={data}
-						margin={{ top: 36, right: 28, left: 52, bottom: 36 }}
-					>
-						<CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-						<XAxis
-							dataKey="period"
-							tick={{ fontSize: 11 }}
-							height={36}
-							label={{
-								value: "Period",
-								position: "bottom",
-								offset: 12,
-								style: { fontSize: 11, fill: "#6c757d" },
-							}}
-						/>
-						<YAxis
-							tickFormatter={(v) => numberFormatWithComma(v)}
-							width={48}
-							label={{
-								value: "Count",
-								angle: -90,
-								position: "left",
-								offset: 6,
-								style: { fontSize: 11, fill: "#6c757d", textAnchor: "middle" },
-							}}
-						/>
-						<Tooltip content={renderTooltip} cursor={{ fill: "transparent" }} />
-						<Bar
-							dataKey="creates"
-							name="Creates"
-							stackId="a"
-							fill={CREATES_COLOR}
-							radius={[0, 0, 0, 0]}
-						>
-							{data.map((_, index) => (
-								<Cell key={`creates-${index}`} fill={CREATES_COLOR} />
-							))}
-						</Bar>
-						<Bar
-							dataKey="updates"
-							name="Updates"
-							stackId="a"
-							fill={UPDATES_COLOR}
-							radius={[0, 0, 0, 0]}
-						>
-							{data.map((_, index) => (
-								<Cell key={`updates-${index}`} fill={UPDATES_COLOR} />
-							))}
-						</Bar>
-						<Bar
-							dataKey="deletes"
-							name="Deletes"
-							stackId="a"
-							fill={DELETES_COLOR}
-							radius={[0, 4, 4, 0]}
-						>
-							<LabelList
-								dataKey="count"
-								position="top"
-								offset={8}
-								formatter={(v: unknown) => (typeof v === "number" ? numberFormatWithComma(v) : "")}
-								className="message-consumption-chart-element-43"
-							/>
-							{data.map((_, index) => (
-								<Cell key={`deletes-${index}`} fill={DELETES_COLOR} />
-							))}
-						</Bar>
-					</BarChart>
-				</ResponsiveContainer>
-			</Box>
-		);
-	}
+    return (
+      <Box
+        role={chartAriaLabel ? "region" : undefined}
+        aria-label={chartAriaLabel}
+        className="message-consumption-chart__chart-container"
+      >
+        <Stack
+          direction="row"
+          spacing={2}
+          className="entity-type-bar-chart__legend-container"
+          aria-label="Chart legend"
+        >
+          <Stack direction="row" alignItems="center" spacing={0.75}>
+            <Box
+              className="message-consumption-chart__legend-color-active"
+              aria-hidden
+            />
+            <Typography
+              variant="caption"
+              className="entity-type-bar-chart__legend-label"
+            >
+              Creates
+            </Typography>
+          </Stack>
+          <Stack direction="row" alignItems="center" spacing={0.75}>
+            <Box
+              className="message-consumption-chart__legend-color-total"
+              aria-hidden
+            />
+            <Typography
+              variant="caption"
+              className="entity-type-bar-chart__legend-label"
+            >
+              Updates
+            </Typography>
+          </Stack>
+          <Stack direction="row" alignItems="center" spacing={0.75}>
+            <Box
+              className="message-consumption-chart__legend-color-deleted"
+              aria-hidden
+            />
+            <Typography
+              variant="caption"
+              className="entity-type-bar-chart__legend-label"
+            >
+              Deletes
+            </Typography>
+          </Stack>
+        </Stack>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={data}
+            margin={{ top: 36, right: 28, left: 52, bottom: 36 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis
+              dataKey="period"
+              tick={{ fontSize: 11 }}
+              height={36}
+              label={{
+                value: "Period",
+                position: "bottom",
+                offset: 12,
+                style: { fontSize: 11, fill: "#6c757d" },
+              }}
+            />
+            <YAxis
+              tickFormatter={(v) => numberFormatWithComma(v)}
+              width={48}
+              label={{
+                value: "Count",
+                angle: -90,
+                position: "left",
+                offset: 6,
+                style: { fontSize: 11, fill: "#6c757d", textAnchor: "middle" },
+              }}
+            />
+            <Tooltip content={renderTooltip} cursor={{ fill: "transparent" }} />
+            <Bar
+              dataKey="creates"
+              name="Creates"
+              stackId="a"
+              fill={CREATES_COLOR}
+              radius={[0, 0, 0, 0]}
+            >
+              {data.map((_, index) => (
+                <Cell key={`creates-${index}`} fill={CREATES_COLOR} />
+              ))}
+            </Bar>
+            <Bar
+              dataKey="updates"
+              name="Updates"
+              stackId="a"
+              fill={UPDATES_COLOR}
+              radius={[0, 0, 0, 0]}
+            >
+              {data.map((_, index) => (
+                <Cell key={`updates-${index}`} fill={UPDATES_COLOR} />
+              ))}
+            </Bar>
+            <Bar
+              dataKey="deletes"
+              name="Deletes"
+              stackId="a"
+              fill={DELETES_COLOR}
+              radius={[0, 4, 4, 0]}
+            >
+              <LabelList
+                dataKey="count"
+                position="top"
+                offset={8}
+                formatter={(v: unknown) =>
+                  typeof v === "number" ? numberFormatWithComma(v) : ""
+                }
+                className="message-consumption-chart__x-axis-tick"
+              />
+              {data.map((_, index) => (
+                <Cell key={`deletes-${index}`} fill={DELETES_COLOR} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </Box>
+    );
+  },
 );
 
 MessageConsumptionChart.displayName = "MessageConsumptionChart";

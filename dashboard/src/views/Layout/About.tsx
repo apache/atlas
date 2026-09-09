@@ -17,27 +17,33 @@
 
 import { useAppSelector } from "@hooks/reducerHook";
 import SkeletonLoader from "@components/SkeletonLoader";
-import {
-  List,
-  ListItem,
-  ListItemText,
-  Stack,
-  Typography
-} from "@mui/material";
+import { List, ListItem, ListItemText, Stack, Typography } from "@mui/material";
 
 const About = () => {
-  const { data: versionData, loading: loader, error } = useAppSelector((state) => state.session.versionData);
+  const {
+    data: versionData,
+    loading: loader,
+    error,
+  } = useAppSelector((state) => state.session.versionData);
 
   return (
     <>
       <Stack spacing={2}>
         {loader ? (
-          <SkeletonLoader animation="wave" variant="text" width={'100%'} count={3} className="about-skeleton-loader-44"/>
+          <SkeletonLoader
+            animation="wave"
+            variant="text"
+            width={"100%"}
+            count={3}
+            className="about__skeleton-loader"
+          />
         ) : (
           <Stack direction="column" spacing={1}>
             <Typography variant="body1">
               <strong>Version: </strong>
-              {error ? "Unknown (failed to fetch version)" : ((versionData?.Version as string) || "N/A")}
+              {error
+                ? "Unknown (failed to fetch version)"
+                : (versionData?.Version as string) || "N/A"}
             </Typography>
             <Typography variant="body2" color="info.main">
               Get involved!
