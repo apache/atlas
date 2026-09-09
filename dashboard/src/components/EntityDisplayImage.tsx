@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import type { SyntheticEvent } from "react";
+import { useState, useEffect } from "react";
 import { Avatar } from "@mui/material";
 import { getEntityIconPath } from "../utils/Utils";
 
@@ -32,19 +32,23 @@ const DisplayImage = ({
   width,
   height,
   avatarDisplay,
-  isProcess
+  isProcess,
 }: DisplayImageProps) => {
   const entityData = { ...entity, isProcess };
-  
-  const primaryUrl = getEntityIconPath({ entityData }) || "";
-  const fallbackUrl = getEntityIconPath({ entityData, errorUrl: primaryUrl }) || "";
 
-  const handleError = (e: SyntheticEvent<HTMLImageElement, Event>) => {
-    const target = e.currentTarget;
-    if (target.dataset.fallbackApplied !== "true") {
-      target.dataset.fallbackApplied = "true";
-      target.onerror = null;
-      target.src = fallbackUrl;
+  const primaryUrl = getEntityIconPath({ entityData }) || "";
+  const fallbackUrl =
+    getEntityIconPath({ entityData, errorUrl: primaryUrl }) || "";
+
+  const [imgSrc, setImgSrc] = useState(primaryUrl);
+
+  useEffect(() => {
+    setImgSrc(primaryUrl);
+  }, [primaryUrl]);
+
+  const handleError = () => {
+    if (imgSrc !== fallbackUrl) {
+      setImgSrc(fallbackUrl);
     }
   };
 
@@ -55,14 +59,14 @@ const DisplayImage = ({
           className="search-result-table-img"
           id={entity.guid ? String(entity.guid) : undefined}
           data-cy={entity.guid ? String(entity.guid) : undefined}
-          src={primaryUrl}
+          src={imgSrc}
           alt="Entity Icon"
           onError={handleError}
         />
       ) : (
         <Avatar
           alt="entityImg"
-          src={primaryUrl}
+          src={imgSrc}
           sx={{ width: width, height: height }}
           variant="square"
           imgProps={{ onError: handleError }}

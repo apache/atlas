@@ -23,7 +23,7 @@ import {
   InputLabel,
   Stack,
   Card,
-  CardContent
+  CardContent,
 } from "@mui/material";
 import { Controller, useFieldArray } from "react-hook-form";
 import AddIcon from "@mui/icons-material/Add";
@@ -123,7 +123,7 @@ interface TimeZoneAutocompleteProps {
 const TimeZoneAutocomplete = ({
   control,
   name,
-  options
+  options,
 }: TimeZoneAutocompleteProps) => (
   <Controller
     control={control}
@@ -151,10 +151,7 @@ const TimeZoneAutocomplete = ({
               variant="outlined"
               placeholder="Select TimeZone"
               helperText={error ? "This field is required" : ""}
-              sx={{
-                height: "34px",
-                "& .MuiInputBase-root": { height: "34px" }
-              }}
+              className="add-validity-period__text-field"
             />
           )}
         />
@@ -168,28 +165,28 @@ const AddValidityPeriod = (props: { control: any }) => {
   const { sessionObj } = useAppSelector((state) => state.session);
   const { fields, append, remove } = useFieldArray({
     name: "validityPeriod",
-    control
+    control,
   });
 
   const timezones = (sessionObj.data?.timezones as string[]) || [];
   const timeZonesList = timezones.map((obj: string) => ({
     label: obj,
-    value: obj
+    value: obj,
   }));
 
   return (
     <>
-      <Card variant="outlined" className="add-validity-period-card-2">
+      <Card variant="outlined" className="add-validity-period__card">
         <CardContent>
           <Stack gap="1rem">
             <LightTooltip title={"Add Validity Period"}>
               <CustomButton
-                className="add-validity-period-custom-button-3"
+                className="add-validity-period__custom-button"
                 variant="outlined"
                 size="small"
                 onClick={(_e: any) => {
                   append({
-                    validityPeriod: ""
+                    validityPeriod: "",
                   });
                 }}
                 startIcon={<AddIcon />}
@@ -203,7 +200,7 @@ const AddValidityPeriod = (props: { control: any }) => {
                 key={field.id}
                 direction="row"
                 alignItems="center"
-                className="add-validity-period-stack-4"
+                className="add-validity-period__stack"
               >
                 <StartDatePicker
                   control={control}
@@ -222,7 +219,7 @@ const AddValidityPeriod = (props: { control: any }) => {
                   aria-label="back"
                   color="error"
                   size="small"
-                  className="add-validity-period-icon-button-5"
+                  className="add-validity-period__icon-button"
                   onClick={() => remove(index)}
                 >
                   <ClearOutlinedIcon fontSize="small" />

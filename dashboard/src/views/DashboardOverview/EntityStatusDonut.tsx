@@ -17,7 +17,14 @@
 
 import { memo, useCallback, useState } from "react";
 import { Paper, Stack, Typography, Box } from "@mui/material";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Sector } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  Sector,
+} from "recharts";
 import { useNavigate } from "react-router-dom";
 import { numberFormatWithComma } from "@utils/Helper";
 import { getEntityStatusTotals } from "@utils/metricsUtils";
@@ -25,145 +32,168 @@ import { navigateToSearch } from "@utils/dashboardSearchUtils";
 import { ENTITY_STATUS_DONUT_COLORS as COLORS } from "./dashboardChartPalette";
 
 interface EntityStatusDonutProps {
-	entity: Record<string, unknown> | undefined;
-	isLoading?: boolean;
+  entity: Record<string, unknown> | undefined;
+  isLoading?: boolean;
 }
 
-const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) => {
-	const [activeIndex, setActiveIndex] = useState<number>(-1);
-	const navigate = useNavigate();
-	const totals = getEntityStatusTotals(entity);
-	const total = totals.active + totals.shell + totals.deleted;
+const EntityStatusDonut = memo(
+  ({ entity, isLoading }: EntityStatusDonutProps) => {
+    const [activeIndex, setActiveIndex] = useState<number>(-1);
+    const navigate = useNavigate();
+    const totals = getEntityStatusTotals(entity);
+    const total = totals.active + totals.shell + totals.deleted;
 
-	const chartData: Array<{ name: string; value: number; color: string }> = [
-		{ name: "Active", value: totals.active, color: COLORS.Active },
-		{ name: "Shell", value: totals.shell, color: COLORS.Shell },
-		{ name: "Deleted", value: totals.deleted, color: COLORS.Deleted }
-	].filter((d) => d.value > 0);
+    const chartData: Array<{ name: string; value: number; color: string }> = [
+      { name: "Active", value: totals.active, color: COLORS.Active },
+      { name: "Shell", value: totals.shell, color: COLORS.Shell },
+      { name: "Deleted", value: totals.deleted, color: COLORS.Deleted },
+    ].filter((d) => d.value > 0);
 
-	const getPercent = (val: number) => (total > 0 ? Math.round((val / total) * 100) : 0);
+    const getPercent = (val: number) =>
+      total > 0 ? Math.round((val / total) * 100) : 0;
 
-	const handleStatusClick = useCallback(
-		(status: "Active" | "Shell" | "Deleted") => {
-			if (status === "Active") {
-				navigateToSearch(navigate, "entity_status");
-			} else if (status === "Deleted") {
-				navigateToSearch(navigate, "entity_status", {
-					includeDE: true,
-					entityFilters: {
-						condition: "AND",
-						criterion: [{ attributeName: "__state", operator: "eq", attributeValue: "DELETED" }]
-					}
-				});
-			} else if (status === "Shell") {
-				navigateToSearch(navigate, "entity_status", {
-					entityFilters: {
-						condition: "AND",
-						criterion: [{ attributeName: "__isIncomplete", operator: "eq", attributeValue: "true" }]
-					}
-				});
-			}
-		},
-		[navigate]
-	);
+    const handleStatusClick = useCallback(
+      (status: "Active" | "Shell" | "Deleted") => {
+        if (status === "Active") {
+          navigateToSearch(navigate, "entity_status");
+        } else if (status === "Deleted") {
+          navigateToSearch(navigate, "entity_status", {
+            includeDE: true,
+            entityFilters: {
+              condition: "AND",
+              criterion: [
+                {
+                  attributeName: "__state",
+                  operator: "eq",
+                  attributeValue: "DELETED",
+                },
+              ],
+            },
+          });
+        } else if (status === "Shell") {
+          navigateToSearch(navigate, "entity_status", {
+            entityFilters: {
+              condition: "AND",
+              criterion: [
+                {
+                  attributeName: "__isIncomplete",
+                  operator: "eq",
+                  attributeValue: "true",
+                },
+              ],
+            },
+          });
+        }
+      },
+      [navigate],
+    );
 
-	if (isLoading) return null;
+    if (isLoading) return null;
 
-	const renderActiveShape = (props: unknown) => {
-		const p = props as { outerRadius?: number; innerRadius?: number; [k: string]: unknown };
-		return (
-			<Sector
-				{...p}
-				outerRadius={(p.outerRadius ?? 60) * 1.08}
-				innerRadius={p.innerRadius ?? 40}
-			/>
-		);
-	};
+    const renderActiveShape = (props: unknown) => {
+      const p = props as {
+        outerRadius?: number;
+        innerRadius?: number;
+        [k: string]: unknown;
+      };
+      return (
+        <Sector
+          {...p}
+          outerRadius={(p.outerRadius ?? 60) * 1.08}
+          innerRadius={p.innerRadius ?? 40}
+        />
+      );
+    };
 
-	return (
-		<Paper
-			elevation={1}
-			sx={{
-				padding: 2,
-				borderRadius: 2,
-				minHeight: 200,
-				transition: "box-shadow 0.3s ease",
-				"&:hover": { boxShadow: 4 }
-			}}
-		>
-			<Box className="classification-distribution-card-box-11">
-				<Typography className="classification-distribution-card-typography-12">
-					Entity Status Overview
-				</Typography>
-			</Box>
-			<Stack direction="row" spacing={2} alignItems="center" height={160} className="entity-status-donut-stack-23">
-				<Stack spacing={1.5} flex={1}>
-					{(["Active", "Shell", "Deleted"] as const).map((status) => (
-						<Box
-							key={status}
-							component="button"
-							type="button"
-							onClick={() => handleStatusClick(status)}
-							aria-label={`View ${status} entities`}
-							sx={{
-								display: "flex",
-								alignItems: "center",
-								gap: 1.5,
-								cursor: "pointer",
-								background: "none",
-								border: "none",
-								padding: 0,
-								margin: 0,
-								font: "inherit",
-								textAlign: "left",
-								"&:hover": { opacity: 0.85 }
-							}}
-						>
-							<Box
-								className={`entity-status-donut-box-24 entity-status-donut-box-${status}`}
-							/>
-							<Typography component="span" className="entity-status-donut-typography-25">
-								{status} {getPercent(totals[status.toLowerCase() as keyof typeof totals])}%
-							</Typography>
-						</Box>
-					))}
-				</Stack>
-				<ResponsiveContainer width="50%" height="100%" className="classification-distribution-card-responsive-container-17">
-					<PieChart>
-						<Pie
-							data={chartData}
-							cx="50%"
-							cy="50%"
-							innerRadius={40}
-							outerRadius={60}
-							paddingAngle={2}
-							dataKey="value"
-							isAnimationActive
-							animationDuration={800}
-							animationEasing="ease-out"
-							{...({ activeIndex: activeIndex >= 0 ? activeIndex : undefined } as Record<string, unknown>)}
-							activeShape={renderActiveShape}
-							onMouseEnter={(_, index) => setActiveIndex(index)}
-							onMouseLeave={() => setActiveIndex(-1)}
-							onClick={(data) => {
-								const d = data as { name?: "Active" | "Shell" | "Deleted" };
-								if (d?.name) handleStatusClick(d.name);
-							}}
-						>
-							{chartData.map((entry, index) => (
-								<Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-							))}
-						</Pie>
-						<Tooltip
-							formatter={(value: unknown) => (typeof value === "number" ? numberFormatWithComma(value) : "")}
-							contentStyle={{ borderRadius: 8 }}
-						/>
-					</PieChart>
-				</ResponsiveContainer>
-			</Stack>
-		</Paper>
-	);
-});
+    return (
+      <Paper elevation={1} className="entity-status-donut__paper">
+        <Box className="classification-distribution-card__header">
+          <Typography className="classification-distribution-card__title">
+            Entity Status Overview
+          </Typography>
+        </Box>
+        <Stack
+          direction="row"
+          spacing={2}
+          alignItems="center"
+          height={160}
+          className="entity-status-donut__container"
+        >
+          <Stack spacing={1.5} flex={1}>
+            {(["Active", "Shell", "Deleted"] as const).map((status) => (
+              <Box
+                key={status}
+                component="button"
+                type="button"
+                onClick={() => handleStatusClick(status)}
+                aria-label={`View ${status} entities`}
+                className="entity-status-donut__legend-button"
+              >
+                <Box
+                  className={`entity-status-donut__legend-color entity-status-donut-box-${status}`}
+                />
+                <Typography
+                  component="span"
+                  className="entity-status-donut__legend-label"
+                >
+                  {status}{" "}
+                  {getPercent(
+                    totals[status.toLowerCase() as keyof typeof totals],
+                  )}
+                  %
+                </Typography>
+              </Box>
+            ))}
+          </Stack>
+          <ResponsiveContainer
+            width="50%"
+            height="100%"
+            className="classification-distribution-card__responsive-container"
+          >
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                innerRadius={40}
+                outerRadius={60}
+                paddingAngle={2}
+                dataKey="value"
+                isAnimationActive
+                animationDuration={800}
+                animationEasing="ease-out"
+                {...({
+                  activeIndex: activeIndex >= 0 ? activeIndex : undefined,
+                } as Record<string, unknown>)}
+                activeShape={renderActiveShape}
+                onMouseEnter={(_, index) => setActiveIndex(index)}
+                onMouseLeave={() => setActiveIndex(-1)}
+                onClick={(data) => {
+                  const d = data as { name?: "Active" | "Shell" | "Deleted" };
+                  if (d?.name) handleStatusClick(d.name);
+                }}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.color}
+                    stroke="none"
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value: unknown) =>
+                  typeof value === "number" ? numberFormatWithComma(value) : ""
+                }
+                contentStyle={{ borderRadius: 8 }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </Stack>
+      </Paper>
+    );
+  },
+);
 
 EntityStatusDonut.displayName = "EntityStatusDonut";
 
