@@ -86,6 +86,8 @@ const OverflowTooltip = ({ title, children, wrapperSx, wrapperClassName, ...prop
     if (textElementRef.current) {
       const el = textElementRef.current;
       setIsOverflowed(
+        // clientWidth is an integer, which can miss subpixel overflow.
+        // getBoundingClientRect().width is fractional, catching those subpixel cases.
         el.scrollWidth > el.clientWidth || 
         el.scrollWidth > el.getBoundingClientRect().width
       );
@@ -110,15 +112,7 @@ const OverflowTooltip = ({ title, children, wrapperSx, wrapperClassName, ...prop
       component="span"
       ref={textElementRef}
       className={wrapperClassName}
-      sx={{
-        display: "inline-flex",
-        minWidth: 0,
-        width: "100%",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
-        ...wrapperSx
-      }}
+      sx={wrapperSx}
       onMouseEnter={checkOverflow}
     >
       {children}

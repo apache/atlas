@@ -72,6 +72,8 @@ describe('muiComponents', () => {
 
 	describe('OverflowTooltip', () => {
 		let triggerResize: ResizeObserverCallback | undefined
+		const mockDisconnect = jest.fn()
+		const mockObserve = jest.fn()
 		const originalResizeObserver = global.ResizeObserver
 
 		beforeAll(() => {
@@ -79,10 +81,15 @@ describe('muiComponents', () => {
 				constructor(callback: ResizeObserverCallback) {
 					triggerResize = callback
 				}
-				observe = jest.fn()
+				observe = mockObserve
 				unobserve = jest.fn()
-				disconnect = jest.fn()
-			} as any
+				disconnect = mockDisconnect
+			} as unknown as typeof ResizeObserver
+		})
+
+		beforeEach(() => {
+			mockDisconnect.mockClear()
+			mockObserve.mockClear()
 		})
 
 		afterAll(() => {
@@ -161,6 +168,49 @@ describe('muiComponents', () => {
 			fireEvent.mouseOver(span)
 
 			expect(await screen.findByText('subpixel tip')).toBeInTheDocument()
+		})
+
+		it('disconnects ResizeObserver on unmount', () => {
+			const { unmount } = render(
+				<OverflowTooltip title="tip">
+					<span>Text</span>
+				</OverflowTooltip>
+			)
+			expect(mockObserve).toHaveBeenCalled()
+			unmount()
+			expect(mockDisconnect).toHaveBeenCalled()
+		})
+
+		it('applies wrapperClassName to the wrapper', () => {
+			render(
+				<OverflowTooltip title="tip" wrapperClassName="custom-wrapper-class">
+					<span data-testid="child-text">Text</span>
+				</OverflowTooltip>
+			)
+			const wrapper = screen.getByTestId('child-text').parentElement
+			expect(wrapper).toHaveClass('custom-wrapper-class')
+		})
+
+		it('updates overflow state when title prop changes', async () => {
+			const { rerender } = render(
+				<OverflowTooltip title="initial tip">
+					<span data-testid="title-change">Text</span>
+				</OverflowTooltip>
+			)
+			
+			const span = screen.getByTestId('title-change').parentElement!
+			Object.defineProperty(span, 'scrollWidth', { configurable: true, value: 200 })
+			Object.defineProperty(span, 'clientWidth', { configurable: true, value: 100 })
+			
+			// Change title which triggers useEffect
+			rerender(
+				<OverflowTooltip title="new tip">
+					<span data-testid="title-change">Text</span>
+				</OverflowTooltip>
+			)
+			
+			fireEvent.mouseOver(span)
+			expect(await screen.findByText('new tip')).toBeInTheDocument()
 		})
 	})
 
