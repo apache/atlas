@@ -22,7 +22,7 @@ import {
   isEmpty,
   isNumber,
   millisecondsToTime,
-  serverError
+  serverError,
 } from "@utils/Utils";
 import { TableLayout } from "@components/Table/TableLayout";
 import { dateFormat } from "@utils/Utils";
@@ -54,7 +54,9 @@ const AdminAuditTable = () => {
       const limit = pageSize || 25;
       const offset = (pageIndex || 0) * limit;
 
-      let auditFilters = !isEmpty(queryApiObj) ? JSON.parse(JSON.stringify(queryApiObj)) : null;
+      let auditFilters = !isEmpty(queryApiObj)
+        ? JSON.parse(JSON.stringify(queryApiObj))
+        : null;
 
       if (auditFilters) {
         const filtersStr = JSON.stringify(auditFilters);
@@ -62,7 +64,9 @@ const AdminAuditTable = () => {
           // Remove any existing auditRowKind to prevent duplicates/conflicts
           const removeAuditRowKind = (node: Record<string, any>) => {
             if (node && node.criterion) {
-              node.criterion = node.criterion.filter((c: Record<string, any>) => c.attributeName !== 'auditRowKind');
+              node.criterion = node.criterion.filter(
+                (c: Record<string, any>) => c.attributeName !== "auditRowKind",
+              );
               node.criterion.forEach(removeAuditRowKind);
             }
           };
@@ -73,8 +77,12 @@ const AdminAuditTable = () => {
             condition: "AND",
             criterion: [
               auditFilters,
-              { attributeName: "auditRowKind", operator: "eq", attributeValue: "SUMMARY" }
-            ]
+              {
+                attributeName: "auditRowKind",
+                operator: "eq",
+                attributeValue: "SUMMARY",
+              },
+            ],
           };
         }
       }
@@ -84,7 +92,7 @@ const AdminAuditTable = () => {
         limit: limit,
         sortOrder: "DESCENDING",
         offset: offset,
-        sortBy: "startTime"
+        sortBy: "startTime",
       };
 
       try {
@@ -93,13 +101,17 @@ const AdminAuditTable = () => {
         setAuditData(searchResp.data || []);
         setLoader(false);
       } catch (error: unknown) {
-        console.error("Error fetching data:", (error as any)?.response?.data?.errorMessage || (error as any)?.message);
+        console.error(
+          "Error fetching data:",
+          (error as any)?.response?.data?.errorMessage ||
+            (error as any)?.message,
+        );
         toast.dismiss(toastId.current);
         serverError(error, toastId);
         setLoader(false);
       }
     },
-    [queryApiObj]
+    [queryApiObj],
   );
 
   const defaultColumns = useMemo<ColumnDef<AuditTableType>[]>(
@@ -114,7 +126,7 @@ const AdminAuditTable = () => {
           ),
         header: "Users",
         enableSorting: true,
-        show: true
+        show: true,
       },
       {
         accessorKey: "operation",
@@ -126,7 +138,7 @@ const AdminAuditTable = () => {
           ),
         header: "Operations",
         enableSorting: true,
-        show: true
+        show: true,
       },
       {
         accessorKey: "clientId",
@@ -140,7 +152,7 @@ const AdminAuditTable = () => {
           ),
         header: "Client ID",
         enableSorting: true,
-        show: true
+        show: true,
       },
       {
         accessorKey: "resultCount",
@@ -152,7 +164,7 @@ const AdminAuditTable = () => {
           ),
         header: "Result Count",
         enableSorting: true,
-        show: true
+        show: true,
       },
       {
         accessorKey: "startTime",
@@ -164,7 +176,7 @@ const AdminAuditTable = () => {
           ),
         header: "Start Time",
         enableSorting: true,
-        show: true
+        show: true,
       },
       {
         accessorKey: "endTime",
@@ -176,7 +188,7 @@ const AdminAuditTable = () => {
           ),
         header: "End Time",
         enableSorting: true,
-        show: true
+        show: true,
       },
       {
         accessorKey: "duration",
@@ -184,7 +196,7 @@ const AdminAuditTable = () => {
           const { startTime, endTime } = info.row.original;
           if (isNumber(parseInt(startTime)) && isNumber(parseInt(endTime))) {
             let duration = moment.duration(
-              moment(endTime).diff(moment(startTime))
+              moment(endTime).diff(moment(startTime)),
             );
 
             return millisecondsToTime(duration);
@@ -194,14 +206,14 @@ const AdminAuditTable = () => {
         },
         header: "Duration",
         enableSorting: true,
-        show: false
-      }
+        show: false,
+      },
     ],
-    []
+    [],
   );
 
   const handleClickFilterPopover = (
-    event: React.MouseEvent<HTMLButtonElement>
+    event: React.MouseEvent<HTMLButtonElement>,
   ) => {
     setFiltersPopover(event.currentTarget);
   };
@@ -233,7 +245,9 @@ const AdminAuditTable = () => {
                 <CustomButton
                   variant="outlined"
                   size="small"
-                  disabled={loader || (isEmpty(auditData) && isEmpty(queryApiObj))}
+                  disabled={
+                    loader || (isEmpty(auditData) && isEmpty(queryApiObj))
+                  }
                   onClick={handleClickFilterPopover}
                   startIcon={
                     !filtersPopover ? (
@@ -242,7 +256,7 @@ const AdminAuditTable = () => {
                       <KeyboardArrowDownOutlinedIcon />
                     )
                   }
-                  className="admin-audit-table-element-1"
+                  className="admin-audit-table__container"
                 >
                   Filters
                 </CustomButton>
@@ -262,8 +276,8 @@ const AdminAuditTable = () => {
               auditTableDetails={{
                 Component: AuditResults,
                 componentProps: {
-                  auditData: auditData
-                }
+                  auditData: auditData,
+                },
               }}
               queryBuilder={false}
               paginationSummaryVariant="audit"
