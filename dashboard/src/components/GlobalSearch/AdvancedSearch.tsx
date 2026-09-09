@@ -394,9 +394,8 @@ const AdvancedSearch: React.FC<AdvancedSearchPropsType> = ({
           variant="outlined"
           color="success"
           aria-label="reset"
-          primary={true}
           size="small"
-          onClick={(e: Event) => {
+          onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
             e.stopPropagation();
             handleClearValue();
           }}

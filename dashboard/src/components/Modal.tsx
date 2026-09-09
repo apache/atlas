@@ -175,7 +175,7 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                     variant="outlined"
                     color="primary"
                     disabled={isLoading}
-                    onClick={(e: Event) => {
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
                       if (isLoading) {
                         return;
@@ -196,7 +196,6 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                         ? "Action in progress, please wait"
                         : "Confirm dialog action"
                     }
-                    primary={true}
                     disabled={primaryDisabled}
                     sx={{
                       minWidth: isLoading ? 88 : undefined,
@@ -232,7 +231,7 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                         />
                       ) : undefined
                     }
-                    onClick={(e: Event) => {
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
                       if (isLoading) {
                         return;
