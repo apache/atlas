@@ -86,7 +86,13 @@ public class ClassificationAssociator {
 
         private AtlasEntityHeader getEntityHeaderByGuid(String guid) {
             try {
-                return entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+                AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+
+                if (entityHeader == null || !entityRetriever.isEntityReadAllowed(entityHeader)) {
+                    return null;
+                }
+
+                return entityHeader;
             } catch (AtlasBaseException e) {
                 LOG.error("Error fetching entity: {}", guid, e);
             }
