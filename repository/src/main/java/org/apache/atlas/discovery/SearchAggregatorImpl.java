@@ -60,7 +60,15 @@ public class SearchAggregatorImpl implements SearchAggregator {
             AtlasGraphIndexClient graphIndexClient    = graph.getGraphIndexClient();
             Set<AtlasEntityType>  searchForEntityType = searchContext.getEntityTypes();
 
+            if (FreeTextSearchProcessor.isOpenSearchIndexBackend()) {
+                searchForEntityType = FreeTextSearchProcessor.resolveOpenSearchEntityTypes(searchContext);
+            }
+
             Map<String, String> indexFieldNameCache = new HashMap<>();
+
+            if (FreeTextSearchProcessor.isOpenSearchIndexBackend()) {
+                indexFieldNameCache.putAll(FreeTextSearchProcessor.buildOpenSearchIndexFieldNameCache(typeRegistry));
+            }
 
             for (String fieldName : aggregationFields) {
                 String indexFieldName = getIndexFieldNameForCommonFieldName(typeRegistry, fieldName);

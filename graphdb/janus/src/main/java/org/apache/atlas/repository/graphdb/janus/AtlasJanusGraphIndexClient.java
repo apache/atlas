@@ -24,6 +24,8 @@ import org.apache.atlas.model.discovery.AtlasAggregationEntry;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AggregationContext;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
+import org.apache.atlas.repository.graphdb.QuickSearchContext;
+import org.apache.atlas.repository.graphdb.QuickSearchResult;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -44,6 +46,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.janusgraph.diskstorage.es.ElasticSearch7Index;
 import org.janusgraph.diskstorage.es.ElasticSearchClient;
+import org.janusgraph.diskstorage.opensearch.AtlasOpenSearchIndex;
+import org.janusgraph.diskstorage.opensearch.OpenSearchClient;
 import org.janusgraph.diskstorage.solr.Solr6Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +70,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasJanusGraphIndexClient.class);
 
     private static final FreqComparator FREQ_COMPARATOR              = new FreqComparator();
-    private static final int            DEFAULT_SUGGESTION_COUNT     = 5;
+    static final int                    DEFAULT_SUGGESTION_COUNT     = 5;
     private static final int            MIN_FACET_COUNT_REQUIRED     = 1;
     private static final String         TERMS_PREFIX                 = "terms.prefix";
     private static final String         TERMS_FIELD                  = "terms.fl";
@@ -162,6 +166,12 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
 
     @Override
     public Map<String, List<AtlasAggregationEntry>> getAggregatedMetrics(AggregationContext aggregationContext) {
+        String idxBackEnd = configuration != null ? configuration.getString(ApplicationProperties.INDEX_BACKEND_CONF) : null;
+
+        if (ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(idxBackEnd)) {
+            return AtlasOpenSearchIndexClient.getAggregatedMetrics(aggregationContext, configuration);
+        }
+
         SolrClient solrClient = null;
 
         try {
@@ -266,6 +276,12 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
 
     @Override
     public List<String> getSuggestions(String prefixString, String indexFieldName) {
+        String idxBackEnd = configuration != null ? configuration.getString(ApplicationProperties.INDEX_BACKEND_CONF) : null;
+
+        if (ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(idxBackEnd)) {
+            return AtlasOpenSearchIndexClient.getSuggestions(prefixString, indexFieldName, configuration);
+        }
+
         SolrClient solrClient = null;
 
         try {
@@ -323,7 +339,26 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     }
 
     @Override
+    public QuickSearchResult quickSearch(QuickSearchContext quickSearchContext) throws AtlasBaseException {
+        String idxBackEnd = configuration != null ? configuration.getString(ApplicationProperties.INDEX_BACKEND_CONF) : null;
+
+        if (ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(idxBackEnd)) {
+            return AtlasOpenSearchIndexClient.quickSearch(quickSearchContext, configuration);
+        }
+
+        return new QuickSearchResult(Collections.emptyList(), 0L);
+    }
+
+    @Override
     public void applySearchWeight(String collectionName, Map<String, Integer> indexFieldName2SearchWeightMap) {
+        String idxBackEnd = configuration != null ? configuration.getString(ApplicationProperties.INDEX_BACKEND_CONF) : null;
+
+        if (ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(idxBackEnd)) {
+            AtlasOpenSearchIndexClient.applySearchWeight(indexFieldName2SearchWeightMap);
+
+            return;
+        }
+
         SolrClient solrClient = null;
 
         try {
@@ -395,6 +430,14 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
 
     @Override
     public void applySuggestionFields(String collectionName, List<String> suggestionProperties) {
+        String idxBackEnd = configuration != null ? configuration.getString(ApplicationProperties.INDEX_BACKEND_CONF) : null;
+
+        if (ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(idxBackEnd)) {
+            AtlasOpenSearchIndexClient.applySuggestionFields(suggestionProperties);
+
+            return;
+        }
+
         SolrClient solrClient = null;
 
         try {
@@ -421,6 +464,15 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         LOG.info("Applied suggestion fields request handler for collection {}.", collectionName);
     }
 
+    @Override
+    public void applyKeywordSubfieldFields(String collectionName, Set<String> indexFieldNames) {
+        String idxBackEnd = configuration != null ? configuration.getString(ApplicationProperties.INDEX_BACKEND_CONF) : null;
+
+        if (ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(idxBackEnd)) {
+            AtlasOpenSearchIndexClient.setKeywordSubfieldIndexFields(indexFieldNames);
+        }
+    }
+
     public boolean isHealthy() {
         boolean isHealthy   = false;
         long    currentTime = System.currentTimeMillis();
@@ -431,6 +483,8 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
                 isHealthy = isSolrHealthy();
             } else if (ApplicationProperties.INDEX_BACKEND_ELASTICSEARCH.equals(idxBackEnd)) {
                 isHealthy = isElasticsearchHealthy();
+            } else if (ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(idxBackEnd)) {
+                isHealthy = isOpenSearchHealthy();
             }
 
             LOG.info("indexBackEnd={}; isHealthy={}", idxBackEnd, isHealthy);
@@ -479,6 +533,13 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     private boolean isElasticsearchHealthy() throws IOException {
         ElasticSearchClient client           = ElasticSearch7Index.getElasticSearchClient();
         String              janusVertexIndex = ApplicationProperties.DEFAULT_INDEX_NAME + "_" + Constants.VERTEX_INDEX;
+
+        return client != null && client.indexExists(janusVertexIndex);
+    }
+
+    private boolean isOpenSearchHealthy() throws IOException {
+        OpenSearchClient client           = AtlasOpenSearchIndex.getOpenSearchClient();
+        String           janusVertexIndex = ApplicationProperties.DEFAULT_INDEX_NAME + "_" + Constants.VERTEX_INDEX;
 
         return client != null && client.indexExists(janusVertexIndex);
     }
