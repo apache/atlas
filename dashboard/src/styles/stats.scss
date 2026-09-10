@@ -145,8 +145,8 @@ html[data-theme="dark"] .chart-card-header {
 }
 
 .chart-card-title {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
   // Color inherits from Typography (text.primary)
 }
 
