@@ -21,11 +21,12 @@ import { Link as RouterLink } from "react-router-dom";
 import moment from "moment";
 import { useNavigate } from "react-router-dom";
 import { navigateToLatestEntitiesSearch } from "@utils/dashboardSearchUtils";
-import type { LatestEntityRowModel } from "./latestEntitiesList.utils";
 import {
 	resolveLatestEntityDisplayName,
 	resolveLatestEntityGuid,
-	resolveLatestEntityTypeName
+	resolveLatestEntityTypeName,
+	LATEST_ENTITIES_DISPLAY_LIMIT,
+	type LatestEntityRowModel
 } from "./latestEntitiesList.utils";
 
 interface EntityItem extends LatestEntityRowModel {
@@ -194,7 +195,7 @@ const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesL
 				</Stack>
 			) : (
 				<List disablePadding sx={{ pt: 2 }}>
-					{entities.slice(0, 7).map((entity) => {
+					{entities.slice(0, LATEST_ENTITIES_DISPLAY_LIMIT).map((entity) => {
 						const displayName = resolveLatestEntityDisplayName(entity);
 						const entityGuid = resolveLatestEntityGuid(entity);
 						const typeName = resolveLatestEntityTypeName(entity);
@@ -215,7 +216,7 @@ const LatestEntitiesList = memo(({ entities, isLoading, error }: LatestEntitiesL
 								}}
 							>
 								<Stack width="100%" direction="row" justifyContent="space-between" alignItems="center">
-									<Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap" flex={1} minWidth={0} mr={1}>
+									<Stack direction="column" alignItems="flex-start" flexWrap="wrap" flex={1} minWidth={0} mr={1}>
 										{detailHref ? (
 											<Link
 												component={RouterLink}
