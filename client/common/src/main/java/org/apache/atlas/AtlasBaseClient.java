@@ -640,7 +640,7 @@ public abstract class AtlasBaseClient {
             return;
         }
         if (tokenSupplier == null) {
-            LOG.warn("AtlasBaseClient.handleJwt(): tokenRetriever is null. Skipping JWT header injection.");
+            LOG.warn("AtlasBaseClient.handleJwt(): tokenSupplier is null. Skipping JWT header injection.");
             return;
         }
 
@@ -649,7 +649,7 @@ public abstract class AtlasBaseClient {
         if (StringUtils.isNotBlank(jwtOptional)) {
             requestBuilder.header(AUTHORIZATION_HEADER, JWT_AUTHZ_PREFIX + jwtOptional);
         } else {
-            LOG.warn("AtlasBaseClient.handleJwt(): JWT token not available from configured retriever. Authorization header not set.");
+            LOG.warn("AtlasBaseClient.handleJwt(): JWT token not available from configured supplier. Authorization header not set.");
         }
     }
 

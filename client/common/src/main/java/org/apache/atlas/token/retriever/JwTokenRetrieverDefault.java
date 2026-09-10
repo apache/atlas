@@ -87,7 +87,7 @@ public class JwTokenRetrieverDefault implements Supplier<String> {
 
             default:
                 if (StringUtils.isNotBlank(source)) {
-                    LOG.warn("JwTokenRetrieverDefault.retrieve(): unsupported source='{}'", source);
+                    LOG.warn("JwTokenRetrieverDefault.get(): unsupported source='{}'", source);
                 }
 
                 ret = Optional.empty();

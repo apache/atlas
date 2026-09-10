@@ -2762,6 +2762,36 @@ public class AtlasClientV2Test {
         assertTokenSupplierClass(client, TestTokenSupplierWithConfig.class);
     }
 
+    @Test
+    public void testNonExistingTokenSupplier() {
+        Configuration configuration = Mockito.mock(Configuration.class);
+
+        when(configuration.getString(PROP_REST_AUTH_TOKEN_SUPPLIER)).thenReturn("NonExistingTokenSupplier");
+
+        try {
+            AtlasClientV2 client = new AtlasClientV2(service, configuration);
+
+            fail("AtlasClientV2 instantiation should have failed. Token supplier class: NonExistingTokenSupplier");
+        } catch (IllegalArgumentException ignore) {
+            // ignored
+        }
+    }
+
+    @Test
+    public void testInvalidTokenSupplier() {
+        Configuration configuration = Mockito.mock(Configuration.class);
+
+        when(configuration.getString(PROP_REST_AUTH_TOKEN_SUPPLIER)).thenReturn(TestInvalidTokenSupplier.class.getName());
+
+        try {
+            AtlasClientV2 client = new AtlasClientV2(service, configuration);
+
+            fail("AtlasClientV2 instantiation should have failed. Token supplier class: " + TestInvalidTokenSupplier.class.getName());
+        } catch (IllegalArgumentException ignore) {
+            // ignored
+        }
+    }
+
     private void assertTokenSupplierClass(AtlasClientV2 client, Class clz) throws Exception {
         Field fieldTokenSupplier = AtlasBaseClient.class.getDeclaredField("tokenSupplier");
 
@@ -2790,6 +2820,15 @@ public class AtlasClientV2Test {
         @Override
         public String get() {
             return "testTokenWithConfig";
+        }
+    }
+
+    private static class TestInvalidTokenSupplier {
+        public TestInvalidTokenSupplier() {
+        }
+
+        public String get() {
+            return "testToken";
         }
     }
 }
