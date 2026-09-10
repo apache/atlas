@@ -1502,6 +1502,9 @@
                         <exclude>**/.docz/**</exclude>
                         <exclude>**/*.svg</exclude>
 
+                        <!-- enunciate assets -->
+                        <exclude>**/webapp/src/main/enunciate-assets/**</exclude>
+                        <exclude>**/src/main/enunciate-assets/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>
