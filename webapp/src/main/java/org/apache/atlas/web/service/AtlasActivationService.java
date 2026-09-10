@@ -144,5 +144,4 @@ public class AtlasActivationService implements Service {
             RequestContext.clear();
         }
     }
-
 }

@@ -959,7 +959,14 @@ public class AtlasTypeRegistry {
 
         TypeRegistryUpdateSynchronizer(AtlasTypeRegistry typeRegistry) {
             this.typeRegistry           = typeRegistry;
-            this.typeRegistryUpdateLock = new ReentrantLock();
+            // Fair ordering: in active-active, the typedef-sync consumer rebuilds the whole registry
+            // (a full init() under this lock) once per poll batch, back-to-back during a post-restart
+            // backlog. With a non-fair lock a legitimate writer (e.g. createTypesDef) or an on-demand
+            // TypeRegistryCatchUp reload gets barged by each successive reload and can wait out the
+            // full 15s tryLock window -> ATLAS-500 "Failed to get the lock". FIFO ordering grants the
+            // longest waiter next, so a writer waits for at most one in-flight reload instead of
+            // starving. Type updates are infrequent, so fairness has negligible throughput cost.
+            this.typeRegistryUpdateLock = new ReentrantLock(true);
         }
 
         AtlasTransientTypeRegistry lockTypeRegistryForUpdate(int lockMaxWaitTimeInSeconds) throws AtlasBaseException {

@@ -385,6 +385,30 @@ public final class GraphClaim {
     }
 
     /**
+     * Drops a stale lease marker and commits.
+     *
+     * <p>Used by startup code that is waiting on a peer claim: if there is no live lease holder,
+     * clearing a stale marker (for example from a crashed process) lets the waiting node retry
+     * ownership immediately instead of idling until another polling cycle notices.
+     *
+     * @return {@code true} when a stale claim marker was removed, {@code false} otherwise
+     */
+    public static boolean releaseIfNoLiveHolderAndCommit(AtlasGraph graph, String claimName) {
+        try {
+            boolean released = releaseIfNoLiveHolder(graph, claimName);
+
+            graph.commit();
+
+            return released;
+        } catch (Exception exception) {
+            rollbackQuietly(graph);
+            LOG.debug("GraphClaim: could not clear stale lease marker for '{}'", claimName, exception);
+
+            return false;
+        }
+    }
+
+    /**
      * Whether this node holds the named lease <em>and</em> it has not lapsed.  A holder that fell
      * behind on renewals must assume a peer has taken over, so this answers "may I keep going" rather
      * than "is my name on it".
@@ -399,6 +423,28 @@ public final class GraphClaim {
         Long expiresAt = expiryOf(holder);
 
         return expiresAt != null && expiresAt > System.currentTimeMillis();
+    }
+
+    private static boolean releaseIfNoLiveHolder(AtlasGraph graph, String claimName) {
+        AtlasVertex holder = holderOf(graph, claimName);
+
+        if (holder == null) {
+            return false;
+        }
+
+        Long expiresAt = expiryOf(holder);
+        long now       = System.currentTimeMillis();
+
+        if (expiresAt != null && expiresAt > now) {
+            return false;
+        }
+
+        LOG.warn("GraphClaim: clearing stale lease marker for '{}' from node={} (expiry={})",
+                claimName, claimedBy(holder), expiresAt);
+
+        discardClaimVertex(graph, holder);
+
+        return true;
     }
 
     /**

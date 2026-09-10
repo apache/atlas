@@ -85,6 +85,14 @@ public class TaskRegistry {
                     .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
 
             for (AtlasVertex vertex : (Iterable<AtlasVertex>) query.vertices()) {
+                // The status index can lag: a task already moved past PENDING (e.g. a propagation task
+                // that just completed) can still be returned here. Callers such as deleteClassification
+                // reject the request with 406 when a pending task is seen, so a stale hit would block a
+                // legitimate delete. Confirm the live status before trusting the index.
+                if (!isPending(vertex)) {
+                    continue;
+                }
+
                 ret.add(toAtlasTask(vertex));
             }
         } catch (Exception exception) {
@@ -108,6 +116,11 @@ public class TaskRegistry {
                     .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
 
             for (AtlasVertex vertex : (Iterable<AtlasVertex>) query.vertices()) {
+                // Guard against a lagging status index returning tasks that are no longer PENDING.
+                if (!isPending(vertex)) {
+                    continue;
+                }
+
                 ret.add(toAtlasTask(vertex));
             }
         } catch (Exception exception) {
@@ -272,6 +285,10 @@ public class TaskRegistry {
         long now = System.currentTimeMillis();
 
         for (AtlasVertex vertex : (Iterable<AtlasVertex>) query.vertices()) {
+            if (!isInProgress(vertex)) {
+                continue;
+            }
+
             String taskGuid    = vertex.getProperty(Constants.TASK_GUID, String.class);
             Long   updatedTime = vertex.getProperty(Constants.TASK_UPDATED_TIME, Long.class);
 
@@ -310,7 +327,13 @@ public class TaskRegistry {
                 .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
                 .has(Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS.toString());
 
-        return query.vertices().iterator().hasNext();
+        for (AtlasVertex vertex : (Iterable<AtlasVertex>) query.vertices()) {
+            if (isInProgress(vertex)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private boolean isStaleInProgress(Long updatedTime, long now) {
@@ -370,6 +393,16 @@ public class TaskRegistry {
     private static boolean isPending(AtlasVertex vertex) {
         try {
             return AtlasTask.Status.PENDING.toString().equals(vertex.getProperty(Constants.TASK_STATUS, String.class));
+        } catch (Exception exception) {
+            LOG.debug("TaskRegistry: skipping a task vertex that could no longer be read", exception);
+
+            return false;
+        }
+    }
+
+    private static boolean isInProgress(AtlasVertex vertex) {
+        try {
+            return AtlasTask.Status.IN_PROGRESS.toString().equals(vertex.getProperty(Constants.TASK_STATUS, String.class));
         } catch (Exception exception) {
             LOG.debug("TaskRegistry: skipping a task vertex that could no longer be read", exception);
 

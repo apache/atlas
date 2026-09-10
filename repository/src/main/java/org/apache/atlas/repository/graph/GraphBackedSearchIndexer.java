@@ -145,6 +145,7 @@ import static org.apache.atlas.repository.Constants.TASK_STATUS;
 import static org.apache.atlas.repository.Constants.TASK_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPEDEF_BOOTSTRAP_FILE_KEY;
 import static org.apache.atlas.repository.Constants.TYPEDESCRIPTION_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPEOPTIONS_PROPERTY_KEY;
@@ -205,6 +206,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     private Set<String> edgeIndexKeys            = new HashSet<>();
 
     private volatile boolean stoodDownFromIndexSetup;
+
+    private enum IndexSetupWaitOutcome { COMPLETED_BY_PEER, OWNERSHIP_ACQUIRED, INTERRUPTED }
 
     @Inject
     public GraphBackedSearchIndexer(AtlasTypeRegistry typeRegistry) throws AtlasException {
@@ -293,31 +296,44 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
         try {
             claimAction.recoverStaleClaims();
-            if (!Boolean.TRUE.equals(claimAction.attemptClaim())) {
+            boolean ownsIndexSetup = Boolean.TRUE.equals(claimAction.attemptClaim());
+            if (!ownsIndexSetup) {
                 LOG.info("GraphBackedSearchIndexer.instanceIsActive(): index setup already claimed by another node; waiting for completion");
 
-                if (!waitForIndexSetupCompletion()) {
+                IndexSetupWaitOutcome waitOutcome = waitForIndexSetupCompletionOrOwnership(claimManager, ownerId);
+                if (waitOutcome == IndexSetupWaitOutcome.INTERRUPTED) {
                     throw new AtlasException("Interrupted while waiting for index initialization to complete on another node");
                 }
 
-                LOG.info("GraphBackedSearchIndexer.instanceIsActive(): observed index setup completion by another node");
+                if (waitOutcome == IndexSetupWaitOutcome.OWNERSHIP_ACQUIRED) {
+                    LOG.info("GraphBackedSearchIndexer.instanceIsActive(): no live index-setup owner found; this node acquired ownership (owner={})", ownerId);
+                    ownsIndexSetup = true;
+                } else {
+                    LOG.info("GraphBackedSearchIndexer.instanceIsActive(): observed index setup completion by another node");
 
-                standDownFromIndexSetup();
+                    standDownFromIndexSetup();
 
-                return;
+                    return;
+                }
+            }
+
+            LOG.info("Reacting to active: initializing index (owner={})", ownerId);
+
+            try {
+                initializeWithRetries(claimManager, ownerId);
+
+                // Only the node that actually created the indexes makes the typedef-bootstrap
+                // lookup index usable; a node that stood down to a peer must not reindex.
+                if (!stoodDownFromIndexSetup) {
+                    ensureTypedefBootstrapIndexUsable();
+                }
+            } catch (RepositoryException | IndexException e) {
+                throw new AtlasException("Error in reacting to active on initialization", e);
+            } finally {
+                claimManager.releaseOwnership(ownerId);
             }
         } catch (AtlasBaseException e) {
             throw new AtlasException("Error claiming index initialization ownership", e);
-        }
-
-        LOG.info("Reacting to active: initializing index (owner={})", ownerId);
-
-        try {
-            initializeWithRetries(claimManager, ownerId);
-        } catch (RepositoryException | IndexException e) {
-            throw new AtlasException("Error in reacting to active on initialization", e);
-        } finally {
-            claimManager.releaseOwnership(ownerId);
         }
     }
 
@@ -341,6 +357,28 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         stoodDownFromIndexSetup = true;
 
         registerCommonIndexFieldNames();
+    }
+
+    /**
+     * Makes the typedef-bootstrap lookup index usable before {@link org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer}
+     * (which runs after index setup) queries it. On a fresh cluster the composite index is created
+     * together with its property key and is ENABLED immediately, so this is a cheap status check. On
+     * a cluster where {@code __typedef.bootstrap.file} already carried data before the index existed,
+     * the composite index is left REGISTERED (ignored by the query planner, forcing full scans);
+     * this enables and reindexes it once so bootstrap lookups hit the index instead of scanning.
+     */
+    private void ensureTypedefBootstrapIndexUsable() {
+        try (AtlasGraphManagement management = provider.get().getManagementSystem()) {
+            boolean usable = management.ensureCompositeIndexEnabled(TYPEDEF_BOOTSTRAP_FILE_KEY);
+
+            if (usable) {
+                LOG.info("GraphBackedSearchIndexer: typedef-bootstrap lookup index '{}' is ENABLED for bootstrap", TYPEDEF_BOOTSTRAP_FILE_KEY);
+            } else {
+                LOG.warn("GraphBackedSearchIndexer: typedef-bootstrap lookup index '{}' is not ENABLED; bootstrap may fall back to full graph scans", TYPEDEF_BOOTSTRAP_FILE_KEY);
+            }
+        } catch (Exception e) {
+            LOG.warn("GraphBackedSearchIndexer: could not verify/enable typedef-bootstrap lookup index '{}'", TYPEDEF_BOOTSTRAP_FILE_KEY, e);
+        }
     }
 
     private void initializeWithRetries(IndexRecoveryService.RecoveryInfoManagement claimManager, String ownerId) throws RepositoryException, IndexException, AtlasException {
@@ -396,11 +434,45 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
     }
 
+    private IndexSetupWaitOutcome waitForIndexSetupCompletionOrOwnership(IndexRecoveryService.RecoveryInfoManagement claimManager, String ownerId) {
+        while (true) {
+            if (isIndexSetupComplete()) {
+                return IndexSetupWaitOutcome.COMPLETED_BY_PEER;
+            }
+
+            if (!peerHoldsIndexClaim()) {
+                try {
+                    GraphClaim.releaseIfNoLiveHolderAndCommit(provider.get(), Constants.CLAIM_INDEX);
+                } catch (Exception e) {
+                    LOG.debug("GraphBackedSearchIndexer: could not clear stale index-init claim before retrying ownership", e);
+                }
+
+                try {
+                    if (claimManager.tryClaimOwnership(ownerId, INDEX_INIT_LEASE_MS)) {
+                        return IndexSetupWaitOutcome.OWNERSHIP_ACQUIRED;
+                    }
+                } catch (Exception e) {
+                    LOG.debug("GraphBackedSearchIndexer: could not re-attempt index-init ownership while waiting", e);
+                }
+            }
+
+            if (!sleepQuietly(INDEX_INIT_WAIT_POLL_MS)) {
+                return IndexSetupWaitOutcome.INTERRUPTED;
+            }
+        }
+    }
+
     private boolean isIndexSetupComplete() {
         try (AtlasGraphManagement management = provider.get().getManagementSystem()) {
             boolean complete = management.getGraphIndex(VERTEX_INDEX) != null
                     && management.getGraphIndex(EDGE_INDEX) != null
-                    && management.getGraphIndex(FULLTEXT_INDEX) != null;
+                    && management.getGraphIndex(FULLTEXT_INDEX) != null
+                    // Guard AMRA bootstrap: the node that waits for a peer must not proceed until the
+                    // typedef-bootstrap lookup index is not just present but ENABLED. A composite index
+                    // that exists in REGISTERED state (e.g. built over a key that already had data) is
+                    // ignored by the query planner, so bootstrap would fall back to full graph scans.
+                    // Requiring ENABLED forces one node to take ownership and enable/reindex it.
+                    && management.isCompositeIndexEnabled(TYPEDEF_BOOTSTRAP_FILE_KEY);
 
             management.setIsSuccess(true);
 
@@ -656,6 +728,14 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             if (indexFieldName == null && isIndexApplicable(propertyClass, cardinality)) {
                 indexFieldName = management.getIndexFieldName(VERTEX_INDEX, propertyKey, isStringField);
+
+                if (indexFieldName == null) {
+                    // Upgrade-safety: if the property key pre-exists but was never added to the mixed
+                    // index, add it now so lookups don't fall back to full graph scans.
+                    indexFieldName = management.addMixedIndex(VERTEX_INDEX, propertyKey, isStringField);
+                    LOG.info("Created missing backing index for existing vertex property {} of type {}",
+                            propertyName, propertyClass.getName());
+                }
             }
 
             if (propertyKey != null) {
@@ -823,6 +903,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         handler.accept(PATCH_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
         handler.accept(PATCH_ACTION_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
         handler.accept(PATCH_STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(TYPEDEF_BOOTSTRAP_FILE_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
 
         // tasks
         handler.accept(TASK_GUID, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);

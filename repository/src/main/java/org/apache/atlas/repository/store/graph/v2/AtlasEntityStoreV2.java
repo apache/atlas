@@ -170,7 +170,21 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry, ignoreRelationships);
 
-        AtlasEntityWithExtInfo ret = entityRetriever.toAtlasEntityWithExtInfo(guid, isMinExtInfo);
+        AtlasEntityWithExtInfo ret;
+
+        try {
+            ret = entityRetriever.toAtlasEntityWithExtInfo(guid, isMinExtInfo);
+        } catch (AtlasBaseException e) {
+            // A peer may have created this entity's type moments ago, too recently for the typedef-sync
+            // path to have rebuilt this node's registry. The vertex is in the shared graph, but retrieval
+            // cannot resolve its type and fails. Catch up on demand and retry once before surfacing the
+            // error; only retries when the type was genuinely missing, so it never masks unrelated errors.
+            if (!caughtUpMissingEntityType(guid)) {
+                throw e;
+            }
+
+            ret = entityRetriever.toAtlasEntityWithExtInfo(guid, isMinExtInfo);
+        }
 
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
@@ -1442,6 +1456,38 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         return response;
     }
 
+    /**
+     * Resolves an entity's type on demand when this node's in-memory registry has fallen behind a peer
+     * that created it, so a just-created entity read on this node does not fail while the vertex is
+     * already present in the shared graph.
+     *
+     * <p>Touches the graph only on the retrieval-failure path, and reports success only when the type
+     * was genuinely missing and is now resolvable, so it never triggers a needless retry and never
+     * masks an unrelated retrieval failure.
+     *
+     * @return {@code true} when a missing entity type was resolved and the read is worth retrying
+     */
+    // package-private for unit testing (see AtlasEntityStoreV2CatchUpTest)
+    boolean caughtUpMissingEntityType(String guid) {
+        if (typeRegistryCatchUp == null || StringUtils.isEmpty(guid)) {
+            return false;
+        }
+
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+
+        if (vertex == null) {
+            return false;
+        }
+
+        String typeName = AtlasGraphUtilsV2.getTypeName(vertex);
+
+        if (StringUtils.isEmpty(typeName) || typeRegistry.getEntityTypeByName(typeName) != null) {
+            return false;
+        }
+
+        return typeRegistryCatchUp.entityType(typeName) != null;
+    }
+
     private void validateAndNormalize(AtlasClassification classification) throws AtlasBaseException {
         AtlasClassificationType type = typeRegistry.getClassificationTypeByName(classification.getTypeName());
 
@@ -1486,6 +1532,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             // for each classification, check whether there are entities it should be restricted to
             AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(newClassification);
+
+            if (classificationType == null && typeRegistryCatchUp != null) {
+                classificationType = typeRegistryCatchUp.classificationType(newClassification);
+            }
+
+            if (classificationType == null) {
+                throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, newClassification);
+            }
 
             if (!classificationType.canApplyToEntityType(entityType)) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_ENTITY_FOR_CLASSIFICATION, guid, entityTypeName, newClassification);

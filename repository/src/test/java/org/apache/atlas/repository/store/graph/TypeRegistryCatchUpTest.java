@@ -18,9 +18,11 @@
 package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasBusinessMetadataType;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -44,6 +46,7 @@ import static org.testng.Assert.assertSame;
 public class TypeRegistryCatchUpTest {
     private static final String TYPE_NAME        = "PII";
     private static final String ENTITY_TYPE_NAME = "hive_table";
+    private static final String BM_NAME          = "search_bm";
 
     @Mock
     private AtlasTypeRegistry typeRegistry;
@@ -51,18 +54,20 @@ public class TypeRegistryCatchUpTest {
     @Mock
     private AtlasTypeDefStore typeDefStore;
 
-    private AtlasClassificationType classificationType;
-    private AtlasEntityType         entityType;
-    private TypeRegistryCatchUp     catchUp;
-    private int                     storeLookups;
+    private AtlasClassificationType   classificationType;
+    private AtlasEntityType           entityType;
+    private AtlasBusinessMetadataType businessMetadataType;
+    private TypeRegistryCatchUp       catchUp;
+    private int                       storeLookups;
 
     @BeforeMethod
     public void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        classificationType = mock(AtlasClassificationType.class);
-        entityType         = mock(AtlasEntityType.class);
-        storeLookups       = 0;
+        classificationType   = mock(AtlasClassificationType.class);
+        entityType           = mock(AtlasEntityType.class);
+        businessMetadataType = mock(AtlasBusinessMetadataType.class);
+        storeLookups         = 0;
 
         // Counted so a test can assert the store is never resolved during construction: asking for it
         // eagerly reintroduces the startup dependency cycle this indirection exists to avoid.
@@ -153,6 +158,35 @@ public class TypeRegistryCatchUpTest {
         when(typeDefStore.getEntityDefByName(ENTITY_TYPE_NAME)).thenReturn(new AtlasEntityDef(ENTITY_TYPE_NAME));
 
         assertSame(catchUp.entityType(ENTITY_TYPE_NAME), entityType);
+
+        verify(typeDefStore, times(1)).init();
+    }
+
+    @Test
+    public void registryAlreadyHasBusinessMetadataTypeSoStoreIsNotConsulted() {
+        when(typeRegistry.getBusinessMetadataTypeByName(BM_NAME)).thenReturn(businessMetadataType);
+
+        assertSame(catchUp.businessMetadataType(BM_NAME), businessMetadataType);
+
+        verifyNoInteractions(typeDefStore);
+    }
+
+    @Test
+    public void unknownBusinessMetadataTypeDoesNotTriggerReload() throws AtlasBaseException {
+        when(typeRegistry.getBusinessMetadataTypeByName(BM_NAME)).thenReturn(null);
+        when(typeDefStore.getBusinessMetadataDefByName(BM_NAME)).thenThrow(new AtlasBaseException("no such type"));
+
+        assertNull(catchUp.businessMetadataType(BM_NAME));
+
+        verify(typeDefStore, never()).init();
+    }
+
+    @Test
+    public void businessMetadataTypeInStoreButNotRegistryTriggersReload() throws AtlasBaseException {
+        when(typeRegistry.getBusinessMetadataTypeByName(BM_NAME)).thenReturn(null, null, businessMetadataType);
+        when(typeDefStore.getBusinessMetadataDefByName(BM_NAME)).thenReturn(new AtlasBusinessMetadataDef(BM_NAME, "bm"));
+
+        assertSame(catchUp.businessMetadataType(BM_NAME), businessMetadataType);
 
         verify(typeDefStore, times(1)).init();
     }

@@ -29,6 +29,7 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.store.graph.TypeRegistryCatchUp;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -68,11 +69,13 @@ import java.util.Set;
 public class TypesREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TypesREST");
 
-    private final AtlasTypeDefStore typeDefStore;
+    private final AtlasTypeDefStore   typeDefStore;
+    private final TypeRegistryCatchUp typeRegistryCatchUp;
 
     @Inject
-    public TypesREST(AtlasTypeDefStore typeDefStore) {
-        this.typeDefStore = typeDefStore;
+    public TypesREST(AtlasTypeDefStore typeDefStore, TypeRegistryCatchUp typeRegistryCatchUp) {
+        this.typeDefStore        = typeDefStore;
+        this.typeRegistryCatchUp = typeRegistryCatchUp;
     }
 
     /**
@@ -368,6 +371,8 @@ public class TypesREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.createAtlasTypeDefs(" + AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
 
+            catchUpTypesReferencedBy(typesDef);
+
             return typeDefStore.createTypesDef(typesDef);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -394,9 +399,57 @@ public class TypesREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.updateAtlasTypeDefs(" + AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
 
+            catchUpTypesReferencedBy(typesDef);
+
             return typeDefStore.updateTypesDef(typesDef);
         } finally {
             AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Resolves types referenced by an incoming create/update against the shared store before it is
+     * validated, so a reference to a type a peer created moments ago is not rejected as unknown while
+     * this node's registry catches up over the typedef-changes topic.
+     *
+     * <p>The reference that matters in active-active is a supertype: a child classification names its
+     * parent, and an entity type names its supertypes. A classification also names the entity types it
+     * can be applied to. {@link TypeRegistryCatchUp#classificationType(String)} and
+     * {@link TypeRegistryCatchUp#entityType(String)} are no-ops when the type is already known, so this
+     * costs nothing in the common case and only reloads when this node is genuinely behind a peer.
+     */
+    private void catchUpTypesReferencedBy(AtlasTypesDef typesDef) {
+        if (typesDef == null) {
+            return;
+        }
+
+        if (typesDef.getClassificationDefs() != null) {
+            for (AtlasClassificationDef classificationDef : typesDef.getClassificationDefs()) {
+                catchUpClassificationTypes(classificationDef.getSuperTypes());
+                catchUpEntityTypes(classificationDef.getEntityTypes());
+            }
+        }
+
+        if (typesDef.getEntityDefs() != null) {
+            for (AtlasEntityDef entityDef : typesDef.getEntityDefs()) {
+                catchUpEntityTypes(entityDef.getSuperTypes());
+            }
+        }
+    }
+
+    private void catchUpClassificationTypes(Set<String> typeNames) {
+        if (typeNames != null) {
+            for (String typeName : typeNames) {
+                typeRegistryCatchUp.classificationType(typeName);
+            }
+        }
+    }
+
+    private void catchUpEntityTypes(Set<String> typeNames) {
+        if (typeNames != null) {
+            for (String typeName : typeNames) {
+                typeRegistryCatchUp.entityType(typeName);
+            }
         }
     }
 

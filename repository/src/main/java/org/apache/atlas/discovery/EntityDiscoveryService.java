@@ -492,7 +492,81 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }
         }
 
+        catchUpPeerCreatedSearchTypes(searchParameters);
+
         return searchWithSearchContext(new SearchContext(searchParameters, typeRegistry, graph, indexer.getVertexIndexKeys()));
+    }
+
+    /**
+     * Resolves types a peer may have created moments ago, before a search validates against them.
+     *
+     * <p>In active-active, a typedef created on one node reaches this node's in-memory registry over
+     * the typedef-changes topic a beat later. A search issued in that window names an entity type,
+     * classification, or business-metadata attribute this node's registry has not caught up to yet,
+     * and {@link SearchContext} rejects it with a 400 - while the node that created it answers 200,
+     * so the active-active read reconcile flags the mismatch. Catching up here, before the context is
+     * built, closes that window. Each name costs one indexed store check when the type is already
+     * known (the common case) and triggers at most one guarded reload when it is genuinely missing.
+     */
+    private void catchUpPeerCreatedSearchTypes(SearchParameters searchParameters) {
+        if (typeRegistryCatchUp == null || searchParameters == null) {
+            return;
+        }
+
+        catchUpTypeNames(searchParameters.getTypeName(), true);
+        catchUpTypeNames(searchParameters.getClassification(), false);
+        catchUpBusinessMetadataTypes(searchParameters.getEntityFilters());
+    }
+
+    private void catchUpTypeNames(String typeNamesCsv, boolean entity) {
+        if (StringUtils.isEmpty(typeNamesCsv)) {
+            return;
+        }
+
+        // SearchContext splits multiple type/classification names on comma.
+        for (String rawName : typeNamesCsv.split(",")) {
+            String name = rawName.trim();
+
+            // Skip blanks and wildcard/regex expressions - they never name a single missing type.
+            if (StringUtils.isEmpty(name) || name.contains("*")) {
+                continue;
+            }
+
+            if (entity) {
+                typeRegistryCatchUp.entityType(name);
+            } else {
+                typeRegistryCatchUp.classificationType(name);
+            }
+        }
+    }
+
+    private void catchUpBusinessMetadataTypes(SearchParameters.FilterCriteria criteria) {
+        if (criteria == null) {
+            return;
+        }
+
+        List<SearchParameters.FilterCriteria> subCriteria = criteria.getCriterion();
+
+        if (CollectionUtils.isNotEmpty(subCriteria)) {
+            for (SearchParameters.FilterCriteria subCriterion : subCriteria) {
+                catchUpBusinessMetadataTypes(subCriterion);
+            }
+
+            return;
+        }
+
+        String attributeName = criteria.getAttributeName();
+
+        // Business-metadata attributes are filtered as "bmName.attrName"; the prefix names the BM
+        // type. A dotted name that is not a business metadata resolves to no stored def and triggers
+        // no reload, so attempting this for any dotted attribute is safe.
+        if (StringUtils.isNotEmpty(attributeName)) {
+            int dotIdx = attributeName.indexOf('.');
+
+            if (dotIdx > 0) {
+                typeRegistryCatchUp.businessMetadataType(attributeName.substring(0, dotIdx));
+            }
+        }
     }
 
     @Override
@@ -809,7 +883,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         quickSearchParameters.setQuery(query);
 
-        SearchContext searchContext = new SearchContext(createSearchParameters(quickSearchParameters), typeRegistry, graph, indexer.getVertexIndexKeys());
+        SearchParameters searchParameters = createSearchParameters(quickSearchParameters);
+
+        catchUpPeerCreatedSearchTypes(searchParameters);
+
+        SearchContext searchContext = new SearchContext(searchParameters, typeRegistry, graph, indexer.getVertexIndexKeys());
 
         LOG.debug("Generating the search results for the query {}", searchContext.getSearchParameters().getQuery());
 

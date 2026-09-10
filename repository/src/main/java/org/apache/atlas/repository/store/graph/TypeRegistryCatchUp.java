@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasBusinessMetadataType;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -99,6 +100,19 @@ public class TypeRegistryCatchUp {
         return resolve("entityType", typeName, typeRegistry::getEntityTypeByName, this::storeHasEntityDef);
     }
 
+    /**
+     * Looks up a business-metadata type, reloading the registry first if this node has fallen behind
+     * a peer that created it. Used by searches that filter on a business-metadata attribute
+     * ({@code bmName.attrName}): an entity type only exposes a business-metadata attribute once its
+     * business-metadata type is in this node's registry, so a search naming one a peer created
+     * moments ago is otherwise rejected as an unknown attribute.
+     *
+     * @return the resolved type, or null if no type by this name exists anywhere.
+     */
+    public AtlasBusinessMetadataType businessMetadataType(String typeName) {
+        return resolve("businessMetadataType", typeName, typeRegistry::getBusinessMetadataTypeByName, this::storeHasBusinessMetadataDef);
+    }
+
     private <T> T resolve(String kind, String typeName, Function<String, T> fromRegistry, Predicate<String> inStore) {
         T ret = fromRegistry.apply(typeName);
 
@@ -162,6 +176,20 @@ public class TypeRegistryCatchUp {
             return typeDefStoreProvider.get().getEntityDefByName(typeName) != null;
         } catch (AtlasBaseException excp) {
             LOG.debug("storeHasEntityDef({}): no such entity type", typeName, excp);
+
+            return false;
+        }
+    }
+
+    /**
+     * @return whether the store holds a business-metadata def by this name, whatever this node's
+     * registry believes.
+     */
+    private boolean storeHasBusinessMetadataDef(String typeName) {
+        try {
+            return typeDefStoreProvider.get().getBusinessMetadataDefByName(typeName) != null;
+        } catch (AtlasBaseException excp) {
+            LOG.debug("storeHasBusinessMetadataDef({}): no such business metadata", typeName, excp);
 
             return false;
         }

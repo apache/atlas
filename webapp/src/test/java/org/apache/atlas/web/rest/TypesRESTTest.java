@@ -29,6 +29,7 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.store.graph.TypeRegistryCatchUp;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -44,6 +45,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -61,6 +63,9 @@ import static org.testng.Assert.expectThrows;
 public class TypesRESTTest {
     @Mock
     private AtlasTypeDefStore typeDefStore;
+
+    @Mock
+    private TypeRegistryCatchUp typeRegistryCatchUp;
 
     @Mock
     private AtlasBaseTypeDef mockBaseTypeDef;
@@ -99,7 +104,7 @@ public class TypesRESTTest {
         MockitoAnnotations.openMocks(this);
 
         // Manually create the TypesREST instance with mocked dependencies
-        typesREST = new TypesREST(typeDefStore);
+        typesREST = new TypesREST(typeDefStore, typeRegistryCatchUp);
     }
 
     @Test
@@ -441,6 +446,38 @@ public class TypesRESTTest {
             verify(typeDefStore).createTypesDef(mockTypesDef);
             mockedPerfTracer.verify(() -> AtlasPerfTracer.isPerfTraceEnabled(any()));
             mockedPerfTracer.verify(() -> AtlasPerfTracer.getPerfTracer(any(), anyString()));
+        }
+    }
+
+    @Test
+    public void testCreateAtlasTypeDefs_CatchesUpReferencedTypes() throws AtlasBaseException {
+        // A child classification names a parent that a peer may have created moments ago; an entity
+        // def names a supertype. Both must be resolved against the shared store before validation,
+        // otherwise the create is rejected as referencing an unknown type while this node catches up.
+        AtlasClassificationDef childTag = new AtlasClassificationDef("child_tag");
+        childTag.setSuperTypes(new HashSet<>(Collections.singletonList("parent_tag")));
+        childTag.setEntityTypes(new HashSet<>(Collections.singletonList("hive_table")));
+
+        AtlasEntityDef childEntity = new AtlasEntityDef("child_entity");
+        childEntity.setSuperTypes(new HashSet<>(Collections.singletonList("parent_entity")));
+
+        AtlasTypesDef typesDef = new AtlasTypesDef();
+        typesDef.getClassificationDefs().add(childTag);
+        typesDef.getEntityDefs().add(childEntity);
+
+        when(typeDefStore.createTypesDef(typesDef)).thenReturn(typesDef);
+
+        try (MockedStatic<AtlasPerfTracer> mockedPerfTracer = mockStatic(AtlasPerfTracer.class);
+                MockedStatic<AtlasTypeUtil> mockedAtlasTypeUtil = mockStatic(AtlasTypeUtil.class)) {
+            mockedPerfTracer.when(() -> AtlasPerfTracer.isPerfTraceEnabled(any())).thenReturn(false);
+            mockedAtlasTypeUtil.when(() -> AtlasTypeUtil.toDebugString(any(AtlasTypesDef.class))).thenReturn("debug_string");
+
+            typesREST.createAtlasTypeDefs(typesDef);
+
+            verify(typeRegistryCatchUp).classificationType("parent_tag");
+            verify(typeRegistryCatchUp).entityType("hive_table");
+            verify(typeRegistryCatchUp).entityType("parent_entity");
+            verify(typeDefStore).createTypesDef(typesDef);
         }
     }
 

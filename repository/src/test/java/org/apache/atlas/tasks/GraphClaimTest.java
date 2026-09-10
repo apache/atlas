@@ -19,11 +19,14 @@ package org.apache.atlas.tasks;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
 import java.sql.SQLException;
@@ -31,6 +34,7 @@ import java.util.Collections;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -146,6 +150,54 @@ public class GraphClaimTest {
 
         verify(graph, never()).commit();
         verify(graph).rollback();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void releaseIfNoLiveHolderAndCommit_clearsExpiredLeaseMarker() {
+        AtlasGraph      graph      = mock(AtlasGraph.class);
+        AtlasGraphQuery query      = mock(AtlasGraphQuery.class);
+        AtlasVertex     staleHolder = mock(AtlasVertex.class);
+
+        when(graph.query()).thenReturn(query);
+        when(query.has(Constants.CLAIM_KEY, CLAIM_NAME)).thenReturn(query);
+        when(query.vertices()).thenReturn(Collections.singletonList(staleHolder));
+        when(staleHolder.getProperty(Constants.CLAIM_OWNER_KEY, String.class)).thenReturn("dead-node");
+        when(staleHolder.getProperty(Constants.CLAIM_EXPIRY_KEY, Long.class)).thenReturn(System.currentTimeMillis() - 1_000L);
+        when(staleHolder.getProperty(Constants.CLAIM_KEY, String.class)).thenReturn(CLAIM_NAME);
+        when(staleHolder.getProperty(Constants.CLAIM_VERTEX_TYPE_KEY, String.class)).thenReturn(Constants.CLAIM_VERTEX_TYPE_NAME);
+
+        try (MockedStatic<AtlasGraphProvider> graphProviderMock = Mockito.mockStatic(AtlasGraphProvider.class)) {
+            graphProviderMock.when(AtlasGraphProvider::getGraphInstance).thenReturn(graph);
+
+            assertTrue(GraphClaim.releaseIfNoLiveHolderAndCommit(graph, CLAIM_NAME));
+        }
+
+        verify(graph, times(1)).removeVertex(staleHolder);
+        verify(graph, times(1)).commit();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void releaseIfNoLiveHolderAndCommit_keepsLiveLeaseMarker() {
+        AtlasGraph      graph      = mock(AtlasGraph.class);
+        AtlasGraphQuery query      = mock(AtlasGraphQuery.class);
+        AtlasVertex     liveHolder = mock(AtlasVertex.class);
+
+        when(graph.query()).thenReturn(query);
+        when(query.has(Constants.CLAIM_KEY, CLAIM_NAME)).thenReturn(query);
+        when(query.vertices()).thenReturn(Collections.singletonList(liveHolder));
+        when(liveHolder.getProperty(Constants.CLAIM_OWNER_KEY, String.class)).thenReturn("peer-node");
+        when(liveHolder.getProperty(Constants.CLAIM_EXPIRY_KEY, Long.class)).thenReturn(System.currentTimeMillis() + 60_000L);
+
+        try (MockedStatic<AtlasGraphProvider> graphProviderMock = Mockito.mockStatic(AtlasGraphProvider.class)) {
+            graphProviderMock.when(AtlasGraphProvider::getGraphInstance).thenReturn(graph);
+
+            assertFalse(GraphClaim.releaseIfNoLiveHolderAndCommit(graph, CLAIM_NAME));
+        }
+
+        verify(graph, never()).removeVertex(liveHolder);
+        verify(graph, times(1)).commit();
     }
 
     // ------------------------------------------------------------------ conflict detection

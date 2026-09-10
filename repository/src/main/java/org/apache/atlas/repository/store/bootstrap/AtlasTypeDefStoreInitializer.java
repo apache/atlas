@@ -130,6 +130,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     private final AtlasGraph        graph;
     private final AtlasPatchManager patchManager;
     private       boolean           peerLoadedTypeDefs;
+    private       boolean           reloadedTypesAfterBootstrap;
 
     @Inject
     public AtlasTypeDefStoreInitializer(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
@@ -479,6 +480,10 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                         LOG.info("TypeDef file {} already applied by another node. Skipping.", fileKey);
 
                         peerLoadedTypeDefs = true;
+                        // Keep the bootstrap lease alive even when this file is already applied:
+                        // the skip path still performed a graph lookup, and letting the lease
+                        // lapse here makes peers reclaim and restart bootstrap work.
+                        GraphClaim.claimLeaseAndCommit(graph, Constants.CLAIM_TYPEDEF_BOOTSTRAP, nodeId, leaseMillis);
 
                         continue;
                     }
@@ -545,6 +550,10 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
         try {
             typeDefStore.init();
+
+            // Signal startInternal() that the registry has already been rebuilt after bootstrap, so it
+            // can skip its own post-bootstrap re-read instead of rebuilding the whole registry twice.
+            reloadedTypesAfterBootstrap = true;
 
             LOG.info("AtlasTypeDefStoreInitializer: read back the types loaded by peers before applying patches");
         } catch (AtlasBaseException exception) {
@@ -721,6 +730,8 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
     private void startInternal() {
         try {
+            reloadedTypesAfterBootstrap = false;
+
             typeDefStore.init();
             loadBootstrapTypeDefs();
 
@@ -728,9 +739,17 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             // bootstrap, and bootstrap writes nothing this node's peer already did - so on a node that
             // started while a peer was still writing the models, the first read came up empty and the
             // files were then skipped as "already applied", leaving this node with no types at all and
-            // answering every request with "unknown typename".  Re-reading costs one pass over the
-            // typedefs at startup, the same pass a node that never bootstraps already makes.
-            typeDefStore.init();
+            // answering every request with "unknown typename".
+            //
+            // loadBootstrapTypeDefs() already re-reads the registry via readBackTypesLoadedByPeers()
+            // whenever a peer had loaded models this node skipped - the common active-active boot - so
+            // repeating a full init() here just rebuilds the whole registry a second time for the same
+            // reason.  Only re-read when that path did not run (e.g. loadTypes() returned early after
+            // failing to take the bootstrap claim), which is the sole case a stale/empty first read
+            // would otherwise survive to serve "unknown typename".
+            if (!reloadedTypesAfterBootstrap) {
+                typeDefStore.init();
+            }
 
             typeDefStore.notifyLoadCompletion();
             try {

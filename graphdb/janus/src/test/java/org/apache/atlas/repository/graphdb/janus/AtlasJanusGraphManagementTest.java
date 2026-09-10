@@ -789,6 +789,56 @@ public class AtlasJanusGraphManagementTest {
     }
 
     @Test
+    public void testEnsureCompositeIndexEnabled_alreadyEnabled_returnsTrueWithoutReindex() {
+        JanusGraphManagement localMgmt = mock(JanusGraphManagement.class);
+        JanusGraphIndex      index     = mock(JanusGraphIndex.class);
+        PropertyKey          fieldKey  = mock(PropertyKey.class);
+
+        when(mockAtlasGraph.getGraph()).thenReturn(mockJanusGraph);
+        when(mockJanusGraph.openManagement()).thenReturn(localMgmt);
+        when(localMgmt.getGraphIndex("idx")).thenReturn(index);
+        when(index.isCompositeIndex()).thenReturn(true);
+        when(index.getFieldKeys()).thenReturn(new PropertyKey[] {fieldKey});
+        when(index.getIndexStatus(fieldKey)).thenReturn(SchemaStatus.ENABLED);
+
+        boolean result = management.ensureCompositeIndexEnabled("idx");
+
+        assertTrue(result);
+        // fast path: no reindex should be attempted when the index is already ENABLED
+        verify(localMgmt, never()).updateIndex(any(), any());
+    }
+
+    @Test
+    public void testEnsureCompositeIndexEnabled_indexMissing_returnsFalse() {
+        JanusGraphManagement localMgmt = mock(JanusGraphManagement.class);
+
+        when(mockAtlasGraph.getGraph()).thenReturn(mockJanusGraph);
+        when(mockJanusGraph.openManagement()).thenReturn(localMgmt);
+        when(localMgmt.getGraphIndex("missing")).thenReturn(null);
+
+        boolean result = management.ensureCompositeIndexEnabled("missing");
+
+        assertFalse(result);
+        verify(localMgmt, never()).updateIndex(any(), any());
+    }
+
+    @Test
+    public void testEnsureCompositeIndexEnabled_notCompositeIndex_returnsFalse() {
+        JanusGraphManagement localMgmt = mock(JanusGraphManagement.class);
+        JanusGraphIndex      index     = mock(JanusGraphIndex.class);
+
+        when(mockAtlasGraph.getGraph()).thenReturn(mockJanusGraph);
+        when(mockJanusGraph.openManagement()).thenReturn(localMgmt);
+        when(localMgmt.getGraphIndex("mixed")).thenReturn(index);
+        when(index.isCompositeIndex()).thenReturn(false);
+
+        boolean result = management.ensureCompositeIndexEnabled("mixed");
+
+        assertFalse(result);
+        verify(localMgmt, never()).updateIndex(any(), any());
+    }
+
+    @Test
     public void testIntegrationWithRealGraph() {
         if (atlasGraph != null) {
             try (AtlasGraphManagement mgmt = atlasGraph.getManagementSystem()) {

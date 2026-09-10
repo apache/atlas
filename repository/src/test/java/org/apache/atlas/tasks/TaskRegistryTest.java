@@ -23,7 +23,9 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.mockito.Mockito;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
@@ -34,6 +36,11 @@ import javax.inject.Inject;
 import java.util.Collections;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -482,6 +489,44 @@ public class TaskRegistryTest {
 
         registry.deleteByGuid(task.getGuid());
         graph.commit();
+    }
+
+    @Test
+    public void recoverStaleInProgressTasks_skipsVerticesNoLongerInProgress() {
+        AtlasGraph mockGraph = Mockito.mock(AtlasGraph.class);
+        AtlasGraphQuery mockQuery = Mockito.mock(AtlasGraphQuery.class);
+        AtlasVertex mockVertex = Mockito.mock(AtlasVertex.class);
+
+        when(mockGraph.query()).thenReturn(mockQuery);
+        when(mockQuery.has(anyString(), any())).thenReturn(mockQuery);
+        when(mockQuery.vertices()).thenReturn(Collections.singletonList(mockVertex));
+        when(mockVertex.getProperty(Constants.TASK_STATUS, String.class)).thenReturn(AtlasTask.Status.COMPLETE.toString());
+
+        TaskRegistry localRegistry = new TaskRegistry(mockGraph, 0L);
+        localRegistry.recoverStaleInProgressTasks();
+
+        verify(mockVertex, never()).setProperty(Constants.TASK_STATUS, AtlasTask.Status.PENDING.toString());
+    }
+
+    @Test
+    public void getPendingTasks_skipsStaleIndexHitsNoLongerPending() {
+        AtlasGraph      mockGraph  = Mockito.mock(AtlasGraph.class);
+        AtlasGraphQuery mockQuery  = Mockito.mock(AtlasGraphQuery.class);
+        AtlasVertex     mockVertex = Mockito.mock(AtlasVertex.class);
+
+        when(mockGraph.query()).thenReturn(mockQuery);
+        when(mockQuery.has(anyString(), any())).thenReturn(mockQuery);
+        when(mockQuery.orderBy(anyString(), any())).thenReturn(mockQuery);
+        when(mockQuery.vertices()).thenReturn(Collections.singletonList(mockVertex));
+
+        // The status index returns this vertex for a PENDING query, but its live status has already
+        // moved on (e.g. a propagation task that just completed). It must not be reported as pending,
+        // otherwise deleteClassification would reject a legitimate delete with a false 406.
+        when(mockVertex.getProperty(Constants.TASK_STATUS, String.class)).thenReturn(AtlasTask.Status.COMPLETE.toString());
+
+        List<AtlasTask> pending = new TaskRegistry(mockGraph, 0L).getPendingTasks();
+
+        assertTrue(pending.isEmpty(), "a task no longer PENDING must not be returned as pending");
     }
 
     private void clearAllTasks() throws AtlasBaseException {

@@ -41,6 +41,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.patches.AtlasPatchRegistry;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.tasks.GraphClaim;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
@@ -312,6 +313,83 @@ public class AtlasTypeDefStoreInitializerTest {
         } finally {
             deleteDirectory(tempDir.toFile());
         }
+    }
+
+    @Test
+    public void testLoadModelsInFolderRenewsBootstrapLeaseWhenFileAlreadyApplied() throws Exception {
+        Path tempDir = Files.createTempDirectory("atlas-models-applied");
+        File typeFile = new File(tempDir.toFile(), "001-already-applied.json");
+        Files.write(typeFile.toPath(), createSampleTypeDefJson("AppliedType").getBytes(StandardCharsets.UTF_8));
+
+        AtlasVertex appliedVertex = mock(AtlasVertex.class);
+        when(query.vertices()).thenReturn(Arrays.asList(appliedVertex));
+        when(appliedVertex.getProperty(Constants.TYPEDEF_BOOTSTRAP_STATE_KEY, String.class)).thenReturn(APPLIED.toString());
+
+        Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, String.class, long.class);
+        loadModelsMethod.setAccessible(true);
+
+        try (MockedStatic<GraphClaim> graphClaimMock = mockStatic(GraphClaim.class)) {
+            loadModelsMethod.invoke(initializer, tempDir.toFile(), "test-node", 120000L);
+
+            graphClaimMock.verify(() ->
+                    GraphClaim.claimLeaseAndCommit(graph, Constants.CLAIM_TYPEDEF_BOOTSTRAP, "test-node", 120000L), times(1));
+        } finally {
+            deleteDirectory(tempDir.toFile());
+        }
+    }
+
+    /**
+     * When a peer had already loaded the models this node skipped, the read-back reloads the registry
+     * once and records that it did so - which is what lets startInternal() drop its own duplicate
+     * post-bootstrap reload instead of rebuilding the whole registry a second time.
+     */
+    @Test
+    public void testReadBackReloadsOnceAndFlagsWhenPeerLoadedTypes() throws Exception {
+        Path tempDir  = Files.createTempDirectory("atlas-models-peer-loaded");
+        File typeFile = new File(tempDir.toFile(), "001-already-applied.json");
+        Files.write(typeFile.toPath(), createSampleTypeDefJson("AppliedType").getBytes(StandardCharsets.UTF_8));
+
+        // Peer already applied the file: this node skips it and sets peerLoadedTypeDefs.
+        AtlasVertex appliedVertex = mock(AtlasVertex.class);
+        when(query.vertices()).thenReturn(Arrays.asList(appliedVertex));
+        when(appliedVertex.getProperty(Constants.TYPEDEF_BOOTSTRAP_STATE_KEY, String.class)).thenReturn(APPLIED.toString());
+
+        Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, String.class, long.class);
+        loadModelsMethod.setAccessible(true);
+        Method readBackMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("readBackTypesLoadedByPeers");
+        readBackMethod.setAccessible(true);
+
+        try (MockedStatic<GraphClaim> graphClaimMock = mockStatic(GraphClaim.class)) {
+            loadModelsMethod.invoke(initializer, tempDir.toFile(), "test-node", 120000L);
+
+            // Skipping the file marks the peer-load without reloading the registry yet.
+            assertTrue((Boolean) getField(initializer, "peerLoadedTypeDefs"));
+            verify(typeDefStore, never()).init();
+
+            readBackMethod.invoke(initializer);
+
+            verify(typeDefStore, times(1)).init();
+            assertTrue((Boolean) getField(initializer, "reloadedTypesAfterBootstrap"),
+                    "read-back must record that it rebuilt the registry so startInternal skips its duplicate reload");
+            assertFalse((Boolean) getField(initializer, "peerLoadedTypeDefs"));
+        } finally {
+            deleteDirectory(tempDir.toFile());
+        }
+    }
+
+    /**
+     * With nothing loaded by a peer, the read-back is a no-op and does not flag a reload, so
+     * startInternal() still performs its own post-bootstrap read (the sole reload in that case).
+     */
+    @Test
+    public void testReadBackDoesNothingWhenNoPeerLoadedTypes() throws Exception {
+        Method readBackMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("readBackTypesLoadedByPeers");
+        readBackMethod.setAccessible(true);
+
+        readBackMethod.invoke(initializer);
+
+        verify(typeDefStore, never()).init();
+        assertFalse((Boolean) getField(initializer, "reloadedTypesAfterBootstrap"));
     }
 
     @Test
@@ -1904,6 +1982,12 @@ public class AtlasTypeDefStoreInitializerTest {
         Field field = obj.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         field.set(obj, value);
+    }
+
+    private Object getField(Object obj, String fieldName) throws Exception {
+        Field field = obj.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field.get(obj);
     }
 
     private void deleteDirectory(File dir) {

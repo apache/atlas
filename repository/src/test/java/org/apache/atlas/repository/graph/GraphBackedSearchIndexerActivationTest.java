@@ -20,6 +20,7 @@ package org.apache.atlas.repository.graph;
 import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.GraphBackedSearchIndexer.UniqueKind;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
@@ -38,6 +39,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -45,6 +47,33 @@ import static org.mockito.Mockito.when;
 
 public class GraphBackedSearchIndexerActivationTest {
     private static final String INDEX_FIELD_NAME = "awp1_t";
+
+    @Test
+    public void createVertexIndex_whenPropertyExistsButMixedIndexFieldMissing_addsMissingMixedIndex() throws Exception {
+        IAtlasGraphProvider provider = Mockito.mock(IAtlasGraphProvider.class);
+        Configuration configuration = Mockito.mock(Configuration.class);
+        AtlasTypeRegistry typeRegistry = Mockito.mock(AtlasTypeRegistry.class);
+        AtlasGraphManagement management = Mockito.mock(AtlasGraphManagement.class);
+        AtlasPropertyKey propertyKey = Mockito.mock(AtlasPropertyKey.class);
+
+        when(management.getPropertyKey(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(propertyKey);
+        when(management.getIndexFieldName(Constants.VERTEX_INDEX, propertyKey, false)).thenReturn(null);
+        when(management.addMixedIndex(Constants.VERTEX_INDEX, propertyKey, false)).thenReturn(INDEX_FIELD_NAME);
+
+        GraphBackedSearchIndexer indexer = new GraphBackedSearchIndexer(provider, configuration, typeRegistry);
+        String indexField = indexer.createVertexIndex(management,
+                Constants.TYPEDEF_BOOTSTRAP_FILE_KEY,
+                UniqueKind.NONE,
+                String.class,
+                org.apache.atlas.repository.graphdb.AtlasCardinality.SINGLE,
+                false,
+                false,
+                false);
+
+        verify(management, never()).makePropertyKey(anyString(), any(), any());
+        verify(management, times(1)).addMixedIndex(Constants.VERTEX_INDEX, propertyKey, false);
+        org.testng.Assert.assertEquals(indexField, INDEX_FIELD_NAME);
+    }
 
     @Test
     public void instanceIsActive_skipsIndexSetupWhenRunModeDoesNotAllowIt() throws Exception {
@@ -83,6 +112,8 @@ public class GraphBackedSearchIndexerActivationTest {
         when(management.getGraphIndex(Constants.VERTEX_INDEX)).thenReturn(graphIndex);
         when(management.getGraphIndex(Constants.EDGE_INDEX)).thenReturn(graphIndex);
         when(management.getGraphIndex(Constants.FULLTEXT_INDEX)).thenReturn(graphIndex);
+        when(management.getGraphIndex(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(graphIndex);
+        when(management.isCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(true);
         when(management.getPropertyKey(anyString())).thenReturn(propertyKey);
         when(management.getIndexFieldName(eq(Constants.VERTEX_INDEX), any(AtlasPropertyKey.class), anyBoolean())).thenReturn(INDEX_FIELD_NAME);
 
@@ -107,9 +138,61 @@ public class GraphBackedSearchIndexerActivationTest {
 
             // the index field names come from the schema the peer left behind: nothing is created here
             verify(typeRegistry, times(1)).addIndexFieldName(Constants.TYPENAME_PROPERTY_KEY, INDEX_FIELD_NAME);
+            verify(typeRegistry, times(1)).addIndexFieldName(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY, INDEX_FIELD_NAME);
             verify(management, never()).makePropertyKey(anyString(), any(), any());
             verify(management, never()).addMixedIndex(anyString(), any(AtlasPropertyKey.class), anyBoolean());
             verify(management, never()).createVertexCompositeIndex(anyString(), anyBoolean(), anyList());
+        }
+    }
+
+    @Test
+    public void instanceIsActive_whenInitialClaimFailsAndNoLiveHolder_retriesClaimWhileWaiting() throws Exception {
+        IAtlasGraphProvider provider = Mockito.mock(IAtlasGraphProvider.class);
+        Configuration configuration = Mockito.mock(Configuration.class);
+        AtlasTypeRegistry typeRegistry = Mockito.mock(AtlasTypeRegistry.class);
+        AtlasGraph graph = Mockito.mock(AtlasGraph.class);
+        AtlasGraphManagement waitManagementFirst = Mockito.mock(AtlasGraphManagement.class);
+        AtlasGraphManagement waitManagementSecond = Mockito.mock(AtlasGraphManagement.class);
+        AtlasGraphManagement waitManagementThird = Mockito.mock(AtlasGraphManagement.class);
+        AtlasGraphIndex graphIndex = Mockito.mock(AtlasGraphIndex.class);
+
+        when(provider.get()).thenReturn(graph);
+        when(graph.getManagementSystem()).thenReturn(waitManagementFirst, waitManagementSecond, waitManagementThird);
+        when(waitManagementFirst.getGraphIndex(Constants.VERTEX_INDEX)).thenReturn(graphIndex);
+        when(waitManagementFirst.getGraphIndex(Constants.EDGE_INDEX)).thenReturn(graphIndex);
+        when(waitManagementFirst.getGraphIndex(Constants.FULLTEXT_INDEX)).thenReturn(graphIndex);
+        when(waitManagementFirst.getGraphIndex(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(null);
+        when(waitManagementFirst.isCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(false);
+        when(waitManagementSecond.getGraphIndex(Constants.VERTEX_INDEX)).thenReturn(graphIndex);
+        when(waitManagementSecond.getGraphIndex(Constants.EDGE_INDEX)).thenReturn(graphIndex);
+        when(waitManagementSecond.getGraphIndex(Constants.FULLTEXT_INDEX)).thenReturn(graphIndex);
+        when(waitManagementSecond.getGraphIndex(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(null);
+        when(waitManagementSecond.isCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(false);
+        when(waitManagementThird.getGraphIndex(Constants.VERTEX_INDEX)).thenReturn(graphIndex);
+        when(waitManagementThird.getGraphIndex(Constants.EDGE_INDEX)).thenReturn(graphIndex);
+        when(waitManagementThird.getGraphIndex(Constants.FULLTEXT_INDEX)).thenReturn(graphIndex);
+        when(waitManagementThird.getGraphIndex(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(graphIndex);
+        when(waitManagementThird.isCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(true);
+
+        GraphBackedSearchIndexer indexer = new GraphBackedSearchIndexer(provider, configuration, typeRegistry);
+
+        try (MockedStatic<AtlasRunMode> runModeMock = Mockito.mockStatic(AtlasRunMode.class);
+                MockedStatic<GraphClaim> graphClaimMock = Mockito.mockStatic(GraphClaim.class);
+                MockedConstruction<IndexRecoveryService.RecoveryInfoManagement> claimManagerConstruction =
+                        Mockito.mockConstruction(IndexRecoveryService.RecoveryInfoManagement.class,
+                                (mock, context) -> when(mock.tryClaimOwnership(anyString(), anyLong())).thenReturn(false))) {
+            AtlasRunMode runMode = Mockito.mock(AtlasRunMode.class);
+            runModeMock.when(AtlasRunMode::current).thenReturn(runMode);
+            when(runMode.runsIndexSetup()).thenReturn(true);
+            graphClaimMock.when(() -> GraphClaim.hasLiveHolder(graph, Constants.CLAIM_INDEX)).thenReturn(false);
+            graphClaimMock.when(() -> GraphClaim.releaseIfNoLiveHolderAndCommit(graph, Constants.CLAIM_INDEX)).thenReturn(true);
+
+            indexer.instanceIsActive();
+
+            IndexRecoveryService.RecoveryInfoManagement claimManager = claimManagerConstruction.constructed().get(0);
+            // first claim attempt + one re-attempt during wait when no live holder exists
+            verify(claimManager, atLeast(2)).tryClaimOwnership(anyString(), anyLong());
+            graphClaimMock.verify(() -> GraphClaim.releaseIfNoLiveHolderAndCommit(graph, Constants.CLAIM_INDEX), atLeast(1));
         }
     }
 
@@ -132,6 +215,8 @@ public class GraphBackedSearchIndexerActivationTest {
         when(waitManagement.getGraphIndex(Constants.VERTEX_INDEX)).thenReturn(graphIndex);
         when(waitManagement.getGraphIndex(Constants.EDGE_INDEX)).thenReturn(graphIndex);
         when(waitManagement.getGraphIndex(Constants.FULLTEXT_INDEX)).thenReturn(graphIndex);
+        when(waitManagement.getGraphIndex(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(graphIndex);
+        when(waitManagement.isCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(true);
         when(waitManagement.getPropertyKey(anyString())).thenReturn(propertyKey);
         when(waitManagement.getIndexFieldName(eq(Constants.VERTEX_INDEX), any(AtlasPropertyKey.class), anyBoolean())).thenReturn(INDEX_FIELD_NAME);
 
@@ -181,6 +266,8 @@ public class GraphBackedSearchIndexerActivationTest {
         when(management.getGraphIndex(Constants.VERTEX_INDEX)).thenReturn(graphIndex);
         when(management.getGraphIndex(Constants.EDGE_INDEX)).thenReturn(graphIndex);
         when(management.getGraphIndex(Constants.FULLTEXT_INDEX)).thenReturn(graphIndex);
+        when(management.getGraphIndex(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(graphIndex);
+        when(management.isCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(true);
         when(management.getIndexFieldName(eq(Constants.VERTEX_INDEX), any(AtlasPropertyKey.class), anyBoolean())).thenReturn(INDEX_FIELD_NAME);
 
         // the peer has not created __typeName yet when this node first looks
@@ -264,6 +351,48 @@ public class GraphBackedSearchIndexerActivationTest {
         indexer.onLoadCompletion();
 
         verify(listener, times(1)).onInitCompletion(any(ChangedTypeDefs.class));
+    }
+
+    /**
+     * The node that owns index setup and creates the indexes must also make the typedef-bootstrap
+     * lookup index usable (ENABLED + reindexed) before AtlasTypeDefStoreInitializer - which runs
+     * after index setup - queries it; otherwise a REGISTERED-only composite index is ignored by the
+     * query planner and bootstrap falls back to full graph scans.
+     */
+    @Test
+    public void instanceIsActive_whenOwnerCreatesIndexes_enablesTypedefBootstrapLookupIndex() throws Exception {
+        IAtlasGraphProvider provider = Mockito.mock(IAtlasGraphProvider.class);
+        Configuration configuration = Mockito.mock(Configuration.class);
+        AtlasTypeRegistry typeRegistry = Mockito.mock(AtlasTypeRegistry.class);
+        AtlasGraph graph = Mockito.mock(AtlasGraph.class);
+        AtlasGraphManagement management = Mockito.mock(AtlasGraphManagement.class);
+        AtlasGraphIndex graphIndex = Mockito.mock(AtlasGraphIndex.class);
+        AtlasPropertyKey propertyKey = Mockito.mock(AtlasPropertyKey.class);
+
+        when(provider.get()).thenReturn(graph);
+        when(graph.getManagementSystem()).thenReturn(management);
+        when(management.getGraphIndex(Constants.VERTEX_INDEX)).thenReturn(graphIndex);
+        when(management.getGraphIndex(Constants.EDGE_INDEX)).thenReturn(graphIndex);
+        when(management.getGraphIndex(Constants.FULLTEXT_INDEX)).thenReturn(graphIndex);
+        when(management.getPropertyKey(anyString())).thenReturn(propertyKey);
+        when(management.getIndexFieldName(eq(Constants.VERTEX_INDEX), any(AtlasPropertyKey.class), anyBoolean())).thenReturn(INDEX_FIELD_NAME);
+
+        GraphBackedSearchIndexer indexer = new GraphBackedSearchIndexer(provider, configuration, typeRegistry);
+
+        try (MockedStatic<AtlasRunMode> runModeMock = Mockito.mockStatic(AtlasRunMode.class);
+                MockedConstruction<IndexRecoveryService.RecoveryInfoManagement> claimManagerConstruction =
+                        Mockito.mockConstruction(IndexRecoveryService.RecoveryInfoManagement.class, (mock, context) -> {
+                            when(mock.tryClaimOwnership(anyString(), anyLong())).thenReturn(true);
+                            when(mock.isOwner(anyString())).thenReturn(true);
+                        })) {
+            AtlasRunMode runMode = Mockito.mock(AtlasRunMode.class);
+            runModeMock.when(AtlasRunMode::current).thenReturn(runMode);
+            when(runMode.runsIndexSetup()).thenReturn(true);
+
+            indexer.instanceIsActive();
+
+            verify(management, times(1)).ensureCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY);
+        }
     }
 
     private static class FakePermanentLockingException extends RuntimeException {
