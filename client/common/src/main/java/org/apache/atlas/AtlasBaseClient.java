@@ -44,7 +44,6 @@ import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.security.SecureClientUtils;
 import org.apache.atlas.token.retriever.JwTokenRetrieverDefault;
-import org.apache.atlas.token.retriever.TokenRetriever;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AuthenticationUtil;
@@ -67,11 +66,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Constructor;
 import java.net.ConnectException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.function.Supplier;
 
 import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
 import static org.apache.atlas.token.retriever.JwTokenRetrieverDefault.JWT_SOURCE;
@@ -96,6 +96,9 @@ public abstract class AtlasBaseClient {
     public static final API API_STATUS  = new API(BASE_URI + ADMIN_STATUS, HttpMethod.GET, Response.Status.OK);
     public static final API API_VERSION = new API(BASE_URI + ADMIN_VERSION, HttpMethod.GET, Response.Status.OK);
     public static final API API_METRICS = new API(BASE_URI + ADMIN_METRICS, HttpMethod.GET, Response.Status.OK);
+
+    public static final String PROP_REST_AUTH_TOKEN_SUPPLIER    = "atlas.rest.auth.token.supplier";
+    public static final String DEFAULT_REST_AUTH_TOKEN_SUPPLIER = JwTokenRetrieverDefault.class.getName();
 
     static final String JSON_MEDIA_TYPE             = MediaType.APPLICATION_JSON + "; charset=UTF-8";
     static final String UNKNOWN_STATUS              = "Unknown status";
@@ -124,7 +127,7 @@ public abstract class AtlasBaseClient {
     private   boolean            retryEnabled;
     private   Cookie             cookie;
     private   boolean            useJwtAuth;
-    private   TokenRetriever<String> tokenRetriever;
+    private   Supplier<String>   tokenSupplier;
 
     private SecureClientUtils clientUtils;
 
@@ -167,6 +170,8 @@ public abstract class AtlasBaseClient {
     protected AtlasBaseClient(WebResource service, Configuration configuration) {
         this.service       = service;
         this.configuration = configuration;
+
+        initializeTokenSupplier(configuration);
     }
 
     @VisibleForTesting
@@ -542,14 +547,19 @@ public abstract class AtlasBaseClient {
 
     protected abstract API formatPathParameters(API api, String... params);
 
+    void initializeTokenSupplier(Configuration configuration) {
+        useJwtAuth    = isJwtConfigured(configuration);
+        tokenSupplier = useJwtAuth ? getTokenSupplier(configuration) : null;
+    }
+
     void initializeState(String[] baseUrls, UserGroupInformation ugi, String doAsUser) {
         initializeState(getClientProperties(), baseUrls, ugi, doAsUser);
     }
 
     void initializeState(Configuration configuration, String[] baseUrls, UserGroupInformation ugi, String doAsUser) {
+        initializeTokenSupplier(configuration);
+
         this.configuration  = configuration;
-        useJwtAuth          = isJwtSourceConfigured(configuration);
-        tokenRetriever      = useJwtAuth ? getJwtTokenRetriever(configuration) : null;
 
         Client client = getClient(configuration, ugi, doAsUser);
 
@@ -565,33 +575,73 @@ public abstract class AtlasBaseClient {
         service            = client.resource(UriBuilder.fromUri(activeServiceUrl).build());
     }
 
-    private TokenRetriever<String> getJwtTokenRetriever(Configuration configuration) {
-        return new JwTokenRetrieverDefault(configuration);
-    }
+    private boolean isJwtConfigured(Configuration configuration) {
+        boolean ret = false;
 
-    private boolean isJwtSourceConfigured(Configuration configuration) {
-        if (configuration == null) {
-            return false;
+        if (configuration != null) {
+            String tokenSupplier = configuration.getString(PROP_REST_AUTH_TOKEN_SUPPLIER);
+
+            ret = StringUtils.isNotBlank(tokenSupplier);
+
+            if (!ret) {
+                String jwtSource = configuration.getString(JWT_SOURCE, "");
+
+                ret = StringUtils.isNotBlank(jwtSource);
+            }
         }
 
-        String jwtSource = configuration.getString(JWT_SOURCE, "");
-        return StringUtils.isNotBlank(jwtSource);
+        return ret;
+    }
+
+    private Supplier<String> getTokenSupplier(Configuration configuration) {
+        Supplier<String> ret = null;
+
+        if (configuration != null) {
+            String clzName = configuration.getString(PROP_REST_AUTH_TOKEN_SUPPLIER);
+
+            if (StringUtils.isBlank(clzName)) {
+                clzName = DEFAULT_REST_AUTH_TOKEN_SUPPLIER;
+            }
+
+            try {
+                Class<?> clz = Class.forName(clzName);
+
+                if (!Supplier.class.isAssignableFrom(clz)) {
+                    throw new IllegalArgumentException(clzName + " does not implement Supplier");
+                }
+
+                try {
+                    // look for a constructor taking Configuration as its argument
+                    Constructor<?> c = clz.getDeclaredConstructor(Configuration.class);
+
+                    ret = (Supplier<String>) c.newInstance(configuration);
+                } catch (NoSuchMethodException excp) {
+                    // use the default constructor
+                    ret = (Supplier<String>) clz.getDeclaredConstructor().newInstance();
+                }
+            } catch (ReflectiveOperationException excp) {
+                throw new IllegalArgumentException("Failed to instantiate token supplier: " + clzName, excp);
+            }
+        }
+
+        return ret;
     }
 
     private void handleJwt(com.sun.jersey.api.client.WebResource.Builder requestBuilder) {
         if (!useJwtAuth) {
             return;
         }
-        if (tokenRetriever == null) {
-            LOG.warn("AtlasBaseClient.handleJwt(): tokenRetriever is null. Skipping JWT header injection.");
+        if (tokenSupplier == null) {
+            LOG.warn("AtlasBaseClient.handleJwt(): tokenSupplier is null. Skipping JWT header injection.");
             return;
         }
 
-        Optional<String> jwtOptional = tokenRetriever.retrieve();
-        if (jwtOptional.isPresent()) {
-            requestBuilder.header(AUTHORIZATION_HEADER, JWT_AUTHZ_PREFIX + jwtOptional.get());
+        String jwtOptional = tokenSupplier.get();
+
+        if (StringUtils.isNotBlank(jwtOptional)) {
+            requestBuilder.header(AUTHORIZATION_HEADER, JWT_AUTHZ_PREFIX + jwtOptional);
         } else {
-            LOG.warn("AtlasBaseClient.handleJwt(): JWT token not available from configured retriever. Authorization header not set.");
+            LOG.warn("AtlasBaseClient.handleJwt(): JWT token not available from configured supplier. Authorization header not set.");
         }
     }
 
