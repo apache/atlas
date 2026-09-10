@@ -42,6 +42,9 @@ const EntitiesTree = ({ sideBarOpen, searchTerm, isPopover }: Props) => {
   const { allEntityTypesData }: any = useAppSelector(
     (state: any) => state.allEntityTypes
   );
+  const { entityData }: any = useAppSelector(
+    (state: any) => state.entity
+  );
   const { metricsData }: any = useAppSelector((state: any) => state.metrics);
   const [isEmptyServicetype, setisEmptyServicetype] = useState<boolean>(false);
   const [isGroupView, setisGroupView] = useState<boolean>(true);
@@ -53,8 +56,10 @@ const EntitiesTree = ({ sideBarOpen, searchTerm, isPopover }: Props) => {
   >([]);
 
   useEffect(() => {
-    dispatch(fetchEntityData());
-  }, []);
+    if (!entityData || isEmpty(entityData?.entityDefs)) {
+      dispatch(fetchEntityData());
+    }
+  }, [entityData, dispatch]);
 
   const fetchInitialData = async () => {
     await dispatch(fetchTypeHeaderData());

@@ -31,8 +31,10 @@ const BusinessMetadataTree = (props: Props) => {
   );
 
   useEffect(() => {
-    dispatch(fetchBusinessMetaData());
-  }, []);
+    if (!businessMetaData || isEmpty(businessMetaData?.businessMetadataDefs)) {
+      dispatch(fetchBusinessMetaData());
+    }
+  }, [businessMetaData, dispatch]);
 
   useEffect(() => {
     if (businessMetaData?.businessMetadataDefs != undefined) {

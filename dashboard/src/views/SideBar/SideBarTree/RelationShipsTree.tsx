@@ -18,7 +18,7 @@
 import { useEffect, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
 import SideBarTree from "../../SideBar/SideBarTree/SideBarTree.tsx";
-import { customSortBy } from "@utils/Utils.ts";
+import { customSortBy, isEmpty } from "@utils/Utils.ts";
 import type { EnumTypeDefData, Props } from "@models/treeStructureType.ts";
 import { fetchRelationshipsData } from "@redux/slice/typeDefSlices/typedefRelationshipsSlice.ts";
 
@@ -31,8 +31,10 @@ const RelationshipsTree = (props: Props) => {
   );
 
   useEffect(() => {
-    dispatch(fetchRelationshipsData());
-  }, [dispatch]);
+    if (!relationships || isEmpty(relationships?.relationshipDefs)) {
+      dispatch(fetchRelationshipsData());
+    }
+  }, [relationships, dispatch]);
 
   const relationshipsData = useMemo(() => {
     if (relationships?.relationshipDefs) {

@@ -218,10 +218,21 @@ describe('ClassificationTree', () => {
 	})
 
 	describe('Data Fetching', () => {
-		it('should dispatch fetchClassificationData on mount', () => {
+		it('should dispatch fetchClassificationData on mount if data is empty', () => {
 			renderComponent()
 
 			expect(mockDispatch).toHaveBeenCalledWith({ type: 'fetchClassificationData' })
+		})
+
+		it('should not dispatch fetchClassificationData on mount if data exists', () => {
+			renderComponent({}, {
+				classification: {
+					classificationData: { classificationDefs: [{ name: 'test' }] },
+					loadingClassification: false
+				}
+			})
+
+			expect(mockDispatch).not.toHaveBeenCalledWith({ type: 'fetchClassificationData' })
 		})
 
 		it('should call refreshData when refresh button is clicked', async () => {

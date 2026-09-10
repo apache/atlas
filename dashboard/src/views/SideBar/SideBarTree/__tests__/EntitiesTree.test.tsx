@@ -136,6 +136,7 @@ describe('EntitiesTree', () => {
 			reducer: {
 				typeHeader: (state = initialState.typeHeader) => state,
 				allEntityTypes: (state = initialState.allEntityTypes) => state,
+				entity: (state = initialState.entity || { entityData: null }) => state,
 				metrics: (state = initialState.metrics) => state
 			},
 			middleware: (getDefaultMiddleware) =>
@@ -155,6 +156,9 @@ describe('EntitiesTree', () => {
 			},
 			allEntityTypes: {
 				allEntityTypesData: { category: 'ENTITY' }
+			},
+			entity: {
+				entityData: null
 			},
 			metrics: {
 				metricsData: {
@@ -268,11 +272,23 @@ describe('EntitiesTree', () => {
 	})
 
 	describe('Data Fetching', () => {
-		it('should dispatch fetchEntityData on mount', async () => {
+		it('should dispatch fetchEntityData on mount if entityData is empty', async () => {
 			renderComponent()
 
 			await waitFor(() => {
 				expect(mockDispatch).toHaveBeenCalledWith({ type: 'fetchEntityData' })
+			})
+		})
+
+		it('should not dispatch fetchEntityData on mount if entityData exists', async () => {
+			renderComponent({}, {
+				entity: {
+					entityData: { entityDefs: [{ name: 'test' }] }
+				}
+			})
+
+			await waitFor(() => {
+				expect(mockDispatch).not.toHaveBeenCalledWith({ type: 'fetchEntityData' })
 			})
 		})
 
