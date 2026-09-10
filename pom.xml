@@ -1505,6 +1505,7 @@
                         <!-- enunciate assets -->
                         <exclude>**/webapp/src/main/enunciate-assets/**</exclude>
                         <exclude>**/src/main/enunciate-assets/**</exclude>
+                        <exclude>**/src/main/resources/ui-dist/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>
