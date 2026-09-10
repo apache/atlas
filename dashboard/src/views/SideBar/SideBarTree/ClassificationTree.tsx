@@ -42,8 +42,10 @@ const ClassificationTree = (props: Props) => {
   const [isGroupView, setisGroupView] = useState<boolean>(true);
 
   useEffect(() => {
-    dispatch(fetchClassificationData());
-  }, []);
+    if (!classificationData || isEmpty(classificationData?.classificationDefs)) {
+      dispatch(fetchClassificationData());
+    }
+  }, [classificationData, dispatch]);
 
   const fetchInitialData = async () => {
     await dispatch(fetchClassificationData());

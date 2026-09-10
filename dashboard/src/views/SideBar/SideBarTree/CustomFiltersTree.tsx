@@ -51,10 +51,12 @@ const CustomFiltersTree = ({ sideBarOpen, searchTerm, isPopover }: Props) => {
   const [customFilterLoader, setCustomFilterLoader] = useState<boolean>(false);
 
   useEffect(() => {
-    setCustomFilterLoader(true);
-    dispatch(fetchSavedSearchData());
-    setCustomFilterLoader(false);
-  }, []);
+    if (!savedSearchData || isEmpty(savedSearchData)) {
+      setCustomFilterLoader(true);
+      dispatch(fetchSavedSearchData());
+      setCustomFilterLoader(false);
+    }
+  }, [savedSearchData, dispatch]);
 
   const fetchInitialData = async () => {
     setCustomFilterLoader(true);

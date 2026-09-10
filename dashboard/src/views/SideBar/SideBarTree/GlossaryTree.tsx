@@ -48,8 +48,10 @@ const GlossaryTree = ({ sideBarOpen, searchTerm, isPopover }: Props) => {
   >([]);
 
   useEffect(() => {
-    dispatch(fetchGlossaryData());
-  }, []);
+    if (!glossaryData || isEmpty(glossaryData)) {
+      dispatch(fetchGlossaryData());
+    }
+  }, [glossaryData, dispatch]);
 
   const fetchInitialData = async () => {
     await dispatch(fetchGlossaryData());
