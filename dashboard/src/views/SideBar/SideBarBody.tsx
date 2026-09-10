@@ -59,6 +59,7 @@ import ErrorPage from "@views/ErrorPage";
 import AppRoutes from "@views/AppRoutes";
 import ErrorBoundaryWithNavigate from "../../ErrorBoundary";
 import useHistory from "@utils/history.js";
+import { isEmpty } from "@utils/Utils";
 
 const Header = lazy(() => import("@views/Layout/Header"));
 
@@ -104,6 +105,11 @@ const SideBarBody = (props: {
   const dispatch = useAppDispatch();
   const { handleOpenModal, handleOpenAboutModal } = props;
   const navigate = useNavigate();
+  const { typeHeaderData } = useAppSelector((state) => state.typeHeader || {});
+  const { allEntityTypesData } = useAppSelector((state) => state.allEntityTypes || {});
+  const { rootClassificationTypeData } = useAppSelector((state) => state.rootClassificationType || {});
+  const { enumObj } = useAppSelector((state) => state.enum || {});
+  const { metricsData } = useAppSelector((state) => state.metrics || {});
   const relationshipSearch = Boolean(globalSessionData?.relationshipSearch);
   const [open, setOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -203,12 +209,25 @@ const SideBarBody = (props: {
   const headerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    dispatch(fetchTypeHeaderData());
-    dispatch(fetchRootEntity());
-    dispatch(fetchRootClassification());
-    dispatch(fetchEnumData());
-    dispatch(fetchMetricEntity());
-    dispatch(fetchVersionData());
+    if (isEmpty(typeHeaderData)) {
+      dispatch(fetchTypeHeaderData());
+    }
+    if (isEmpty(allEntityTypesData)) {
+      dispatch(fetchRootEntity());
+    }
+    if (isEmpty(rootClassificationTypeData?.rootClassificationData)) {
+      dispatch(fetchRootClassification());
+    }
+    if (isEmpty(enumObj?.data)) {
+      dispatch(fetchEnumData());
+    }
+    if (isEmpty(metricsData)) {
+      dispatch(fetchMetricEntity());
+    }
+    if (isEmpty(versionData)) {
+      dispatch(fetchVersionData());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
 
   const handleAtlasLogoClick = useCallback(() => {

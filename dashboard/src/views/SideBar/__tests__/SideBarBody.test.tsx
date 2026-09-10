@@ -189,6 +189,26 @@ describe('SideBarBody', () => {
           versionData: { loading: false, data: null, error: null },
           globalSessionData: { relationshipSearch: true },
           ...(initialState.session || {})
+        }),
+        allEntityTypes: () => ({
+          loading: false,
+          allEntityTypesData: null,
+          ...(initialState.allEntityTypes || {})
+        }),
+        rootClassificationType: () => ({
+          loading: false,
+          rootClassificationTypeData: null,
+          ...(initialState.rootClassificationType || {})
+        }),
+        enum: () => ({
+          loading: false,
+          enumObj: null,
+          ...(initialState.enum || {})
+        }),
+        metrics: () => ({
+          loading: false,
+          metricsData: null,
+          ...(initialState.metrics || {})
         })
       }
     });
