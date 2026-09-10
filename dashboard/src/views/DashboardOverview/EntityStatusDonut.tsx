@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Paper, Stack, Typography, Box } from "@mui/material";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Sector } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Sector, PieSectorDataItem } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { numberFormatWithComma } from "@utils/Helper";
 import { getEntityStatusTotals, getPayloadFromRechartsEvent } from "@utils/metricsUtils";
@@ -35,17 +35,34 @@ interface StatusDonutDataItem {
 	color: string;
 }
 
+const renderActiveShape = (props: PieSectorDataItem) => {
+	return (
+		<Sector
+			{...props}
+			outerRadius={(props.outerRadius ?? 60) * 1.08}
+			innerRadius={props.innerRadius ?? 40}
+		/>
+	);
+};
+
+const AnimatedPie = Pie as React.ComponentType<
+	React.ComponentProps<typeof Pie> & {
+		activeIndex?: number;
+		activeShape?: typeof renderActiveShape;
+	}
+>;
+
 const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) => {
 	const navigate = useNavigate();
 	const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
 	const totals = getEntityStatusTotals(entity);
 	const total = totals.active + totals.shell + totals.deleted;
 
-	const chartData = [
+	const chartData = useMemo(() => [
 		{ name: "Active", value: totals.active, color: COLORS.Active },
 		{ name: "Shell", value: totals.shell, color: COLORS.Shell },
 		{ name: "Deleted", value: totals.deleted, color: COLORS.Deleted }
-	].filter((d) => d.value > 0);
+	].filter((d) => d.value > 0), [totals.active, totals.shell, totals.deleted]);
 
 	const getPercent = (val: number) => (total > 0 ? Math.round((val / total) * 100) : 0);
 
@@ -75,18 +92,6 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 
 	if (isLoading) return null;
 
-	const renderActiveShape = (props: unknown) => {
-		if (!props || typeof props !== "object") return null;
-		const p = props as { outerRadius?: number; innerRadius?: number; [k: string]: unknown };
-		return (
-			<Sector
-				{...p}
-				outerRadius={(p.outerRadius ?? 60) * 1.08}
-				innerRadius={p.innerRadius ?? 40}
-			/>
-		);
-	};
-
 	return (
 		<Paper elevation={1} className="chart-card">
 			<Box className="chart-card-header">
@@ -114,7 +119,7 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 				</Stack>
 				<ResponsiveContainer width="50%" height="100%" className="chart-cursor-pointer">
 					<PieChart>
-						<Pie
+						<AnimatedPie
 							data={chartData}
 							cx="50%"
 							cy="50%"
@@ -140,7 +145,7 @@ const EntityStatusDonut = memo(({ entity, isLoading }: EntityStatusDonutProps) =
 							{chartData.map((entry, index) => (
 								<Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
 							))}
-						</Pie>
+						</AnimatedPie>
 						<Tooltip
 							formatter={(value: unknown) => numberFormatWithComma(Number(value || 0))}
 							wrapperClassName="donut-tooltip-wrapper"

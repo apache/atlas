@@ -246,6 +246,6 @@ export interface RechartsEventPayload<T> {
 
 export const getPayloadFromRechartsEvent = <T>(item: unknown): T | undefined => {
 	if (!item || typeof item !== "object") return undefined;
-	const rec = item as RechartsEventPayload<T>;
-	return rec.payload;
+	const rec = item as RechartsEventPayload<T> & T;
+	return rec.payload ?? (("name" in rec || "count" in rec) ? (rec as T) : undefined);
 };
