@@ -125,6 +125,27 @@ describe('sessionSlice', () => {
 		expect(state.sessionObj.error).toBe(error);
 	});
 
+	it('should handle fetchSessionData.rejected while retaining previous stale data', () => {
+		const previousState = {
+			...initialState,
+			sessionObj: {
+				loading: true,
+				data: { 'atlas.entity.create.allowed': true },
+				error: null
+			}
+		};
+		const error = 'Network error';
+		const action = {
+			type: fetchSessionData.rejected.type,
+			payload: error
+		};
+		const state = sessionReducer(previousState, action);
+
+		expect(state.sessionObj.loading).toBe(false);
+		expect(state.sessionObj.data).toEqual({ 'atlas.entity.create.allowed': true });
+		expect(state.sessionObj.error).toBe(error);
+	});
+
 	it('should fetch session data successfully', async () => {
 		const { fetchApi } = require('../../../api/apiMethods/fetchApi');
 		const mockData = {
