@@ -33,6 +33,8 @@ import { numberFormatWithComma } from "@utils/Helper";
 import {
 	getClassificationDistribution,
 	getTagEntityAssociationTotal,
+	getPayloadFromRechartsEvent,
+	type ClassificationDistributionItem,
 } from "@utils/metricsUtils";
 import { navigateToSearch, navigateToClassificationSearch } from "@utils/dashboardSearchUtils";
 import {
@@ -50,6 +52,8 @@ interface ClassificationDistributionCardProps {
 	isLoading?: boolean;
 }
 
+
+
 const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationDistributionCardProps) => {
 	const navigate = useNavigate();
 	const data = getClassificationDistribution(tag, 5);
@@ -60,8 +64,11 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 	);
 
 	const handleBarClick = useCallback(
-		(entry: { name: string }) => {
-			navigateToClassificationSearch(navigate, entry.name);
+		(barProps: unknown) => {
+			const name = getPayloadFromRechartsEvent<ClassificationDistributionItem>(barProps)?.name;
+			if (name) {
+				navigateToClassificationSearch(navigate, name);
+			}
 		},
 		[navigate]
 	);
@@ -83,54 +90,41 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 		const row = p.payload[0]?.payload;
 		if (!row) return null;
 		return (
-			<Box sx={{ p: 1.5, bgcolor: "background.paper", borderRadius: 1, boxShadow: 2, minWidth: 140 }}>
-				<Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
+			<Paper className="chart-tooltip-box">
+				<Typography variant="body2" className="chart-tooltip-title">
 					{row.name}
 				</Typography>
 				<Typography variant="caption" display="block">
 					Entities: {numberFormatWithComma(row.count)}
 				</Typography>
-			</Box>
+			</Paper>
 		);
 	}, []);
 
 	if (isLoading) return null;
 
 	return (
-		<Paper
-			elevation={1}
-			sx={{
-				padding: 2,
-				borderRadius: 2,
-				minHeight: 340,
-				minWidth: 0,
-				width: "100%",
-				height: "100%",
-				boxSizing: "border-box",
-				transition: "box-shadow 0.3s ease",
-				"&:hover": { boxShadow: 4 }
-			}}
-		>
-			<Box sx={{ pb: 2, borderBottom: "1px solid", borderColor: "divider" }}>
+		<Paper elevation={1} className="classification-card-wrapper">
+			<Box className="chart-card-header">
 				<Stack direction="row" justifyContent="space-between" alignItems="center">
-					<Typography sx={{ fontSize: "1rem", fontWeight: 600, color: "#1a1a1a" }}>
+					<Typography className="chart-card-title">
 						Classification Distribution
 					</Typography>
 					<Link
 						component="button"
 						onClick={handleViewAll}
-						sx={{ fontSize: "0.875rem", cursor: "pointer", textDecoration: "none", color: "primary.main" }}
+						className="chart-view-all-link"
 						aria-label="View all classifications"
 					>
 						View All
 					</Link>
 				</Stack>
 			</Box>
-			<Typography variant="body2" sx={{ color: "#6c757d", mt: 2, lineHeight: 1.4 }}>
+			<Typography variant="body2" className="classification-assoc-total">
 				<strong>Tag–entity associations (total):</strong>{" "}
 				{numberFormatWithComma(associationTotal)}
 			</Typography>
-			<Typography variant="caption" sx={{ color: "#868e96", display: "block", mt: 0.75, lineHeight: 1.4 }}>
+			<Typography variant="caption" className="classification-caption">
 				The chart shows the top 5 classifications by number of entities in use.
 			</Typography>
 			{data.length === 0 ? (
@@ -140,8 +134,8 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 					</Typography>
 				</Stack>
 			) : (
-				<Box sx={{ mt: 2, minHeight: 260, height: 260, width: "100%", minWidth: 280 }}>
-					<ResponsiveContainer width="100%" height="100%" style={{ cursor: "pointer" }}>
+				<Box className="classification-chart-container">
+					<ResponsiveContainer width="100%" height="100%" className="chart-cursor-pointer">
 						<BarChart
 							data={data}
 							layout="vertical"
@@ -156,7 +150,7 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 									value: "Entity Count",
 									position: "bottom",
 									offset: 12,
-									style: { fontSize: 11, fill: "#6c757d" },
+									className: "chart-axis-label",
 								}}
 							/>
 							<YAxis
@@ -174,7 +168,7 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 										<g
 											transform={`translate(${x},${y})`}
 											onClick={() => (value ? handleLabelClick(value) : undefined)}
-											style={{ cursor: value ? "pointer" : "default" }}
+											className={value ? "chart-cursor-pointer" : "chart-cursor-default"}
 											role={value ? "button" : undefined}
 											tabIndex={value ? 0 : undefined}
 											aria-label={value || undefined}
@@ -203,19 +197,15 @@ const ClassificationDistributionCard = memo(({ tag, isLoading }: ClassificationD
 								name="Entities"
 								fill={BAR_COLOR}
 								radius={[0, 4, 4, 0]}
-								onClick={(entry) => handleBarClick(entry)}
+								onClick={handleBarClick}
 								cursor="pointer"
 							>
 								<LabelList
 									dataKey="count"
 									position="right"
 									offset={10}
-									formatter={(v: number) => numberFormatWithComma(v)}
-									style={{
-										fontSize: 12,
-										fontWeight: 500,
-										fill: BAR_COLOR,
-									}}
+									formatter={(v: unknown) => numberFormatWithComma(Number(v))}
+									className="chart-label-list"
 								/>
 								{data.map((_, index) => <Cell key={index} fill={BAR_COLOR} />)}
 							</Bar>

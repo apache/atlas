@@ -62,3 +62,5 @@ export const resolveLatestEntityTypeName = (
 	const t = entity.typeName;
 	return typeof t === "string" && t.trim() !== "" ? t.trim() : "Entity";
 };
+
+export const LATEST_ENTITIES_DISPLAY_LIMIT = 6;
