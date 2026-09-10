@@ -36,8 +36,14 @@ describe("getPayloadFromRechartsEvent", () => {
 		expect(getPayloadFromRechartsEvent(Symbol("test"))).toBeUndefined();
 	});
 
-	it("returns undefined when given an object without payload key", () => {
+	it("returns undefined when given an object without payload key and without name/count", () => {
 		expect(getPayloadFromRechartsEvent({})).toBeUndefined();
-		expect(getPayloadFromRechartsEvent({ name: "Active", count: 10 })).toBeUndefined();
+		expect(getPayloadFromRechartsEvent({ otherKey: "value" })).toBeUndefined();
+	});
+
+	it("returns the item itself if payload is missing but it contains name or count (Recharts v3 support)", () => {
+		expect(getPayloadFromRechartsEvent({ name: "Active", count: 10 })).toEqual({ name: "Active", count: 10 });
+		expect(getPayloadFromRechartsEvent({ name: "Active" })).toEqual({ name: "Active" });
+		expect(getPayloadFromRechartsEvent({ count: 10 })).toEqual({ count: 10 });
 	});
 });
