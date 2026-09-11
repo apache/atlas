@@ -19,6 +19,7 @@ import React, { ChangeEvent } from "react";
 import { Paper, InputBase, Stack } from "@mui/material";
 import ClearIcon from "@mui/icons-material/Clear";
 import { IconButton } from "@components/muiComponents";
+import iconSearch from "/img/sidebar-icons/icon-search.svg";
 
 interface SidebarSearchInputProps {
   searchTerm: string;
@@ -62,7 +63,7 @@ export const SidebarSearchInput: React.FC<SidebarSearchInputProps> = ({
             </IconButton>
           )}
           <img
-            src="/img/sidebar-icons/icon-search.svg"
+            src={iconSearch}
             className="sidebar-searchbar-icon"
             alt="Search"
           />

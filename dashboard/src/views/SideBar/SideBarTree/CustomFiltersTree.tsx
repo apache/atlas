@@ -51,7 +51,7 @@ const CustomFiltersTree = ({ sideBarOpen, searchTerm, isPopover }: Props) => {
   const [customFilterLoader, setCustomFilterLoader] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!savedSearchData || isEmpty(savedSearchData)) {
+    if (savedSearchData === null || savedSearchData === undefined) {
       setCustomFilterLoader(true);
       dispatch(fetchSavedSearchData());
       setCustomFilterLoader(false);

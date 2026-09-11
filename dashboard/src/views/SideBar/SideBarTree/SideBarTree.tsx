@@ -38,6 +38,12 @@ import {
   TreeItemContentProps,
 } from "@mui/x-tree-view/TreeItem";
 import clsx from "clsx";
+
+import iconEntities from "/img/sidebar-icons/icon-entities.svg";
+import iconClassifications from "/img/sidebar-icons/icon-classifications.svg";
+import iconBusinessMetadata from "/img/sidebar-icons/icon-business-metadata.svg";
+import iconGlossary from "/img/sidebar-icons/icon-glossary.svg";
+import iconCustomFilters from "/img/sidebar-icons/icon-custom-filters.svg";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import {
   MoreVertIcon,
@@ -249,10 +255,10 @@ const CustomContent = forwardRef(function CustomContent(
         "Mui-expanded": expanded,
         "Mui-selected":
           (isValidElement(props.label) &&
+            labelProps?.node !== undefined &&
             (labelProps?.selectedNodeType === labelProps?.node ||
               labelProps?.selectedNodeTag === labelProps?.node ||
-              labelProps?.selectedNodeRelationship ===
-              labelProps?.node ||
+              labelProps?.selectedNodeRelationship === labelProps?.node ||
               labelProps?.selectedNodeBM === labelProps?.node ||
               labelProps?.selectedNodeTerm === labelProps?.node ||
               labelProps?.selectedNodeCustomFilter === labelProps?.node)) ||
@@ -1009,8 +1015,26 @@ const BarTreeView: FC<{
       );
     };
 
-    const renderTreeItem = (node: TreeNode) =>
-      node?.id && (
+    const renderTreeItem = (node: TreeNode) => {
+      if (!node?.id) return null;
+
+      if (node.id === "No Records Found") {
+        return (
+          <CustomTreeItem
+            key={node.id}
+            itemId={getNodeId(node)}
+            disabled={true}
+            className="no-records-item"
+            label={
+              <Typography variant="body2" className="no-records-label">
+                {node.label}
+              </Typography>
+            }
+          />
+        );
+      }
+
+      return (
         <CustomTreeItem
           key={node.id}
           itemId={getNodeId(node)}
@@ -1040,19 +1064,16 @@ const BarTreeView: FC<{
             >
               {(isHovered: boolean) => (
                 <>
-                  {node.id !== "No Records Found" && (
-                    <TreeIcons
-                      node={node}
-                      treeName={treeName}
-                      isEmptyServicetype={isEmptyServicetype ?? false}
-                    />
-                  )}
+                  <TreeIcons
+                    node={node}
+                    treeName={treeName}
+                    isEmptyServicetype={isEmptyServicetype ?? false}
+                  />
                   <TreeLabelWithTooltip label={node.label} />
                   {(treeName === "Entities" ||
                     treeName === "Classifications" ||
                     treeName === "CustomFilters" ||
-                    treeName === "Glossary") &&
-                    node.id !== "No Records Found" && (
+                    treeName === "Glossary") && (
                       <TreeNodeIcons
                         node={node}
                         treeName={treeName}
@@ -1069,6 +1090,7 @@ const BarTreeView: FC<{
           {node.children && node.children.map((child) => renderTreeItem(child))}
         </CustomTreeItem>
       );
+    };
 
     const downloadFile = async () => {
       try {
@@ -1119,11 +1141,11 @@ const BarTreeView: FC<{
                   className="tree-item-parent-label"
                 >
                   <Stack flexGrow={1} direction="row" alignItems="center" gap="12px">
-                    {treeName === "Entities" && <img src="/img/sidebar-icons/icon-entities.svg" className="sidebar-tree-icon" alt="" />}
-                    {treeName === "Classifications" && <img src="/img/sidebar-icons/icon-classifications.svg" className="sidebar-tree-icon" alt="" />}
-                    {treeName === "Business MetaData" && <img src="/img/sidebar-icons/icon-business-metadata.svg" className="sidebar-tree-icon" alt="" />}
-                    {treeName === "Glossary" && <img src="/img/sidebar-icons/icon-glossary.svg" className="sidebar-tree-icon" alt="" />}
-                    {treeName === "CustomFilters" && <img src="/img/sidebar-icons/icon-custom-filters.svg" className="sidebar-tree-icon" alt="" />}
+                    {treeName === "Entities" && <img src={iconEntities} className="sidebar-tree-icon" alt="" />}
+                    {treeName === "Classifications" && <img src={iconClassifications} className="sidebar-tree-icon" alt="" />}
+                    {treeName === "Business MetaData" && <img src={iconBusinessMetadata} className="sidebar-tree-icon" alt="" />}
+                    {treeName === "Glossary" && <img src={iconGlossary} className="sidebar-tree-icon" alt="" />}
+                    {treeName === "CustomFilters" && <img src={iconCustomFilters} className="sidebar-tree-icon" alt="" />}
                     <Typography className="sidebar-tree-typography">{displayTreeName}</Typography>
                   </Stack>
                   <Stack direction="row" alignItems="center" gap="0.375rem">

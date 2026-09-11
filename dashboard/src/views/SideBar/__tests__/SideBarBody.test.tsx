@@ -741,7 +741,7 @@ describe('SideBarBody', () => {
       });
     });
 
-    it('[Positive] should portal active tree element into the Popover container DOM structure', async () => {
+    it('should portal active tree element into the Popover container DOM structure', async () => {
       const glossaryIcon = screen.getByAltText('glossary');
       fireEvent.click(glossaryIcon.closest('button')!);
 
@@ -753,7 +753,7 @@ describe('SideBarBody', () => {
       });
     });
 
-    it('[Positive] should return portaled tree element back to sidebar wrapper when popover closes', async () => {
+    it('should return portaled tree element back to sidebar wrapper when popover closes', async () => {
       const glossaryIcon = screen.getByAltText('glossary');
       fireEvent.click(glossaryIcon.closest('button')!);
 
@@ -775,7 +775,7 @@ describe('SideBarBody', () => {
       });
     });
 
-    it('[Negative] should NOT create duplicate tree instances when popover is opened', async () => {
+    it('should NOT create duplicate tree instances when popover is opened', async () => {
       const entitiesIcon = screen.getByAltText('entities');
       fireEvent.click(entitiesIcon.closest('button')!);
 
@@ -786,7 +786,7 @@ describe('SideBarBody', () => {
       });
     });
 
-    it('[Negative] should NOT portal inactive tree elements into the popover container', async () => {
+    it('should NOT portal inactive tree elements into the popover container', async () => {
       const glossaryIcon = screen.getByAltText('glossary');
       fireEvent.click(glossaryIcon.closest('button')!);
 
@@ -927,6 +927,25 @@ describe('SideBarBody', () => {
       // Restore
       Object.defineProperty(window, 'innerHeight', { value: originalInnerHeight, configurable: true });
       Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    });
+  });
+
+  describe('SVG Module Icons Mapping', () => {
+    it('should pass correct dynamic SVG icons without using hardcoded string paths', () => {
+      const { unmount } = renderWithProviders();
+      
+      const toggleButton = screen.getByTestId('KeyboardDoubleArrowLeftIcon').closest('button');
+      fireEvent.click(toggleButton!);
+
+      const entitiesIcon = screen.getByAltText('entities');
+      expect(entitiesIcon).toHaveAttribute('src');
+      expect(entitiesIcon.getAttribute('src')).not.toContain('/img/sidebar-icons/icon-entities.svg');
+      
+      const classificationsIcon = screen.getByAltText('classifications');
+      expect(classificationsIcon).toHaveAttribute('src');
+      expect(classificationsIcon.getAttribute('src')).not.toContain('/img/sidebar-icons/icon-classifications.svg');
+
+      unmount();
     });
   });
 

@@ -538,3 +538,15 @@ button.MuiButtonBase-root.MuiIconButton-root.MuiIconButton-sizeSmall.tree-item-m
   border-radius: 4px;
   background-color: var(--skeleton-bg, rgba(255,255,255,0.08));
 }
+.no-records-item {
+  .MuiTreeItem-content.Mui-disabled {
+    opacity: 1 !important;
+  }
+}
+
+.no-records-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-style: italic;
+  padding: 4px 0;
+  cursor: default;
+}

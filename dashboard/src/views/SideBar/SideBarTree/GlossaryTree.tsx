@@ -48,7 +48,7 @@ const GlossaryTree = ({ sideBarOpen, searchTerm, isPopover }: Props) => {
   >([]);
 
   useEffect(() => {
-    if (!glossaryData || isEmpty(glossaryData)) {
+    if (glossaryData === null || glossaryData === undefined) {
       dispatch(fetchGlossaryData());
     }
   }, [glossaryData, dispatch]);
