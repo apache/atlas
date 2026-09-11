@@ -24,6 +24,7 @@ import org.apache.atlas.authorize.AtlasAccessRequest;
 import org.apache.atlas.authorize.AtlasAdminAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizer;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasNotificationRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
@@ -32,6 +33,7 @@ import org.apache.atlas.authorize.AtlasTypesDefFilterRequest;
 import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.AtlasAdminPermission;
 import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.AtlasAuthzRole;
 import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.AtlasEntityPermission;
+import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.AtlasNotificationPermission;
 import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.AtlasRelationshipPermission;
 import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.AtlasTypePermission;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
@@ -254,6 +256,39 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
+    public boolean isAccessAllowed(AtlasNotificationRequest request) {
+        LOG.debug("==> SimpleAtlasAuthorizer.isAccessAllowed({})", request);
+
+        boolean     ret   = false;
+        Set<String> roles = getRoles(request.getUser(), request.getUserGroups());
+
+        for (String role : roles) {
+            List<AtlasNotificationPermission> permissions = getNotificationPermissionsForRole(role);
+
+            if (permissions != null) {
+                final String action    = request.getAction() != null ? request.getAction().getType() : null;
+                final String topicName = request.getTopicName();
+
+                for (AtlasNotificationPermission permission : permissions) {
+                    if (isMatch(action, permission.getPrivileges()) && isMatch(topicName, permission.getTopicNames())) {
+                        ret = true;
+
+                        break;
+                    }
+                }
+            }
+
+            if (ret) {
+                break;
+            }
+        }
+
+        LOG.debug("<== SimpleAtlasAuthorizer.isAccessAllowed({}): {}", request, ret);
+
+        return ret;
+    }
+
+    @Override
     public void scrubSearchResults(AtlasSearchResultScrubRequest request) {
         LOG.debug("==> SimpleAtlasAuthorizer.scrubSearchResults({})", request);
 
@@ -365,6 +400,18 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             AtlasAuthzRole role = authzPolicy.getRoles().get(roleName);
 
             ret = role != null ? role.getRelationshipPermissions() : null;
+        }
+
+        return ret;
+    }
+
+    private List<AtlasNotificationPermission> getNotificationPermissionsForRole(String roleName) {
+        List<AtlasNotificationPermission> ret = null;
+
+        if (authzPolicy != null && roleName != null) {
+            AtlasAuthzRole role = authzPolicy.getRoles().get(roleName);
+
+            ret = role != null ? role.getNotificationPermissions() : null;
         }
 
         return ret;

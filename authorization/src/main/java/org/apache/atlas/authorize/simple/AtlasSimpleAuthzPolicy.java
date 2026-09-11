@@ -76,19 +76,25 @@ public class AtlasSimpleAuthzPolicy implements Serializable {
     public static class AtlasAuthzRole implements Serializable {
         private static final long serialVersionUID = 1L;
 
-        private List<AtlasAdminPermission>        adminPermissions;
-        private List<AtlasTypePermission>         typePermissions;
-        private List<AtlasEntityPermission>       entityPermissions;
-        private List<AtlasRelationshipPermission> relationshipPermissions;
+        private List<AtlasAdminPermission>         adminPermissions;
+        private List<AtlasTypePermission>          typePermissions;
+        private List<AtlasEntityPermission>        entityPermissions;
+        private List<AtlasRelationshipPermission>  relationshipPermissions;
+        private List<AtlasNotificationPermission>  notificationPermissions;
 
         public AtlasAuthzRole() {
         }
 
         public AtlasAuthzRole(List<AtlasAdminPermission> adminPermissions, List<AtlasTypePermission> typePermissions, List<AtlasEntityPermission> entityPermissions, List<AtlasRelationshipPermission> relationshipPermissions) {
-            this.adminPermissions        = adminPermissions;
-            this.typePermissions         = typePermissions;
-            this.entityPermissions       = entityPermissions;
-            this.relationshipPermissions = relationshipPermissions;
+            this(adminPermissions, typePermissions, entityPermissions, relationshipPermissions, null);
+        }
+
+        public AtlasAuthzRole(List<AtlasAdminPermission> adminPermissions, List<AtlasTypePermission> typePermissions, List<AtlasEntityPermission> entityPermissions, List<AtlasRelationshipPermission> relationshipPermissions, List<AtlasNotificationPermission> notificationPermissions) {
+            this.adminPermissions         = adminPermissions;
+            this.typePermissions          = typePermissions;
+            this.entityPermissions        = entityPermissions;
+            this.relationshipPermissions  = relationshipPermissions;
+            this.notificationPermissions  = notificationPermissions;
         }
 
         public List<AtlasAdminPermission> getAdminPermissions() {
@@ -121,6 +127,14 @@ public class AtlasSimpleAuthzPolicy implements Serializable {
 
         public void setRelationshipPermissions(List<AtlasRelationshipPermission> relationshipPermissions) {
             this.relationshipPermissions = relationshipPermissions;
+        }
+
+        public List<AtlasNotificationPermission> getNotificationPermissions() {
+            return notificationPermissions;
+        }
+
+        public void setNotificationPermissions(List<AtlasNotificationPermission> notificationPermissions) {
+            this.notificationPermissions = notificationPermissions;
         }
     }
 
@@ -389,6 +403,42 @@ public class AtlasSimpleAuthzPolicy implements Serializable {
 
         public void setEnd2EntityClassification(List<String> end2EntityClassification) {
             this.end2EntityClassification = end2EntityClassification;
+        }
+    }
+
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @XmlRootElement
+    @XmlAccessorType(XmlAccessType.PROPERTY)
+    public static class AtlasNotificationPermission implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private List<String> privileges;
+        private List<String> topicNames;
+
+        public AtlasNotificationPermission() {
+        }
+
+        public AtlasNotificationPermission(List<String> privileges, List<String> topicNames) {
+            this.privileges  = privileges;
+            this.topicNames  = topicNames;
+        }
+
+        public List<String> getPrivileges() {
+            return privileges;
+        }
+
+        public void setPrivileges(List<String> privileges) {
+            this.privileges = privileges;
+        }
+
+        public List<String> getTopicNames() {
+            return topicNames;
+        }
+
+        public void setTopicNames(List<String> topicNames) {
+            this.topicNames = topicNames;
         }
     }
 }
