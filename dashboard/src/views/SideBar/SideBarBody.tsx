@@ -31,6 +31,13 @@ import TreeSkeletonLoader from "@components/TreeSkeletonLoader";
 import { SidebarSearchInput } from "@components/SidebarSearchInput";
 import atlasLogo from "/img/atlas_logo.svg";
 import apacheAtlasLogo from "/img/apache-atlas-logo.svg";
+import iconEntities from "/img/sidebar-icons/icon-entities.svg";
+import iconClassifications from "/img/sidebar-icons/icon-classifications.svg";
+import iconGlossary from "/img/sidebar-icons/icon-glossary.svg";
+import iconBusinessMetadata from "/img/sidebar-icons/icon-business-metadata.svg";
+import iconRelationships from "/img/sidebar-icons/icon-relationships.svg";
+import iconCustomFilters from "/img/sidebar-icons/icon-custom-filters.svg";
+import iconSearch from "/img/sidebar-icons/icon-search.svg";
 import {
   matchRoutes,
   Outlet,
@@ -107,38 +114,44 @@ const SideBarBody = (props: {
   const navigate = useNavigate();
   const { typeHeaderData } = useAppSelector((state) => state.typeHeader || {});
   const { allEntityTypesData } = useAppSelector((state) => state.allEntityTypes || {});
-  const { rootClassificationTypeData } = useAppSelector((state) => state.rootClassificationType || {});
+  const { rootClassificationTypeData } = useAppSelector((state) => state.rootClassification || {});
   const { enumObj } = useAppSelector((state) => state.enum || {});
   const { metricsData } = useAppSelector((state) => state.metrics || {});
   const relationshipSearch = Boolean(globalSessionData?.relationshipSearch);
   const [open, setOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const { data: versionData, loading: isVersionLoading, error: versionError } = useAppSelector((state) => state.session?.versionData || {});
-  const activeModule = useMemo(() => {
+  const { isCustomFilterActive, isGlossaryActive, isBusinessMetadataActive, isClassificationActive, isRelationshipActive, isEntitiesActive } = useMemo(() => {
     const searchParams = new URLSearchParams(location.search);
-    if (searchParams.get("isCF") === "true") return "customFilters";
-    if (location.pathname.includes("/glossary") || !!searchParams.get("gtype") || !!searchParams.get("term") || !!searchParams.get("category")) return "glossary";
-    if (location.pathname.includes("/administrator/businessMetadata")) return "businessMetadata";
-    if (!!searchParams.get("tag") || location.pathname.includes("/tag/tagAttribute")) return "classification";
-    if (!!searchParams.get("relationshipName") || location.pathname.includes("/relationshipDetailPage")) return "relationships";
-    if (!!searchParams.get("type") || location.pathname.includes("/detailPage")) return "entities";
-    return null;
+    const isCustomFilterActive = searchParams.get("isCF") === "true";
+    const isBusinessMetadataActive = location.pathname.includes("/administrator/businessMetadata");
+    const isRelationshipActive = !!searchParams.get("relationshipName") || location.pathname.includes("/relationshipDetailPage");
+
+    // Entity, Classification, and Glossary can be active simultaneously (e.g. basic search),
+    // but not if Custom Filters, Business Metadata, or Relationships is the active module.
+    const isExclusiveModuleActive = isCustomFilterActive || isBusinessMetadataActive || isRelationshipActive;
+
+    const isGlossaryActive = !isExclusiveModuleActive && (location.pathname.includes("/glossary") || !!searchParams.get("gtype") || !!searchParams.get("term") || !!searchParams.get("category"));
+    const isClassificationActive = !isExclusiveModuleActive && (!!searchParams.get("tag") || location.pathname.includes("/tag/tagAttribute"));
+    const isEntitiesActive = !isExclusiveModuleActive && (!!searchParams.get("type") || location.pathname.includes("/detailPage"));
+
+    return {
+      isCustomFilterActive,
+      isGlossaryActive,
+      isBusinessMetadataActive,
+      isClassificationActive,
+      isRelationshipActive,
+      isEntitiesActive
+    };
   }, [location.pathname, location.search]);
 
-  const isCustomFilterActive = activeModule === "customFilters";
-  const isGlossaryActive = activeModule === "glossary";
-  const isBusinessMetadataActive = activeModule === "businessMetadata";
-  const isClassificationActive = activeModule === "classification";
-  const isRelationshipActive = activeModule === "relationships";
-  const isEntitiesActive = activeModule === "entities";
-
   const modules = useMemo(() => [
-    { id: "entities", title: "Entities", isActive: isEntitiesActive, iconUrl: "/img/sidebar-icons/icon-entities.svg", Component: EntitiesTree, isVisible: true },
-    { id: "classification", title: "Classifications", isActive: isClassificationActive, iconUrl: "/img/sidebar-icons/icon-classifications.svg", Component: ClassificationTree, isVisible: true },
-    { id: "glossary", title: "Glossary", isActive: isGlossaryActive, iconUrl: "/img/sidebar-icons/icon-glossary.svg", Component: GlossaryTree, isVisible: true },
-    { id: "businessMetadata", title: "Business Metadata", isActive: isBusinessMetadataActive, iconUrl: "/img/sidebar-icons/icon-business-metadata.svg", Component: BusinessMetadataTree, isVisible: true },
-    { id: "relationships", title: "Relationships", isActive: isRelationshipActive, iconUrl: "/img/sidebar-icons/icon-relationships.svg", Component: RelationshipsTree, isVisible: !!relationshipSearch },
-    { id: "customFilters", title: "Custom Filters", isActive: isCustomFilterActive, iconUrl: "/img/sidebar-icons/icon-custom-filters.svg", Component: CustomFiltersTree, isVisible: true }
+    { id: "entities", title: "Entities", isActive: isEntitiesActive, iconUrl: iconEntities, Component: EntitiesTree, isVisible: true },
+    { id: "classification", title: "Classifications", isActive: isClassificationActive, iconUrl: iconClassifications, Component: ClassificationTree, isVisible: true },
+    { id: "glossary", title: "Glossary", isActive: isGlossaryActive, iconUrl: iconGlossary, Component: GlossaryTree, isVisible: true },
+    { id: "businessMetadata", title: "Business Metadata", isActive: isBusinessMetadataActive, iconUrl: iconBusinessMetadata, Component: BusinessMetadataTree, isVisible: true },
+    { id: "relationships", title: "Relationships", isActive: isRelationshipActive, iconUrl: iconRelationships, Component: RelationshipsTree, isVisible: !!relationshipSearch },
+    { id: "customFilters", title: "Custom Filters", isActive: isCustomFilterActive, iconUrl: iconCustomFilters, Component: CustomFiltersTree, isVisible: true }
   ], [
     isEntitiesActive,
     isClassificationActive,
@@ -346,7 +359,7 @@ const SideBarBody = (props: {
                 <Box className="sidebar-module-box">
                   <Tooltip title="Search" placement="right">
                     <IconButton aria-label="Expand sidebar search" onClick={() => { setOpen(true); handlePopoverClose(); }} className="sidebar-module-btn">
-                      <img src="/img/sidebar-icons/icon-search.svg" className="sidebar-module-icon" alt="search" />
+                      <img src={iconSearch} className="sidebar-module-icon" alt="search" />
                     </IconButton>
                   </Tooltip>
                 </Box>

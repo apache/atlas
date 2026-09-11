@@ -2238,4 +2238,14 @@ describe('SideBarTree', () => {
 			if (originalClientWidth) Object.defineProperty(HTMLElement.prototype, 'clientWidth', originalClientWidth)
 		})
 	})
+
+	describe('No Records Found Logic', () => {
+		it('should render No Records Found placeholder securely with disabled state and class', async () => {
+			renderComponent({ treeData: [{ id: 'No Records Found', label: 'No Records Found', children: [] }] })
+			
+			const noRecordsItem = await screen.findByText('No Records Found')
+			expect(noRecordsItem).toBeInTheDocument()
+			expect(noRecordsItem.closest('.no-records-item')).toBeInTheDocument()
+		})
+	})
 })

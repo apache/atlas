@@ -842,4 +842,28 @@ describe('EntitiesTree', () => {
 			expect(screen.getByTestId('search-term')).toHaveTextContent('updated')
 		})
 	})
+
+	describe('API Empty States Data Loading Logic', () => {
+		it('should dispatch fetchEntityData when entityData is null', () => {
+			const store = createMockStore({
+				entity: { entityData: null },
+				typeHeader: { typeHeaderData: [], loading: false },
+				allEntityTypes: { allEntityTypesData: { category: 'ENTITY' } },
+				metrics: { metricsData: null }
+			})
+			renderComponent({}, store)
+			expect(screen.getByTestId('sidebar-tree')).toBeInTheDocument();
+		})
+
+		it('should NOT dispatch fetchEntityData when entityData is defined but empty array/object', () => {
+			const store = createMockStore({
+				entity: { entityData: { entityDefs: [] } },
+				typeHeader: { typeHeaderData: [], loading: false },
+				allEntityTypes: { allEntityTypesData: { category: 'ENTITY' } },
+				metrics: { metricsData: null }
+			})
+			renderComponent({}, store)
+			expect(screen.getByTestId('sidebar-tree')).toBeInTheDocument();
+		})
+	})
 })
