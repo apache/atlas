@@ -26,8 +26,8 @@ import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.notification.NotificationHookConsumer;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.atlas.service.Service;
-import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -45,15 +45,13 @@ import javax.inject.Singleton;
 import java.net.InetAddress;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Consumes typedef-change signals from the {@value #DEFAULT_TOPIC} Kafka topic
- * and reloads the in-memory type registry on this node by calling
- * {@link AtlasTypeDefStore#init()}.
+ * and reloads the in-memory type registry on this node through
+ * {@link TypeRegistryVersionGate#ensureUpToDate()}.
  *
  * <p>This bean implements only {@link ActiveStateChangeHandler} — it does
  * <em>not</em> implement {@link org.apache.atlas.listener.TypeDefChangeListener},
@@ -65,7 +63,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *     → List&lt;TypeDefChangeListener&gt; → {@link TypeDefChangeNotifier}  (no store dep)
  *
  *   TypeDefSyncConsumer                                               (no listener dep)
- *     → AtlasTypeDefStore → AtlasTypeDefGraphStoreV2
+ *     → TypeRegistryVersionGate → AtlasTypeDefStore
  * </pre>
  *
  * <h3>Why every node gets every message</h3>
@@ -74,9 +72,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * delivers every typedef-change signal to every consumer group independently,
  * so all nodes reload their type registry on each CRUD operation.
  *
- * <h3>Timestamp-based stale detection</h3>
- * Signal payloads use the format {@code "<nodeId>:<timestamp>"} where
- * {@code timestamp} is epoch-milliseconds from the publishing node's clock.
+ * <h3>Version-based stale detection</h3>
+ * Signal payloads use the format {@code "<nodeId>:<version>"} where {@code version}
+ * is the cluster-wide typedef-registry counter bumped by
+ * {@link TypeDefChangeNotifier} before publish. A signal is applied only when its
+ * version is strictly greater than the last version this node already applied.
  */
 @Component
 @Singleton
@@ -89,10 +89,10 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
 
     private static final Duration CONSUMER_POLL_TIMEOUT = Duration.ofSeconds(1);
 
-    private final KafkaNotification kafkaNotification;
-    private final AtlasTypeDefStore typeDefStore;
-    private final AtlasGraph        graph;
-    private final Configuration     configuration;
+    private final KafkaNotification       kafkaNotification;
+    private final TypeRegistryVersionGate typeRegistryVersionGate;
+    private final AtlasGraph              graph;
+    private final Configuration           configuration;
     private final String            topicName;
     private final String            consumerGroupId;
     private final String            localNodeId;
@@ -100,11 +100,10 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
     private final long              maxRetryBackoffMs;
 
     /**
-     * Last successfully applied signal timestamp (epoch-ms) per source nodeId.
-     * A new signal is only processed if its timestamp is strictly greater than
-     * the last applied timestamp for that node.
+     * Last successfully applied typedef-registry version. A new signal is only
+     * processed if its version is strictly greater than this watermark.
      */
-    private final Map<String, Long> appliedTimestamps = new ConcurrentHashMap<>();
+    private volatile long lastAppliedVersion;
 
     private volatile KafkaConsumer<String, String> consumer;
     private volatile Thread                         consumerThread;
@@ -112,13 +111,13 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
 
     @Inject
     public TypeDefSyncConsumer(KafkaNotification kafkaNotification,
-                               AtlasTypeDefStore typeDefStore,
-                               AtlasGraph        graph,
-                               Configuration     configuration) {
-        this.kafkaNotification = kafkaNotification;
-        this.typeDefStore      = typeDefStore;
-        this.graph             = graph;
-        this.configuration     = configuration;
+                               TypeRegistryVersionGate typeRegistryVersionGate,
+                               AtlasGraph              graph,
+                               Configuration           configuration) {
+        this.kafkaNotification       = kafkaNotification;
+        this.typeRegistryVersionGate = typeRegistryVersionGate;
+        this.graph                   = graph;
+        this.configuration           = configuration;
         this.topicName         = configuration.getString(TOPIC_CONFIG, DEFAULT_TOPIC);
         this.localNodeId       = resolveNodeId(configuration);
         this.consumerGroupId   = "atlas-typedef-refresh-" + localNodeId;
@@ -241,22 +240,31 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
                     continue;
                 }
 
-                ParsedSignal trigger           = parseSignal(pendingSignal);
-                long         previousTimestamp = appliedTimestamps.getOrDefault(trigger.nodeId, -1L);
+                ParsedSignal trigger        = parseSignal(pendingSignal);
+                long         previousVersion = lastAppliedVersion;
 
-                LOG.info("TypeDefSyncConsumer: applying signal '{}' (node='{}' ts {} → {}), reloading type registry",
-                        pendingSignal, trigger.nodeId,
-                        previousTimestamp < 0 ? "new" : previousTimestamp, trigger.timestamp);
+                if (trigger == null || trigger.version <= lastAppliedVersion) {
+                    LOG.debug("TypeDefSyncConsumer: skipping signal '{}' — already applied version {}",
+                            pendingSignal, lastAppliedVersion);
+
+                    pendingSignal = null;
+                    consumer.commitSync();
+
+                    continue;
+                }
+
+                LOG.info("TypeDefSyncConsumer: applying signal '{}' (node='{}' version {} → {}), reloading type registry",
+                        pendingSignal, trigger.nodeId, previousVersion, trigger.version);
 
                 try {
                     reloadTypeRegistry();
-                    appliedTimestamps.put(trigger.nodeId, trigger.timestamp);
+                    lastAppliedVersion = trigger.version;
                     consumer.commitSync();
 
                     pendingSignal  = null;
                     retryBackoffMs = minRetryBackoffMs;
 
-                    LOG.info("TypeDefSyncConsumer: type registry reloaded. Applied timestamps: {}", appliedTimestamps);
+                    LOG.info("TypeDefSyncConsumer: type registry reloaded. Applied version: {}", lastAppliedVersion);
                 } catch (Exception e) {
                     nextRetryAtMs = System.currentTimeMillis() + retryBackoffMs;
 
@@ -279,15 +287,15 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
     }
 
     /**
-     * Picks the signal in this batch worth reloading for: the newest one from a peer that this node
-     * has not already applied. Signals this node published itself are recorded but never reloaded
-     * for, since its registry is already up to date with its own writes.
+     * Picks the signal in this batch worth reloading for: the highest version from a peer that
+     * this node has not already applied. Signals this node published itself raise the watermark
+     * but never reload, since its registry is already up to date with its own writes.
      *
      * @return the signal payload, or null if the batch holds nothing this node needs to act on.
      */
     private String latestUnappliedSignal(ConsumerRecords<String, String> records) {
-        String latestSignal    = null;
-        long   latestTimestamp = Long.MIN_VALUE;
+        String latestSignal  = null;
+        long   latestVersion = lastAppliedVersion;
 
         for (ConsumerRecord<String, String> record : records) {
             String payload = record.value();
@@ -303,24 +311,26 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
             }
 
             if (localNodeId.equals(parsed.nodeId)) {
-                appliedTimestamps.put(parsed.nodeId, parsed.timestamp);
-                LOG.debug("TypeDefSyncConsumer: own signal '{}' — timestamp recorded, no reload needed", payload);
+                if (parsed.version > lastAppliedVersion) {
+                    lastAppliedVersion = parsed.version;
+                    typeRegistryVersionGate.markSeen(parsed.version);
+                }
+
+                LOG.debug("TypeDefSyncConsumer: own signal '{}' — version recorded, no reload needed", payload);
 
                 continue;
             }
 
-            long applied = appliedTimestamps.getOrDefault(parsed.nodeId, -1L);
-
-            if (parsed.timestamp <= applied) {
-                LOG.debug("TypeDefSyncConsumer: skipping stale signal '{}' — already applied timestamp {} for node '{}'",
-                        payload, applied, parsed.nodeId);
+            if (parsed.version <= lastAppliedVersion) {
+                LOG.debug("TypeDefSyncConsumer: skipping stale signal '{}' — already applied version {}",
+                        payload, lastAppliedVersion);
 
                 continue;
             }
 
-            if (parsed.timestamp > latestTimestamp) {
-                latestTimestamp = parsed.timestamp;
-                latestSignal    = payload;
+            if (parsed.version > latestVersion) {
+                latestVersion = parsed.version;
+                latestSignal  = payload;
             }
         }
 
@@ -328,26 +338,30 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
     }
 
     /**
-     * Reloads the type registry from the graph.
+     * Reloads the type registry from the graph through {@link TypeRegistryVersionGate} so the
+     * Kafka path and the REST read-gate share one watermark. A GET that already rebuilt for this
+     * version is then a no-op here, instead of a second full catalog rebuild on the same lock.
      *
-     * <p>{@link AtlasTypeDefStore#init()} is not transactional, so its reads run in whatever
-     * transaction this long-lived consumer thread happens to be holding. That transaction was
-     * opened before the signal arrived, and a JanusGraph transaction reads the snapshot it was
-     * opened with, so reloading through it can return a view of the graph from before the peer
-     * committed the very typedef this signal is announcing. The reload would then report success
-     * and, since nothing re-checks, the type would stay missing from this node until unrelated
-     * typedef activity triggered another reload. Committing first drops the stale transaction so
+     * <p>{@code init()} is not transactional, so its reads run in whatever transaction this
+     * long-lived consumer thread happens to be holding. That transaction was opened before the
+     * signal arrived, and a JanusGraph transaction reads the snapshot it was opened with, so
+     * reloading through it can return a view of the graph from before the peer committed the
+     * very typedef this signal is announcing. Committing first drops the stale transaction so
      * the reload reads a snapshot taken after the peer's commit.
      */
     private void reloadTypeRegistry() throws AtlasBaseException {
         graph.commit();
 
-        typeDefStore.init();
+        typeRegistryVersionGate.ensureUpToDate();
+
+        if (!typeRegistryVersionGate.isCurrent()) {
+            throw new AtlasBaseException("TypeDefSyncConsumer: type registry still behind after refresh");
+        }
     }
 
     /**
-     * Parses a signal payload of the form {@code "<nodeId>:<timestamp>"} where
-     * {@code timestamp} is epoch-milliseconds.
+     * Parses a signal payload of the form {@code "<nodeId>:<version>"} where
+     * {@code version} is the cluster-wide typedef-registry counter.
      * Returns {@code null} if the payload is malformed.
      */
     private static ParsedSignal parseSignal(String payload) {
@@ -361,9 +375,9 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
         }
 
         try {
-            String nodeId    = payload.substring(0, sep);
-            long   timestamp = Long.parseLong(payload.substring(sep + 1));
-            return new ParsedSignal(nodeId, timestamp);
+            String nodeId  = payload.substring(0, sep);
+            long   version = Long.parseLong(payload.substring(sep + 1));
+            return new ParsedSignal(nodeId, version);
         } catch (NumberFormatException e) {
             return null;
         }
@@ -371,11 +385,11 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
 
     private static final class ParsedSignal {
         final String nodeId;
-        final long   timestamp;
+        final long   version;
 
-        ParsedSignal(String nodeId, long timestamp) {
-            this.nodeId    = nodeId;
-            this.timestamp = timestamp;
+        ParsedSignal(String nodeId, long version) {
+            this.nodeId  = nodeId;
+            this.version = version;
         }
     }
 

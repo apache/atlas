@@ -21,7 +21,7 @@ import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.commons.configuration2.Configuration;
 import org.mockito.InOrder;
 import org.mockito.Mock;
@@ -47,7 +47,7 @@ public class TypeDefSyncConsumerTest {
     private KafkaNotification kafkaNotification;
 
     @Mock
-    private AtlasTypeDefStore typeDefStore;
+    private TypeRegistryVersionGate typeRegistryVersionGate;
 
     @Mock
     private AtlasGraph graph;
@@ -85,12 +85,12 @@ public class TypeDefSyncConsumerTest {
     }
 
     @Test
-    public void parseSignal_validPayload_parsesNodeAndTimestamp() throws Exception {
-        Object parsed = parseSignal("serverA:12345");
+    public void parseSignal_validPayload_parsesNodeAndVersion() throws Exception {
+        Object parsed = parseSignal("serverA:7");
 
         assertNotNull(parsed);
         assertEquals(getFieldValue(parsed, "nodeId"), "serverA");
-        assertEquals(getFieldValue(parsed, "timestamp"), 12345L);
+        assertEquals(getFieldValue(parsed, "version"), 7L);
     }
 
     @Test
@@ -101,24 +101,27 @@ public class TypeDefSyncConsumerTest {
     }
 
     @Test
-    public void reload_dropsTheStaleTransactionBeforeReadingTheTypesBack() throws Exception {
+    public void reload_dropsTheStaleTransactionThenUsesTheSharedGate() throws Exception {
         TypeDefSyncConsumer consumer = newConsumer();
+
+        when(typeRegistryVersionGate.isCurrent()).thenReturn(true);
 
         reloadTypeRegistry(consumer);
 
         // Reading the types back through the transaction this thread already holds would return
         // the graph as it looked before the peer committed the typedef being announced.
-        InOrder inOrder = Mockito.inOrder(graph, typeDefStore);
+        InOrder inOrder = Mockito.inOrder(graph, typeRegistryVersionGate);
 
         inOrder.verify(graph).commit();
-        inOrder.verify(typeDefStore).init();
+        inOrder.verify(typeRegistryVersionGate).ensureUpToDate();
+        inOrder.verify(typeRegistryVersionGate).isCurrent();
     }
 
     @Test
     public void reload_letsAFailedReadBackSurfaceSoTheSignalIsNotMarkedApplied() throws Exception {
         TypeDefSyncConsumer consumer = newConsumer();
 
-        Mockito.doThrow(new AtlasBaseException("reload failed")).when(typeDefStore).init();
+        when(typeRegistryVersionGate.isCurrent()).thenReturn(false);
 
         try {
             reloadTypeRegistry(consumer);
@@ -148,7 +151,7 @@ public class TypeDefSyncConsumerTest {
     }
 
     private TypeDefSyncConsumer newConsumer() {
-        return new TypeDefSyncConsumer(kafkaNotification, typeDefStore, graph, configuration);
+        return new TypeDefSyncConsumer(kafkaNotification, typeRegistryVersionGate, graph, configuration);
     }
 
     private static void reloadTypeRegistry(TypeDefSyncConsumer consumer) throws Exception {

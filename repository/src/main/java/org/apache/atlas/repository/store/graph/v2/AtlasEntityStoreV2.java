@@ -50,7 +50,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
-import org.apache.atlas.repository.store.graph.TypeRegistryCatchUp;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEntityDiffResult;
 import org.apache.atlas.type.AtlasArrayType;
@@ -112,7 +112,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final EntityGraphMapper          entityGraphMapper;
     private final EntityGraphRetriever       entityRetriever;
     private       EntityRenameHandler        entityRenameHandler;
-    private       TypeRegistryCatchUp        typeRegistryCatchUp;
+    private       TypeRegistryVersionGate    typeRegistryVersionGate;
     private       boolean                    storeDifferentialAudits;
 
     @Inject
@@ -132,8 +132,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     @Inject
-    public void setTypeRegistryCatchUp(TypeRegistryCatchUp typeRegistryCatchUp) {
-        this.typeRegistryCatchUp = typeRegistryCatchUp;
+    public void setTypeRegistryVersionGate(TypeRegistryVersionGate typeRegistryVersionGate) {
+        this.typeRegistryVersionGate = typeRegistryVersionGate;
     }
 
     @VisibleForTesting
@@ -204,7 +204,20 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
 
-        AtlasEntityHeader ret = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+        AtlasEntityHeader ret;
+
+        try {
+            ret = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+        } catch (AtlasBaseException e) {
+            // Same peer-typedef race as getById: the vertex is in the shared graph, but this
+            // node's registry cannot resolve its type. Audit GET uses this path, so a missing
+            // type here becomes HTTP 400 instead of the entity-not-found fallback.
+            if (!caughtUpMissingEntityType(guid)) {
+                throw e;
+            }
+
+            ret = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+        }
 
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
@@ -1308,6 +1321,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("preCreateOrUpdate");
 
+        // A peer may have just created the entity type this payload uses. Discovery looks the type
+        // up in this node's registry and throws TYPE_NAME_INVALID if it is only in the shared store.
+        if (typeRegistryVersionGate != null) {
+            typeRegistryVersionGate.ensureUpToDate();
+        }
+
         EntityGraphDiscovery        graphDiscoverer  = new AtlasEntityGraphDiscoveryV2(graph, typeRegistry, entityStream, entityGraphMapper);
         EntityGraphDiscoveryContext discoveryContext = graphDiscoverer.discoverEntities();
         EntityMutationContext       context          = new EntityMutationContext(discoveryContext);
@@ -1469,7 +1488,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
      */
     // package-private for unit testing (see AtlasEntityStoreV2CatchUpTest)
     boolean caughtUpMissingEntityType(String guid) {
-        if (typeRegistryCatchUp == null || StringUtils.isEmpty(guid)) {
+        if (typeRegistryVersionGate == null || StringUtils.isEmpty(guid)) {
             return false;
         }
 
@@ -1485,17 +1504,19 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             return false;
         }
 
-        return typeRegistryCatchUp.entityType(typeName) != null;
+        typeRegistryVersionGate.ensureUpToDate();
+
+        return typeRegistry.getEntityTypeByName(typeName) != null;
     }
 
     private void validateAndNormalize(AtlasClassification classification) throws AtlasBaseException {
-        AtlasClassificationType type = typeRegistry.getClassificationTypeByName(classification.getTypeName());
-
-        if (type == null && typeRegistryCatchUp != null) {
-            // A peer may have created this classification moments ago, too recently for the
-            // typedef-sync path to have rebuilt this node's registry yet.
-            type = typeRegistryCatchUp.classificationType(classification.getTypeName());
+        // A parent typedef can grow attributes while this child type is already in the registry.
+        // Refresh before validating so inherited attributes are not treated as unknown and dropped.
+        if (typeRegistryVersionGate != null) {
+            typeRegistryVersionGate.ensureUpToDate();
         }
+
+        AtlasClassificationType type = typeRegistry.getClassificationTypeByName(classification.getTypeName());
 
         if (type == null) {
             throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classification.getTypeName());
@@ -1519,6 +1540,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
      * @param classifications list of classifications to be associated
      */
     private void validateEntityAssociations(String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
+        // Refresh once so both the entity type and the incoming classifications resolve against
+        // the shared store. Looking the entity type up first (before the gate) left a custom
+        // type as null when a peer had just created it.
+        if (typeRegistryVersionGate != null) {
+            typeRegistryVersionGate.ensureUpToDate();
+        }
+
         List<String>    entityClassifications = getClassificationNames(guid);
         String          entityTypeName        = AtlasGraphUtilsV2.getTypeNameFromGuid(graph, guid);
         AtlasEntityType entityType            = typeRegistry.getEntityTypeByName(entityTypeName);
@@ -1530,12 +1558,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "entity: " + guid + ", already associated with classification: " + newClassification);
             }
 
-            // for each classification, check whether there are entities it should be restricted to
             AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(newClassification);
-
-            if (classificationType == null && typeRegistryCatchUp != null) {
-                classificationType = typeRegistryCatchUp.classificationType(newClassification);
-            }
 
             if (classificationType == null) {
                 throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, newClassification);

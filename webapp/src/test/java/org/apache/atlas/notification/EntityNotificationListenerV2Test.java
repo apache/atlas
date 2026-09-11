@@ -31,7 +31,7 @@ import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
-import org.apache.atlas.repository.store.graph.TypeRegistryCatchUp;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -70,6 +70,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -109,7 +110,7 @@ public class EntityNotificationListenerV2Test {
     @Mock
     private AtlasClassificationType classificationType;
     @Mock
-    private TypeRegistryCatchUp typeRegistryCatchUp;
+    private TypeRegistryVersionGate typeRegistryVersionGate;
     @Mock
     private AtlasClassificationType superClassificationType;
     @Mock
@@ -383,17 +384,14 @@ public class EntityNotificationListenerV2Test {
 
     @Test
     public void classificationPayloadFallsBackToCatchUp() throws AtlasBaseException, NotificationException {
-        // A peer may have created this classification moments ago, too recently for this node's
-        // registry to have caught up. When getClassificationTypeByName misses, the listener must
-        // fall back to TypeRegistryCatchUp before building the notification payload.
-        when(typeRegistry.getClassificationTypeByName(CLASSIFICATION_TYPE)).thenReturn(null);
-        when(typeRegistryCatchUp.classificationType(CLASSIFICATION_TYPE)).thenReturn(classificationType);
+        when(typeRegistry.getClassificationTypeByName(CLASSIFICATION_TYPE)).thenReturn(classificationType);
+        when(typeRegistryVersionGate.ensureUpToDate()).thenReturn(true);
 
-        listener.setTypeRegistryCatchUp(typeRegistryCatchUp);
+        listener.setTypeRegistryVersionGate(typeRegistryVersionGate);
 
         listener.onEntitiesAdded(Collections.singletonList(entity), false);
 
-        verify(typeRegistryCatchUp).classificationType(CLASSIFICATION_TYPE);
+        verify(typeRegistryVersionGate, atLeastOnce()).ensureUpToDate();
     }
 
     // Term Events Tests (Should do nothing)

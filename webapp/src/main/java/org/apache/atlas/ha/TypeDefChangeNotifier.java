@@ -21,6 +21,9 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.listener.TypeDefChangeListener;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration2.Configuration;
 import org.slf4j.Logger;
@@ -38,12 +41,10 @@ import java.util.UUID;
  * Publishes a typedef-change signal to the {@value TypeDefSyncConsumer#DEFAULT_TOPIC}
  * Kafka topic whenever a typedef CRUD operation is committed on this node.
  *
- * <p>The signal payload is {@code "<nodeId>:<timestamp>"} where {@code timestamp} is
- * {@code System.currentTimeMillis()} at the moment the change is committed.
- * Using a wall-clock timestamp instead of a per-JVM counter means the signal is
- * always interpreted correctly after a node restart: signals published after a restart
- * carry a newer timestamp than any signal the consuming node has already applied, so
- * no counter-state restoration is needed on restart.
+ * <p>The signal payload is {@code "<nodeId>:<version>"} where {@code version} is the
+ * cluster-wide typedef-registry counter bumped immediately before this publish.
+ * Peers compare that version before reloading, so a signal that is older than what
+ * they have already applied is ignored.
  *
  * <p>This bean has <em>no dependency on {@code AtlasTypeDefStore}</em>, which avoids
  * the circular reference that would arise if it were combined with
@@ -65,26 +66,30 @@ import java.util.UUID;
 public class TypeDefChangeNotifier implements TypeDefChangeListener {
     private static final Logger LOG = LoggerFactory.getLogger(TypeDefChangeNotifier.class);
 
-    private final KafkaNotification kafkaNotification;
-    private final String            topicName;
-    private final String            nodeId;
+    private final KafkaNotification        kafkaNotification;
+    private final AtlasGraph               atlasGraph;
+    private final TypeRegistryVersionGate  typeRegistryVersionGate;
+    private final String                   topicName;
+    private final String                   nodeId;
 
     @Inject
-    public TypeDefChangeNotifier(KafkaNotification kafkaNotification, Configuration configuration) {
-        this.kafkaNotification = kafkaNotification;
-        this.topicName         = configuration.getString(TypeDefSyncConsumer.TOPIC_CONFIG,
+    public TypeDefChangeNotifier(KafkaNotification kafkaNotification, Configuration configuration,
+                                 AtlasGraph atlasGraph, TypeRegistryVersionGate typeRegistryVersionGate) {
+        this.kafkaNotification        = kafkaNotification;
+        this.atlasGraph               = atlasGraph;
+        this.typeRegistryVersionGate  = typeRegistryVersionGate;
+        this.topicName                = configuration.getString(TypeDefSyncConsumer.TOPIC_CONFIG,
                 TypeDefSyncConsumer.DEFAULT_TOPIC);
-        this.nodeId            = resolveNodeId(configuration);
+        this.nodeId                   = resolveNodeId(configuration);
 
         LOG.info("TypeDefChangeNotifier: typedef-change signals will be sent to topic '{}' (nodeId='{}')",
                 topicName, nodeId);
     }
 
     /**
-     * Sends a timestamped signal to the typedef-changes topic so every peer node reloads
-     * its type registry.  The payload is {@code "<nodeId>:<timestamp>"} where
-     * {@code timestamp} is epoch-milliseconds.
-     * Fire-and-forget — never delays the typedef CRUD operation.
+     * Bumps the shared typedef-registry version and publishes {@code "<nodeId>:<version>"}
+     * so every peer can compare before reloading. Fire-and-forget — never delays the
+     * typedef CRUD operation.
      */
     @Override
     public void onChange(ChangedTypeDefs changedTypeDefs) throws AtlasBaseException {
@@ -100,8 +105,23 @@ public class TypeDefChangeNotifier implements TypeDefChangeListener {
             return;
         }
 
-        long   ts      = System.currentTimeMillis();
-        String payload = nodeId + ":" + ts;
+        long version;
+
+        try {
+            version = AtlasGraphUtilsV2.bumpTypeDefRegistryVersionAndCommit(atlasGraph);
+
+            // This node already applied the typedef in-place; without advancing the watermark
+            // the next local GET would rebuild the whole catalog for a version it already has.
+            typeRegistryVersionGate.markSeen(version);
+
+            LOG.info("TypeDefChangeNotifier.onChange(): bumped typedef registry version to {}", version);
+        } catch (Exception e) {
+            LOG.warn("TypeDefChangeNotifier.onChange(): could not bump typedef registry version; skipping Kafka signal", e);
+
+            return;
+        }
+
+        String payload = nodeId + ":" + version;
 
         try {
             kafkaNotification.sendInternal(topicName, Collections.singletonList(payload));

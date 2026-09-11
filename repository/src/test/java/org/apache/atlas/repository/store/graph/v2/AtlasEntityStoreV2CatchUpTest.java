@@ -19,7 +19,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.TypeRegistryCatchUp;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -40,8 +40,8 @@ import static org.testng.Assert.assertTrue;
  *
  * <p>Reproduces the active-active read-after-write miss: a peer creates an entity (and its type), the
  * vertex is durably in the shared graph, but this node's in-memory type registry has not caught up, so
- * entity retrieval cannot resolve the type and fails. The fix resolves the missing type on demand and
- * retries, but only when the type was genuinely absent - it must never retry (or mask errors) otherwise.
+ * entity retrieval cannot resolve the type and fails. The version gate reloads the registry and the
+ * read is retried only when the type was genuinely absent.
  */
 public class AtlasEntityStoreV2CatchUpTest {
     private static final String GUID      = "guid-1";
@@ -49,17 +49,15 @@ public class AtlasEntityStoreV2CatchUpTest {
 
     @Test
     public void catchUp_resolvesMissingTypeAndSignalsRetry() {
-        AtlasGraph          graph    = mock(AtlasGraph.class);
-        AtlasTypeRegistry   registry = mock(AtlasTypeRegistry.class);
-        TypeRegistryCatchUp catchUp  = mock(TypeRegistryCatchUp.class);
-        AtlasVertex         vertex   = mock(AtlasVertex.class);
+        AtlasGraph              graph    = mock(AtlasGraph.class);
+        AtlasTypeRegistry       registry = mock(AtlasTypeRegistry.class);
+        TypeRegistryVersionGate gate     = mock(TypeRegistryVersionGate.class);
+        AtlasVertex             vertex   = mock(AtlasVertex.class);
 
-        // Peer wrote the vertex; this node's registry has not rebuilt yet, so the type is absent...
-        when(registry.getEntityTypeByName(TYPE_NAME)).thenReturn(null);
-        // ...but an on-demand catch-up finds it in the store and resolves it.
-        when(catchUp.entityType(TYPE_NAME)).thenReturn(mock(AtlasEntityType.class));
+        when(registry.getEntityTypeByName(TYPE_NAME)).thenReturn(null, mock(AtlasEntityType.class));
+        when(gate.ensureUpToDate()).thenReturn(true);
 
-        AtlasEntityStoreV2 store = newStore(graph, registry, catchUp);
+        AtlasEntityStoreV2 store = newStore(graph, registry, gate);
 
         try (MockedStatic<AtlasGraphUtilsV2> graphUtils = Mockito.mockStatic(AtlasGraphUtilsV2.class)) {
             graphUtils.when(() -> AtlasGraphUtilsV2.findByGuid(graph, GUID)).thenReturn(vertex);
@@ -68,21 +66,19 @@ public class AtlasEntityStoreV2CatchUpTest {
             assertTrue(store.caughtUpMissingEntityType(GUID), "should signal retry after resolving the missing type");
         }
 
-        verify(catchUp, times(1)).entityType(TYPE_NAME);
+        verify(gate, times(1)).ensureUpToDate();
     }
 
     @Test
     public void catchUp_whenTypeAlreadyKnown_doesNotReloadOrRetry() {
-        AtlasGraph          graph    = mock(AtlasGraph.class);
-        AtlasTypeRegistry   registry = mock(AtlasTypeRegistry.class);
-        TypeRegistryCatchUp catchUp  = mock(TypeRegistryCatchUp.class);
-        AtlasVertex         vertex   = mock(AtlasVertex.class);
+        AtlasGraph              graph    = mock(AtlasGraph.class);
+        AtlasTypeRegistry       registry = mock(AtlasTypeRegistry.class);
+        TypeRegistryVersionGate gate     = mock(TypeRegistryVersionGate.class);
+        AtlasVertex             vertex   = mock(AtlasVertex.class);
 
-        // The type is already in this node's registry, so the retrieval failure was something else:
-        // catching up would be wasteful and retrying would mask the real error.
         when(registry.getEntityTypeByName(TYPE_NAME)).thenReturn(mock(AtlasEntityType.class));
 
-        AtlasEntityStoreV2 store = newStore(graph, registry, catchUp);
+        AtlasEntityStoreV2 store = newStore(graph, registry, gate);
 
         try (MockedStatic<AtlasGraphUtilsV2> graphUtils = Mockito.mockStatic(AtlasGraphUtilsV2.class)) {
             graphUtils.when(() -> AtlasGraphUtilsV2.findByGuid(graph, GUID)).thenReturn(vertex);
@@ -91,25 +87,24 @@ public class AtlasEntityStoreV2CatchUpTest {
             assertFalse(store.caughtUpMissingEntityType(GUID), "must not retry when the type is already known");
         }
 
-        verify(catchUp, never()).entityType(TYPE_NAME);
+        verify(gate, never()).ensureUpToDate();
     }
 
     @Test
     public void catchUp_whenVertexMissing_doesNotRetry() {
-        AtlasGraph          graph    = mock(AtlasGraph.class);
-        AtlasTypeRegistry   registry = mock(AtlasTypeRegistry.class);
-        TypeRegistryCatchUp catchUp  = mock(TypeRegistryCatchUp.class);
+        AtlasGraph              graph    = mock(AtlasGraph.class);
+        AtlasTypeRegistry       registry = mock(AtlasTypeRegistry.class);
+        TypeRegistryVersionGate gate     = mock(TypeRegistryVersionGate.class);
 
-        AtlasEntityStoreV2 store = newStore(graph, registry, catchUp);
+        AtlasEntityStoreV2 store = newStore(graph, registry, gate);
 
         try (MockedStatic<AtlasGraphUtilsV2> graphUtils = Mockito.mockStatic(AtlasGraphUtilsV2.class)) {
-            // No vertex for this guid: a genuine not-found must surface as-is, not become a retry.
             graphUtils.when(() -> AtlasGraphUtilsV2.findByGuid(graph, GUID)).thenReturn(null);
 
             assertFalse(store.caughtUpMissingEntityType(GUID), "must not retry when the vertex does not exist");
         }
 
-        verify(catchUp, never()).entityType(Mockito.anyString());
+        verify(gate, never()).ensureUpToDate();
     }
 
     @Test
@@ -117,7 +112,6 @@ public class AtlasEntityStoreV2CatchUpTest {
         AtlasGraph        graph    = mock(AtlasGraph.class);
         AtlasTypeRegistry registry = mock(AtlasTypeRegistry.class);
 
-        // No catch-up wired (e.g. active-passive): behaviour is unchanged and the graph is not touched.
         AtlasEntityStoreV2 store = newStore(graph, registry, null);
 
         try (MockedStatic<AtlasGraphUtilsV2> graphUtils = Mockito.mockStatic(AtlasGraphUtilsV2.class)) {
@@ -129,17 +123,15 @@ public class AtlasEntityStoreV2CatchUpTest {
 
     @Test
     public void catchUp_whenStoreLacksTypeToo_doesNotRetry() {
-        AtlasGraph          graph    = mock(AtlasGraph.class);
-        AtlasTypeRegistry   registry = mock(AtlasTypeRegistry.class);
-        TypeRegistryCatchUp catchUp  = mock(TypeRegistryCatchUp.class);
-        AtlasVertex         vertex   = mock(AtlasVertex.class);
+        AtlasGraph              graph    = mock(AtlasGraph.class);
+        AtlasTypeRegistry       registry = mock(AtlasTypeRegistry.class);
+        TypeRegistryVersionGate gate     = mock(TypeRegistryVersionGate.class);
+        AtlasVertex             vertex   = mock(AtlasVertex.class);
 
-        // Type absent from the registry and the catch-up cannot resolve it either (unknown type):
-        // the original failure is real, so do not retry.
         when(registry.getEntityTypeByName(TYPE_NAME)).thenReturn(null);
-        when(catchUp.entityType(TYPE_NAME)).thenReturn(null);
+        when(gate.ensureUpToDate()).thenReturn(true);
 
-        AtlasEntityStoreV2 store = newStore(graph, registry, catchUp);
+        AtlasEntityStoreV2 store = newStore(graph, registry, gate);
 
         try (MockedStatic<AtlasGraphUtilsV2> graphUtils = Mockito.mockStatic(AtlasGraphUtilsV2.class)) {
             graphUtils.when(() -> AtlasGraphUtilsV2.findByGuid(graph, GUID)).thenReturn(vertex);
@@ -149,7 +141,7 @@ public class AtlasEntityStoreV2CatchUpTest {
         }
     }
 
-    private static AtlasEntityStoreV2 newStore(AtlasGraph graph, AtlasTypeRegistry registry, TypeRegistryCatchUp catchUp) {
+    private static AtlasEntityStoreV2 newStore(AtlasGraph graph, AtlasTypeRegistry registry, TypeRegistryVersionGate gate) {
         AtlasEntityStoreV2 store = new AtlasEntityStoreV2(
                 graph,
                 mock(DeleteHandlerDelegate.class),
@@ -157,8 +149,8 @@ public class AtlasEntityStoreV2CatchUpTest {
                 mock(IAtlasEntityChangeNotifier.class),
                 mock(EntityGraphMapper.class));
 
-        if (catchUp != null) {
-            store.setTypeRegistryCatchUp(catchUp);
+        if (gate != null) {
+            store.setTypeRegistryVersionGate(gate);
         }
 
         return store;

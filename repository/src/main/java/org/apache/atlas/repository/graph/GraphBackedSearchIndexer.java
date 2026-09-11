@@ -146,6 +146,8 @@ import static org.apache.atlas.repository.Constants.TASK_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPEDEF_BOOTSTRAP_FILE_KEY;
+import static org.apache.atlas.repository.Constants.TYPEDEF_REGISTRY_VERSION_KEY;
+import static org.apache.atlas.repository.Constants.TYPEDEF_REGISTRY_VERSION_MARKER_KEY;
 import static org.apache.atlas.repository.Constants.TYPEDESCRIPTION_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPEOPTIONS_PROPERTY_KEY;
@@ -904,6 +906,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         handler.accept(PATCH_ACTION_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
         handler.accept(PATCH_STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
         handler.accept(TYPEDEF_BOOTSTRAP_FILE_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(TYPEDEF_REGISTRY_VERSION_MARKER_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
+        handler.accept(TYPEDEF_REGISTRY_VERSION_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
 
         // tasks
         handler.accept(TASK_GUID, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);

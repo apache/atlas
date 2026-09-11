@@ -29,7 +29,7 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.repository.store.graph.TypeRegistryCatchUp;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -65,7 +65,7 @@ public class TypesRESTTest {
     private AtlasTypeDefStore typeDefStore;
 
     @Mock
-    private TypeRegistryCatchUp typeRegistryCatchUp;
+    private TypeRegistryVersionGate typeRegistryVersionGate;
 
     @Mock
     private AtlasBaseTypeDef mockBaseTypeDef;
@@ -104,7 +104,7 @@ public class TypesRESTTest {
         MockitoAnnotations.openMocks(this);
 
         // Manually create the TypesREST instance with mocked dependencies
-        typesREST = new TypesREST(typeDefStore, typeRegistryCatchUp);
+        typesREST = new TypesREST(typeDefStore, typeRegistryVersionGate);
     }
 
     @Test
@@ -474,9 +474,7 @@ public class TypesRESTTest {
 
             typesREST.createAtlasTypeDefs(typesDef);
 
-            verify(typeRegistryCatchUp).classificationType("parent_tag");
-            verify(typeRegistryCatchUp).entityType("hive_table");
-            verify(typeRegistryCatchUp).entityType("parent_entity");
+            verify(typeRegistryVersionGate).ensureUpToDate();
             verify(typeDefStore).createTypesDef(typesDef);
         }
     }

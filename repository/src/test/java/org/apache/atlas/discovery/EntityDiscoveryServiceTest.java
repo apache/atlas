@@ -36,7 +36,6 @@ import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.TypeRegistryCatchUp;
 import org.apache.atlas.repository.userprofile.UserProfileService;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasEntityType;
@@ -84,8 +83,6 @@ public class EntityDiscoveryServiceTest {
     @Mock
     private TaskManagement taskManagement;
     @Mock
-    private TypeRegistryCatchUp typeRegistryCatchUp;
-    @Mock
     private AtlasEntityType entityType;
     @Mock
     private AtlasAttribute attribute;
@@ -130,7 +127,7 @@ public class EntityDiscoveryServiceTest {
             when(appProps.getString(anyString(), anyString())).thenReturn("v.");
             // Create real service instance with properly mocked dependencies
             try {
-                entityDiscoveryService = new EntityDiscoveryService(typeRegistry, graph, indexer, searchTracker, userProfileService, taskManagement, typeRegistryCatchUp);
+                entityDiscoveryService = new EntityDiscoveryService(typeRegistry, graph, indexer, searchTracker, userProfileService, taskManagement);
             } catch (Exception e) {
                 // If construction still fails, create a spy to get partial real behavior
                 EntityDiscoveryService mockService = mock(EntityDiscoveryService.class);
@@ -180,7 +177,7 @@ public class EntityDiscoveryServiceTest {
         when(RequestContext.get()).thenReturn(context);
         when(context.getUser()).thenReturn("testUser");
 
-        return new EntityDiscoveryService(typeRegistry, graph, indexer, searchTracker, userProfileService, taskManagement, typeRegistryCatchUp);
+        return new EntityDiscoveryService(typeRegistry, graph, indexer, searchTracker, userProfileService, taskManagement);
     }
 
     @AfterMethod

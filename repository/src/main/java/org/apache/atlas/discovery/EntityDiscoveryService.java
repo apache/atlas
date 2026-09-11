@@ -57,7 +57,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.TypeRegistryCatchUp;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.tasks.AuditReductionTaskFactory;
@@ -139,10 +139,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final SuggestionsProvider       suggestionsProvider;
     private final DSLQueryExecutor          dslQueryExecutor;
     private final TaskManagement            taskManagement;
-    private final TypeRegistryCatchUp       typeRegistryCatchUp;
+    private       TypeRegistryVersionGate   typeRegistryVersionGate;
 
     @Inject
-    EntityDiscoveryService(AtlasTypeRegistry typeRegistry, AtlasGraph graph, GraphBackedSearchIndexer indexer, SearchTracker searchTracker, UserProfileService userProfileService, TaskManagement taskManagement, TypeRegistryCatchUp typeRegistryCatchUp) throws AtlasException {
+    EntityDiscoveryService(AtlasTypeRegistry typeRegistry, AtlasGraph graph, GraphBackedSearchIndexer indexer, SearchTracker searchTracker, UserProfileService userProfileService, TaskManagement taskManagement) throws AtlasException {
         this.graph                    = graph;
         this.entityRetriever          = new EntityGraphRetriever(this.graph, typeRegistry);
         this.indexer                  = indexer;
@@ -157,9 +157,13 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.suggestionsProvider      = new SuggestionsProviderImpl(graph, typeRegistry);
         this.dslQueryExecutor         = new TraversalBasedExecutor(typeRegistry, graph, entityRetriever);
         this.taskManagement           = taskManagement;
-        this.typeRegistryCatchUp      = typeRegistryCatchUp;
 
         LOG.info("DSL Executor: {}", this.dslQueryExecutor.getClass().getSimpleName());
+    }
+
+    @Inject
+    public void setTypeRegistryVersionGate(TypeRegistryVersionGate typeRegistryVersionGate) {
+        this.typeRegistryVersionGate = typeRegistryVersionGate;
     }
 
     public static SearchParameters createSearchParameters(QuickSearchParameters quickSearchParameters) {
@@ -210,6 +214,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     @GraphTransaction
     public AtlasSearchResult searchUsingDslQuery(String dslQuery, int limit, int offset) throws AtlasBaseException {
+        ensureTypeRegistryCurrent();
+
         AtlasSearchResult ret = dslQueryExecutor.execute(dslQuery, limit, offset);
 
         scrubSearchResults(ret);
@@ -222,17 +228,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         String queryStr = query == null ? "" : query;
 
         if (StringUtils.isNotEmpty(typeName)) {
-            // Last point at which the type is a name rather than part of a query string. The DSL
-            // parser resolves it against this node's registry only, so a type a peer created moments
-            // ago reads as a syntax error until the typedef-sync path catches up.
-            typeRegistryCatchUp.entityType(typeName);
-
             queryStr = escapeTypeName(typeName) + " " + queryStr;
         }
 
         if (StringUtils.isNotEmpty(classification)) {
-            typeRegistryCatchUp.classificationType(classification);
-
             // isa works with a type name only - like hive_column isa PII; it doesn't work with more complex query
             if (StringUtils.isEmpty(query)) {
                 queryStr += (" isa " + classification);
@@ -262,6 +261,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     @GraphTransaction
     public AtlasSearchResult searchUsingBasicQuery(String query, String typeName, String classification, String attrName, String attrValuePrefix, boolean excludeDeletedEntities, int limit, int offset) throws AtlasBaseException {
+        ensureTypeRegistryCurrent();
+
         AtlasSearchResult ret = new AtlasSearchResult(AtlasQueryType.BASIC);
 
         LOG.debug("Executing basic search query: {} with type: {} and classification: {}", query, typeName, classification);
@@ -482,6 +483,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     @GraphTransaction
     public AtlasSearchResult searchWithParameters(SearchParameters searchParameters) throws AtlasBaseException {
+        ensureTypeRegistryCurrent();
+
         String query = searchParameters.getQuery();
 
         if (StringUtils.isNotEmpty(query)) {
@@ -492,81 +495,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }
         }
 
-        catchUpPeerCreatedSearchTypes(searchParameters);
-
         return searchWithSearchContext(new SearchContext(searchParameters, typeRegistry, graph, indexer.getVertexIndexKeys()));
-    }
-
-    /**
-     * Resolves types a peer may have created moments ago, before a search validates against them.
-     *
-     * <p>In active-active, a typedef created on one node reaches this node's in-memory registry over
-     * the typedef-changes topic a beat later. A search issued in that window names an entity type,
-     * classification, or business-metadata attribute this node's registry has not caught up to yet,
-     * and {@link SearchContext} rejects it with a 400 - while the node that created it answers 200,
-     * so the active-active read reconcile flags the mismatch. Catching up here, before the context is
-     * built, closes that window. Each name costs one indexed store check when the type is already
-     * known (the common case) and triggers at most one guarded reload when it is genuinely missing.
-     */
-    private void catchUpPeerCreatedSearchTypes(SearchParameters searchParameters) {
-        if (typeRegistryCatchUp == null || searchParameters == null) {
-            return;
-        }
-
-        catchUpTypeNames(searchParameters.getTypeName(), true);
-        catchUpTypeNames(searchParameters.getClassification(), false);
-        catchUpBusinessMetadataTypes(searchParameters.getEntityFilters());
-    }
-
-    private void catchUpTypeNames(String typeNamesCsv, boolean entity) {
-        if (StringUtils.isEmpty(typeNamesCsv)) {
-            return;
-        }
-
-        // SearchContext splits multiple type/classification names on comma.
-        for (String rawName : typeNamesCsv.split(",")) {
-            String name = rawName.trim();
-
-            // Skip blanks and wildcard/regex expressions - they never name a single missing type.
-            if (StringUtils.isEmpty(name) || name.contains("*")) {
-                continue;
-            }
-
-            if (entity) {
-                typeRegistryCatchUp.entityType(name);
-            } else {
-                typeRegistryCatchUp.classificationType(name);
-            }
-        }
-    }
-
-    private void catchUpBusinessMetadataTypes(SearchParameters.FilterCriteria criteria) {
-        if (criteria == null) {
-            return;
-        }
-
-        List<SearchParameters.FilterCriteria> subCriteria = criteria.getCriterion();
-
-        if (CollectionUtils.isNotEmpty(subCriteria)) {
-            for (SearchParameters.FilterCriteria subCriterion : subCriteria) {
-                catchUpBusinessMetadataTypes(subCriterion);
-            }
-
-            return;
-        }
-
-        String attributeName = criteria.getAttributeName();
-
-        // Business-metadata attributes are filtered as "bmName.attrName"; the prefix names the BM
-        // type. A dotted name that is not a business metadata resolves to no stored def and triggers
-        // no reload, so attempting this for any dotted attribute is safe.
-        if (StringUtils.isNotEmpty(attributeName)) {
-            int dotIdx = attributeName.indexOf('.');
-
-            if (dotIdx > 0) {
-                typeRegistryCatchUp.businessMetadataType(attributeName.substring(0, dotIdx));
-            }
-        }
     }
 
     @Override
@@ -875,6 +804,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     @GraphTransaction
     public AtlasQuickSearchResult quickSearch(QuickSearchParameters quickSearchParameters) throws AtlasBaseException {
+        ensureTypeRegistryCurrent();
+
         String query = quickSearchParameters.getQuery();
 
         if (StringUtils.isNotEmpty(query) && !AtlasStructType.AtlasAttribute.hastokenizeChar(query)) {
@@ -884,8 +815,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         quickSearchParameters.setQuery(query);
 
         SearchParameters searchParameters = createSearchParameters(quickSearchParameters);
-
-        catchUpPeerCreatedSearchTypes(searchParameters);
 
         SearchContext searchContext = new SearchContext(searchParameters, typeRegistry, graph, indexer.getVertexIndexKeys());
 
@@ -1327,5 +1256,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         return atttOwner;
+    }
+
+    private void ensureTypeRegistryCurrent() {
+        if (typeRegistryVersionGate != null) {
+            typeRegistryVersionGate.ensureUpToDate();
+        }
     }
 }

@@ -751,11 +751,12 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
     }
 
     /**
-     * A typedef created on a peer is in the store before this node's registry hears about it, which
-     * is the state this reproduces by taking the type back out of the registry only.
+     * Store-layer get*ByName reads the in-memory registry only. A peer-created type that is
+     * already in the graph is restored by {@code init()} (what TypeRegistryVersionGate calls),
+     * not by a per-read store fallback.
      */
     @Test(dependsOnMethods = "testGet")
-    public void aTypeThisNodeHasNotCaughtUpWithIsServedFromTheStore() throws AtlasBaseException {
+    public void aTypeForgottenFromTheRegistryIsRestoredByInit() throws AtlasBaseException {
         String        tagName  = "tag_created_on_a_peer";
         AtlasTypesDef typesDef = new AtlasTypesDef();
 
@@ -768,15 +769,19 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
 
             assertFalse(typeRegistry.isRegisteredType(tagName), "the registry should be behind the store at this point");
 
-            AtlasClassificationDef fromStore = typeDefStore.getClassificationDefByName(tagName);
+            AtlasBaseException byCategory = expectThrows(AtlasBaseException.class, () -> typeDefStore.getClassificationDefByName(tagName));
+            AtlasBaseException byName     = expectThrows(AtlasBaseException.class, () -> typeDefStore.getByName(tagName));
 
-            assertNotNull(fromStore, "the read should have gone to the store");
-            assertEquals(fromStore.getName(), tagName);
+            assertEquals(byCategory.getAtlasErrorCode(), AtlasErrorCode.TYPE_NAME_NOT_FOUND);
+            assertEquals(byName.getAtlasErrorCode(), AtlasErrorCode.TYPE_NAME_NOT_FOUND);
 
-            assertNotNull(typeDefStore.getByName(tagName), "a lookup by name alone should go to the store too");
+            typeDefStore.init();
 
-            // Catching up is the typedef-sync path's job: a read must not reload the registry.
-            assertFalse(typeRegistry.isRegisteredType(tagName), "a read should have left the registry alone");
+            AtlasClassificationDef restored = typeDefStore.getClassificationDefByName(tagName);
+
+            assertNotNull(restored);
+            assertEquals(restored.getName(), tagName);
+            assertTrue(typeRegistry.isRegisteredType(tagName), "init() should have reloaded the type into the registry");
         } finally {
             typeDefStore.deleteTypesDef(typesDef);
         }

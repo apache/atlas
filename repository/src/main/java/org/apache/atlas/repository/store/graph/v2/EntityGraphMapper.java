@@ -52,7 +52,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
-import org.apache.atlas.repository.store.graph.TypeRegistryCatchUp;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.tasks.TaskManagement;
@@ -190,7 +190,7 @@ public class EntityGraphMapper {
     private final EntityGraphRetriever       entityRetriever;
     private final IFullTextMapper            fullTextMapperV2;
     private final TaskManagement             taskManagement;
-    private       TypeRegistryCatchUp        typeRegistryCatchUp;
+    private       TypeRegistryVersionGate    typeRegistryVersionGate;
 
     private boolean deferredActionEnabled = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
 
@@ -211,8 +211,8 @@ public class EntityGraphMapper {
     }
 
     @Inject
-    public void setTypeRegistryCatchUp(TypeRegistryCatchUp typeRegistryCatchUp) {
-        this.typeRegistryCatchUp = typeRegistryCatchUp;
+    public void setTypeRegistryVersionGate(TypeRegistryVersionGate typeRegistryVersionGate) {
+        this.typeRegistryVersionGate = typeRegistryVersionGate;
     }
 
     public static List<Object> getArrayElementsProperty(AtlasType elementType, boolean isSoftReference, AtlasVertex vertex, String vertexPropertyName) {
@@ -1398,13 +1398,11 @@ public class EntityGraphMapper {
     }
 
     private AtlasClassificationType classificationType(String typeName) throws AtlasBaseException {
-        AtlasClassificationType type = typeRegistry.getClassificationTypeByName(typeName);
-
-        if (type == null && typeRegistryCatchUp != null) {
-            type = typeRegistryCatchUp.classificationType(typeName);
+        if (typeRegistryVersionGate != null) {
+            typeRegistryVersionGate.ensureUpToDate();
         }
 
-        return type;
+        return typeRegistry.getClassificationTypeByName(typeName);
     }
 
     public void importActivateEntity(AtlasVertex vertex, AtlasEntity entity) {

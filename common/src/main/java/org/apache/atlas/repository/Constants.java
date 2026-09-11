@@ -122,6 +122,16 @@ public final class Constants {
     public static final String TYPEDEF_BOOTSTRAP_APPLIED_BY_KEY   = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "typedef.bootstrap.appliedBy");
     public static final String TYPEDEF_BOOTSTRAP_APPLIED_AT_KEY   = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "typedef.bootstrap.appliedAt");
     /**
+     * TypeDef registry version marker. A single graph vertex (located by the globally-unique
+     * indexed marker key below) carries a monotonic counter that is incremented in
+     * TypeDefChangeNotifier immediately before the Kafka typedef-sync signal. Peers read the
+     * counter on type-registry reads and reload the in-memory registry immediately when it
+     * changed, instead of waiting for that async path.
+     */
+    public static final String TYPEDEF_REGISTRY_VERSION_MARKER_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "typedef.registry.versionMarker");
+    public static final String TYPEDEF_REGISTRY_VERSION_KEY        = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "typedef.registry.version");
+    public static final String TYPEDEF_REGISTRY_VERSION_MARKER     = "ATLAS_TYPEDEF_REGISTRY_VERSION";
+    /**
      * The homeId field is used when saving into Atlas a copy of an object that is being imported from another
      * repository. The homeId will be set to a String that identifies the other repository. The specific format
      * of repository identifiers is domain dependent. Where it is set by Open Metadata Repository Services it will
