@@ -56,7 +56,7 @@ const EntitiesTree = ({ sideBarOpen, searchTerm, isPopover }: Props) => {
   >([]);
 
   useEffect(() => {
-    if (!entityData || isEmpty(entityData?.entityDefs)) {
+    if (entityData === null || entityData === undefined) {
       dispatch(fetchEntityData());
     }
   }, [entityData, dispatch]);
