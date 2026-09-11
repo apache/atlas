@@ -17,13 +17,19 @@
 
 import { fetchApi } from "@api/apiMethods/fetchApi";
 import { getSessionApiUrl } from "@api/apiUrlLinks/sessionApiUrl";
+import { getVersion } from "@api/apiMethods/headerApiMethods";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { globalSession } from "@utils/Global";
 
-type DynamicData = Record<any, any>;
+type DynamicData = Record<string, unknown>;
 
 interface SessionState {
   sessionObj: {
+    loading: boolean;
+    data: DynamicData | null;
+    error: string | null;
+  };
+  versionData: {
     loading: boolean;
     data: DynamicData | null;
     error: string | null;
@@ -41,10 +47,23 @@ export const fetchSessionData = createAsyncThunk<DynamicData, void>(
   }
 );
 
+export const fetchVersionData = createAsyncThunk<DynamicData, void>(
+  "session/fetchVersionData",
+  async () => {
+    const response = await getVersion();
+    return response.data;
+  }
+);
+
 const sessionInitialState: SessionState = {
   sessionObj: {
     loading: false,
     data: null,
+    error: null
+  },
+  versionData: {
+    loading: false,
+    data: null as Record<string, unknown> | null,
     error: null
   }
 };
@@ -55,11 +74,8 @@ const sessionSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(fetchSessionData.pending, (state) => {
-      state.sessionObj = {
-        loading: true,
-        data: null,
-        error: null
-      };
+      state.sessionObj.loading = true;
+      state.sessionObj.error = null;
     }),
       builder.addCase(
         fetchSessionData.fulfilled,
@@ -74,7 +90,29 @@ const sessionSlice = createSlice({
       builder.addCase(fetchSessionData.rejected, (state, action) => {
         state.sessionObj = {
           loading: false,
-          data: null,
+          data: state.sessionObj.data,
+          error: (action.payload as string) || action.error?.message || 'An error occurred'
+        };
+      }),
+      builder.addCase(fetchVersionData.pending, (state) => {
+        // Preserve existing state.versionData.data on pending (stale-while-revalidate)
+        state.versionData.loading = true;
+        state.versionData.error = null;
+      }),
+      builder.addCase(
+        fetchVersionData.fulfilled,
+        (state, action: PayloadAction<DynamicData>) => {
+          state.versionData = {
+            loading: false,
+            data: action.payload,
+            error: null
+          };
+        }
+      ),
+      builder.addCase(fetchVersionData.rejected, (state, action) => {
+        state.versionData = {
+          loading: false,
+          data: state.versionData.data,
           error: (action.payload as string) || action.error?.message || 'An error occurred'
         };
       });

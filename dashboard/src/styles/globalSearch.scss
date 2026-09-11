@@ -164,3 +164,43 @@
 .dashboard-quick-search .advanced-search-link p {
   font-size: 1rem;
 }
+
+.quick-search-select {
+  height: 32px;
+  box-sizing: border-box;
+}
+
+.quick-search-input {
+  height: 32px;
+  padding: 0 10px !important;
+  border-radius: 4px;
+  color: #1a1a1a;
+  background-color: white;
+  box-sizing: border-box;
+}
+
+.quick-search-btn {
+  background-color: #4a90e2 !important;
+  color: #fff !important;
+  text-transform: none !important;
+  font-weight: 600 !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  box-sizing: border-box;
+}
+
+.quick-search-advanced-btn {
+  background-color: white !important;
+  color: #4a90e2 !important;
+  border-color: #dddddd !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  box-sizing: border-box;
+
+  &:hover {
+    background-color: rgba(74, 144, 226, 0.08) !important;
+    color: #4a90e2 !important;
+  }
+}
