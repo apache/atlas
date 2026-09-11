@@ -31,7 +31,8 @@ public final class AtlasConstants {
     public static final String ATLAS_SERVICES_ENABLED        = "atlas.services.enabled";
     public static final String CLUSTER_NAME_ATTRIBUTE        = "clusterName";
     public static final String DEFAULT_APP_PORT_STR          = "21000";
-    public static final String DEFAULT_ATLAS_REST_ADDRESS    = "http://localhost:21000";
+    public static final String DEFAULT_ATLAS_REST_ADDRESS           = "http://localhost:21000";
+    public static final String DEFAULT_REST_NOTIFICATION_ADDRESS    = "http://localhost:41000/rest";
     public static final String DEFAULT_TYPE_VERSION          = "1.0";
     public static final int    ATLAS_SHUTDOWN_HOOK_PRIORITY  = 30;
 
