@@ -21,6 +21,7 @@ import org.apache.atlas.authorize.AtlasAuthorizationException;
 import org.apache.atlas.authorize.AtlasAuthorizer;
 import org.apache.atlas.authorize.AtlasAuthorizerFactory;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasNotificationRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -50,6 +51,10 @@ public class AtlasSimpleAuthorizerTest {
     private static final String USER_FINANCE_PII      = "financePII";
     private static final String USER_IN_ADMIN_GROUP   = "admin-group-user";
     private static final String USER_IN_UNKNOWN_GROUP = "unknown-group-user";
+    private static final String USER_HIVE_HOOK        = "hivehook";
+
+    private static final String TOPIC_ATLAS_HOOK      = "ATLAS_HOOK";
+    private static final String TOPIC_ATLAS_ENTITIES  = "ATLAS_ENTITIES";
 
     private static final Map<String, Set<String>> USER_GROUPS       = new HashMap<>();
     private static final List<AtlasPrivilege>     ENTITY_PRIVILEGES = new ArrayList<>();
@@ -310,6 +315,42 @@ public class AtlasSimpleAuthorizerTest {
     }
 
     @Test
+    public void testPostNotificationAllowedForAdminUser() throws AtlasAuthorizationException {
+        AtlasNotificationRequest request = new AtlasNotificationRequest(AtlasPrivilege.POST_NOTIFICATION, TOPIC_ATLAS_HOOK);
+
+        setUser(request, USER_ADMIN);
+
+        AssertJUnit.assertTrue("admin should be allowed to post notification", authorizer.isAccessAllowed(request));
+    }
+
+    @Test
+    public void testPostNotificationDeniedForDataScientistUser() throws AtlasAuthorizationException {
+        AtlasNotificationRequest request = new AtlasNotificationRequest(AtlasPrivilege.POST_NOTIFICATION, TOPIC_ATLAS_HOOK);
+
+        setUser(request, USER_DATA_SCIENTIST);
+
+        AssertJUnit.assertFalse("data scientist should be denied to post notification", authorizer.isAccessAllowed(request));
+    }
+
+    @Test
+    public void testPostNotificationAllowedForTopicSpecificRole() throws AtlasAuthorizationException {
+        AtlasNotificationRequest request = new AtlasNotificationRequest(AtlasPrivilege.POST_NOTIFICATION, TOPIC_ATLAS_HOOK);
+
+        setUser(request, USER_HIVE_HOOK);
+
+        AssertJUnit.assertTrue("hivehook should be allowed to post to ATLAS_HOOK", authorizer.isAccessAllowed(request));
+    }
+
+    @Test
+    public void testPostNotificationDeniedForTopicSpecificRoleOnOtherTopic() throws AtlasAuthorizationException {
+        AtlasNotificationRequest request = new AtlasNotificationRequest(AtlasPrivilege.POST_NOTIFICATION, TOPIC_ATLAS_ENTITIES);
+
+        setUser(request, USER_HIVE_HOOK);
+
+        AssertJUnit.assertFalse("hivehook should be denied to post to ATLAS_ENTITIES", authorizer.isAccessAllowed(request));
+    }
+
+    @Test
     public void testBusinessMetadata() {
         try {
             for (String userName : Arrays.asList(USER_DATA_SCIENTIST, USER_DATA_STEWARD)) {
@@ -351,6 +392,7 @@ public class AtlasSimpleAuthorizerTest {
         USER_GROUPS.put(USER_FINANCE_PII, Collections.singleton("FINANCE_PII"));
         USER_GROUPS.put(USER_IN_ADMIN_GROUP, Collections.singleton("ROLE_ADMIN"));
         USER_GROUPS.put(USER_IN_UNKNOWN_GROUP, Collections.singleton("UNKNOWN_GROUP"));
+        USER_GROUPS.put(USER_HIVE_HOOK, Collections.emptySet());
 
         ENTITY_PRIVILEGES.add(AtlasPrivilege.ENTITY_CREATE);
         ENTITY_PRIVILEGES.add(AtlasPrivilege.ENTITY_UPDATE);
