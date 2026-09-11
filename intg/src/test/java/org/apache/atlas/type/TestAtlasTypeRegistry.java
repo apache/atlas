@@ -1145,4 +1145,82 @@ public class TestAtlasTypeRegistry {
             }
         }
     }
+
+    /**
+     * Regression guard for the fair type-registry update lock. In active-active, the typedef-sync
+     * consumer rebuilds the whole registry under this lock back-to-back during a post-restart
+     * backlog; with a non-fair lock a legitimate writer is barged repeatedly and times out with
+     * ATLAS-500. The lock must be fair so the longest waiter is granted next.
+     */
+    @Test
+    public void testTypeRegistryUpdateLockIsFair() throws Exception {
+        AtlasTypeRegistry reg = new AtlasTypeRegistry();
+
+        java.lang.reflect.Field syncField = AtlasTypeRegistry.class.getDeclaredField("updateSynchronizer");
+        syncField.setAccessible(true);
+        Object sync = syncField.get(reg);
+
+        java.lang.reflect.Field lockField = sync.getClass().getDeclaredField("typeRegistryUpdateLock");
+        lockField.setAccessible(true);
+        java.util.concurrent.locks.ReentrantLock lock = (java.util.concurrent.locks.ReentrantLock) lockField.get(sync);
+
+        assertTrue(lock.isFair(), "typeRegistryUpdateLock must be fair to prevent writer starvation during typedef-sync reloads");
+    }
+
+    /**
+     * Behavioral counterpart to {@link #testTypeRegistryUpdateLockIsFair()}: while one thread hogs
+     * the lock with continuous back-to-back acquisitions (mimicking the typedef-sync consumer's
+     * repeated full reloads), a writer that has already queued must still be granted the lock. Under
+     * a fair lock the queued writer is served on the next release rather than being barged forever.
+     */
+    @Test(timeOut = 30000)
+    public void testWriterNotStarvedByContinuousReloads() throws Exception {
+        final AtlasTypeRegistry            reg      = new AtlasTypeRegistry();
+        final java.util.concurrent.atomic.AtomicBoolean keepHogging = new java.util.concurrent.atomic.AtomicBoolean(true);
+        final java.util.concurrent.CountDownLatch       writerDone  = new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.atomic.AtomicBoolean writerAcquired = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        // Hog thread: acquire, briefly hold, release, immediately re-acquire - like the sync consumer
+        // rebuilding the registry once per poll batch during a backlog.
+        Thread hog = new Thread(() -> {
+            while (keepHogging.get()) {
+                try {
+                    AtlasTransientTypeRegistry ttr = reg.lockTypeRegistryForUpdate();
+                    try {
+                        Thread.sleep(5);
+                    } finally {
+                        reg.releaseTypeRegistryForUpdate(ttr, false);
+                    }
+                } catch (Exception e) {
+                    break;
+                }
+            }
+        }, "hog-reloader");
+
+        // Writer thread: a legitimate type update that must not be starved out.
+        Thread writer = new Thread(() -> {
+            try {
+                AtlasTransientTypeRegistry ttr = reg.lockTypeRegistryForUpdate();
+                writerAcquired.set(true);
+                reg.releaseTypeRegistryForUpdate(ttr, false);
+            } catch (Exception e) {
+                // leaves writerAcquired false -> assertion below fails
+            } finally {
+                writerDone.countDown();
+            }
+        }, "type-writer");
+
+        hog.start();
+        Thread.sleep(50); // let the hog get into its acquire/release cycle
+        writer.start();
+
+        boolean finished = writerDone.await(20, TimeUnit.SECONDS);
+
+        keepHogging.set(false);
+        hog.join(5000);
+        writer.join(5000);
+
+        assertTrue(finished, "writer did not complete - it was starved by continuous reloads");
+        assertTrue(writerAcquired.get(), "writer failed to acquire the type-registry update lock");
+    }
 }

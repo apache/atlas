@@ -31,6 +31,7 @@ import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -69,6 +70,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -107,6 +109,8 @@ public class EntityNotificationListenerV2Test {
     private AtlasEntityType entityType;
     @Mock
     private AtlasClassificationType classificationType;
+    @Mock
+    private TypeRegistryVersionGate typeRegistryVersionGate;
     @Mock
     private AtlasClassificationType superClassificationType;
     @Mock
@@ -376,6 +380,18 @@ public class EntityNotificationListenerV2Test {
         verify(requestContext).startMetricRecord("entityNotification");
         verify(requestContext).endMetricRecord(metricRecorder);
         verify(notificationSender).send(anyList());
+    }
+
+    @Test
+    public void classificationPayloadFallsBackToCatchUp() throws AtlasBaseException, NotificationException {
+        when(typeRegistry.getClassificationTypeByName(CLASSIFICATION_TYPE)).thenReturn(classificationType);
+        when(typeRegistryVersionGate.ensureUpToDate()).thenReturn(true);
+
+        listener.setTypeRegistryVersionGate(typeRegistryVersionGate);
+
+        listener.onEntitiesAdded(Collections.singletonList(entity), false);
+
+        verify(typeRegistryVersionGate, atLeastOnce()).ensureUpToDate();
     }
 
     // Term Events Tests (Should do nothing)

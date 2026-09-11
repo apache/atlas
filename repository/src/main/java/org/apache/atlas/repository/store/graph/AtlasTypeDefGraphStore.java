@@ -51,6 +51,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
@@ -89,6 +90,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     public AtlasTypeRegistry getTypeRegistry() {
         return typeRegistry;
     }
+
+    /**
+     * @return the category of the type the store holds by this name, or null if the store has no
+     * such type.
+     */
+    protected abstract TypeCategory typeCategoryInStore(String typeName);
 
     /**
      * Registers a TypeDefChangeListener to receive notifications of type definition changes.
@@ -774,8 +781,13 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, "", name);
         }
 
-        AtlasType        type = typeRegistry.getType(name);
-        AtlasBaseTypeDef ret  = getTypeDefFromTypeWithNoAuthz(type);
+        AtlasBaseTypeDef ret;
+
+        if (typeRegistry.isRegisteredType(name)) {
+            ret = getTypeDefFromTypeWithNoAuthz(typeRegistry.getType(name));
+        } else {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
+        }
 
         if (ret != null) {
             AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", name);

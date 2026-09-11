@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph;
 
 import com.google.inject.Inject;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
@@ -34,6 +35,8 @@ import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
 import org.apache.atlas.utils.TestResourceFileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,14 +61,20 @@ import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.expectThrows;
 import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasTypeDefGraphStoreTest.class);
 
+    private static final int TYPE_UPDATE_LOCK_WAIT_SECONDS = 5;
+
     @Inject
     private AtlasTypeDefStore typeDefStore;
+
+    @Inject
+    private AtlasTypeRegistry typeRegistry;
 
     @BeforeTest
     public void setupTest() {
@@ -739,5 +748,64 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
 
         assertNotNull(classificationTypeDef);
         assertEquals(classificationTypeDef, AtlasClassificationType.getClassificationRoot().getClassificationDef());
+    }
+
+    /**
+     * Store-layer get*ByName reads the in-memory registry only. A peer-created type that is
+     * already in the graph is restored by {@code init()} (what TypeRegistryVersionGate calls),
+     * not by a per-read store fallback.
+     */
+    @Test(dependsOnMethods = "testGet")
+    public void aTypeForgottenFromTheRegistryIsRestoredByInit() throws AtlasBaseException {
+        String        tagName  = "tag_created_on_a_peer";
+        AtlasTypesDef typesDef = new AtlasTypesDef();
+
+        typesDef.setClassificationDefs(Collections.singletonList(new AtlasClassificationDef(tagName)));
+
+        typeDefStore.createTypesDef(typesDef);
+
+        try {
+            forgetTypeWithoutRemovingItFromTheStore(tagName);
+
+            assertFalse(typeRegistry.isRegisteredType(tagName), "the registry should be behind the store at this point");
+
+            AtlasBaseException byCategory = expectThrows(AtlasBaseException.class, () -> typeDefStore.getClassificationDefByName(tagName));
+            AtlasBaseException byName     = expectThrows(AtlasBaseException.class, () -> typeDefStore.getByName(tagName));
+
+            assertEquals(byCategory.getAtlasErrorCode(), AtlasErrorCode.TYPE_NAME_NOT_FOUND);
+            assertEquals(byName.getAtlasErrorCode(), AtlasErrorCode.TYPE_NAME_NOT_FOUND);
+
+            typeDefStore.init();
+
+            AtlasClassificationDef restored = typeDefStore.getClassificationDefByName(tagName);
+
+            assertNotNull(restored);
+            assertEquals(restored.getName(), tagName);
+            assertTrue(typeRegistry.isRegisteredType(tagName), "init() should have reloaded the type into the registry");
+        } finally {
+            typeDefStore.deleteTypesDef(typesDef);
+        }
+    }
+
+    @Test(dependsOnMethods = "testGet")
+    public void aNameNoOneHasEverDefinedIsReportedAsUnknown() {
+        AtlasBaseException byCategory = expectThrows(AtlasBaseException.class, () -> typeDefStore.getClassificationDefByName("tag_that_was_never_created"));
+        AtlasBaseException byName     = expectThrows(AtlasBaseException.class, () -> typeDefStore.getByName("tag_that_was_never_created"));
+
+        assertEquals(byCategory.getAtlasErrorCode(), AtlasErrorCode.TYPE_NAME_NOT_FOUND);
+        assertEquals(byName.getAtlasErrorCode(), AtlasErrorCode.TYPE_NAME_NOT_FOUND);
+    }
+
+    private void forgetTypeWithoutRemovingItFromTheStore(String typeName) throws AtlasBaseException {
+        AtlasTransientTypeRegistry ttr           = typeRegistry.lockTypeRegistryForUpdate(TYPE_UPDATE_LOCK_WAIT_SECONDS);
+        boolean                    commitUpdates = false;
+
+        try {
+            ttr.removeTypeByName(typeName);
+
+            commitUpdates = true;
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
+        }
     }
 }

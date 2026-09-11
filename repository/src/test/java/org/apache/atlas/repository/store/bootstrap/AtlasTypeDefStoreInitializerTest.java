@@ -17,10 +17,8 @@
  */
 package org.apache.atlas.repository.store.bootstrap;
 
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.patches.AtlasPatch;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
@@ -43,6 +41,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.patches.AtlasPatchRegistry;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.tasks.GraphClaim;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
@@ -105,7 +104,6 @@ public class AtlasTypeDefStoreInitializerTest {
     @Mock private AtlasVertex mockVertex;
 
     private AtlasTypeDefStoreInitializer initializer;
-    private MockedStatic<HAConfiguration> haConfigMock;
     private MockedStatic<AtlasType> atlasTypeMock;
     private MockedStatic<RequestContext> requestContextMock;
 
@@ -139,7 +137,6 @@ public class AtlasTypeDefStoreInitializerTest {
 
         initializer = new AtlasTypeDefStoreInitializer(typeDefStore, typeRegistry, graph, conf, patchManager);
 
-        haConfigMock = mockStatic(HAConfiguration.class);
         atlasTypeMock = mockStatic(AtlasType.class);
         requestContextMock = mockStatic(RequestContext.class);
 
@@ -153,9 +150,6 @@ public class AtlasTypeDefStoreInitializerTest {
 
     @AfterMethod
     public void tearDown() {
-        if (haConfigMock != null) {
-            haConfigMock.close();
-        }
         if (atlasTypeMock != null) {
             atlasTypeMock.close();
         }
@@ -170,29 +164,31 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     @Test
-    public void testInitWhenHADisabled() throws Exception {
-        haConfigMock.when(() -> HAConfiguration.isHAEnabled(conf)).thenReturn(false);
-        initializer.init();
-        verify(typeDefStore, times(1)).init();
-        verify(typeDefStore, times(1)).notifyLoadCompletion();
-    }
-
-    @Test
-    public void testInitWhenHAEnabled() throws Exception {
-        haConfigMock.when(() -> HAConfiguration.isHAEnabled(conf)).thenReturn(true);
+    public void testInit_doesNotLoadTypes() throws Exception {
         initializer.init();
         verify(typeDefStore, never()).init();
+        verify(typeDefStore, never()).notifyLoadCompletion();
     }
 
+    /**
+     * Bootstrap reads the types twice on purpose: the second read is what saves a node that came up
+     * while a peer was still writing the models, which would otherwise skip those files as "already
+     * applied" and serve requests with no types at all.
+     */
     @Test
     public void testInstanceIsActive() throws Exception {
         initializer.instanceIsActive();
-        verify(typeDefStore, times(1)).init();
+        verify(typeDefStore, times(2)).init();
     }
 
     @Test
-    public void testInstanceIsPassive() throws AtlasException {
-        initializer.instanceIsPassive();
+    public void testLoadTypesOnlyInitializesOnce() throws Exception {
+        Method loadTypesOnlyMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadTypesOnly");
+        loadTypesOnlyMethod.setAccessible(true);
+        loadTypesOnlyMethod.invoke(initializer);
+
+        verify(typeDefStore, times(1)).init();
+        verify(typeDefStore, times(1)).notifyLoadCompletion();
     }
 
     @Test
@@ -308,15 +304,92 @@ public class AtlasTypeDefStoreInitializerTest {
 
             when(typeRegistry.isRegisteredType("ValidType")).thenReturn(false);
 
-            Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, AtlasPatchRegistry.class);
+            Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, String.class, long.class);
             loadModelsMethod.setAccessible(true);
-            loadModelsMethod.invoke(initializer, tempDir.toFile(), patchRegistry);
+            loadModelsMethod.invoke(initializer, tempDir.toFile(), "test-node", 120000L);
 
             // Verify valid files were processed, empty/invalid files handled gracefully
             verify(typeDefStore, times(2)).createUpdateTypesDef(any(), any());
         } finally {
             deleteDirectory(tempDir.toFile());
         }
+    }
+
+    @Test
+    public void testLoadModelsInFolderRenewsBootstrapLeaseWhenFileAlreadyApplied() throws Exception {
+        Path tempDir = Files.createTempDirectory("atlas-models-applied");
+        File typeFile = new File(tempDir.toFile(), "001-already-applied.json");
+        Files.write(typeFile.toPath(), createSampleTypeDefJson("AppliedType").getBytes(StandardCharsets.UTF_8));
+
+        AtlasVertex appliedVertex = mock(AtlasVertex.class);
+        when(query.vertices()).thenReturn(Arrays.asList(appliedVertex));
+        when(appliedVertex.getProperty(Constants.TYPEDEF_BOOTSTRAP_STATE_KEY, String.class)).thenReturn(APPLIED.toString());
+
+        Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, String.class, long.class);
+        loadModelsMethod.setAccessible(true);
+
+        try (MockedStatic<GraphClaim> graphClaimMock = mockStatic(GraphClaim.class)) {
+            loadModelsMethod.invoke(initializer, tempDir.toFile(), "test-node", 120000L);
+
+            graphClaimMock.verify(() ->
+                    GraphClaim.claimLeaseAndCommit(graph, Constants.CLAIM_TYPEDEF_BOOTSTRAP, "test-node", 120000L), times(1));
+        } finally {
+            deleteDirectory(tempDir.toFile());
+        }
+    }
+
+    /**
+     * When a peer had already loaded the models this node skipped, the read-back reloads the registry
+     * once and records that it did so - which is what lets startInternal() drop its own duplicate
+     * post-bootstrap reload instead of rebuilding the whole registry a second time.
+     */
+    @Test
+    public void testReadBackReloadsOnceAndFlagsWhenPeerLoadedTypes() throws Exception {
+        Path tempDir  = Files.createTempDirectory("atlas-models-peer-loaded");
+        File typeFile = new File(tempDir.toFile(), "001-already-applied.json");
+        Files.write(typeFile.toPath(), createSampleTypeDefJson("AppliedType").getBytes(StandardCharsets.UTF_8));
+
+        // Peer already applied the file: this node skips it and sets peerLoadedTypeDefs.
+        AtlasVertex appliedVertex = mock(AtlasVertex.class);
+        when(query.vertices()).thenReturn(Arrays.asList(appliedVertex));
+        when(appliedVertex.getProperty(Constants.TYPEDEF_BOOTSTRAP_STATE_KEY, String.class)).thenReturn(APPLIED.toString());
+
+        Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, String.class, long.class);
+        loadModelsMethod.setAccessible(true);
+        Method readBackMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("readBackTypesLoadedByPeers");
+        readBackMethod.setAccessible(true);
+
+        try (MockedStatic<GraphClaim> graphClaimMock = mockStatic(GraphClaim.class)) {
+            loadModelsMethod.invoke(initializer, tempDir.toFile(), "test-node", 120000L);
+
+            // Skipping the file marks the peer-load without reloading the registry yet.
+            assertTrue((Boolean) getField(initializer, "peerLoadedTypeDefs"));
+            verify(typeDefStore, never()).init();
+
+            readBackMethod.invoke(initializer);
+
+            verify(typeDefStore, times(1)).init();
+            assertTrue((Boolean) getField(initializer, "reloadedTypesAfterBootstrap"),
+                    "read-back must record that it rebuilt the registry so startInternal skips its duplicate reload");
+            assertFalse((Boolean) getField(initializer, "peerLoadedTypeDefs"));
+        } finally {
+            deleteDirectory(tempDir.toFile());
+        }
+    }
+
+    /**
+     * With nothing loaded by a peer, the read-back is a no-op and does not flag a reload, so
+     * startInternal() still performs its own post-bootstrap read (the sole reload in that case).
+     */
+    @Test
+    public void testReadBackDoesNothingWhenNoPeerLoadedTypes() throws Exception {
+        Method readBackMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("readBackTypesLoadedByPeers");
+        readBackMethod.setAccessible(true);
+
+        readBackMethod.invoke(initializer);
+
+        verify(typeDefStore, never()).init();
+        assertFalse((Boolean) getField(initializer, "reloadedTypesAfterBootstrap"));
     }
 
     @Test
@@ -352,9 +425,9 @@ public class AtlasTypeDefStoreInitializerTest {
             when(typeRegistry.getTypeDefByName("TestEntity")).thenReturn(existingEntity);
             when(patchRegistry.isApplicable(anyString(), anyString(), anyInt())).thenReturn(false); // Make patches not applicable to test skipped path
 
-            Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class);
+            Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class, String.class, long.class);
             applyPatchesMethod.setAccessible(true);
-            applyPatchesMethod.invoke(initializer, tempDir.toString(), patchRegistry);
+            applyPatchesMethod.invoke(initializer, tempDir.toString(), patchRegistry, "test-node", 120000L);
 
             verify(patchRegistry, never()).register(anyString(), any(), eq("TYPEDEF_PATCH"), anyString(), any(AtlasPatch.PatchStatus.class));
         } finally {
@@ -365,9 +438,9 @@ public class AtlasTypeDefStoreInitializerTest {
     @Test
     public void testApplyTypePatchesWithNonExistentPatchDirectory() throws Exception {
         // Test patch application with non-existent patch directory (covers line 450)
-        Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class);
+        Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class, String.class, long.class);
         applyPatchesMethod.setAccessible(true);
-        applyPatchesMethod.invoke(initializer, "/non/existent/path", patchRegistry);
+        applyPatchesMethod.invoke(initializer, "/non/existent/path", patchRegistry, "test-node", 120000L);
 
         verify(patchRegistry, never()).register(anyString(), any(), anyString(), anyString(), any(AtlasPatch.PatchStatus.class));
     }
@@ -518,13 +591,13 @@ public class AtlasTypeDefStoreInitializerTest {
 
     @Test
     public void testNonExistentDirectoriesHandling() throws Exception {
-        Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, AtlasPatchRegistry.class);
+        Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, String.class, long.class);
         loadModelsMethod.setAccessible(true);
-        loadModelsMethod.invoke(initializer, new File("/non/existent"), patchRegistry);
+        loadModelsMethod.invoke(initializer, new File("/non/existent"), "test-node", 120000L);
 
-        Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class);
+        Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class, String.class, long.class);
         applyPatchesMethod.setAccessible(true);
-        applyPatchesMethod.invoke(initializer, "/non/existent", patchRegistry);
+        applyPatchesMethod.invoke(initializer, "/non/existent", patchRegistry, "test-node", 120000L);
 
         verify(typeDefStore, never()).createUpdateTypesDef(any(), any());
     }
@@ -544,9 +617,9 @@ public class AtlasTypeDefStoreInitializerTest {
             atlasTypeMock.when(() -> AtlasType.fromJson(eq(unknownPatchJson), any(Class.class)))
                     .thenReturn(unknownPatches);
 
-            Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class);
+            Method applyPatchesMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("applyTypePatches", String.class, AtlasPatchRegistry.class, String.class, long.class);
             applyPatchesMethod.setAccessible(true);
-            applyPatchesMethod.invoke(initializer, tempDir.toString(), patchRegistry);
+            applyPatchesMethod.invoke(initializer, tempDir.toString(), patchRegistry, "test-node", 120000L);
 
             verify(patchRegistry, never()).register(anyString(), any(), anyString(), eq("UNKNOWN_ACTION"), any());
         } finally {
@@ -1909,6 +1982,12 @@ public class AtlasTypeDefStoreInitializerTest {
         Field field = obj.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         field.set(obj, value);
+    }
+
+    private Object getField(Object obj, String fieldName) throws Exception {
+        Field field = obj.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field.get(obj);
     }
 
     private void deleteDirectory(File dir) {

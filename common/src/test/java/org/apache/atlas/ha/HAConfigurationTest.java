@@ -63,13 +63,13 @@ public class HAConfigurationTest {
     }
 
     @Test
-    public void testIsHAEnabledByIds() {
+    public void testIsHAEnabledByIds_doesNotInferWhenFlagMissing() {
         when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(false);
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(TEST_ATLAS_SERVER_IDS_HA);
         boolean isHAEnabled = HAConfiguration.isHAEnabled(configuration);
-        assertTrue(isHAEnabled);
+        assertFalse(isHAEnabled);
 
-        // restore
+        // single-id remains disabled as well when explicit flag is absent
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1"});
         isHAEnabled = HAConfiguration.isHAEnabled(configuration);
         assertFalse(isHAEnabled);

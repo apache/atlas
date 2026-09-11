@@ -848,7 +848,9 @@ public class AdminResource {
                 LOG.info("==> Status of current node is {}", state);
                 if (state.equals(ACTIVE)) {
                     LOG.info("==> Scheduled Purging has started");
-                    EntityMutationResponse entityMutationResponse = purgeService.purgeEntities();
+                    // this lock and the ACTIVE check are both per-node, so the cluster-wide claim that
+                    // keeps peers from purging the same entities is taken inside the purge service
+                    EntityMutationResponse entityMutationResponse = purgeService.purgeEntitiesAsClusterOwner();
 
                     final List<AtlasEntityHeader> purgedEntities = entityMutationResponse.getPurgedEntities() != null
                             ? entityMutationResponse.getPurgedEntities()

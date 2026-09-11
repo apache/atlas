@@ -16,9 +16,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# setup directories for HBase
-${HADOOP_HOME}/bin/hdfs dfs -mkdir /hbase
-${HADOOP_HOME}/bin/hdfs dfs -chown hbase:hadoop /hbase
+# setup directories for HBase (idempotent — safe to run on every start)
+${HADOOP_HOME}/bin/hdfs dfs -mkdir /hbase 2>/dev/null || true
+${HADOOP_HOME}/bin/hdfs dfs -chown hbase:hadoop /hbase 2>/dev/null || true
 
 # setup directories for Hive
 ${HADOOP_HOME}/bin/hdfs dfs -mkdir -p /user/hive/warehouse

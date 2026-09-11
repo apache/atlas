@@ -77,7 +77,17 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final AtlasRunMode DEFAULT_ATLAS_RUN_MODE           = AtlasRunMode.PROD;
     public static final String       INDEX_SEARCH_MAX_RESULT_SET_SIZE = "atlas.graph.index.search.max-result-set-size";
 
-    public static final SimpleEntry<String, String> DB_CACHE_CONF               = new SimpleEntry<>("atlas.graph.cache.db-cache", "true");
+    /**
+     * Defaulted off because JanusGraph's database-level cache is never invalidated across
+     * instances: a node that has cached a read keeps answering from that cache until the entry
+     * expires, however many times another node has written since. Every node serves requests in
+     * active-active mode, so a typedef or entity committed on one node can stay missing on another
+     * for up to {@code cache.db-cache-time} — long enough for a classification created on one node
+     * to be rejected as unknown by another. A deployment running a single node can set this back
+     * to {@code true}; nothing here overrides a configured value.
+     */
+    public static final SimpleEntry<String, String> DB_CACHE_CONF               = new SimpleEntry<>("atlas.graph.cache.db-cache", "false");
+
     public static final SimpleEntry<String, String> DB_CACHE_CLEAN_WAIT_CONF    = new SimpleEntry<>("atlas.graph.cache.db-cache-clean-wait", "20");
     public static final SimpleEntry<String, String> DB_CACHE_SIZE_CONF          = new SimpleEntry<>("atlas.graph.cache.db-cache-size", "0.5");
     public static final SimpleEntry<String, String> DB_TX_CACHE_SIZE_CONF       = new SimpleEntry<>("atlas.graph.cache.tx-cache-size", "15000");

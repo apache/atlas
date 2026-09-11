@@ -172,6 +172,14 @@ public class AtlasPatchManagerTest {
         assertEquals(handlers.size(), 11); // Based on the init() method in AtlasPatchManager
     }
 
+    @Test
+    public void testGetAllPatchesInitializesContext() {
+        AtlasPatches patches = patchManager.getAllPatches();
+
+        assertNotNull(patches);
+        assertNotNull(patchManager.getContext());
+    }
+
     private AtlasPatchHandler createMockHandler(PatchStatus status) {
         AtlasPatchHandler mockHandler = mock(AtlasPatchHandler.class);
         when(mockHandler.getStatusFromRegistry()).thenReturn(status);

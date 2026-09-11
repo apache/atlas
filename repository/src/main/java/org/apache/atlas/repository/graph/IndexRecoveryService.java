@@ -21,13 +21,16 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.service.Service;
+import org.apache.atlas.tasks.GraphClaim;
+import org.apache.atlas.tasks.GraphLeaseClaimable;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -38,6 +41,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
+import java.lang.management.ManagementFactory;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -56,44 +60,47 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEn
 
 @Component
 @Order(8)
-public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
+public class IndexRecoveryService implements Service, ActiveStateChangeHandler, GraphLeaseClaimable {
     private static final Logger LOG = LoggerFactory.getLogger(IndexRecoveryService.class);
 
     private static final String DATE_FORMAT                               = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     private static final String INDEX_HEALTH_MONITOR_THREAD_NAME          = "index-health-monitor";
     private static final String SOLR_STATUS_CHECK_RETRY_INTERVAL          = "atlas.graph.index.status.check.frequency";
     private static final String SOLR_INDEX_RECOVERY_CONFIGURED_START_TIME = "atlas.index.recovery.start.time";
+    private static final String SOLR_INDEX_RECOVERY_OWNER_LEASE_MS        = "atlas.index.recovery.owner.lease.ms";
     private static final long   SOLR_STATUS_RETRY_DEFAULT_MS              = 30000; // 30 secs default
+    private static final long   SOLR_OWNER_LEASE_DEFAULT_MS               = 120000; // 2 mins
 
     public final  RecoveryInfoManagement recoveryInfoManagement;
     public        RecoveryThread         recoveryThread;
 
     private final Thread        indexHealthMonitor;
     private final Configuration configuration;
+    private final AtlasGraph    graph;
     private final boolean       isIndexRecoveryEnabled;
+    private final long          ownerLeaseMillis;
+    private final String        ownerId;
 
     @Inject
     public IndexRecoveryService(Configuration config, AtlasGraph graph) {
         this.configuration          = config;
+        this.graph                  = graph;
         this.isIndexRecoveryEnabled = config.getBoolean(ApplicationProperties.INDEX_RECOVERY_CONF, DEFAULT_INDEX_RECOVERY);
+        this.ownerLeaseMillis       = config.getLong(SOLR_INDEX_RECOVERY_OWNER_LEASE_MS, SOLR_OWNER_LEASE_DEFAULT_MS);
+        this.ownerId                = buildOwnerId();
 
         long recoveryStartTimeFromConfig = getRecoveryStartTimeFromConfig(config);
         long healthCheckFrequencyMillis  = config.getLong(SOLR_STATUS_CHECK_RETRY_INTERVAL, SOLR_STATUS_RETRY_DEFAULT_MS);
 
         this.recoveryInfoManagement = new RecoveryInfoManagement(graph);
-        this.recoveryThread         = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis);
+        this.recoveryThread         = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig,
+                healthCheckFrequencyMillis, ownerId, ownerLeaseMillis);
         this.indexHealthMonitor     = new Thread(recoveryThread, INDEX_HEALTH_MONITOR_THREAD_NAME);
     }
 
     @Override
     public void start() throws AtlasException {
-        if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
-            LOG.info("==> IndexRecoveryService.start()");
-
-            startTxLogMonitoring();
-
-            LOG.info("<== IndexRecoveryService.start()");
-        }
+        // activation is handled exclusively by instanceIsActive()
     }
 
     @Override
@@ -111,23 +118,55 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
     public void instanceIsActive() throws AtlasException {
         LOG.info("==> IndexRecoveryService.instanceIsActive()");
 
+        // Index recovery monitors Solr health and replays missed index updates.
+        // Only relevant on nodes that serve search queries (MONOLITHIC, METADATA_SERVER).
+        // NOTIFICATION_PROCESSOR does not use Solr search and INITIALIZER exits after init.
+        if (!AtlasRunMode.current().runsMetadataServer()) {
+            LOG.info("IndexRecoveryService.instanceIsActive(): RUN_MODE={} — skipping index recovery monitor",
+                    AtlasRunMode.current());
+            return;
+        }
+
         startTxLogMonitoring();
 
         LOG.info("<== IndexRecoveryService.instanceIsActive()");
     }
 
     @Override
-    public void instanceIsPassive() throws AtlasException {
-        LOG.info("==> IndexRecoveryService.instanceIsPassive()");
-
-        stop();
-
-        LOG.info("<== IndexRecoveryService.instanceIsPassive()");
+    public int getHandlerOrder() {
+        return ActiveStateChangeHandler.HandlerOrder.INDEX_RECOVERY.getOrder();
     }
 
     @Override
-    public int getHandlerOrder() {
-        return ActiveStateChangeHandler.HandlerOrder.INDEX_RECOVERY.getOrder();
+    public String claimName() {
+        return Constants.CLAIM_INDEX;
+    }
+
+    @Override
+    public AtlasGraph graph() {
+        return graph;
+    }
+
+    @Override
+    public String ownerId() {
+        return ownerId;
+    }
+
+    @Override
+    public long leaseMillis() {
+        return ownerLeaseMillis;
+    }
+
+    private String buildOwnerId() {
+        String runMode  = AtlasRunMode.current().name();
+        String hostName = System.getenv("HOSTNAME");
+        String jvmId    = ManagementFactory.getRuntimeMXBean().getName();
+
+        if (StringUtils.isBlank(hostName)) {
+            hostName = "unknown-host";
+        }
+
+        return runMode + "@" + hostName + "#" + jvmId;
     }
 
     private long getRecoveryStartTimeFromConfig(Configuration config) {
@@ -169,12 +208,17 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         private final RecoveryInfoManagement recoveryInfoManagement;
         private final AtomicBoolean          shouldRun = new AtomicBoolean(false);
         private final long                   indexStatusCheckRetryMillis;
+        private final String                 ownerId;
+        private final long                   ownerLeaseMillis;
         private       Object                 txRecoveryObject;
 
-        private RecoveryThread(RecoveryInfoManagement recoveryInfoManagement, AtlasGraph graph, long startTimeFromConfig, long healthCheckFrequencyMillis) {
+        private RecoveryThread(RecoveryInfoManagement recoveryInfoManagement, AtlasGraph graph, long startTimeFromConfig,
+                               long healthCheckFrequencyMillis, String ownerId, long ownerLeaseMillis) {
             this.graph                       = graph;
             this.recoveryInfoManagement      = recoveryInfoManagement;
             this.indexStatusCheckRetryMillis = healthCheckFrequencyMillis;
+            this.ownerId                     = ownerId;
+            this.ownerLeaseMillis            = ownerLeaseMillis;
 
             if (startTimeFromConfig > 0) {
                 this.recoveryInfoManagement.updateStartTime(startTimeFromConfig);
@@ -188,7 +232,26 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
             while (shouldRun.get()) {
                 try {
+                    boolean hasOwnership = recoveryInfoManagement.tryClaimOwnership(ownerId, ownerLeaseMillis);
+
+                    if (!hasOwnership) {
+                        if (this.txRecoveryObject != null) {
+                            stopMonitoringAfterOwnershipLoss();
+                        }
+
+                        Thread.sleep(indexStatusCheckRetryMillis);
+                        continue;
+                    }
+
                     boolean isIdxHealthy = waitAndCheckIfIndexBackendHealthy();
+                    boolean stillOwnsRecovery = recoveryInfoManagement.isOwner(ownerId);
+
+                    if (!stillOwnsRecovery) {
+                        if (this.txRecoveryObject != null) {
+                            stopMonitoringAfterOwnershipLoss();
+                        }
+                        continue;
+                    }
 
                     if (this.txRecoveryObject == null && isIdxHealthy) {
                         startMonitoring();
@@ -214,6 +277,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
                 }
 
                 shouldRun.set(false);
+                recoveryInfoManagement.releaseOwnership(ownerId);
             } finally {
                 LOG.info("Index Health Monitor: Shutdown: Done!");
             }
@@ -265,6 +329,12 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
         private void stopMonitoring() {
             stopIndexRecoveryAndUpdateStartTime();
+        }
+
+        private void stopMonitoringAfterOwnershipLoss() {
+            LOG.info("Index Recovery: ownership lost by {}, stopping local recovery handle without updating startTime",
+                    ownerId);
+            stopIndexRecovery();
         }
 
         private void stopIndexRecoveryAndUpdateStartTime() {
@@ -333,13 +403,9 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
                 Long        prevStartTime      = NumberUtils.createLong(indexRecoveryData.get(PROPERTY_KEY_INDEX_RECOVERY_PREV_TIME));
                 Long        customStartTime    = NumberUtils.createLong(indexRecoveryData.get(PROPERTY_KEY_INDEX_RECOVERY_CUSTOM_TIME));
                 boolean     isStartTimeUpdated = startTime != null;
-                AtlasVertex vertex             = findVertex();
+                AtlasVertex vertex             = findOrCreateVertex();
 
-                if (vertex == null) {
-                    vertex = graph.addVertex();
-
-                    setEncodedProperty(vertex, PROPERTY_KEY_INDEX_RECOVERY_NAME, INDEX_RECOVERY_TYPE_NAME);
-                } else {
+                if (vertex != null) {
                     prevStartTime = isStartTimeUpdated ? getStartTime(vertex) : prevStartTime;
                 }
 
@@ -367,11 +433,55 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
             return getStartTime(vertex);
         }
 
+        /**
+         * Takes or renews the index lease, shared by index recovery and index initialization so the
+         * two never run against each other.
+         *
+         * <p>The claim is arbitrated by the store rather than by comparing an owner field on this
+         * vertex: every node reads and writes the same recovery-info vertex, and a write that leaves
+         * a field's value unchanged - or replaces it - is one no store will refuse, so two nodes
+         * reading "unowned" together would both come away believing they owned it.
+         */
+        public boolean tryClaimOwnership(String ownerId, long leaseMillis) {
+            return GraphClaim.claimLeaseAndCommit(graph, Constants.CLAIM_INDEX, ownerId, leaseMillis);
+        }
+
+        public void releaseOwnership(String ownerId) {
+            GraphClaim.releaseLeaseAndCommit(graph, Constants.CLAIM_INDEX, ownerId);
+        }
+
+        /**
+         * Whether this node still holds the index lease.  A holder that fell behind on renewals must
+         * assume a peer has taken over and stop working.
+         */
+        public boolean isOwner(String ownerId) {
+            try {
+                return GraphClaim.holdsLease(graph, Constants.CLAIM_INDEX, ownerId);
+            } catch (Exception ex) {
+                LOG.error("Error while checking index-recovery ownership for {}", ownerId, ex);
+
+                return false;
+            } finally {
+                graph.commit();
+            }
+        }
+
         public AtlasVertex findVertex() {
             AtlasGraphQuery       query   = graph.query().has(PROPERTY_KEY_INDEX_RECOVERY_NAME, INDEX_RECOVERY_TYPE_NAME);
             Iterator<AtlasVertex> results = query.vertices().iterator();
 
             return results.hasNext() ? results.next() : null;
+        }
+
+        private AtlasVertex findOrCreateVertex() {
+            AtlasVertex vertex = findVertex();
+
+            if (vertex == null) {
+                vertex = graph.addVertex();
+                setEncodedProperty(vertex, PROPERTY_KEY_INDEX_RECOVERY_NAME, INDEX_RECOVERY_TYPE_NAME);
+            }
+
+            return vertex;
         }
 
         private Long getStartTime(AtlasVertex vertex) {

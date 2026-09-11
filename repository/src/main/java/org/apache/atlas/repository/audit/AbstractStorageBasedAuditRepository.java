@@ -63,11 +63,6 @@ public abstract class AbstractStorageBasedAuditRepository implements Service, En
     }
 
     @Override
-    public void instanceIsPassive() {
-        LOG.info("Reacting to passive: No action for now.");
-    }
-
-    @Override
     public int getHandlerOrder() {
         return HandlerOrder.AUDIT_REPOSITORY.getOrder();
     }

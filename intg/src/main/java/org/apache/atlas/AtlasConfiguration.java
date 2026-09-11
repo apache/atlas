@@ -124,6 +124,40 @@ public enum AtlasConfiguration {
     ASYNC_IMPORT_TOPIC_PREFIX("atlas.async.import.topic.prefix", "ATLAS_IMPORT_"),
     ASYNC_IMPORT_REQUEST_ID_PREFIX("atlas.async.import.request_id.prefix", "async_import_"),
     REPLACE_HUGE_SPARK_PROCESS_ATTRIBUTES_PATCH("atlas.process.spark.attributes.update.patch", false),
+    ASYNC_IMPORT_CLAIM_STALE_THRESHOLD_MS("atlas.async.import.claim.stale.threshold.ms", 3600000L),
+    TASK_CLAIM_STALE_THRESHOLD_MS("atlas.tasks.claim.stale.threshold.ms", 3600000L),
+    /**
+     * How often a node re-checks the graph for pending tasks.  Creating a task wakes the worker
+     * immediately, so this only backstops work that no live worker knows about — tasks orphaned
+     * by a peer that died, or left behind by a previous run.
+     */
+    TASKS_POLL_INTERVAL_MS("atlas.tasks.poll.interval.ms", 30000L),
+    /**
+     * How long a node applying a patch keeps its claim on it.  A node that dies mid-patch cannot
+     * hand the claim back, so peers wait this long before taking the patch over.  The claim is not
+     * renewed while the patch runs, so this must exceed the longest a patch can take: taking a
+     * patch over from a node that is still applying it would run it twice.
+     */
+    PATCH_CLAIM_LEASE_MS("atlas.patch.claim.lease.ms", 3600000L),
+    TYPEDEF_BOOTSTRAP_STALE_THRESHOLD_MS("atlas.typedef.bootstrap.claim.stale.threshold.ms", 120000L),
+    /**
+     * Shortest gap between two on-demand type registry reloads triggered by a request naming a type
+     * a peer created but this node has not synced yet. A reload rebuilds the whole registry, so this
+     * keeps a burst of such requests to one rebuild rather than one each.
+     */
+    TYPEDEF_CATCHUP_MIN_RELOAD_INTERVAL_MS("atlas.typedef.catchup.min.reload.interval.ms", 1000L),
+    /**
+     * Maximum number of times the {GraphTransactionInterceptor} will
+     * retry a failed outer transaction when JanusGraph reports a locking conflict
+     * ({@code PermanentLockingException} / {@code TemporaryLockingException}).
+     * Set to 0 to disable retries entirely.
+     */
+    GRAPH_TXN_MAX_RETRIES("atlas.graph.transaction.max.retries", 5),
+    /**
+     * Base back-off in milliseconds between transaction retry attempts.
+     * Each successive attempt waits {@code attempt * backoff} ms before retrying.
+     */
+    GRAPH_TXN_RETRY_BACKOFF_MS("atlas.graph.transaction.retry.backoff.ms", 1000),
     PURGE_API_MAX_REQUEST_SIZE("atlas.purge.api.max.request.size", 1000);
     private static final Configuration APPLICATION_PROPERTIES;
 

@@ -73,6 +73,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.DelegatingAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -421,6 +422,22 @@ public class AtlasSecurityConfigTest {
 
         // Test 7: All conditions enabled
         testDetailedHttpSecurityConfiguration(true, true, true);
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    public void testAddHaAndMigrationGuards_AlwaysRegistersActiveServerFilter() throws Exception {
+        setupAtlasSecurityConfig(false);
+        when(mockConfiguration.getString(ATLAS_MIGRATION_MODE_FILENAME)).thenReturn("");
+        when(mockConfiguration.getBoolean("atlas.server.ha.enabled", false)).thenReturn(false);
+        when(mockHttpSecurity.addFilterAfter(any(), any())).thenReturn(mockHttpSecurity);
+
+        Method method = org.apache.atlas.server.common.security.AtlasSecurityConfig.class
+                .getDeclaredMethod("addHaAndMigrationGuards", HttpSecurity.class);
+        method.setAccessible(true);
+        method.invoke(atlasSecurityConfig, mockHttpSecurity);
+
+        verify(mockHttpSecurity).addFilterAfter(eq(mockActiveServerFilter), eq(BasicAuthenticationFilter.class));
     }
 
     private void testDetailedHttpSecurityConfiguration(boolean migrationEnabled, boolean haEnabled, boolean keycloakEnabled) throws Exception {

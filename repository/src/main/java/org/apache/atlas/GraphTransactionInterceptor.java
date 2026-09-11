@@ -28,6 +28,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -44,9 +45,15 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static org.apache.atlas.AtlasConfiguration.GRAPH_TXN_MAX_RETRIES;
+import static org.apache.atlas.AtlasConfiguration.GRAPH_TXN_RETRY_BACKOFF_MS;
+
 @Component
 public class GraphTransactionInterceptor implements MethodInterceptor {
     private static final Logger LOG = LoggerFactory.getLogger(GraphTransactionInterceptor.class);
+
+    /** The graph's own index of schema element names, which is where two nodes defining the same element collide. */
+    private static final String SCHEMA_NAME_INDEX_KEY = "~T$SchemaName";
 
     private static final ObjectUpdateSynchronizer                     OBJECT_UPDATE_SYNCHRONIZER = new ObjectUpdateSynchronizer();
     private static final ThreadLocal<List<PostTransactionHook>>       postTransactionHooks       = new ThreadLocal<>();
@@ -59,11 +66,15 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
 
     private final AtlasGraph     graph;
     private final TaskManagement taskManagement;
+    private final int            maxRetries;
+    private final long           backoffMs;
 
     @Inject
     public GraphTransactionInterceptor(AtlasGraph graph, TaskManagement taskManagement) {
         this.graph          = graph;
         this.taskManagement = taskManagement;
+        this.maxRetries     = GRAPH_TXN_MAX_RETRIES.getInt();
+        this.backoffMs      = GRAPH_TXN_RETRY_BACKOFF_MS.getLong();
     }
 
     public static void lockObjectAndReleasePostCommit(final String guid) {
@@ -184,32 +195,66 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
 
         boolean        isSuccess = false;
         MetricRecorder metric    = null;
+        int            attempt   = 0;
 
         try {
-            try {
-                Object response = invocation.proceed();
+            while (true) {
+                try {
+                    Object response = invocation.proceed();
 
-                if (isInnerTxn) {
-                    LOG.debug("Ignoring commit for nested/inner transaction {}.{}", invokingClass, invokedMethodName);
-                } else {
-                    metric = RequestContext.get().startMetricRecord("graphCommit");
+                    if (isInnerTxn) {
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("Ignoring commit for nested/inner transaction {}.{}", invokingClass, invokedMethodName);
+                        }
+                    } else {
+                        metric = RequestContext.get().startMetricRecord("graphCommit");
 
-                    doCommitOrRollback(invokingClass, invokedMethodName);
+                        doCommitOrRollback(invokingClass, invokedMethodName);
+                    }
+
+                    isSuccess = !innerFailure.get();
+
+                    return response;
                 }
+                catch (Throwable t) {
+                    if (isInnerTxn) {
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("Ignoring rollback for nested/inner transaction {}.{}", invokingClass, invokedMethodName);
+                        }
+                        innerFailure.set(true);
+                        throw t;
+                    }
 
-                isSuccess = !innerFailure.get();
+                    if (isRetryableException(t) && attempt < maxRetries) {
+                        attempt++;
+                        long backoff = backoffMs * attempt;
+                        LOG.warn("JanusGraph locking conflict in {}.{} – rolling back and retrying (attempt {}/{}), backoff {}ms",
+                                invokingClass, invokedMethodName, attempt, maxRetries + 1, backoff);
+                        graph.rollback();
+                        RequestContext.get().endMetricRecord(metric);
+                        metric = null;
+                        OBJECT_UPDATE_SYNCHRONIZER.releaseLockedObjects();
+                        innerFailure.set(Boolean.FALSE);
+                        clearCache();
 
-                return response;
-            } catch (Throwable t) {
-                if (isInnerTxn) {
-                    LOG.debug("Ignoring rollback for nested/inner transaction {}.{}", invokingClass, invokedMethodName);
+                        // The abandoned attempt's hooks have to run, not just be dropped: they are what
+                        // gives back whatever it took hold of.  Dropping them stranded the type-registry
+                        // update lock once per retry, and since that lock is held for the life of the
+                        // process, a few retries during startup left every later type update failing with
+                        // "another type update might be in progress".  They run as a failure because that
+                        // is what this attempt was.
+                        firePostTransactionHooks(false);
+                        try {
+                            Thread.sleep(backoff);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                        }
+                        continue;
+                    }
 
-                    innerFailure.set(true);
-                } else {
                     doRollback(logRollback, t);
+                    throw t;
                 }
-
-                throw t;
             }
         } finally {
             RequestContext.get().endMetricRecord(metric);
@@ -223,21 +268,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
                 innerFailure.set(Boolean.FALSE);
                 clearCache();
 
-                List<PostTransactionHook> trxHooks = postTransactionHooks.get();
-
-                if (trxHooks != null) {
-                    LOG.debug("Processing post-txn hooks");
-
-                    postTransactionHooks.remove();
-
-                    for (PostTransactionHook trxHook : trxHooks) {
-                        try {
-                            trxHook.onComplete(isSuccess);
-                        } catch (Throwable t) {
-                            LOG.error("postTransactionHook failed", t);
-                        }
-                    }
-                }
+                firePostTransactionHooks(isSuccess);
             }
 
             OBJECT_UPDATE_SYNCHRONIZER.releaseLockedObjects();
@@ -256,6 +287,59 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
         } else {
             return !(t instanceof NotFoundException);
         }
+    }
+
+    private static void firePostTransactionHooks(boolean isSuccess) {
+        List<PostTransactionHook> trxHooks = postTransactionHooks.get();
+
+        if (trxHooks == null) {
+            return;
+        }
+
+        LOG.debug("Processing post-txn hooks");
+
+        postTransactionHooks.remove();
+
+        for (PostTransactionHook trxHook : trxHooks) {
+            try {
+                trxHook.onComplete(isSuccess);
+            } catch (Throwable t) {
+                LOG.error("postTransactionHook failed", t);
+            }
+        }
+    }
+
+    /**
+     * Returns {@code true} when the exception (or any cause in its chain) is a JanusGraph
+     * locking conflict that is safe to retry by re-running the whole transaction.
+     */
+    private static boolean isRetryableException(Throwable t) {
+        for (Throwable cause = t; cause != null; cause = cause.getCause()) {
+            String name = cause.getClass().getName();
+            if ("org.janusgraph.diskstorage.locking.PermanentLockingException".equals(name)
+                    || "org.janusgraph.diskstorage.locking.TemporaryLockingException".equals(name)) {
+                return true;
+            }
+
+            if (isSchemaCreationRace(cause)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Two nodes reaching at the same moment for a schema element the graph creates on demand - a
+     * property key or label nothing declared up front.  Both create it and the store refuses the
+     * second by name, failing whatever request happened to be carrying it.  The element is there by
+     * the time the loser looks again, so the request is worth repeating.
+     *
+     * <p>Only a clash on the schema-name index counts.  A violation on any other key is a genuine
+     * duplicate that a second attempt would hit just the same.
+     */
+    private static boolean isSchemaCreationRace(Throwable cause) {
+        return cause.getClass().getSimpleName().endsWith("SchemaViolationException")
+                && StringUtils.contains(cause.getMessage(), SCHEMA_NAME_INDEX_KEY);
     }
 
     private void doCommitOrRollback(final String invokingClass, final String invokedMethodName) {

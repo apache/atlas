@@ -19,20 +19,20 @@ package org.apache.atlas.notification.rest.web.services;
 
 import org.apache.atlas.server.common.filters.spi.ActiveInstanceStateProvider;
 import org.apache.atlas.server.common.filters.spi.ServiceStateProvider;
-import org.apache.atlas.server.common.service.ActiveInstanceState;
 import org.apache.atlas.server.common.service.ServiceState;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
  * Local adapter for Rest-notification module.
- * Bridges local ActiveInstanceState and ServiceState to shared Security SPIs.
+ * Bridges local service-state wiring to shared security SPIs.
  */
 @Configuration
 public class AtlasServiceStateProviderConfig {
     @Bean
-    public ActiveInstanceStateProvider activeInstanceStateProvider(ActiveInstanceState activeInstanceState) {
-        return activeInstanceState::getActiveServerAddress;
+    public ActiveInstanceStateProvider activeInstanceStateProvider() {
+        // Active-active mode has no leader/follower redirect target.
+        return () -> null;
     }
 
     @Bean

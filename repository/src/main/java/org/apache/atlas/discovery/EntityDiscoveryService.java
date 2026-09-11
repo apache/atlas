@@ -57,6 +57,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.tasks.AuditReductionTaskFactory;
@@ -138,6 +139,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final SuggestionsProvider       suggestionsProvider;
     private final DSLQueryExecutor          dslQueryExecutor;
     private final TaskManagement            taskManagement;
+    private       TypeRegistryVersionGate   typeRegistryVersionGate;
 
     @Inject
     EntityDiscoveryService(AtlasTypeRegistry typeRegistry, AtlasGraph graph, GraphBackedSearchIndexer indexer, SearchTracker searchTracker, UserProfileService userProfileService, TaskManagement taskManagement) throws AtlasException {
@@ -157,6 +159,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.taskManagement           = taskManagement;
 
         LOG.info("DSL Executor: {}", this.dslQueryExecutor.getClass().getSimpleName());
+    }
+
+    @Inject
+    public void setTypeRegistryVersionGate(TypeRegistryVersionGate typeRegistryVersionGate) {
+        this.typeRegistryVersionGate = typeRegistryVersionGate;
     }
 
     public static SearchParameters createSearchParameters(QuickSearchParameters quickSearchParameters) {
@@ -207,6 +214,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     @GraphTransaction
     public AtlasSearchResult searchUsingDslQuery(String dslQuery, int limit, int offset) throws AtlasBaseException {
+        ensureTypeRegistryCurrent();
+
         AtlasSearchResult ret = dslQueryExecutor.execute(dslQuery, limit, offset);
 
         scrubSearchResults(ret);
@@ -252,6 +261,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     @GraphTransaction
     public AtlasSearchResult searchUsingBasicQuery(String query, String typeName, String classification, String attrName, String attrValuePrefix, boolean excludeDeletedEntities, int limit, int offset) throws AtlasBaseException {
+        ensureTypeRegistryCurrent();
+
         AtlasSearchResult ret = new AtlasSearchResult(AtlasQueryType.BASIC);
 
         LOG.debug("Executing basic search query: {} with type: {} and classification: {}", query, typeName, classification);
@@ -472,6 +483,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     @GraphTransaction
     public AtlasSearchResult searchWithParameters(SearchParameters searchParameters) throws AtlasBaseException {
+        ensureTypeRegistryCurrent();
+
         String query = searchParameters.getQuery();
 
         if (StringUtils.isNotEmpty(query)) {
@@ -791,6 +804,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     @GraphTransaction
     public AtlasQuickSearchResult quickSearch(QuickSearchParameters quickSearchParameters) throws AtlasBaseException {
+        ensureTypeRegistryCurrent();
+
         String query = quickSearchParameters.getQuery();
 
         if (StringUtils.isNotEmpty(query) && !AtlasStructType.AtlasAttribute.hastokenizeChar(query)) {
@@ -799,7 +814,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         quickSearchParameters.setQuery(query);
 
-        SearchContext searchContext = new SearchContext(createSearchParameters(quickSearchParameters), typeRegistry, graph, indexer.getVertexIndexKeys());
+        SearchParameters searchParameters = createSearchParameters(quickSearchParameters);
+
+        SearchContext searchContext = new SearchContext(searchParameters, typeRegistry, graph, indexer.getVertexIndexKeys());
 
         LOG.debug("Generating the search results for the query {}", searchContext.getSearchParameters().getQuery());
 
@@ -1239,5 +1256,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         return atttOwner;
+    }
+
+    private void ensureTypeRegistryCurrent() {
+        if (typeRegistryVersionGate != null) {
+            typeRegistryVersionGate.ensureUpToDate();
+        }
     }
 }

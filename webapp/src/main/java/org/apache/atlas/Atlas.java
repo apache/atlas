@@ -64,6 +64,12 @@ public final class Atlas {
     }
 
     public static void main(String[] args) throws Exception {
+        // Resolve RUN_MODE before Spring, Jetty, or any service is created
+        // so every handler sees the correct mode at class-load time.
+        AtlasRunMode            runMode            = AtlasRunMode.current();
+
+        LOG.info("Atlas starting in RUN_MODE={}", runMode);
+
         CommandLine             cmd                = parseArgs(args);
         PropertiesConfiguration buildConfiguration = new PropertiesConfiguration();
         FileHandler fileHandler = new FileHandler(buildConfiguration);
@@ -102,7 +108,37 @@ public final class Atlas {
 
         installLogBridge();
 
+        if (runMode.exitsAfterInit()) {
+            runInitializationAndExit(runMode);
+        }
+
         server.start();
+    }
+
+    /**
+     * Runs the bootstrap and terminates, for the init container that prepares the store before the
+     * long-lived roles come up.
+     *
+     * <p>Deploying the web application is what runs the bootstrap, so the initializer starts the
+     * server like any other mode and stops it again once deployment returns.  The stop has to happen
+     * here rather than through {@code System.exit} inside the bootstrap itself: exiting from there
+     * leaves this thread parked in {@code Shutdown.runHooks()} while it still holds Jetty's lifecycle
+     * lock and Spring's startup monitor, and the shutdown hook that then tries to stop that same
+     * half-deployed server waits on those locks forever.  The process survived its own exit and had
+     * to be killed by hand.
+     */
+    private static void runInitializationAndExit(AtlasRunMode runMode) throws Exception {
+        server.startWithoutJoin();
+
+        LOG.info("Atlas RUN_MODE={} - initialization complete, stopping embedded server", runMode);
+
+        server.stop();
+
+        LOG.info("Atlas RUN_MODE={} - initialization complete, exiting", runMode);
+
+        // an explicit exit rather than returning from main: bootstrap leaves non-daemon threads
+        // behind that would otherwise keep the JVM up long after there is any work for it
+        System.exit(0);
     }
 
     public static String getProjectVersion(PropertiesConfiguration buildConfiguration) {
