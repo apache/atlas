@@ -114,7 +114,7 @@ public class AtlasHeaderPreAuthFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) servletResponse;
 
         AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
-        HeadersUtil.setSecurityHeaders(responseWrapper);
+        HeadersUtil.setSecurityHeaders(responseWrapper, servletRequest);
 
         try {
             if (headerAuthEnabled) {
