@@ -68,7 +68,7 @@ Docker files in this folder create docker images and run them to build Apache At
 
       ```shell
       export ATLAS_BACKEND=postgres
-      docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-postgres.yml up -d --wait
+      docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml -f docker-compose.atlas-hbase.yml up -d --wait
       ```
 
       The Postgres overlay runs `config/init_postgres.sh` as a one-shot initialization service before Atlas starts.
@@ -78,7 +78,7 @@ Docker files in this folder create docker images and run them to build Apache At
 
       ```shell
       export ATLAS_BACKEND=hbase
-      docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml up -d --wait
+      docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml -f docker-compose.atlas-hive.yml up -d --wait
       ```
 
    Apache Atlas will be installed at /opt/atlas/, and logs are at /var/log/atlas directory.

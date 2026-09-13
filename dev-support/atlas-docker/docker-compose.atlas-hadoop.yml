@@ -16,7 +16,7 @@ services:
       - "9000:9000"
       - "8088:8088"
     healthcheck:
-      test: [ "CMD-SHELL", "su hdfs -c \"/opt/hadoop/bin/hdfs dfsadmin -report | grep -q 'Live datanodes'\"" ]
+      test: [ "CMD-SHELL", "su hdfs -c \"/opt/hadoop/bin/hdfs dfs -stat /tmp/hive\"" ]
       interval: 30s
       timeout: 10s
       retries: 30

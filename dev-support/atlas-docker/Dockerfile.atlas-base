@@ -45,6 +45,7 @@ RUN groupadd atlas && \
     useradd -g hadoop -ms /bin/bash kafka && \
     mkdir -p /home/atlas/dist && \
     mkdir -p /home/atlas/scripts && \
+    chmod 755 /home/atlas && \
     chown -R atlas:atlas /home/atlas
 
 ENTRYPOINT [ "/bin/bash" ]
