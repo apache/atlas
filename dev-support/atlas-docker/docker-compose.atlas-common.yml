@@ -53,7 +53,19 @@ services:
     networks:
       - atlas
     environment:
+      POSTGRES_HOST: atlas-db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
       POSTGRES_PASSWORD: atlasR0cks!
+      HIVE_DB_PASSWORD: atlasR0cks!
+      ATLAS_DB_PASSWORD: atlasR0cks!
+      ATLAS_SCHEMA_FILE: /tmp/create_schema.sql
+    volumes:
+      - ./config/init_postgres.sh:/tmp/init_postgres.sh:ro
+      - ../../graphdb/janusgraph-rdbms/src/main/resources/META-INF/postgres/create_schema.sql:/tmp/create_schema.sql:ro
+    command:
+      - /tmp/init_postgres.sh
     healthcheck:
       test: 'su -c "pg_isready -q" postgres'
       interval: 30s

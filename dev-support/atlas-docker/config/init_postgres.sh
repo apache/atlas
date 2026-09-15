@@ -103,6 +103,19 @@ EOSQL
   "${psql_cmd[@]}" --dbname "${database_name}" -c "GRANT ALL ON SCHEMA public TO public;"
 }
 
+
+# Start the normal PostgreSQL entrypoint in background
+docker-entrypoint.sh postgres &
+pg_pid=$!
+
+# Wait until PostgreSQL is ready
+until pg_isready -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}"; do
+    sleep 1
+done
+
+echo "PostgreSQL is ready"
+
+
 create_role hive "${HIVE_DB_PASSWORD}"
 create_database hive hive
 
@@ -110,3 +123,7 @@ create_role atlas "${ATLAS_DB_PASSWORD}"
 create_database atlas atlas
 
 PGPASSWORD="${ATLAS_DB_PASSWORD}" "${atlas_psql_cmd[@]}" --file "${ATLAS_SCHEMA_FILE}"
+
+
+# Keep postgres as the container's main process
+wait "$pg_pid"
