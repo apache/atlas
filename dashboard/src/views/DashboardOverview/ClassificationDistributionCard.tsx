@@ -114,13 +114,13 @@ const ClassificationDistributionCard = memo(
 
     return (
       <Paper elevation={1} className="classification-distribution-card__paper">
-        <Box className="classification-distribution-card__header">
+        <Box className="dashboard-card__header">
           <Stack
             direction="row"
             justifyContent="space-between"
             alignItems="center"
           >
-            <Typography className="classification-distribution-card__title">
+            <Typography className="dashboard-card__title">
               Classification Distribution
             </Typography>
             <Link
@@ -207,11 +207,11 @@ const ClassificationDistributionCard = memo(
                         onKeyDown={
                           value
                             ? (e: React.KeyboardEvent<SVGGElement>) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  handleLabelClick(value);
-                                }
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleLabelClick(value);
                               }
+                            }
                             : undefined
                         }
                       >

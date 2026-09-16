@@ -107,8 +107,8 @@ const EntityStatusDonut = memo(
 
     return (
       <Paper elevation={1} className="entity-status-donut__paper">
-        <Box className="classification-distribution-card__header">
-          <Typography className="classification-distribution-card__title">
+        <Box className="dashboard-card__header">
+          <Typography className="dashboard-card__title">
             Entity Status Overview
           </Typography>
         </Box>
