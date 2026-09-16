@@ -185,19 +185,19 @@ const MessageConsumptionChart = memo(
 							label={{
 								value: "Period",
 								position: "bottom",
-								offset: 12,
-								style: { fontSize: 11, fill: "#6c757d" },
+								offset: -2,
+								className: "chart-axis-label",
 							}}
 						/>
 						<YAxis
 							tickFormatter={(v) => numberFormatWithComma(v)}
 							width={48}
 							label={{
-								value: "Count",
+								value: "Message Count",
 								angle: -90,
-								position: "left",
-								offset: 6,
-								style: { fontSize: 11, fill: "#6c757d", textAnchor: "middle" },
+								position: "insideLeft",
+								offset: 4,
+								className: "chart-axis-label-y",
 							}}
 						/>
 						<Tooltip content={renderTooltip} cursor={{ fill: "transparent" }} />
@@ -234,12 +234,8 @@ const MessageConsumptionChart = memo(
 								dataKey="count"
 								position="top"
 								offset={8}
-								formatter={(v: number) => numberFormatWithComma(v)}
-								style={{
-									fontSize: 11,
-									fontWeight: 600,
-									fill: "#374151",
-								}}
+								formatter={(v: unknown) => numberFormatWithComma(Number(v))}
+								className="chart-label-list-sm"
 							/>
 							{data.map((_, index) => (
 								<Cell key={`deletes-${index}`} fill={DELETES_COLOR} />
