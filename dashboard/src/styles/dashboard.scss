@@ -78,18 +78,18 @@
   margin-bottom: 4px;
 }
 
-.classification-distribution-card__header {
+.dashboard-card__header {
   /* sx */
   padding-bottom: 16px;
   border-bottom: 1px solid;
-  border-color: divider;
+  border-color: rgba(0, 0, 0, 0.12);
 }
 
-.classification-distribution-card__title {
+.dashboard-card__title {
   /* sx */
-  font-size: 1rem;
-  font-weight: 600;
-  color: v.$text-heading;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  color: v.$text-heading !important;
 }
 
 .classification-distribution-card__view-all-link {
