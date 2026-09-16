@@ -54,9 +54,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Janus HBase2 backend (registers storage backend id "hbase2"). Must be on the runtime classpath whenever
-             atlas.graph.storage.backend is hbase2; profile-only deps can be omitted by some builds and cause
-             ClassNotFoundException: hbase2. -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-configuration2</artifactId>
@@ -73,50 +70,6 @@
             <artifactId>commons-text</artifactId>
             <version>${commons-text.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-distcp</artifactId>
-            <version>${hadoop.version}</version>
-        </dependency>
-        <!-- Default index: Solr (+Lucene). Elasticsearch: use atlas-graphdb-janus-es-shim + -Pindex-elasticsearch on the WAR (ATLAS-5220). -->
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-analyzers-common</artifactId>
-            <version>${lucene-solr.version}</version>
-        </dependency>
-        <!-- CVE Overrides for Lucene -->
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-core</artifactId>
-            <version>${lucene-solr.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-queryparser</artifactId>
-            <version>${lucene-solr.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-spatial-extras</artifactId>
-            <version>${lucene-solr.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.solr</groupId>
-            <artifactId>solr-solrj</artifactId>
-            <version>${solr.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.zookeeper</groupId>
-                    <artifactId>zookeeper-jute</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.codehaus.woodstox</groupId>
-                    <artifactId>woodstox-core-asl</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-core</artifactId>
@@ -146,18 +99,6 @@
             <artifactId>tinkergraph-gremlin</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-lucene</artifactId>
-            <version>${janusgraph.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.lucene</groupId>
-                    <artifactId>lucene-backward-codecs</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-server</artifactId>
@@ -207,26 +148,6 @@
                 <exclusion>
                     <groupId>org.noggit</groupId>
                     <artifactId>noggit</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-solr</artifactId>
-            <version>${janusgraph.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.solr</groupId>
-                    <artifactId>solr-core</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -309,14 +230,87 @@
         </plugins>
     </build>
 
-    <!-- ATLAS-5220: optional storage backends. HBase stack only when atlas.storage.backend=hbase (default). ES index: atlas-graphdb-janus-es-shim (WAR -Pindex-elasticsearch). -->
+    <!-- ATLAS-5220: optional storage/index backends. ES index: atlas-graphdb-janus-es-shim (WAR -Pindex-elasticsearch). -->
     <profiles>
+        <profile>
+            <id>index-solr</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.lucene</groupId>
+                    <artifactId>lucene-analyzers-common</artifactId>
+                    <version>${lucene-solr.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.lucene</groupId>
+                    <artifactId>lucene-core</artifactId>
+                    <version>${lucene-solr.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.lucene</groupId>
+                    <artifactId>lucene-queryparser</artifactId>
+                    <version>${lucene-solr.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.lucene</groupId>
+                    <artifactId>lucene-spatial-extras</artifactId>
+                    <version>${lucene-solr.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.solr</groupId>
+                    <artifactId>solr-solrj</artifactId>
+                    <version>${solr.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>org.apache.zookeeper</groupId>
+                            <artifactId>zookeeper-jute</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>org.codehaus.woodstox</groupId>
+                            <artifactId>woodstox-core-asl</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>org.janusgraph</groupId>
+                    <artifactId>janusgraph-lucene</artifactId>
+                    <version>${janusgraph.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>org.apache.lucene</groupId>
+                            <artifactId>lucene-backward-codecs</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>org.janusgraph</groupId>
+                    <artifactId>janusgraph-solr</artifactId>
+                    <version>${janusgraph.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>javax.servlet</groupId>
+                            <artifactId>servlet-api</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>org.apache.solr</groupId>
+                            <artifactId>solr-core</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
+        </profile>
         <profile>
             <id>dist</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
-            <!-- -Pdist disables activeByDefault storage-hbase; declare default HBase stack here (ATLAS-5220). -->
+            <!-- -Pdist disables activeByDefault storage-hbase/index-solr; declare default stacks here (ATLAS-5220). -->
             <dependencies>
                 <dependency>
                     <groupId>org.apache.atlas</groupId>
@@ -340,6 +334,41 @@
                     </exclusions>
                 </dependency>
                 <dependency>
+                    <groupId>org.apache.lucene</groupId>
+                    <artifactId>lucene-analyzers-common</artifactId>
+                    <version>${lucene-solr.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.lucene</groupId>
+                    <artifactId>lucene-core</artifactId>
+                    <version>${lucene-solr.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.lucene</groupId>
+                    <artifactId>lucene-queryparser</artifactId>
+                    <version>${lucene-solr.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.lucene</groupId>
+                    <artifactId>lucene-spatial-extras</artifactId>
+                    <version>${lucene-solr.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.solr</groupId>
+                    <artifactId>solr-solrj</artifactId>
+                    <version>${solr.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>org.apache.zookeeper</groupId>
+                            <artifactId>zookeeper-jute</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>org.codehaus.woodstox</groupId>
+                            <artifactId>woodstox-core-asl</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
                     <groupId>org.janusgraph</groupId>
                     <artifactId>janusgraph-hbase</artifactId>
                     <version>${janusgraph.version}</version>
@@ -355,6 +384,36 @@
                         <exclusion>
                             <groupId>org.apache.hbase</groupId>
                             <artifactId>hbase-shaded-mapreduce</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>org.janusgraph</groupId>
+                    <artifactId>janusgraph-lucene</artifactId>
+                    <version>${janusgraph.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>org.apache.lucene</groupId>
+                            <artifactId>lucene-backward-codecs</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>org.janusgraph</groupId>
+                    <artifactId>janusgraph-solr</artifactId>
+                    <version>${janusgraph.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>javax.servlet</groupId>
+                            <artifactId>servlet-api</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>org.apache.solr</groupId>
+                            <artifactId>solr-core</artifactId>
                         </exclusion>
                     </exclusions>
                 </dependency>
