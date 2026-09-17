@@ -582,6 +582,12 @@
                                             <artifactId>commons-configuration2</artifactId>
                                             <version>${commons-conf2.version}</version>
                                         </artifactItem>
+                                        <!-- Hadoop metrics use commons-configuration 1.x; excluded from HBASE_CP in import-hbase.sh -->
+                                        <artifactItem>
+                                            <groupId>commons-configuration</groupId>
+                                            <artifactId>commons-configuration</artifactId>
+                                            <version>1.10</version>
+                                        </artifactItem>
                                         <artifactItem>
                                             <groupId>org.apache.commons</groupId>
                                             <artifactId>commons-text</artifactId>
