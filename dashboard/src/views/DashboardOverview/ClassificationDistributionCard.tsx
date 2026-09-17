@@ -137,7 +137,7 @@ const ClassificationDistributionCard = memo(
           variant="body2"
           className="classification-distribution-card__total-associations"
         >
-          <strong>Tag–entity associations (total):</strong>{" "}
+          <strong>Tag-entity associations (total):</strong>{" "}
           {numberFormatWithComma(associationTotal)}
         </Typography>
         <Typography
@@ -165,11 +165,13 @@ const ClassificationDistributionCard = memo(
                 layout="vertical"
                 margin={{ ...CLASSIFICATION_DISTRIBUTION_CHART_MARGIN }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <CartesianGrid horizontal={false} vertical={true} strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis
                   type="number"
                   tickFormatter={(v) => numberFormatWithComma(v)}
                   height={36}
+                  tickLine={{ stroke: "#d9d9d9" }}
+                  axisLine={{ stroke: "#d9d9d9" }}
                   label={{
                     value: "Entity Count",
                     position: "bottom",
@@ -181,7 +183,8 @@ const ClassificationDistributionCard = memo(
                   type="category"
                   dataKey="name"
                   width={yAxisWidth}
-                  tickMargin={4}
+                  tickLine={{ stroke: "#d9d9d9" }}
+                  axisLine={{ stroke: "#d9d9d9" }}
                   tick={(props: Record<string, unknown>) => {
                     const { x = 0, y = 0, payload } = props;
                     const p = payload as
@@ -217,12 +220,12 @@ const ClassificationDistributionCard = memo(
                       >
                         {isTruncated ? <title>{value}</title> : null}
                         <text
-                          x={0}
+                          x={-4}
                           y={0}
                           dy={4}
                           textAnchor="end"
-                          fill="#333"
-                          fontSize={12}
+                          fill="#595959"
+                          fontSize={11}
                         >
                           {displayLabel}
                         </text>
@@ -239,13 +242,14 @@ const ClassificationDistributionCard = memo(
                   name="Entities"
                   fill={BAR_COLOR}
                   radius={[0, 4, 4, 0]}
+                  barSize={20}
                   onClick={handleBarClick}
                   cursor="pointer"
                 >
                   <LabelList
                     dataKey="count"
                     position="right"
-                    offset={10}
+                    offset={8}
                     formatter={(v: unknown) =>
                       typeof v === "number" ? numberFormatWithComma(v) : ""
                     }

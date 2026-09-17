@@ -130,7 +130,7 @@ const EntityStatusDonut = memo(
                 className="entity-status-donut__legend-button"
               >
                 <Box
-                  className={`entity-status-donut__legend-color entity-status-donut-box-${status}`}
+                  className={`entity-status-donut__legend-color entity-status-donut__legend-color--${status.toLowerCase()}`}
                 />
                 <Typography
                   component="span"
