@@ -30,6 +30,7 @@ services:
     depends_on:
       atlas-zk:
         condition: service_started
+    restart: unless-stopped
     environment:
       - KAFKA_VERSION
       - ATLAS_VERSION

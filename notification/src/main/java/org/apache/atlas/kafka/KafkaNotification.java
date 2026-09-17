@@ -140,6 +140,8 @@ public class KafkaNotification extends AbstractNotification implements Service {
         // if no value is specified for max.poll.records, set to 1
         properties.put("max.poll.records", kafkaConf.getInt("max.poll.records", 1));
 
+        applyKafkaClientRecoveryDefaults(properties);
+
         KafkaUtils.setKafkaJAASProperties(applicationProperties, properties);
 
         LOG.info("<== KafkaNotification()");
@@ -173,6 +175,31 @@ public class KafkaNotification extends AbstractNotification implements Service {
         }
 
         return ret;
+    }
+
+    /**
+     * Kafka 3.8+ defaults {@code metadata.recovery.strategy} to {@code none}, so a client that has
+     * lost every known broker (container restart, broker failover) never re-reads
+     * {@code bootstrap.servers} and stays idle until the process is restarted.
+     */
+    @VisibleForTesting
+    static final String METADATA_RECOVERY_STRATEGY_CONFIG              = "metadata.recovery.strategy";
+    @VisibleForTesting
+    static final String METADATA_RECOVERY_REBOOTSTRAP_TRIGGER_MS_CONFIG = "metadata.recovery.rebootstrap.trigger.ms";
+
+    @VisibleForTesting
+    static void applyKafkaClientRecoveryDefaults(Properties properties) {
+        if (properties == null) {
+            return;
+        }
+
+        if (!properties.containsKey(METADATA_RECOVERY_STRATEGY_CONFIG)) {
+            properties.put(METADATA_RECOVERY_STRATEGY_CONFIG, "rebootstrap");
+        }
+
+        if (!properties.containsKey(METADATA_RECOVERY_REBOOTSTRAP_TRIGGER_MS_CONFIG)) {
+            properties.put(METADATA_RECOVERY_REBOOTSTRAP_TRIGGER_MS_CONFIG, "10000");
+        }
     }
 
     @Override
@@ -298,7 +325,12 @@ public class KafkaNotification extends AbstractNotification implements Service {
                 notificationConsumers.add(kafkaConsumer);
             }
 
-            consumers.add(new AtlasKafkaConsumer<>(notificationType, kafkaConsumer, autoCommitEnabled, pollTimeOutMs));
+            String     topicName    = topics.get(i % topics.size());
+            Properties recoverProps = new Properties();
+
+            recoverProps.putAll(consumerProperties);
+
+            consumers.add(new AtlasKafkaConsumer<>(notificationType, kafkaConsumer, autoCommitEnabled, pollTimeOutMs, recoverProps, Collections.singletonList(topicName)));
         }
 
         LOG.info("<== KafkaNotification.createConsumers(notificationType={}, numConsumers={}, autoCommitEnabled={})", notificationType, numConsumers, autoCommitEnabled);
@@ -567,19 +599,18 @@ public class KafkaNotification extends AbstractNotification implements Service {
         }
     }
 
-    // kafka-client doesn't have method to check if consumer is open, hence checking list topics and catching exception
+    // kafka-client doesn't have method to check if consumer is open; subscription() fails locally if closed
     private boolean isKafkaConsumerOpen(KafkaConsumer consumer) {
-        boolean ret = true;
-
-        try {
-            consumer.listTopics();
-        } catch (IllegalStateException ex) {
-            if (ex.getMessage().equalsIgnoreCase(consumerClosedErrorMsg)) {
-                ret = false;
-            }
+        if (consumer == null) {
+            return false;
         }
 
-        return ret;
+        try {
+            consumer.subscription();
+            return true;
+        } catch (IllegalStateException ex) {
+            return false;
+        }
     }
 
     private static class MessageContext {

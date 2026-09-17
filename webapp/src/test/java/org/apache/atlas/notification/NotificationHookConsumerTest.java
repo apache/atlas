@@ -63,6 +63,7 @@ import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateReq
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
 import org.apache.commons.configuration2.Configuration;
+import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.TopicPartition;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -102,6 +103,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -164,6 +166,28 @@ public class NotificationHookConsumerTest {
         when(mode.runsMetadataServer()).thenReturn(runsMetadataServer);
         when(mode.runsNotificationProcessing()).thenReturn(runsNotificationProcessing);
         return mode;
+    }
+
+    @Test
+    public void testHookConsumerRecoversAfterKafkaFailure() throws Exception {
+        NotificationConsumer<HookNotification> consumer = mock(NotificationConsumer.class);
+
+        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
+        when(consumer.receiveWithCheckedCommit(any())).thenThrow(new KafkaException("broker down")).thenReturn(Collections.emptyList());
+
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
+        NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(consumer);
+
+        Thread thread = new Thread(hookConsumer, "test-hook-consumer-recover");
+
+        thread.start();
+
+        try {
+            verify(consumer, timeout(5000).atLeastOnce()).recover();
+        } finally {
+            hookConsumer.shutdown();
+            thread.join(5000);
+        }
     }
 
     @Test
@@ -952,16 +976,16 @@ public class NotificationHookConsumerTest {
         Method handleMessageMethod = hookConsumer.getClass().getDeclaredMethod("handleMessage", AtlasKafkaMessage.class);
         handleMessageMethod.setAccessible(true);
 
-        // Mock to throw AtlasSchemaViolationException (should not retry)
         when(atlasEntityStore.createOrUpdate(any(AtlasEntityStream.class), anyBoolean()))
-                .thenThrow(new org.apache.atlas.repository.graphdb.AtlasSchemaViolationException(new Exception("Schema - Violation")));
+                .thenThrow(new org.apache.atlas.repository.graphdb.AtlasSchemaViolationException(new Exception("Schema - Violation")))
+                .thenReturn(mock(EntityMutationResponse.class));
 
         EntityCreateRequestV2 createRequest = new EntityCreateRequestV2("testUser", new AtlasEntitiesWithExtInfo());
         AtlasKafkaMessage<HookNotification> kafkaMsg = new AtlasKafkaMessage<>(createRequest, 1L, "test-topic", 0);
 
         handleMessageMethod.invoke(hookConsumer, kafkaMsg);
 
-        // Should only try once (no retries for schema violations)
+        verify(atlasEntityStore, times(2)).createOrUpdate(any(AtlasEntityStream.class), anyBoolean());
         verify(notificationConsumer).commit(any(TopicPartition.class), anyLong());
     }
 

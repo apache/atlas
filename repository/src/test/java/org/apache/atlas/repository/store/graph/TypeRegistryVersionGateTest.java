@@ -72,6 +72,7 @@ public class TypeRegistryVersionGateTest {
             assertFalse(gate.ensureUpToDate());
         }
 
+        verify(typeDefStore, never()).refreshFromStore();
         verify(typeDefStore, never()).init();
         assertEquals(storeLookups, 0);
     }
@@ -85,7 +86,8 @@ public class TypeRegistryVersionGateTest {
             assertFalse(gate.ensureUpToDate());
         }
 
-        verify(typeDefStore, times(1)).init();
+        verify(typeDefStore, times(1)).refreshFromStore();
+        verify(typeDefStore, never()).init();
     }
 
     @Test
@@ -99,6 +101,7 @@ public class TypeRegistryVersionGateTest {
             assertTrue(gate.isCurrent());
         }
 
+        verify(typeDefStore, never()).refreshFromStore();
         verify(typeDefStore, never()).init();
     }
 
@@ -111,12 +114,13 @@ public class TypeRegistryVersionGateTest {
             assertTrue(gate.ensureUpToDate());
         }
 
-        verify(typeDefStore, times(2)).init();
+        verify(typeDefStore, times(2)).refreshFromStore();
+        verify(typeDefStore, never()).init();
     }
 
     @Test
     public void failedReloadReturnsFalseAndLeavesVersionUnseen() throws AtlasBaseException {
-        doThrow(new AtlasBaseException("reload failed")).when(typeDefStore).init();
+        doThrow(new AtlasBaseException("reload failed")).when(typeDefStore).refreshFromStore();
 
         try (MockedStatic<AtlasGraphUtilsV2> utils = mockStatic(AtlasGraphUtilsV2.class)) {
             utils.when(() -> AtlasGraphUtilsV2.getTypeDefRegistryVersion(graph)).thenReturn(1L);

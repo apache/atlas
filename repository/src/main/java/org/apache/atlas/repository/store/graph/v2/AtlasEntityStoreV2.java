@@ -175,11 +175,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         try {
             ret = entityRetriever.toAtlasEntityWithExtInfo(guid, isMinExtInfo);
         } catch (AtlasBaseException e) {
-            // A peer may have created this entity's type moments ago, too recently for the typedef-sync
-            // path to have rebuilt this node's registry. The vertex is in the shared graph, but retrieval
-            // cannot resolve its type and fails. Catch up on demand and retry once before surfacing the
-            // error; only retries when the type was genuinely missing, so it never masks unrelated errors.
-            if (!caughtUpMissingEntityType(guid)) {
+            // A peer may have created this entity's type — or a classification on it — too recently
+            // for the typedef-sync path to have rebuilt this node's registry. The vertex is in the
+            // shared graph, but retrieval cannot resolve that type and fails. Catch up on demand
+            // and retry once before surfacing the error.
+            if (!shouldRetryAfterTypeCatchUp(e, guid)) {
                 throw e;
             }
 
@@ -210,9 +210,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             ret = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
         } catch (AtlasBaseException e) {
             // Same peer-typedef race as getById: the vertex is in the shared graph, but this
-            // node's registry cannot resolve its type. Audit GET uses this path, so a missing
-            // type here becomes HTTP 400 instead of the entity-not-found fallback.
-            if (!caughtUpMissingEntityType(guid)) {
+            // node's registry cannot resolve its type or a classification on it. Audit GET uses
+            // this path, so a missing type here becomes HTTP 400 instead of the entity-not-found fallback.
+            if (!shouldRetryAfterTypeCatchUp(e, guid)) {
                 throw e;
             }
 
@@ -265,7 +265,17 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry, ignoreRelationships);
 
-        AtlasEntitiesWithExtInfo ret = entityRetriever.toAtlasEntitiesWithExtInfo(guids, isMinExtInfo);
+        AtlasEntitiesWithExtInfo ret;
+
+        try {
+            ret = entityRetriever.toAtlasEntitiesWithExtInfo(guids, isMinExtInfo);
+        } catch (AtlasBaseException e) {
+            if (!caughtUpMissingReferencedType(e)) {
+                throw e;
+            }
+
+            ret = entityRetriever.toAtlasEntitiesWithExtInfo(guids, isMinExtInfo);
+        }
 
         if (ret != null) {
             for (String guid : guids) {
@@ -329,7 +339,17 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry, ignoreRelationships);
 
-        AtlasEntityWithExtInfo ret = entityRetriever.toAtlasEntityWithExtInfo(entityVertex, isMinExtInfo);
+        AtlasEntityWithExtInfo ret;
+
+        try {
+            ret = entityRetriever.toAtlasEntityWithExtInfo(entityVertex, isMinExtInfo);
+        } catch (AtlasBaseException e) {
+            if (!caughtUpMissingReferencedType(e)) {
+                throw e;
+            }
+
+            ret = entityRetriever.toAtlasEntityWithExtInfo(entityVertex, isMinExtInfo);
+        }
 
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entityType.getTypeName(), uniqAttributes.toString());
@@ -1507,6 +1527,37 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         typeRegistryVersionGate.ensureUpToDate();
 
         return typeRegistry.getEntityTypeByName(typeName) != null;
+    }
+
+    /**
+     * A classification (or other referenced type) can be in the shared graph while this node's
+     * registry still lacks it — {@link #caughtUpMissingEntityType} will not retry because the
+     * entity type itself is already known. Reload when the failure is an unknown type and the
+     * store version has moved.
+     */
+    // package-private for unit testing (see AtlasEntityStoreV2CatchUpTest)
+    boolean caughtUpMissingReferencedType(AtlasBaseException failure) {
+        if (typeRegistryVersionGate == null || !isUnknownTypeError(failure)) {
+            return false;
+        }
+
+        return typeRegistryVersionGate.ensureUpToDate();
+    }
+
+    private boolean shouldRetryAfterTypeCatchUp(AtlasBaseException failure, String guid) {
+        return caughtUpMissingReferencedType(failure) || caughtUpMissingEntityType(guid);
+    }
+
+    private static boolean isUnknownTypeError(AtlasBaseException failure) {
+        if (failure == null) {
+            return false;
+        }
+
+        AtlasErrorCode code = failure.getAtlasErrorCode();
+
+        return code == AtlasErrorCode.TYPE_NAME_NOT_FOUND
+                || code == AtlasErrorCode.TYPE_NAME_INVALID
+                || code == AtlasErrorCode.CLASSIFICATION_NOT_FOUND;
     }
 
     private void validateAndNormalize(AtlasClassification classification) throws AtlasBaseException {

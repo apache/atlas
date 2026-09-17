@@ -1175,13 +1175,21 @@ public class NotificationPreProcessor implements NotificationEntityProcessor, Ty
 
         Map<String, AtlasEntity> filteredReferredEntities = new HashMap<>();
         Set<String>              processedGUIDs           = new HashSet<>();
+        List<String>             pending                  = new ArrayList<>(referencedGUIDs);
 
-        // First pass: directly referenced entities
-        for (String referencedGUID : referencedGUIDs) {
-            AtlasEntity referredEntity = allReferredEntities.get(referencedGUID);
+        // Include directly referenced entities and their nested referred graph
+        // (e.g. hive_table -> hive_storagedesc / hive_column / hive_db). A lineage
+        // split that copies only the table leaves temp GUIDs unresolved and the
+        // process is created without input/output edges.
+        while (!pending.isEmpty()) {
+            String guid = pending.remove(pending.size() - 1);
+            if (StringUtils.isBlank(guid) || !processedGUIDs.add(guid)) {
+                continue;
+            }
+            AtlasEntity referredEntity = allReferredEntities.get(guid);
             if (referredEntity != null) {
-                filteredReferredEntities.put(referencedGUID, referredEntity);
-                processedGUIDs.add(referencedGUID);
+                filteredReferredEntities.put(guid, referredEntity);
+                pending.addAll(extractReferencedGUIDsFromEntity(referredEntity));
             }
         }
 
@@ -1212,6 +1220,22 @@ public class NotificationPreProcessor implements NotificationEntityProcessor, Ty
         }
 
         return processedEntities;
+    }
+
+    private Map<String, AtlasEntity> processReferredEntitiesForTopic(Map<String, AtlasEntity> referredEntities,
+            Set<String> entityGuidsForTopic, HookNotification originalRequest) {
+        if (referredEntities == null || referredEntities.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<AtlasEntity> processed = processEntitiesForTopic(new ArrayList<>(referredEntities.values()), entityGuidsForTopic, originalRequest);
+        Map<String, AtlasEntity> processedReferredEntities = new HashMap<>();
+        for (AtlasEntity entity : processed) {
+            if (StringUtils.isNotBlank(entity.getGuid())) {
+                processedReferredEntities.put(entity.getGuid(), entity);
+            }
+        }
+        return processedReferredEntities;
     }
 
     /**
@@ -1431,9 +1455,27 @@ public class NotificationPreProcessor implements NotificationEntityProcessor, Ty
             }
         }
 
-        // Filter referred entities to only include those referenced by entities in this topic
+        // Include original main entities that this topic references (e.g. hive_table inputs/outputs
+        // of hive_process). compact() removed them from referredEntities, so a lineage split would
+        // otherwise create the process without relationship payloads and lose lineage edges.
         Map<String, AtlasEntity> originalReferredEntities = originalEntities.getReferredEntities();
-        Map<String, AtlasEntity> filteredReferredEntities = filterReferredEntities(originalReferredEntities, allReferencedGUIDs);
+        Map<String, AtlasEntity> referredSource           = new HashMap<>();
+        if (originalReferredEntities != null) {
+            referredSource.putAll(originalReferredEntities);
+        }
+        if (originalEntities.getEntities() != null) {
+            for (AtlasEntity entity : originalEntities.getEntities()) {
+                if (StringUtils.isNotBlank(entity.getGuid()) && !referredSource.containsKey(entity.getGuid())) {
+                    referredSource.put(entity.getGuid(), entity);
+                }
+            }
+        }
+        Map<String, AtlasEntity> filteredReferredEntities = filterReferredEntities(referredSource, allReferencedGUIDs);
+        for (AtlasEntity mainEntity : mainEntities) {
+            if (mainEntity.getGuid() != null) {
+                filteredReferredEntities.remove(mainEntity.getGuid());
+            }
+        }
 
         // Create set of available entity GUIDs for this specific topic group
         Set<String> entityGuidsForTopic = new HashSet<>();
@@ -1450,8 +1492,7 @@ public class NotificationPreProcessor implements NotificationEntityProcessor, Ty
 
         // Process temporary GUIDs (strip if referred entity is not in this Kafka topic)
         List<AtlasEntity> processedMainEntities = processEntitiesForTopic(mainEntities, entityGuidsForTopic, originalV2Request);
-        // Referred entities are kept as-is (filtering already happened)
-        Map<String, AtlasEntity> processedReferredEntities = filteredReferredEntities;
+        Map<String, AtlasEntity> processedReferredEntities = processReferredEntitiesForTopic(filteredReferredEntities, entityGuidsForTopic, originalV2Request);
 
         LOG.debug("Created grouped {} : {} main entities, {} referred entities (filtered from {}) with {} available GUIDs for topic group",
                 originalV2Request instanceof EntityCreateRequestV2 ? "EntityCreateRequestV2" : "EntityUpdateRequestV2", processedMainEntities.size(), processedReferredEntities.size(),
@@ -1554,6 +1595,7 @@ public class NotificationPreProcessor implements NotificationEntityProcessor, Ty
 
             // Process lineage entities with original notification's metadata
             if (!lineageEntities.isEmpty()) {
+                colocateLineageEntitiesOnProcessTopic(lineageEntities);
                 routeEntitiesByTopic(v2Notification, lineageEntities, "lineage", notificationMetadata);
             }
 
@@ -1565,6 +1607,36 @@ public class NotificationPreProcessor implements NotificationEntityProcessor, Ty
             LOG.error("Error processing notification: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to process notification", e);
         }
+    }
+
+    /**
+     * Keep hive_process, hive_process_execution and hive_column_lineage from one hook notification
+     * on the same ATLAS_LINEAGE topic. Independent per-entity routing keys (process QN vs
+     * processQN:column) otherwise fan out to ATLAS_LINEAGE_0/1/2 and race on the unique process key.
+     */
+    private void colocateLineageEntitiesOnProcessTopic(List<EntityRoutingInfo> lineageEntities) {
+        if (lineageEntities == null || lineageEntities.size() <= 1) {
+            return;
+        }
+
+        String sharedKey = null;
+        for (EntityRoutingInfo info : lineageEntities) {
+            if (EntityPreprocessor.TYPE_HIVE_PROCESS.equals(getEntityTypeName(info.getEntity()))
+                    || AtlasBaseTypeDef.ATLAS_TYPE_PROCESS.equals(getEntityTypeName(info.getEntity()))) {
+                sharedKey = info.getRoutingKey();
+                break;
+            }
+        }
+        if (sharedKey == null) {
+            sharedKey = lineageEntities.get(0).getRoutingKey();
+        }
+
+        String sharedTopic = lineageRouter.getTargetTopic(sharedKey);
+        for (int i = 0; i < lineageEntities.size(); i++) {
+            EntityRoutingInfo old = lineageEntities.get(i);
+            lineageEntities.set(i, new EntityRoutingInfo(old.getEntity(), sharedKey, sharedTopic, old.getReferencedGUIDs()));
+        }
+        LOG.debug("Colocated {} lineage entities on topic {} using routing key {}", lineageEntities.size(), sharedTopic, sharedKey);
     }
 
     /**

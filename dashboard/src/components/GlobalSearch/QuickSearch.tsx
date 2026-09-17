@@ -31,7 +31,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { getGlobalSearchResult } from "../../api/apiMethods/searchApiMethod";
 import DisplayImage from "../EntityDisplayImage";
 import SearchIcon from "@mui/icons-material/Search";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { entityStateReadOnly } from "../../utils/Enum";
 import {
 	extractKeyValueFromEntity,
@@ -87,9 +87,7 @@ const SCOPE_LABELS: Record<QuickSearchScope, string> = {
 
 const QuickSearch = () => {
 	const navigate = useNavigate();
-	const location = useLocation();
 	const toastId = useRef(null);
-	const searchParams = new URLSearchParams(location.search);
 	const [options, setOptions] = useState<GlobalOptionRow[]>([]);
 	const [open, setOpen] = useState<boolean>(false);
 	const [openAdvanceSearch, setOpenAdvanceSearch] = useState<boolean>(false);
@@ -287,16 +285,7 @@ const QuickSearch = () => {
 			if (scope !== "default") {
 				return;
 			}
-			const sanitizedQuery = queryValue || "*";
-			searchParams.set("query", sanitizedQuery);
-			searchParams.set("searchType", "basic");
-			navigate(
-				{
-					pathname: `/search/searchResult`,
-					search: searchParams.toString()
-				},
-				{ replace: true }
-			);
+			navigateToBasicTextQuery(navigate, queryValue || "*");
 			return;
 		}
 
@@ -318,9 +307,6 @@ const QuickSearch = () => {
 		setOptions([]);
 		setInputText("");
 
-		searchParams.set("query", sanitizedTitle);
-		searchParams.set("searchType", "basic");
-
 		if (types === "Entities" && entityObj && entityObj.guid) {
 			navigate(
 				{
@@ -329,13 +315,7 @@ const QuickSearch = () => {
 				{ replace: true }
 			);
 		} else {
-			navigate(
-				{
-					pathname: `/search/searchResult`,
-					search: searchParams.toString()
-				},
-				{ replace: true }
-			);
+			navigateToBasicTextQuery(navigate, sanitizedTitle);
 		}
 	};
 

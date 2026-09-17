@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.repository.store.graph.v2;
 
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
@@ -36,12 +38,17 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 /**
- * Unit tests for {@link AtlasEntityStoreV2#caughtUpMissingEntityType(String)}.
+ * Unit tests for {@link AtlasEntityStoreV2#caughtUpMissingEntityType(String)} and
+ * {@link AtlasEntityStoreV2#caughtUpMissingReferencedType(AtlasBaseException)}.
  *
  * <p>Reproduces the active-active read-after-write miss: a peer creates an entity (and its type), the
  * vertex is durably in the shared graph, but this node's in-memory type registry has not caught up, so
  * entity retrieval cannot resolve the type and fails. The version gate reloads the registry and the
  * read is retried only when the type was genuinely absent.
+ *
+ * <p>Issue 2 is the classification-shaped form of the same miss: the entity type is already known,
+ * so {@code caughtUpMissingEntityType} will not retry, but mapping a classification whose typedef
+ * arrived on a peer while Kafka was down throws {@code TYPE_NAME_NOT_FOUND}.
  */
 public class AtlasEntityStoreV2CatchUpTest {
     private static final String GUID      = "guid-1";
@@ -139,6 +146,51 @@ public class AtlasEntityStoreV2CatchUpTest {
 
             assertFalse(store.caughtUpMissingEntityType(GUID), "must not retry when the type is unresolvable anywhere");
         }
+    }
+
+    @Test
+    public void referencedTypeCatchUp_reloadsWhenStoreIsAhead() {
+        TypeRegistryVersionGate gate  = mock(TypeRegistryVersionGate.class);
+        AtlasEntityStoreV2      store = newStore(mock(AtlasGraph.class), mock(AtlasTypeRegistry.class), gate);
+
+        when(gate.ensureUpToDate()).thenReturn(true);
+
+        AtlasBaseException missingClassification =
+                new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, "BUG2_TAG");
+
+        assertTrue(store.caughtUpMissingReferencedType(missingClassification),
+                "should retry GET after catching up a missing classification type");
+        verify(gate, times(1)).ensureUpToDate();
+    }
+
+    @Test
+    public void referencedTypeCatchUp_doesNotRetryWhenStoreIsCurrent() {
+        TypeRegistryVersionGate gate  = mock(TypeRegistryVersionGate.class);
+        AtlasEntityStoreV2      store = newStore(mock(AtlasGraph.class), mock(AtlasTypeRegistry.class), gate);
+
+        when(gate.ensureUpToDate()).thenReturn(false);
+
+        assertFalse(store.caughtUpMissingReferencedType(
+                new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, "BUG2_TAG")));
+        verify(gate, times(1)).ensureUpToDate();
+    }
+
+    @Test
+    public void referencedTypeCatchUp_ignoresUnrelatedErrors() {
+        TypeRegistryVersionGate gate  = mock(TypeRegistryVersionGate.class);
+        AtlasEntityStoreV2      store = newStore(mock(AtlasGraph.class), mock(AtlasTypeRegistry.class), gate);
+
+        assertFalse(store.caughtUpMissingReferencedType(
+                new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, GUID)));
+        verify(gate, never()).ensureUpToDate();
+    }
+
+    @Test
+    public void referencedTypeCatchUp_whenCatchUpUnavailable_doesNotReload() {
+        AtlasEntityStoreV2 store = newStore(mock(AtlasGraph.class), mock(AtlasTypeRegistry.class), null);
+
+        assertFalse(store.caughtUpMissingReferencedType(
+                new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, "BUG2_TAG")));
     }
 
     private static AtlasEntityStoreV2 newStore(AtlasGraph graph, AtlasTypeRegistry registry, TypeRegistryVersionGate gate) {

@@ -358,7 +358,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
      * This allows models to be grouped into folders to help managability.
      *
      */
-    private void loadBootstrapTypeDefs() {
+    private void loadBootstrapTypeDefs() throws AtlasBaseException {
         LOG.info("==> AtlasTypeDefStoreInitializer.loadBootstrapTypeDefs()");
 
         String atlasHomeDir  = System.getProperty("atlas.home");
@@ -409,7 +409,8 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
      * the holder dies, since its lease then lapses and this node takes over - picking up from the
      * recorded per-file and per-patch state, so nothing the holder finished is done twice.
      */
-    private void loadTypes(List<File> modelFolders, AtlasPatchRegistry patchRegistry, String nodeId) {
+    private void loadTypes(List<File> modelFolders, AtlasPatchRegistry patchRegistry, String nodeId)
+            throws AtlasBaseException {
         long leaseMillis      = TYPEDEF_BOOTSTRAP_STALE_THRESHOLD_MS;
         int  unexplainedTries = 0;
 
@@ -440,6 +441,12 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         }
 
         try {
+            // Load the registry only after this node holds the claim (or the previous
+            // holder has finished).  A late joiner then reads a complete catalog once
+            // instead of rebuilding an empty one and then rebuilding it again.
+            typeDefStore.init();
+            reloadedTypesAfterBootstrap = true;
+
             for (File folder : modelFolders) {
                 loadModelsInFolder(folder, nodeId, leaseMillis);
             }
@@ -479,7 +486,13 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     if (!waitOrClaimTypeDefFile(fileKey, nodeId)) {
                         LOG.info("TypeDef file {} already applied by another node. Skipping.", fileKey);
 
-                        peerLoadedTypeDefs = true;
+                        // Historical APPLIED (warm restart) is skipped after the post-claim
+                        // init() already loaded those types.  Only a skip that happens before
+                        // the registry is loaded can leave us stale — the late-joiner case
+                        // the read-back is for.
+                        if (!reloadedTypesAfterBootstrap) {
+                            peerLoadedTypeDefs = true;
+                        }
                         // Keep the bootstrap lease alive even when this file is already applied:
                         // the skip path still performed a graph lookup, and letting the lease
                         // lapse here makes peers reclaim and restart bootstrap work.
@@ -732,21 +745,13 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         try {
             reloadedTypesAfterBootstrap = false;
 
-            typeDefStore.init();
             loadBootstrapTypeDefs();
 
-            // Read the types back before announcing completion.  The first read happened before
-            // bootstrap, and bootstrap writes nothing this node's peer already did - so on a node that
-            // started while a peer was still writing the models, the first read came up empty and the
-            // files were then skipped as "already applied", leaving this node with no types at all and
-            // answering every request with "unknown typename".
-            //
-            // loadBootstrapTypeDefs() already re-reads the registry via readBackTypesLoadedByPeers()
-            // whenever a peer had loaded models this node skipped - the common active-active boot - so
-            // repeating a full init() here just rebuilds the whole registry a second time for the same
-            // reason.  Only re-read when that path did not run (e.g. loadTypes() returned early after
-            // failing to take the bootstrap claim), which is the sole case a stale/empty first read
-            // would otherwise survive to serve "unknown typename".
+            // loadTypes() loads the registry after taking the bootstrap claim.  The only
+            // remaining reason to read here is when that path never ran: the claim could
+            // not be taken, the wait was interrupted, or there was nothing to load.  That
+            // is the sole case a stale/empty registry would otherwise survive to serve
+            // "unknown typename".
             if (!reloadedTypesAfterBootstrap) {
                 typeDefStore.init();
             }

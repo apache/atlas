@@ -127,7 +127,9 @@ public class TypeDefChangeNotifier implements TypeDefChangeListener {
             kafkaNotification.sendInternal(topicName, Collections.singletonList(payload));
             LOG.info("TypeDefChangeNotifier.onChange(): sent signal '{}' to topic '{}'", payload, topicName);
         } catch (Exception e) {
-            LOG.warn("TypeDefChangeNotifier.onChange(): could not send typedef-change signal '{}' to '{}'",
+            // Fire-and-forget: the write already committed and the version vertex moved.
+            // Peers catch up from that store version even if this signal never lands.
+            LOG.warn("TypeDefChangeNotifier.onChange(): could not send typedef-change signal '{}' to '{}'; peers will catch up from the store version",
                     payload, topicName, e);
         }
     }

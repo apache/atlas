@@ -50,6 +50,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -202,6 +203,59 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         super.init();
 
         LOG.info("<== AtlasTypeDefGraphStoreV2.init()");
+    }
+
+    @Override
+    @GraphTransaction
+    public void refreshFromStore() throws AtlasBaseException {
+        LOG.info("==> AtlasTypeDefGraphStoreV2.refreshFromStore()");
+
+        super.refreshFromStore();
+
+        LOG.info("<== AtlasTypeDefGraphStoreV2.refreshFromStore()");
+    }
+
+    @Override
+    protected Map<String, StoredTypeMeta> getStoredTypeIndex() {
+        Map<String, StoredTypeMeta> index = new HashMap<>();
+
+        indexCategory(index, TypeCategory.ENUM);
+        indexCategory(index, TypeCategory.STRUCT);
+        indexCategory(index, TypeCategory.TRAIT);
+        indexCategory(index, TypeCategory.CLASS);
+        indexCategory(index, TypeCategory.RELATIONSHIP);
+        indexCategory(index, TypeCategory.BUSINESS_METADATA);
+
+        return index;
+    }
+
+    private void indexCategory(Map<String, StoredTypeMeta> index, TypeCategory category) {
+        Iterator<AtlasVertex> vertices = findTypeVerticesByCategory(category);
+
+        while (vertices != null && vertices.hasNext()) {
+            AtlasVertex vertex = vertices.next();
+            String      name   = vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY, String.class);
+
+            if (StringUtils.isBlank(name)) {
+                continue;
+            }
+
+            index.put(name, new StoredTypeMeta(name, category, typeVertexVersion(vertex)));
+        }
+    }
+
+    private static long typeVertexVersion(AtlasVertex vertex) {
+        Object versionObj = vertex.getProperty(Constants.VERSION_PROPERTY_KEY, Object.class);
+
+        if (versionObj instanceof Number) {
+            return ((Number) versionObj).longValue();
+        }
+
+        if (versionObj != null) {
+            return Long.parseLong(versionObj.toString());
+        }
+
+        return 0L;
     }
 
     AtlasGraph getAtlasGraph() {

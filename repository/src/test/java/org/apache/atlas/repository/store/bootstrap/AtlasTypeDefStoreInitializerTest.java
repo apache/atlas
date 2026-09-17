@@ -48,6 +48,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.configuration2.Configuration;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
@@ -68,6 +69,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.SKIPPED;
@@ -75,10 +77,12 @@ import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -171,14 +175,13 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     /**
-     * Bootstrap reads the types twice on purpose: the second read is what saves a node that came up
-     * while a peer was still writing the models, which would otherwise skip those files as "already
-     * applied" and serve requests with no types at all.
+     * Becoming active loads the catalog once after the bootstrap claim, then announces completion.
      */
     @Test
     public void testInstanceIsActive() throws Exception {
         initializer.instanceIsActive();
-        verify(typeDefStore, times(2)).init();
+        verify(typeDefStore, times(1)).init();
+        verify(typeDefStore, times(1)).notifyLoadCompletion();
     }
 
     @Test
@@ -339,9 +342,8 @@ public class AtlasTypeDefStoreInitializerTest {
     }
 
     /**
-     * When a peer had already loaded the models this node skipped, the read-back reloads the registry
-     * once and records that it did so - which is what lets startInternal() drop its own duplicate
-     * post-bootstrap reload instead of rebuilding the whole registry a second time.
+     * When a skip happens before the registry is loaded, the read-back reloads it once and records
+     * that it did so - which is what lets startInternal() drop its own fallback reload.
      */
     @Test
     public void testReadBackReloadsOnceAndFlagsWhenPeerLoadedTypes() throws Exception {
@@ -379,7 +381,7 @@ public class AtlasTypeDefStoreInitializerTest {
 
     /**
      * With nothing loaded by a peer, the read-back is a no-op and does not flag a reload, so
-     * startInternal() still performs its own post-bootstrap read (the sole reload in that case).
+     * startInternal() still performs its fallback read if loadTypes() never loaded the registry.
      */
     @Test
     public void testReadBackDoesNothingWhenNoPeerLoadedTypes() throws Exception {
@@ -390,6 +392,147 @@ public class AtlasTypeDefStoreInitializerTest {
 
         verify(typeDefStore, never()).init();
         assertFalse((Boolean) getField(initializer, "reloadedTypesAfterBootstrap"));
+    }
+
+    /**
+     * Warm restart: every model file is already APPLIED.  After the post-claim catalog load those
+     * skips are no-ops, so the registry is not rebuilt a second time.
+     */
+    @Test
+    public void testWarmRestartLoadsRegistryOnce() throws Exception {
+        Path tempDir  = Files.createTempDirectory("atlas-warm-restart");
+        File modelsDir = new File(tempDir.toFile(), "models");
+        modelsDir.mkdirs();
+        File typeFile = new File(modelsDir, "001-already-applied.json");
+        Files.write(typeFile.toPath(), createSampleTypeDefJson("AppliedType").getBytes(StandardCharsets.UTF_8));
+
+        AtlasVertex appliedVertex = mock(AtlasVertex.class);
+        when(query.vertices()).thenReturn(Arrays.asList(appliedVertex));
+        when(appliedVertex.getProperty(Constants.TYPEDEF_BOOTSTRAP_STATE_KEY, String.class)).thenReturn(APPLIED.toString());
+
+        try (MockedStatic<GraphClaim> graphClaimMock = mockBootstrapClaimHeld()) {
+            System.setProperty("atlas.home", tempDir.toString());
+            invokeStartInternal();
+
+            verify(typeDefStore, times(1)).init();
+            verify(typeDefStore, never()).createUpdateTypesDef(any(), any());
+            verify(typeDefStore, times(1)).notifyLoadCompletion();
+            assertTrue((Boolean) getField(initializer, "reloadedTypesAfterBootstrap"));
+            assertFalse((Boolean) getField(initializer, "peerLoadedTypeDefs"));
+            graphClaimMock.verify(() ->
+                    GraphClaim.releaseLeaseAndCommit(eq(graph), eq(Constants.CLAIM_TYPEDEF_BOOTSTRAP), anyString()), times(1));
+        } finally {
+            System.clearProperty("atlas.home");
+            deleteDirectory(tempDir.toFile());
+        }
+    }
+
+    /**
+     * A waiter does not rebuild the catalog while a peer holds the bootstrap claim.  Once the
+     * holder finishes, this node takes the claim and loads the registry once.
+     */
+    @Test
+    public void testWaiterLoadsRegistryOnlyAfterClaim() throws Exception {
+        Path tempDir   = Files.createTempDirectory("atlas-waiter");
+        File modelsDir = new File(tempDir.toFile(), "models");
+        modelsDir.mkdirs();
+        File typeFile = new File(modelsDir, "001-already-applied.json");
+        Files.write(typeFile.toPath(), createSampleTypeDefJson("AppliedType").getBytes(StandardCharsets.UTF_8));
+
+        AtlasVertex appliedVertex = mock(AtlasVertex.class);
+        when(query.vertices()).thenReturn(Arrays.asList(appliedVertex));
+        when(appliedVertex.getProperty(Constants.TYPEDEF_BOOTSTRAP_STATE_KEY, String.class)).thenReturn(APPLIED.toString());
+
+        AtomicInteger claimAttempts = new AtomicInteger();
+        try (MockedStatic<GraphClaim> graphClaimMock = mockStatic(GraphClaim.class)) {
+            graphClaimMock.when(() -> GraphClaim.claimLeaseAndCommit(any(), anyString(), anyString(), anyLong()))
+                    .thenAnswer(invocation -> {
+                        if (claimAttempts.incrementAndGet() == 1) {
+                            verify(typeDefStore, never()).init();
+                            return false;
+                        }
+                        return true;
+                    });
+            graphClaimMock.when(() -> GraphClaim.hasLiveHolder(any(), anyString())).thenReturn(true);
+            graphClaimMock.when(() -> GraphClaim.releaseLeaseAndCommit(any(), anyString(), anyString()))
+                    .thenAnswer(invocation -> null);
+
+            System.setProperty("atlas.home", tempDir.toString());
+            invokeStartInternal();
+
+            verify(typeDefStore, times(1)).init();
+            verify(typeDefStore, times(1)).notifyLoadCompletion();
+            assertTrue(claimAttempts.get() >= 2, "waiter must retry the claim after the peer is seen holding it");
+        } finally {
+            System.clearProperty("atlas.home");
+            deleteDirectory(tempDir.toFile());
+        }
+    }
+
+    /**
+     * The owner still needs an in-memory registry before it diffs model files against it.
+     */
+    @Test
+    public void testOwnerInitsBeforeApplyingModelFiles() throws Exception {
+        Path tempDir   = Files.createTempDirectory("atlas-owner");
+        File modelsDir = new File(tempDir.toFile(), "models");
+        modelsDir.mkdirs();
+        File typeFile = new File(modelsDir, "001-new.json");
+        String typeJson = createSampleTypeDefJson("OwnerType");
+        Files.write(typeFile.toPath(), typeJson.getBytes(StandardCharsets.UTF_8));
+
+        AtlasTypesDef typesDef = createTestTypesDef("OwnerType");
+        atlasTypeMock.when(() -> AtlasType.fromJson(anyString(), eq(AtlasTypesDef.class)))
+                .thenReturn(typesDef);
+        when(typeRegistry.isRegisteredType("OwnerType")).thenReturn(false);
+
+        try (MockedStatic<GraphClaim> graphClaimMock = mockBootstrapClaimHeld()) {
+            System.setProperty("atlas.home", tempDir.toString());
+            invokeStartInternal();
+
+            InOrder inOrder = inOrder(typeDefStore);
+            inOrder.verify(typeDefStore).init();
+            inOrder.verify(typeDefStore).createUpdateTypesDef(any(), any());
+            inOrder.verify(typeDefStore).notifyLoadCompletion();
+            verify(typeDefStore, times(1)).init();
+            graphClaimMock.verify(() ->
+                    GraphClaim.releaseLeaseAndCommit(eq(graph), eq(Constants.CLAIM_TYPEDEF_BOOTSTRAP), anyString()), times(1));
+        } finally {
+            System.clearProperty("atlas.home");
+            deleteDirectory(tempDir.toFile());
+        }
+    }
+
+    /**
+     * Skipping an already-APPLIED file after the registry is loaded is a warm-restart no-op:
+     * it must not request a second catalog rebuild.
+     */
+    @Test
+    public void testAppliedSkipDoesNotFlagPeerLoadAfterRegistryIsLoaded() throws Exception {
+        Path tempDir  = Files.createTempDirectory("atlas-applied-skip");
+        File typeFile = new File(tempDir.toFile(), "001-already-applied.json");
+        Files.write(typeFile.toPath(), createSampleTypeDefJson("AppliedType").getBytes(StandardCharsets.UTF_8));
+
+        AtlasVertex appliedVertex = mock(AtlasVertex.class);
+        when(query.vertices()).thenReturn(Arrays.asList(appliedVertex));
+        when(appliedVertex.getProperty(Constants.TYPEDEF_BOOTSTRAP_STATE_KEY, String.class)).thenReturn(APPLIED.toString());
+
+        setField(initializer, "reloadedTypesAfterBootstrap", true);
+
+        Method loadModelsMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("loadModelsInFolder", File.class, String.class, long.class);
+        loadModelsMethod.setAccessible(true);
+
+        try (MockedStatic<GraphClaim> graphClaimMock = mockStatic(GraphClaim.class)) {
+            graphClaimMock.when(() -> GraphClaim.claimLeaseAndCommit(any(), anyString(), anyString(), anyLong()))
+                    .thenReturn(true);
+
+            loadModelsMethod.invoke(initializer, tempDir.toFile(), "test-node", 120000L);
+
+            assertFalse((Boolean) getField(initializer, "peerLoadedTypeDefs"));
+            verify(typeDefStore, never()).init();
+        } finally {
+            deleteDirectory(tempDir.toFile());
+        }
     }
 
     @Test
@@ -1976,6 +2119,22 @@ public class AtlasTypeDefStoreInitializerTest {
         setField(patch, "updateToVersion", updateToVersion);
 
         return patch;
+    }
+
+    private void invokeStartInternal() throws Exception {
+        Method startInternalMethod = AtlasTypeDefStoreInitializer.class.getDeclaredMethod("startInternal");
+        startInternalMethod.setAccessible(true);
+        startInternalMethod.invoke(initializer);
+    }
+
+    private MockedStatic<GraphClaim> mockBootstrapClaimHeld() {
+        MockedStatic<GraphClaim> graphClaimMock = mockStatic(GraphClaim.class);
+        graphClaimMock.when(() -> GraphClaim.claimLeaseAndCommit(any(), anyString(), anyString(), anyLong()))
+                .thenReturn(true);
+        graphClaimMock.when(() -> GraphClaim.hasLiveHolder(any(), anyString())).thenReturn(false);
+        graphClaimMock.when(() -> GraphClaim.releaseLeaseAndCommit(any(), anyString(), anyString()))
+                .thenAnswer(invocation -> null);
+        return graphClaimMock;
     }
 
     private void setField(Object obj, String fieldName, Object value) throws Exception {

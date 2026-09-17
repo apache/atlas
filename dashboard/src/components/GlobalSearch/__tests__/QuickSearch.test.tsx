@@ -889,9 +889,9 @@ describe('QuickSearch', () => {
 			// Should navigate to search result page, not detail page
 			expect(mockNavigate).toHaveBeenCalledWith(
 				expect.objectContaining({
-					pathname: '/search/searchResult'
-				}),
-				{ replace: true }
+					pathname: '/search/searchResult',
+					search: expect.stringContaining('query=TestEntity')
+				})
 			)
 		})
 
@@ -2028,6 +2028,31 @@ describe('QuickSearch', () => {
 			})
 
 			expect(mockNavigate).toHaveBeenCalled()
+		})
+
+		it('does not keep leftover type filters on free-text Run search', () => {
+			mockUseLocation.mockReturnValue({
+				pathname: '/search/searchResult',
+				search: '?searchType=basic&type=hive_db'
+			})
+			mockIsEmpty.mockReturnValue(true)
+
+			render(<QuickSearch />)
+
+			const input = screen.getByTestId('autocomplete-input')
+			fireEvent.change(input, { target: { value: 'lineage_demo_tpd.aggregated' } })
+			fireEvent.keyDown(input, {
+				keyCode: 13,
+				which: 13,
+				preventDefault: jest.fn()
+			})
+
+			expect(mockNavigate).toHaveBeenCalled()
+			const navArg = mockNavigate.mock.calls[0][0]
+			const search = typeof navArg === 'string' ? navArg : navArg.search || ''
+			expect(search).toContain('query=lineage_demo_tpd.aggregated')
+			expect(search).toContain('searchType=basic')
+			expect(search).not.toContain('type=hive_db')
 		})
 	})
 

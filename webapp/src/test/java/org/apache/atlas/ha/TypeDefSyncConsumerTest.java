@@ -133,6 +133,45 @@ public class TypeDefSyncConsumerTest {
     }
 
     @Test
+    public void catchUpFromStore_whenAlreadyCurrent_commitsThenSkipsReload() throws Exception {
+        TypeDefSyncConsumer consumer = newConsumer();
+
+        when(typeRegistryVersionGate.isCurrent()).thenReturn(true);
+
+        catchUpFromStore(consumer);
+
+        InOrder inOrder = Mockito.inOrder(graph, typeRegistryVersionGate);
+
+        inOrder.verify(graph).commit();
+        inOrder.verify(typeRegistryVersionGate).isCurrent();
+        Mockito.verify(typeRegistryVersionGate, Mockito.never()).ensureUpToDate();
+    }
+
+    @Test
+    public void catchUpFromStore_whenBehind_refreshesRegistry() throws Exception {
+        TypeDefSyncConsumer consumer = newConsumer();
+
+        when(typeRegistryVersionGate.isCurrent()).thenReturn(false);
+
+        catchUpFromStore(consumer);
+
+        InOrder inOrder = Mockito.inOrder(graph, typeRegistryVersionGate);
+
+        inOrder.verify(graph).commit();
+        inOrder.verify(typeRegistryVersionGate).isCurrent();
+        inOrder.verify(typeRegistryVersionGate).ensureUpToDate();
+    }
+
+    @Test
+    public void catchUpFromStore_swallowsReloadFailures() throws Exception {
+        TypeDefSyncConsumer consumer = newConsumer();
+
+        when(typeRegistryVersionGate.isCurrent()).thenThrow(new RuntimeException("store unavailable"));
+
+        catchUpFromStore(consumer);
+    }
+
+    @Test
     public void start_isNoopAndDoesNotCreateConsumerThread() throws Exception {
         TypeDefSyncConsumer consumer = newConsumer();
 
@@ -159,6 +198,13 @@ public class TypeDefSyncConsumerTest {
         reloadMethod.setAccessible(true);
 
         reloadMethod.invoke(consumer);
+    }
+
+    private static void catchUpFromStore(TypeDefSyncConsumer consumer) throws Exception {
+        Method catchUpMethod = TypeDefSyncConsumer.class.getDeclaredMethod("catchUpFromStore");
+        catchUpMethod.setAccessible(true);
+
+        catchUpMethod.invoke(consumer);
     }
 
     private static Object parseSignal(String payload) throws Exception {

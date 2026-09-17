@@ -77,6 +77,14 @@ import java.util.UUID;
  * is the cluster-wide typedef-registry counter bumped by
  * {@link TypeDefChangeNotifier} before publish. A signal is applied only when its
  * version is strictly greater than the last version this node already applied.
+ *
+ * <h3>Store catch-up when Kafka is unavailable</h3>
+ * Typedef CRUD bumps that graph-backed counter even when the Kafka publish fails, and
+ * this consumer starts at {@code auto.offset.reset=latest}, so a missed signal is never
+ * replayed after the broker returns. Idle polls therefore drop this thread's JanusGraph
+ * snapshot and reload through {@link TypeRegistryVersionGate} when the store is ahead.
+ * Poll failures recreate the Kafka client instead of exiting the loop, so catch-up
+ * continues through an outage and Kafka signals resume afterwards.
  */
 @Component
 @Singleton
@@ -206,83 +214,141 @@ public class TypeDefSyncConsumer implements Service, ActiveStateChangeHandler {
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG,   "100");
 
-        consumer = new KafkaConsumer<>(props);
+        String pendingSignal  = null;
+        long   nextRetryAtMs  = 0L;
+        long   retryBackoffMs = minRetryBackoffMs;
 
         try {
-            consumer.subscribe(Collections.singletonList(topicName));
-            LOG.info("TypeDefSyncConsumer: subscribed to '{}' (group='{}')", topicName, consumerGroupId);
-
-            String pendingSignal  = null;
-            long   nextRetryAtMs  = 0L;
-            long   retryBackoffMs = minRetryBackoffMs;
-
             while (running) {
-                ConsumerRecords<String, String> records = consumer.poll(CONSUMER_POLL_TIMEOUT);
-                String                          signal  = latestUnappliedSignal(records);
+                try {
+                    if (consumer == null) {
+                        KafkaConsumer<String, String> next = new KafkaConsumer<>(props);
 
-                if (signal != null) {
-                    // A reload picks up every change committed before it runs, so the newest signal
-                    // stands in for any earlier one still waiting to be retried.
-                    pendingSignal  = signal;
-                    nextRetryAtMs  = 0L;
-                    retryBackoffMs = minRetryBackoffMs;
-                }
+                        next.subscribe(Collections.singletonList(topicName));
+                        consumer = next;
 
-                if (pendingSignal == null) {
-                    if (!records.isEmpty()) {
-                        consumer.commitSync();
+                        LOG.info("TypeDefSyncConsumer: subscribed to '{}' (group='{}')", topicName, consumerGroupId);
                     }
 
-                    continue;
-                }
+                    ConsumerRecords<String, String> records = consumer.poll(CONSUMER_POLL_TIMEOUT);
+                    String                          signal  = latestUnappliedSignal(records);
 
-                if (System.currentTimeMillis() < nextRetryAtMs) {
-                    continue;
-                }
+                    if (signal != null) {
+                        // A reload picks up every change committed before it runs, so the newest signal
+                        // stands in for any earlier one still waiting to be retried.
+                        pendingSignal  = signal;
+                        nextRetryAtMs  = 0L;
+                        retryBackoffMs = minRetryBackoffMs;
+                    }
 
-                ParsedSignal trigger        = parseSignal(pendingSignal);
-                long         previousVersion = lastAppliedVersion;
+                    if (pendingSignal == null) {
+                        if (!records.isEmpty()) {
+                            consumer.commitSync();
+                        }
 
-                if (trigger == null || trigger.version <= lastAppliedVersion) {
-                    LOG.debug("TypeDefSyncConsumer: skipping signal '{}' — already applied version {}",
-                            pendingSignal, lastAppliedVersion);
+                        catchUpFromStore();
+                        continue;
+                    }
 
-                    pendingSignal = null;
-                    consumer.commitSync();
+                    if (System.currentTimeMillis() < nextRetryAtMs) {
+                        continue;
+                    }
 
-                    continue;
-                }
+                    ParsedSignal trigger         = parseSignal(pendingSignal);
+                    long         previousVersion = lastAppliedVersion;
 
-                LOG.info("TypeDefSyncConsumer: applying signal '{}' (node='{}' version {} → {}), reloading type registry",
-                        pendingSignal, trigger.nodeId, previousVersion, trigger.version);
+                    if (trigger == null || trigger.version <= lastAppliedVersion) {
+                        LOG.debug("TypeDefSyncConsumer: skipping signal '{}' — already applied version {}",
+                                pendingSignal, lastAppliedVersion);
 
-                try {
-                    reloadTypeRegistry();
-                    lastAppliedVersion = trigger.version;
-                    consumer.commitSync();
+                        pendingSignal = null;
+                        consumer.commitSync();
 
-                    pendingSignal  = null;
-                    retryBackoffMs = minRetryBackoffMs;
+                        continue;
+                    }
 
-                    LOG.info("TypeDefSyncConsumer: type registry reloaded. Applied version: {}", lastAppliedVersion);
+                    LOG.info("TypeDefSyncConsumer: applying signal '{}' (node='{}' version {} → {}), reloading type registry",
+                            pendingSignal, trigger.nodeId, previousVersion, trigger.version);
+
+                    try {
+                        reloadTypeRegistry();
+                        lastAppliedVersion = trigger.version;
+                        consumer.commitSync();
+
+                        pendingSignal  = null;
+                        retryBackoffMs = minRetryBackoffMs;
+
+                        LOG.info("TypeDefSyncConsumer: type registry reloaded. Applied version: {}", lastAppliedVersion);
+                    } catch (Exception e) {
+                        nextRetryAtMs = System.currentTimeMillis() + retryBackoffMs;
+
+                        LOG.warn("TypeDefSyncConsumer: type registry reload failed for signal '{}' — retrying in {}ms",
+                                pendingSignal, retryBackoffMs, e);
+
+                        retryBackoffMs = Math.min(retryBackoffMs * 2, maxRetryBackoffMs);
+                    } finally {
+                        RequestContext.clear();
+                    }
+                } catch (WakeupException e) {
+                    if (!running) {
+                        LOG.info("TypeDefSyncConsumer: consumer shutting down");
+                        break;
+                    }
                 } catch (Exception e) {
-                    nextRetryAtMs = System.currentTimeMillis() + retryBackoffMs;
-
-                    LOG.warn("TypeDefSyncConsumer: type registry reload failed for signal '{}' — retrying in {}ms",
-                            pendingSignal, retryBackoffMs, e);
-
-                    retryBackoffMs = Math.min(retryBackoffMs * 2, maxRetryBackoffMs);
-                } finally {
-                    RequestContext.clear();
+                    LOG.warn("TypeDefSyncConsumer: poll failed, recreating consumer", e);
+                    closeConsumerQuietly();
+                    catchUpFromStore();
+                    sleepQuietly(minRetryBackoffMs);
                 }
             }
-        } catch (WakeupException e) {
-            LOG.info("TypeDefSyncConsumer: consumer shutting down");
-        } catch (Exception e) {
-            LOG.error("TypeDefSyncConsumer: consumer loop exited unexpectedly", e);
         } finally {
-            consumer.close();
-            consumer = null;
+            closeConsumerQuietly();
+        }
+    }
+
+    private void closeConsumerQuietly() {
+        KafkaConsumer<String, String> previous = consumer;
+
+        consumer = null;
+
+        if (previous == null) {
+            return;
+        }
+
+        try {
+            previous.close();
+        } catch (Exception e) {
+            LOG.debug("TypeDefSyncConsumer: error closing consumer", e);
+        }
+    }
+
+    private void sleepQuietly(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * Reloads from the shared store when Kafka did not announce the version bump — for example
+     * a typedef created while the broker was down. Committing first drops the long-lived
+     * snapshot this thread holds so the version vertex is not read from before the peer write.
+     */
+    private void catchUpFromStore() {
+        try {
+            graph.commit();
+
+            if (typeRegistryVersionGate.isCurrent()) {
+                return;
+            }
+
+            LOG.info("TypeDefSyncConsumer: in-memory registry is behind the store; catching up without a Kafka signal");
+            typeRegistryVersionGate.ensureUpToDate();
+        } catch (Exception e) {
+            LOG.warn("TypeDefSyncConsumer: store catch-up failed", e);
+        } finally {
+            RequestContext.clear();
         }
     }
 

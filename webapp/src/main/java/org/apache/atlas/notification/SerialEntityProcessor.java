@@ -342,8 +342,10 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
      * - TemporaryBackendException: Temporary storage backend issues
      * - TemporaryLockingException: Temporary lock conflicts
      *
+     * Retryable exceptions continued:
+     * - AtlasSchemaViolationException: Unique-key races between parallel splits; retry so createOrUpdate can merge
+     *
      * Non-retryable exceptions (fail fast, no retry):
-     * - AtlasSchemaViolationException: Unique constraint violations (code bug or duplicate message)
      * - IllegalStateException: Invalid application state
      * - NullPointerException: Programming errors
      * - AtlasBaseException with INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND: Entity not found (acceptable)
@@ -356,10 +358,9 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
             return false;
         }
 
-        // Non-retryable: Schema violations indicate code bugs or duplicate messages
+        // Retryable: unique constraint races from parallel lineage/metadata splits
         if (e instanceof org.apache.atlas.repository.graphdb.AtlasSchemaViolationException) {
-            LOG.warn("Non-retryable exception: SchemaViolationException indicates unique constraint violation");
-            return false;
+            return true;
         }
 
         // Non-retryable: Programming errors
@@ -691,10 +692,9 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                         if (e instanceof InterruptedException) {
                             LOG.error("Interrupted!", e);
                             return null;
-                        } else if (e instanceof org.apache.atlas.repository.graphdb.AtlasSchemaViolationException) {
-                            LOG.warn("{} - {}: Non-retryable {}: Skipping message: {}",
-                                    kafkaMsg.getTopicPartition().toString(), kafkaMsg.getOffset(), exceptionClassName, e.getMessage());
-                            return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
+                        } else if (e instanceof IllegalStateException || e instanceof NullPointerException) {
+                            LOG.error("Non-retryable exception: {} - not committing offset for reprocessing", exceptionClassName, e);
+                            return null;
                         } else if (e instanceof AtlasBaseException) {
                             AtlasBaseException baseException = (AtlasBaseException) e;
                             LOG.warn("Error handling message: {}: {} - {} - {}",
@@ -723,7 +723,7 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                         return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
                     }
 
-                    if (isTransactionRelatedError(e)) {
+                    if (isTransactionRelatedError(e) || e instanceof org.apache.atlas.repository.graphdb.AtlasSchemaViolationException) {
                         // Retryable exceptions: perform rollback, clear cache, and retry
                         LOG.warn("{}: Offset: {}: Retryable exception: Try: {}/{}: Pause: {} ms. {}",
                                 exceptionClassName, kafkaMsg.getOffset(), numRetries + 1, maxRetries, adaptiveWaiter.getWaitDuration(), e.getMessage());

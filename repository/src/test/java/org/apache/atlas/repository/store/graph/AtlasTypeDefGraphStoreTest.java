@@ -752,8 +752,39 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
 
     /**
      * Store-layer get*ByName reads the in-memory registry only. A peer-created type that is
-     * already in the graph is restored by {@code init()} (what TypeRegistryVersionGate calls),
-     * not by a per-read store fallback.
+     * already in the graph is restored by {@code refreshFromStore()} (what TypeRegistryVersionGate
+     * calls for AMRA sync), not by a per-read store fallback.
+     */
+    @Test(dependsOnMethods = "testGet")
+    public void aTypeForgottenFromTheRegistryIsRestoredByRefreshFromStore() throws AtlasBaseException {
+        String        tagName  = "tag_created_on_a_peer_delta";
+        AtlasTypesDef typesDef = new AtlasTypesDef();
+
+        typesDef.setClassificationDefs(Collections.singletonList(new AtlasClassificationDef(tagName)));
+
+        typeDefStore.createTypesDef(typesDef);
+
+        try {
+            forgetTypeWithoutRemovingItFromTheStore(tagName);
+
+            assertFalse(typeRegistry.isRegisteredType(tagName), "the registry should be behind the store at this point");
+
+            typeDefStore.refreshFromStore();
+
+            AtlasClassificationDef restored = typeDefStore.getClassificationDefByName(tagName);
+
+            assertNotNull(restored);
+            assertEquals(restored.getName(), tagName);
+            assertTrue(typeRegistry.isRegisteredType(tagName),
+                    "refreshFromStore() should have applied only the missing type into the registry");
+        } finally {
+            typeDefStore.deleteTypesDef(typesDef);
+        }
+    }
+
+    /**
+     * Full catalog rebuild via {@code init()} still restores a forgotten type. Startup and
+     * non-AMRA callers keep using this path.
      */
     @Test(dependsOnMethods = "testGet")
     public void aTypeForgottenFromTheRegistryIsRestoredByInit() throws AtlasBaseException {

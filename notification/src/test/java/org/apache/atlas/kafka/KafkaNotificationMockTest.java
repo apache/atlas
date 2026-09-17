@@ -86,6 +86,24 @@ public class KafkaNotificationMockTest {
     }
 
     @Test
+    public void testKafkaClientRecoveryDefaults() {
+        Properties properties = new Properties();
+
+        KafkaNotification.applyKafkaClientRecoveryDefaults(properties);
+
+        assertEquals(properties.getProperty(KafkaNotification.METADATA_RECOVERY_STRATEGY_CONFIG), "rebootstrap");
+        assertEquals(properties.getProperty(KafkaNotification.METADATA_RECOVERY_REBOOTSTRAP_TRIGGER_MS_CONFIG), "10000");
+
+        properties.setProperty(KafkaNotification.METADATA_RECOVERY_STRATEGY_CONFIG, "none");
+        properties.setProperty(KafkaNotification.METADATA_RECOVERY_REBOOTSTRAP_TRIGGER_MS_CONFIG, "300000");
+
+        KafkaNotification.applyKafkaClientRecoveryDefaults(properties);
+
+        assertEquals(properties.getProperty(KafkaNotification.METADATA_RECOVERY_STRATEGY_CONFIG), "none");
+        assertEquals(properties.getProperty(KafkaNotification.METADATA_RECOVERY_REBOOTSTRAP_TRIGGER_MS_CONFIG), "300000");
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     public void shouldSendMessagesSuccessfully() throws NotificationException, ExecutionException, InterruptedException {
         Properties        configProperties  = mock(Properties.class);

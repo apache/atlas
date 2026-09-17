@@ -35,8 +35,9 @@ import javax.inject.Singleton;
  * <p>A typedef created on one node is in the graph immediately, but peers only rebuild their
  * registry when the async typedef-sync (Kafka) signal arrives. This gate reads the indexed
  * registry-version vertex on each call and reloads only when that counter has moved, so a peer
- * can answer with the latest types without waiting for Kafka. Kafka remains the background
- * backstop if a version bump is missed.
+ * can answer with the latest types without waiting for Kafka. {@code TypeDefSyncConsumer}
+ * also polls this counter so a missed Kafka publish is still reconciled after the broker
+ * returns, without a node restart.
  *
  * <p>The store is taken as a {@link Provider} rather than the store itself, because asking for it
  * during construction closes a cycle: {@link AtlasTypeDefStore} needs its typedef-change listeners,
@@ -62,11 +63,11 @@ public class TypeRegistryVersionGate {
     /**
      * Reloads this node's type registry when the shared version counter has moved since the last
      * reload on this node. Kafka {@code TypeDefSyncConsumer} and REST both call this method so
-     * they share one watermark and one {@code init()} — two independent rebuilds for the same
-     * version contend for the type-update lock and push the follow-up GET past the client timeout.
+     * they share one watermark and one {@code refreshFromStore()} — a delta apply, not a full
+     * catalog rebuild. {@code init()} remains the startup / fallback rebuild.
      *
      * @return {@code true} when a reload ran, {@code false} when the registry was already current
-     *         or the reload failed (Kafka remains the backstop).
+     *         or the reload failed (the typedef-sync consumer retries).
      */
     public boolean ensureUpToDate() {
         long storeVersion = AtlasGraphUtilsV2.getTypeDefRegistryVersion(graph);
@@ -81,16 +82,16 @@ public class TypeRegistryVersionGate {
             }
 
             try {
-                LOG.info("TypeRegistryVersionGate: store version {} is ahead of last-seen {}; reloading type registry",
+                LOG.info("TypeRegistryVersionGate: store version {} is ahead of last-seen {}; applying typedef delta",
                         storeVersion, lastSeenVersion);
 
-                typeDefStoreProvider.get().init();
+                typeDefStoreProvider.get().refreshFromStore();
 
                 lastSeenVersion = storeVersion;
 
                 return true;
             } catch (AtlasBaseException excp) {
-                LOG.warn("TypeRegistryVersionGate: reload failed at store version {}; the typedef-sync path will retry",
+                LOG.warn("TypeRegistryVersionGate: delta refresh failed at store version {}; the typedef-sync path will retry",
                         storeVersion, excp);
 
                 return false;
