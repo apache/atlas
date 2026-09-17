@@ -80,9 +80,8 @@
 
 .dashboard-card__header {
   /* sx */
-  padding-bottom: 16px;
-  border-bottom: 1px solid;
-  border-color: rgba(0, 0, 0, 0.12);
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e8e8e8;
 }
 
 .dashboard-card__title {
@@ -103,15 +102,18 @@
 .classification-distribution-card__total-associations {
   /* sx */
   color: v.$text-muted;
-  margin-top: 16px;
+  display: block;
+  margin-top: 16px !important;
+  font-size: 0.875rem;
   line-height: 1.4;
 }
 
 .classification-distribution-card__description {
   /* sx */
-  color: v.$text-subtle;
+  color: #8c8c8c;
   display: block;
-  margin-top: 6px;
+  margin-top: 6px !important;
+  font-size: 0.8125rem;
   line-height: 1.4;
 }
 
