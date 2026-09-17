@@ -44,6 +44,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 
+import static org.mockito.Mockito.anyList;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -134,6 +135,19 @@ public class KafkaConsumerTest {
         consumer.commit(tp, 1);
 
         verify(kafkaConsumer, never()).commitSync(Collections.singletonMap(tp, new OffsetAndMetadata(1)));
+    }
+
+    @Test
+    public void testRecoverIsNoOpWithoutConsumerProperties() {
+        TopicPartition                       tp       = new TopicPartition(ATLAS_HOOK_TOPIC, 0);
+        AtlasKafkaConsumer<HookNotification> consumer = new AtlasKafkaConsumer<>(NotificationType.HOOK, kafkaConsumer, false, 100L);
+
+        consumer.recover();
+
+        verify(kafkaConsumer, never()).close();
+        verify(kafkaConsumer, never()).subscribe(anyList());
+        consumer.commit(tp, 1);
+        verify(kafkaConsumer).commitSync(Collections.singletonMap(tp, new OffsetAndMetadata(1)));
     }
 
     @Test

@@ -33,7 +33,6 @@ import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.curator.shaded.com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -246,7 +245,6 @@ public class AtlasEntityType extends AtlasStructType {
         return dynAttributes;
     }
 
-    @VisibleForTesting
     public void setDynEvalAttributes(List<AtlasAttribute> dynAttributes) {
         this.dynAttributes = dynAttributes;
     }
@@ -255,7 +253,6 @@ public class AtlasEntityType extends AtlasStructType {
         return dynEvalTriggerAttributes;
     }
 
-    @VisibleForTesting
     public void setDynEvalTriggerAttributes(List<AtlasAttribute> dynEvalTriggerAttributes) {
         this.dynEvalTriggerAttributes = dynEvalTriggerAttributes;
     }

@@ -1,0 +1,118 @@
+#
+# Atlas MONOLITHIC Multi-Instance Docker Compose
+#
+# Full legacy stack in a single JVM per node (RUN_MODE=MONOLITHIC).
+#
+x-atlas-build: &atlas-build
+  build:
+    context: .
+    dockerfile: Dockerfile.atlas
+    args:
+      - ATLAS_BACKEND=${ATLAS_BACKEND}
+      - ATLAS_SERVER_JAVA_VERSION=${ATLAS_SERVER_JAVA_VERSION}
+      - ATLAS_VERSION=${ATLAS_VERSION}
+  image: atlas:latest
+  stdin_open: true
+  tty: true
+  networks:
+    - atlas
+  volumes:
+    - ./data:/home/atlas/data
+  entrypoint:
+    - /home/atlas/scripts/atlas-active-active.sh
+
+services:
+  atlas-hadoop:
+    extends:
+      service: atlas-hadoop
+      file: docker-compose.atlas-hadoop.yml
+
+  atlas-backend:
+    extends:
+      service: ${ATLAS_BACKEND}
+      file: docker-compose.atlas-backend.yml
+    container_name: atlas-backend
+
+  atlas-kafka:
+    extends:
+      service: atlas-kafka
+      file: docker-compose.atlas-common.yml
+
+  atlas-db:
+    extends:
+      service: atlas-db
+      file: docker-compose.atlas-common.yml
+
+  atlas-solr:
+    extends:
+      service: atlas-solr
+      file: docker-compose.atlas-common.yml
+
+  atlas-zk:
+    extends:
+      service: atlas-zk
+      file: docker-compose.atlas-common.yml
+
+  atlas-monolithic-server:
+    <<: *atlas-build
+    environment:
+      - ATLAS_BACKEND
+      - ATLAS_SERVER_JAVA_VERSION
+      - ATLAS_VERSION
+      - ATLAS_REBUILD_INDEX
+      - ATLAS_UPDATE_COMPOSITE_INDEX_STATUS
+      - ATLAS_INDEX_RECOVERY_ENABLE
+      - RUN_MODE=MONOLITHIC
+    volumes:
+      - ./data:/home/atlas/data
+      - atlas-monolithic-server-home:/opt/atlas/data
+      - ./config/atlas/active-active/common/atlas-application.properties:/opt/atlas/conf/atlas-application-common.properties:ro
+      - ./config/atlas/active-active/${ATLAS_BACKEND}/atlas-application.properties:/opt/atlas/conf/atlas-application-backend.properties:ro
+      - ./config/atlas/users-credentials.properties:/opt/atlas/conf/users-credentials.properties
+    depends_on:
+      atlas-backend:
+        condition: service_healthy
+      atlas-db:
+        condition: service_healthy
+      atlas-kafka:
+        condition: service_started
+      atlas-solr:
+        condition: service_started
+      atlas-zk:
+        condition: service_started
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - >
+          wget -qO-
+          http://localhost:21000/api/atlas/admin/status
+          2>/dev/null | grep -q '"Status":"ACTIVE"'
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 600s
+    restart: unless-stopped
+    deploy:
+      replicas: ${MONOLITHIC_REPLICAS:-1}
+
+  atlas-lb:
+    image: nginx:1.27-alpine
+    container_name: atlas-lb
+    hostname: atlas.example.com
+    networks:
+      - atlas
+    ports:
+      - "${ATLAS_LB_PORT:-21000}:80"
+    volumes:
+      - ./config/nginx-monolithic.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      atlas-monolithic-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  atlas-monolithic-server-home:
+
+networks:
+  atlas:
+    name: atlasnw

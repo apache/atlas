@@ -64,7 +64,7 @@
                                     <groupId>org.apache.hbase</groupId>
                                     <artifactId>hbase-shaded-client</artifactId>
                                     <version>${hbase.version}-hadoop3</version>
-                                    <excludes>META-INF/services/javax.ws.rs.ext.MessageBodyWriter,META-INF/services/javax.ws.rs.ext.MessageBodyReader</excludes>
+                                    <excludes>META-INF/services/javax.ws.rs.ext.MessageBodyWriter,META-INF/services/javax.ws.rs.ext.MessageBodyReader,org/apache/hadoop/hbase/zookeeper/**</excludes>
                                     <outputDirectory>${project.build.directory}/unpacked</outputDirectory>
                                 </artifactItem>
                             </artifactItems>

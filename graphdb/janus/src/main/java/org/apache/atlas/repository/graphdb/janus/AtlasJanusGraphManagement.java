@@ -71,8 +71,10 @@ import java.util.concurrent.ExecutionException;
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.janusgraph.core.schema.SchemaAction.DISABLE_INDEX;
 import static org.janusgraph.core.schema.SchemaAction.ENABLE_INDEX;
+import static org.janusgraph.core.schema.SchemaAction.REINDEX;
 import static org.janusgraph.core.schema.SchemaStatus.DISABLED;
 import static org.janusgraph.core.schema.SchemaStatus.ENABLED;
+import static org.janusgraph.core.schema.SchemaStatus.INSTALLED;
 import static org.janusgraph.core.schema.SchemaStatus.REGISTERED;
 
 /**
@@ -376,6 +378,96 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     public void updateSchemaStatus() {
         updateSchemaStatus(this.management, this.graph.getGraph(), Vertex.class);
         updateSchemaStatus(this.management, this.graph.getGraph(), Edge.class);
+    }
+
+    @Override
+    public boolean ensureCompositeIndexEnabled(String indexName) {
+        JanusGraph janusGraph = this.graph.getGraph();
+
+        try {
+            SchemaStatus status = compositeIndexStatus(janusGraph, indexName);
+
+            if (status == null) {
+                LOG.warn("ensureCompositeIndexEnabled: index {} not found or not a composite index; skipping", indexName);
+
+                return false;
+            }
+
+            if (status == ENABLED) {
+                // Fast path: freshly built over a new key, or already reindexed. Nothing to do.
+                return true;
+            }
+
+            // A composite index built over a key that already had data lands in INSTALLED/REGISTERED
+            // and is ignored by the query planner. Wait for it to converge to REGISTERED, then REINDEX
+            // (which populates existing data and transitions the index to ENABLED).
+            if (status == INSTALLED) {
+                ManagementSystem.awaitGraphIndexStatus(janusGraph, indexName).status(REGISTERED).call();
+            }
+
+            LOG.info("ensureCompositeIndexEnabled: index {} is {}; reindexing to make it usable", indexName, status);
+
+            JanusGraphManagement mgmt = null;
+
+            try {
+                mgmt = janusGraph.openManagement();
+
+                JanusGraphIndex index = mgmt.getGraphIndex(indexName);
+
+                mgmt.updateIndex(index, REINDEX).get();
+            } finally {
+                if (mgmt != null) {
+                    mgmt.commit();
+                }
+            }
+
+            ManagementSystem.awaitGraphIndexStatus(janusGraph, indexName).status(ENABLED).call();
+
+            LOG.info("ensureCompositeIndexEnabled: index {} is now ENABLED", indexName);
+
+            return true;
+        } catch (InterruptedException e) {
+            LOG.error("ensureCompositeIndexEnabled: interrupted for index {}", indexName, e);
+
+            Thread.currentThread().interrupt();
+
+            return false;
+        } catch (Exception e) {
+            LOG.error("ensureCompositeIndexEnabled: could not enable index {}", indexName, e);
+
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isCompositeIndexEnabled(String indexName) {
+        try {
+            return compositeIndexStatus(this.graph.getGraph(), indexName) == ENABLED;
+        } catch (Exception e) {
+            LOG.debug("isCompositeIndexEnabled: status check failed for index {}", indexName, e);
+
+            return false;
+        }
+    }
+
+    private static SchemaStatus compositeIndexStatus(JanusGraph janusGraph, String indexName) {
+        JanusGraphManagement mgmt = null;
+
+        try {
+            mgmt = janusGraph.openManagement();
+
+            JanusGraphIndex index = mgmt.getGraphIndex(indexName);
+
+            if (index == null || !index.isCompositeIndex()) {
+                return null;
+            }
+
+            return index.getIndexStatus(index.getFieldKeys()[0]);
+        } finally {
+            if (mgmt != null) {
+                mgmt.rollback();
+            }
+        }
     }
 
     @Override

@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.tasks;
 
-import org.apache.atlas.AtlasException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -45,20 +44,15 @@ public class TaskFactoryRegistry {
     }
 
     @PostConstruct
-    public void startTaskManagement() throws AtlasException {
-        try {
-            if (!taskManagement.hasStarted()) {
-                LOG.info("TaskFactoryRegistry: TaskManagement start skipped! Someone else will start it.");
+    public void startTaskManagement() {
+        if (!taskManagement.hasStarted()) {
+            LOG.info("TaskFactoryRegistry: TaskManagement start skipped! Someone else will start it.");
 
-                return;
-            }
-
-            LOG.info("TaskFactoryRegistry: Starting TaskManagement...");
-
-            taskManagement.start();
-        } catch (AtlasException e) {
-            LOG.error("Error starting TaskManagement!", e);
-            throw e;
+            return;
         }
+
+        LOG.info("TaskFactoryRegistry: Starting TaskManagement...");
+
+        taskManagement.onFactoriesRegistered();
     }
 }

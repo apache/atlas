@@ -19,6 +19,8 @@ package org.apache.atlas.tasks;
 
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
 import javax.inject.Inject;
 
@@ -26,8 +28,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class BaseTaskFixture {
+    protected static final ReentrantLock TASK_TEST_LOCK = new ReentrantLock();
+
     protected static final String SPYING_TASK_ADD            = "add";
     protected static final String SPYING_TASK_ERROR_THROWING = "errorThrowingTask";
 
@@ -36,6 +41,16 @@ public class BaseTaskFixture {
 
     @Inject
     protected TaskRegistry taskRegistry;
+
+    @BeforeMethod(alwaysRun = true)
+    public void lockTaskTestExecution() {
+        TASK_TEST_LOCK.lock();
+    }
+
+    @AfterMethod(alwaysRun = true)
+    public void unlockTaskTestExecution() {
+        TASK_TEST_LOCK.unlock();
+    }
 
     protected AtlasTask createTask(TaskManagement taskManagement, String type) {
         return taskManagement.createTask(type, "testUser", Collections.singletonMap("params", "params"));

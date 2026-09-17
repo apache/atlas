@@ -30,6 +30,7 @@ services:
     depends_on:
       atlas-zk:
         condition: service_started
+    restart: unless-stopped
     environment:
       - KAFKA_VERSION
       - ATLAS_VERSION
@@ -50,6 +51,7 @@ services:
     image: postgres:13.21
     container_name: atlas-db
     hostname: atlas-db.example.com
+    command: ["postgres", "-c", "max_connections=300"]
     networks:
       - atlas
     environment:

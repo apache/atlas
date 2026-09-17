@@ -21,10 +21,12 @@ package org.apache.atlas.repository.patches;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.pc.WorkItemManager;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -32,10 +34,11 @@ import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 
+import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -56,10 +59,10 @@ public class ReIndexPatchTest {
     private AtlasGraphManagement management;
 
     private ReIndexPatch patch;
-    private MockedStatic<AtlasConfiguration> atlasConfigurationMock;
+    private Object originalRebuildIndexConfig;
 
     @BeforeMethod
-    public void setUp() {
+    public void setUp() throws Exception {
         MockitoAnnotations.openMocks(this);
         when(patchContext.getPatchRegistry()).thenReturn(patchRegistry);
         when(patchContext.getGraph()).thenReturn(graph);
@@ -68,15 +71,9 @@ public class ReIndexPatchTest {
         lenient().doNothing().when(patchRegistry).updateStatus(any(), any());
         when(graph.getManagementSystem()).thenReturn(management);
 
-        atlasConfigurationMock = mockStatic(AtlasConfiguration.class);
+        originalRebuildIndexConfig = AtlasConfiguration.REBUILD_INDEX.get();
+        setAtlasConfig(AtlasConfiguration.REBUILD_INDEX.getPropertyName(), false);
         patch = new ReIndexPatch(patchContext);
-    }
-
-    @AfterMethod
-    public void tearDown() {
-        if (atlasConfigurationMock != null) {
-            atlasConfigurationMock.close();
-        }
     }
 
     @Test
@@ -90,6 +87,18 @@ public class ReIndexPatchTest {
         patch.apply();
 
         verify(management, never()).updateUniqueIndexesForConsistencyLock();
+    }
+
+    @Test
+    public void testApplyWhenRebuildIndexEnabledSetsApplied() throws Exception {
+        setAtlasConfig(AtlasConfiguration.REBUILD_INDEX.getPropertyName(), true);
+        when(graph.getVertices()).thenReturn(new ArrayList<AtlasVertex>());
+        when(graph.getEdges()).thenReturn(new ArrayList<AtlasEdge>());
+
+        patch.apply();
+
+        assertEquals(patch.getStatus(), APPLIED);
+        verify(patchRegistry).updateStatus("JAVA_PATCH_0000_006", APPLIED);
     }
 
     @Test
@@ -167,5 +176,18 @@ public class ReIndexPatchTest {
         Method repairEdgesMethod = ReIndexPatch.ReindexPatchProcessor.class.getDeclaredMethod("repairEdges");
         repairEdgesMethod.setAccessible(true);
         repairEdgesMethod.invoke(processor);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Exception {
+        setAtlasConfig(AtlasConfiguration.REBUILD_INDEX.getPropertyName(), originalRebuildIndexConfig);
+    }
+
+    private static void setAtlasConfig(String key, Object value) throws Exception {
+        Field configurationField = AtlasConfiguration.class.getDeclaredField("APPLICATION_PROPERTIES");
+        configurationField.setAccessible(true);
+
+        Configuration configuration = (Configuration) configurationField.get(null);
+        configuration.setProperty(key, value);
     }
 }

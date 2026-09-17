@@ -21,9 +21,14 @@ package org.apache.atlas.listener;
 import org.apache.atlas.AtlasException;
 
 /**
- * An interface that should be implemented by objects and services to react to changes in state of an Atlas server.
+ * Callback interface for components that need to react when this Atlas node becomes active.
  *
- * The two state transitions we handle are (1) becoming active and (2) becoming passive.
+ * <p>In active-active peer mode every node transitions directly to {@code ACTIVE}; there
+ * are no leader, follower, or passive states.  Implementations receive a single callback —
+ * {@link #instanceIsActive()} — and should start their subsystem at that point.
+ *
+ * <p>Which subsystems actually start is further controlled by {@link org.apache.atlas.AtlasRunMode}
+ * via the {@code RUN_MODE} environment variable or system property.
  */
 public interface ActiveStateChangeHandler {
     enum HandlerOrder {
@@ -49,30 +54,18 @@ public interface ActiveStateChangeHandler {
     }
 
     /**
-     * Callback that is invoked on an implementor when this instance of Atlas server is declared the leader.
+     * Called when this Atlas node has fully activated.
      *
-     * Any initialization that must be carried out by an implementor only when the server becomes active
-     * should happen on this callback.
+     * <p>Any initialisation that must happen only when the node is ready to serve
+     * requests should be done here.
      *
-     * @throws {@link AtlasException} if anything is wrong on initialization
+     * @throws AtlasException if anything goes wrong during activation
      */
     void instanceIsActive() throws AtlasException;
 
     /**
-     * Callback that is invoked on an implementor when this instance of Atlas server is removed as the leader.
-     *
-     * Any cleanup that must be carried out by an implementor when the server becomes passive
-     * should happen on this callback.
-     *
-     * @throws {@link AtlasException} if anything is wrong on shutdown
-     */
-
-    void instanceIsPassive() throws AtlasException;
-
-    /**
-     * Defines the order in which the handler should be called.
-     *   When state becomes active, the handler will be called from low order to high
-     *   When state becomes passive, the handler will be called from high order to low
+     * Defines the order in which handlers are invoked during activation.
+     * Lower values are called first.
      */
     int getHandlerOrder();
 }
