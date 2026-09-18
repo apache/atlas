@@ -54,6 +54,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String       INDEX_MAP_NAME_CONF              = "atlas.graph.index.search.map-name";
     public static final String       SOLR_WAIT_SEARCHER_CONF          = "atlas.graph.index.search.solr.wait-searcher";
     public static final String       ELASTICSEARCH_INDEX_NAME_CONF    = "atlas.graph.index.search.elasticsearch.index-name";
+    public static final String       OPENSEARCH_INDEX_NAME_CONF       = "atlas.graph.index.search.opensearch.index-name";
     public static final String       INDEX_RECOVERY_CONF              = "atlas.index.recovery.enable";
     public static final String       ENABLE_FULLTEXT_SEARCH_CONF      = "atlas.search.fulltext.enable";
     public static final String       ENABLE_FREETEXT_SEARCH_CONF      = "atlas.search.freetext.enable";
@@ -64,6 +65,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String       STORAGE_BACKEND_HBASE2           = "hbase2";
     public static final String       INDEX_BACKEND_SOLR               = "solr";
     public static final String       INDEX_BACKEND_ELASTICSEARCH      = "elasticsearch";
+    public static final String       INDEX_BACKEND_OPENSEARCH         = "opensearch";
     public static final String       LDAP_TYPE                        = "atlas.authentication.method.ldap.type";
     public static final String       LDAP                             = "LDAP";
     public static final String       AD                               = "AD";
@@ -442,6 +444,10 @@ public final class ApplicationProperties extends PropertiesConfiguration {
             addPropertyDirect(ELASTICSEARCH_INDEX_NAME_CONF, DEFAULT_INDEX_NAME);
 
             LOG.info("Setting elasticsearch.index-name property '{}'", DEFAULT_INDEX_NAME);
+        } else if (indexBackend.equalsIgnoreCase(INDEX_BACKEND_OPENSEARCH)) {
+            addPropertyDirect(OPENSEARCH_INDEX_NAME_CONF, DEFAULT_INDEX_NAME);
+
+            LOG.info("Setting opensearch.index-name property '{}'", DEFAULT_INDEX_NAME);
         }
 
         // setting value for 'atlas.graph.index.search.max-result-set-size' (default = 500000)

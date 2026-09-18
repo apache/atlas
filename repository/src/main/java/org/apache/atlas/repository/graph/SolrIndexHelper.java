@@ -36,13 +36,17 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.DEFAULT_SEARCHWEIGHT;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_TEXT_KEY;
 import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.LABELS_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 
 /**
@@ -87,6 +91,7 @@ public class SolrIndexHelper implements IndexChangeListener {
 
                 graphIndexClient.applySearchWeight(Constants.VERTEX_INDEX, indexFieldName2SearchWeightMap);
                 graphIndexClient.applySuggestionFields(Constants.VERTEX_INDEX, getIndexFieldNamesForSuggestions(indexFieldName2SearchWeightMap));
+                graphIndexClient.applyKeywordSubfieldFields(Constants.VERTEX_INDEX, buildKeywordSubfieldIndexFields());
             } catch (AtlasException e) {
                 LOG.error("Error encountered in handling type system change notification.", e);
 
@@ -125,6 +130,60 @@ public class SolrIndexHelper implements IndexChangeListener {
         }
 
         return ret;
+    }
+
+    private Set<String> buildKeywordSubfieldIndexFields() {
+        Set<String> fields = new LinkedHashSet<>();
+
+        addKeywordSubfieldIfPresent(fields, STATE_PROPERTY_KEY);
+        addKeywordSubfieldIfPresent(fields, ENTITY_TYPE_PROPERTY_KEY);
+        addKeywordSubfieldIfPresent(fields, LABELS_PROPERTY_KEY);
+        addKeywordSubfieldIfPresent(fields, CLASSIFICATION_TEXT_KEY);
+
+        for (AtlasEntityType entityType : typeRegistry.getAllEntityTypes()) {
+            if (entityType.isInternalType()) {
+                continue;
+            }
+
+            processTypeForKeywordSubfields(fields, entityType);
+        }
+
+        for (AtlasBusinessMetadataType businessMetadataType : typeRegistry.getAllBusinessMetadataTypes()) {
+            processTypeForKeywordSubfields(fields, businessMetadataType);
+        }
+
+        return fields;
+    }
+
+    private void processTypeForKeywordSubfields(Set<String> fields, AtlasStructType structType) {
+        List<AtlasAttributeDef> attributes = structType.getStructDef().getAttributeDefs();
+
+        if (CollectionUtils.isNotEmpty(attributes)) {
+            for (AtlasAttributeDef attributeDef : attributes) {
+                processAttributeForKeywordSubfield(fields, structType.getAttribute(attributeDef.getName()));
+            }
+        }
+    }
+
+    private void addKeywordSubfieldIfPresent(Set<String> fields, String propertyKey) {
+        String indexFieldName = typeRegistry.getIndexFieldName(propertyKey);
+
+        if (StringUtils.isNotEmpty(indexFieldName)) {
+            fields.add(indexFieldName);
+        }
+    }
+
+    private void processAttributeForKeywordSubfield(Set<String> fields, AtlasAttribute attribute) {
+        if (attribute == null || !GraphBackedSearchIndexer.isStringAttribute(attribute)
+                || StringUtils.isEmpty(attribute.getIndexFieldName())) {
+            return;
+        }
+
+        boolean isStringField = AtlasAttributeDef.IndexType.STRING.equals(attribute.getIndexType());
+
+        if (GraphBackedSearchIndexer.needsKeywordSubfield(attribute.getVertexPropertyName(), isStringField, attribute.getSearchWeight())) {
+            fields.add(attribute.getIndexFieldName());
+        }
     }
 
     private Map<String, Integer> geIndexFieldNamesWithSearchWeights() {

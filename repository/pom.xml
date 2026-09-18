@@ -435,5 +435,74 @@
                 </dependency>
             </dependencies>
         </profile>
+
+        <profile>
+            <id>opensearch-it</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.atlas</groupId>
+                    <artifactId>atlas-graphdb-janus</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.atlas</groupId>
+                    <artifactId>janusgraph-opensearch</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.janusgraph</groupId>
+                    <artifactId>janusgraph-berkeleyje</artifactId>
+                    <version>${janusgraph.version}</version>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.testcontainers</groupId>
+                    <artifactId>testcontainers</artifactId>
+                    <version>${testcontainers.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration combine.self="override">
+                            <includes>
+                                <include>**/*OpenSearch*IT.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <opensearch.docker.image>${opensearch.docker.image}</opensearch.docker.image>
+                                <opensearch.docker.version>${opensearch.docker.version}</opensearch.docker.version>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <!-- The root pom.xml binds maven-failsafe-plugin globally with forkCount=0 ("don't fork
+                             the IT until there's sandbox capability for IT env"), so its argLine (JDK17 module
+                             opens flags) never actually applies — failsafe runs in Maven's own unforked JVM instead.
+                             Failsafe's default **/*IT.java pattern already matches these OpenSearch ITs and
+                             re-runs them (redundantly with the surefire execution above) at the
+                             integration-test/verify phase; without a real fork here, static init in Atlas's type
+                             system (AtlasTypeRegistry/AtlasEntityType) fails with ExceptionInInitializerError on
+                             JDK17, without changing the forkCount=0 default for every other module. -->
+                        <configuration>
+                            <forkCount>1</forkCount>
+                            <systemPropertyVariables>
+                                <opensearch.docker.image>${opensearch.docker.image}</opensearch.docker.image>
+                                <opensearch.docker.version>${opensearch.docker.version}</opensearch.docker.version>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>
