@@ -108,6 +108,8 @@ public class NotificationREST {
             String       concatenatedMessage = StringUtils.join(failedMessages, "\n");
 
             throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_EXCEPTION, exception, concatenatedMessage);
+        } catch (Exception exception) {
+            throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_EXCEPTION, exception, exception.getMessage());
         }
     }
 
