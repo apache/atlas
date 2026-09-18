@@ -679,15 +679,13 @@ public final class GraphHelper {
     }
 
     public static List<String> getBlockedClassificationIds(AtlasEdge edge) {
-        List<String> ret = null;
-
-        if (edge != null) {
-            List<String> classificationIds = AtlasGraphUtilsV2.getEncodedProperty(edge, RELATIONSHIPTYPE_BLOCKED_PROPAGATED_CLASSIFICATIONS_KEY, List.class);
-
-            ret = CollectionUtils.isNotEmpty(classificationIds) ? classificationIds : Collections.emptyList();
+        if (edge == null) {
+            return Collections.emptyList();
         }
 
-        return ret;
+        List<String> classificationIds = edge.getListProperty(RELATIONSHIPTYPE_BLOCKED_PROPAGATED_CLASSIFICATIONS_KEY);
+
+        return CollectionUtils.isNotEmpty(classificationIds) ? classificationIds : Collections.emptyList();
     }
 
     public static PropagateTags getPropagateTags(AtlasElement element) {
