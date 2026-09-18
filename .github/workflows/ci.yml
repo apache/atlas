@@ -26,6 +26,9 @@ name: CI
 
 on:
   push:
+    branches:
+     - master
+     - atlas-2.6
   pull_request:
     branches: [ "master" ]
 
