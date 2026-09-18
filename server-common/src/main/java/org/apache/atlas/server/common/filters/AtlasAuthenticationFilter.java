@@ -421,7 +421,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             String                      action          = httpRequest.getParameter("action");
             String                      doAsUser        = request.getParameter("doAs");
 
-            HeadersUtil.setSecurityHeaders(responseWrapper);
+            HeadersUtil.setSecurityHeaders(responseWrapper, request);
 
             if (logoutHandler != null && supportTrustedProxy && StringUtils.isNotEmpty(doAsUser) && StringUtils.equals(action, RestUtil.TIMEOUT_ACTION)) {
                 if (existingAuth != null) {

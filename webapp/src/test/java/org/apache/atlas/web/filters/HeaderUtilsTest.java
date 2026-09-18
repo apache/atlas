@@ -28,7 +28,9 @@ import java.util.Map;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -96,6 +98,18 @@ public class HeaderUtilsTest {
         assertEquals("DENY", HeadersUtil.getHeaderMap(HeadersUtil.X_FRAME_OPTIONS_KEY));
         assertEquals("nosniff", HeadersUtil.getHeaderMap(HeadersUtil.X_CONTENT_TYPE_OPTIONS_KEY));
         assertEquals("1; mode=block", HeadersUtil.getHeaderMap(HeadersUtil.X_XSS_PROTECTION_KEY));
+    }
+
+    @Test
+    public void testContentSecurityPolicyValueUsesNonce() {
+        HeadersUtil.initializeHttpResponseHeaders(null);
+
+        String cspValue = HeadersUtil.getContentSecurityPolicyValue("testNonce123");
+
+        assertTrue(cspValue.contains("nonce-testNonce123"));
+        assertFalse(cspValue.contains(HeadersUtil.CONTENT_SEC_POLICY_NONCE_PLACEHOLDER));
+        assertFalse(cspValue.contains("'unsafe-inline'"));
+        assertFalse(cspValue.contains("'unsafe-eval'"));
     }
 
     private Properties createPropertiesWithHeaders(String... headers) {

@@ -104,7 +104,7 @@ public class AtlasCSRFPreventionFilter implements Filter {
         final HttpServletResponse   httpResponse    = (HttpServletResponse) response;
         AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
 
-        HeadersUtil.setSecurityHeaders(responseWrapper);
+        HeadersUtil.setSecurityHeaders(responseWrapper, request);
 
         if (isCSRF_ENABLED) {
             handleHttpInteraction(new ServletFilterHttpInteraction(httpRequest, httpResponse, chain));
