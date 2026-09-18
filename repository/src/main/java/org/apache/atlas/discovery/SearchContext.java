@@ -23,11 +23,9 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -48,7 +46,9 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -582,15 +582,16 @@ public class SearchContext {
         AtlasVertex ret = null;
 
         if (StringUtils.isNotEmpty(termName)) {
-            AtlasEntityType termType = getTermEntityType();
-            AtlasAttribute  attrName = termType.getAttribute(TermSearchProcessor.ATLAS_GLOSSARY_TERM_ATTR_QNAME);
-            AtlasGraphQuery query    = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, termType.getTypeName())
-                    .has(attrName.getVertexPropertyName(), termName)
-                    .has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
+            AtlasEntityType     termType       = getTermEntityType();
+            Map<String, Object> uniqAttributes = new HashMap<>();
 
-            Iterator<AtlasVertex> results = query.vertices().iterator();
+            uniqAttributes.put(TermSearchProcessor.ATLAS_GLOSSARY_TERM_ATTR_QNAME, termName);
 
-            ret = results.hasNext() ? results.next() : null;
+            ret = AtlasGraphUtilsV2.findByUniqueAttributes(graph, termType, uniqAttributes);
+
+            if (ret != null && AtlasGraphUtilsV2.getState(ret) != AtlasEntity.Status.ACTIVE) {
+                ret = null;
+            }
         }
 
         return ret;
