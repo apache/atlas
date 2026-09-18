@@ -104,7 +104,14 @@ def hbaseBinDir(dir):
     return os.path.join(dir, "hbase", BIN)
 
 def hbaseConfDir(dir):
-    return os.environ.get(HBASE_CONF_DIR, os.path.join(dir, "hbase", CONF))
+    """Resolve HBase client conf dir. Relative HBASE_CONF_DIR is resolved against Atlas home so
+    atlas_start.py works when run from bin/ (cwd is not the install root)."""
+    conf = os.environ.get(HBASE_CONF_DIR)
+    if conf:
+        if not os.path.isabs(conf):
+            conf = os.path.normpath(os.path.join(dir, conf))
+        return conf
+    return os.path.join(dir, "hbase", CONF)
 
 def zookeeperBinDir(dir):
     return os.environ.get(SOLR_BIN, os.path.join(dir, "zk", BIN))

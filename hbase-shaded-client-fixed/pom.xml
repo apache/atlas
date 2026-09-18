@@ -73,6 +73,29 @@
                 </executions>
             </plugin>
 
+            <!-- Expose unpacked HBase classes on compile classpath for reactor dependents (mvn compile without package). -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-unpacked-hbase-to-classes</id>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}/unpacked</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Repack the jar -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

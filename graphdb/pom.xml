@@ -31,12 +31,13 @@
     <name>Apache Atlas Graph Database Projects</name>
     <description>Apache Atlas Graph Database Projects</description>
 
-    <!-- Build all modules including all the possible graph providers although only one will be used -->
+    <!-- JanusGraph RDBMS module builds before janus so the handler jar is available for RDBMS packaging profiles. -->
     <modules>
         <module>api</module>
         <module>common</module>
         <module>graphdb-impls</module>
         <module>janus</module>
+        <module>janus-elasticsearch-shim</module>
         <module>janusgraph-rdbms</module>
     </modules>
 

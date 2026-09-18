@@ -42,13 +42,12 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.TermsResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
-import org.janusgraph.diskstorage.es.ElasticSearch7Index;
-import org.janusgraph.diskstorage.es.ElasticSearchClient;
 import org.janusgraph.diskstorage.solr.Solr6Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -476,11 +475,28 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         return client != null && client.ping(Constants.VERTEX_INDEX).getStatus() == SOLR_HEALTHY_STATUS;
     }
 
-    private boolean isElasticsearchHealthy() throws IOException {
-        ElasticSearchClient client           = ElasticSearch7Index.getElasticSearchClient();
-        String              janusVertexIndex = ApplicationProperties.DEFAULT_INDEX_NAME + "_" + Constants.VERTEX_INDEX;
+    private boolean isElasticsearchHealthy() {
+        try {
+            Class<?> esIndexClass = Class.forName("org.janusgraph.diskstorage.es.ElasticSearch7Index");
+            Method   getClient    = esIndexClass.getMethod("getElasticSearchClient");
+            Object   client       = getClient.invoke(null);
 
-        return client != null && client.indexExists(janusVertexIndex);
+            if (client == null) {
+                return false;
+            }
+
+            Method indexExists = client.getClass().getMethod("indexExists", String.class);
+            String janusVertexIndex = ApplicationProperties.DEFAULT_INDEX_NAME + "_" + Constants.VERTEX_INDEX;
+            Object exists = indexExists.invoke(client, janusVertexIndex);
+
+            return Boolean.TRUE.equals(exists);
+        } catch (ClassNotFoundException e) {
+            LOG.debug("Elasticsearch index implementation not on classpath; skipping health check");
+            return false;
+        } catch (ReflectiveOperationException e) {
+            LOG.debug("Elasticsearch health check failed: {}", e.getMessage());
+            return false;
+        }
     }
 
     private SolrResponse updateFreeTextRequestHandler(SolrClient solrClient, String collectionName, Map<String, Integer> indexFieldName2SearchWeightMap, Solr6Index.Mode mode) throws IOException, SolrServerException, AtlasBaseException {
