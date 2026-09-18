@@ -45,10 +45,10 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -891,7 +891,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         params.setExcludeHeaderAttributes(true);
         params.setEntityFilters(filterCriteria);
         params.setSortBy("name");
-        params.setAttributes(new HashSet<>(Collections.singletonList("name")));
+        params.setAttributes(Collections.singletonList("name"));
         params.setLimit(1);
 
         AtlasSearchResult                       searchResult = discoveryService.searchWithParameters(params);
@@ -904,6 +904,40 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
     }
 
     @Test
+    public void excludeHeaderAttributesPreservesAttributeOrder() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setExcludeHeaderAttributes(true);
+        params.setAttributes(Arrays.asList("qualifiedName", "createTime"));
+        params.setLimit(25);
+
+        AtlasSearchResult searchResult = discoveryService.searchWithParameters(params);
+
+        assertNotNull(searchResult.getAttributes());
+        assertEquals(searchResult.getAttributes().getName(), Arrays.asList("qualifiedName", "createTime"));
+        assertEquals(new ArrayList<>(searchResult.getSearchParameters().getAttributes()),
+                Arrays.asList("qualifiedName", "createTime"));
+    }
+
+    @Test
+    public void excludeHeaderAttributesDedupesAttributeNames() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setExcludeHeaderAttributes(true);
+        params.setAttributes(Arrays.asList("qualifiedName", "createTime", "qualifiedName"));
+        params.setLimit(25);
+
+        AtlasSearchResult searchResult = discoveryService.searchWithParameters(params);
+
+        assertNotNull(searchResult.getAttributes());
+        assertEquals(searchResult.getAttributes().getName(), Arrays.asList("qualifiedName", "createTime"));
+        assertEquals(new ArrayList<>(searchResult.getSearchParameters().getAttributes()),
+                Arrays.asList("qualifiedName", "createTime"));
+    }
+
+    @Test
     public void excludeHeaderAttributesRelationAttr() throws AtlasBaseException {
         SearchParameters.FilterCriteria filterCriteria = getSingleFilterCondition("name", Operator.EQ, "time_dim");
         SearchParameters                params         = new SearchParameters();
@@ -911,7 +945,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         params.setTypeName(HIVE_TABLE_TYPE);
         params.setExcludeHeaderAttributes(true);
         params.setEntityFilters(filterCriteria);
-        params.setAttributes(new HashSet<>(Arrays.asList("name", "db")));
+        params.setAttributes(Arrays.asList("name", "db"));
         params.setLimit(1);
 
         AtlasSearchResult searchResult = discoveryService.searchWithParameters(params);
@@ -928,7 +962,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
 
         params.setTypeName(HIVE_TABLE_TYPE);
         params.setExcludeHeaderAttributes(true);
-        params.setAttributes(new HashSet<>(Arrays.asList("name", "__state")));
+        params.setAttributes(Arrays.asList("name", "__state"));
         params.setLimit(1);
         params.setEntityFilters(filterCriteria);
         params.setSortBy("name");
@@ -948,7 +982,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
 
         params.setTypeName(HIVE_TABLE_TYPE + "," + ALL_ENTITY_TYPES);
         params.setExcludeHeaderAttributes(true);
-        params.setAttributes(new HashSet<>(Collections.singletonList("__state")));
+        params.setAttributes(Collections.singletonList("__state"));
         params.setLimit(2);
 
         AtlasSearchResult                       searchResult = discoveryService.searchWithParameters(params);
@@ -966,7 +1000,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
 
         params.setTypeName(HIVE_TABLE_TYPE + "," + ALL_ENTITY_TYPES);
         params.setExcludeHeaderAttributes(true);
-        params.setAttributes(new HashSet<>(Arrays.asList("__state", "__guid")));
+        params.setAttributes(Arrays.asList("__state", "__guid"));
         params.setLimit(2);
 
         AtlasSearchResult searchResult = discoveryService.searchWithParameters(params);
@@ -979,7 +1013,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
 
         params.setTypeName(HIVE_TABLE_TYPE + "," + ALL_ENTITY_TYPES);
         params.setExcludeHeaderAttributes(true);
-        params.setAttributes(new HashSet<>(Collections.singletonList("name")));
+        params.setAttributes(Collections.singletonList("name"));
         params.setLimit(1);
 
         discoveryService.searchWithParameters(params);
@@ -991,7 +1025,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
 
         params.setTypeName(HIVE_TABLE_TYPE);
         params.setExcludeHeaderAttributes(true);
-        params.setAttributes(new HashSet<>(Collections.singletonList("name1")));
+        params.setAttributes(Collections.singletonList("name1"));
         params.setLimit(1);
 
         discoveryService.searchWithParameters(params);
@@ -1382,10 +1416,10 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         assertNotNull(searchResult);
         AtlasSearchResult.AttributeSearchResult result = searchResult.getAttributes();
         assertNotNull(result);
-        assertTrue(result.getName().containsAll(expected.getName()));
+        assertEquals(result.getName(), expected.getName());
         int i = 0;
         for (List<Object> value : result.getValues()) {
-            assertTrue(value.containsAll(expected.getValues().get(i)));
+            assertEquals(value, expected.getValues().get(i));
             i++;
         }
     }

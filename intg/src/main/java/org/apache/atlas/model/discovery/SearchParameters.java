@@ -22,10 +22,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.apache.atlas.SortOrder;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -63,6 +66,7 @@ public class SearchParameters implements Serializable {
     private FilterCriteria entityFilters;
     private FilterCriteria tagFilters;
     private FilterCriteria relationshipFilters;
+    @JsonDeserialize(as = LinkedHashSet.class)
     private Set<String>    attributes;
     private SortOrder      sortOrder;
 
@@ -319,11 +323,12 @@ public class SearchParameters implements Serializable {
 
     /**
      * Return these attributes in the result response
+     * Duplicate attribute names are ignored; the first occurrence determines position.
      *
      * @param attributes
      */
-    public void setAttributes(Set<String> attributes) {
-        this.attributes = attributes;
+    public void setAttributes(Collection<String> attributes) {
+        this.attributes = attributes == null ? null : new LinkedHashSet<>(attributes);
     }
 
     /**
