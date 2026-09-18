@@ -127,7 +127,7 @@ public class EntityDiscoveryServiceTest {
             when(appProps.getString(anyString(), anyString())).thenReturn("v.");
             // Create real service instance with properly mocked dependencies
             try {
-                entityDiscoveryService = new EntityDiscoveryService(typeRegistry, graph, indexer, searchTracker, userProfileService, taskManagement);
+                entityDiscoveryService = new EntityDiscoveryService(typeRegistry, graph, indexer, searchTracker, userProfileService, taskManagement, mock(org.apache.atlas.semantic.SemanticSearchService.class));
             } catch (Exception e) {
                 // If construction still fails, create a spy to get partial real behavior
                 EntityDiscoveryService mockService = mock(EntityDiscoveryService.class);
@@ -177,7 +177,7 @@ public class EntityDiscoveryServiceTest {
         when(RequestContext.get()).thenReturn(context);
         when(context.getUser()).thenReturn("testUser");
 
-        return new EntityDiscoveryService(typeRegistry, graph, indexer, searchTracker, userProfileService, taskManagement);
+        return new EntityDiscoveryService(typeRegistry, graph, indexer, searchTracker, userProfileService, taskManagement, mock(org.apache.atlas.semantic.SemanticSearchService.class));
     }
 
     @AfterMethod

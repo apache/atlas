@@ -54,6 +54,7 @@ public class AtlasSearchResult implements Serializable {
     private Map<String, AtlasEntityHeader> referredEntities;
     private long                           approximateCount = -1;
     private String                         nextMarker;
+    private Map<String, Double>            similarityScores;
 
     public AtlasSearchResult() {
     }
@@ -271,7 +272,15 @@ public class AtlasSearchResult implements Serializable {
         }
     }
 
-    public enum AtlasQueryType { DSL, FULL_TEXT, GREMLIN, BASIC, ATTRIBUTE, RELATIONSHIP }
+    public Map<String, Double> getSimilarityScores() {
+        return similarityScores;
+    }
+
+    public void setSimilarityScores(Map<String, Double> similarityScores) {
+        this.similarityScores = similarityScores;
+    }
+
+    public enum AtlasQueryType { DSL, FULL_TEXT, GREMLIN, BASIC, ATTRIBUTE, RELATIONSHIP, SEMANTIC }
 
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
     @JsonInclude(JsonInclude.Include.NON_NULL)

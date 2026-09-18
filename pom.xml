@@ -76,6 +76,8 @@
         <module>server-common</module>
         <module>test-tools</module>
         <module>tools/atlas-index-repair</module>
+        <module>services/atlas-semantic-indexer</module>
+        <module>tools/atlas-semantic-repair</module>
         <module>tools/classification-updater</module>
         <module>tools/notification-analyzer</module>
         <module>webapp</module>

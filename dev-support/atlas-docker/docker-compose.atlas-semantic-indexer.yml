@@ -1,0 +1,20 @@
+# Semantic Indexer overlay — use with docker-compose.atlas.yml (OpenSearch backend).
+#
+#   docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-semantic-indexer.yml up -d atlas-semantic-indexer
+
+services:
+  atlas-semantic-indexer:
+    image: ${ATLAS_IMAGE:-apache/atlas:latest}
+    container_name: atlas-semantic-indexer
+    depends_on:
+      - atlas
+      - atlas-kafka
+      - atlas-opensearch
+    environment:
+      - ATLAS_HOME=/opt/atlas
+    volumes:
+      - ./config/atlas/postgres/opensearch/atlas-application.properties:/opt/atlas/conf/atlas-application.properties:ro
+    command: ["/opt/atlas/bin/atlas_semantic_indexer.sh"]
+    restart: unless-stopped
+    networks:
+      - atlas

@@ -34,6 +34,8 @@ import org.apache.atlas.model.discovery.AtlasSuggestionsResult;
 import org.apache.atlas.model.discovery.QuickSearchParameters;
 import org.apache.atlas.model.discovery.RelationshipSearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.discovery.SemanticSearchParameters;
+import org.apache.atlas.model.discovery.SimilarEntitySearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.repository.Constants;
@@ -1029,5 +1031,65 @@ public class DiscoveryREST {
         DateTimeFormatter formatter     = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss.SSS");
 
         return formatter.format(localDateTime);
+    }
+
+    /**
+     * Semantic search using vector similarity.
+     */
+    @POST
+    @Path("/semantic")
+    @Timed
+    public AtlasSearchResult semanticSearch(SemanticSearchParameters searchParameters) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.semanticSearch(" + searchParameters + ")");
+            }
+
+            if (searchParameters == null || StringUtils.isEmpty(searchParameters.getQuery())) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_SEARCH_PARAMS);
+            }
+
+            return discoveryService.semanticSearch(searchParameters);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Find entities similar to the entity identified by guid.
+     */
+    @GET
+    @Path("/similar")
+    @Timed
+    public AtlasSearchResult similarEntities(@QueryParam("guid") String guid,
+                                             @QueryParam("typeName") String typeName,
+                                             @QueryParam("excludeDeletedEntities") @DefaultValue("true") boolean excludeDeletedEntities,
+                                             @QueryParam("includeSubTypes") @DefaultValue("true") boolean includeSubTypes,
+                                             @QueryParam("topK") @DefaultValue("25") int topK,
+                                             @QueryParam("minScore") @DefaultValue("0.0") double minScore) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.similarEntities(" + guid + ")");
+            }
+
+            if (StringUtils.isEmpty(guid)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid");
+            }
+
+            SimilarEntitySearchParameters searchParameters = new SimilarEntitySearchParameters();
+            searchParameters.setTypeName(typeName);
+            searchParameters.setExcludeDeletedEntities(excludeDeletedEntities);
+            searchParameters.setIncludeSubTypes(includeSubTypes);
+            searchParameters.setTopK(topK);
+            searchParameters.setMinScore(minScore);
+
+            return discoveryService.similarEntities(guid, searchParameters);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 }

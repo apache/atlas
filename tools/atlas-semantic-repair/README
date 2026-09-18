@@ -1,0 +1,9 @@
+Apache Atlas Semantic Repair
+============================
+
+Backfills semantic embeddings for existing graph vertices into the JanusGraph
+OpenSearch vertex index.
+
+  atlas_semantic_repair.sh [--batch-size N] [--dry-run] [--guid <guid>]
+
+Run after enabling semantic search or changing the embedding model/dimension.

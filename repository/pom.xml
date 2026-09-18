@@ -168,6 +168,11 @@
             <artifactId>hbase-client</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+        </dependency>
+
         <!-- Required at runtime by Apache POI 5.x (XSSFWorkbook / XLSX export).
              log4j-api is excluded from poi/poi-ooxml above to avoid duplicate logging
              bindings, but POI still references org.apache.logging.log4j.Logger at class init. -->
