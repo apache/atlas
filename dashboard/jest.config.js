@@ -36,6 +36,7 @@ const config = {
   
   // Module name mapping for path aliases
   moduleNameMapper: {
+    '^sanitize-html$': '<rootDir>/src/__mocks__/sanitize-html.ts',
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@components/(.*)$': '<rootDir>/src/components/$1',
     '^@api/(.*)\.js$': '<rootDir>/src/api/$1.ts',

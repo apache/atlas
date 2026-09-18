@@ -22,6 +22,7 @@
  * Coverage Target: 100% for Statements, Branches, Functions, and Lines
  */
 
+
 import {
 	customSortBy,
 	customSortByObjectKeys,
@@ -878,11 +879,80 @@ describe('Utils', () => {
 	});
 
 	describe('sanitizeHtmlContent', () => {
-		it('should sanitize HTML content', () => {
-			const html = '<script>alert("xss")</script><p>Safe content</p>';
-			const result = sanitizeHtmlContent(html);
+		it('should allow configured positive HTML tags and attributes', () => {
+			const safeHtml = `
+				<h1>Heading</h1>
+				<p>This is a <b>bold</b> and <em>italic</em> text.</p>
+				<ul><li>List item</li></ul>
+				<a href="https://example.com">Valid link</a>
+			`;
+			const result = sanitizeHtmlContent(safeHtml);
+			expect(result).toContain('<h1>Heading</h1>');
+			expect(result).toContain('<b>bold</b>');
+			expect(result).toContain('<em>italic</em>');
+			expect(result).toContain('<ul><li>List item</li></ul>');
+			expect(result).toContain('<a href="https://example.com">Valid link</a>');
+		});
+
+		it('should strip malicious and unconfigured tags (negative XSS cases)', () => {
+			const xssHtml = `
+				<script>alert("xss")</script>
+				<p>Safe content <iframe src="javascript:alert(1)"></iframe></p>
+				<a href="javascript:alert('xss')">Malicious link</a>
+				<img src="x" onerror="alert(1)" />
+				<div onclick="alert(1)">Click me</div>
+			`;
+			const result = sanitizeHtmlContent(xssHtml);
+			
+			// <script> is stripped
 			expect(result).not.toContain('<script>');
-			expect(result).toContain('<p>');
+			expect(result).not.toContain('alert("xss")');
+			
+			// <iframe> is stripped
+			expect(result).not.toContain('<iframe');
+			
+			// javascript: protocol is stripped in href
+			expect(result).not.toContain('javascript:alert');
+			expect(result).toContain('<a>Malicious link</a>');
+			
+			// <img> and onerror are stripped
+			expect(result).not.toContain('<img');
+			expect(result).not.toContain('onerror');
+			
+			// <div> is stripped (only its text remains)
+			expect(result).not.toContain('<div');
+			expect(result).toContain('Click me');
+			
+			// Allowed <p> remains
+			expect(result).toContain('<p>Safe content');
+		});
+
+		it('should handle edge cases: non-string input, empty string, mailto links, and remaining allowed tags', () => {
+			// non-string input and empty string
+			expect(sanitizeHtmlContent(null)).toBe('');
+			expect(sanitizeHtmlContent(undefined)).toBe('');
+			expect(sanitizeHtmlContent('')).toBe('');
+			
+			// mailto links
+			const mailtoHtml = '<a href="mailto:test@example.com">Email Me</a>';
+			expect(sanitizeHtmlContent(mailtoHtml)).toContain('<a href="mailto:test@example.com">Email Me</a>');
+			
+			// remaining allowed tags (strong, u, ol, h2-h4)
+			const remainingTagsHtml = `
+				<h2>Heading 2</h2>
+				<h3>Heading 3</h3>
+				<h4>Heading 4</h4>
+				<strong>Strong text</strong>
+				<u>Underlined text</u>
+				<ol><li>Ordered item</li></ol>
+			`;
+			const result = sanitizeHtmlContent(remainingTagsHtml);
+			expect(result).toContain('<h2>Heading 2</h2>');
+			expect(result).toContain('<h3>Heading 3</h3>');
+			expect(result).toContain('<h4>Heading 4</h4>');
+			expect(result).toContain('<strong>Strong text</strong>');
+			expect(result).toContain('<u>Underlined text</u>');
+			expect(result).toContain('<ol><li>Ordered item</li></ol>');
 		});
 	});
 
