@@ -1,0 +1,23 @@
+{
+  "patches": [
+    {
+      "id": "TYPEDEF_PATCH_6000_003_A",
+      "description": "Add 'location' attribute to trino_schema",
+      "action": "ADD_ATTRIBUTE",
+      "typeName": "trino_schema",
+      "applyToVersion": "1.0",
+      "updateToVersion": "1.1",
+      "params": null,
+      "attributeDefs": [
+        {
+          "name": "location",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    }
+  ]
+}
