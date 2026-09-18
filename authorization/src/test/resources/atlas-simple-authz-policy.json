@@ -127,6 +127,20 @@
           "classifications":       [ "PII.*" ]
         }
       ]
+    },
+
+    "REL_PARTIAL_READ": {
+      "entityPermissions": [
+        {
+          "privileges":            [ "entity-read", "entity-read-classification" ],
+          "entityTypes":           [ ".*" ],
+          "entityIds":             [ "sales_fact@cl1", "Sales.sales_fact.sales@cl1" ],
+          "entityClassifications": [ ".*" ],
+          "labels":                [ ".*" ],
+          "businessMetadata":      [ ".*" ],
+          "attributes":            [ ".*" ]
+        }
+      ]
     }
   },
 
@@ -134,7 +148,8 @@
     "admin":          [ "ROLE_ADMIN" ],
     "rangertagsync":  [ "DATA_SCIENTIST" ],
     "dataScientist1": [ "DATA_SCIENTIST"],
-    "dataSteward1":   [ "DATA_STEWARD"]
+    "dataSteward1":   [ "DATA_STEWARD"],
+    "relreader":      [ "REL_PARTIAL_READ" ]
   },
 
   "groupRoles": {
@@ -145,6 +160,7 @@
     "FINANCE":         [ "FINANCE" ],
     "FINANCE_PII":     [ "FINANCE_PII" ],
     "RANGER_TAG_SYNC": [ "DATA_SCIENTIST" ],
-    "DATA_STEWARD_EX": [ "DATA_STEWARD_EX" ]
+    "DATA_STEWARD_EX": [ "DATA_STEWARD_EX" ],
+    "REL_PARTIAL_READ":[ "REL_PARTIAL_READ" ]
   }
 }
