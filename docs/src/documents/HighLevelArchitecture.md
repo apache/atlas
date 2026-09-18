@@ -60,6 +60,7 @@ as well. Currently, Atlas supports ingesting and managing metadata from the foll
    *  [Sqoop](#/HookSqoop)
    *  [Storm](#/HookStorm)
    *  [Kafka](#/HookKafka)
+   *  [Nutch](#/HookNutch)
 
 The integration implies two things:
 There are metadata models that Atlas defines natively to represent objects of these components.
