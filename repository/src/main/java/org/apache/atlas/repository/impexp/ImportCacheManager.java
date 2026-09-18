@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 /**
  * Lightweight in-memory cache for import operations.
@@ -35,9 +36,21 @@ public class ImportCacheManager<K, V> {
     private static final long TTL_MINUTES = 30;         // Expire after 30 minutes
     private static final long TTL_MILLIS = TimeUnit.MINUTES.toMillis(TTL_MINUTES);
 
+    /**
+     * Entries rejected by this predicate are never dropped by size or TTL pressure. Callers whose
+     * cached value is the only copy of in-flight state use it to pin that state until it is durable.
+     * Explicit {@link #invalidate(Object)} and {@link #clear()} still remove pinned entries.
+     */
+    private final Predicate<V> evictable;
+
     private final ConcurrentHashMap<K, CacheEntry<V>> cache = new ConcurrentHashMap<>();
 
     public ImportCacheManager() {
+        this(null);
+    }
+
+    public ImportCacheManager(Predicate<V> evictable) {
+        this.evictable = evictable != null ? evictable : value -> true;
         startCleanupThread();
     }
 
@@ -76,7 +89,7 @@ public class ImportCacheManager<K, V> {
             return null;
         }
 
-        if (entry.isExpired(TTL_MILLIS)) {
+        if (entry.isExpired(TTL_MILLIS) && evictable.test(entry.value)) {
             cache.remove(key);
             return null;
         }
@@ -99,13 +112,13 @@ public class ImportCacheManager<K, V> {
         return cache.size();
     }
 
-    /** Evicts the oldest entry based on timestamp */
+    /** Evicts the oldest evictable entry based on timestamp */
     private void evictOldest() {
         K oldestKey = null;
         long oldestTime = Long.MAX_VALUE;
 
         for (Map.Entry<K, CacheEntry<V>> e : cache.entrySet()) {
-            if (e.getValue().timestamp < oldestTime) {
+            if (e.getValue().timestamp < oldestTime && evictable.test(e.getValue().value)) {
                 oldestKey = e.getKey();
                 oldestTime = e.getValue().timestamp;
             }
@@ -127,6 +140,6 @@ public class ImportCacheManager<K, V> {
 
     private void cleanup() {
         long now = System.currentTimeMillis();
-        cache.entrySet().removeIf(e -> (now - e.getValue().timestamp) > TTL_MILLIS);
+        cache.entrySet().removeIf(e -> (now - e.getValue().timestamp) > TTL_MILLIS && evictable.test(e.getValue().value));
     }
 }
