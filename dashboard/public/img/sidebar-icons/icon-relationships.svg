@@ -1,4 +1,4 @@
-/*
+<!--
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -13,31 +13,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-export interface Props {
-  sideBarOpen: boolean;
-  loading?: boolean;
-  searchTerm: string;
-  isPopover?: boolean;
-}
-
-export interface TypeHeaderState {
-  typeHeader: {
-    loading: boolean;
-  };
-}
-
-export interface TreeNode {
-  id: string;
-  label: string;
-  children?: TreeNode[];
-  guid?: string;
-  types?: string;
-  cGuid?: string;
-  parent?: string;
-}
-
-export interface EnumTypeDefData {
-  name: string;
-  guid: string;
-}
+-->
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M17 16l-4-4V8.82C14.16 8.4 15 7.3 15 6c0-1.66-1.34-3-3-3S9 4.34 9 6c0 1.3.84 2.4 2 2.82V12l-4 4H3v5h5v-3.05l4-4.2 4 4.2V21h5v-5h-4z" fill="white"/>
+</svg>

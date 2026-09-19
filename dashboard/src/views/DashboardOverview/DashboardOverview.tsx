@@ -34,116 +34,149 @@ import KafkaTopicSummaryCard from "./KafkaTopicSummaryCard";
 import ClassificationDistributionCard from "./ClassificationDistributionCard";
 
 const DashboardOverview = () => {
-	const dispatch = useAppDispatch();
-	const { metricsData, loading: metricsLoading } = useAppSelector((state: { metrics: { metricsData: unknown; loading: boolean } }) => state.metrics);
-	const typeHeaderData = useAppSelector(
-		(state: { typeHeader?: { typeHeaderData?: TypeHeaderInterface[] | null } }) =>
-			state.typeHeader?.typeHeaderData ?? null
-	);
-	const dashboardRefreshVersion = useAppSelector((state) => state.dashboardRefresh.version);
-	const [latestEntities, setLatestEntities] = useState<unknown[]>([]);
-	const [latestLoading, setLatestLoading] = useState(true);
-	const [latestError, setLatestError] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const { metricsData, loading: metricsLoading } = useAppSelector(
+    (state: { metrics: { metricsData: unknown; loading: boolean } }) =>
+      state.metrics,
+  );
+  const typeHeaderData = useAppSelector(
+    (state: {
+      typeHeader?: { typeHeaderData?: TypeHeaderInterface[] | null };
+    }) => state.typeHeader?.typeHeaderData ?? null,
+  );
+  const dashboardRefreshVersion = useAppSelector(
+    (state) => state.dashboardRefresh.version,
+  );
+  const [latestEntities, setLatestEntities] = useState<unknown[]>([]);
+  const [latestLoading, setLatestLoading] = useState(true);
+  const [latestError, setLatestError] = useState<string | null>(null);
 
-	const metrics = metricsData as {
-		data?: {
-			general?: { entityCount?: number; tagCount?: number; stats?: Record<string, unknown> };
-			entity?: Record<string, unknown>;
-			tag?: Record<string, unknown>;
-		};
-	} | null;
-	const general = metrics?.data?.general;
-	const entity = metrics?.data?.entity;
-	const tag = metrics?.data?.tag;
-	const stats = general?.stats;
-	const entityCount = general?.entityCount ?? 0;
-	const tagCount = general?.tagCount ?? 0;
+  const metrics = metricsData as {
+    data?: {
+      general?: {
+        entityCount?: number;
+        tagCount?: number;
+        stats?: Record<string, unknown>;
+      };
+      entity?: Record<string, unknown>;
+      tag?: Record<string, unknown>;
+    };
+  } | null;
+  const general = metrics?.data?.general;
+  const entity = metrics?.data?.entity;
+  const tag = metrics?.data?.tag;
+  const stats = general?.stats;
+  const entityCount = general?.entityCount ?? 0;
+  const tagCount = general?.tagCount ?? 0;
 
-	const isLoading = metricsLoading;
+  const isLoading = metricsLoading;
 
-	const fetchLatestEntities = useCallback(async () => {
-		setLatestLoading(true);
-		setLatestError(null);
-		try {
-			const resp = await getLatestEntities();
-			const entities = (resp as { data?: { entities?: unknown[] } })?.data?.entities ?? [];
-			setLatestEntities(Array.isArray(entities) ? entities : []);
-		} catch (err) {
-			setLatestError(err instanceof Error ? err.message : "Failed to load latest entities");
-			setLatestEntities([]);
-		} finally {
-			setLatestLoading(false);
-		}
-	}, []);
+  const fetchLatestEntities = useCallback(async () => {
+    setLatestLoading(true);
+    setLatestError(null);
+    try {
+      const resp = await getLatestEntities();
+      const entities =
+        (resp as { data?: { entities?: unknown[] } })?.data?.entities ?? [];
+      setLatestEntities(Array.isArray(entities) ? entities : []);
+    } catch (err) {
+      setLatestError(
+        err instanceof Error ? err.message : "Failed to load latest entities",
+      );
+      setLatestEntities([]);
+    } finally {
+      setLatestLoading(false);
+    }
+  }, []);
 
-	useEffect(() => {
-		fetchLatestEntities();
-	}, [dashboardRefreshVersion, fetchLatestEntities]);
+  useEffect(() => {
+    fetchLatestEntities();
+  }, [dashboardRefreshVersion, fetchLatestEntities]);
 
-	useEffect(() => {
-		dispatch(fetchTypeHeaderData());
-	}, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchTypeHeaderData());
+  }, [dispatch]);
 
-	const latestEntitiesList = useMemo(() => {
-		if (!Array.isArray(latestEntities)) return [];
-		return latestEntities.slice(0, 7) as { guid?: string; typeName?: string; attributes?: { name?: string; qualifiedName?: string; __timestamp?: number } }[];
-	}, [latestEntities]);
+  const latestEntitiesList = useMemo(() => {
+    if (!Array.isArray(latestEntities)) return [];
+    return latestEntities.slice(0, 7) as {
+      guid?: string;
+      typeName?: string;
+      attributes?: {
+        name?: string;
+        qualifiedName?: string;
+        __timestamp?: number;
+      };
+    }[];
+  }, [latestEntities]);
 
-	return (
-		<Stack
-			spacing={3}
-			width="100%"
-			sx={{
-				maxWidth: "100%",
-				boxSizing: "border-box",
-				backgroundColor: "#f5f7f9",
-				padding: 3,
-				borderRadius: 2
-			}}
-		>
-			<Grid container spacing={3} sx={{ width: "100%", alignItems: "stretch" }}>
-				<Grid item xs={12} md={4}>
-					{isLoading ? <DashboardSkeleton /> : <OverviewCard entityCount={entityCount} tagCount={tagCount} />}
-				</Grid>
-				<Grid item xs={12} md={4}>
-					{isLoading ? <DashboardSkeleton /> : <EntityStatusDonut entity={entity} />}
-				</Grid>
-				<Grid item xs={12} md={4}>
-					{isLoading ? (
-						<DashboardSkeleton />
-					) : (
-						<ClassificationCoverage
-							classificationTypeDefinitions={tagCount}
-							tag={tag}
-						/>
-					)}
-				</Grid>
-				<Grid item xs={12} md={8} sx={{ display: "flex", minWidth: 0 }}>
-					{isLoading ? (
-						<EntityTypeBarChartSkeleton />
-					) : (
-						<EntityTypeBarChart entity={entity} typeHeaderData={typeHeaderData} />
-					)}
-				</Grid>
-				<Grid item xs={12} md={4} sx={{ display: "flex", minWidth: 0 }}>
-					{latestLoading ? (
-						<LatestEntitiesSkeleton />
-					) : (
-						<LatestEntitiesList entities={latestEntitiesList} error={latestError} />
-					)}
-				</Grid>
-				<Grid item xs={12} md={12} sx={{ display: "flex", minWidth: 0 }}>
-					<RecentActivity />
-				</Grid>
-				<Grid item xs={12} md={12} sx={{ display: "flex", minWidth: 0 }}>
-					{isLoading ? <EntityTypeBarChartSkeleton /> : <ClassificationDistributionCard tag={tag} isLoading={isLoading} />}
-				</Grid>
-				<Grid item xs={12} md={12} sx={{ display: "flex", minWidth: 0 }}>
-					{isLoading ? <EntityTypeBarChartSkeleton /> : <KafkaTopicSummaryCard stats={stats} isLoading={isLoading} />}
-				</Grid>
-			</Grid>
-		</Stack>
-	);
+  return (
+    <Stack spacing={3} width="100%" className="dashboard-overview__container">
+      <Grid container spacing={3} className="dashboard-overview__grid">
+        <Grid item xs={12} md={4}>
+          {isLoading ? (
+            <DashboardSkeleton />
+          ) : (
+            <OverviewCard entityCount={entityCount} tagCount={tagCount} />
+          )}
+        </Grid>
+        <Grid item xs={12} md={4}>
+          {isLoading ? (
+            <DashboardSkeleton />
+          ) : (
+            <EntityStatusDonut entity={entity} />
+          )}
+        </Grid>
+        <Grid item xs={12} md={4}>
+          {isLoading ? (
+            <DashboardSkeleton />
+          ) : (
+            <ClassificationCoverage
+              classificationTypeDefinitions={tagCount}
+              tag={tag}
+            />
+          )}
+        </Grid>
+        <Grid item xs={12} md={8} className="dashboard-overview__grid-item">
+          {isLoading ? (
+            <EntityTypeBarChartSkeleton />
+          ) : (
+            <EntityTypeBarChart
+              entity={entity}
+              typeHeaderData={typeHeaderData}
+            />
+          )}
+        </Grid>
+        <Grid item xs={12} md={4} className="dashboard-overview__grid-item">
+          {latestLoading ? (
+            <LatestEntitiesSkeleton />
+          ) : (
+            <LatestEntitiesList
+              entities={latestEntitiesList}
+              error={latestError}
+            />
+          )}
+        </Grid>
+        <Grid item xs={12} md={12} className="dashboard-overview__grid-item">
+          <RecentActivity />
+        </Grid>
+        <Grid item xs={12} md={12} className="dashboard-overview__grid-item">
+          {isLoading ? (
+            <EntityTypeBarChartSkeleton />
+          ) : (
+            <ClassificationDistributionCard tag={tag} isLoading={isLoading} />
+          )}
+        </Grid>
+        <Grid item xs={12} md={12} className="dashboard-overview__grid-item">
+          {isLoading ? (
+            <EntityTypeBarChartSkeleton />
+          ) : (
+            <KafkaTopicSummaryCard stats={stats} isLoading={isLoading} />
+          )}
+        </Grid>
+      </Grid>
+    </Stack>
+  );
 };
 
 export default DashboardOverview;

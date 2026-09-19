@@ -400,6 +400,7 @@ const QuickSearch = () => {
 						onChange={handleScopeChange}
 						aria-label="Search scope"
 						displayEmpty
+						className="quick-search-select"
 						renderValue={(v) => SCOPE_LABELS[v as QuickSearchScope]}
 					>
 						<MenuItem value="default">Select All</MenuItem>
@@ -575,7 +576,7 @@ const QuickSearch = () => {
 											}
 										>
 											{types === "Entities" && !isEmpty(entityObj) && (
-												<DisplayImage entity={entityObj} />
+												<DisplayImage entity={entityObj || {}} />
 											)}
 											{types === "Entities" && !isEmpty(entityObj)
 												? parts.map((part, index) => (
@@ -645,13 +646,8 @@ const QuickSearch = () => {
 								}}
 								className="text-black-default"
 								InputProps={{
-									style: {
-										padding: "1px 10px",
-										borderRadius: "4px",
-										color: "#1a1a1a",
-										backgroundColor: "white"
-									},
 									...params.InputProps,
+									className: `quick-search-input ${params.InputProps.className || ""}`,
 									type: "search",
 									endAdornment: (
 										<InputAdornment position="end">
@@ -682,12 +678,7 @@ const QuickSearch = () => {
 				<CustomButton
 					variant="contained"
 					size="small"
-					sx={{
-						backgroundColor: "#4a90e2 !important",
-						color: "#fff !important",
-						textTransform: "none",
-						fontWeight: 600
-					}}
+					className="quick-search-btn"
 					onClick={handleSubmitSearch}
 					aria-label="Run search"
 				>
@@ -697,15 +688,7 @@ const QuickSearch = () => {
 				<CustomButton
 					variant="outlined"
 					size="small"
-					sx={{
-						backgroundColor: "white !important",
-						color: "#4a90e2 !important",
-						borderColor: "#dddddd !important",
-						"&:hover": {
-							backgroundColor: "rgba(74, 144, 226, 0.08) !important",
-							color: "#4a90e2 !important"
-						}
-					}}
+					className="quick-search-advanced-btn"
 					onClick={() => {
 						setOpenAdvanceSearch(true);
 					}}
