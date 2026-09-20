@@ -37,6 +37,29 @@ export const getInnerTypeName = (typeName: string): string => {
 export const isArrayTypeName = (typeName: string): boolean =>
 	Boolean(typeName && typeName.indexOf("array<") === 0);
 
+const PRIMITIVE_TYPE_NAMES = new Set([
+	"string",
+	"int",
+	"short",
+	"float",
+	"double",
+	"long",
+	"boolean",
+	"date",
+	"byte"
+]);
+
+export const isPrimitiveTypeName = (typeName: string): boolean => {
+	if (!typeName) {
+		return false;
+	}
+
+	return PRIMITIVE_TYPE_NAMES.has(getInnerTypeName(typeName));
+};
+
+export const isPotentialEnumTypeName = (typeName: string): boolean =>
+	Boolean(typeName && !isPrimitiveTypeName(typeName));
+
 export const isEnumTypeName = (
 	typeName: string,
 	enumDefs: EnumDef[] | undefined

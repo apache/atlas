@@ -17,12 +17,8 @@
  * limitations under the License.
  */
 
-import { IconButton } from "../components/muiComponents";
-
 import {
   dateFormat,
-  escapeHtml,
-  extractKeyValueFromEntity,
   formatedDate,
   isArray,
   isBoolean,
@@ -32,14 +28,11 @@ import {
   isObject,
   isString
 } from "../utils/Utils";
-import { JSONPrettyPrint, getValue } from "../utils/CommonViewFunction";
-import { useSelector } from "react-redux";
-import { entityStateReadOnly } from "../utils/Enum";
-import { Link, useLocation } from "react-router-dom";
-import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
-import { useEffect, useState } from "react";
-import { getDetailPageData } from "../api/apiMethods/detailpageApiMethod";
 import moment from "moment";
+import { renderEntityRefValue } from "./entityRefRenderers";
+
+export { ExtractObject } from "./ExtractObject";
+export { default as AuditEntityRefLink } from "./AuditEntityRefLink";
 
 export const EllipsisText = (props: any) => {
   const { children } = props;
@@ -47,201 +40,16 @@ export const EllipsisText = (props: any) => {
   return <div className="chip-ellipsis cursor-pointer">{children}</div>;
 };
 
-export const ExtractObject = (props: any) => {
-  const { typeHeaderData }: any = useSelector((state: any) => state.typeHeader);
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const [headerData, setHeaderData] = useState<string>("");
-  let triggerHeaderApi = "";
-
-  useEffect(() => {
-    getInputOutputValue(triggerHeaderApi);
-  }, [triggerHeaderApi]);
-
-  const getGuid = (guid: string) => {
-    if (!isEmpty(guid)) {
-      triggerHeaderApi = guid;
-    }
-  };
-
-  const getInputOutputValue = async (guid: string) => {
-    if (!isEmpty(guid)) {
-      try {
-        const { data: response } = await getDetailPageData(guid, {}, "headers");
-        const { name } = extractKeyValueFromEntity(response);
-        setHeaderData(name as string);
-      } catch {
-        // Error handled silently
-      }
-    }
-  };
-
-  let valueOfArray = [],
-    keyValue = props.keyValue,
-    nameVal = "",
-    tempLink = "",
-    deleteIcon = false,
-    fetchVal = false;
-
-  if (!isArray(keyValue) && isObject(keyValue)) {
-    keyValue = [keyValue];
-  }
-  for (var i = 0; i < keyValue?.length; i++) {
-    let inputOutputField = keyValue[i],
-      id = inputOutputField.guid,
-      status =
-        inputOutputField.status ||
-        inputOutputField.entityStatus ||
-        (isObject(inputOutputField.id)
-          ? inputOutputField.id.state
-          : inputOutputField.state),
-      readOnly = entityStateReadOnly[status];
-
-    if (!inputOutputField.attributes && inputOutputField.values) {
-      inputOutputField["attributes"] = inputOutputField.values;
-    }
-    if (
-      isString(inputOutputField) ||
-      isBoolean(inputOutputField) ||
-      isNumber(inputOutputField)
-    ) {
-      let tempVarfor$check = inputOutputField.toString();
-      if (tempVarfor$check.indexOf("$") == -1) {
-        let tmpVal = getValue(inputOutputField as any);
-
-        valueOfArray.push(
-          '<span class="json-string">' + escapeHtml(String(tmpVal)) + "</span>"
-        );
-      }
-    } else if (isObject(inputOutputField) && id == undefined) {
-      let attributesList = inputOutputField;
-      if (typeHeaderData && inputOutputField.typeName) {
-        let typeNameCategory = typeHeaderData.find(
-          (obj: { name: string }) => obj.name == inputOutputField.typeName
-        );
-
-        if (
-          attributesList?.attributes &&
-          typeNameCategory?.category === "STRUCT"
-        ) {
-          attributesList = attributesList.attributes;
-        }
-      }
-      valueOfArray.push(JSONPrettyPrint(attributesList));
-    }
-
-    if (id && inputOutputField) {
-      const { name }: { name: string } = extractKeyValueFromEntity(
-        inputOutputField,
-        "",
-        "",
-        getGuid,
-        headerData
-      );
-      nameVal = name;
-      if (inputOutputField.typeName == "AtlasGlossaryTerm") {
-        tempLink = `/glossary/${id}`;
-        let keys = Array.from(searchParams.keys());
-        for (let i = 0; i < keys.length; i++) {
-          if (keys[i] != "searchType") {
-            searchParams.delete(keys[i]);
-          }
-        }
-        searchParams.set("guid", id);
-        searchParams.set("gtype", "term");
-        searchParams.set("viewType", "term");
-        fetchVal = true;
-      } else {
-        tempLink = `/detailPage/${id}`;
-      }
-    }
-
-    if (readOnly) {
-      if (!fetchVal) {
-        deleteIcon = true;
-      } else {
-        fetchVal = false;
-      }
-    }
-  }
-
-  return (
-    <>
-      {valueOfArray?.length > 0 ? (
-        props.properties != undefined ? (
-          <pre className="code-block fixed-height">
-            <code>
-              <span
-                dangerouslySetInnerHTML={{
-                  __html: valueOfArray as any
-                }}
-              ></span>
-            </code>
-          </pre>
-        ) : (
-          <span
-            dangerouslySetInnerHTML={{
-              __html: valueOfArray as any
-            }}
-          ></span>
-        )
-      ) : (
-        <>
-          {tempLink != "" ? (
-            <>
-              <Link
-                className="entity-name nav-link max-100 text-blue text-decoration-none"
-                to={{
-                  pathname: tempLink,
-                  search: searchParams.toString() ? searchParams.toString() : ""
-                }}
-                style={{
-                  display: "inline-block",
-                  maxWidth: "100%",
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                  verticalAlign: "bottom",
-                  color: deleteIcon ? "#bb5838" : "#4a90e2"
-                }}
-                title={nameVal}
-              >
-                {nameVal}
-              </Link>
-              {deleteIcon && (
-                <IconButton
-                  aria-label="back"
-                  sx={{
-                    display: "inline-flex",
-                    position: "relative",
-                    padding: "0",
-                    marginLeft: "4px"
-                  }}
-                >
-                  <DeleteOutlineOutlinedIcon
-                    className="delete-icon"
-                    sx={{ fontSize: "1.25rem", height: "24px" }}
-                  />
-                </IconButton>
-              )}
-            </>
-          ) : (
-            "N/A"
-          )}
-        </>
-      )}
-    </>
-  );
-};
-
 export const GetArrayValue = ({
   values,
   properties,
-  referredEntities
+  referredEntities,
+  auditDetails
 }: {
   values: string[];
   properties?: string;
   referredEntities?: any;
+  auditDetails?: boolean;
 }) => {
   return !isEmpty(values) ? (
     properties != undefined ? (
@@ -250,21 +58,19 @@ export const GetArrayValue = ({
           {values.map((obj: any, i: number) => {
             if (isObject(obj)) {
               return (
-                <>
-                  <ExtractObject
-                    keyValue={
-                      referredEntities?.[obj?.guid] != undefined
-                        ? referredEntities[obj.guid]
-                        : obj
-                    }
-                    properties={properties}
-                  />
+                <span key={obj?.guid ?? i}>
+                  {renderEntityRefValue({
+                    entityRef: obj,
+                    referredEntities,
+                    properties,
+                    auditDetails
+                  })}
                   <br />
-                </>
+                </span>
               );
             }
             return (
-              <span className="json-string">
+              <span key={i} className="json-string">
                 {obj}
                 {i < values?.length - 1 && ", "}
               </span>
@@ -275,7 +81,7 @@ export const GetArrayValue = ({
     ) : (
       values.map((obj: any, i: number) => {
         return (
-          <span className="json-string">
+          <span key={i} className="json-string">
             {obj}
             {i < values?.length - 1 && ", "}
           </span>
@@ -295,7 +101,8 @@ export const getValues = (
   properties?: string,
   referredEntities?: any,
   filterEntityData?: any,
-  keys?: string
+  keys?: string,
+  auditDetails?: boolean
 ) => {
   var tempObj = {
     attributeDefs: [entity],
@@ -348,9 +155,12 @@ export const getValues = (
         filterEntityData?.relationshipAttributes?.[keys as string] != undefined
           ? filterEntityData.relationshipAttributes[keys as string]
           : keyValue;
-      return (
-        <ExtractObject keyValue={filteredValues} properties={properties} />
-      );
+      return renderEntityRefValue({
+        entityRef: filteredValues,
+        referredEntities,
+        properties,
+        auditDetails
+      });
     }
     if (!isEmpty(currentValue) && isArray(currentValue)) {
       let filteredValues =
@@ -365,6 +175,7 @@ export const getValues = (
           values={filteredValues}
           properties={properties}
           referredEntities={referredEntities}
+          auditDetails={auditDetails}
         />
       );
     }
@@ -374,9 +185,12 @@ export const getValues = (
         filterEntityData?.relationshipAttributes?.[keys as string] != undefined
           ? filterEntityData.relationshipAttributes[keys as string]
           : keyValue;
-      return (
-        <ExtractObject keyValue={filteredValues} properties={properties} />
-      );
+      return renderEntityRefValue({
+        entityRef: filteredValues,
+        referredEntities,
+        properties,
+        auditDetails
+      });
     }
   }
   if (!isEmpty(currentValue) && isArray(currentValue)) {
@@ -391,6 +205,7 @@ export const getValues = (
         values={filteredValues}
         properties={properties}
         referredEntities={referredEntities}
+        auditDetails={auditDetails}
       />
     );
   }
