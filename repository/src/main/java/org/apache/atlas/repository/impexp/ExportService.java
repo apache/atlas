@@ -248,10 +248,11 @@ public class ExportService {
                 AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(guid);
                 String typeName = GraphHelper.getTypeName(vertex);
                 context.startingEntityType = typeName;
+                context.startingEntityGuid = guid;
                 processEntityGuid(guid, context);
             }
 
-            while (!context.guidsToProcess.isEmpty()) {
+            while (!context.guidsToProcess.isEmpty() || !context.lineageToProcess.isEmpty()) {
                 while (!context.guidsToProcess.isEmpty()) {
                     String guid = context.guidsToProcess.remove(0);
 
@@ -288,8 +289,19 @@ public class ExportService {
     private void processEntityGuid(String guid, ExportContext context) throws AtlasBaseException {
         LOG.debug("==> processEntityGuid({})", guid);
 
+        boolean resumeExportForStartingEntity = false;
+        if ((context.fetchType == ExportFetchType.CONNECTED
+                || (context.fetchType == ExportFetchType.INCREMENTAL && context.changeMarker <= 0))
+                && guid.equals(context.startingEntityGuid)) {
+            resumeExportForStartingEntity = true;
+        }
+
         if (context.guidsProcessed.contains(guid)) {
-            return;
+            if (resumeExportForStartingEntity) {
+                LOG.info("Resuming export for {}", guid);
+            } else {
+                return;
+            }
         }
 
         if (context.fetchType == ExportFetchType.INCREMENTAL && context.startingEntityType.equals(ATLAS_TYPE_HIVE_DB) && !context.skipLineage) {
@@ -472,6 +484,7 @@ public class ExportService {
         boolean isSkipConnectedFetch;
         private int progressReportCount;
         public String startingEntityType;
+        public String startingEntityGuid;
 
         ExportContext(AtlasExportResult result, ZipSink sink) {
             this.result = result;
@@ -512,6 +525,7 @@ public class ExportService {
             guidsProcessed.clear();
             guidDirection.clear();
             startingEntityType = null;
+            startingEntityGuid = null;
         }
 
         public void addToBeProcessed(boolean isSuperTypeProcess, String guid, TraversalDirection direction) {
