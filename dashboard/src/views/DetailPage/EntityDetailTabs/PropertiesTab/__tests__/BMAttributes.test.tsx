@@ -56,6 +56,13 @@ jest.mock('@hooks/reducerHook', () => ({
             }
           ]
         }
+      },
+      enum: {
+        enumObj: {
+          loading: false,
+          data: null,
+          error: null
+        }
       }
     };
     return selector(state);
@@ -87,6 +94,10 @@ jest.mock('@utils/Utils', () => ({
 
 jest.mock('@redux/slice/detailPageSlice', () => ({
   fetchDetailPageData: jest.fn((guid: string) => ({ type: 'fetchDetailPageData', payload: guid }))
+}));
+
+jest.mock('@redux/slice/enumSlice', () => ({
+  fetchEnumData: jest.fn(() => ({ type: 'FETCH_ENUM_DATA' }))
 }));
 
 // Mock BMAttributesFields to avoid complex form input mocks unless needed
@@ -222,6 +233,173 @@ describe('BMAttributes Component', () => {
     expect(serverError).toHaveBeenCalled();
   });
 
+  it('dispatches fetchEnumData when enum data has not been loaded', () => {
+    const { fetchEnumData } = require('@redux/slice/enumSlice');
+
+    render(<TestWrapper><BMAttributes {...defaultProps} /></TestWrapper>);
+
+    expect(fetchEnumData).toHaveBeenCalled();
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'FETCH_ENUM_DATA' });
+  });
+
+  it('does not refetch enum data when enum definitions are already loaded', () => {
+    const { fetchEnumData } = require('@redux/slice/enumSlice');
+    const { useAppSelector } = require('@hooks/reducerHook');
+
+    fetchEnumData.mockClear();
+    useAppSelector.mockImplementation((selector: any) =>
+      selector({
+        entity: {
+          entityData: {
+            entityDefs: [
+              {
+                name: 'DataSet',
+                businessAttributeDefs: {
+                  Group1: [
+                    { name: 'attr1', typeName: 'string' },
+                    { name: 'attr2', typeName: 'int' }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        businessMetaData: {
+          businessMetaData: {
+            businessMetadataDefs: [
+              {
+                name: 'Group1',
+                attributeDefs: [
+                  { name: 'attr1', typeName: 'string' },
+                  { name: 'attr2', typeName: 'int' }
+                ]
+              }
+            ]
+          }
+        },
+        enum: {
+          enumObj: {
+            loading: false,
+            data: { enumDefs: [] },
+            error: null
+          }
+        }
+      })
+    );
+
+    render(<TestWrapper><BMAttributes {...defaultProps} /></TestWrapper>);
+
+    expect(fetchEnumData).not.toHaveBeenCalled();
+  });
+
+  it('does not refetch enum data when enum fetch previously failed', () => {
+    const { fetchEnumData } = require('@redux/slice/enumSlice');
+    const { useAppSelector } = require('@hooks/reducerHook');
+
+    fetchEnumData.mockClear();
+    useAppSelector.mockImplementation((selector: any) =>
+      selector({
+        entity: {
+          entityData: {
+            entityDefs: [
+              {
+                name: 'DataSet',
+                businessAttributeDefs: {
+                  Group1: [
+                    { name: 'attr1', typeName: 'string' },
+                    { name: 'attr2', typeName: 'int' }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        businessMetaData: {
+          businessMetaData: {
+            businessMetadataDefs: [
+              {
+                name: 'Group1',
+                attributeDefs: [
+                  { name: 'attr1', typeName: 'string' },
+                  { name: 'attr2', typeName: 'int' }
+                ]
+              }
+            ]
+          }
+        },
+        enum: {
+          enumObj: {
+            loading: false,
+            data: null,
+            error: 'Failed to load enum definitions'
+          }
+        }
+      })
+    );
+
+    render(<TestWrapper><BMAttributes {...defaultProps} /></TestWrapper>);
+
+    expect(fetchEnumData).not.toHaveBeenCalled();
+  });
+
+  it('disables save while enum definitions are loading for enum attributes', () => {
+    const { useAppSelector } = require('@hooks/reducerHook');
+
+    useAppSelector.mockImplementation((selector: any) =>
+      selector({
+        entity: {
+          entityData: {
+            entityDefs: [
+              {
+                name: 'DataSet',
+                businessAttributeDefs: {
+                  Group1: [
+                    { name: 'replication', typeName: 'adls_gen2_replication' }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        businessMetaData: {
+          businessMetaData: {
+            businessMetadataDefs: [
+              {
+                name: 'Group1',
+                attributeDefs: [
+                  { name: 'replication', typeName: 'adls_gen2_replication' }
+                ]
+              }
+            ]
+          }
+        },
+        enum: {
+          enumObj: {
+            loading: true,
+            data: null,
+            error: null
+          }
+        }
+      })
+    );
+
+    const enumProps = {
+      loading: false,
+      bmAttributes: {
+        Group1: {
+          replication: 'LRS'
+        }
+      },
+      entity: { guid: 'test-guid-123', status: 'ACTIVE', typeName: 'DataSet' }
+    };
+
+    render(<TestWrapper><BMAttributes {...enumProps} /></TestWrapper>);
+    fireEvent.click(screen.getByText('Edit').closest('button')!);
+
+    const saveBtn = screen.getByText('Save').closest('button');
+    expect(saveBtn).toBeDisabled();
+  });
+
   it('hides Add button while loading', () => {
     render(<TestWrapper><BMAttributes loading={true} bmAttributes={{}} entity={{ status: 'ACTIVE', typeName: 'DataSet' }} /></TestWrapper>);
     expect(screen.queryByText('Add')).not.toBeInTheDocument();
@@ -230,6 +408,293 @@ describe('BMAttributes Component', () => {
   it('hides Edit button while loading even when business metadata exists', () => {
     render(<TestWrapper><BMAttributes {...defaultProps} loading={true} entity={{ ...defaultProps.entity, status: 'ACTIVE' }} /></TestWrapper>);
     expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+  });
+
+  it('serializes array<string> values on save (positive)', async () => {
+    const { useAppSelector } = require('@hooks/reducerHook');
+    mockGetEntityBusinessMetadata.mockResolvedValueOnce({ data: {} });
+
+    useAppSelector.mockImplementation((selector: any) =>
+      selector({
+        entity: {
+          entityData: {
+            entityDefs: [{
+              name: 'DataSet',
+              businessAttributeDefs: {
+                Group1: [{ name: 'tags', typeName: 'array<string>' }]
+              }
+            }]
+          }
+        },
+        businessMetaData: {
+          businessMetaData: {
+            businessMetadataDefs: [{
+              name: 'Group1',
+              attributeDefs: [{ name: 'tags', typeName: 'array<string>' }]
+            }]
+          }
+        },
+        enum: { enumObj: { loading: false, data: { enumDefs: [] }, error: null } }
+      })
+    );
+
+    render(
+      <TestWrapper>
+        <BMAttributes
+          loading={false}
+          bmAttributes={{ Group1: { tags: ['a', 'b'] } }}
+          entity={{ guid: 'test-guid-123', status: 'ACTIVE', typeName: 'DataSet' }}
+        />
+      </TestWrapper>
+    );
+
+    fireEvent.click(screen.getByText('Edit').closest('button')!);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save').closest('button')!);
+    });
+
+    await waitFor(() => {
+      expect(mockGetEntityBusinessMetadata).toHaveBeenCalledWith('test-guid-123', {
+        Group1: { tags: ['a', 'b'] }
+      });
+    });
+  });
+
+  it('serializes array<date> timestamps on save without transformation (positive)', async () => {
+    const { useAppSelector } = require('@hooks/reducerHook');
+    mockGetEntityBusinessMetadata.mockResolvedValueOnce({ data: {} });
+
+    const dateTimestamps = [1717200000000, 1717286400000];
+
+    useAppSelector.mockImplementation((selector: any) =>
+      selector({
+        entity: {
+          entityData: {
+            entityDefs: [{
+              name: 'DataSet',
+              businessAttributeDefs: {
+                Group1: [{ name: 'eventDates', typeName: 'array<date>' }]
+              }
+            }]
+          }
+        },
+        businessMetaData: {
+          businessMetaData: {
+            businessMetadataDefs: [{
+              name: 'Group1',
+              attributeDefs: [{ name: 'eventDates', typeName: 'array<date>' }]
+            }]
+          }
+        },
+        enum: { enumObj: { loading: false, data: { enumDefs: [] }, error: null } }
+      })
+    );
+
+    render(
+      <TestWrapper>
+        <BMAttributes
+          loading={false}
+          bmAttributes={{ Group1: { eventDates: dateTimestamps } }}
+          entity={{ guid: 'test-guid-123', status: 'ACTIVE', typeName: 'DataSet' }}
+        />
+      </TestWrapper>
+    );
+
+    fireEvent.click(screen.getByText('Edit').closest('button')!);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save').closest('button')!);
+    });
+
+    await waitFor(() => {
+      expect(mockGetEntityBusinessMetadata).toHaveBeenCalledWith('test-guid-123', {
+        Group1: { eventDates: dateTimestamps }
+      });
+    });
+  });
+
+  it('serializes empty array<date> payload when value is missing (negative)', async () => {
+    const { useAppSelector } = require('@hooks/reducerHook');
+    mockGetEntityBusinessMetadata.mockResolvedValueOnce({ data: {} });
+
+    useAppSelector.mockImplementation((selector: any) =>
+      selector({
+        entity: {
+          entityData: {
+            entityDefs: [{
+              name: 'DataSet',
+              businessAttributeDefs: {
+                Group1: [{ name: 'eventDates', typeName: 'array<date>' }]
+              }
+            }]
+          }
+        },
+        businessMetaData: {
+          businessMetaData: {
+            businessMetadataDefs: [{
+              name: 'Group1',
+              attributeDefs: [{ name: 'eventDates', typeName: 'array<date>' }]
+            }]
+          }
+        },
+        enum: { enumObj: { loading: false, data: { enumDefs: [] }, error: null } }
+      })
+    );
+
+    render(
+      <TestWrapper>
+        <BMAttributes
+          loading={false}
+          bmAttributes={{ Group1: { eventDates: [] } }}
+          entity={{ guid: 'test-guid-123', status: 'ACTIVE', typeName: 'DataSet' }}
+        />
+      </TestWrapper>
+    );
+
+    fireEvent.click(screen.getByText('Edit').closest('button')!);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save').closest('button')!);
+    });
+
+    await waitFor(() => {
+      expect(mockGetEntityBusinessMetadata).toHaveBeenCalledWith('test-guid-123', {
+        Group1: { eventDates: [] }
+      });
+    });
+  });
+
+  it('serializes boolean and date values on save (positive)', async () => {
+    const { useAppSelector } = require('@hooks/reducerHook');
+    mockGetEntityBusinessMetadata.mockResolvedValueOnce({ data: {} });
+
+    useAppSelector.mockImplementation((selector: any) =>
+      selector({
+        entity: {
+          entityData: {
+            entityDefs: [{
+              name: 'DataSet',
+              businessAttributeDefs: {
+                Group1: [
+                  { name: 'active', typeName: 'boolean' },
+                  { name: 'created', typeName: 'date' }
+                ]
+              }
+            }]
+          }
+        },
+        businessMetaData: {
+          businessMetaData: {
+            businessMetadataDefs: [{
+              name: 'Group1',
+              attributeDefs: [
+                { name: 'active', typeName: 'boolean' },
+                { name: 'created', typeName: 'date' }
+              ]
+            }]
+          }
+        },
+        enum: { enumObj: { loading: false, data: { enumDefs: [] }, error: null } }
+      })
+    );
+
+    render(
+      <TestWrapper>
+        <BMAttributes
+          loading={false}
+          bmAttributes={{
+            Group1: {
+              active: true,
+              created: 1717200000000
+            }
+          }}
+          entity={{ guid: 'test-guid-123', status: 'ACTIVE', typeName: 'DataSet' }}
+        />
+      </TestWrapper>
+    );
+
+    fireEvent.click(screen.getByText('Edit').closest('button')!);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save').closest('button')!);
+    });
+
+    await waitFor(() => {
+      expect(mockGetEntityBusinessMetadata).toHaveBeenCalledWith(
+        'test-guid-123',
+        expect.objectContaining({
+          Group1: expect.objectContaining({
+            active: expect.any(Boolean),
+            created: expect.any(Number)
+          })
+        })
+      );
+    });
+  });
+
+  it('renders read mode for array, date, and boolean values (positive)', () => {
+    const { useAppSelector } = require('@hooks/reducerHook');
+
+    useAppSelector.mockImplementation((selector: any) =>
+      selector({
+        entity: {
+          entityData: {
+            entityDefs: [{
+              name: 'DataSet',
+              businessAttributeDefs: {
+                Group1: [
+                  { name: 'flags', typeName: 'array<int>' },
+                  { name: 'dates', typeName: 'array<date>' },
+                  { name: 'active', typeName: 'boolean' }
+                ]
+              }
+            }]
+          }
+        },
+        businessMetaData: {
+          businessMetaData: {
+            businessMetadataDefs: [{
+              name: 'Group1',
+              attributeDefs: [
+                { name: 'flags', typeName: 'array<int>' },
+                { name: 'dates', typeName: 'array<date>' },
+                { name: 'active', typeName: 'boolean' }
+              ]
+            }]
+          }
+        },
+        enum: { enumObj: { loading: false, data: { enumDefs: [] }, error: null } }
+      })
+    );
+
+    render(
+      <TestWrapper>
+        <BMAttributes
+          loading={false}
+          bmAttributes={{
+            Group1: {
+              flags: [1, 2],
+              dates: [1717200000000],
+              active: true
+            }
+          }}
+          entity={{ guid: 'test-guid-123', status: 'ACTIVE', typeName: 'DataSet' }}
+        />
+      </TestWrapper>
+    );
+
+    expect(screen.getByText('flags (array<int>)')).toBeInTheDocument();
+    expect(screen.getByText('1, 2')).toBeInTheDocument();
+    expect(screen.getByText('active (boolean)')).toBeInTheDocument();
+    expect(screen.getByText('true')).toBeInTheDocument();
+  });
+
+  it('cancels edit mode and restores read view (negative)', () => {
+    render(<TestWrapper><BMAttributes {...defaultProps} /></TestWrapper>);
+
+    fireEvent.click(screen.getByText('Edit').closest('button')!);
+    expect(screen.getAllByRole('button', { name: /save/i }).length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /cancel/i })[0]);
+    expect(screen.queryByText('Save')).not.toBeInTheDocument();
+    expect(screen.getByText('Edit')).toBeInTheDocument();
   });
 
 });

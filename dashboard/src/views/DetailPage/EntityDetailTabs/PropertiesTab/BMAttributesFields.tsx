@@ -24,47 +24,147 @@ import {
   Stack,
   TextField,
   Autocomplete,
-  createFilterOptions
+  createFilterOptions,
+  CircularProgress,
+  Typography
 } from "@mui/material";
+import type { RootState } from "@redux/store/store";
+import {
+  areEnumOptionsEqual,
+  buildEnumOptionsForTypeName,
+  EnumOption,
+  getEnumOptionLabel,
+  isArrayTypeName,
+  isEnumTypeName,
+  isPotentialEnumTypeName,
+  normalizeMultiEnumValue
+} from "@utils/enumTypeUtils";
 import { isEmpty } from "@utils/Utils";
 import moment from "moment";
-import { Controller } from "react-hook-form";
+import { useEffect, type Ref } from "react";
+import { Control, Controller, FieldValues } from "react-hook-form";
 import ReactQuill from "react-quill-new";
 
-const BMAttributesFields = ({ obj, control, index }: any) => {
-  const { name, typeName } = obj || {};
+interface BMAttributeFieldObj {
+  name: string;
+  typeName: string;
+}
 
-  const { enumObj }: any = useAppSelector((state: any) => state.enum);
-  const filter = createFilterOptions<any>();
-  const { enumDefs } = enumObj?.data || {};
+interface BMAttributesFieldsProps {
+  obj: BMAttributeFieldObj;
+  control: Control<FieldValues>;
+  index: number;
+}
 
-  let isMultiValued: string = typeName && typeName?.indexOf("array<") === 0;
-  let multipleType: string = typeName?.match("array<(.*)>");
-  let modeTypeName = typeName;
-  let options: any,
-    foundEnumType = {};
-  if (!isMultiValued || typeName === "array<boolean>") {
-    if (multipleType && multipleType[1]) {
-      modeTypeName = multipleType[1];
+type AutocompleteFreeSoloOption = string | EnumOption | { inputValue: string; label?: string };
+
+interface DateValueFieldProps {
+  typeName: "date" | "array<date>";
+  value: unknown;
+  onChange: (value: unknown) => void;
+  fieldRef: Ref<unknown>;
+}
+
+const DateValueField = ({
+  typeName,
+  value,
+  onChange,
+  fieldRef
+}: DateValueFieldProps) => {
+  useEffect(() => {
+    if (typeName === "date" && !value) {
+      onChange(new Date().toISOString());
     }
-    foundEnumType = !isEmpty(enumDefs)
-      ? enumDefs.find((obj: { name: any }) => {
-          return obj.name == modeTypeName;
-        })
-      : {};
-    const { elementDefs }: any = foundEnumType || {};
+  }, [typeName, value, onChange]);
 
-    typeName == "array<boolean>"
-      ? (options = [
-          { label: "true", value: "true" },
-          { label: "false", value: "false" }
-        ])
-      : (options = !isEmpty(elementDefs)
-          ? elementDefs.map((obj: { value: any }) => {
-              return { label: obj.value, value: obj.value };
-            })
-          : []);
+  if (typeName === "date") {
+    return (
+      <CustomDatepicker
+        showPopperArrow={false}
+        popperProps={{ strategy: "fixed" }}
+        selected={
+          value && moment(value).isValid()
+            ? moment(value).toDate()
+            : moment().toDate()
+        }
+        onChange={(date: { getTime: () => number }) => {
+          onChange(date ? date.getTime() : null);
+        }}
+        ref={fieldRef}
+        dateFormat="MM/dd/yyyy"
+      />
+    );
   }
+
+  return (
+    <CustomDatepicker
+      showPopperArrow={false}
+      popperProps={{ strategy: "fixed" }}
+      selectsMultiple
+      selectedDates={
+        Array.isArray(value)
+          ? value.map((d: string | number | Date) => new Date(d))
+          : []
+      }
+      onChange={(dates: Date[]) => {
+        onChange(
+          Array.isArray(dates) ? dates.map((date) => date.getTime()) : []
+        );
+      }}
+      shouldCloseOnSelect={false}
+      disabledKeyboardNavigation
+      ref={fieldRef}
+      dateFormat="MM/dd/yyyy"
+    />
+  );
+};
+
+const BMAttributesFields = ({ obj, control, index }: BMAttributesFieldsProps) => {
+  const { name, typeName } = obj || { name: "", typeName: "" };
+
+  const enumObj = useAppSelector((state: RootState) => state.enum.enumObj);
+  const filter = createFilterOptions<AutocompleteFreeSoloOption>();
+  const enumDefs = enumObj?.data?.enumDefs ?? [];
+  const enumLoading = enumObj?.loading === true;
+  const enumLoaded = enumObj?.data != null;
+
+  const isMultiValued = isArrayTypeName(typeName);
+  const isPotentialEnumType = isPotentialEnumTypeName(typeName);
+  const isEnumType = isEnumTypeName(typeName, enumDefs);
+  const options = buildEnumOptionsForTypeName(typeName, enumDefs);
+  const fieldWidthSx = { width: "100%" };
+  const booleanSelectId = `bm-boolean-select-${index}`;
+  const enumSelectId = `bm-enum-select-${index}`;
+
+  if (isPotentialEnumType && enumLoading) {
+    return (
+      <Stack
+        direction="row"
+        alignItems="center"
+        gap="0.5rem"
+        className="bm-enum-loading"
+        aria-label="Loading enum definitions"
+      >
+        <CircularProgress size={18} />
+        <Typography variant="body2" color="text.secondary">
+          Loading enum definitions...
+        </Typography>
+      </Stack>
+    );
+  }
+
+  if (isPotentialEnumType && enumLoaded && isEmpty(enumDefs)) {
+    return (
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        className="bm-enum-unavailable-text"
+      >
+        No enum definitions present.
+      </Typography>
+    );
+  }
+
   if (typeName === "date" || typeName === "array<date>") {
     return (
       <Controller
@@ -72,63 +172,23 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
         control={control}
         key={`businessMetadata.${index}.value` as const}
         defaultValue={new Date().toISOString()}
-        render={({ field: { onChange, value, ref } }) => {
-          if (!value) {
-            const defaultDate = new Date();
-            onChange(defaultDate.toISOString());
-          }
-
-          return typeName === "date" ? (
-            <CustomDatepicker
-              showPopperArrow={false}
-              popperProps={{ strategy: "fixed" }}
-              selected={
-                value && moment(value).isValid()
-                  ? moment(value).toDate()
-                  : moment().toDate()
-              }
-              onChange={(date: { getTime: () => any }) => {
-                onChange(date ? date.getTime() : null);
-              }}
-              ref={ref}
-              dateFormat="MM/dd/yyyy"
-            />
-          ) : (
-            <CustomDatepicker
-              showPopperArrow={false}
-              popperProps={{ strategy: "fixed" }}
-              selectsMultiple
-              selectedDates={
-                Array.isArray(value)
-                  ? value.map((d: string | number | Date) => new Date(d))
-                  : []
-              }
-              onChange={(dates: any[]) => {
-                onChange(
-                  Array.isArray(dates)
-                    ? dates.map((date) => date.getTime())
-                    : []
-                );
-              }}
-              shouldCloseOnSelect={false}
-              disabledKeyboardNavigation
-              ref={ref}
-              dateFormat="MM/dd/yyyy"
-            />
-          );
-        }}
+        render={({ field: { onChange, value, ref } }) => (
+          <DateValueField
+            typeName={typeName as "date" | "array<date>"}
+            value={value}
+            onChange={onChange}
+            fieldRef={ref}
+          />
+        )}
       />
     );
   } else if (
-    (typeName === "string" ||
-      typeName === "int" ||
-      typeName === "short" ||
-      typeName === "float" ||
-      typeName === "double" ||
-      typeName === "long") &&
-    typeName !== "array<boolean>" &&
-    typeName !== "array<string>" &&
-    typeName !== "array<date>"
+    typeName === "string" ||
+    typeName === "int" ||
+    typeName === "short" ||
+    typeName === "float" ||
+    typeName === "double" ||
+    typeName === "long"
   ) {
     return (
       <Controller
@@ -142,7 +202,7 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
           return (
           <Stack gap="0.5rem">
             <div style={{ position: "relative", flexBasis: "100%" }}>
-              {typeName == "string" ? (
+              {typeName === "string" ? (
                 <ReactQuill
                     key={`quill-${index}-${name}`}
                   theme="snow"
@@ -157,19 +217,13 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
                 <TextField
                   margin="none"
                   fullWidth
+                  className="bm-attribute-value-field"
                   onChange={(e) => {
-                    const inputValue = e.target.value;
-                    // For numeric types, allow string input while typing, convert to number on blur
-                    if (typeName !== "string") {
-                      // Store as string to allow partial input (e.g., "-", "1.", etc.)
-                      field.onChange(inputValue);
-                    } else {
-                      field.onChange(inputValue);
-                    }
+                    // Keep string while typing to allow partial numeric input (e.g., "-", "1.")
+                    field.onChange(e.target.value);
                   }}
                   onBlur={(e) => {
-                    // On blur, convert valid numeric strings to numbers
-                    if (typeName !== "string" && e.target.value !== "") {
+                    if (e.target.value !== "") {
                       const numValue = Number(e.target.value);
                       if (!isNaN(numValue)) {
                         field.onChange(numValue);
@@ -178,14 +232,10 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
                   }}
                   variant="outlined"
                   size="small"
-                  type={typeName == "string" ? "text" : "number"}
+                  type="number"
                   placeholder={name}
                   value={
-                    typeName == "string"
-                      ? typeof field.value === "string"
-                        ? field.value
-                        : ""
-                      : field.value !== null && field.value !== undefined
+                    field.value !== null && field.value !== undefined
                       ? String(field.value)
                       : ""
                   }
@@ -212,14 +262,16 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
             <div style={{ width: "100%" }}>
               <Select
                 fullWidth
+                className="bm-attribute-value-field"
                 size="small"
-                id="demo-select-small"
-                value={value}
+                id={booleanSelectId}
+                displayEmpty
+                value={value ?? ""}
                 onChange={(e: SelectChangeEvent) => {
                   onChange(e.target.value);
                 }}
                 renderValue={(selected) => {
-                  if (selected.length === 0) {
+                  if (!selected) {
                     return <em>--Select true or false--</em>;
                   }
 
@@ -242,7 +294,7 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
     typeName === "array<int>" ||
     typeName === "array<short>" ||
     typeName === "array<float>" ||
-    typeName === "array<double" ||
+    typeName === "array<double>" ||
     typeName === "array<boolean>" ||
     typeName === "array<long>"
   ) {
@@ -251,9 +303,6 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
         name={`businessMetadata.${index}.value` as const}
         control={control}
         key={`autocomplete-${name}`}
-        // rules={{
-        //   required: isOptional ? false : true
-        // }}
         defaultValue={[]}
         render={({ field: { onChange, value }, fieldState: { error } }) => {
           return (
@@ -262,25 +311,26 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
                 size="small"
                 freeSolo
                 multiple
+                className="bm-attribute-value-field"
                 onChange={(_event, newValue) => {
                   onChange(newValue);
                 }}
                 sx={{
-                  flexBasis: "100%",
+                  ...fieldWidthSx,
                   paddingTop: "4px",
                   paddingBottom: "4px",
                   paddingLeft: "6px",
                   gap: "4px",
-                  '& .MuiAutocomplete-inputRoot': {
-                    flexWrap: 'wrap'
+                  "& .MuiAutocomplete-inputRoot": {
+                    flexWrap: "wrap"
                   }
                 }}
-                filterOptions={(options, params) => {
-                  const filtered = filter(options, params);
+                filterOptions={(optionList, params) => {
+                  const filtered = filter(optionList, params);
 
                   const { inputValue } = params;
 
-                  const isExisting = options.some(
+                  const isExisting = optionList.some(
                     (option) => inputValue === option
                   );
                   if (inputValue !== "" && !isExisting) {
@@ -289,7 +339,7 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
                     });
                   }
 
-                  return typeName != "array<boolean>" ? filtered : options;
+                  return typeName !== "array<boolean>" ? filtered : optionList;
                 }}
                 value={!isEmpty(value) && Array.isArray(value) ? value : []}
                 getOptionLabel={(option) => {
@@ -299,19 +349,25 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
 
                   return !isEmpty(option?.inputValue)
                     ? option.inputValue
-                    : option.label;
+                    : option.label ?? "";
                 }}
                 options={!isEmpty(options) ? options : []}
                 renderOption={(props, option) => {
                   const { ...optionProps } = props;
-                  const { inputValue, label } = option;
-                  return <li {...optionProps}>{inputValue || label}</li>;
+                  const optionLabel =
+                    typeof option === "string"
+                      ? option
+                      : option.inputValue || option.label;
+                  return <li {...optionProps}>{optionLabel}</li>;
                 }}
-                isOptionEqualToValue={(option, value) => {
-                  if (!isEmpty(options?.label)) {
-                    return option.label === value.label;
+                isOptionEqualToValue={(option, selectedValue) => {
+                  if (typeof option === "string" || typeof selectedValue === "string") {
+                    return option === selectedValue;
                   }
-                  return option.inputValue === value.inputValue;
+                  if (!isEmpty(option?.label) && !isEmpty(selectedValue?.label)) {
+                    return option.label === selectedValue.label;
+                  }
+                  return option.inputValue === selectedValue.inputValue;
                 }}
                 filterSelectedOptions
                 renderInput={(params) => (
@@ -322,7 +378,7 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
                     InputProps={{
                       ...params.InputProps
                     }}
-                    type={typeName == "array<string>" ? "string" : "number"}
+                    type={typeName === "array<string>" ? "string" : "number"}
                     placeholder={`Select a ${typeName} from the dropdown list`}
                   />
                 )}
@@ -332,11 +388,7 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
         }}
       />
     );
-  } else if (
-    typeName?.indexOf("array") > -1 &&
-    typeName &&
-    typeName !== "array<boolean>"
-  ) {
+  } else if (isMultiValued && isEnumType) {
     return (
       <Controller
         control={control}
@@ -344,50 +396,24 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
         key={`autocomplete-${name}`}
         defaultValue={[]}
         render={({ field: { onChange, value }, fieldState: { error } }) => {
+          const selectedValues = normalizeMultiEnumValue(value, options);
+
           return (
             <>
               <Autocomplete
-                freeSolo
                 size="small"
                 multiple
-                onChange={(_event, item) => {
-                  onChange(item);
+                disableCloseOnSelect
+                className="bm-attribute-value-field"
+                onChange={(_event, selectedOptions) => {
+                  onChange(selectedOptions);
                 }}
-                sx={{ flexBasis: "100%" }}
-                value={!isEmpty(value) && Array.isArray(value) ? value : []}
-                filterOptions={(options, params) => {
-                  const filtered = filter(options, params);
-
-                  const { inputValue } = params;
-
-                  const isExisting = options.some(
-                    (option) => inputValue === option
-                  );
-                  if (inputValue !== "" && !isExisting) {
-                    filtered.push({
-                      inputValue
-                    });
-                  }
-
-                  return filtered;
-                }}
+                sx={fieldWidthSx}
+                value={selectedValues}
                 filterSelectedOptions
-                getOptionLabel={(option) => {
-                  if (typeof option === "string") {
-                    return option;
-                  }
-
-                  return !isEmpty(option?.inputValue)
-                    ? option.inputValue
-                    : option.label;
-                }}
-                isOptionEqualToValue={(option, value) => {
-                  if (!isEmpty(options?.label)) {
-                    return option.label === value.label;
-                  }
-                  return option.inputValue === value.inputValue;
-                }}
-                options={!isEmpty(options) ? options : []}
+                getOptionLabel={getEnumOptionLabel}
+                isOptionEqualToValue={areEnumOptionsEqual}
+                options={options}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -396,7 +422,7 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
                     InputProps={{
                       ...params.InputProps
                     }}
-                    placeholder={`Select a ${typeName} from the dropdown list`}
+                    placeholder="Select enum values"
                   />
                 )}
               />
@@ -405,10 +431,7 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
         }}
       />
     );
-  } else if (
-    (typeName && typeName.indexOf("array") === -1) ||
-    typeName !== "array<boolean>"
-  ) {
+  } else if (isEnumType && !isMultiValued) {
     return (
       <Controller
         name={`businessMetadata.${index}.value` as const}
@@ -420,14 +443,27 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
             <div style={{ width: "100%" }}>
               <Select
                 fullWidth
+                className="bm-attribute-value-field"
                 size="small"
-                id="demo-select-small"
+                id={enumSelectId}
+                inputProps={{ "aria-label": `Select ${name} enum value` }}
+                displayEmpty
                 value={!isEmpty(value) ? value : ""}
                 onChange={(e: SelectChangeEvent) => {
                   onChange(e.target.value);
                 }}
+                renderValue={(selected) => {
+                  if (!selected) {
+                    return <em>--Select Value--</em>;
+                  }
+
+                  return selected;
+                }}
               >
-                {options.map((option: any) => (
+                <MenuItem value="">
+                  <em>--Select Value--</em>
+                </MenuItem>
+                {options.map((option: EnumOption) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
                   </MenuItem>
@@ -450,11 +486,12 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
               margin="none"
               error={!!error}
               fullWidth
+              className="bm-attribute-value-field"
               onChange={onChange}
               value={value}
               variant="outlined"
               size="small"
-              type={typeName == "string" ? "text" : "number"}
+              type={typeName === "string" ? "text" : "number"}
               placeholder={name}
             />
           </>
