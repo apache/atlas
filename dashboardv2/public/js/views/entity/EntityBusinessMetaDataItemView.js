@@ -69,6 +69,33 @@ define(['require',
         initialize: function(options) {
             _.extend(this, options);
         },
+        getInnerEnumTypeName: function(typeName) {
+            if (!typeName || typeName.indexOf("array<") !== 0) {
+                return typeName;
+            }
+            var match = typeName.match(/array<(.*)>/);
+            return match && match[1] ? match[1] : typeName;
+        },
+        getEnumTypeDef: function(typeName) {
+            if (!this.enumDefCollection || !typeName) {
+                return null;
+            }
+            var innerEnumTypeName = this.getInnerEnumTypeName(typeName);
+            return this.enumDefCollection.fullCollection.findWhere({ name: innerEnumTypeName });
+        },
+        initializeEnumSelect2: function(selectEl, val) {
+            var data = [];
+            if (selectEl.data("multi")) {
+                data = val && val.length && (_.isArray(val) ? val : val.split(",")) || [];
+            } else {
+                data = _.unescape(val);
+            }
+            selectEl.select2({
+                multiple: !!selectEl.data("multi"),
+                placeholder: "Select enum values"
+            });
+            selectEl.val(data).trigger("change");
+        },
         onRender: function() {
             var that = this;
             this.ui.keyEl.val("");
@@ -232,25 +259,29 @@ define(['require',
                 } else if (typeName === "byte" || typeName === "array<byte>" || typeName === "short" || typeName === "array<short>" || typeName === "int" || typeName === "array<int>" || typeName === "float" || typeName === "array<float>" || typeName === "double" || typeName === "array<double>" || typeName === "long" || typeName === "array<long>") {
                     allowOnlyNum = true;
                     returnEL = '<' + elType + ' data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" type="number" data-multi="' + isMultiValued + '" data-tags="true" placeholder="Enter Number" class="form-control" ' + (!_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '></' + elType + '>';
-                } else if (typeName) {
-                    isEnum = true;
-                    var modTypeName = typeName;
-                    if (isMultiValued) {
-                        var multipleType = typeName.match("array<(.*)>");
-                        if (multipleType && multipleType[1]) {
-                            modTypeName = multipleType[1];
+                } else {
+                    var enumTypeDef = this.getEnumTypeDef(typeName);
+                    if (enumTypeDef) {
+                        isEnum = true;
+                        var enumOptions = "";
+                        _.forEach(enumTypeDef.get("elementDefs"), function(obj) {
+                            enumOptions += '<option value="' + _.escape(obj.value) + '">' + _.escape(obj.value) + '</option>';
+                        });
+                        returnEL = '<select data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" data-enum="true" class="form-control"' + (isMultiValued ? ' multiple="multiple"' : '') + '>' + enumOptions + '</select>';
+                    } else if (typeName) {
+                        if (!this.enumDefCollection || this.enumDefCollection.fullCollection.length === 0) {
+                            returnEL = '<span class="bm-enum-unavailable-text">No enum definitions present.</span>';
+                        } else {
+                            returnEL = '<input type="text" data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" placeholder="Enter Value" class="form-control" ' + (!_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '>';
                         }
                     }
-                    var foundEnumType = this.enumDefCollection.fullCollection.find({ name: modTypeName });
-                    if (foundEnumType) {
-                        var enumOptions = "";
-                        _.forEach(foundEnumType.get("elementDefs"), function(obj) {
-                            enumOptions += '<option value="' + _.escape(obj.value) + '">' + _.escape(obj.value) + '</option>'
-                        });
-                        returnEL = '<select data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" data-enum="true">' + enumOptions + '</select>';
-                    }
                 }
-                if (isEnum || elType === "select") {
+                if (isEnum) {
+                    setTimeout(function() {
+                        var selectEl = that.$el.find('.custom-col-1[data-id="value"] select[data-key="' + key + '"]');
+                        that.initializeEnumSelect2(selectEl, val);
+                    }, 0);
+                } else if (elType === "select") {
                     setTimeout(function() {
                         var selectEl = that.$el.find('.custom-col-1[data-id="value"] select[data-key="' + key + '"]');
                         var data = [];

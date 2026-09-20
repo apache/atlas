@@ -51,6 +51,100 @@
   display: inline;
 }
 
+.bm-attribute-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.bm-attribute-key-col {
+  flex: 0 0 38%;
+  min-width: 0;
+  max-width: 38%;
+
+  .MuiAutocomplete-root,
+  .MuiFormControl-root,
+  .MuiInputBase-root {
+    width: 100%;
+  }
+}
+
+.bm-attribute-value-col {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  .MuiAutocomplete-root,
+  .MuiFormControl-root,
+  .MuiInputBase-root,
+  .MuiSelect-root,
+  .classification-form-editor {
+    width: 100%;
+  }
+}
+
+.bm-attribute-actions-col {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 0.25rem;
+  align-self: center;
+  padding-top: 2px;
+}
+
+.bm-attribute-separator {
+  flex: 0 0 auto;
+  align-self: center;
+  line-height: 36px;
+  margin: 0;
+}
+
+.bm-attribute-key-label {
+  display: block;
+  word-break: break-word;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  line-height: 1.4;
+  padding-top: 6px;
+}
+
+.bm-attribute-read-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 0.5rem 0;
+  width: 100%;
+}
+
+.bm-attribute-read-key {
+  flex: 0 0 38%;
+  min-width: 0;
+  max-width: 38%;
+  word-break: break-word;
+  text-align: left;
+}
+
+.bm-attribute-read-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  word-break: break-word;
+  text-align: left;
+}
+
+.bm-attribute-value-field {
+  width: 100%;
+}
+
+.bm-enum-loading {
+  min-height: 36px;
+  padding-top: 6px;
+}
+
+.bm-enum-unavailable-text {
+  min-height: 36px;
+  padding-top: 8px;
+  font-style: italic;
+}
+
 .bmattributes-key .MuiInputBase-sizeSmall {
   height: 34px;
 }
