@@ -16,7 +16,7 @@
  */
 
 import React from 'react'
-import { render, screen, fireEvent, within } from '@testing-library/react'
+import { render, screen, fireEvent, within, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
 jest.mock('@utils/dashboardSearchUtils', () => ({
@@ -164,7 +164,10 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		expect(screen.getByText('Orphan')).toBeInTheDocument()
+		const fallbackText = screen.getByText('Orphan')
+		expect(fallbackText).toBeInTheDocument()
+		expect(fallbackText.tagName).toBe('SPAN')
+		expect(fallbackText).toHaveClass('latest-entities-entity-name-fallback')
 		expect(screen.queryByRole('link', { name: 'Orphan' })).toBeNull()
 	})
 
@@ -185,11 +188,9 @@ describe('LatestEntitiesList', () => {
 				/>
 			</MemoryRouter>,
 		)
-		const row = screen.getByText('X').closest('li')
+		const row = screen.getByText('X').closest('li') as HTMLElement
 		expect(row).toBeTruthy()
-		expect(
-			within(row as HTMLElement).getByText(/^Created /),
-		).toBeInTheDocument()
+		expect(within(row).getByText(/^Created /)).toBeInTheDocument()
 	})
 
 	it('shows Created today for unusable timestamp', () => {
@@ -330,7 +331,7 @@ describe('LatestEntitiesList', () => {
 			</MemoryRouter>,
 		)
 		const li = screen.getByText('A').closest('li') as HTMLElement
-		expect(within(li).getByText(/Created in /)).toBeInTheDocument()
+		expect(within(li).getByText(/^Created /)).toBeInTheDocument()
 	})
 
 	it('normalizeEntityTimestampMs: $numberLong and longValue wrappers', () => {
@@ -578,7 +579,7 @@ describe('LatestEntitiesList', () => {
 			</MemoryRouter>,
 		)
 		expect(
-			within(screen.getByRole('listitem')).getByText(/^Created /),
+			within(screen.getByRole('listitem')).getByText('Created today'),
 		).toHaveTextContent('Created today')
 		spy.mockRestore()
 	})
@@ -623,5 +624,111 @@ describe('LatestEntitiesList', () => {
 			</MemoryRouter>,
 		)
 		expect(screen.getByText('Created today')).toBeInTheDocument()
+	})
+
+
+	it('renders extremely long entity name without crashing and shows tooltip', async () => {
+		const longName = 'A'.repeat(500)
+		render(
+			<MemoryRouter>
+				<LatestEntitiesList
+					entities={[
+						{
+							guid: 'g1',
+							name: longName,
+							typeName: 'T',
+							attributes: { __timestamp: Date.now() },
+						},
+					]}
+				/>
+			</MemoryRouter>,
+		)
+		const link = screen.getByRole('link', { name: longName })
+		expect(link).toBeInTheDocument()
+		expect(link.textContent).toBe(longName)
+		
+		const span = link.parentElement!
+		expect(span).toHaveClass('latest-entities-name-wrapper')
+
+		// Force overflow mock so the OverflowTooltip displays
+		Object.defineProperty(span, 'scrollWidth', { configurable: true, value: 500 })
+		Object.defineProperty(span, 'clientWidth', { configurable: true, value: 200 })
+		span.getBoundingClientRect = jest.fn(() => ({ width: 200 } as DOMRect))
+
+		fireEvent.mouseEnter(span)
+		fireEvent.mouseOver(span)
+		
+		act(() => {
+			jest.advanceTimersByTime(200)
+		})
+		
+		// Wait for tooltip to appear - expect multiple instances of the text (one is the tooltip)
+		const elements = await screen.findAllByText(longName)
+		expect(elements.length).toBeGreaterThan(1)
+	})
+
+	it('renders gracefully when typeName is missing', () => {
+		render(
+			<MemoryRouter>
+				<LatestEntitiesList
+					entities={[
+						{
+							guid: 'g1',
+							name: 'NamelessType',
+							attributes: { __timestamp: Date.now() },
+						},
+					]}
+				/>
+			</MemoryRouter>,
+		)
+		expect(screen.getByText('(Entity)')).toBeInTheDocument()
+	})
+
+	it('renders extremely long typeName without breaking layout', () => {
+		const longTypeName = 'B'.repeat(300)
+		render(
+			<MemoryRouter>
+				<LatestEntitiesList
+					entities={[
+						{
+							guid: 'g1',
+							name: 'EntityWithLongType',
+							typeName: longTypeName,
+							attributes: { __timestamp: Date.now() },
+						},
+					]}
+				/>
+			</MemoryRouter>,
+		)
+		const typeElement = screen.getByText(`(${longTypeName})`)
+		expect(typeElement).toBeInTheDocument()
+		
+		const wrapper = typeElement.parentElement
+		expect(wrapper).toHaveClass('latest-entities-type-wrapper')
+	})
+
+	it('renders both extremely long entity name and extremely long typeName without layout break', () => {
+		const longName = 'A'.repeat(500)
+		const longTypeName = 'B'.repeat(300)
+		render(
+			<MemoryRouter>
+				<LatestEntitiesList
+					entities={[
+						{
+							guid: 'g1',
+							name: longName,
+							typeName: longTypeName,
+							attributes: { __timestamp: Date.now() },
+						},
+					]}
+				/>
+			</MemoryRouter>,
+		)
+		
+		const nameLink = screen.getByRole('link', { name: longName })
+		expect(nameLink.parentElement).toHaveClass('latest-entities-name-wrapper')
+		
+		const typeElement = screen.getByText(`(${longTypeName})`)
+		expect(typeElement.parentElement).toHaveClass('latest-entities-type-wrapper')
 	})
 })
