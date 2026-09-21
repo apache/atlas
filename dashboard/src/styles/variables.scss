@@ -23,3 +23,28 @@ $action_gray: #999999;
 $tag_color: #4a90e2;
 $color_havelock_blue_approx: #4a90e2;
 $gray: #808080;
+
+$sidebar-bg: #034858;
+$sidebar-active: #2ccebb;
+$sidebar-divider: #ddd;
+$sidebar-search-bg: #f1f1f1;
+$sidebar-highlight: #D3D3D3;
+
+$card-bg: #ffffff;
+$card-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+$dashboard-bg: #f5f7f9;
+$primary-blue: #1976d2;
+$text-heading: #1a1a1a;
+$text-muted: #6c757d;
+$text-subtle: #868e96;
+$text-dark-gray: #374151;
+$status-active: #10b981;
+$status-shell: #f59e0b;
+$status-deleted: #ef4444;
+
+:root {
+  --sidebar-bg: #{$sidebar-bg};
+  --sidebar-active: #{$sidebar-active};
+  --text-blue: #{$text-blue};
+  --card-bg: #{$card-bg};
+}

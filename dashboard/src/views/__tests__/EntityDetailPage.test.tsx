@@ -68,7 +68,7 @@ jest.mock('@components/SkeletonLoader', () => ({
 
 jest.mock('@components/EntityDisplayImage', () => ({
 	__esModule: true,
-	default: () => <div data-testid="entity-image">Entity Image</div>
+	default: ({ entity }: { entity: Record<string, unknown> }) => <div data-testid="entity-image" data-entity={JSON.stringify(entity)}>Entity Image</div>
 }));
 
 jest.mock('../DetailPage/EntityDetailTabs/ReplicationAuditTab', () => ({
@@ -189,6 +189,7 @@ describe('EntityDetailPage', () => {
 		entityDefs: [
 			{
 				name: 'DataSet',
+				serviceType: 'mock-service-type',
 				attributeDefs: [
 					{ name: 'name', typeName: 'string' },
 					{ name: 'description', typeName: 'string' }
@@ -351,6 +352,16 @@ describe('EntityDetailPage', () => {
 		renderWithProviders(<TestWrapper store={store} />);
 
 		expect(screen.getByTestId('entity-image')).toBeTruthy();
+	});
+
+	it('should merge serviceType from entityObj into entity passed to DisplayImage', () => {
+		const store = createMockStore(mockDetailPageData, mockEntityData);
+		renderWithProviders(<TestWrapper store={store} />);
+
+		const displayImage = screen.getByTestId('entity-image');
+		const passedEntity = JSON.parse(displayImage.getAttribute('data-entity') || '{}');
+		
+		expect(passedEntity).toHaveProperty('serviceType', 'mock-service-type');
 	});
 
 	it('should handle Process entity type', () => {

@@ -30,7 +30,7 @@ const Statistics = lazy(() => import("@views/Statistics/Statistics"));
 const Layout: React.FC = () => {
   const location = useLocation();
   const { sessionObj = "" }: any = useAppSelector(
-    (state: any) => state.session
+    (state: any) => state.session,
   );
   const { data } = sessionObj || {};
   const key = "atlas.session.timeout.secs";
@@ -123,7 +123,6 @@ const Layout: React.FC = () => {
       <div className="row">
         <div className="column layout-sidebar">
           <SideBarBody
-            loading={false}
             handleOpenModal={handleOpenModal}
             handleOpenAboutModal={handleOpenAboutModal}
           />
@@ -140,7 +139,10 @@ const Layout: React.FC = () => {
               button2Label="Cancel"
               button2Handler={handleCloseModal}
             >
-              <CircularProgress size={32} sx={{ display: "block", mx: "auto" }} />
+              <CircularProgress
+                size={32}
+                className="layout__circular-progress"
+              />
             </CustomModal>
           }
         >

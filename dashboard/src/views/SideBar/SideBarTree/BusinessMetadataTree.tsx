@@ -31,8 +31,10 @@ const BusinessMetadataTree = (props: Props) => {
   );
 
   useEffect(() => {
-    dispatch(fetchBusinessMetaData());
-  }, []);
+    if (businessMetaData === null || businessMetaData === undefined) {
+      dispatch(fetchBusinessMetaData());
+    }
+  }, [businessMetaData, dispatch]);
 
   useEffect(() => {
     if (businessMetaData?.businessMetadataDefs != undefined) {
@@ -66,6 +68,7 @@ const BusinessMetadataTree = (props: Props) => {
       sideBarOpen={sideBarOpen}
       loader={loading}
       searchTerm={searchTerm}
+      isPopover={props.isPopover}
     />
   );
 };
