@@ -17,9 +17,24 @@
 # limitations under the License.
 
 ATLAS_HOME="${ATLAS_HOME:-$(cd "$(dirname "$0")/../../.." && pwd)}"
-CLASSPATH="${ATLAS_HOME}/conf:${ATLAS_HOME}/lib/*"
+WEBINF="${ATLAS_HOME}/server/webapp/atlas/WEB-INF"
 
-exec java -Datlas.home="${ATLAS_HOME}" \
-  -Datlas.conf="${ATLAS_HOME}/conf" \
+if [ -z "${ATLAS_CONF:-}" ]; then
+  if [ -f "${ATLAS_HOME}/conf/runtime/atlas-application.properties" ]; then
+    ATLAS_CONF="${ATLAS_HOME}/conf/runtime"
+  else
+    ATLAS_CONF="${ATLAS_HOME}/conf"
+  fi
+fi
+
+CLASSPATH="${ATLAS_CONF}:${WEBINF}/classes:${WEBINF}/lib/*"
+if [ -d "${ATLAS_HOME}/lib" ]; then
+  CLASSPATH="${CLASSPATH}:${ATLAS_HOME}/lib/*"
+fi
+
+JVM_OPENS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED"
+
+exec java ${JVM_OPENS} -Datlas.home="${ATLAS_HOME}" \
+  -Datlas.conf="${ATLAS_CONF}" \
   -cp "${CLASSPATH}" \
   org.apache.atlas.tools.SemanticRepair "$@"

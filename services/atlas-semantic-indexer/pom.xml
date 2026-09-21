@@ -57,10 +57,52 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.apache.atlas.tools.SemanticIndexer</mainClass>
+                            <mainClass>org.apache.atlas.semantic.indexer.SemanticIndexer</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-runtime-dependencies</id>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                            <includeScope>runtime</includeScope>
+                            <overWriteReleases>true</overWriteReleases>
+                            <overWriteSnapshots>true</overWriteSnapshots>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>package-semantic-indexer-distro</id>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <skipAssembly>false</skipAssembly>
+                            <attach>true</attach>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <finalName>apache-atlas-${project.version}-semantic-indexer</finalName>
+                            <descriptors>
+                                <descriptor>src/main/assemblies/atlas-semantic-indexer-package.xml</descriptor>
+                            </descriptors>
+                            <tarLongFileMode>gnu</tarLongFileMode>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

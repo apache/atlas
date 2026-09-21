@@ -1,0 +1,37 @@
+{
+  "terms": [
+    {
+      "name": "Revenue",
+      "description": "Total recognized value of completed orders or payments. Used when analysts ask about sales, income, or recognized payment value."
+    },
+    {
+      "name": "Customer Lifetime Value",
+      "abbreviation": "CLV",
+      "description": "Estimated long-term economic value of a customer relationship across repeat purchases and retention."
+    },
+    {
+      "name": "LTV",
+      "description": "Lifetime value — common synonym for customer lifetime value and customer worth in marketing analytics."
+    },
+    {
+      "name": "customer worth",
+      "description": "Informal business synonym for customer lifetime value when stakeholders avoid finance jargon."
+    },
+    {
+      "name": "Churn Risk",
+      "description": "Likelihood a customer stops buying or engaging. Related to attrition, disengagement, and retention risk."
+    },
+    {
+      "name": "Attrition",
+      "description": "Customer attrition and disengagement. See-also concept for churn risk and why customers stop buying."
+    },
+    {
+      "name": "Campaign ROI",
+      "description": "Return on marketing investment for campaigns. Covers campaign returns, payback, and marketing efficiency."
+    },
+    {
+      "name": "Customer Segment",
+      "description": "Grouping of customers by behavior, value band, or lifecycle stage for targeting and analytics."
+    }
+  ]
+}

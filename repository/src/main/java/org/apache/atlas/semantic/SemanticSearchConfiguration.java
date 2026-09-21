@@ -36,6 +36,10 @@ public final class SemanticSearchConfiguration {
 
     public static final String SEMANTIC_INDEXER_KAFKA_GROUP_ID_CONF     = "atlas.semantic.indexer.kafka.group.id";
     public static final String SEMANTIC_INDEXER_BATCH_SIZE_CONF         = "atlas.semantic.indexer.batch.size";
+    public static final String SEMANTIC_INDEXER_KAFKA_POLL_TIMEOUT_MS_CONF = "atlas.semantic.indexer.kafka.poll.timeout.ms";
+    public static final String SEMANTIC_INDEXER_HEALTH_ENABLED_CONF     = "atlas.semantic.indexer.health.enabled";
+    public static final String SEMANTIC_INDEXER_HEALTH_PORT_CONF        = "atlas.semantic.indexer.health.port";
+    public static final String SEMANTIC_INDEXER_HEALTH_PATH_CONF        = "atlas.semantic.indexer.health.path";
 
     public static final String GRAPH_INDEX_HOSTNAME_CONF                = "atlas.graph.index.search.hostname";
     public static final String GRAPH_INDEX_PORT_CONF                    = "atlas.graph.index.search.port";
@@ -55,6 +59,9 @@ public final class SemanticSearchConfiguration {
     private static final int    DEFAULT_SEMANTIC_RETRY_MAX_ATTEMPTS     = 3;
     private static final long   DEFAULT_SEMANTIC_RETRY_SLEEP_MS         = 500L;
     private static final String DEFAULT_SEMANTIC_INDEXER_KAFKA_GROUP_ID   = "atlas_semantic_indexer";
+    private static final long   DEFAULT_SEMANTIC_INDEXER_KAFKA_POLL_TIMEOUT_MS = 5000L;
+    private static final int    DEFAULT_SEMANTIC_INDEXER_HEALTH_PORT          = 8089;
+    private static final String DEFAULT_SEMANTIC_INDEXER_HEALTH_PATH          = "/health";
     private static final String DEFAULT_GRAPH_INDEX_NAME                = "janusgraph";
 
     private SemanticSearchConfiguration() {
@@ -129,6 +136,41 @@ public final class SemanticSearchConfiguration {
             return ApplicationProperties.get().getString(SEMANTIC_INDEXER_KAFKA_GROUP_ID_CONF, DEFAULT_SEMANTIC_INDEXER_KAFKA_GROUP_ID);
         } catch (AtlasException e) {
             return DEFAULT_SEMANTIC_INDEXER_KAFKA_GROUP_ID;
+        }
+    }
+
+    public static long getSemanticIndexerKafkaPollTimeoutMs() {
+        try {
+            return ApplicationProperties.get().getLong(SEMANTIC_INDEXER_KAFKA_POLL_TIMEOUT_MS_CONF,
+                    DEFAULT_SEMANTIC_INDEXER_KAFKA_POLL_TIMEOUT_MS);
+        } catch (AtlasException e) {
+            return DEFAULT_SEMANTIC_INDEXER_KAFKA_POLL_TIMEOUT_MS;
+        }
+    }
+
+    public static boolean isSemanticIndexerHealthEnabled() {
+        try {
+            return ApplicationProperties.get().getBoolean(SEMANTIC_INDEXER_HEALTH_ENABLED_CONF, true);
+        } catch (AtlasException e) {
+            return true;
+        }
+    }
+
+    public static int getSemanticIndexerHealthPort() {
+        try {
+            return ApplicationProperties.get().getInt(SEMANTIC_INDEXER_HEALTH_PORT_CONF,
+                    DEFAULT_SEMANTIC_INDEXER_HEALTH_PORT);
+        } catch (AtlasException e) {
+            return DEFAULT_SEMANTIC_INDEXER_HEALTH_PORT;
+        }
+    }
+
+    public static String getSemanticIndexerHealthPath() {
+        try {
+            return ApplicationProperties.get().getString(SEMANTIC_INDEXER_HEALTH_PATH_CONF,
+                    DEFAULT_SEMANTIC_INDEXER_HEALTH_PATH);
+        } catch (AtlasException e) {
+            return DEFAULT_SEMANTIC_INDEXER_HEALTH_PATH;
         }
     }
 

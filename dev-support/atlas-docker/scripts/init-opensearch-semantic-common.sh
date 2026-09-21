@@ -2,6 +2,10 @@
 # Shared helpers for OpenSearch semantic search init scripts.
 set -euo pipefail
 
+SEMANTIC_TEXT_FIELD="${SEMANTIC_TEXT_FIELD:-atlas_semantic_text}"
+SEMANTIC_EMBEDDING_FIELD="${SEMANTIC_EMBEDDING_FIELD:-atlas_semantic_embedding}"
+VERTEX_INDEX_NAME="${VERTEX_INDEX_NAME:-janusgraph_vertex_index}"
+
 wait_for_opensearch() {
   local url="${1:?OpenSearch URL required}"
   echo "==> Waiting for OpenSearch at ${url} ..."
@@ -43,8 +47,8 @@ print_atlas_config_guide() {
 atlas.search.semantic.opensearch.model.id=${model_id}
 atlas.search.semantic.opensearch.embedding.dimension=${dimension}
 
-Atlas creates the ingest pipeline (${pipeline_name}) on startup and stores embeddings
-on the existing JanusGraph vertex index ({atlas.graph.index.search.index-name}_vertex_index).
+OpenSearch bootstrap applied knn + ingest pipeline (${pipeline_name}) + embedding mapping
+on the JanusGraph vertex index (${VERTEX_INDEX_NAME}).
 EOF
 
   if [ -n "${artifact_file}" ]; then
@@ -97,4 +101,115 @@ register_remote_model() {
       \"description\": \"Remote embedding model for Atlas semantic search\",
       \"connector_id\": \"${connector_id}\"
     }"
+}
+
+vertex_index_exists() {
+  local url="${1:?OpenSearch URL required}"
+  local index_name="${2:?Index name required}"
+  curl -sf -o /dev/null -w '%{http_code}' "${url}/${index_name}" | grep -q '^200$'
+}
+
+is_vertex_index_knn_enabled() {
+  local url="${1:?OpenSearch URL required}"
+  local index_name="${2:?Index name required}"
+  curl -sf "${url}/${index_name}/_settings/index.knn" | python3 -c "
+import sys, json
+try:
+    root = json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+for payload in root.values():
+    idx = payload.get('settings', {}).get('index', {})
+    knn = idx.get('knn', False)
+    print(str(knn).lower())
+    break
+else:
+    print('false')
+" 2>/dev/null || echo "false"
+}
+
+ensure_vertex_index_knn() {
+  local url="${1:?OpenSearch URL required}"
+  local index_name="${2:?Index name required}"
+
+  if [ "$(is_vertex_index_knn_enabled "${url}" "${index_name}")" = "true" ]; then
+    echo "==> knn already enabled on ${index_name}"
+    return 0
+  fi
+
+  echo "==> Enabling knn on ${index_name} ..."
+  curl -sf -X PUT "${url}/${index_name}/_settings" \
+    -H 'Content-Type: application/json' \
+    -d '{"settings":{"index":{"knn":true}}}'
+}
+
+ensure_semantic_ingest_pipeline() {
+  local url="${1:?OpenSearch URL required}"
+  local model_id="${2:?Model id required}"
+  local pipeline_name="${3:?Pipeline name required}"
+
+  echo "==> Ensuring ingest pipeline ${pipeline_name} (model ${model_id}) ..."
+  curl -sf -X PUT "${url}/_ingest/pipeline/${pipeline_name}" \
+    -H 'Content-Type: application/json' \
+    -d "{
+      \"description\": \"Atlas semantic search: embed text at ingest on JanusGraph vertex index\",
+      \"processors\": [
+        {
+          \"text_embedding\": {
+            \"model_id\": \"${model_id}\",
+            \"field_map\": {
+              \"${SEMANTIC_TEXT_FIELD}\": \"${SEMANTIC_EMBEDDING_FIELD}\"
+            }
+          }
+        },
+        {
+          \"remove\": {
+            \"field\": \"${SEMANTIC_TEXT_FIELD}\",
+            \"ignore_missing\": true
+          }
+        }
+      ]
+    }"
+}
+
+ensure_semantic_embedding_mapping() {
+  local url="${1:?OpenSearch URL required}"
+  local index_name="${2:?Index name required}"
+  local dimension="${3:?Embedding dimension required}"
+
+  echo "==> Ensuring ${SEMANTIC_EMBEDDING_FIELD} mapping on ${index_name} (dim=${dimension}) ..."
+  curl -sf -X PUT "${url}/${index_name}/_mapping" \
+    -H 'Content-Type: application/json' \
+    -d "{
+      \"properties\": {
+        \"${SEMANTIC_EMBEDDING_FIELD}\": {
+          \"type\": \"knn_vector\",
+          \"dimension\": ${dimension},
+          \"method\": {
+            \"name\": \"hnsw\",
+            \"space_type\": \"cosinesimil\",
+            \"engine\": \"lucene\"
+          }
+        }
+      }
+    }"
+}
+
+bootstrap_semantic_vertex_index() {
+  local url="${1:?OpenSearch URL required}"
+  local model_id="${2:?Model id required}"
+  local pipeline_name="${3:?Pipeline name required}"
+  local dimension="${4:?Embedding dimension required}"
+  local index_name="${5:-${VERTEX_INDEX_NAME}}"
+
+  if ! vertex_index_exists "${url}" "${index_name}"; then
+    echo "WARNING: Vertex index '${index_name}' does not exist yet — skipping knn/pipeline/mapping bootstrap."
+    echo "         Start Atlas once so JanusGraph creates the index, then re-run this script."
+    return 0
+  fi
+
+  ensure_vertex_index_knn "${url}" "${index_name}"
+  ensure_semantic_ingest_pipeline "${url}" "${model_id}" "${pipeline_name}"
+  ensure_semantic_embedding_mapping "${url}" "${index_name}" "${dimension}"
+  echo "==> Semantic vertex index bootstrap complete (${index_name})"
 }

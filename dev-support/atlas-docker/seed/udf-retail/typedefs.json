@@ -1,0 +1,124 @@
+{
+  "classificationDefs": [
+    {
+      "name": "Certified",
+      "category": "CLASSIFICATION",
+      "superTypes": [],
+      "attributeDefs": [
+        {
+          "name": "level",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "udf_PII",
+      "category": "CLASSIFICATION",
+      "superTypes": [],
+      "attributeDefs": [
+        {
+          "name": "piiType",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "Sensitive",
+      "category": "CLASSIFICATION",
+      "superTypes": [],
+      "attributeDefs": [
+        {
+          "name": "controlLevel",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "Deprecated",
+      "category": "CLASSIFICATION",
+      "superTypes": [],
+      "attributeDefs": [
+        {
+          "name": "reason",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    }
+  ],
+  "businessMetadataDefs": [
+    {
+      "name": "Governance",
+      "category": "BUSINESS_METADATA",
+      "attributeDefs": [
+        {
+          "name": "sourceOfTruth",
+          "typeName": "boolean",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "dataOwner",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "domain",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ],
+      "options": {
+        "applicableEntityTypes": "[\"DataSet\"]"
+      }
+    },
+    {
+      "name": "DataQuality",
+      "category": "BUSINESS_METADATA",
+      "attributeDefs": [
+        {
+          "name": "freshnessHours",
+          "typeName": "int",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "slaTier",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ],
+      "options": {
+        "applicableEntityTypes": "[\"DataSet\"]"
+      }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "_comment": "Split into glossary-create.json and glossary-terms.json. term-relationships.json holds AtlasGlossarySynonym / AtlasGlossaryRelatedTerm payloads.",
+  "glossaryCreateFile": "glossary-create.json",
+  "glossaryTermsFile": "glossary-terms.json",
+  "termRelationshipsFile": "term-relationships.json",
+  "termAssignmentsFile": "term-assignments.json"
+}

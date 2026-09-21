@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  Logback for standalone atlas-semantic-indexer: INFO for Atlas semantic code on console,
+  suppress Kafka/JanusGraph/Hikari DEBUG noise.
+-->
+<configuration>
+  <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%date [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="org.apache.atlas" level="info" additivity="false">
+    <appender-ref ref="console"/>
+  </logger>
+
+  <logger name="org.apache.kafka" level="warn" additivity="false">
+    <appender-ref ref="console"/>
+  </logger>
+
+  <logger name="org.janusgraph" level="warn" additivity="false">
+    <appender-ref ref="console"/>
+  </logger>
+
+  <logger name="com.zaxxer.hikari" level="warn" additivity="false">
+    <appender-ref ref="console"/>
+  </logger>
+
+  <root level="warn">
+    <appender-ref ref="console"/>
+  </root>
+</configuration>

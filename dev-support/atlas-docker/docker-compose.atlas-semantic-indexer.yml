@@ -1,4 +1,5 @@
-# Semantic Indexer overlay — use with docker-compose.atlas.yml (OpenSearch backend).
+# DEPRECATED — use docker-compose.atlas-semantic.yml + Dockerfile.atlas-semantic-indexer instead.
+# This legacy overlay ran the indexer inside the full atlas:latest image.
 #
 #   docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-semantic-indexer.yml up -d atlas-semantic-indexer
 
@@ -7,9 +8,12 @@ services:
     image: ${ATLAS_IMAGE:-apache/atlas:latest}
     container_name: atlas-semantic-indexer
     depends_on:
-      - atlas
-      - atlas-kafka
-      - atlas-opensearch
+      atlas-db-init:
+        condition: service_completed_successfully
+      atlas-kafka:
+        condition: service_started
+      atlas-index:
+        condition: service_healthy
     environment:
       - ATLAS_HOME=/opt/atlas
     volumes:

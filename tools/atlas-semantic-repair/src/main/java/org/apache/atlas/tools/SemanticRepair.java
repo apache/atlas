@@ -17,18 +17,16 @@
  */
 package org.apache.atlas.tools;
 
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.repository.graph.FullTextMapperV2;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.semantic.OpenSearchSemanticStore;
-import org.apache.atlas.tools.SemanticEntityIndexer;
+import org.apache.atlas.semantic.SemanticNotificationGuidExpander;
 import org.apache.atlas.semantic.SemanticTextBuilder;
-import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.semantic.indexer.SemanticEntityIndexer;
 import org.apache.atlas.utils.SSLUtil;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -39,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
@@ -67,26 +64,17 @@ public class SemanticRepair {
             semanticStore.initialize();
 
             AtlasGraph graph = AtlasGraphProvider.getGraphInstance();
-            AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
-            FullTextMapperV2 fullTextMapper = new FullTextMapperV2(graph, typeRegistry, ApplicationProperties.get());
-            SemanticTextBuilder textBuilder = new SemanticTextBuilder(fullTextMapper, typeRegistry);
+            SemanticTextBuilder textBuilder = new SemanticTextBuilder();
             SemanticEntityIndexer entityIndexer = new SemanticEntityIndexer(textBuilder, semanticStore);
 
             Set<String> guids = collectGuids(graph, guid);
             LOG.info("Semantic repair starting for {} entit(y/ies), dryRun={}", guids.size(), dryRun);
 
-            int processed = 0;
-            Set<String> batch = new LinkedHashSet<>();
-            for (String entityGuid : guids) {
-                batch.add(entityGuid);
-                if (batch.size() >= batchSize) {
-                    processed += processBatch(entityIndexer, batch, dryRun);
-                    batch.clear();
-                }
-            }
+            int processed = dryRun ? guids.size()
+                    : entityIndexer.indexGuidsInBatches(guids, batchSize).getIndexed();
 
-            if (!batch.isEmpty()) {
-                processed += processBatch(entityIndexer, batch, dryRun);
+            if (dryRun) {
+                LOG.info("Dry-run: would index {} embeddable active entit(y/ies)", processed);
             }
 
             LOG.info("Semantic repair completed. processedEntities={}", processed);
@@ -110,22 +98,16 @@ public class SemanticRepair {
             AtlasVertex vertex = (AtlasVertex) vertexObj;
             String guid     = AtlasGraphUtilsV2.getIdFromVertex(vertex);
             String typeName = AtlasGraphUtilsV2.getEncodedProperty(vertex, TYPE_NAME_PROPERTY_KEY, String.class);
-            if (StringUtils.isBlank(guid) || StringUtils.isBlank(typeName) || GraphHelper.isInternalType(typeName)) {
+            if (StringUtils.isBlank(guid) || !SemanticNotificationGuidExpander.isEmbeddableEntityType(typeName)) {
+                continue;
+            }
+            if (AtlasGraphUtilsV2.getState(vertex) != AtlasEntity.Status.ACTIVE) {
                 continue;
             }
             guids.add(guid);
         }
 
         return guids;
-    }
-
-    private static int processBatch(SemanticEntityIndexer entityIndexer, Set<String> guids, boolean dryRun) {
-        if (dryRun) {
-            LOG.info("Dry-run: would index {} entities", guids.size());
-            return guids.size();
-        }
-
-        return entityIndexer.indexGuids(guids);
     }
 
     private static CommandLine parseArgs(String[] args) throws Exception {

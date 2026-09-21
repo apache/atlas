@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Provision a local OpenSearch embedding model for Atlas semantic search (dev).
-# Ingest pipeline is created/updated by Atlas on startup (ensureIngestPipeline).
+# Also enables knn, ingest pipeline, and embedding mapping on the JanusGraph vertex index.
 #
 # Usage:
 #   ./scripts/init-opensearch-semantic-local.sh
@@ -37,6 +37,8 @@ fi
 wait_for_ml_task "${OPENSEARCH_URL}" "${TASK_ID}" MODEL_ID
 
 echo "==> Model deployed: ${MODEL_ID}"
+
+bootstrap_semantic_vertex_index "${OPENSEARCH_URL}" "${MODEL_ID}" "${PIPELINE_NAME}" "${EMBEDDING_DIMENSION}"
 
 write_bootstrap_artifact "${BOOTSTRAP_ARTIFACT}" "${MODEL_ID}" "${PIPELINE_NAME}" "${EMBEDDING_DIMENSION}"
 print_atlas_config_guide "${MODEL_ID}" "${PIPELINE_NAME}" "${EMBEDDING_DIMENSION}" "${BOOTSTRAP_ARTIFACT}"

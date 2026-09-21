@@ -64,6 +64,9 @@ const ReplicationAuditTable = lazy(
 const ProfileTab = lazy(() => import("./EntityDetailTabs/ProfileTab"));
 const TaskTab = lazy(() => import("./EntityDetailTabs/TaskTab"));
 const LineageTab = lazy(() => import("./EntityDetailTabs/LineageTab"));
+const SimilarEntitiesTab = lazy(
+  () => import("./EntityDetailTabs/SimilarEntitiesTab")
+);
 
 const tabFallback = (
   <Stack direction="column" spacing={2} sx={{ p: 2 }}>
@@ -150,6 +153,7 @@ const EntityDetailPage: React.FC = () => {
   let allTabs = [
     "properties",
     "relationship",
+    "similar",
     "classification",
     "audit",
     "pendingTask"
@@ -267,6 +271,10 @@ const EntityDetailPage: React.FC = () => {
             referredEntities={referredEntities}
             loading={loading}
           />
+        );
+      case "similar":
+        return (
+          <SimilarEntitiesTab guid={guid as string} typeName={entity?.typeName} />
         );
       case "classification":
         return (
@@ -582,6 +590,7 @@ const EntityDetailPage: React.FC = () => {
             <LinkTab label="Properties" />-{" "}
             {isLineageRender && <LinkTab label="Lineage" />}
             <LinkTab label="Relationships" />
+            <LinkTab label="Similar" />
             <LinkTab label="Classifications" />
             <LinkTab label="Audits" />
             {!isEmpty(schemaRelationNames) && <LinkTab label="Schema" />}

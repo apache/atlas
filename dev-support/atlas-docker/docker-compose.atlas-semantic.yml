@@ -1,0 +1,62 @@
+# Semantic search stack: Postgres + OpenSearch + standalone Semantic Indexer (no Solr).
+#
+#   export ATLAS_BACKEND=postgres ATLAS_INDEX_BACKEND=opensearch COMPOSE_PROFILES=opensearch-index
+#   ./scripts/run-atlas-semantic.sh
+#
+# Or manually:
+#   docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-postgres.yml \
+#     -f docker-compose.atlas-semantic.yml up -d --wait
+
+services:
+  atlas:
+    volumes:
+      - ./config/atlas-semantic-docker.properties:/home/atlas/config/atlas-semantic-docker.properties:ro
+      - ./config/atlas-logback.xml:/opt/atlas/conf/atlas-logback.xml:ro
+      - ./scripts/merge-semantic-config.sh:/home/atlas/scripts/merge-semantic-config.sh:ro
+      - ./scripts/atlas.sh:/home/atlas/scripts/atlas.sh:ro
+    entrypoint:
+      - /bin/bash
+      - -lc
+      - |
+        export ATLAS_HOME=/opt/atlas
+        export ATLAS_SEMANTIC_CONFIG=/home/atlas/config/atlas-semantic-docker.properties
+        /home/atlas/scripts/merge-semantic-config.sh
+        export ATLAS_CONF="$${ATLAS_HOME}/conf/runtime"
+        exec env ATLAS_CONF="$${ATLAS_CONF}" /home/atlas/scripts/atlas.sh
+
+  atlas-semantic-indexer:
+    build:
+      context: .
+      dockerfile: Dockerfile.atlas-semantic-indexer
+      args:
+        - ATLAS_VERSION=${ATLAS_VERSION}
+    image: atlas-semantic-indexer:latest
+    container_name: atlas-semantic-indexer
+    hostname: atlas-semantic-indexer.example.com
+    stdin_open: true
+    tty: true
+    networks:
+      - atlas
+    depends_on:
+      atlas-db-init:
+        condition: service_completed_successfully
+      atlas-kafka:
+        condition: service_started
+      atlas-index:
+        condition: service_healthy
+    environment:
+      - ATLAS_SEMANTIC_INDEXER_HOME=/opt/atlas-semantic-indexer
+      - ATLAS_HOME=/opt/atlas-semantic-indexer
+      - ATLAS_SEMANTIC_CONFIG=/home/atlas/config/atlas-semantic-docker.properties
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./config/atlas/postgres/opensearch/atlas-application.properties:/opt/atlas-semantic-indexer/conf/atlas-application.properties:ro
+      - ./config/atlas/users-credentials.properties:/opt/atlas-semantic-indexer/conf/users-credentials.properties:ro
+      - ./config/atlas-semantic-docker.properties:/home/atlas/config/atlas-semantic-docker.properties:ro
+      - ./config/atlas-semantic-indexer-logback.xml:/opt/atlas-semantic-indexer/conf/atlas-semantic-indexer-logback.xml:ro
+      - ./scripts/merge-semantic-config.sh:/home/atlas/scripts/merge-semantic-config.sh:ro
+      - ./scripts/atlas-semantic-indexer.sh:/home/atlas/scripts/atlas-semantic-indexer.sh:ro
+    entrypoint:
+      - /home/atlas/scripts/atlas-semantic-indexer.sh
+    restart: unless-stopped

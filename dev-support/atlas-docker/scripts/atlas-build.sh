@@ -108,7 +108,8 @@ for f in \
   "distro/target/apache-atlas-${ATLAS_VERSION}-hive-hook.tar.gz" \
   "distro/target/apache-atlas-${ATLAS_VERSION}-hbase-hook.tar.gz" \
   "distro/target/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz" \
-  "distro/target/apache-atlas-${ATLAS_VERSION}-rest-server.tar.gz"
+  "distro/target/apache-atlas-${ATLAS_VERSION}-rest-server.tar.gz" \
+  "services/atlas-semantic-indexer/target/apache-atlas-${ATLAS_VERSION}-semantic-indexer.tar.gz"
 
 do
   if [ -f "${f}" ]; then

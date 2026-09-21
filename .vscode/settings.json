@@ -1,0 +1,10 @@
+{
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.import.maven.enabled": true,
+  "java.import.maven.recursive": true,
+  "java.project.importOnFirstTimeStartup": "automatic",
+  "java.eclipse.downloadSources": true,
+  "java.maven.downloadSources": true,
+  "java.references.includeDecompiledSources": true,
+  "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xmx4G -Xms512m"
+}

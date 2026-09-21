@@ -122,6 +122,39 @@
             </includes>
         </fileSet>
 
+        <!-- semantic indexer (standalone Kafka consumer) -->
+        <fileSet>
+            <directory>../services/atlas-semantic-indexer/scripts</directory>
+            <outputDirectory>bin</outputDirectory>
+            <includes>
+                <include>atlas_semantic_indexer.sh</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <fileSet>
+            <directory>../services/atlas-semantic-indexer/target</directory>
+            <outputDirectory>lib</outputDirectory>
+            <includes>
+                <include>atlas-semantic-indexer-${project.version}.jar</include>
+            </includes>
+        </fileSet>
+
+        <!-- semantic repair (offline backfill) -->
+        <fileSet>
+            <directory>../tools/atlas-semantic-repair/scripts</directory>
+            <outputDirectory>bin</outputDirectory>
+            <includes>
+                <include>atlas_semantic_repair.sh</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <fileSet>
+            <directory>../tools/atlas-semantic-repair/target</directory>
+            <outputDirectory>lib</outputDirectory>
+            <includes>
+                <include>atlas-semantic-repair-tool-${project.version}.jar</include>
+            </includes>
+        </fileSet>
 
         <fileSet>
             <directory>../</directory>

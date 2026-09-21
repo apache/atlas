@@ -28,6 +28,13 @@
     </filter>
   </appender>
 
+  <appender name="semantic-console" class="ch.qos.logback.core.ConsoleAppender">
+    <param name="Target" value="System.out"/>
+    <encoder>
+      <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+    </encoder>
+  </appender>
+
   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>${atlas.log.dir}/${atlas.log.file}</file>
     <append>true</append>
@@ -153,6 +160,12 @@
   -->
 
   <logger name="org.apache.atlas" additivity="false" level="info">
+    <appender-ref ref="FILE"/>
+  </logger>
+
+  <!-- Semantic search REST + service DEBUG to docker logs via semantic-console (no INFO threshold) -->
+  <logger name="org.apache.atlas.semantic" additivity="false" level="debug">
+    <appender-ref ref="semantic-console"/>
     <appender-ref ref="FILE"/>
   </logger>
 

@@ -1,17 +1,5 @@
 Apache Atlas Semantic Indexer
 =============================
 
-Standalone Kafka consumer that listens on `ATLAS_ENTITIES`, builds embeddable text
-from JanusGraph, and partial-updates the JanusGraph OpenSearch vertex index with
-semantic embeddings via the `atlas-semantic-ingest` ML pipeline.
-
-Run after Atlas and OpenSearch ML model deployment:
-
-  atlas_semantic_indexer.sh
-
-Configuration (atlas-application.properties):
-
-  atlas.search.semantic.opensearch.model.id
-  atlas.search.semantic.opensearch.embedding.dimension
-  atlas.semantic.indexer.kafka.group.id
-  atlas.semantic.indexer.batch.size
+See **`dev-support/atlas-docker/SemanticSearch.md`** for architecture, configuration,
+operations, REST API, local Docker setup, and health endpoint details.

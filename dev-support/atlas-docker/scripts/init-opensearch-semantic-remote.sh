@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Provision a remote OpenSearch embedding model for Atlas semantic search (dev).
-# Ingest pipeline is created/updated by Atlas on startup (ensureIngestPipeline).
+# Also enables knn, ingest pipeline, and embedding mapping on the JanusGraph vertex index.
 #
 # Use one of these paths:
 #
@@ -83,6 +83,8 @@ EOF
 else
   echo "==> Using existing model id: ${MODEL_ID}"
 fi
+
+bootstrap_semantic_vertex_index "${OPENSEARCH_URL}" "${MODEL_ID}" "${PIPELINE_NAME}" "${EMBEDDING_DIMENSION}"
 
 write_bootstrap_artifact "${BOOTSTRAP_ARTIFACT}" "${MODEL_ID}" "${PIPELINE_NAME}" "${EMBEDDING_DIMENSION}"
 print_atlas_config_guide "${MODEL_ID}" "${PIPELINE_NAME}" "${EMBEDDING_DIMENSION}" "${BOOTSTRAP_ARTIFACT}"

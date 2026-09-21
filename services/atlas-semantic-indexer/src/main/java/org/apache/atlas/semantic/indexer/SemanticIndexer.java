@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.tools;
+package org.apache.atlas.semantic.indexer;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
@@ -24,20 +24,16 @@ import org.apache.atlas.model.notification.EntityNotification;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.repository.graph.FullTextMapperV2;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase;
 import org.apache.atlas.semantic.OpenSearchSemanticStore;
 import org.apache.atlas.semantic.SemanticNotificationFilter;
+import org.apache.atlas.semantic.SemanticNotificationGuidExpander;
 import org.apache.atlas.semantic.SemanticSearchConfiguration;
 import org.apache.atlas.semantic.SemanticTextBuilder;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.SSLUtil;
 import org.apache.commons.configuration2.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.kafka.common.TopicPartition;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -54,6 +50,7 @@ public class SemanticIndexer {
 
     public static void main(String[] args) {
         int exitCode = 1;
+        SemanticIndexerHealthServer healthServer = null;
 
         try {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> running = false));
@@ -63,15 +60,22 @@ public class SemanticIndexer {
 
             Configuration config = ApplicationProperties.get();
             config.setProperty("atlas.kafka.entities.group.id", SemanticSearchConfiguration.getSemanticIndexerKafkaGroupId());
+            config.setProperty("atlas.kafka.poll.timeout.ms",
+                    SemanticSearchConfiguration.getSemanticIndexerKafkaPollTimeoutMs());
+
+            if (SemanticSearchConfiguration.isSemanticIndexerHealthEnabled()) {
+                healthServer = new SemanticIndexerHealthServer(
+                        SemanticSearchConfiguration.getSemanticIndexerHealthPort(),
+                        SemanticSearchConfiguration.getSemanticIndexerHealthPath(),
+                        () -> running);
+                healthServer.start();
+            }
 
             AtlasJanusGraphDatabase.getGraphInstance();
             OpenSearchSemanticStore semanticStore = new OpenSearchSemanticStore();
             semanticStore.initialize();
 
-            AtlasGraph graph = AtlasGraphProvider.getGraphInstance();
-            AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
-            FullTextMapperV2 fullTextMapper = new FullTextMapperV2(graph, typeRegistry, config);
-            SemanticTextBuilder textBuilder = new SemanticTextBuilder(fullTextMapper, typeRegistry);
+            SemanticTextBuilder textBuilder = new SemanticTextBuilder();
             SemanticEntityIndexer entityIndexer = new SemanticEntityIndexer(textBuilder, semanticStore);
 
             KafkaNotification kafkaNotification = new KafkaNotification(config);
@@ -79,8 +83,9 @@ public class SemanticIndexer {
                     kafkaNotification.createConsumers(NotificationType.ENTITIES, 1, false).get(0);
 
             int batchSize = SemanticSearchConfiguration.getSemanticIndexerBatchSize();
-            LOG.info("Semantic Indexer started (batchSize={}, groupId={})", batchSize,
-                    SemanticSearchConfiguration.getSemanticIndexerKafkaGroupId());
+            LOG.info("Semantic Indexer started (batchSize={}, groupId={}, pollTimeoutMs={})", batchSize,
+                    SemanticSearchConfiguration.getSemanticIndexerKafkaGroupId(),
+                    SemanticSearchConfiguration.getSemanticIndexerKafkaPollTimeoutMs());
 
             while (running) {
                 @SuppressWarnings("unchecked")
@@ -101,16 +106,23 @@ public class SemanticIndexer {
                         continue;
                     }
 
-                    guids.addAll(SemanticNotificationFilter.extractGuids(entityNotification));
+                    guids.addAll(SemanticNotificationGuidExpander.expandForIndexing(
+                            SemanticNotificationFilter.extractGuids(entityNotification)));
                 }
 
+                SemanticEntityIndexer.IndexStats stats = SemanticEntityIndexer.IndexStats.EMPTY;
                 if (!guids.isEmpty()) {
-                    LOG.debug("Processing {} guid(s) from {} Kafka message(s)", guids.size(), messages.size());
-                    processInBatches(entityIndexer, guids, batchSize);
+                    LOG.info("Processing {} guid(s) from {} Kafka message(s)", guids.size(), messages.size());
+                    stats = entityIndexer.indexGuidsInBatches(guids, batchSize);
                 }
 
-                for (AtlasKafkaMessage<EntityNotification> kafkaMessage : messages) {
-                    consumer.commit(kafkaMessage.getTopicPartition(), kafkaMessage.getOffset() + 1);
+                if (!stats.hasFailures()) {
+                    for (AtlasKafkaMessage<EntityNotification> kafkaMessage : messages) {
+                        consumer.commit(kafkaMessage.getTopicPartition(), kafkaMessage.getOffset() + 1);
+                    }
+                } else {
+                    LOG.warn("Skipping Kafka commit for {} message(s) after {} indexing failure(s)",
+                            messages.size(), stats.getFailed());
                 }
             }
 
@@ -118,23 +130,11 @@ public class SemanticIndexer {
         } catch (Exception e) {
             LOG.error("Semantic Indexer failed", e);
         } finally {
+            if (healthServer != null) {
+                healthServer.close();
+            }
             LOG.info("Semantic Indexer exiting with code {}", exitCode);
             System.exit(exitCode);
-        }
-    }
-
-    private static void processInBatches(SemanticEntityIndexer entityIndexer, Set<String> guids, int batchSize) {
-        Set<String> batch = new LinkedHashSet<>();
-        for (String guid : guids) {
-            batch.add(guid);
-            if (batch.size() >= batchSize) {
-                entityIndexer.indexGuids(batch);
-                batch.clear();
-            }
-        }
-
-        if (!batch.isEmpty()) {
-            entityIndexer.indexGuids(batch);
         }
     }
 }

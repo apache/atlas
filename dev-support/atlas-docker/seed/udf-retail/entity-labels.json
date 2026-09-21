@@ -1,0 +1,12 @@
+[
+  {
+    "entityType": "DataSet",
+    "qualifiedName": "edw.f_0091@udf-retail",
+    "labels": ["q3-finance-approved", "finance-deck"]
+  },
+  {
+    "entityType": "DataSet",
+    "qualifiedName": "mart.rev_roll@udf-retail",
+    "labels": ["q3-finance-approved", "marketing-deck"]
+  }
+]

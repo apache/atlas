@@ -1,0 +1,68 @@
+[
+  {
+    "typeName": "AtlasGlossarySemanticAssignment",
+    "end1": {
+      "typeName": "AtlasGlossaryTerm",
+      "uniqueAttributes": { "qualifiedName": "Revenue@UDF Retail Glossary" }
+    },
+    "end2": {
+      "typeName": "DataSet",
+      "uniqueAttributes": { "qualifiedName": "edw.f_0091@udf-retail" }
+    }
+  },
+  {
+    "typeName": "AtlasGlossarySemanticAssignment",
+    "end1": {
+      "typeName": "AtlasGlossaryTerm",
+      "uniqueAttributes": { "qualifiedName": "Revenue@UDF Retail Glossary" }
+    },
+    "end2": {
+      "typeName": "DataSet",
+      "uniqueAttributes": { "qualifiedName": "raw.stg_amt@udf-retail" }
+    }
+  },
+  {
+    "typeName": "AtlasGlossarySemanticAssignment",
+    "end1": {
+      "typeName": "AtlasGlossaryTerm",
+      "uniqueAttributes": { "qualifiedName": "Customer Lifetime Value@UDF Retail Glossary" }
+    },
+    "end2": {
+      "typeName": "DataSet",
+      "uniqueAttributes": { "qualifiedName": "edw.cust_scr_ds@udf-retail" }
+    }
+  },
+  {
+    "typeName": "AtlasGlossarySemanticAssignment",
+    "end1": {
+      "typeName": "AtlasGlossaryTerm",
+      "uniqueAttributes": { "qualifiedName": "Churn Risk@UDF Retail Glossary" }
+    },
+    "end2": {
+      "typeName": "DataSet",
+      "uniqueAttributes": { "qualifiedName": "edw.gx_117@udf-retail" }
+    }
+  },
+  {
+    "typeName": "AtlasGlossarySemanticAssignment",
+    "end1": {
+      "typeName": "AtlasGlossaryTerm",
+      "uniqueAttributes": { "qualifiedName": "Campaign ROI@UDF Retail Glossary" }
+    },
+    "end2": {
+      "typeName": "DataSet",
+      "uniqueAttributes": { "qualifiedName": "mart.rev_roll@udf-retail" }
+    }
+  },
+  {
+    "typeName": "AtlasGlossarySemanticAssignment",
+    "end1": {
+      "typeName": "AtlasGlossaryTerm",
+      "uniqueAttributes": { "qualifiedName": "Customer Segment@UDF Retail Glossary" }
+    },
+    "end2": {
+      "typeName": "DataSet",
+      "uniqueAttributes": { "qualifiedName": "mart.seg_out@udf-retail" }
+    }
+  }
+]

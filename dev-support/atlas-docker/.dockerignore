@@ -4,5 +4,6 @@
 !dist/apache-atlas-*-hive-hook.tar.gz
 !dist/apache-atlas-*-kafka-hook.tar.gz
 !dist/apache-atlas-*-server.tar.gz
+!dist/apache-atlas-*-semantic-indexer.tar.gz
 !downloads/*
 !scripts/*

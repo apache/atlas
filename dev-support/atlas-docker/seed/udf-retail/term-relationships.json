@@ -1,0 +1,35 @@
+[
+  {
+    "typeName": "AtlasGlossarySynonym",
+    "end1": {
+      "typeName": "AtlasGlossaryTerm",
+      "uniqueAttributes": { "qualifiedName": "Customer Lifetime Value@UDF Retail Glossary" }
+    },
+    "end2": {
+      "typeName": "AtlasGlossaryTerm",
+      "uniqueAttributes": { "qualifiedName": "LTV@UDF Retail Glossary" }
+    }
+  },
+  {
+    "typeName": "AtlasGlossarySynonym",
+    "end1": {
+      "typeName": "AtlasGlossaryTerm",
+      "uniqueAttributes": { "qualifiedName": "Customer Lifetime Value@UDF Retail Glossary" }
+    },
+    "end2": {
+      "typeName": "AtlasGlossaryTerm",
+      "uniqueAttributes": { "qualifiedName": "customer worth@UDF Retail Glossary" }
+    }
+  },
+  {
+    "typeName": "AtlasGlossaryRelatedTerm",
+    "end1": {
+      "typeName": "AtlasGlossaryTerm",
+      "uniqueAttributes": { "qualifiedName": "Churn Risk@UDF Retail Glossary" }
+    },
+    "end2": {
+      "typeName": "AtlasGlossaryTerm",
+      "uniqueAttributes": { "qualifiedName": "Attrition@UDF Retail Glossary" }
+    }
+  }
+]

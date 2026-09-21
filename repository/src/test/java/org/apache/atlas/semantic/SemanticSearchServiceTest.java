@@ -17,31 +17,53 @@
  */
 package org.apache.atlas.semantic;
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
 import org.apache.atlas.model.discovery.SemanticSearchParameters;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
+import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.expectThrows;
 
 public class SemanticSearchServiceTest {
+    private static final class StubSemanticStore extends OpenSearchSemanticStore {
+        @Override
+        public List<VectorSearchHit> neuralSearch(String queryText, int topK, VectorSearchFilter filter) {
+            return Collections.emptyList();
+        }
+    }
+
+    @BeforeMethod
+    public void loadSemanticTestConfig() throws Exception {
+        System.setProperty(ApplicationProperties.ATLAS_PROPERTIES_FILENAME_SYSTEM_CONF,
+                "atlas-semantic-test-application.properties");
+        ApplicationProperties.forceReload();
+    }
+
+    @AfterMethod
+    public void clearSemanticTestConfig() {
+        System.clearProperty(ApplicationProperties.ATLAS_PROPERTIES_FILENAME_SYSTEM_CONF);
+        ApplicationProperties.forceReload();
+    }
+
     @Test
     public void semanticSearchRequiresEnableFlag() {
+        System.setProperty(ApplicationProperties.ATLAS_PROPERTIES_FILENAME_SYSTEM_CONF,
+                "atlas-application.properties");
+        ApplicationProperties.forceReload();
+
         SemanticSearchService service = new SemanticSearchService(
-                mock(OpenSearchSemanticStore.class),
-                mock(AtlasGraph.class),
-                mock(AtlasTypeRegistry.class),
-                mock(SemanticTextBuilder.class));
+                new StubSemanticStore(),
+                null,
+                new AtlasTypeRegistry(),
+                null);
 
         SemanticSearchParameters params = new SemanticSearchParameters();
         params.setQuery("test");
@@ -51,31 +73,16 @@ public class SemanticSearchServiceTest {
 
     @Test
     public void buildSearchResultUsesSemanticQueryType() throws Exception {
-        OpenSearchSemanticStore store = mock(OpenSearchSemanticStore.class);
-        when(store.neuralSearch(anyString(), anyInt(), any())).thenReturn(Collections.emptyList());
-
         SemanticSearchService service = new SemanticSearchService(
-                store,
-                mock(AtlasGraph.class),
-                mock(AtlasTypeRegistry.class),
-                mock(SemanticTextBuilder.class));
+                new StubSemanticStore(),
+                null,
+                new AtlasTypeRegistry(),
+                null);
 
         SemanticSearchParameters params = new SemanticSearchParameters();
         params.setQuery("cars");
 
-        try {
-            System.setProperty("atlas.search.semantic.enable", "true");
-            System.setProperty("atlas.search.semantic.opensearch.model.id", "test-model");
-            System.setProperty("atlas.search.semantic.opensearch.embedding.dimension", "384");
-            org.apache.atlas.ApplicationProperties.forceReload();
-
-            AtlasSearchResult result = service.semanticSearch(params);
-            assertEquals(result.getQueryType(), AtlasQueryType.SEMANTIC);
-        } finally {
-            System.clearProperty("atlas.search.semantic.enable");
-            System.clearProperty("atlas.search.semantic.opensearch.model.id");
-            System.clearProperty("atlas.search.semantic.opensearch.embedding.dimension");
-            org.apache.atlas.ApplicationProperties.forceReload();
-        }
+        AtlasSearchResult result = service.semanticSearch(params);
+        assertEquals(result.getQueryType(), AtlasQueryType.SEMANTIC);
     }
 }

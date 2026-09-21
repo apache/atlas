@@ -100,6 +100,20 @@ atlas.graph.storage.hbase.regions-per-server=1
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-semantic-indexer</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-semantic-repair-tool</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-server-api</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>

@@ -146,6 +146,22 @@ export const navigateToBasicTextQuery = (
 	navigate({ pathname: "/search/searchResult", search: params.toString() });
 };
 
+/** Semantic (vector) search — POST /v2/search/semantic */
+export const navigateToSemanticSearch = (
+	navigate: NavigateFunction,
+	query: string,
+	typeName?: string
+): void => {
+	const params = new URLSearchParams();
+	params.set("searchType", "semantic");
+	params.set("query", query.trim());
+	params.set("topK", "25");
+	if (typeName) {
+		params.set("type", typeName);
+	}
+	navigate({ pathname: "/search/searchResult", search: params.toString() });
+};
+
 export const navigateToClassificationDetailPage = (
 	navigate: NavigateFunction,
 	classificationName: string

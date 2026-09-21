@@ -83,6 +83,8 @@ public class SemanticSearchService {
             Set<String> typeNames = resolveTypeNames(parameters.getTypeName(), parameters.getIncludeSubTypes());
             VectorSearchFilter filter = new VectorSearchFilter(typeNames, Collections.emptySet());
             int fetchSize = overfetchSize(topK);
+            LOG.debug("semanticSearch query='{}' topK={} minScore={} typeName={}",
+                    parameters.getQuery(), topK, minScore, parameters.getTypeName());
             List<VectorSearchHit> hits = semanticStore.neuralSearch(parameters.getQuery(), fetchSize, filter);
 
             return buildSearchResult(parameters.getQuery(), hits, minScore, topK,
@@ -108,15 +110,17 @@ public class SemanticSearchService {
         boolean includeSubTypes = parameters == null || parameters.getIncludeSubTypes();
 
         try {
-            String sourceText = buildQueryTextForGuid(guid);
-            if (StringUtils.isBlank(sourceText)) {
+            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(guid);
+            if (vertex == null || AtlasGraphUtilsV2.getState(vertex) != AtlasEntity.Status.ACTIVE) {
                 throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
             }
 
             Set<String> typeNames = resolveTypeNames(typeName, includeSubTypes);
             VectorSearchFilter filter = new VectorSearchFilter(typeNames, Collections.singleton(guid));
             int fetchSize = overfetchSize(topK + 1);
-            List<VectorSearchHit> hits = semanticStore.neuralSearch(sourceText, fetchSize, filter);
+
+            List<VectorSearchHit> hits = similarSearchHits(guid, vertex, fetchSize, filter);
+            LOG.debug("similarEntities guid={} topK={} minScore={} typeName={}", guid, topK, minScore, typeName);
 
             return buildSearchResult("similar:" + guid, hits, minScore, topK, attributes, excludeDeleted);
         } catch (SemanticSearchException e) {
@@ -158,9 +162,9 @@ public class SemanticSearchService {
             result.setSimilarityScores(scores);
         }
 
-        result.setApproximateCount(hits.size());
+        result.setApproximateCount(result.getEntities().size());
 
-        LOG.debug("Semantic search completed: queryText='{}', returned {} entit(y/ies) from {} hit(s)",
+        LOG.debug("semantic search completed queryText='{}' returned={} hits={}",
                 queryText, result.getEntities().size(), hits.size());
 
         return result;
@@ -186,17 +190,24 @@ public class SemanticSearchService {
         }
     }
 
-    private String buildQueryTextForGuid(String guid) throws AtlasBaseException {
-        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(guid);
-        if (vertex == null) {
-            return null;
+    private List<VectorSearchHit> similarSearchHits(String guid,
+                                                    AtlasVertex vertex,
+                                                    int fetchSize,
+                                                    VectorSearchFilter filter) throws AtlasBaseException, SemanticSearchException {
+        List<?> storedEmbedding = semanticStore.getStoredEmbeddingByGuid(guid);
+        if (storedEmbedding != null && !storedEmbedding.isEmpty()) {
+            LOG.debug("Similar search for guid={} using stored embedding", guid);
+            return semanticStore.knnSearch(storedEmbedding, fetchSize, filter);
         }
 
-        if (AtlasGraphUtilsV2.getState(vertex) != AtlasEntity.Status.ACTIVE) {
-            return null;
+        String sourceText = textBuilder.buildText(vertex);
+        if (StringUtils.isBlank(sourceText)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
+                    "Entity has no semantic index text: " + guid);
         }
 
-        return textBuilder.buildTextForEntity(guid, vertex);
+        LOG.debug("Similar search for guid={} falling back to neural query (no stored embedding)", guid);
+        return semanticStore.neuralSearch(sourceText, fetchSize, filter);
     }
 
     private int resolveTopK(int topK) {

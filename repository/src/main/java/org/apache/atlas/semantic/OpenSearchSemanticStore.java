@@ -89,11 +89,12 @@ public class OpenSearchSemanticStore {
 
     private void executeUpdateEmbedding(String documentId, String semanticText) throws SemanticSearchException {
         String indexName = SemanticSearchConfiguration.getVertexIndexName();
-        String url       = baseUrl() + "/" + indexName + "/_update/" + documentId + "?conflicts=proceed&pipeline="
-                + SEMANTIC_INGEST_PIPELINE_NAME;
+        // OpenSearch 3.x no longer accepts pipeline/conflicts on _update; embed via pipeline simulate, then patch vector.
+        List<?> embedding = computeEmbedding(semanticText);
+        String url       = baseUrl() + "/" + indexName + "/_update/" + documentId;
 
         Map<String, Object> doc = new HashMap<>();
-        doc.put(SEMANTIC_TEXT_FIELD, semanticText);
+        doc.put(SEMANTIC_EMBEDDING_FIELD, embedding);
 
         Map<String, Object> body = new HashMap<>();
         body.put("doc", doc);
@@ -113,6 +114,50 @@ public class OpenSearchSemanticStore {
         }
 
         throw httpFailure(response);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<?> computeEmbedding(String semanticText) throws SemanticSearchException {
+        Map<String, Object> source = new HashMap<>();
+        source.put(SEMANTIC_TEXT_FIELD, semanticText);
+
+        Map<String, Object> doc = new HashMap<>();
+        doc.put("_source", source);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("docs", Collections.singletonList(doc));
+
+        String url = baseUrl() + "/_ingest/pipeline/" + SEMANTIC_INGEST_PIPELINE_NAME + "/_simulate";
+        HttpPost post = new HttpPost(url);
+        post.setEntity(new StringEntity(AtlasJson.toJson(body), ContentType.APPLICATION_JSON));
+
+        String response = executeRequestForBody(post);
+        Map<String, Object> root = AtlasJson.fromJson(response, Map.class);
+        if (root == null || !(root.get("docs") instanceof List) || ((List<?>) root.get("docs")).isEmpty()) {
+            throw new SemanticSearchException("Pipeline simulate returned no documents for semantic embedding");
+        }
+
+        Object firstDoc = ((List<?>) root.get("docs")).get(0);
+        if (!(firstDoc instanceof Map)) {
+            throw new SemanticSearchException("Pipeline simulate returned invalid document payload");
+        }
+
+        Object docObj = ((Map<String, Object>) firstDoc).get("doc");
+        if (!(docObj instanceof Map)) {
+            throw new SemanticSearchException("Pipeline simulate returned no doc for semantic embedding");
+        }
+
+        Object docSource = ((Map<String, Object>) docObj).get("_source");
+        if (!(docSource instanceof Map)) {
+            throw new SemanticSearchException("Pipeline simulate returned no _source for semantic embedding");
+        }
+
+        Object embedding = ((Map<String, Object>) docSource).get(SEMANTIC_EMBEDDING_FIELD);
+        if (!(embedding instanceof List) || ((List<?>) embedding).isEmpty()) {
+            throw new SemanticSearchException("Pipeline simulate did not produce " + SEMANTIC_EMBEDDING_FIELD);
+        }
+
+        return (List<?>) embedding;
     }
 
     public List<VectorSearchHit> neuralSearch(String queryText, int topK, VectorSearchFilter filter) throws SemanticSearchException {
@@ -142,6 +187,100 @@ public class OpenSearchSemanticStore {
         Map<String, Object> query = new HashMap<>();
         query.put("bool", boolQuery);
 
+        return executeSearch(indexName, topK, query, filter);
+    }
+
+    /**
+     * k-NN search using a pre-computed embedding (used by similar-entities to avoid query-time ML inference).
+     */
+    public List<VectorSearchHit> knnSearch(List<?> queryVector, int topK, VectorSearchFilter filter)
+            throws SemanticSearchException {
+        if (queryVector == null || queryVector.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String indexName = SemanticSearchConfiguration.getVertexIndexName();
+
+        Map<String, Object> knnField = new HashMap<>();
+        knnField.put("vector", queryVector);
+        knnField.put("k", topK);
+
+        Map<String, Object> knnClause = new HashMap<>();
+        knnClause.put(SEMANTIC_EMBEDDING_FIELD, knnField);
+
+        List<Map<String, Object>> filters = buildFilters(filter);
+
+        Map<String, Object> query;
+        if (filters.isEmpty()) {
+            query = Collections.singletonMap("knn", knnClause);
+        } else {
+            Map<String, Object> boolQuery = new HashMap<>();
+            boolQuery.put("must", Collections.singletonList(Collections.singletonMap("knn", knnClause)));
+            boolQuery.put("filter", filters);
+            query = Collections.singletonMap("bool", boolQuery);
+        }
+
+        return executeSearch(indexName, topK, query, filter);
+    }
+
+    /**
+     * Reads the stored embedding for an entity by Atlas guid from the JanusGraph vertex index.
+     */
+    @SuppressWarnings("unchecked")
+    public List<?> getStoredEmbeddingByGuid(String guid) throws SemanticSearchException {
+        if (StringUtils.isBlank(guid)) {
+            return null;
+        }
+
+        String indexName = SemanticSearchConfiguration.getVertexIndexName();
+
+        Map<String, Object> term = new HashMap<>();
+        term.put(guidFilterField(), guid);
+
+        Map<String, Object> query = new HashMap<>();
+        query.put("term", term);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("size", 1);
+        body.put("query", query);
+        body.put("_source", Collections.singletonList(SEMANTIC_EMBEDDING_FIELD));
+
+        HttpPost post = new HttpPost(baseUrl() + "/" + indexName + "/_search");
+        post.setEntity(new StringEntity(AtlasJson.toJson(body), ContentType.APPLICATION_JSON));
+
+        String response = executeRequestForBody(post);
+        Map<String, Object> root = AtlasJson.fromJson(response, Map.class);
+        if (root == null || !(root.get("hits") instanceof Map)) {
+            return null;
+        }
+
+        Object hitsArray = ((Map<String, Object>) root.get("hits")).get("hits");
+        if (!(hitsArray instanceof List) || ((List<?>) hitsArray).isEmpty()) {
+            return null;
+        }
+
+        Object firstHit = ((List<?>) hitsArray).get(0);
+        if (!(firstHit instanceof Map)) {
+            return null;
+        }
+
+        Object source = ((Map<String, Object>) firstHit).get("_source");
+        if (!(source instanceof Map)) {
+            return null;
+        }
+
+        Object embedding = ((Map<String, Object>) source).get(SEMANTIC_EMBEDDING_FIELD);
+        if (!(embedding instanceof List) || ((List<?>) embedding).isEmpty()) {
+            return null;
+        }
+
+        return (List<?>) embedding;
+    }
+
+    private List<VectorSearchHit> executeSearch(String indexName,
+                                                int topK,
+                                                Map<String, Object> query,
+                                                VectorSearchFilter filter) throws SemanticSearchException {
         Map<String, Object> body = new HashMap<>();
         body.put("size", topK);
         body.put("query", query);
@@ -152,16 +291,6 @@ public class OpenSearchSemanticStore {
 
         String response = executeRequestForBody(post);
         return parseSearchHits(response, filter);
-    }
-
-    public boolean isHealthy() {
-        try {
-            executeRequest(new HttpGet(baseUrl() + "/_cluster/health"));
-            return true;
-        } catch (SemanticSearchException e) {
-            LOG.warn("OpenSearch health check failed", e);
-            return false;
-        }
     }
 
     void ensureIngestPipeline() throws SemanticSearchException {
@@ -212,6 +341,10 @@ public class OpenSearchSemanticStore {
     }
 
     private void ensureKnnEnabled(String indexName) throws SemanticSearchException {
+        if (isKnnEnabled(indexName)) {
+            return;
+        }
+
         Map<String, Object> indexSettings = new HashMap<>();
         indexSettings.put("knn", true);
 
@@ -226,11 +359,38 @@ public class OpenSearchSemanticStore {
         executeRequest(put);
     }
 
-    private void patchSemanticMapping(String indexName, int dimensions) throws SemanticSearchException {
-        Map<String, Object> textField = new HashMap<>();
-        textField.put("type", "text");
-        textField.put("index", true);
+    private boolean isKnnEnabled(String indexName) throws SemanticSearchException {
+        HttpGet get = new HttpGet(baseUrl() + "/" + indexName + "/_settings/index.knn");
+        String  response = executeRequestForBody(get);
 
+        try {
+            Map<String, Object> root = AtlasJson.fromJson(response, Map.class);
+            for (Object indexPayload : root.values()) {
+                if (!(indexPayload instanceof Map)) {
+                    continue;
+                }
+
+                Object settings = ((Map<?, ?>) indexPayload).get("settings");
+                if (!(settings instanceof Map)) {
+                    continue;
+                }
+
+                Object index = ((Map<?, ?>) settings).get("index");
+                if (!(index instanceof Map)) {
+                    continue;
+                }
+
+                Object knn = ((Map<?, ?>) index).get("knn");
+                return Boolean.TRUE.equals(knn) || "true".equalsIgnoreCase(String.valueOf(knn));
+            }
+        } catch (Exception e) {
+            LOG.warn("Unable to read knn setting for index '{}'", indexName, e);
+        }
+
+        return false;
+    }
+
+    private void patchSemanticMapping(String indexName, int dimensions) throws SemanticSearchException {
         Map<String, Object> embeddingField = new HashMap<>();
         embeddingField.put("type", "knn_vector");
         embeddingField.put("dimension", dimensions);
@@ -241,8 +401,8 @@ public class OpenSearchSemanticStore {
         method.put("engine", "lucene");
         embeddingField.put("method", method);
 
+        // Only persist the vector on the JanusGraph vertex index; semantic text is transient (pipeline simulate).
         Map<String, Object> properties = new HashMap<>();
-        properties.put(SEMANTIC_TEXT_FIELD, textField);
         properties.put(SEMANTIC_EMBEDDING_FIELD, embeddingField);
 
         Map<String, Object> mappings = new HashMap<>();
@@ -340,10 +500,28 @@ public class OpenSearchSemanticStore {
         List<Map<String, Object>> filters = new ArrayList<>();
 
         if (!filter.getTypeNames().isEmpty()) {
-            filters.add(termsFilter(Constants.ENTITY_TYPE_PROPERTY_KEY, filter.getTypeNames()));
+            // JanusGraph maps __typeName as text; exact type filtering requires the keyword subfield.
+            filters.add(termsFilter(typeNameFilterField(), filter.getTypeNames()));
+        }
+
+        if (!filter.getExcludeGuids().isEmpty()) {
+            Map<String, Object> mustNot = new HashMap<>();
+            mustNot.put("terms", Collections.singletonMap(guidFilterField(), new ArrayList<>(filter.getExcludeGuids())));
+
+            Map<String, Object> bool = new HashMap<>();
+            bool.put("must_not", Collections.singletonList(mustNot));
+            filters.add(Collections.singletonMap("bool", bool));
         }
 
         return filters;
+    }
+
+    private static String typeNameFilterField() {
+        return Constants.ENTITY_TYPE_PROPERTY_KEY + ".keyword";
+    }
+
+    private static String guidFilterField() {
+        return Constants.GUID_PROPERTY_KEY + ".keyword";
     }
 
     private Map<String, Object> termsFilter(String field, Set<String> values) {

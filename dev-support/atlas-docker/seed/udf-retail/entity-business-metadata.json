@@ -1,0 +1,33 @@
+[
+  {
+    "entityType": "DataSet",
+    "qualifiedName": "edw.ord_fct_2@udf-retail",
+    "businessMetadata": {
+      "Governance": {
+        "sourceOfTruth": true,
+        "dataOwner": "finance-dl",
+        "domain": "Orders"
+      }
+    }
+  },
+  {
+    "entityType": "DataSet",
+    "qualifiedName": "edw.f_0091@udf-retail",
+    "businessMetadata": {
+      "DataQuality": {
+        "freshnessHours": 24,
+        "slaTier": "gold"
+      }
+    }
+  },
+  {
+    "entityType": "DataSet",
+    "qualifiedName": "edw.gx_117@udf-retail",
+    "businessMetadata": {
+      "DataQuality": {
+        "freshnessHours": 48,
+        "slaTier": "silver"
+      }
+    }
+  }
+]

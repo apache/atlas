@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.tools;
+package org.apache.atlas.semantic.indexer;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -50,7 +50,8 @@ public final class JanusGraphSemanticDocumentResolver {
 
         JanusGraph graph = AtlasJanusGraphDatabase.getGraphInstance();
         if (!(graph instanceof StandardJanusGraph)) {
-            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "JanusGraph instance is required to resolve OpenSearch document id");
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR,
+                    "JanusGraph instance is required to resolve OpenSearch document id");
         }
 
         StandardJanusGraph janusGraph      = (StandardJanusGraph) graph;
@@ -73,10 +74,11 @@ public final class JanusGraphSemanticDocumentResolver {
 
             return null;
         } catch (Exception e) {
-            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e, "Failed to resolve OpenSearch document id for vertex");
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e,
+                    "Failed to resolve OpenSearch document id for vertex");
         } finally {
             if (mgmt != null) {
-                mgmt.commit();
+                mgmt.rollback();
             }
         }
     }

@@ -17,7 +17,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { getBasicSearchResult } from "../../api/apiMethods/searchApiMethod";
+import {
+  getBasicSearchResult,
+  getSemanticSearchResult
+} from "../../api/apiMethods/searchApiMethod";
 import { useSearchParams } from "react-router-dom";
 import { FormControlLabel, FormGroup, IconButton, Stack } from "@mui/material";
 import { useSelector } from "react-redux";
@@ -146,6 +149,65 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
     async ({ pagination }: { pagination?: any }) => {
       setLoader(true);
       const { pageSize, pageIndex } = pagination || {};
+
+      if (searchParams.get("searchType") === "semantic") {
+        const query = searchParams.get("query");
+        if (!query) {
+          setIsEmptyData(true);
+          setSearchData({ entities: [] });
+          setTotalCount(0);
+          setPageCount(0);
+          setLoader(false);
+          return;
+        }
+
+        try {
+          const body: Record<string, unknown> = {
+            query,
+            topK: Number(searchParams.get("topK") || 25),
+            minScore: Number(searchParams.get("minScore") || 0),
+            excludeDeletedEntities: searchParams.get("includeDE") !== "true",
+            includeSubTypes: searchParams.get("excludeST") !== "true"
+          };
+          const typeName = searchParams.get("type");
+          if (typeName) {
+            body.typeName = typeName;
+          }
+
+          const searchResp = await getSemanticSearchResult({ data: body });
+          const { data = {} } = searchResp || {};
+          const scores = (data as any).similarityScores || {};
+          const entities = ((data as any).entities || []).map((entity: any) => ({
+            ...entity,
+            attributes: {
+              ...(entity.attributes || {}),
+              _similarityScore: scores[entity.guid] ?? null
+            }
+          }));
+
+          if (!entities.length) {
+            setIsEmptyData(true);
+            setSearchData({ entities: [], referredEntities: {} });
+            setTotalCount(0);
+            setPageCount(0);
+          } else {
+            setIsEmptyData(false);
+            setSearchData({ ...(data as any), entities });
+            setTotalCount(entities.length);
+            setPageCount(1);
+          }
+          setLoader(false);
+        } catch (error: any) {
+          console.error(
+            "Error fetching semantic search:",
+            error?.response?.data?.errorMessage
+          );
+          toast.dismiss(toastId.current);
+          serverError(error, toastId);
+          setLoader(false);
+        }
+        return;
+      }
 
       let params: Params | any = {
         excludeDeletedEntities: !isEmpty(searchParams.get("includeDE"))
@@ -947,6 +1009,23 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
   );
 
   const isDslSearchMode = searchParams.get("searchType") === "dsl";
+  const isSemanticSearchMode = searchParams.get("searchType") === "semantic";
+
+  const semanticScoreColumn = isSemanticSearchMode
+    ? [
+        {
+          accessorKey: "_similarityScore",
+          header: "Similarity",
+          cell: (info: any) => {
+            const score = info.row.original?.attributes?._similarityScore;
+            return (
+              <span>{score != null ? Number(score).toFixed(4) : "—"}</span>
+            );
+          },
+          show: true
+        }
+      ]
+    : [];
   const getDslAttributeNames = () => {
     const src: any = Array.isArray(searchData) ? searchData[0] : searchData;
     if (!src) return [] as string[];
@@ -977,6 +1056,12 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
   let allColumns =
     isDslSearchMode && dslColumns.length > 0
       ? dslColumns
+      : isSemanticSearchMode
+      ? removeDuplicateObjects([
+          ...defaultColumns,
+          ...semanticScoreColumn,
+          ...dynamicColumns
+        ])
       : isEmpty(searchParams.get("type")) &&
         isEmpty(searchParams.get("tag")) &&
         !isEmpty(searchParams.get("term"))

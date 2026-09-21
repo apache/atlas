@@ -1,0 +1,32 @@
+[
+  {
+    "entityType": "DataSet",
+    "qualifiedName": "edw.f_0091@udf-retail",
+    "classifications": [
+      { "typeName": "Certified", "attributes": { "level": "gold" } }
+    ]
+  },
+  {
+    "entityType": "DataSet",
+    "qualifiedName": "raw.cust_raw@udf-retail",
+    "classifications": [
+      { "typeName": "udf_PII", "attributes": { "piiType": "email" } },
+      { "typeName": "Sensitive", "attributes": { "controlLevel": "restricted" } }
+    ]
+  },
+  {
+    "entityType": "DataSet",
+    "qualifiedName": "mart.seg_out@udf-retail",
+    "classifications": [
+      { "typeName": "udf_PII", "attributes": { "piiType": "email" } },
+      { "typeName": "Sensitive", "attributes": { "controlLevel": "restricted" } }
+    ]
+  },
+  {
+    "entityType": "DataSet",
+    "qualifiedName": "raw.stg_amt@udf-retail",
+    "classifications": [
+      { "typeName": "Deprecated", "attributes": { "reason": "superseded-by-edw.f_0091" } }
+    ]
+  }
+]

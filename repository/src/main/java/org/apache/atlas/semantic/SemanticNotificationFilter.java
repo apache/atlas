@@ -57,15 +57,6 @@ public final class SemanticNotificationFilter {
         return !extractGuids(notification).isEmpty();
     }
 
-    /**
-     * @deprecated use {@link #extractGuids(EntityNotificationV2)}
-     */
-    @Deprecated
-    public static String extractGuid(EntityNotificationV2 notification) {
-        Set<String> guids = extractGuids(notification);
-        return guids.isEmpty() ? null : guids.iterator().next();
-    }
-
     public static Set<String> extractGuids(EntityNotificationV2 notification) {
         if (notification == null) {
             return Collections.emptySet();

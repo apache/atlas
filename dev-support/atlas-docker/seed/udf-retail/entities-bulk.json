@@ -1,0 +1,135 @@
+{
+  "entities": [
+    {
+      "typeName": "DataSet",
+      "attributes": {
+        "qualifiedName": "edw.f_0091@udf-retail",
+        "name": "f_0091",
+        "displayName": "edw.f_0091",
+        "description": "Curated daily revenue metrics for reporting. Trusted business-facing mart used by finance dashboards and quarterly board packs.",
+        "userDescription": "Gold-certified revenue rollups. No raw payment grain; preferred for executive reporting.",
+        "owner": "finance-dl"
+      },
+      "customAttributes": {
+        "reportingTier": "executive",
+        "refreshCadence": "daily"
+      }
+    },
+    {
+      "typeName": "DataSet",
+      "attributes": {
+        "qualifiedName": "raw.stg_amt@udf-retail",
+        "name": "stg_amt",
+        "displayName": "raw.stg_amt",
+        "description": "Payment-level facts used to calculate revenue. Staging layer with one row per payment attempt.",
+        "userDescription": "Lower-level detail feeding revenue marts. Not certified for reporting.",
+        "owner": "finance-dl"
+      },
+      "customAttributes": {
+        "reportingTier": "staging",
+        "grain": "payment"
+      }
+    },
+    {
+      "typeName": "DataSet",
+      "attributes": {
+        "qualifiedName": "edw.gx_117@udf-retail",
+        "name": "gx_117",
+        "displayName": "edw.gx_117",
+        "description": "Attrition and churn-risk scoring for retail customers. Models why customers stop buying or engaging.",
+        "userDescription": "Column churn_propensity scores likelihood of disengagement. Segmentation features for retention campaigns.",
+        "owner": "analytics-dl"
+      },
+      "customAttributes": {
+        "modelFamily": "churn",
+        "primaryMetric": "churn_propensity"
+      }
+    },
+    {
+      "typeName": "DataSet",
+      "attributes": {
+        "qualifiedName": "edw.cust_scr_ds@udf-retail",
+        "name": "cust_scr_ds",
+        "displayName": "edw.cust_scr_ds",
+        "description": "Customer lifetime value metrics and value bands for retail accounts.",
+        "userDescription": "Column v_band groups customers by long-term relationship value. No table name hints at LTV or lifetime.",
+        "owner": "analytics-dl"
+      },
+      "customAttributes": {
+        "valueColumn": "v_band",
+        "metricType": "lifetime_value"
+      }
+    },
+    {
+      "typeName": "DataSet",
+      "attributes": {
+        "qualifiedName": "edw.cmp_9@udf-retail",
+        "name": "cmp_9",
+        "displayName": "edw.cmp_9",
+        "description": "Campaign definitions and multi-touch attribution metadata.",
+        "userDescription": "Source for campaign spend and response joins used in marketing ROI analysis.",
+        "owner": "marketing-dl"
+      }
+    },
+    {
+      "typeName": "DataSet",
+      "attributes": {
+        "qualifiedName": "mart.rev_roll@udf-retail",
+        "name": "rev_roll",
+        "displayName": "mart.rev_roll",
+        "description": "Curated marketing performance and return-on-investment metrics by campaign.",
+        "userDescription": "Campaign returns and ROI rollups for marketing leadership reviews.",
+        "owner": "marketing-dl"
+      },
+      "customAttributes": {
+        "reportingTier": "marketing",
+        "metricFocus": "campaign_returns"
+      }
+    },
+    {
+      "typeName": "DataSet",
+      "attributes": {
+        "qualifiedName": "raw.cust_raw@udf-retail",
+        "name": "cust_raw",
+        "displayName": "raw.cust_raw",
+        "description": "Customer profile source data. Contains personally identifiable email_hash values.",
+        "userDescription": "Direct source of personal customer contact data. Requires privacy controls.",
+        "owner": "privacy-dl"
+      },
+      "customAttributes": {
+        "piiColumn": "email_hash",
+        "dataClass": "personal"
+      }
+    },
+    {
+      "typeName": "DataSet",
+      "attributes": {
+        "qualifiedName": "mart.seg_out@udf-retail",
+        "name": "seg_out",
+        "displayName": "mart.seg_out",
+        "description": "Downstream segmentation output derived from raw.cust_raw through lineage.",
+        "userDescription": "Customer segment assignments inherit privacy classification from upstream profile source.",
+        "owner": "privacy-dl"
+      },
+      "customAttributes": {
+        "derivedFrom": "raw.cust_raw",
+        "outputType": "customer_segment"
+      }
+    },
+    {
+      "typeName": "DataSet",
+      "attributes": {
+        "qualifiedName": "edw.ord_fct_2@udf-retail",
+        "name": "ord_fct_2",
+        "displayName": "edw.ord_fct_2",
+        "description": "Orders fact table and authoritative system of record for order transactions.",
+        "userDescription": "Canonical orders dataset for finance and operations. Governed as source of truth.",
+        "owner": "finance-dl"
+      },
+      "customAttributes": {
+        "recordType": "orders",
+        "systemRole": "system_of_record"
+      }
+    }
+  ]
+}
