@@ -19,8 +19,14 @@ import { useState, useEffect } from "react";
 import { Avatar } from "@mui/material";
 import { getEntityIconPath } from "../utils/Utils";
 
+interface EntityData {
+  guid?: string | number;
+  isProcess?: boolean;
+  [key: string]: unknown;
+}
+
 interface DisplayImageProps {
-  entity: Record<string, unknown>;
+  entity: EntityData;
   width?: string | number;
   height?: string | number;
   avatarDisplay?: boolean;
